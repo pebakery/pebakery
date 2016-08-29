@@ -8,26 +8,14 @@ using System.Collections;
 
 namespace PEBakery_Engine
 {
-    // opcode is normalized into upper letter
     public enum BakerOpcode
     {
         // Empty
         None = 0,
         // File
-        FILECOPY, FILEDELETE, FILERENAME, FILECREATEBLANK,
+        FileCopy, FileDelete, FileRename, FileCreateBlank,
         // Text
         TXTAddLine
-    }
-
-    // operand is normalized into upper letter
-    [Flags]
-    public enum OptionalOperand
-    {
-        None = 0,
-        PRESERVE = 1,
-        NOWARN = 2,
-        SHOW = 4,
-        NOREC = 8
     }
 
     /// <summary>
@@ -51,14 +39,6 @@ namespace PEBakery_Engine
                 return operands;
             }
         }
-        private OptionalOperand optional;
-        public OptionalOperand Optional
-        {
-            get
-            {
-                return optional;
-            }
-        }
 
         /// <summary>
         /// Hold command information in BakerCommand instance.
@@ -66,11 +46,10 @@ namespace PEBakery_Engine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="optional"></param>
-        public BakerCommand(BakerOpcode opcode, string[] operands, OptionalOperand optional)
+        public BakerCommand(BakerOpcode opcode, string[] operands)
         {
             this.opcode = opcode;
             this.operands = operands;
-            this.optional = optional;
         }
 
         public override string ToString()
@@ -78,11 +57,6 @@ namespace PEBakery_Engine
             string str = this.opcode.ToString();
             foreach (string operand in this.operands)
                 str = String.Concat(str, "_", operand);
-            foreach (OptionalOperand optional in Enum.GetValues(typeof(OptionalOperand)))
-            {
-                if (BakerOperations.OptionalOperandBitMask(this.optional, optional))
-                    str = String.Concat(str, "_", optional.ToString());
-            }
 
             return str;
         }
@@ -178,10 +152,10 @@ namespace PEBakery_Engine
             try
             {
                 Console.WriteLine(secEntryPoint.SectionData);
-                BakerCommand command = ParseCommand("FileCopy,\"1 2.txt\",2.txt,NOWARN");
+                BakerCommand command = ParseCommand("FileCreateBlank,Korean_IME_TheOven.txt");
                 Console.WriteLine(command);
-                // command = ParseCommand(@"TXTAddLine,%ProjectTemp%\Korean_IME_TheOven.txt,,Append");
-                // Console.WriteLine(command);
+                command = ParseCommand(@"TXTAddLine,Korean_IME_TheOven.txt,,Append");
+                Console.WriteLine(command);
             }
             catch (Exception e)
             {
@@ -206,7 +180,6 @@ namespace PEBakery_Engine
         {
             BakerOpcode opcode = BakerOpcode.None;
             ArrayList operandList = new ArrayList();
-            OptionalOperand optional = OptionalOperand.None;
 
             string[] slices = rawCode.Split(',');
             if (slices.Length < 2) // No ','? Invalid format!
@@ -216,7 +189,7 @@ namespace PEBakery_Engine
             try
             {
                 // https://msdn.microsoft.com/ko-kr/library/essfb559(v=vs.110).aspx
-                BakerOpcode opcodeValue = (BakerOpcode)Enum.Parse(typeof(BakerOpcode), slices[0].ToUpper());
+                BakerOpcode opcodeValue = (BakerOpcode)Enum.Parse(typeof(BakerOpcode), slices[0], true);
                 if (Enum.IsDefined(typeof(BakerOpcode), opcodeValue))
                     opcode = opcodeValue;
                 else
@@ -301,30 +274,6 @@ namespace PEBakery_Engine
             if (state == ParseState.Merge)
                 throw new InvalidOperandException("ParseState == Merge");
 
-            // find OptionalOperand
-            ArrayList removeOperand = new ArrayList();
-            foreach (string operand in operandList)
-            {
-                try
-                {
-                    // https://msdn.microsoft.com/ko-kr/library/essfb559(v=vs.110).aspx
-                    OptionalOperand optionalValue = (OptionalOperand)Enum.Parse(typeof(OptionalOperand), operand.ToUpper());
-                    if (Enum.IsDefined(typeof(OptionalOperand), optionalValue))
-                    {
-                        optional = optional | optionalValue;
-                        removeOperand.Add(operand);
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // Don't do anything
-                }
-            }
-
-            // remove OptionalOperand from operandList
-            foreach (string operand in removeOperand)
-                operandList.Remove(operand);
-
             // Expand variable's name into value
             foreach (string operand in operandList)
             {
@@ -332,7 +281,7 @@ namespace PEBakery_Engine
             }
 
             // forge BakerCommand
-            return new BakerCommand(opcode, operandList.ToArray(typeof(string)) as string[], optional);
+            return new BakerCommand(opcode, operandList.ToArray(typeof(string)) as string[]);
         }
 
 

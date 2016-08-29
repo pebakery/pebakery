@@ -45,18 +45,7 @@ namespace PEBakery_Engine
         {
             try
             {
-                FileStream fs = null;
-                StreamReader sr = null;
-                char[] buffer = null;
-
-                fs = new FileStream(this.fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                sr = new StreamReader(fs, true);
-                buffer = new char[fs.Length];
-                sr.Read(buffer, 0, buffer.Length);
-                this.rawData = new string(buffer);
-
-                sr.Close();
-                fs.Close();
+                this.rawData = Helper.ReadTextFile(this.fileName);
             }
             catch (Exception e)
             {
@@ -103,7 +92,6 @@ namespace PEBakery_Engine
             try
             {
                 Console.WriteLine("FileName = " + this.fileName);
-                // Console.WriteLine("Data :\n" + this.rawData);
                 foreach (PluginSection section in sections)
                 {
                     Console.WriteLine(section.Index);
@@ -141,10 +129,6 @@ namespace PEBakery_Engine
             {
                 return sectionName;
             }
-            set
-            {
-                sectionName = value;
-            }
         }
 
         private string sectionData;
@@ -153,10 +137,6 @@ namespace PEBakery_Engine
             get
             {
                 return sectionData;
-            }
-            set
-            {
-                sectionData = value;
             }
         }
 
@@ -167,10 +147,6 @@ namespace PEBakery_Engine
             get
             {
                 return index;
-            }
-            set
-            {
-                index = value;
             }
         }
 
@@ -185,48 +161,9 @@ namespace PEBakery_Engine
 
     public class PluginSectionNotFoundException : Exception
     {
-        public PluginSectionNotFoundException()
-        {
-        }
-
-        public PluginSectionNotFoundException(string message)
-            : base(message)
-        {
-        }
-
-        public PluginSectionNotFoundException(string message, Exception inner)
-            : base(message, inner)
-        {
-        }
+        public PluginSectionNotFoundException() { }
+        public PluginSectionNotFoundException(string message) : base(message) { }
+        public PluginSectionNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
 }
 
-
-
-
-/*
-    public static Encoding DetectTextEncoding(string fileName)
-        {
-            byte[] bom = new byte[4];
-            FileStream fs = null;
-
-            try
-            {
-                fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                fs.Read(bom, 0, bom.Length);
-                fs.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("The process failed: {0}", e.ToString());
-            }
-
-            if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
-                return Encoding.UTF8;
-            else if (bom[0] == 0xFF && bom[1] == 0xF)
-                return Encoding.Unicode;
-            else if (bom[0] == 0xFE && bom[1] == 0xFF)
-                return Encoding.BigEndianUnicode;
-            return Encoding.Default;
-        }
-*/
