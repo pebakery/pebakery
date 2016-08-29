@@ -18,8 +18,8 @@ namespace PEBakery_Engine
             }
 
             Plugin plugin = new Plugin(args[0]);
-            plugin.Debug();
-            BakerEngine engine = new BakerEngine(plugin);
+            Logger logger = new Logger("log.txt");
+            BakerEngine engine = new BakerEngine(plugin, logger);
             engine.Debug();
             
             return 0;
