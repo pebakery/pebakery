@@ -9,7 +9,7 @@ using System.Collections;
 
 namespace PEBakery_Engine
 {
-    class Plugin
+    public class Plugin
     {
         // Fields
         private string fileName;
@@ -122,7 +122,7 @@ namespace PEBakery_Engine
         {
             foreach (PluginSection section in this.sections)
             {
-                if (section.SectionName == "Process")
+                if (string.Equals(section.SectionName, sectionName, StringComparison.OrdinalIgnoreCase))
                     return section;
             }
             throw new PluginSectionNotFoundException();
@@ -131,7 +131,7 @@ namespace PEBakery_Engine
 
     }
 
-    class PluginSection
+    public class PluginSection
     {
         // Fields
         private string sectionName;
@@ -182,25 +182,27 @@ namespace PEBakery_Engine
             this.index = index;
         }
     }
+
+    public class PluginSectionNotFoundException : Exception
+    {
+        public PluginSectionNotFoundException()
+        {
+        }
+
+        public PluginSectionNotFoundException(string message)
+            : base(message)
+        {
+        }
+
+        public PluginSectionNotFoundException(string message, Exception inner)
+            : base(message, inner)
+        {
+        }
+    }
 }
 
 
-public class PluginSectionNotFoundException : Exception
-{
-    public PluginSectionNotFoundException()
-    {
-    }
 
-    public PluginSectionNotFoundException(string message)
-        : base(message)
-    {
-    }
-
-    public PluginSectionNotFoundException(string message, Exception inner)
-        : base(message, inner)
-    {
-    }
-}
 
 /*
     public static Encoding DetectTextEncoding(string fileName)
