@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Globalization;
 
 namespace PEBakery_Engine
 {
@@ -122,5 +123,31 @@ namespace PEBakery_Engine
             fs.Close();
             return new string(buffer);
         }
+
+        /// <summary>
+        /// return Compile DateTime
+        /// </summary>
+        /// <returns></returns>
+        /// Add to pre-build event : echo %date% %time% > "$(ProjectDir)\Resources\BuildDate.txt"
+        /// Add to "Resources\BuildData.txt" as resources
+        /// http://stackoverflow.com/questions/1600962/displaying-the-build-date
+        public static DateTime GetBuildDate()
+        {
+            // Ex) 2016-08-30  7:10:00.25 
+            string[] rawBuildDateStr = Properties.Resources.BuildDate.Split(new char[] { ' ', '.', '\r', '\n' });
+            string buildDateStr = String.Format("{0} {1}", rawBuildDateStr[0], rawBuildDateStr[1]);
+            DateTime buildDate;
+            try
+            {
+                buildDate = DateTime.ParseExact(buildDateStr, "yyyy-MM-dd H:mm:ss", CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
+            { // Format Error, just print 0001-01-01
+                buildDate = new DateTime(1, 1, 1);
+            }
+            
+            return buildDate;
+        }
+
     }
 }

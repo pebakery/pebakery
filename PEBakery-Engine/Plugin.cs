@@ -61,7 +61,7 @@ namespace PEBakery_Engine
             try
             {
                 // Match sections using regex
-                MatchCollection matches = Regex.Matches(rawData, @"^\[(.)+\]\r?$", RegexOptions.Multiline);
+                MatchCollection matches = Regex.Matches(rawData, @"^\[(.+)\]\r?$", RegexOptions.Multiline);
 
                 // Make instances of sections
                 sections = new PluginSection[matches.Count];
