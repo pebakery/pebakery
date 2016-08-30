@@ -9,14 +9,24 @@ using System.Text.RegularExpressions;
 
 namespace PEBakery_Engine
 {
+    using VariableDictionary = Dictionary<string, string>;
+
     public enum BakerOpcode
     {
         // Misc
-        None = 0, Comment,
+        None = 0, Comment, Error, Unknown, 
         // File
         FileCopy, FileDelete, FileRename, FileCreateBlank,
         // Text
-        TXTAddLine
+        TXTAddLine,
+        // Misc
+        Set,
+    }
+
+    public enum BakerState
+    {
+        None = 0,
+
     }
 
     /// <summary>
@@ -24,21 +34,20 @@ namespace PEBakery_Engine
     /// </summary>
     public class BakerCommand
     {
+        private string rawCode;
+        public string RawCode
+        {
+            get { return rawCode; }
+        }
         private BakerOpcode opcode;
         public BakerOpcode Opcode
         {
-            get
-            {
-                return opcode;
-            }
+            get { return opcode; }
         }
         private string[] operands;
         public string[] Operands
         {
-            get
-            {
-                return operands;
-            }
+            get { return operands; }
         }
 
         /// <summary>
@@ -47,15 +56,16 @@ namespace PEBakery_Engine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="optional"></param>
-        public BakerCommand(BakerOpcode opcode, string[] operands)
+        public BakerCommand(string rawCode, BakerOpcode opcode, string[] operands)
         {
+            this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
         }
 
         public override string ToString()
         {
-            string str = this.opcode.ToString();
+            string str = String.Concat("[", this.rawCode, "]\n", this.opcode.ToString());
             foreach (string operand in this.operands)
                 str = String.Concat(str, "_", operand);
 
@@ -103,13 +113,12 @@ namespace PEBakery_Engine
         public InternalParseException(string message, Exception inner) : base(message, inner) { }
     }
 
-
     /// <summary>
     /// Interpreter of raw codes
     /// </summary>
-    public class BakerEngine
+    public partial class BakerEngine
     {
-        // Field
+        // Fields used globally
         private Logger logger;
         private Plugin plugin;
         private PluginSection secMain;
@@ -118,7 +127,12 @@ namespace PEBakery_Engine
         private PluginSection secEntryPoint;
         private PluginSection secAttachAuthor;
         private PluginSection secAttachInterface;
-        private Dictionary<string, string> variables;
+        private VariableDictionary globalVars;
+        private VariableDictionary localVars;
+
+        // Fields used as engine's state
+        private BakerCommand currentCommand;
+        private BakerCommand nextCommand;
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -136,8 +150,10 @@ namespace PEBakery_Engine
                 this.secAttachAuthor = plugin.FindSection("AuthorEncoded");
                 this.secAttachInterface = plugin.FindSection("InterfaceEncoded");
                 this.logger = logger;
-                this.variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                LoadDefaultVariables();
+                this.globalVars = new VariableDictionary(StringComparer.OrdinalIgnoreCase);
+                this.localVars = new VariableDictionary(StringComparer.OrdinalIgnoreCase);
+                LoadDefaultGlobalVariables();
+                currentCommand = null;
             }
             catch (Exception e)
             {
@@ -154,27 +170,19 @@ namespace PEBakery_Engine
             try
             {
                 // Variables
-                foreach (var vars in variables)
-                {
+                Console.WriteLine("- GlobalVars");
+                foreach (var vars in globalVars)
                     Console.WriteLine(vars);
-                }
+                Console.WriteLine();
+                Console.WriteLine("- LocalVars");
+                foreach (var vars in localVars)
+                    Console.WriteLine(vars);
                 Console.WriteLine();
 
                 // Commands - EntryPoint
+                Console.WriteLine("- EntryPoint");
                 Console.WriteLine(secEntryPoint.SectionData);
                 Console.WriteLine();
-
-                // BakerCommand Test
-                BakerCommand command = ParseCommand("FileCreateBlank,Korean_IME_TheOven.txt");
-                Console.WriteLine(command);
-                command = ParseCommand(@"TXTAddLine,Korean_IME_TheOven.txt,Test1,Append");
-                Console.WriteLine(command);
-                command = ParseCommand(@"TXTAddLine,%BaseDir%\Korean_IME_TheOven.txt,Test2,Append");
-                Console.WriteLine(command);
-                command = ParseCommand(@"//TXTAddLine,%BaseDir%\Korean_IME_TheOven.txt,Test2,Append");
-                Console.WriteLine(command);
-                command = ParseCommand(@"#TXTAddLine,%BaseDir%\Korean_IME_TheOven.txt,Test2,Append");
-                Console.WriteLine(command);
             }
             catch (Exception e)
             {
@@ -182,17 +190,17 @@ namespace PEBakery_Engine
             }
         }
 
-        public void LoadDefaultVariables()
+        public void LoadDefaultGlobalVariables()
         {
             // BaseDir
-            variables.Add("BaseDir", AppDomain.CurrentDomain.BaseDirectory);
+            globalVars.Add("BaseDir", Helper.RemoveLastDirectorySeparator(AppDomain.CurrentDomain.BaseDirectory));
             // Year, Month, Day
-            DateTime todayDate = new DateTime();
-            variables.Add("Year", todayDate.Year.ToString());
-            variables.Add("Month", todayDate.Month.ToString());
-            variables.Add("Day", todayDate.Day.ToString());
+            DateTime todayDate = DateTime.Now;
+            globalVars.Add("Year", todayDate.Year.ToString());
+            globalVars.Add("Month", todayDate.Month.ToString());
+            globalVars.Add("Day", todayDate.Day.ToString());
             // Build
-            variables.Add("Build", String.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
+            globalVars.Add("Build", String.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
         }
 
         /// <summary>
@@ -200,7 +208,57 @@ namespace PEBakery_Engine
         /// </summary>
         public void Run()
         {
+            RunSection(secEntryPoint);
             return;
+        }
+
+        private void RunSection(PluginSection section)
+        {
+            string[] codes = section.SectionData.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
+            for (int i = 0; i < codes.Length; i++)
+            {
+                currentCommand = ParseCommand(codes[i]);
+                logger.Write(ExecuteCommand(currentCommand));
+            }
+        }
+
+        private LogInfo ExecuteCommand(BakerCommand cmd)
+        {
+            LogInfo log = null;
+            switch (cmd.Opcode)
+            {
+                case BakerOpcode.FileCopy:
+                    log = this.FileCopy(cmd);
+                    break;
+                case BakerOpcode.FileDelete:
+                    log = this.FileDelete(cmd);
+                    break;
+                case BakerOpcode.FileRename:
+                    log = this.FileRename(cmd);
+                    break;
+                case BakerOpcode.FileCreateBlank:
+                    log = this.FileCreateBlank(cmd);
+                    break;
+                case BakerOpcode.TXTAddLine:
+                    log = this.TXTAddLine(cmd);
+                    break;
+                case BakerOpcode.Set:
+                    log = this.Set(cmd);
+                    break;
+                case BakerOpcode.None: // NOP
+                    log = new LogInfo(cmd.RawCode, "NOP", LogState.None);
+                    break;
+                case BakerOpcode.Comment: // NOP
+                    log = new LogInfo(cmd.RawCode, "Comment", LogState.Ignore);
+                    break;
+                case BakerOpcode.Unknown: // NOP
+                    log = new LogInfo(cmd.RawCode, "Unknown", LogState.Error);
+                    break;
+                default:
+                    throw new InvalidOpcodeException("ExecuteCommand does not know " + cmd.Opcode.ToString());
+            }
+
+            return log;
         }
 
         /// <summary>
@@ -216,22 +274,32 @@ namespace PEBakery_Engine
             // Remove whitespace of rawCode's start and end
             rawCode = rawCode.Trim();
 
+            // Check if rawCode is Empty
+            if (String.Equals(rawCode, String.Empty))
+                return new BakerCommand(String.Empty, BakerOpcode.None, new string[0]);
+
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.Substring(0, 2) == "//" || rawCode.Substring(0, 1) == "#" || rawCode.Substring(0, 1) == ";")
             {
-                return new BakerCommand(BakerOpcode.Comment, new string[0]);
+                return new BakerCommand(rawCode, BakerOpcode.Comment, new string[0]);
             }
 
             // Splice with spaces
             string[] slices = rawCode.Split(',');
+            /*
             if (slices.Length < 2) // No ',' -> Invalid format! Every command must have at least one operand!
-                throw new InvalidCommandException();
+            {
+                if (!(String.Equals(slices[0], "Begin", StringComparison.OrdinalIgnoreCase))
+                    || String.Equals(slices[0], "End", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidCommandException();
+            }
+            */
             
             // Parse opcode
             try
             {
                 // https://msdn.microsoft.com/ko-kr/library/essfb559(v=vs.110).aspx
-                BakerOpcode opcodeValue = (BakerOpcode)Enum.Parse(typeof(BakerOpcode), slices[0], true);
+                BakerOpcode opcodeValue = (BakerOpcode)Enum.Parse(typeof(BakerOpcode), slices[0].Trim(), true);
                 if (Enum.IsDefined(typeof(BakerOpcode), opcodeValue))
                 {
                     if (opcodeValue != BakerOpcode.None && opcodeValue != BakerOpcode.Comment)
@@ -244,11 +312,11 @@ namespace PEBakery_Engine
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException();
+                return new BakerCommand(rawCode, BakerOpcode.Unknown, new string[0]);
             }
             catch (InvalidOpcodeException)
             {
-                // Write an log : warning
+                return new BakerCommand(rawCode, BakerOpcode.Unknown, new string[0]);
             }
 
             // Check doublequote's occurence - must be 2n
@@ -261,6 +329,9 @@ namespace PEBakery_Engine
 
             for (int i = 1; i < slices.Length; i++)
             {
+                // Remove whitespace
+                slices[i] = slices[i].Trim();
+
                 // Check if operand is doublequoted
                 int idx = slices[i].IndexOf("\"");
                 if (idx == -1) // Do not have doublequote
@@ -327,64 +398,57 @@ namespace PEBakery_Engine
             string[] operands  = operandList.ToArray(typeof(string)) as string[];
             for (int i = 0; i < operands.Length; i++)
             {
-                // Ex) Invalid : TXTAddLine,%Base%Dir%\Korean_IME_Fonts.txt,[Gulim],Append
-                if (Helper.CountStringOccurrences(operands[i], @"%") % 2 == 1)
-                    throw new InvalidCommandException(@"Variable names must be enclosed by %");
-
-                // Expand variable's name into value
-                // Ex) 123%BaseDir%456%OS%789
-                MatchCollection matches = Regex.Matches(operands[i], @"%(.+)%");
-                string expandStr = String.Empty;
-                for (int x = 0; x < matches.Count; x++)
-                {
-                    expandStr = String.Concat(expandStr, operands[i].Substring(x == 0 ? 0 : matches[x-1].Index, matches[x].Index));
-                    expandStr = String.Concat(expandStr, variables[matches[x].Groups[1].ToString()]);
-                    if (x + 1 == matches.Count) // Last iteration
-                        expandStr = String.Concat(expandStr, operands[i].Substring(matches[x].Index + matches[x].Value.Length));
-                }
-                if (0 < matches.Count)
-                    operands[i] = expandStr;
+                if (opcode != BakerOpcode.Set)
+                    operands[i] = ExpandVariables(operands[i]);
 
                 // Process Escape Characters
                 operands[i] = operands[i].Replace(@"$#c", ",");
                 operands[i] = operands[i].Replace(@"$#p", "%");
                 operands[i] = operands[i].Replace(@"$#q", "\"");
                 operands[i] = operands[i].Replace(@"$#s", " ");
+                operands[i] = operands[i].Replace(@"$#t", "\t");
                 operands[i] = operands[i].Replace(@"$#x", "\r\n");
-                // operands[i] = operands[i].Replace(@"$#z", "\x00\x00");
+                operands[i] = operands[i].Replace(@"$#z", "\x00\x00");
             }
 
             // forge BakerCommand
-            return new BakerCommand(opcode, operands);
+            return new BakerCommand(rawCode, opcode, operands);
         }
 
-
-        private void ExecuteCommand(BakerCommand command)
+        /// <summary>
+        /// Expand PEBakery variables
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public string ExpandVariables(string operand)
         {
-            switch (command.Opcode)
+            // Ex) Invalid : TXTAddLine,%Base%Dir%\Korean_IME_Fonts.txt,[Gulim],Append
+            if (Helper.CountStringOccurrences(operand, @"%") % 2 == 1)
+                throw new InvalidCommandException(@"Variable names must be enclosed by %");
+
+            // Expand variable's name into value
+            // Ex) 123%BaseDir%456%OS%789
+            MatchCollection matches = Regex.Matches(operand, @"%(.+)%");
+            string expandStr = String.Empty;
+            for (int x = 0; x < matches.Count; x++)
             {
-                case BakerOpcode.FileCopy:
-                    BakerOperations.FileCopy(command.Operands);
-                    break;
-                case BakerOpcode.FileDelete:
-                    BakerOperations.FileDelete(command.Operands);
-                    break;
-                case BakerOpcode.FileRename:
-                    BakerOperations.FileRename(command.Operands);
-                    break;
-                case BakerOpcode.FileCreateBlank:
-                    BakerOperations.FileCreateBlank(command.Operands);
-                    break;
-                case BakerOpcode.TXTAddLine:
-                    BakerOperations.TXTAddLine(command.Operands);
-                    break;
-                case BakerOpcode.None: // NOP
-                    break;
-                case BakerOpcode.Comment: // NOP
-                    break;
-                default:
-                    throw new InvalidOpcodeException();
+                string varName = matches[x].Groups[1].ToString();
+                expandStr = String.Concat(expandStr, operand.Substring(x == 0 ? 0 : matches[x - 1].Index, matches[x].Index));
+                if (globalVars.ContainsKey(varName))
+                    expandStr = String.Concat(expandStr, globalVars[varName]);
+                else if (localVars.ContainsKey(varName))
+                    expandStr = String.Concat(expandStr, localVars[varName]);
+                else // no variable exists? log it and pass
+                    logger.Write(new LogInfo(currentCommand.RawCode, "Variable [" + varName + "] does not exists", LogState.Warning));
+
+                if (x + 1 == matches.Count) // Last iteration
+                    expandStr = String.Concat(expandStr, operand.Substring(matches[x].Index + matches[x].Value.Length));
             }
+            if (0 < matches.Count) // Only copy it if variable exists
+                operand = expandStr;
+
+            return operand;
         }
+
     }
 }

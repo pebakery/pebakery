@@ -8,6 +8,8 @@ using System.Collections;
 
 namespace PEBakery_Engine
 {
+    using VariableDictionary = Dictionary<string, string>;
+
     /// <summary>
     /// Exception used in BakerOperations
     /// </summary>
@@ -31,31 +33,34 @@ namespace PEBakery_Engine
     /// <summary>
     /// Implementation of commands
     /// </summary>
-    public static class BakerOperations
+    public partial class BakerEngine
     {
         /// <summary>
         /// FileCopy
         /// </summary>
         /// <param name="operand"></param>
         /// <returns></returns>
-        public static LogInfo FileCopy(string[] operands)
+        public LogInfo FileCopy(BakerCommand cmd)
         { // FileCopy,<SrcFileName>,<DestFileName>[,PRESERVE][,NOWARN][,SHOW][,NOREC]
             try
             {
                 // Must-have operand : 2
-                if (!(2 <= operands.Length))
+                if (!(2 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
+                string srcFileName = cmd.Operands[0];
+                string destFileName = cmd.Operands[1];
+
                 // Check if srcFileName exists
-                if (File.Exists(operands[0]) == false)
-                    throw new FileDoesNotExistException(String.Format("{0} does not exist", operands[0]));
+                if (File.Exists(srcFileName) == false)
+                    throw new FileDoesNotExistException(String.Format("{0} does not exist", srcFileName));
 
                 bool preserve = false;
                 bool noWarn = false;
                 bool show = false;
                 bool noRec = false;
 
-                foreach (string operand in operands)
+                foreach (string operand in cmd.Operands)
                 {
                     switch (operand.ToUpper())
                     {
@@ -75,35 +80,37 @@ namespace PEBakery_Engine
                 }
                 
                 if (preserve)
-                    File.Copy(operands[0], operands[1], false);
+                    File.Copy(srcFileName, destFileName, false);
                 else
-                    File.Copy(operands[0], operands[1], true);
+                    File.Copy(srcFileName, destFileName, true);
             }
             catch (Exception e)
             {
                 Console.WriteLine("[ERR]\n{0}", e.ToString());
             }
 
-            return new LogInfo(null, "FileCopy", LogState.Success);
+            return new LogInfo(cmd.RawCode, "FileCopy", LogState.Success);
         }
 
         
-        public static LogInfo FileDelete(string[] operands)
+        public LogInfo FileDelete(BakerCommand cmd)
         { // FileDelete,<FileName>,[,NOWARN][,NOREC]
             try
             {
                 // Must-have operand : 1
-                if (!(1 <= operands.Length))
+                if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
+                string fileName = cmd.Operands[0];
+
                 // Check if srcFileName exists
-                if (File.Exists(operands[0]) == false)
-                    throw new FileDoesNotExistException(String.Format("{0} does not exist", operands[0]));
+                if (File.Exists(fileName) == false)
+                    throw new FileDoesNotExistException(String.Format("{0} does not exist", fileName));
 
                 bool noWarn = false;
                 bool noRec = false;
 
-                foreach (string operand in operands)
+                foreach (string operand in cmd.Operands)
                 {
                     switch (operand.ToUpper())
                     {
@@ -116,52 +123,55 @@ namespace PEBakery_Engine
                     }
                 }
 
-                File.Delete(operands[0]);
+                File.Delete(fileName);
             }
             catch (Exception e)
             {
                 Console.WriteLine("[ERR]\n{0}", e.ToString());
             }
 
-            return new LogInfo(null, "FileDelete", LogState.Success);
+            return new LogInfo(cmd.RawCode, "FileDelete", LogState.Success);
         }
 
-        public static LogInfo FileRename(string[] operands)
+        public LogInfo FileRename(BakerCommand cmd)
         { // FileRename,<srcFileName>,<destFileName>
             try
             {
                 // Must-have operand : 2
-                if (!(1 <= operands.Length))
+                if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                // Check if srcFileName exists
-                if (File.Exists(operands[0]) == false)
-                    throw new FileDoesNotExistException(String.Format("{0} does not exist", operands[0]));
+                string srcFileName = cmd.Operands[0];
+                string destFileName = cmd.Operands[1];
 
-                File.Move(operands[0], operands[1]);
+                // Check if srcFileName exists
+                if (File.Exists(srcFileName) == false)
+                    throw new FileDoesNotExistException(String.Format("{0} does not exist", srcFileName));
+
+                File.Move(srcFileName, destFileName);
             }
             catch (Exception e)
             {
                 Console.WriteLine("[ERR]\n{0}", e.ToString());
             }
 
-            return new LogInfo(null, "FileRename", LogState.Success);
+            return new LogInfo(cmd.RawCode, "FileRename", LogState.Success);
         }
 
-        public static LogInfo FileCreateBlank(string[] operands)
+        public LogInfo FileCreateBlank(BakerCommand cmd)
         { // FileCreateBlank,<FileName>[,PRESERVE][,NOWARN][,UTF8 | UTF16LE | UTF16BE | ANSI]
             try
             {
                 // Must-have operand : 1
-                if (!(1 <= operands.Length))
+                if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string fileName = operands[0];
+                string fileName = cmd.Operands[0];
                 bool preserve = false;
                 bool noWarn = false;
                 Encoding encoding = null;
 
-                foreach (string operand in operands)
+                foreach (string operand in cmd.Operands)
                 {
                     switch (operand.ToUpper())
                     {
@@ -208,7 +218,7 @@ namespace PEBakery_Engine
                 if (encoding == null)
                     encoding = Encoding.UTF8;
 
-                FileStream fs = new FileStream(operands[0], preserve ? FileMode.CreateNew : FileMode.Create, FileAccess.Write, FileShare.Write);
+                FileStream fs = new FileStream(fileName, preserve ? FileMode.CreateNew : FileMode.Create, FileAccess.Write, FileShare.Write);
                 Helper.WriteTextBOM(fs, encoding).Close();
             }
             catch (Exception e)
@@ -216,7 +226,7 @@ namespace PEBakery_Engine
                 Console.WriteLine("[ERR]\n{0}", e.ToString());
             }
 
-            return new LogInfo(null, "FileCreateBlank", LogState.Success);
+            return new LogInfo(cmd.RawCode, "FileCreateBlank", LogState.Success);
         }
 
         /* 
@@ -226,44 +236,42 @@ namespace PEBakery_Engine
         /// <summary>
         /// Add line to text file
         /// </summary>
-        /// <param name="fileName"></param>
-        /// <param name="line"></param>
-        /// <param name="mode"></param>
+        /// <param name="cmd"></param>
         /// <returns></returns>
-        public static LogInfo TXTAddLine(string[] operands)
+        public LogInfo TXTAddLine(BakerCommand cmd)
         { // TXTAddLine,<FileName>,<Line>,<Mode>
             // Mode : Prepend / Append / Place,LineNum
             try
             {
                 // Must-have operand : 3-4
-                if (!(3 <= operands.Length || operands.Length <= 4))
+                if (!(3 <= cmd.Operands.Length || cmd.Operands.Length <= 4))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string fileName = operands[0];
-                string line = operands[1];
+                string fileName = cmd.Operands[0];
+                string line = cmd.Operands[1];
                 int mode = 1;
                 int placeLineNum = 0;
 
-                if (string.Equals(operands[2], "Prepend", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(cmd.Operands[2], "Prepend", StringComparison.OrdinalIgnoreCase))
                 {
                     mode = 0;
-                    if (4 <= operands.Length)
+                    if (4 <= cmd.Operands.Length)
                         throw new InvalidOperandException("Too many operands");
                 }
-                else if (string.Equals(operands[2], "Append", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(cmd.Operands[2], "Append", StringComparison.OrdinalIgnoreCase))
                 {
                     mode = 1;
-                    if (4 <= operands.Length)
+                    if (4 <= cmd.Operands.Length)
                         throw new InvalidOperandException("Too many operands");
                 }
-                else if (string.Equals(operands[2], "Place", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(cmd.Operands[2], "Place", StringComparison.OrdinalIgnoreCase))
                 {
                     mode = 2;
-                    if (5 <= operands.Length)
+                    if (5 <= cmd.Operands.Length)
                         throw new InvalidOperandException("Too many operands");
-                    else if (operands.Length == 3)
+                    else if (cmd.Operands.Length == 3)
                         throw new InvalidOperandException("Not enough operands");
-                    placeLineNum = int.Parse(operands[3]);
+                    placeLineNum = int.Parse(cmd.Operands[3]);
                     if (placeLineNum <= 0) // In Place mode, placeLineNum starts from 1;
                         throw new InvalidOperandException("Invalid LineNum value. LineNum starts from 1.");
                 }
@@ -278,7 +286,7 @@ namespace PEBakery_Engine
                 if (File.Exists(fileName))
                     encoding = Helper.DetectTextEncoding(fileName);
                 else
-                    FileCreateBlank(new string[] { fileName, "UTF8" });
+                    Helper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8);
 
                 if (mode == 0) // Prepend
                 {
@@ -290,7 +298,7 @@ namespace PEBakery_Engine
                 }
                 else if (mode == 1) // Append
                 {
-                    File.AppendAllText(fileName, line, encoding);
+                    File.AppendAllText(fileName, line + "\r\n", encoding);
                 }
                 else if (mode == 2) // Place
                 { // In Place mode, placeLineNum starts from 1;
@@ -318,7 +326,54 @@ namespace PEBakery_Engine
                 Console.WriteLine("[ERR]\n{0}", e.ToString());
             }
 
-            return new LogInfo(null, "TXTAddLine", LogState.Success);
+            return new LogInfo(cmd.RawCode, "TXTAddLine", LogState.Success);
+        }
+
+        /// <summary>
+        /// Set variables
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        public LogInfo Set(BakerCommand cmd)
+        { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT] 
+            string varName;
+            string varValue;
+            bool global = false;
+            bool permanent = false;
+            VariableDictionary targetVar;
+
+            // Must-have operand : 2-3
+            if (cmd.Operands.Length == 3)
+            {
+                switch (cmd.Operands[2].ToUpper())
+                {
+                    case "GLOBAL":
+                        global = true;
+                        break;
+                    case "PERMANENT":
+                        permanent = true;
+                        break;
+                    default:
+                        throw new InvalidOperandException("Invalid operand : " + cmd.Operands[2]);
+                }
+            }
+            else if (cmd.Operands.Length != 2)
+                throw new InvalidOperandException("Necessary operands does not exist");
+
+            varName = cmd.Operands[0].Trim(new char[] { '%' });
+            varValue = cmd.Operands[1];
+
+            if (global || permanent)
+                targetVar = this.globalVars;
+            else
+                targetVar = this.localVars;
+
+            if (targetVar.ContainsKey(varName))
+                targetVar[varName] = varValue;
+            else
+                targetVar.Add(varName, varValue);
+
+            return new LogInfo(cmd.RawCode, "Set", LogState.Success);
         }
     }
 }

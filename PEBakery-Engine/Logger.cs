@@ -15,15 +15,16 @@ namespace PEBakery_Engine
 
     public enum LogState
     {
-        Success, Warning, Error, Infomation
+        None = 0,
+        Success, Warning, Error, Infomation, Ignore
     }
 
     public class LogInfo
     {
-        private string rawCommand;
-        public string RawCommand
+        private string rawCode;
+        public string RawCode
         {
-            get { return rawCommand; }
+            get { return rawCode; }
         }
         private string result;
         public string Result
@@ -36,9 +37,9 @@ namespace PEBakery_Engine
             get { return state;  }
         }
 
-        public LogInfo(string rawCommand, string result, LogState state)
+        public LogInfo(string rawCode, string result, LogState state)
         {
-            this.rawCommand = rawCommand;
+            this.rawCode = rawCode;
             this.result = result;
             this.state = state;
         }
@@ -52,7 +53,6 @@ namespace PEBakery_Engine
         /// </summary>
         private string logFileName;
         private LogFormat logFormat;
-        private FileStream fs;
         private StreamWriter sw;
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace PEBakery_Engine
                 this.logFileName = logFileName;
                 this.logFormat = logFormat;
 
-                fs = new FileStream(this.logFileName, FileMode.Create, FileAccess.Write, FileShare.Write);
+                FileStream fs = new FileStream(this.logFileName, FileMode.Create, FileAccess.Write, FileShare.Write);
                 if (logFormat == LogFormat.Text)
                     sw = new StreamWriter(fs, Encoding.UTF8); // With BOM, for txt
                 else
@@ -79,17 +79,67 @@ namespace PEBakery_Engine
             }
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="logFileName"></param>
+        /// <param name="logFormat"></param>
+        public Logger(string logFileName, LogFormat logFormat, PEBakeryInfo info)
+        {
+            try
+            {
+                this.logFileName = logFileName;
+                this.logFormat = logFormat;
+
+                FileStream fs = new FileStream(this.logFileName, FileMode.Create, FileAccess.Write, FileShare.Write);
+                if (logFormat == LogFormat.Text)
+                    sw = new StreamWriter(fs, Encoding.UTF8); // With BOM, for txt
+                else
+                    sw = new StreamWriter(fs, new UTF8Encoding(false)); // Without BOM, for HTML
+
+                PrintBanner(info);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("[ERR]\n{0}", e.ToString());
+            }
+        }
+
+        ~Logger()
+        {
+            Close();
+        }
+
+        private void PrintBanner(PEBakeryInfo info)
+        {
+            sw.WriteLine("PEBakery " + info.Ver.ToString());
+            sw.Flush();
+        }
 
         public void Write(LogInfo logInfo)
         {
-            string log = String.Format("[{0}] {1} ({2})", logInfo.State.ToString(), logInfo.Result, logInfo.RawCommand);
-            sw.Write(log);
+            if (logInfo == null || logInfo.State == LogState.None) // null means do not log
+                return;
+            sw.WriteLine(String.Format("[{0}] {1} ({2})", logInfo.State.ToString(), logInfo.Result, logInfo.RawCode));
+            sw.Flush();
+        }
+
+        public void Write(string log)
+        {
+            sw.WriteLine(log);
+            sw.Flush();
         }
 
         public void Close()
         {
-            sw.Close();
-            fs.Close();
+            try
+            {
+                sw.Close();
+            }
+            catch (ObjectDisposedException)
+            {
+                // StreamWriter already disposed, so pass.
+            }
         }
     }
 }

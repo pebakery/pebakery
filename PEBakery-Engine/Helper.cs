@@ -7,6 +7,9 @@ using System.Globalization;
 
 namespace PEBakery_Engine
 {
+    using System.Text.RegularExpressions;
+    using VariableDictionary = Dictionary<string, string>;
+
     /// <summary>
     /// Contains static helper methods.
     /// </summary>
@@ -52,7 +55,7 @@ namespace PEBakery_Engine
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
-            else if (bom[0] == 0xFF && bom[1] == 0xF)
+            else if (bom[0] == 0xFF && bom[1] == 0xFE)
                 return Encoding.Unicode;
             else if (bom[0] == 0xFE && bom[1] == 0xFF)
                 return Encoding.BigEndianUnicode;
@@ -149,5 +152,16 @@ namespace PEBakery_Engine
             return buildDate;
         }
 
+        /// <summary>
+        /// Remove last \ in the path
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string RemoveLastDirectorySeparator(string path)
+        {
+            if (Path.GetDirectoryName(path) != null)
+                path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return path;
+        }
     }
 }
