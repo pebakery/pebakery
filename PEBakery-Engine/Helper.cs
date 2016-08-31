@@ -157,7 +157,7 @@ namespace PEBakery_Engine
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static string RemoveLastDirectorySeparator(string path)
+        public static string RemoveLastDirChar(string path)
         {
             if (Path.GetDirectoryName(path) != null)
                 path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

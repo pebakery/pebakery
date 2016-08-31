@@ -11,7 +11,7 @@ namespace PEBakery_Engine
 {
     using VariableDictionary = Dictionary<string, string>;
 
-    public enum BakerOpcode
+    public enum Opcode
     {
         // Misc
         None = 0, Comment, Error, Unknown, 
@@ -21,12 +21,17 @@ namespace PEBakery_Engine
         TXTAddLine,
         // Misc
         Set,
+        // If
+        If,
     }
 
-    public enum BakerState
+    public enum NextCommand
     {
         None = 0,
-
+        Next, // Noremal case : execute next command
+        Last, // Last command of section
+        Jump, // In Run command : execute target command
+        IgnoreUntilEnd, // Begin not executed : ignore until find End
     }
 
     /// <summary>
@@ -39,8 +44,8 @@ namespace PEBakery_Engine
         {
             get { return rawCode; }
         }
-        private BakerOpcode opcode;
-        public BakerOpcode Opcode
+        private Opcode opcode;
+        public Opcode Opcode
         {
             get { return opcode; }
         }
@@ -56,7 +61,7 @@ namespace PEBakery_Engine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="optional"></param>
-        public BakerCommand(string rawCode, BakerOpcode opcode, string[] operands)
+        public BakerCommand(string rawCode, Opcode opcode, string[] operands)
         {
             this.rawCode = rawCode;
             this.opcode = opcode;
@@ -88,8 +93,15 @@ namespace PEBakery_Engine
     /// </summary>
     public class InvalidOpcodeException : Exception
     {
+        private BakerCommand command = null;
+        public BakerCommand Command
+        {
+            get { return command; }
+        }
         public InvalidOpcodeException() { }
         public InvalidOpcodeException(string message) : base(message) { }
+        public InvalidOpcodeException(BakerCommand command) { }
+        public InvalidOpcodeException(string message, BakerCommand command) : base(message) { this.command = command; }
         public InvalidOpcodeException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -98,8 +110,15 @@ namespace PEBakery_Engine
     /// </summary>
     public class InvalidOperandException : Exception
     {
+        private BakerCommand command = null;
+        public BakerCommand Command
+        {
+            get { return command; }
+        }
         public InvalidOperandException() { }
         public InvalidOperandException(string message) : base(message) { }
+        public InvalidOperandException(BakerCommand command) { }
+        public InvalidOperandException(string message, BakerCommand command) : base(message) { this.command = command; }
         public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -111,6 +130,26 @@ namespace PEBakery_Engine
         public InternalParseException() { }
         public InternalParseException(string message) : base(message) { }
         public InternalParseException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// Exception used in BakerOperations
+    /// </summary>
+    public class FileDoesNotExistException : Exception
+    {
+        public FileDoesNotExistException() { }
+        public FileDoesNotExistException(string message) : base(message) { }
+        public FileDoesNotExistException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// Exception used in BakerOperations
+    /// </summary>
+    public class InternalUnknownException : Exception
+    {
+        public InternalUnknownException() { }
+        public InternalUnknownException(string message) : base(message) { }
+        public InternalUnknownException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>
@@ -132,7 +171,7 @@ namespace PEBakery_Engine
 
         // Fields used as engine's state
         private BakerCommand currentCommand;
-        private BakerCommand nextCommand;
+        // private NextCommand next;
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -178,11 +217,6 @@ namespace PEBakery_Engine
                 foreach (var vars in localVars)
                     Console.WriteLine(vars);
                 Console.WriteLine();
-
-                // Commands - EntryPoint
-                Console.WriteLine("- EntryPoint");
-                Console.WriteLine(secEntryPoint.SectionData);
-                Console.WriteLine();
             }
             catch (Exception e)
             {
@@ -190,10 +224,15 @@ namespace PEBakery_Engine
             }
         }
 
-        public void LoadDefaultGlobalVariables()
+        private void DisplayOperation(string str)
+        {
+            Console.WriteLine(str);
+        }
+
+        private void LoadDefaultGlobalVariables()
         {
             // BaseDir
-            globalVars.Add("BaseDir", Helper.RemoveLastDirectorySeparator(AppDomain.CurrentDomain.BaseDirectory));
+            globalVars.Add("BaseDir", Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory));
             // Year, Month, Day
             DateTime todayDate = DateTime.Now;
             globalVars.Add("Year", todayDate.Year.ToString());
@@ -212,53 +251,81 @@ namespace PEBakery_Engine
             return;
         }
 
+        /// <summary>
+        /// Run an section
+        /// </summary>
+        /// <param name="section"></param>
         private void RunSection(PluginSection section)
         {
             string[] codes = section.SectionData.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
             for (int i = 0; i < codes.Length; i++)
             {
-                currentCommand = ParseCommand(codes[i]);
-                logger.Write(ExecuteCommand(currentCommand));
+                string rawCode = codes[i].Trim();
+                try
+                {
+                    currentCommand = ParseCommand(rawCode);
+                    try
+                    {
+                        ExecuteCommand(currentCommand, logger);
+                    }
+                    catch (InvalidOpcodeException e)
+                    {
+                        logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
+                    }
+                }
+                catch (InvalidOpcodeException e)
+                {
+                    currentCommand = new BakerCommand(rawCode, Opcode.Unknown, new string[0]);
+                    logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
+                }
+                catch (InvalidOperandException e)
+                {
+                    currentCommand = new BakerCommand(rawCode, Opcode.Unknown, new string[0]);
+                    logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
+                }
             }
         }
 
-        private LogInfo ExecuteCommand(BakerCommand cmd)
+        private void ExecuteCommand(BakerCommand cmd, Logger logger)
         {
             LogInfo log = null;
+            LogInfo[] logs = null;
+
+            DisplayOperation(cmd.RawCode);
             switch (cmd.Opcode)
             {
-                case BakerOpcode.FileCopy:
-                    log = this.FileCopy(cmd);
+                case Opcode.FileCopy:
+                    logs = this.FileCopy(cmd);
                     break;
-                case BakerOpcode.FileDelete:
+                case Opcode.FileDelete:
                     log = this.FileDelete(cmd);
                     break;
-                case BakerOpcode.FileRename:
+                case Opcode.FileRename:
                     log = this.FileRename(cmd);
                     break;
-                case BakerOpcode.FileCreateBlank:
+                case Opcode.FileCreateBlank:
                     log = this.FileCreateBlank(cmd);
                     break;
-                case BakerOpcode.TXTAddLine:
+                case Opcode.TXTAddLine:
                     log = this.TXTAddLine(cmd);
                     break;
-                case BakerOpcode.Set:
+                case Opcode.Set:
                     log = this.Set(cmd);
                     break;
-                case BakerOpcode.None: // NOP
-                    log = new LogInfo(cmd.RawCode, "NOP", LogState.None);
+                case Opcode.None:
+                    log = new LogInfo(cmd, "NOP", LogState.None);
                     break;
-                case BakerOpcode.Comment: // NOP
-                    log = new LogInfo(cmd.RawCode, "Comment", LogState.Ignore);
-                    break;
-                case BakerOpcode.Unknown: // NOP
-                    log = new LogInfo(cmd.RawCode, "Unknown", LogState.Error);
+                case Opcode.Comment:
+                    log = new LogInfo(cmd, "Comment", LogState.Ignore);
                     break;
                 default:
-                    throw new InvalidOpcodeException("ExecuteCommand does not know " + cmd.Opcode.ToString());
+                    throw new InvalidOpcodeException("Cannot execute \'" + cmd.Opcode.ToString() + "\' command", cmd);
             }
 
-            return log;
+            if (log != null)
+                logger.Write(log);
+            if (logs != null)
+                logger.Write(logs);
         }
 
         /// <summary>
@@ -268,7 +335,7 @@ namespace PEBakery_Engine
         /// <returns></returns>
         private BakerCommand ParseCommand(string rawCode)
         {
-            BakerOpcode opcode = BakerOpcode.None;
+            Opcode opcode = Opcode.None;
             ArrayList operandList = new ArrayList();
 
             // Remove whitespace of rawCode's start and end
@@ -276,49 +343,37 @@ namespace PEBakery_Engine
 
             // Check if rawCode is Empty
             if (String.Equals(rawCode, String.Empty))
-                return new BakerCommand(String.Empty, BakerOpcode.None, new string[0]);
+                return new BakerCommand(String.Empty, Opcode.None, new string[0]);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.Substring(0, 2) == "//" || rawCode.Substring(0, 1) == "#" || rawCode.Substring(0, 1) == ";")
             {
-                return new BakerCommand(rawCode, BakerOpcode.Comment, new string[0]);
+                return new BakerCommand(rawCode, Opcode.Comment, new string[0]);
             }
 
             // Splice with spaces
             string[] slices = rawCode.Split(',');
-            /*
-            if (slices.Length < 2) // No ',' -> Invalid format! Every command must have at least one operand!
-            {
-                if (!(String.Equals(slices[0], "Begin", StringComparison.OrdinalIgnoreCase))
-                    || String.Equals(slices[0], "End", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidCommandException();
-            }
-            */
-            
+
             // Parse opcode
             try
             {
                 // https://msdn.microsoft.com/ko-kr/library/essfb559(v=vs.110).aspx
-                BakerOpcode opcodeValue = (BakerOpcode)Enum.Parse(typeof(BakerOpcode), slices[0].Trim(), true);
-                if (Enum.IsDefined(typeof(BakerOpcode), opcodeValue))
+                Opcode opcodeValue = (Opcode)Enum.Parse(typeof(Opcode), slices[0].Trim(), true);
+                if (Enum.IsDefined(typeof(Opcode), opcodeValue))
                 {
-                    if (opcodeValue != BakerOpcode.None && opcodeValue != BakerOpcode.Comment)
+                    if (opcodeValue != Opcode.None && opcodeValue != Opcode.Comment)
                         opcode = opcodeValue;
                     else
-                        throw new InvalidOpcodeException();
+                        throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakerCommand(rawCode, Opcode.Unknown, new string[0]));
                 }
                 else
-                    throw new InvalidOpcodeException();
+                    throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakerCommand(rawCode, Opcode.Unknown, new string[0]));
             }
             catch (ArgumentException)
             {
-                return new BakerCommand(rawCode, BakerOpcode.Unknown, new string[0]);
-            }
-            catch (InvalidOpcodeException)
-            {
-                return new BakerCommand(rawCode, BakerOpcode.Unknown, new string[0]);
-            }
-
+                throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakerCommand(rawCode, Opcode.Unknown, new string[0]));
+            } // Do nothing
+            
             // Check doublequote's occurence - must be 2n
             if (Helper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
@@ -398,7 +453,7 @@ namespace PEBakery_Engine
             string[] operands  = operandList.ToArray(typeof(string)) as string[];
             for (int i = 0; i < operands.Length; i++)
             {
-                if (opcode != BakerOpcode.Set)
+                if (opcode != Opcode.Set && opcode != Opcode.If)
                     operands[i] = ExpandVariables(operands[i]);
 
                 // Process Escape Characters
@@ -407,7 +462,7 @@ namespace PEBakery_Engine
                 operands[i] = operands[i].Replace(@"$#q", "\"");
                 operands[i] = operands[i].Replace(@"$#s", " ");
                 operands[i] = operands[i].Replace(@"$#t", "\t");
-                operands[i] = operands[i].Replace(@"$#x", "\r\n");
+                operands[i] = operands[i].Replace(@"$#x", "\n");
                 operands[i] = operands[i].Replace(@"$#z", "\x00\x00");
             }
 
@@ -439,7 +494,7 @@ namespace PEBakery_Engine
                 else if (localVars.ContainsKey(varName))
                     expandStr = String.Concat(expandStr, localVars[varName]);
                 else // no variable exists? log it and pass
-                    logger.Write(new LogInfo(currentCommand.RawCode, "Variable [" + varName + "] does not exists", LogState.Warning));
+                    logger.Write(new LogInfo(currentCommand, "Variable [" + varName + "] does not exists", LogState.Warning));
 
                 if (x + 1 == matches.Count) // Last iteration
                     expandStr = String.Concat(expandStr, operand.Substring(matches[x].Index + matches[x].Value.Length));

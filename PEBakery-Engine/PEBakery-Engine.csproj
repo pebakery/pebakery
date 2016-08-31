@@ -57,7 +57,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BakerEngine.cs" />
-    <Compile Include="BakerOperations.cs" />
+    <Compile Include="BakerEngineFile.cs" />
+    <Compile Include="BakerEngineMisc.cs" />
+    <Compile Include="BakerEngineRegistry.cs" />
+    <Compile Include="BakerEngineText.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
@@ -68,6 +71,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ResultWin32.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

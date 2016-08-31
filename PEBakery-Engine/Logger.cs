@@ -21,10 +21,10 @@ namespace PEBakery_Engine
 
     public class LogInfo
     {
-        private string rawCode;
-        public string RawCode
+        private BakerCommand command;
+        public BakerCommand Command
         {
-            get { return rawCode; }
+            get { return command; }
         }
         private string result;
         public string Result
@@ -37,9 +37,9 @@ namespace PEBakery_Engine
             get { return state;  }
         }
 
-        public LogInfo(string rawCode, string result, LogState state)
+        public LogInfo(BakerCommand command, string result, LogState state)
         {
-            this.rawCode = rawCode;
+            this.command = command;
             this.result = result;
             this.state = state;
         }
@@ -112,7 +112,7 @@ namespace PEBakery_Engine
 
         private void PrintBanner(PEBakeryInfo info)
         {
-            sw.WriteLine("PEBakery " + info.Ver.ToString());
+            sw.WriteLine("PEBakery " + info.Ver.ToString() + " Test Version Log");
             sw.Flush();
         }
 
@@ -120,7 +120,7 @@ namespace PEBakery_Engine
         {
             if (logInfo == null || logInfo.State == LogState.None) // null means do not log
                 return;
-            sw.WriteLine(String.Format("[{0}] {1} ({2})", logInfo.State.ToString(), logInfo.Result, logInfo.RawCode));
+            sw.WriteLine(String.Format("[{0}] {1} - {2} ({3})", logInfo.State.ToString(), logInfo.Command.Opcode.ToString(), logInfo.Result, logInfo.Command.RawCode));
             sw.Flush();
         }
 
@@ -128,6 +128,12 @@ namespace PEBakery_Engine
         {
             sw.WriteLine(log);
             sw.Flush();
+        }
+
+        public void Write(LogInfo[] logInfos)
+        {
+            foreach (LogInfo logInfo in logInfos)
+                Write(logInfo);
         }
 
         public void Close()
