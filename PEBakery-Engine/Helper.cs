@@ -163,5 +163,19 @@ namespace PEBakery_Engine
                 path = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             return path;
         }
+
+        /// <summary>
+        /// Extends Path.GetDirectoryName().
+        /// If returned dir path is empty, change it to "."
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string GetDirNameEx(string path)
+        {
+            string dirName = Path.GetDirectoryName(path);
+            if (dirName == String.Empty)
+                dirName = ".";
+            return dirName;
+        }
     }
 }

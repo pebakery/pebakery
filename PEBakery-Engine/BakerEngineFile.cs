@@ -21,7 +21,7 @@ namespace PEBakery_Engine
             public DestPathNotDirException(string message) : base(message) { }
             public DestPathNotDirException(string message, Exception inner) : base(message, inner) { }
         }
-        
+
 
         /*
          * File Commands
@@ -31,25 +31,22 @@ namespace PEBakery_Engine
          */
 
         /// <summary>
-        /// FileCopy
+        /// FileCopy,<SrcFileName>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
         /// </summary>
-        /// <param name="operand"></param>
-        /// <returns></returns>
+        /// <param name="cmd"></param>
+        /// <returns>LogInfo[]</returns>
         public LogInfo[] FileCopy(BakerCommand cmd)
-        { // FileCopy,<SrcFileName>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
-            string logResult = String.Empty;
-            LogState resState = LogState.Success;
+        {
             ArrayList logs = new ArrayList();
-            // LogInfo[] logs = new LogInfo[] { new LogInfo(cmd, logResult, resState) };
-            
-            
 
             // Must-have operand : 2
             if (!(2 <= cmd.Operands.Length))
                 throw new InvalidOperandException("Necessary operands does not exist");
 
-            string srcFileName = cmd.Operands[0];
-            string destPath = cmd.Operands[1];
+            string srcFileName = ExpandVariables(cmd.Operands[0]);
+            string rawSrcFileName = cmd.Operands[0];
+            string destPath = ExpandVariables(cmd.Operands[1]);
+            string rawDestPath = cmd.Operands[1];
 
             // Check srcFileName contains wildcard
             bool srcContainWildcard = true;
@@ -96,9 +93,7 @@ namespace PEBakery_Engine
                 if (srcContainWildcard)
                 {
                     string[] listToCopy;
-                    string srcDirToFind = Path.GetDirectoryName(srcFileName);
-                    if (srcDirToFind == String.Empty)
-                        srcDirToFind = ".";
+                    string srcDirToFind = Helper.GetDirNameEx(srcFileName);
                     if (noRec)
                         listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName));
                     else
@@ -107,14 +102,14 @@ namespace PEBakery_Engine
                     {
                         if (destPathIsDir || !destPathExists)
                         {
-                            string destPathTail = srcWCFileName.Remove(0, srcDirToFind.Length+1);
+                            string destPathTail = srcWCFileName.Remove(0, srcDirToFind.Length+1); // 1 for \\
                             string destFullPath = String.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             File.Copy(srcWCFileName, destFullPath, !preserve);
-                            logs.Add(new LogInfo(cmd, String.Concat(srcWCFileName, " copied to ", destFullPath), LogState.Success));
+                            logs.Add(new LogInfo(cmd, String.Concat(@"'", srcWCFileName, @"' copied to '", destFullPath, @"'"), LogState.Success));
                         }
                         else
-                            throw new DestPathNotDirException(String.Concat("\'", destPath, "\' must be directory when using wildcard in <SrcFileName>"));
+                            throw new DestPathNotDirException("<DestPath> must be directory when using wildcard in <SrcFileName>");
                     }                     
                 }
                 else
@@ -122,12 +117,16 @@ namespace PEBakery_Engine
                     if (destPathIsDir)
                     {
                         Directory.CreateDirectory(destPath);
-                        File.Copy(srcFileName, Helper.RemoveLastDirChar(destPath) + @"\" + srcFileName, !preserve);
+                        string destPathTail = srcFileName.Remove(0, Helper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
+                        string destFullPath = String.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
+                        File.Copy(srcFileName, destFullPath, !preserve);
+                        logs.Add(new LogInfo(cmd, String.Concat(@"'", rawSrcFileName, @"' copied to '", rawDestPath, @"'"), LogState.Success));
                     }
                     else
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(destPath));
+                        Directory.CreateDirectory(Helper.GetDirNameEx(destPath));
                         File.Copy(srcFileName, destPath, !preserve);
+                        logs.Add(new LogInfo(cmd, String.Concat(@"'", rawSrcFileName, @"' copied to '", rawDestPath, @"'"), LogState.Success));                        
                     }
                 }
                 
@@ -138,29 +137,23 @@ namespace PEBakery_Engine
                 {
                     if (noWarn)
                     {
-                        logResult = String.Concat("Cannot overwrite ", destPath);
+                        logs.Add(new LogInfo(cmd, String.Concat("Cannot overwrite ", destPath), LogState.Success));
                     }
                     else
                     {
-                        resState = LogState.Warning;
-                        logResult = e.Message;
+                        logs.Add(new LogInfo(cmd, String.Concat(e.GetType(), ": ", e.Message), LogState.Error));
                     }
                 }
                 else
                 {
-                    resState = LogState.Error;
-                    logResult = e.Message;
+                    logs.Add(new LogInfo(cmd, String.Concat(e.GetType(), ": ", e.Message), LogState.Error));
                 }
             }
             catch (Exception e)
             {
-                resState = LogState.Error;
-                logResult = String.Concat(e.GetType(), ": ", e.Message);
+                logs.Add(new LogInfo(cmd, String.Concat(e.GetType(), ": ", e.Message), LogState.Error));
             }
 
-            if (logResult == String.Empty)
-                logResult = String.Concat(srcFileName, " copied to ", destPath);
-            logs.Add(new LogInfo(cmd, logResult, resState));
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
 
@@ -173,7 +166,7 @@ namespace PEBakery_Engine
                 if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string fileName = cmd.Operands[0];
+                string fileName = ExpandVariables(cmd.Operands[0]);
 
                 // Check if srcFileName exists
                 if (File.Exists(fileName) == false)
@@ -213,8 +206,8 @@ namespace PEBakery_Engine
                 if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string srcFileName = cmd.Operands[0];
-                string destFileName = cmd.Operands[1];
+                string srcFileName = ExpandVariables(cmd.Operands[0]);
+                string destFileName = ExpandVariables(cmd.Operands[1]);
 
                 // Check if srcFileName exists
                 if (File.Exists(srcFileName) == false)
@@ -238,7 +231,7 @@ namespace PEBakery_Engine
                 if (!(1 <= cmd.Operands.Length))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string fileName = cmd.Operands[0];
+                string fileName = ExpandVariables(cmd.Operands[0]);
                 bool preserve = false;
                 bool noWarn = false;
                 Encoding encoding = null;

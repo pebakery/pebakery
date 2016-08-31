@@ -453,9 +453,6 @@ namespace PEBakery_Engine
             string[] operands  = operandList.ToArray(typeof(string)) as string[];
             for (int i = 0; i < operands.Length; i++)
             {
-                if (opcode != Opcode.Set && opcode != Opcode.If)
-                    operands[i] = ExpandVariables(operands[i]);
-
                 // Process Escape Characters
                 operands[i] = operands[i].Replace(@"$#c", ",");
                 operands[i] = operands[i].Replace(@"$#p", "%");

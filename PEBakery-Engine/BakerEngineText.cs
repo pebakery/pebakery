@@ -33,8 +33,8 @@ namespace PEBakery_Engine
                 if (!(3 <= cmd.Operands.Length || cmd.Operands.Length <= 4))
                     throw new InvalidOperandException("Necessary operands does not exist");
 
-                string fileName = cmd.Operands[0];
-                string line = cmd.Operands[1];
+                string fileName = ExpandVariables(cmd.Operands[0]);
+                string line = ExpandVariables(cmd.Operands[1]);
                 int mode = 1;
                 int placeLineNum = 0;
 
