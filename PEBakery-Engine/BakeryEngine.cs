@@ -77,6 +77,12 @@ namespace BakeryEngine
         {
             get { return address; }
         }
+        private int sectionDepth;
+        public int SectionDepth
+        {
+            get { return sectionDepth; }
+            set { sectionDepth = value; }
+        }
 
         /// <summary>
         /// Hold command information.
@@ -90,6 +96,7 @@ namespace BakeryEngine
             this.opcode = opcode;
             this.operands = operands;
             this.subCommand = null;
+            this.sectionDepth = 0;
         }
 
         /// <summary>
@@ -105,6 +112,7 @@ namespace BakeryEngine
             this.opcode = opcode;
             this.operands = operands;
             this.subCommand = subCommand;
+            this.sectionDepth = 0;
         }
 
         /// <summary>
@@ -120,6 +128,39 @@ namespace BakeryEngine
             this.operands = operands;
             this.address = address;
             this.subCommand = null;
+            this.sectionDepth = 0;
+        }
+
+        /// <summary>
+        /// Hold command information, with sub command.
+        /// </summary>
+        /// <param name="rawCode"></param>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="subCommand"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, BakeryCommand subCommand, int sectionDepth)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.subCommand = subCommand;
+            this.sectionDepth = sectionDepth;
+        }
+
+        /// <summary>
+        /// Hold command information, with address
+        /// </summary>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="optional"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, int sectionDepth)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.address = address;
+            this.subCommand = null;
+            this.sectionDepth = sectionDepth;
         }
 
         /// <summary>
@@ -135,6 +176,22 @@ namespace BakeryEngine
             this.operands = operands;
             this.address = address;
             this.subCommand = subCommand;
+        }
+
+        /// <summary>
+        /// Hold command information, with address and subcommand
+        /// </summary>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="optional"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, BakeryCommand subCommand, int sectionDepth)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.address = address;
+            this.subCommand = subCommand;
+            this.sectionDepth = sectionDepth;
         }
 
         public override string ToString()
@@ -230,6 +287,17 @@ namespace BakeryEngine
         }
     }
 
+    public struct ReturnAddressInfo
+    {
+        public CommandAddress retAddress;
+        public string secName;
+        public ReturnAddressInfo(CommandAddress retAddress, string secName)
+        {
+            this.retAddress = retAddress;
+            this.secName = secName;
+        }
+    }
+
     /// <summary>
     /// Interpreter of raw codes
     /// </summary>
@@ -243,7 +311,7 @@ namespace BakeryEngine
         // Fields used as engine's state
         private BakeryCommand currentCommand;
         private CommandAddress nextCommand; // ProgramCounter
-        private Stack<CommandAddress> returnAddress;
+        private Stack<ReturnAddressInfo> returnAddress;
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -258,7 +326,7 @@ namespace BakeryEngine
                 this.variables = new BakeryVariables();
                 LoadDefaultGlobalVariables();
                 currentCommand = null;
-                returnAddress = new Stack<CommandAddress>();
+                returnAddress = new Stack<ReturnAddressInfo>();
             }
             catch (Exception e)
             {
@@ -321,7 +389,8 @@ namespace BakeryEngine
         {
             LoadDefaultPluginVariables();
             PluginSection section = plugin.Sections["Process"];
-            RunCommands(new CommandAddress(section, 0, section.SecCodes.Length));
+            nextCommand = new CommandAddress(section, 0, section.SecCodes.Length);
+            RunCommands();
             return;
         }
 
@@ -329,17 +398,48 @@ namespace BakeryEngine
         /// Run array of commands.
         /// </summary>
         /// <param name="nextCommand"></param>
-        private void RunCommands(CommandAddress nextCommand)
+        private void RunCommands()
         {
-            while (nextCommand.line < nextCommand.secLength)
+            string currentSection = string.Empty;
+
+            while (true)
             {
+                if (!(nextCommand.line < nextCommand.secLength)) // End of section
+                {
+                    try
+                    {
+                        ReturnAddressInfo resAddr = returnAddress.Pop();
+                        nextCommand = resAddr.retAddress;
+                        currentSection = resAddr.secName;
+                        if (!(nextCommand.line < nextCommand.secLength)) // Is return address end of section?
+                        {
+                            BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0]);
+                            logCmd.SectionDepth = returnAddress.Count + 1;
+                            string logMsg = string.Concat("Section '", currentCommand.Address.section.SecName, "' End");
+                            logger.Write(new LogInfo(logCmd, logMsg, LogState.Success));
+                            continue;
+                        }
+                    }
+                    catch (InvalidOperationException)
+                    { // The Stack<T> is empty, terminate function
+                        BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0]);
+                        string logMsg = string.Concat("Section '", currentSection, "' End");
+                        logger.Write(new LogInfo(logCmd, logMsg, LogState.Success));
+                        break;
+                    } 
+                }
+
+                // Remeber current section's name, for proper logging
+                currentSection = nextCommand.section.SecName;
+
+                // Fetch instructions
                 int i = nextCommand.line;
                 string rawCode = nextCommand.section.SecCodes[i].Trim();
-                nextCommand.line += 1;
-                
+
                 try
                 {
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.section, i, nextCommand.secLength));
+                    currentCommand.SectionDepth = returnAddress.Count;
                     try
                     {
                         ExecuteCommand(currentCommand, logger);
@@ -359,8 +459,12 @@ namespace BakeryEngine
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
+                nextCommand.line += 1;
+
             }
 
+           
+            
             logger.WriteVariables(variables);
         }
 
@@ -379,6 +483,7 @@ namespace BakeryEngine
             {
                 switch (cmd.Opcode)
                 {
+                    // File
                     case Opcode.FileCopy:
                         logs = this.FileCopy(cmd);
                         break;
@@ -392,9 +497,22 @@ namespace BakeryEngine
                     case Opcode.FileCreateBlank:
                         logs = this.FileCreateBlank(cmd);
                         break;
+                    // Registry
+                    // Text
                     case Opcode.TXTAddLine:
                         logs = this.TXTAddLine(cmd);
                         break;
+                    // INI
+                    // Network
+                    // Attach
+                    // UI
+                    // StringFormat
+                    // System
+                    // Branch
+                    case Opcode.Run:
+                        logs = this.Run(cmd);
+                        break;
+                    // Control
                     case Opcode.Set:
                         logs = this.Set(cmd);
                         break;

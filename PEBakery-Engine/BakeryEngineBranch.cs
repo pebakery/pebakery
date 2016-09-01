@@ -18,60 +18,48 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        ///
-        /*
         public LogInfo[] Run(BakeryCommand cmd)
         {
             ArrayList logs = new ArrayList();
 
             // Necessary operand : 2, optional operand : variable length
             const int necessaryOperandNum = 2;
-            int optionalOperandNum = -1; // Init value
             if (cmd.Operands.Length < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            // Get optional operand
-            if (cmd.Operands.Length == 3)
+            // Get necesssary operand
+            string pluginFile = variables.Expand(cmd.Operands[0]);
+            string rawPluginFile = cmd.Operands[0];
+            string sectionName = variables.Expand(cmd.Operands[1]);
+            string rawSectoinName = cmd.Operands[1];
+
+            // Get optional operand 
+            string[] parameters = new string[cmd.Operands.Length - necessaryOperandNum];
+            if (necessaryOperandNum < cmd.Operands.Length)
+                Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
+
+            bool currentPlugin = false;
+            if (String.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                currentPlugin = true;
+            else if (String.Equals(rawPluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                currentPlugin = true;
+
+            if (currentPlugin)
             {
-                switch (cmd.Operands[2].ToUpper())
-                {
-                    case "GLOBAL":
-                        global = true;
-                        break;
-                    case "PERMANENT":
-                        permanent = true;
-                        break;
-                    default:
-                        throw new InvalidOperandException("Invalid operand : " + cmd.Operands[2]);
-                }
+                if (!plugin.Sections.ContainsKey(sectionName))
+                    throw new InvalidOperandException(string.Concat("'", Path.GetFileName(pluginFile), "' does not have section '", sectionName, "'"), cmd);
+
+                // Branch to new section
+                CommandAddress retCmdAddr = new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength);
+                returnAddress.Push(new ReturnAddressInfo(retCmdAddr, cmd.Address.section.SecName));
+                nextCommand = new CommandAddress(plugin.Sections[sectionName], 0, plugin.Sections[sectionName].SecCodes.Length);
             }
 
-            varKey = cmd.Operands[0].Trim(new char[] { '%' });
-            varValue = cmd.Operands[1];
-
-            bool isVarCreated = false;
-            if (global || permanent)
-            {
-                isVarCreated = variables.GlobalContainsKey(varKey);
-                variables.GlobalSetValue(varKey, varValue);
-            }
-            else
-            {
-                isVarCreated = variables.LocalContainsKey(varKey);
-                variables.LocalSetValue(varKey, varValue);
-            }
-
-            if (isVarCreated)
-            {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% set to ", varValue), LogState.Success));
-            }
-            else
-            {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% created, set to ", varValue), LogState.Success));
-            }
+            cmd.SectionDepth++;
+            logs.Add(new LogInfo(cmd, string.Concat("Running section '", sectionName, "'"), LogState.Success));
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
-        */
+
     }
 }

@@ -103,6 +103,8 @@ namespace BakeryEngine
         {
             if (logInfo == null || logInfo.State == LogState.None) // null means do not log
                 return;
+            for (int i = 0; i < logInfo.Command.SectionDepth; i++)
+                sw.Write("  ");
             sw.WriteLine(string.Format("[{0}] {1} - {2} ({3})", logInfo.State.ToString(), logInfo.Command.Opcode.ToString(), logInfo.Result, logInfo.Command.RawCode));
             sw.Flush();
         }
