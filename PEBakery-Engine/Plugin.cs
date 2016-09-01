@@ -21,14 +21,18 @@ namespace BakeryEngine
             }
         }
         private string rawData;
-        private PluginSection[] sections;
+        private Dictionary<string, PluginSection> sections;
+        public Dictionary<string, PluginSection> Sections
+        {
+            get { return sections; }
+        }
 
         // Constructor
         public Plugin(string fileName)
         {
             this.fileName = fileName;
             this.rawData = null;
-            this.sections = null;
+            this.sections = new Dictionary<string, PluginSection>(StringComparer.OrdinalIgnoreCase);
             this.ReadFile();
         }
 
@@ -56,7 +60,7 @@ namespace BakeryEngine
                 MatchCollection matches = Regex.Matches(rawData, @"^\[(.+)\]\r?$", RegexOptions.Multiline);
 
                 // Make instances of sections
-                sections = new PluginSection[matches.Count];
+                // sections = new PluginSection[matches.Count];
                 for (int i = 0; i < matches.Count; i++)
                 {
                     int secDataOffset = 0;
@@ -70,7 +74,7 @@ namespace BakeryEngine
 
                     string secName = matches[i].Value.Substring(1, matches[i].Length - 3);
                     string secData = rawData.Substring(secDataOffset, secDataLen);
-                    sections[i] = new PluginSection(secName, secData, i);
+                    sections[secName] = new PluginSection(secName, secData, i);
                 }
             }
             catch (Exception e)
@@ -84,11 +88,11 @@ namespace BakeryEngine
             try
             {
                 Console.WriteLine("FileName = " + this.fileName);
-                foreach (PluginSection section in sections)
+                foreach (var section in sections)
                 {
-                    Console.WriteLine(section.Index);
-                    Console.WriteLine(section.SectionName);
-                    Console.WriteLine(section.SectionData);
+                    Console.WriteLine(section.Value.Index);
+                    Console.WriteLine(section.Value.SectionName);
+                    Console.WriteLine(section.Value.SectionData);
                 }
             }
             catch (Exception e)
@@ -97,18 +101,6 @@ namespace BakeryEngine
             }
 
         }
-
-        public PluginSection FindSection(string sectionName)
-        {
-            foreach (PluginSection section in this.sections)
-            {
-                if (string.Equals(section.SectionName, sectionName, StringComparison.OrdinalIgnoreCase))
-                    return section;
-            }
-            throw new PluginSectionNotFoundException();
-        }
-
-
     }
 
     public class PluginSection

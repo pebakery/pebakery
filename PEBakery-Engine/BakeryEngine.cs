@@ -238,12 +238,6 @@ namespace BakeryEngine
         // Fields used globally
         private Logger logger;
         private Plugin plugin;
-        private PluginSection secMain;
-        private PluginSection secVariables;
-        private PluginSection secInterface;
-        private PluginSection secEntryPoint;
-        private PluginSection secAttachAuthor;
-        private PluginSection secAttachInterface;
         private BakeryVariables variables;
 
         // Fields used as engine's state
@@ -260,12 +254,6 @@ namespace BakeryEngine
             try
             {
                 this.plugin = plugin;
-                this.secMain = plugin.FindSection("Main");
-                this.secInterface = plugin.FindSection("Interface");
-                this.secVariables = plugin.FindSection("Variables");
-                this.secEntryPoint = plugin.FindSection("Process");
-                this.secAttachAuthor = plugin.FindSection("AuthorEncoded");
-                this.secAttachInterface = plugin.FindSection("InterfaceEncoded");
                 this.logger = logger;
                 this.variables = new BakeryVariables();
                 LoadDefaultGlobalVariables();
@@ -335,7 +323,7 @@ namespace BakeryEngine
         public void Run()
         {
             LoadDefaultPluginVariables();
-            RunSection(secEntryPoint);
+            RunSection(plugin.Sections["Process"]);
             return;
         }
 
@@ -377,15 +365,6 @@ namespace BakeryEngine
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
             }
-            
-
-/*
-            for (int i = 0; i < codes.Length; i++)
-            {
-                string rawCode = codes[i].Trim();
-                
-            }
-*/
         }
 
         private void ExecuteCommand(BakeryCommand cmd, Logger logger)
