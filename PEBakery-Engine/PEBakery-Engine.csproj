@@ -57,8 +57,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BakeryEngine.cs" />
+    <Compile Include="BakeryEngineBranch.cs" />
     <Compile Include="BakeryEngineFile.cs" />
-    <Compile Include="BakeryEngineMisc.cs" />
+    <Compile Include="BakeryEngineControl.cs" />
     <Compile Include="BakeryEngineRegistry.cs" />
     <Compile Include="BakeryEngineText.cs" />
     <Compile Include="Helper.cs" />
@@ -72,6 +73,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="ResultWin32.cs" />
+    <Compile Include="Variables.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

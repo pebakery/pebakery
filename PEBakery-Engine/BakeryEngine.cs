@@ -6,23 +6,36 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 using System.Text.RegularExpressions;
+using System.Reflection;
 
 namespace BakeryEngine
 {
-    using VariableDictionary = Dictionary<string, string>;
-
     public enum Opcode
     {
         // Misc
-        None = 0, Comment, Error, Unknown, 
+        None = 0, Comment, Error, Unknown,
         // File
-        FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank,
-        // Text
-        TXTAddLine,
-        // Misc
-        Set,
-        // If
-        If,
+        CopyOrExpand, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileExtractByte,
+        // Registry
+        RegHiveLoad, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
+        // Text, INI
+        TXTAddLine, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
+        INIWrite, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge, 
+        // Network
+        WebGet, WebGetIfNotExist,
+        // Attach, Interface
+        ExtractFile, ExtractAndRun, ExtractAllFiles, ExtractAllFilesIfNotExist, Encode,
+        Visible,
+        // UI
+        Message, Echo, Retrieve,
+        // StringFormat
+        StrFormat,
+        // System
+        System, ShellExecute,
+        // Branch
+        Run, Exec, If, Else, Loop, End,
+        // Control
+        Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep
     }
 
     public enum NextCommand
@@ -50,13 +63,23 @@ namespace BakeryEngine
             get { return opcode; }
         }
         private string[] operands;
-        public string[] Operands
+        public string[] Operands 
         {
             get { return operands; }
         }
+        private BakeryCommand subCommand;
+        public BakeryCommand SubCommand
+        {
+            get { return subCommand; }
+        }
+        private CommandAddress address;
+        public CommandAddress Address
+        {
+            get { return address; }
+        }
 
         /// <summary>
-        /// Hold command information in BakeryCommand instance.
+        /// Hold command information.
         /// </summary>
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
@@ -66,6 +89,52 @@ namespace BakeryEngine
             this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
+            this.subCommand = null;
+        }
+
+        /// <summary>
+        /// Hold command information, with sub command.
+        /// </summary>
+        /// <param name="rawCode"></param>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="subCommand"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, BakeryCommand subCommand)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.subCommand = subCommand;
+        }
+
+        /// <summary>
+        /// Hold command information, with address
+        /// </summary>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="optional"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.address = address;
+            this.subCommand = null;
+        }
+
+        /// <summary>
+        /// Hold command information, with address and subcommand
+        /// </summary>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="optional"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, BakeryCommand subCommand)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.address = address;
+            this.subCommand = subCommand;
         }
 
         public override string ToString()
@@ -135,21 +204,30 @@ namespace BakeryEngine
     /// <summary>
     /// Exception used in BakerOperations
     /// </summary>
-    public class FileDoesNotExistException : Exception
-    {
-        public FileDoesNotExistException() { }
-        public FileDoesNotExistException(string message) : base(message) { }
-        public FileDoesNotExistException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Exception used in BakerOperations
-    /// </summary>
     public class InternalUnknownException : Exception
     {
         public InternalUnknownException() { }
         public InternalUnknownException(string message) : base(message) { }
         public InternalUnknownException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// Struct to point command's address
+    /// </summary>
+    public struct CommandAddress
+    { // Return address format = <Section>'s <n'th line>
+        public PluginSection section;
+        /// <summary>
+        /// line == -1 means end
+        /// </summary>
+        public int line;
+        public int secLength;
+        public CommandAddress(PluginSection section, int line, int secLength)
+        {
+            this.section = section;
+            this.line = line;
+            this.secLength = secLength;
+        }
     }
 
     /// <summary>
@@ -166,12 +244,12 @@ namespace BakeryEngine
         private PluginSection secEntryPoint;
         private PluginSection secAttachAuthor;
         private PluginSection secAttachInterface;
-        private VariableDictionary globalVars;
-        private VariableDictionary localVars;
+        private BakeryVariables variables;
 
         // Fields used as engine's state
         private BakeryCommand currentCommand;
-        // private NextCommand next;
+        private CommandAddress nextCommand; // ProgramCounter
+        private Stack<CommandAddress> returnAddress;
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -189,10 +267,10 @@ namespace BakeryEngine
                 this.secAttachAuthor = plugin.FindSection("AuthorEncoded");
                 this.secAttachInterface = plugin.FindSection("InterfaceEncoded");
                 this.logger = logger;
-                this.globalVars = new VariableDictionary(StringComparer.OrdinalIgnoreCase);
-                this.localVars = new VariableDictionary(StringComparer.OrdinalIgnoreCase);
+                this.variables = new BakeryVariables();
                 LoadDefaultGlobalVariables();
                 currentCommand = null;
+                returnAddress = new Stack<CommandAddress>();
             }
             catch (Exception e)
             {
@@ -209,14 +287,7 @@ namespace BakeryEngine
             try
             {
                 // Variables
-                Console.WriteLine("- GlobalVars");
-                foreach (var vars in globalVars)
-                    Console.WriteLine(vars);
-                Console.WriteLine();
-                Console.WriteLine("- LocalVars");
-                foreach (var vars in localVars)
-                    Console.WriteLine(vars);
-                Console.WriteLine();
+                Console.WriteLine(variables);
             }
             catch (Exception e)
             {
@@ -232,14 +303,30 @@ namespace BakeryEngine
         private void LoadDefaultGlobalVariables()
         {
             // BaseDir
-            globalVars.Add("BaseDir", Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory));
+            variables.GlobalSetValue("BaseDir", Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory));
+            // Version
+            Version version = Assembly.GetExecutingAssembly().GetName().Version;
+            variables.GlobalSetValue("Version", version.ToString());
+            // GlobalSupport, GlobalTemp, GlobalTemplates
+            variables.GlobalSetValue("GlobalSupport", @"%BaseDir%\Workbench");
+            variables.GlobalSetValue("GlobalTemp", @"%BaseDir%\Temp");
+            variables.GlobalSetValue("GlobalTemplates", @"%BaseDir%\Workbench\Common");
             // Year, Month, Day
             DateTime todayDate = DateTime.Now;
-            globalVars.Add("Year", todayDate.Year.ToString());
-            globalVars.Add("Month", todayDate.Month.ToString());
-            globalVars.Add("Day", todayDate.Day.ToString());
+            variables.GlobalSetValue("Year", todayDate.Year.ToString());
+            variables.GlobalSetValue("Month", todayDate.Month.ToString());
+            variables.GlobalSetValue("Day", todayDate.Day.ToString());
             // Build
-            globalVars.Add("Build", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
+            variables.GlobalSetValue("Build", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
+            // Version
+            variables.GlobalSetValue("Version", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
+        }
+
+        private void LoadDefaultPluginVariables()
+        {
+            // ScriptFile, PluginFile
+            variables.GlobalSetValue("PluginFile", plugin.FileName);
+            variables.GlobalSetValue("ScriptFile", plugin.FileName);
         }
 
         /// <summary>
@@ -247,6 +334,7 @@ namespace BakeryEngine
         /// </summary>
         public void Run()
         {
+            LoadDefaultPluginVariables();
             RunSection(secEntryPoint);
             return;
         }
@@ -257,15 +345,20 @@ namespace BakeryEngine
         /// <param name="section"></param>
         private void RunSection(PluginSection section)
         {
-            string[] codes = section.SectionData.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
-            for (int i = 0; i < codes.Length; i++)
+            string[] codes = section.SectionData.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None | StringSplitOptions.RemoveEmptyEntries);
+            nextCommand = new CommandAddress(section, 0, codes.Length);
+
+            while (nextCommand.line < codes.Length)
             {
+                int i = nextCommand.line;
                 string rawCode = codes[i].Trim();
+                nextCommand.line += 1;
+                currentCommand = ParseCommand(rawCode, new CommandAddress(section, i, codes.Length));
                 try
                 {
-                    currentCommand = ParseCommand(rawCode);
                     try
                     {
+                        currentCommand = ParseCommand(rawCode, new CommandAddress(section, i, codes.Length));
                         ExecuteCommand(currentCommand, logger);
                     }
                     catch (InvalidOpcodeException e)
@@ -284,6 +377,15 @@ namespace BakeryEngine
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
             }
+            
+
+/*
+            for (int i = 0; i < codes.Length; i++)
+            {
+                string rawCode = codes[i].Trim();
+                
+            }
+*/
         }
 
         private void ExecuteCommand(BakeryCommand cmd, Logger logger)
@@ -310,10 +412,10 @@ namespace BakeryEngine
                         logs = this.FileCreateBlank(cmd);
                         break;
                     case Opcode.TXTAddLine:
-                        log = this.TXTAddLine(cmd);
+                        logs = this.TXTAddLine(cmd);
                         break;
                     case Opcode.Set:
-                        log = this.Set(cmd);
+                        logs = this.Set(cmd);
                         break;
                     case Opcode.None:
                         log = new LogInfo(cmd, "NOP", LogState.None);
@@ -342,7 +444,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="rawCode"></param>
         /// <returns></returns>
-        private BakeryCommand ParseCommand(string rawCode)
+        private BakeryCommand ParseCommand(string rawCode, CommandAddress address)
         {
             Opcode opcode = Opcode.None;
             ArrayList operandList = new ArrayList();
@@ -352,12 +454,12 @@ namespace BakeryEngine
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
-                return new BakeryCommand(string.Empty, Opcode.None, new string[0]);
+                return new BakeryCommand(string.Empty, Opcode.None, new string[0], address);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.Substring(0, 2) == "//" || rawCode.Substring(0, 1) == "#" || rawCode.Substring(0, 1) == ";")
             {
-                return new BakeryCommand(rawCode, Opcode.Comment, new string[0]);
+                return new BakeryCommand(rawCode, Opcode.Comment, new string[0], address);
             }
 
             // Splice with spaces
@@ -373,14 +475,14 @@ namespace BakeryEngine
                     if (opcodeValue != Opcode.None && opcodeValue != Opcode.Comment)
                         opcode = opcodeValue;
                     else
-                        throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0]));
+                        throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
                 }
                 else
-                    throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0]));
+                    throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0]));
+                throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
             } // Do nothing
             
             // Check doublequote's occurence - must be 2n
@@ -473,43 +575,7 @@ namespace BakeryEngine
             }
 
             // forge BakeryCommand
-            return new BakeryCommand(rawCode, opcode, operands);
+            return new BakeryCommand(rawCode, opcode, operands, address);
         }
-
-        /// <summary>
-        /// Expand PEBakery variables
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        public string ExpandVariables(string operand)
-        {
-            // Ex) Invalid : TXTAddLine,%Base%Dir%\Korean_IME_Fonts.txt,[Gulim],Append
-            if (Helper.CountStringOccurrences(operand, @"%") % 2 == 1)
-                throw new InvalidCommandException(@"Variable names must be enclosed by %");
-
-            // Expand variable's name into value
-            // Ex) 123%BaseDir%456%OS%789
-            MatchCollection matches = Regex.Matches(operand, @"%(.+)%");
-            string expandStr = string.Empty;
-            for (int x = 0; x < matches.Count; x++)
-            {
-                string varName = matches[x].Groups[1].ToString();
-                expandStr = string.Concat(expandStr, operand.Substring(x == 0 ? 0 : matches[x - 1].Index, matches[x].Index));
-                if (globalVars.ContainsKey(varName))
-                    expandStr = string.Concat(expandStr, globalVars[varName]);
-                else if (localVars.ContainsKey(varName))
-                    expandStr = string.Concat(expandStr, localVars[varName]);
-                else // no variable exists? log it and pass
-                    logger.Write(new LogInfo(currentCommand, "Variable [" + varName + "] does not exists", LogState.Warning));
-
-                if (x + 1 == matches.Count) // Last iteration
-                    expandStr = string.Concat(expandStr, operand.Substring(matches[x].Index + matches[x].Value.Length));
-            }
-            if (0 < matches.Count) // Only copy it if variable exists
-                operand = expandStr;
-
-            return operand;
-        }
-
     }
 }

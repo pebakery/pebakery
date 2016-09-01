@@ -137,7 +137,8 @@ namespace BakeryEngine
         public static DateTime GetBuildDate()
         {
             // Ex) 2016-08-30  7:10:00.25 
-            string[] rawBuildDateStr = Properties.Resources.BuildDate.Split(new char[] { ' ', '.', '\r', '\n' });
+            // Ex) 2016-09-02  0:25:11.65 
+            string[] rawBuildDateStr = Properties.Resources.BuildDate.Split(new char[] { ' ', '.', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             string buildDateStr = string.Format("{0} {1}", rawBuildDateStr[0], rawBuildDateStr[1]);
             DateTime buildDate;
             try

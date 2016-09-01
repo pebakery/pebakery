@@ -11,8 +11,6 @@ using Microsoft.Win32.Interop;
 
 namespace BakeryEngine
 {
-    using VariableDictionary = Dictionary<string, string>;
-
     /// <summary>
     /// Exception used in BakerOperations
     /// </summary>
@@ -40,14 +38,15 @@ namespace BakeryEngine
          */
 
         /// <summary>
+        /// RegHiveLoad,<KeyName>,<HiveFileName>
+        /// 
         /// Load HiveFile into local machine's key
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo RegHiveLoad(BakeryCommand cmd)
-        { // RegHiveLoad,<KeyName>,<HiveFileName>
-            string logResult = string.Empty;
-            LogState resState = LogState.Success;
+        private LogInfo[] RegHiveLoad(BakeryCommand cmd)
+        {
+            ArrayList logs = new ArrayList();
 
             // Must-have operand : 2
             if (cmd.Operands.Length < 2)
@@ -60,28 +59,33 @@ namespace BakeryEngine
 
             if (!File.Exists(hiveFileName))
             {
-                throw new FileDoesNotExistException(hiveFileName + " does not exists");
+                throw new FileNotFoundException(hiveFileName + " does not exists");
             }
 
             int ret = RegLoadKey(HKLM, keyName, hiveFileName);
-            if (ret != ResultWin32.ERROR_SUCCESS)
+            if (ret == ResultWin32.ERROR_SUCCESS)
             {
-                logResult = string.Format("RegLoadKey API returned error {0}:{1}", ret, ResultWin32.GetErrorName(ret));
-                resState = LogState.Error;
+                logs.Add(new LogInfo(cmd, string.Concat("Loaded ", hiveFileName, " into HKLM\\", keyName), LogState.Success));
+            }
+            else
+            {
+                logs.Add(new LogInfo(cmd, string.Concat("RegLoadKey API returned error : ", ret, " (", ResultWin32.GetErrorName(ret), ")"), LogState.Error));
             }
 
-            if (logResult == string.Empty)
-                logResult = "Loaded " + hiveFileName + " info HKLM\\" + keyName;
-            return new LogInfo(cmd, logResult, resState);
+            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
 
         /// <summary>
+        /// RegHiveUnload,<KeyName>
+        /// 
         /// Unload HiveFile from local machine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo RegHiveUnload(BakeryCommand cmd)
-        { // RegHiveUnload,<KeyName>
+        private LogInfo[] RegHiveUnload(BakeryCommand cmd)
+        {
+            ArrayList logs = new ArrayList();
+
             string logResult = string.Empty;
             LogState resState = LogState.Success;
 
@@ -96,7 +100,7 @@ namespace BakeryEngine
 
             if (!File.Exists(hiveFileName))
             {
-                throw new FileDoesNotExistException(hiveFileName + " does not exists");
+                throw new FileNotFoundException(hiveFileName + " does not exists");
             }
 
             int ret = RegLoadKey(HKLM, keyName, hiveFileName);
@@ -106,7 +110,8 @@ namespace BakeryEngine
                 resState = LogState.Error;
             }
 
-            return new LogInfo(cmd, "TXTAddLine", resState);
+            logs.Add(new LogInfo(cmd, logResult, resState));
+            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
     }
 }

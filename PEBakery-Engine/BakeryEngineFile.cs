@@ -73,9 +73,9 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = ExpandVariables(cmd.Operands[0]);
+            string srcFileName = variables.Expand(cmd.Operands[0]);
             string rawSrcFileName = cmd.Operands[0];
-            string destPath = ExpandVariables(cmd.Operands[1]);
+            string destPath = variables.Expand(cmd.Operands[1]);
             string rawDestPath = cmd.Operands[1];
 
             // Check srcFileName contains wildcard
@@ -138,7 +138,7 @@ namespace BakeryEngine
                             string destFullPath = Path.Combine(Helper.RemoveLastDirChar(destPath), destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             if (File.Exists(destFullPath) && !noWarn)
-                                logs.Add(new LogInfo(cmd, string.Concat(@"'", Path.Combine(rawSrcDirToFind, destPathTail), @"' will be overwrited"), LogState.Warning));
+                                logs.Add(new LogInfo(cmd, string.Concat(@"'", Path.Combine(rawSrcDirToFind, destPathTail), @"' will be overwritten"), LogState.Warning));
                             File.Copy(searchedFilePath, destFullPath, !preserve);
                             logs.Add(new LogInfo(cmd, string.Concat(@"'", Path.Combine(rawSrcDirToFind, destPathTail), @"' copied to '", Path.Combine(rawDestPathDir, destPathTail), @"'"), LogState.Success));
                         }
@@ -146,10 +146,7 @@ namespace BakeryEngine
                             throw new PathNotDirException("<DestPath> must be directory when using wildcard in <SrcFileName>", cmd);
                     }
                     if (listToCopy.Length == 0)
-                    {
-                        if (!noWarn) // file is not found
-                            logs.Add(new LogInfo(cmd, string.Concat(@"'", rawDestPath, @"' not found"), LogState.Warning));
-                    }
+                        logs.Add(new LogInfo(cmd, string.Concat(@"'", rawDestPath, @"' not found"), noWarn ? LogState.Ignore : LogState.Warning));
                 }
                 else
                 {
@@ -159,16 +156,17 @@ namespace BakeryEngine
                         string rawDestPathDir = Helper.GetDirNameEx(rawDestPath);
                         string destPathTail = srcFileName.Remove(0, Helper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
                         string destFullPath = string.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
-                        if (File.Exists(destFullPath) && !noWarn)
-                            logs.Add(new LogInfo(cmd, string.Concat(@"'", Path.Combine(rawDestPathDir, destPathTail), @"' will be overwrited"), LogState.Warning));
+                        if (File.Exists(destFullPath))
+                            logs.Add(new LogInfo(cmd, string.Concat(@"'", Path.Combine(rawDestPathDir, destPathTail), @"' will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
+                            
                         File.Copy(srcFileName, destFullPath, !preserve);
                         logs.Add(new LogInfo(cmd, string.Concat(@"'", rawSrcFileName, @"' copied to '", rawDestPath, @"'"), LogState.Success));
                     }
                     else
                     {
                         Directory.CreateDirectory(Helper.GetDirNameEx(destPath));
-                        if (destPathExists && !noWarn)
-                            logs.Add(new LogInfo(cmd, string.Concat(@"'", rawDestPath, @"' will be overwrited"), LogState.Warning));
+                        if (destPathExists)
+                            logs.Add(new LogInfo(cmd, string.Concat(@"'", rawDestPath, @"' will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
                         File.Copy(srcFileName, destPath, !preserve);
                         logs.Add(new LogInfo(cmd, string.Concat(@"'", rawSrcFileName, @"' copied to '", rawDestPath, @"'"), LogState.Success));                        
                     }
@@ -209,7 +207,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string filePath = ExpandVariables(cmd.Operands[0]);
+            string filePath = variables.Expand(cmd.Operands[0]);
             string rawFilePath = cmd.Operands[0];
 
             // Check srcFileName contains wildcard
@@ -297,9 +295,9 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = ExpandVariables(cmd.Operands[0]);
+            string srcFileName = variables.Expand(cmd.Operands[0]);
             string rawSrcFileName = cmd.Operands[0];
-            string destFileName = ExpandVariables(cmd.Operands[1]);
+            string destFileName = variables.Expand(cmd.Operands[1]);
             string rawDestFileName = cmd.Operands[1];
 
             // Check if srcFileName exists
@@ -355,7 +353,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string fileName = ExpandVariables(cmd.Operands[0]);
+            string fileName = variables.Expand(cmd.Operands[0]);
             string rawFileName = cmd.Operands[0];
 
             bool preserve = false;
@@ -415,8 +413,8 @@ namespace BakeryEngine
             // If file already exists, 
             if (File.Exists(fileName))
             {
-                if (!preserve && !noWarn)
-                    logs.Add(new LogInfo(cmd, string.Concat("\'", rawFileName, "\' will be overwrited"), LogState.Warning));
+                if (!preserve)
+                    logs.Add(new LogInfo(cmd, string.Concat("\'", rawFileName, "\' will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
             }
 
             try
@@ -427,8 +425,8 @@ namespace BakeryEngine
             }
             catch (IOException)
             {
-                if (preserve && !noWarn)
-                    logs.Add(new LogInfo(cmd, string.Concat("Cannot overwrite \'", rawFileName, "\'"), LogState.Warning));
+                if (preserve)
+                    logs.Add(new LogInfo(cmd, string.Concat("Cannot overwrite \'", rawFileName, "\'"), noWarn ? LogState.Ignore : LogState.Warning));
             }
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];

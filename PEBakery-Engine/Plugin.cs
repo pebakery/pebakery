@@ -19,14 +19,6 @@ namespace BakeryEngine
             {
                 return fileName;
             }
-            set
-            {
-                // Path.GetInvalidPathChars
-                if (File.Exists(value))
-                    fileName = value;
-                else
-                    Console.WriteLine("Invalid Path");
-            }
         }
         private string rawData;
         private PluginSection[] sections;
