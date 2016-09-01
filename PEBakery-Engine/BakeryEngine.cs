@@ -106,6 +106,21 @@ namespace BakeryEngine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="subCommand"></param>
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, int sectionDepth)
+        {
+            this.rawCode = rawCode;
+            this.opcode = opcode;
+            this.operands = operands;
+            this.sectionDepth = sectionDepth;
+        }
+
+        /// <summary>
+        /// Hold command information, with sub command.
+        /// </summary>
+        /// <param name="rawCode"></param>
+        /// <param name="opcode"></param>
+        /// <param name="operands"></param>
+        /// <param name="subCommand"></param>
         public BakeryCommand(string rawCode, Opcode opcode, string[] operands, BakeryCommand subCommand)
         {
             this.rawCode = rawCode;
@@ -287,17 +302,6 @@ namespace BakeryEngine
         }
     }
 
-    public struct ReturnAddressInfo
-    {
-        public CommandAddress retAddress;
-        public string secName;
-        public ReturnAddressInfo(CommandAddress retAddress, string secName)
-        {
-            this.retAddress = retAddress;
-            this.secName = secName;
-        }
-    }
-
     /// <summary>
     /// Interpreter of raw codes
     /// </summary>
@@ -310,8 +314,9 @@ namespace BakeryEngine
 
         // Fields used as engine's state
         private BakeryCommand currentCommand;
+        private string[] currentSectionParams;
         private CommandAddress nextCommand; // ProgramCounter
-        private Stack<ReturnAddressInfo> returnAddress;
+        private Stack<CommandAddress> returnAddress;
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -326,7 +331,8 @@ namespace BakeryEngine
                 this.variables = new BakeryVariables();
                 LoadDefaultGlobalVariables();
                 currentCommand = null;
-                returnAddress = new Stack<ReturnAddressInfo>();
+                returnAddress = new Stack<CommandAddress>();
+                currentSectionParams = new string[0];
             }
             catch (Exception e)
             {
@@ -400,37 +406,25 @@ namespace BakeryEngine
         /// <param name="nextCommand"></param>
         private void RunCommands()
         {
-            string currentSection = string.Empty;
-
             while (true)
             {
                 if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
+                    currentSectionParams = new string[0];
+                    BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
+                    string logMsg = string.Concat("Section '", nextCommand.section.SecName, "' End");
+                    logger.Write(new LogInfo(logCmd, logMsg, LogState.Infomation));
                     try
                     {
-                        ReturnAddressInfo resAddr = returnAddress.Pop();
-                        nextCommand = resAddr.retAddress;
-                        currentSection = resAddr.secName;
+                        nextCommand = returnAddress.Pop();
                         if (!(nextCommand.line < nextCommand.secLength)) // Is return address end of section?
-                        {
-                            BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0]);
-                            logCmd.SectionDepth = returnAddress.Count + 1;
-                            string logMsg = string.Concat("Section '", currentCommand.Address.section.SecName, "' End");
-                            logger.Write(new LogInfo(logCmd, logMsg, LogState.Success));
                             continue;
-                        }
                     }
                     catch (InvalidOperationException)
                     { // The Stack<T> is empty, terminate function
-                        BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0]);
-                        string logMsg = string.Concat("Section '", currentSection, "' End");
-                        logger.Write(new LogInfo(logCmd, logMsg, LogState.Success));
                         break;
                     } 
                 }
-
-                // Remeber current section's name, for proper logging
-                currentSection = nextCommand.section.SecName;
 
                 // Fetch instructions
                 int i = nextCommand.line;
@@ -460,11 +454,8 @@ namespace BakeryEngine
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
                 nextCommand.line += 1;
-
             }
 
-           
-            
             logger.WriteVariables(variables);
         }
 

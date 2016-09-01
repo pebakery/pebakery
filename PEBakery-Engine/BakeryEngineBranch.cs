@@ -50,12 +50,12 @@ namespace BakeryEngine
                     throw new InvalidOperandException(string.Concat("'", Path.GetFileName(pluginFile), "' does not have section '", sectionName, "'"), cmd);
 
                 // Branch to new section
-                CommandAddress retCmdAddr = new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength);
-                returnAddress.Push(new ReturnAddressInfo(retCmdAddr, cmd.Address.section.SecName));
+                returnAddress.Push(new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
                 nextCommand = new CommandAddress(plugin.Sections[sectionName], 0, plugin.Sections[sectionName].SecCodes.Length);
+                currentSectionParams = parameters;
             }
 
-            cmd.SectionDepth++;
+            cmd.SectionDepth += 1; // For proper log indentation
             logs.Add(new LogInfo(cmd, string.Concat("Running section '", sectionName, "'"), LogState.Success));
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
