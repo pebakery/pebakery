@@ -37,6 +37,12 @@ namespace BakeryEngine
             get { return state;  }
         }
 
+        /// <summary>
+        /// Forge an log info
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="result"></param>
+        /// <param name="state"></param>
         public LogInfo(BakeryCommand command, string result, LogState state)
         {
             this.command = command;
@@ -47,7 +53,6 @@ namespace BakeryEngine
 
     public class Logger
     {
-
         /// <summary>
         /// Fields
         /// </summary>
@@ -127,6 +132,24 @@ namespace BakeryEngine
         public void Write(string log)
         {
             sw.WriteLine(log);
+            sw.Flush();
+        }
+
+        public void WriteVariables(BakeryVariables vars)
+        {
+            string str = "\n\n[Local Variables]\n";
+            foreach (var local in vars.LocalValue)
+            {
+                str = string.Concat(str, local.Key, " (Raw)   = ", vars.LocalRaw[local.Key], "\n");
+                str = string.Concat(str, local.Key, " (Value) = ", local.Value, "\n");
+            }
+            str += "\n[Global Variables]\n";
+            foreach (var global in vars.GlobalValue)
+            {
+                str = string.Concat(str, global.Key, " (Raw)   = ", vars.GlobalRaw[global.Key], "\n");
+                str = string.Concat(str, global.Key, " (Value) = ", global.Value, "\n");
+            }
+            sw.Write(str);
             sw.Flush();
         }
 

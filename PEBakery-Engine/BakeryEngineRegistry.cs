@@ -12,16 +12,6 @@ using Microsoft.Win32.Interop;
 namespace BakeryEngine
 {
     /// <summary>
-    /// Exception used in BakerOperations
-    /// </summary>
-    public class ileDoesNotExistException : Exception
-    {
-        public ileDoesNotExistException() { }
-        public ileDoesNotExistException(string message) : base(message) { }
-        public ileDoesNotExistException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
     /// Implementation of commands
     /// </summary>
     public partial class BakeryEngine

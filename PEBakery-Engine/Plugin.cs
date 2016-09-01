@@ -74,7 +74,8 @@ namespace BakeryEngine
 
                     string secName = matches[i].Value.Substring(1, matches[i].Length - 3);
                     string secData = rawData.Substring(secDataOffset, secDataLen);
-                    sections[secName] = new PluginSection(secName, secData, i);
+                    string[] secCodes = secData.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                    sections[secName] = new PluginSection(secName, secData, secCodes);
                 }
             }
             catch (Exception e)
@@ -90,9 +91,8 @@ namespace BakeryEngine
                 Console.WriteLine("FileName = " + this.fileName);
                 foreach (var section in sections)
                 {
-                    Console.WriteLine(section.Value.Index);
-                    Console.WriteLine(section.Value.SectionName);
-                    Console.WriteLine(section.Value.SectionData);
+                    Console.WriteLine(section.Value.SecName);
+                    Console.WriteLine(section.Value.SecData);
                 }
             }
             catch (Exception e)
@@ -106,40 +106,34 @@ namespace BakeryEngine
     public class PluginSection
     {
         // Fields
-        private string sectionName;
-        public string SectionName
+        private string secName;
+        public string SecName
         {
             get
             {
-                return sectionName;
+                return secName;
             }
         }
-
-        private string sectionData;
-        public string SectionData
+        private string secData;
+        public string SecData
         {
             get
             {
-                return sectionData;
+                return secData;
             }
         }
-
-
-        private int index;
-        public int Index
+        private string[] secCodes;
+        public string[] SecCodes
         {
-            get
-            {
-                return index;
-            }
+            get { return secCodes; }
         }
 
         // Constructor
-        public PluginSection(string sectionName, string sectionData, int index)
+        public PluginSection(string sectionName, string sectionData, string[] sectionCodes)
         {
-            this.sectionName = sectionName;
-            this.sectionData = sectionData;
-            this.index = index;
+            this.secName = sectionName;
+            this.secData = sectionData;
+            this.secCodes = sectionCodes;
         }
     }
 

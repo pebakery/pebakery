@@ -15,14 +15,22 @@ namespace BakeryEngine
          * local variables > global variables
          */
         private VariablesDictionary globalRaw;
+        public VariablesDictionary GlobalRaw
+        {
+            get { return globalRaw; }
+        }
         private VariablesDictionary globalValue;
-        public VariablesDictionary GlobalVars
+        public VariablesDictionary GlobalValue
         {
             get { return globalValue ; }
         }
         private VariablesDictionary localRaw;
+        public VariablesDictionary LocalRaw
+        {
+            get { return localRaw; }
+        }
         private VariablesDictionary localValue;
-        public VariablesDictionary LocalVars
+        public VariablesDictionary LocalValue
         {
             get { return localValue; }
         }

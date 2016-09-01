@@ -313,40 +313,39 @@ namespace BakeryEngine
         private void LoadDefaultPluginVariables()
         {
             // ScriptFile, PluginFile
-            variables.GlobalSetValue("PluginFile", plugin.FileName);
-            variables.GlobalSetValue("ScriptFile", plugin.FileName);
+            variables.LocalSetValue("PluginFile", plugin.FileName);
+            variables.LocalSetValue("ScriptFile", plugin.FileName);
         }
 
         /// <summary>
         /// Run an plugin
         /// </summary>
-        public void Run()
+        public void RunPlugin()
         {
             LoadDefaultPluginVariables();
-            RunSection(plugin.Sections["Process"]);
+            PluginSection section = plugin.Sections["Process"];
+            RunCommands(new CommandAddress(section, 0, section.SecCodes.Length));
+            logger.WriteVariables(variables);
             return;
         }
 
         /// <summary>
-        /// Run an section
+        /// Run array of commands.
         /// </summary>
-        /// <param name="section"></param>
-        private void RunSection(PluginSection section)
+        /// <param name="nextCommand"></param>
+        private void RunCommands(CommandAddress nextCommand)
         {
-            string[] codes = section.SectionData.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None | StringSplitOptions.RemoveEmptyEntries);
-            nextCommand = new CommandAddress(section, 0, codes.Length);
-
-            while (nextCommand.line < codes.Length)
+            while (nextCommand.line < nextCommand.secLength)
             {
                 int i = nextCommand.line;
-                string rawCode = codes[i].Trim();
+                string rawCode = nextCommand.section.SecCodes[i].Trim();
                 nextCommand.line += 1;
-                currentCommand = ParseCommand(rawCode, new CommandAddress(section, i, codes.Length));
+                
                 try
                 {
+                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.section, i, nextCommand.secLength));
                     try
                     {
-                        currentCommand = ParseCommand(rawCode, new CommandAddress(section, i, codes.Length));
                         ExecuteCommand(currentCommand, logger);
                     }
                     catch (InvalidOpcodeException e)
@@ -367,6 +366,11 @@ namespace BakeryEngine
             }
         }
 
+        /// <summary>
+        /// Execute one command.
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="logger"></param>
         private void ExecuteCommand(BakeryCommand cmd, Logger logger)
         {
             LogInfo log = null;

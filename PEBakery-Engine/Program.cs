@@ -21,8 +21,7 @@ namespace BakeryEngine
             Plugin plugin = new Plugin(args[0]);
             Logger logger = new Logger("log.txt", LogFormat.Text, info);
             BakeryEngine engine = new BakeryEngine(plugin, logger);
-            engine.Run();
-            engine.Debug();
+            engine.RunPlugin();
 
             return 0;
         }
