@@ -6,23 +6,23 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     using VariableDictionary = Dictionary<string, string>;
 
     /// <summary>
     /// Implementation of commands
     /// </summary>
-    public partial class BakerEngine
+    public partial class BakeryEngine
     {
         /// <summary>
         /// Set variables
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo Set(BakerCommand cmd)
+        public LogInfo Set(BakeryCommand cmd)
         { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT] 
-            string logResult = String.Empty;
+            string logResult = string.Empty;
             LogState resState = LogState.Success;
 
             string varName;

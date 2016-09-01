@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     class PEBakery_Engine
     {
@@ -20,7 +20,7 @@ namespace PEBakery_Engine
             PEBakeryInfo info = new PEBakeryInfo(new Version(1, 0, 0), Helper.GetBuildDate());
             Plugin plugin = new Plugin(args[0]);
             Logger logger = new Logger("log.txt", LogFormat.Text, info);
-            BakerEngine engine = new BakerEngine(plugin, logger);
+            BakeryEngine engine = new BakeryEngine(plugin, logger);
             engine.Run();
             engine.Debug();
 

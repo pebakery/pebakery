@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.Globalization;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     using System.Text.RegularExpressions;
     using VariableDictionary = Dictionary<string, string>;
@@ -63,7 +63,7 @@ namespace PEBakery_Engine
         }
 
         /// <summary>
-        /// Exception used in BakerEngine::ParseCommand
+        /// Exception used in BakeryEngine::ParseCommand
         /// </summary>
         public class UnsupportedEncodingException : Exception
         {
@@ -138,7 +138,7 @@ namespace PEBakery_Engine
         {
             // Ex) 2016-08-30  7:10:00.25 
             string[] rawBuildDateStr = Properties.Resources.BuildDate.Split(new char[] { ' ', '.', '\r', '\n' });
-            string buildDateStr = String.Format("{0} {1}", rawBuildDateStr[0], rawBuildDateStr[1]);
+            string buildDateStr = string.Format("{0} {1}", rawBuildDateStr[0], rawBuildDateStr[1]);
             DateTime buildDate;
             try
             {
@@ -153,7 +153,7 @@ namespace PEBakery_Engine
         }
 
         /// <summary>
-        /// Remove last \ in the path
+        /// Remove last \ in the path.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
@@ -165,6 +165,19 @@ namespace PEBakery_Engine
         }
 
         /// <summary>
+        /// Remove last newline in the string.
+        /// Also removes whitespace.
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string RemoveLastNewLine(string str)
+        {
+            return str.Trim().TrimEnd(Environment.NewLine.ToCharArray()).Trim();
+        }
+
+        
+
+        /// <summary>
         /// Extends Path.GetDirectoryName().
         /// If returned dir path is empty, change it to "."
         /// </summary>
@@ -173,7 +186,7 @@ namespace PEBakery_Engine
         public static string GetDirNameEx(string path)
         {
             string dirName = Path.GetDirectoryName(path);
-            if (dirName == String.Empty)
+            if (dirName == string.Empty)
                 dirName = ".";
             return dirName;
         }

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     public enum LogFormat
     {
@@ -21,8 +21,8 @@ namespace PEBakery_Engine
 
     public class LogInfo
     {
-        private BakerCommand command;
-        public BakerCommand Command
+        private BakeryCommand command;
+        public BakeryCommand Command
         {
             get { return command; }
         }
@@ -37,7 +37,7 @@ namespace PEBakery_Engine
             get { return state;  }
         }
 
-        public LogInfo(BakerCommand command, string result, LogState state)
+        public LogInfo(BakeryCommand command, string result, LogState state)
         {
             this.command = command;
             this.result = result;
@@ -120,7 +120,7 @@ namespace PEBakery_Engine
         {
             if (logInfo == null || logInfo.State == LogState.None) // null means do not log
                 return;
-            sw.WriteLine(String.Format("[{0}] {1} - {2} ({3})", logInfo.State.ToString(), logInfo.Command.Opcode.ToString(), logInfo.Result, logInfo.Command.RawCode));
+            sw.WriteLine(string.Format("[{0}] {1} - {2} ({3})", logInfo.State.ToString(), logInfo.Command.Opcode.ToString(), logInfo.Result, logInfo.Command.RawCode));
             sw.Flush();
         }
 

@@ -7,7 +7,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     public class Plugin
     {

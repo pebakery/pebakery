@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     using VariableDictionary = Dictionary<string, string>;
 
     /// <summary>
     /// Implementation of commands
     /// </summary>
-    public partial class BakerEngine
+    public partial class BakeryEngine
     {
         /* 
          * Text Manipulation
@@ -24,7 +24,7 @@ namespace PEBakery_Engine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo TXTAddLine(BakerCommand cmd)
+        public LogInfo TXTAddLine(BakeryCommand cmd)
         { // TXTAddLine,<FileName>,<Line>,<Mode>
             // Mode : Prepend / Append / Place,LineNum
             try

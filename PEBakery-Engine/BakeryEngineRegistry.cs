@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Microsoft.Win32.Interop;
 
-namespace PEBakery_Engine
+namespace BakeryEngine
 {
     using VariableDictionary = Dictionary<string, string>;
 
@@ -26,7 +26,7 @@ namespace PEBakery_Engine
     /// <summary>
     /// Implementation of commands
     /// </summary>
-    public partial class BakerEngine
+    public partial class BakeryEngine
     {
         const UInt32 HKLM = 0x80000002;
 
@@ -44,9 +44,9 @@ namespace PEBakery_Engine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo RegHiveLoad(BakerCommand cmd)
+        public LogInfo RegHiveLoad(BakeryCommand cmd)
         { // RegHiveLoad,<KeyName>,<HiveFileName>
-            string logResult = String.Empty;
+            string logResult = string.Empty;
             LogState resState = LogState.Success;
 
             // Must-have operand : 2
@@ -66,11 +66,11 @@ namespace PEBakery_Engine
             int ret = RegLoadKey(HKLM, keyName, hiveFileName);
             if (ret != ResultWin32.ERROR_SUCCESS)
             {
-                logResult = String.Format("RegLoadKey API returned error {0}:{1}", ret, ResultWin32.GetErrorName(ret));
+                logResult = string.Format("RegLoadKey API returned error {0}:{1}", ret, ResultWin32.GetErrorName(ret));
                 resState = LogState.Error;
             }
 
-            if (logResult == String.Empty)
+            if (logResult == string.Empty)
                 logResult = "Loaded " + hiveFileName + " info HKLM\\" + keyName;
             return new LogInfo(cmd, logResult, resState);
         }
@@ -80,9 +80,9 @@ namespace PEBakery_Engine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo RegHiveUnload(BakerCommand cmd)
+        public LogInfo RegHiveUnload(BakeryCommand cmd)
         { // RegHiveUnload,<KeyName>
-            string logResult = String.Empty;
+            string logResult = string.Empty;
             LogState resState = LogState.Success;
 
             // Must-have operand : 2
@@ -102,7 +102,7 @@ namespace PEBakery_Engine
             int ret = RegLoadKey(HKLM, keyName, hiveFileName);
             if (ret != ResultWin32.ERROR_SUCCESS)
             {
-                logResult = String.Format("RegLoadKey API returned {0}:{1}", ret, ResultWin32.GetErrorName(ret));
+                logResult = string.Format("RegLoadKey API returned {0}:{1}", ret, ResultWin32.GetErrorName(ret));
                 resState = LogState.Error;
             }
 

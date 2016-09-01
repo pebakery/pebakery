@@ -32,7 +32,7 @@ namespace Microsoft.Win32.Interop
             foreach (FieldInfo fi in fields)
                 if ((int)fi.GetValue(null) == result)
                     return fi.Name;
-            return String.Empty;
+            return string.Empty;
         }
 
         /// <summary>
@@ -10358,7 +10358,7 @@ namespace Microsoft.Win32.Interop
         /// </summary>
         public const int CRYPT_E_INVALID_X500_STRING = (int)(0x80092023 - 0x100000000);
         /// <summary>
-        /// The dwValueType for the CERT_NAME_VALUE is not one of the character strings.  Most likely it is either a CERT_RDN_ENCODED_BLOB or CERT_TDN_OCTED_STRING.
+        /// The dwValueType for the CERT_NAME_VALUE is not one of the character strings.  Most likely it is either a CERT_RDN_ENCODED_BLOB or CERT_TDN_OCTED_string.
         /// </summary>
         public const int CRYPT_E_NOT_CHAR_STRING = (int)(0x80092024 - 0x100000000);
         /// <summary>
