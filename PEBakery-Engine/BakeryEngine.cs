@@ -293,8 +293,7 @@ namespace BakeryEngine
             // BaseDir
             variables.GlobalSetValue("BaseDir", Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory));
             // Version
-            Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            variables.GlobalSetValue("Version", version.ToString());
+            variables.GlobalSetValue("Version", Helper.GetProgramVersion().Build.ToString());
             // GlobalSupport, GlobalTemp, GlobalTemplates
             variables.GlobalSetValue("GlobalSupport", @"%BaseDir%\Workbench");
             variables.GlobalSetValue("GlobalTemp", @"%BaseDir%\Temp");
@@ -306,8 +305,6 @@ namespace BakeryEngine
             variables.GlobalSetValue("Day", todayDate.Day.ToString());
             // Build
             variables.GlobalSetValue("Build", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
-            // Version
-            variables.GlobalSetValue("Version", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
         }
 
         private void LoadDefaultPluginVariables()
@@ -325,7 +322,6 @@ namespace BakeryEngine
             LoadDefaultPluginVariables();
             PluginSection section = plugin.Sections["Process"];
             RunCommands(new CommandAddress(section, 0, section.SecCodes.Length));
-            logger.WriteVariables(variables);
             return;
         }
 
@@ -364,6 +360,8 @@ namespace BakeryEngine
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
             }
+
+            logger.WriteVariables(variables);
         }
 
         /// <summary>

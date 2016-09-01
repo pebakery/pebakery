@@ -4,11 +4,12 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Globalization;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace BakeryEngine
 {
-    using System.Text.RegularExpressions;
-    using VariableDictionary = Dictionary<string, string>;
+    
 
     /// <summary>
     /// Contains static helper methods.
@@ -151,6 +152,18 @@ namespace BakeryEngine
             }
             
             return buildDate;
+        }
+
+        /// <summary>
+        /// Read program's version from manifest
+        /// </summary>
+        /// <returns></returns>
+        public static Version GetProgramVersion()
+        {
+            // Assembly assembly = Assembly.GetExecutingAssembly();
+            // FileVersionInfo fileVerInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
+            // return new Version(fileVerInfo.FileMajorPart, fileVerInfo.FileMinorPart, fileVerInfo.FileBuildPart, fileVerInfo.FilePrivatePart);
+            return Assembly.GetExecutingAssembly().GetName().Version;
         }
 
         /// <summary>

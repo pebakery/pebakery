@@ -17,16 +17,13 @@ namespace BakeryEngine
                 return 1;
             }
 
-            PEBakeryInfo info = new PEBakeryInfo(new Version(1, 0, 0), Helper.GetBuildDate());
             Plugin plugin = new Plugin(args[0]);
-            Logger logger = new Logger("log.txt", LogFormat.Text, info);
+            Logger logger = new Logger("log.txt", LogFormat.Text);
             BakeryEngine engine = new BakeryEngine(plugin, logger);
             engine.RunPlugin();
 
             return 0;
-        }
-
-        
+        }   
     }
 
     public class PEBakeryInfo
@@ -42,10 +39,10 @@ namespace BakeryEngine
             get { return build; }
         }
 
-        public PEBakeryInfo(Version ver, DateTime build)
+        public PEBakeryInfo()
         {
-            this.ver = ver;
-            this.build = build;
+            this.ver = Helper.GetProgramVersion();
+            this.build = Helper.GetBuildDate();
         } 
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Reflection;
 
 namespace BakeryEngine
 {
@@ -77,32 +78,8 @@ namespace BakeryEngine
                     sw = new StreamWriter(fs, Encoding.UTF8); // With BOM, for txt
                 else
                     sw = new StreamWriter(fs, new UTF8Encoding(false)); // Without BOM, for HTML
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
-            }
-        }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="logFileName"></param>
-        /// <param name="logFormat"></param>
-        public Logger(string logFileName, LogFormat logFormat, PEBakeryInfo info)
-        {
-            try
-            {
-                this.logFileName = logFileName;
-                this.logFormat = logFormat;
-
-                FileStream fs = new FileStream(this.logFileName, FileMode.Create, FileAccess.Write, FileShare.Write);
-                if (logFormat == LogFormat.Text)
-                    sw = new StreamWriter(fs, Encoding.UTF8); // With BOM, for txt
-                else
-                    sw = new StreamWriter(fs, new UTF8Encoding(false)); // Without BOM, for HTML
-
-                PrintBanner(info);
+                PrintBanner();
             }
             catch (Exception e)
             {
@@ -115,9 +92,10 @@ namespace BakeryEngine
             Close();
         }
 
-        private void PrintBanner(PEBakeryInfo info)
+        private void PrintBanner()
         {
-            sw.WriteLine("PEBakery " + info.Ver.ToString() + " Test Version Log");
+            PEBakeryInfo info = new PEBakeryInfo();
+            sw.WriteLine(string.Concat("PEBakery-Engine v", info.Ver.Build, " (", info.Ver.ToString(), ") Alpha Log"));
             sw.Flush();
         }
 
