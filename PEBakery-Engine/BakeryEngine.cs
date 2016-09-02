@@ -289,9 +289,6 @@ namespace BakeryEngine
     public struct CommandAddress
     { // Return address format = <Section>'s <n'th line>
         public PluginSection section;
-        /// <summary>
-        /// line == -1 means end
-        /// </summary>
         public int line;
         public int secLength;
         public CommandAddress(PluginSection section, int line, int secLength)
@@ -308,11 +305,14 @@ namespace BakeryEngine
     public partial class BakeryEngine
     {
         // Fields used globally
-        private Logger logger;
-        private Plugin plugin;
+        private Plugin[] plugins;
         private BakeryVariables variables;
+        private Logger logger;
 
-        // Fields used as engine's state
+        // Fields : Engine's state (plugins)
+        private int curPluginIdx; // currentPluginIndex
+
+        // Fields : Engine's state (in-plugin)
         private BakeryCommand currentCommand;
         private string[] currentSectionParams;
         private CommandAddress nextCommand; // ProgramCounter
@@ -321,23 +321,28 @@ namespace BakeryEngine
         // Enum
         private enum ParseState { Normal, Merge }
 
-        // Constructor
-        public BakeryEngine(Plugin plugin, Logger logger)
+        // Constructors
+        public BakeryEngine(Plugin[] plugins, Logger logger)
         {
-            try
-            {
-                this.plugin = plugin;
-                this.logger = logger;
-                this.variables = new BakeryVariables();
-                LoadDefaultGlobalVariables();
-                currentCommand = null;
-                returnAddress = new Stack<CommandAddress>();
-                currentSectionParams = new string[0];
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
-            }
+            InternalConstructor(plugins, 0, logger);
+        }
+
+        public BakeryEngine(Plugin[] plugins, int pluginIndex, Logger logger)
+        {
+            InternalConstructor(plugins, pluginIndex, logger);
+        }
+
+        private void InternalConstructor(Plugin[] plugins, int pluginIndex, Logger logger)
+        {
+            this.plugins = plugins;
+            this.logger = logger;
+            this.variables = new BakeryVariables();
+
+            LoadDefaultGlobalVariables();
+            curPluginIdx = pluginIndex;
+            currentCommand = null;
+            returnAddress = new Stack<CommandAddress>();
+            currentSectionParams = new string[0];
         }
 
         // Methods
@@ -357,35 +362,29 @@ namespace BakeryEngine
             }
         }
 
-        private void DisplayOperation(string str)
+        private void DisplayOperation(BakeryCommand cmd)
         {
-            Console.WriteLine(str);
+            for (int i = 0; i < cmd.SectionDepth; i++)
+                Console.Write("  ");
+            Console.WriteLine(cmd.RawCode);
         }
 
         private void LoadDefaultGlobalVariables()
         {
+            PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
-            variables.GlobalSetValue("BaseDir", Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory));
+            variables.GlobalSetValue("BaseDir", info.BaseDir);
             // Version
-            variables.GlobalSetValue("Version", Helper.GetProgramVersion().Build.ToString());
-            // GlobalSupport, GlobalTemp, GlobalTemplates
-            variables.GlobalSetValue("GlobalSupport", @"%BaseDir%\Workbench");
-            variables.GlobalSetValue("GlobalTemp", @"%BaseDir%\Temp");
-            variables.GlobalSetValue("GlobalTemplates", @"%BaseDir%\Workbench\Common");
-            // Year, Month, Day
-            DateTime todayDate = DateTime.Now;
-            variables.GlobalSetValue("Year", todayDate.Year.ToString());
-            variables.GlobalSetValue("Month", todayDate.Month.ToString());
-            variables.GlobalSetValue("Day", todayDate.Day.ToString());
+            variables.GlobalSetValue("Version", info.Ver.Build.ToString());
             // Build
-            variables.GlobalSetValue("Build", string.Format("{0:yyyy-MM-dd HH:mm}", Helper.GetBuildDate()));
+            variables.GlobalSetValue("Build", string.Format("{0:yyyy-MM-dd HH:mm}", info.Ver.ToString()));
         }
 
         private void LoadDefaultPluginVariables()
         {
             // ScriptFile, PluginFile
-            variables.LocalSetValue("PluginFile", plugin.FileName);
-            variables.LocalSetValue("ScriptFile", plugin.FileName);
+            variables.LocalSetValue("PluginFile", plugins[curPluginIdx].FileName);
+            variables.LocalSetValue("ScriptFile", plugins[curPluginIdx].FileName);
         }
 
         /// <summary>
@@ -394,8 +393,8 @@ namespace BakeryEngine
         public void RunPlugin()
         {
             LoadDefaultPluginVariables();
-            PluginSection section = plugin.Sections["Process"];
-            nextCommand = new CommandAddress(section, 0, section.SecCodes.Length);
+            PluginSection section = plugins[curPluginIdx].Sections["Process"];
+            nextCommand = new CommandAddress(section, 0, section.SecLines.Length);
             RunCommands();
             return;
         }
@@ -428,12 +427,12 @@ namespace BakeryEngine
 
                 // Fetch instructions
                 int i = nextCommand.line;
-                string rawCode = nextCommand.section.SecCodes[i].Trim();
+                string rawCode = nextCommand.section.SecLines[i].Trim();
 
                 try
                 {
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.section, i, nextCommand.secLength));
-                    currentCommand.SectionDepth = returnAddress.Count;
+                    
                     try
                     {
                         ExecuteCommand(currentCommand, logger);
@@ -469,7 +468,7 @@ namespace BakeryEngine
             LogInfo log = null;
             LogInfo[] logs = null;
 
-            DisplayOperation(cmd.RawCode);
+            DisplayOperation(cmd);
             try
             {
                 switch (cmd.Opcode)
@@ -501,7 +500,8 @@ namespace BakeryEngine
                     // System
                     // Branch
                     case Opcode.Run:
-                        logs = this.Run(cmd);
+                    case Opcode.Exec:
+                        logs = this.RunExec(cmd);
                         break;
                     // Control
                     case Opcode.Set:
@@ -544,12 +544,12 @@ namespace BakeryEngine
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
-                return new BakeryCommand(string.Empty, Opcode.None, new string[0], address);
+                return new BakeryCommand(string.Empty, Opcode.None, new string[0], address, returnAddress.Count);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.Substring(0, 2) == "//" || rawCode.Substring(0, 1) == "#" || rawCode.Substring(0, 1) == ";")
             {
-                return new BakeryCommand(rawCode, Opcode.Comment, new string[0], address);
+                return new BakeryCommand(rawCode, Opcode.Comment, new string[0], address, returnAddress.Count);
             }
 
             // Splice with spaces
@@ -665,7 +665,7 @@ namespace BakeryEngine
             }
 
             // forge BakeryCommand
-            return new BakeryCommand(rawCode, opcode, operands, address);
+            return new BakeryCommand(rawCode, opcode, operands, address, returnAddress.Count);
         }
     }
 }

@@ -166,6 +166,10 @@ namespace BakeryEngine
             return Assembly.GetExecutingAssembly().GetName().Version;
         }
 
+        public static string GetProgramPath()
+        {
+            return Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory);
+        }
         /// <summary>
         /// Remove last \ in the path.
         /// </summary>

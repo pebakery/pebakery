@@ -18,7 +18,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] Run(BakeryCommand cmd)
+        public LogInfo[] RunExec(BakeryCommand cmd)
         {
             ArrayList logs = new ArrayList();
 
@@ -46,13 +46,19 @@ namespace BakeryEngine
 
             if (currentPlugin)
             {
-                if (!plugin.Sections.ContainsKey(sectionName))
+                if (!plugins[curPluginIdx].Sections.ContainsKey(sectionName))
                     throw new InvalidOperandException(string.Concat("'", Path.GetFileName(pluginFile), "' does not have section '", sectionName, "'"), cmd);
 
                 // Branch to new section
                 returnAddress.Push(new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
-                nextCommand = new CommandAddress(plugin.Sections[sectionName], 0, plugin.Sections[sectionName].SecCodes.Length);
+                nextCommand = new CommandAddress(plugins[curPluginIdx].Sections[sectionName], 0, plugins[curPluginIdx].Sections[sectionName].SecLines.Length);
                 currentSectionParams = parameters;
+
+                // Exec utilizes [Variables] section of the plugin
+                if (cmd.Opcode == Opcode.Exec)
+                {
+
+                }
             }
 
             cmd.SectionDepth += 1; // For proper log indentation
@@ -60,6 +66,5 @@ namespace BakeryEngine
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
-
     }
 }

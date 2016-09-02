@@ -8,10 +8,8 @@ using System.Collections;
 
 namespace BakeryEngine
 {
-    using VariableDictionary = Dictionary<string, string>;
-
     /// <summary>
-    /// Implementation of commands
+    /// Text, INI commands
     /// </summary>
     public partial class BakeryEngine
     {

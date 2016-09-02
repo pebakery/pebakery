@@ -60,7 +60,6 @@ namespace BakeryEngine
                 MatchCollection matches = Regex.Matches(rawData, @"^\[(.+)\]\r?$", RegexOptions.Multiline);
 
                 // Make instances of sections
-                // sections = new PluginSection[matches.Count];
                 for (int i = 0; i < matches.Count; i++)
                 {
                     int secDataOffset = 0;
@@ -73,9 +72,8 @@ namespace BakeryEngine
                         secDataLen = rawData.Length - secDataOffset;
 
                     string secName = matches[i].Value.Substring(1, matches[i].Length - 3);
-                    string secData = rawData.Substring(secDataOffset, secDataLen);
-                    string[] secCodes = secData.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                    sections[secName] = new PluginSection(secName, secData, secCodes);
+                    string[] secLines = rawData.Substring(secDataOffset, secDataLen).Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+                    sections[secName] = new PluginSection(secName, secLines);
                 }
             }
             catch (Exception e)
@@ -86,20 +84,12 @@ namespace BakeryEngine
 
         public void Debug()
         {
-            try
+            Console.WriteLine("FileName = " + this.fileName);
+            foreach (var section in sections)
             {
-                Console.WriteLine("FileName = " + this.fileName);
-                foreach (var section in sections)
-                {
-                    Console.WriteLine(section.Value.SecName);
-                    Console.WriteLine(section.Value.SecData);
-                }
+                Console.WriteLine(section.Value.SecName);
+                Console.WriteLine(section.Value.SecLines);
             }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
-            }
-
         }
     }
 
@@ -114,26 +104,17 @@ namespace BakeryEngine
                 return secName;
             }
         }
-        private string secData;
-        public string SecData
+        private string[] secLines;
+        public string[] SecLines
         {
-            get
-            {
-                return secData;
-            }
-        }
-        private string[] secCodes;
-        public string[] SecCodes
-        {
-            get { return secCodes; }
+            get { return secLines; }
         }
 
         // Constructor
-        public PluginSection(string sectionName, string sectionData, string[] sectionCodes)
+        public PluginSection(string sectionName, string[] sectionLines)
         {
             this.secName = sectionName;
-            this.secData = sectionData;
-            this.secCodes = sectionCodes;
+            this.secLines = sectionLines;
         }
     }
 

@@ -7,23 +7,17 @@ using System.IO;
 
 namespace BakeryEngine
 {
-    class PEBakery_Engine
+    class PEBakery
     {
         static int Main(string[] args)
-        {            
-            if (args.Length < 1)
-            {
-                Console.WriteLine("[ERR] No arg specified");
-                return 1;
-            }
-
-            Plugin plugin = new Plugin(args[0]);
+        {
+            Plugin[] plugins = new Plugin[] { new Plugin("text.project") };
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            BakeryEngine engine = new BakeryEngine(plugin, logger);
+            BakeryEngine engine = new BakeryEngine(plugins, logger);
             engine.RunPlugin();
 
             return 0;
-        }   
+        }
     }
 
     public class PEBakeryInfo
@@ -38,9 +32,15 @@ namespace BakeryEngine
         {
             get { return build; }
         }
+        public string baseDir;
+        public string BaseDir
+        {
+            get { return baseDir; }
+        }
 
         public PEBakeryInfo()
         {
+            this.baseDir = Helper.GetProgramPath();
             this.ver = Helper.GetProgramVersion();
             this.build = Helper.GetBuildDate();
         } 
