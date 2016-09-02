@@ -5,6 +5,7 @@
 *.script
 *.plugin
 res/
+PEBakery-Engine/Resoures/BuildDate.txt
 
 # User-specific files
 *.suo

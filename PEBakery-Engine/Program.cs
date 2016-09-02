@@ -11,7 +11,7 @@ namespace BakeryEngine
     {
         static int Main(string[] args)
         {
-            Plugin[] plugins = new Plugin[] { new Plugin("text.project") };
+            Plugin[] plugins = new Plugin[] { new Plugin("test.script") };
             Logger logger = new Logger("log.txt", LogFormat.Text);
             BakeryEngine engine = new BakeryEngine(plugins, logger);
             engine.RunPlugin();
