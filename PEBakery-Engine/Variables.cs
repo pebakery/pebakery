@@ -180,7 +180,7 @@ namespace BakeryEngine
         /// <param name="section"></param>
         public void LocalAddVariables(PluginSection section)
         {
-            StringDictionary dict = Helper.ParseVarStyle(section.SecLines);
+            StringDictionary dict = Helper.ParseVarStyle(section.Lines);
             InternalAddDictionary(localVars, dict);
         }
 
@@ -190,7 +190,7 @@ namespace BakeryEngine
         /// <param name="section"></param>
         public void GlobalAddVariables(PluginSection section)
         {
-            StringDictionary dict = Helper.ParseVarStyle(section.SecLines);
+            StringDictionary dict = Helper.ParseVarStyle(section.Lines);
             InternalAddDictionary(globalVars, dict);
         }
 

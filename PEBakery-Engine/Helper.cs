@@ -210,49 +210,51 @@ namespace BakeryEngine
         }
 
         /// <summary>
+        /// Get Parent Dir Name, not full path.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string GetParentDirName(string path)
+        {
+            string dirName = Path.GetDirectoryName(path);
+            int idx = dirName.LastIndexOf(Path.DirectorySeparatorChar);
+            if (idx != -1)
+                dirName = dirName.Substring(idx + 1, dirName.Length - (idx + 1));
+            else
+                dirName = string.Empty;
+                
+            return dirName;
+        }
+
+        /// <summary>
         /// Parse INI style string into dictionary
         /// </summary>
         /// <param name="lines"></param>
         /// <returns></returns>
         public static StringDictionary ParseIniStyle(string[] lines)
         {
-            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
-            foreach (string line in lines)
-            {
-                try
-                {
-                    MatchCollection matches = Regex.Matches(line, @"^(.+)=(.+)$", RegexOptions.Compiled);
-
-                    // Make instances of sections
-                    for (int i = 0; i < matches.Count; i++)
-                    {
-                        string key = matches[i].Groups[1].Value.Trim();
-                        string value = matches[i].Groups[2].Value.Trim();
-                        dict[key] = value;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
-                }                
-            }
-            return dict;
+            return InternalParseIniVarStyle(@"^([^=]+)=(.+)$", lines);
         }
 
         /// <summary>
-        /// Parse INI style Variables string into dictionary
+        /// Parse PEBakery-Variable style strings into dictionary
         /// </summary>
         /// There in format of %VarKey%=VarValue
         /// <param name="lines"></param>
         /// <returns></returns>
         public static StringDictionary ParseVarStyle(string[] lines)
         {
+            return InternalParseIniVarStyle(@"^%([^=]+)%=(.+)$", lines);
+        }
+
+        private static StringDictionary InternalParseIniVarStyle(string regex, string[] lines)
+        {
             StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
             foreach (string line in lines)
             {
                 try
                 {
-                    MatchCollection matches = Regex.Matches(line, @"^%(.+)%=(.+)$", RegexOptions.Compiled);
+                    MatchCollection matches = Regex.Matches(line, regex, RegexOptions.Compiled);
 
                     // Make instances of sections
                     for (int i = 0; i < matches.Count; i++)

@@ -307,6 +307,7 @@ namespace BakeryEngine
     public partial class BakeryEngine
     {
         // Fields used globally
+        private Project project;
         private Plugin[] plugins;
         private BakeryVariables variables;
         private Logger logger;
@@ -336,6 +337,7 @@ namespace BakeryEngine
 
         private void InternalConstructor(Plugin[] plugins, int pluginIndex, Logger logger)
         {
+            this.project = new Project("Win10PESE"); 
             this.plugins = plugins;
             this.logger = logger;
             this.variables = new BakeryVariables();
@@ -397,7 +399,7 @@ namespace BakeryEngine
         {
             LoadDefaultPluginVariables();
             PluginSection section = plugins[curPluginIdx].Sections["Process"];
-            nextCommand = new CommandAddress(section, 0, section.SecLines.Length);
+            nextCommand = new CommandAddress(section, 0, section.Lines.Length);
             RunCommands();
             return;
         }
@@ -414,7 +416,7 @@ namespace BakeryEngine
                 {
                     currentSectionParams = new string[0];
                     BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
-                    string logMsg = string.Concat("Section '", nextCommand.section.SecName, "' End");
+                    string logMsg = string.Concat("Section '", nextCommand.section.Name, "' End");
                     logger.Write(new LogInfo(logCmd, logMsg, LogState.Infomation));
                     try
                     {
@@ -430,7 +432,7 @@ namespace BakeryEngine
 
                 // Fetch instructions
                 int i = nextCommand.line;
-                string rawCode = nextCommand.section.SecLines[i].Trim();
+                string rawCode = nextCommand.section.Lines[i].Trim();
 
                 try
                 {
