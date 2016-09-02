@@ -57,7 +57,7 @@ namespace BakeryEngine
             try
             {
                 // Match sections using regex
-                MatchCollection matches = Regex.Matches(rawData, @"^\[(.+)\]\r?$", RegexOptions.Multiline);
+                MatchCollection matches = Regex.Matches(rawData, @"^\[(.+)\]\r?$", RegexOptions.Compiled | RegexOptions.Multiline);
 
                 // Make instances of sections
                 for (int i = 0; i < matches.Count; i++)
@@ -78,7 +78,7 @@ namespace BakeryEngine
             }
             catch (Exception e)
             {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
+                Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
             }
         }
 

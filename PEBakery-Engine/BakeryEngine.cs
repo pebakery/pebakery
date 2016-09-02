@@ -10,6 +10,8 @@ using System.Reflection;
 
 namespace BakeryEngine
 {
+    using StringDictionary = Dictionary<string, string>;
+
     public enum Opcode
     {
         // Misc
@@ -385,6 +387,7 @@ namespace BakeryEngine
             // ScriptFile, PluginFile
             variables.LocalSetValue("PluginFile", plugins[curPluginIdx].FileName);
             variables.LocalSetValue("ScriptFile", plugins[curPluginIdx].FileName);
+            variables.LocalAddVariables(plugins[curPluginIdx].Sections["Variables"]);
         }
 
         /// <summary>

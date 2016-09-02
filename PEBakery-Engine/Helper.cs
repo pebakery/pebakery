@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Globalization;
-using System.Diagnostics;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace BakeryEngine
 {
-    
+    using StringDictionary = Dictionary<string, string>;
 
     /// <summary>
     /// Contains static helper methods.
@@ -207,6 +207,67 @@ namespace BakeryEngine
             if (dirName == string.Empty)
                 dirName = ".";
             return dirName;
+        }
+
+        /// <summary>
+        /// Parse INI style string into dictionary
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseIniStyle(string[] lines)
+        {
+            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            foreach (string line in lines)
+            {
+                try
+                {
+                    MatchCollection matches = Regex.Matches(line, @"^(.+)=(.+)$", RegexOptions.Compiled);
+
+                    // Make instances of sections
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        string key = matches[i].Groups[1].Value.Trim();
+                        string value = matches[i].Groups[2].Value.Trim();
+                        dict[key] = value;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
+                }                
+            }
+            return dict;
+        }
+
+        /// <summary>
+        /// Parse INI style Variables string into dictionary
+        /// </summary>
+        /// There in format of %VarKey%=VarValue
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseVarStyle(string[] lines)
+        {
+            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            foreach (string line in lines)
+            {
+                try
+                {
+                    MatchCollection matches = Regex.Matches(line, @"^%(.+)%=(.+)$", RegexOptions.Compiled);
+
+                    // Make instances of sections
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        string key = matches[i].Groups[1].Value.Trim();
+                        string value = matches[i].Groups[2].Value.Trim();
+                        dict[key] = value;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
+                }
+            }
+            return dict;
         }
     }
 }
