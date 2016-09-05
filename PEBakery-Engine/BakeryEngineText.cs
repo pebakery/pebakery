@@ -45,22 +45,20 @@ namespace BakeryEngine
             if (string.Equals(cmd.Operands[2], "Prepend", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 0;
-                if (4 <= cmd.Operands.Length)
+                if (necessaryOperandNum < cmd.Operands.Length)
                     throw new InvalidOperandException("Too many operands");
             }
             else if (string.Equals(cmd.Operands[2], "Append", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 1;
-                if (4 <= cmd.Operands.Length)
+                if (necessaryOperandNum < cmd.Operands.Length)
                     throw new InvalidOperandException("Too many operands");
             }
             else if (string.Equals(cmd.Operands[2], "Place", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 2;
-                if (5 <= cmd.Operands.Length)
+                if (necessaryOperandNum + 1 < cmd.Operands.Length)
                     throw new InvalidOperandException("Too many operands");
-                else if (cmd.Operands.Length == 3)
-                    throw new InvalidOperandException("Not enough operands");
                 placeLineNum = int.Parse(cmd.Operands[3]);
                 if (placeLineNum <= 0) // In Place mode, placeLineNum starts from 1;
                     throw new InvalidOperandException("Invalid LineNum value. LineNum starts from 1.");
@@ -80,40 +78,114 @@ namespace BakeryEngine
 
             if (mode == 0) // Prepend
             {
-                string rawText = Helper.ReadTextFile(fileName);
-                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Write), encoding);
+                string temp = Helper.CreateTempFile();
+                StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
+                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write), encoding);
                 sw.WriteLine(line);
-                sw.Write(rawText);
+                string lineFromSrc;
+                while ((lineFromSrc = sr.ReadLine()) != null)
+                    sw.WriteLine(lineFromSrc);
+                sr.Close();
                 sw.Close();
-                logs.Add(new LogInfo(cmd, string.Concat("Prepened '", line, "' to '", rawFileName, "'"), LogState.Success));
+                Helper.FileReplaceEx(temp, fileName);
+                logs.Add(new LogInfo(cmd, string.Concat("Prepened [", line, "] to [", rawFileName, "]"), LogState.Success));
             }
             else if (mode == 1) // Append
             {
                 File.AppendAllText(fileName, line + "\r\n", encoding);
-                logs.Add(new LogInfo(cmd, string.Concat("Appended '", line, "' to '", rawFileName, "'"), LogState.Success));
+                logs.Add(new LogInfo(cmd, string.Concat("Appended [", line, "] to [", rawFileName, "]"), LogState.Success));
             }
             else if (mode == 2) // Place
             { // In Place mode, placeLineNum starts from 1;
                 int count = 1;
-                int offset = 0;
-                string rawText = Helper.ReadTextFile(fileName);
-                // Get offset of start of (placeLineNum)'th line
-                while ((count < placeLineNum) && (offset = rawText.IndexOf("\r\n", offset)) != -1)
+                string temp = Helper.CreateTempFile();
+                StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
+                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write), encoding);
+                string lineFromSrc;
+                while ((lineFromSrc = sr.ReadLine()) != null)
                 {
-                    offset += 2;
+                    if (count == placeLineNum)
+                        sw.WriteLine(line);
+                    sw.WriteLine(lineFromSrc);
                     count++;
                 }
-                if (offset == -1) // placeLineNum is bigger than text file's line num, so works as 'Append'
-                    offset = rawText.Length;
-                // Write to file
-                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.Write), encoding);
-                sw.Write(rawText.Substring(0, offset));
-                sw.WriteLine(line);
-                sw.Write(rawText.Substring(offset));
+                sr.Close();
                 sw.Close();
-                logs.Add(new LogInfo(cmd, string.Concat("Placed '", line, "' to '", rawFileName, "'"), LogState.Success));
+                Helper.FileReplaceEx(temp, fileName);
+                logs.Add(new LogInfo(cmd, string.Concat("Placed [", line, "] to [", placeLineNum, "]th row of [", rawFileName, "]"), LogState.Success));
             }
 
+            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+        }
+
+        /// <summary>
+        /// IniRead,<FileName>,<Section>,<Key>,<%Variable%> 
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        public LogInfo[] INIRead(BakeryCommand cmd)
+        {
+            ArrayList logs = new ArrayList();
+
+            // Necessary operand : 4, optional operand : 0
+            const int necessaryOperandNum = 4;
+            const int optionalOperandNum = 0;
+            if (cmd.Operands.Length < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            // Get operands
+            string fileName = variables.Expand(cmd.Operands[0]);
+            string section = variables.Expand(cmd.Operands[1]);
+            string key = variables.Expand(cmd.Operands[2]);
+            string varName = cmd.Operands[3].Trim('%');
+            string rawFileName = cmd.Operands[0];
+
+            try
+            {
+                string value = IniFile.GetIniKey(fileName, section, key);
+                if (value != null)
+                variables.SetValue(VarsType.Local, varName, value);
+                logs.Add(new LogInfo(cmd, string.Concat("[%", varName, "%] set to [", value, "], read from [", rawFileName, "]"), LogState.Success));
+            }
+            catch (FileNotFoundException)
+            {
+                logs.Add(new LogInfo(cmd, string.Concat("[", rawFileName, "] does not exists"), LogState.Error));
+            }
+
+            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+        }
+
+        /// <summary>
+        /// IniWrite,<FileName>,<Section>,<Key>,<Value> 
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        public LogInfo[] INIWrite(BakeryCommand cmd)
+        {
+            ArrayList logs = new ArrayList();
+
+            // Necessary operand : 4, optional operand : 0
+            const int necessaryOperandNum = 4;
+            const int optionalOperandNum = 0;
+            if (cmd.Operands.Length < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            // Get operands
+            string fileName = variables.Expand(cmd.Operands[0]);
+            string section = variables.Expand(cmd.Operands[1]);
+            string key = variables.Expand(cmd.Operands[2]);
+            string value = variables.Expand(cmd.Operands[3]);
+            string rawFileName = cmd.Operands[0];
+
+            bool result = IniFile.SetIniKey(fileName, section, key, value);
+            if (result)
+                logs.Add(new LogInfo(cmd, string.Concat("Key [", key, "] and its value [", value, "]' wrote to [", rawFileName, "]"), LogState.Success));
+            else
+                logs.Add(new LogInfo(cmd, string.Concat("Could not wrote key [", key, "] and its value [", value, "] to [", rawFileName, "]"), LogState.Error));
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
     }

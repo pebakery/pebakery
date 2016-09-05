@@ -377,19 +377,19 @@ namespace BakeryEngine
         {
             PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
-            variables.GlobalSetValue("BaseDir", info.BaseDir);
+            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir);
             // Version
-            variables.GlobalSetValue("Version", info.Ver.Build.ToString());
+            variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString());
             // Build
-            variables.GlobalSetValue("Build", string.Format("{0:yyyy-MM-dd HH:mm}", info.Ver.ToString()));
+            variables.SetValue(VarsType.Global, "Build", string.Format("{0:yyyy-MM-dd HH:mm}", info.Ver.ToString()));
         }
 
         private void LoadDefaultPluginVariables()
         {
             // ScriptFile, PluginFile
-            variables.LocalSetValue("PluginFile", plugins[curPluginIdx].FileName);
-            variables.LocalSetValue("ScriptFile", plugins[curPluginIdx].FileName);
-            variables.LocalAddVariables(plugins[curPluginIdx].Sections["Variables"]);
+            variables.SetValue(VarsType.Local, "PluginFile", plugins[curPluginIdx].FullPath);
+            variables.SetValue(VarsType.Local, "ScriptFile", plugins[curPluginIdx].FullPath);
+            variables.AddVariables(VarsType.Local, plugins[curPluginIdx].Sections["Variables"]);
         }
 
         /// <summary>
@@ -498,6 +498,12 @@ namespace BakeryEngine
                         logs = this.TXTAddLine(cmd);
                         break;
                     // INI
+                    case Opcode.INIRead:
+                        logs = this.INIRead(cmd);
+                        break;
+                    case Opcode.INIWrite:
+                        logs = this.INIWrite(cmd);
+                        break;
                     // Network
                     // Attach
                     // UI

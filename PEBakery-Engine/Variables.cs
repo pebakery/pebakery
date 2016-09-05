@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace BakeryEngine
 {
     using StringDictionary = Dictionary<string, string>;
+    public enum VarsType { Local, Global };
     public class BakeryVariables
     {
         /*
@@ -31,59 +32,47 @@ namespace BakeryEngine
             globalVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
         }
 
-        public void LocalAdd(string key, string rawValue)
+        private StringDictionary GetVarsMatchesType(VarsType type)
         {
-            localVars.Add(key, rawValue);
+            switch (type)
+            {
+                case VarsType.Local:
+                    return localVars;
+                case VarsType.Global:
+                    return globalVars;
+                default:
+                    return null;
+            }
+        }
+        public void Add(VarsType type, string key, string rawValue)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            vars.Add(key, rawValue);
         }
 
-        public void GlobalAdd(string key, string rawValue)
+        public void SetValue(VarsType type, string key, string rawValue)
         {
-            globalVars.Add(key, rawValue);
-        }
-
-        public void SetValue(string key, string rawValue)
-        {
-            this.LocalSetValue(key, rawValue);
-        }
-
-        public void LocalSetValue(string key, string rawValue)
-        {
-            localVars[key] = rawValue;
-        }
-
-        public void GlobalSetValue(string key, string rawValue)
-        {
-            globalVars[key] = rawValue;
+            StringDictionary vars = GetVarsMatchesType(type);
+            vars[key] = rawValue;
         }
 
         public string GetValue(string key)
         {
             string value;
-            bool result = this.TryGetValue(key, out value);
+            bool result = TryGetValue(key, out value);
             if (result == false)
                 value = string.Empty;
             return value;
         }
 
-        public string LocalGetValue(string key)
+        public string GetValue(VarsType type, string key)
         {
+            StringDictionary vars = GetVarsMatchesType(type);
             string value;
-            bool result = localVars.TryGetValue(key, out value);
+            bool result = vars.TryGetValue(key, out value);
             if (result)
                 value = Expand(value);
             else
-                value = string.Empty;
-            return value;
-        }
-
-        public string GlobalGetValue(string key)
-        {
-            string value;
-            bool result = globalVars.TryGetValue(key, out value);
-            if (result)
-                value = Expand(value);
-            else
-                value = string.Empty; if (result == false)
                 value = string.Empty;
             return value;
         }
@@ -93,14 +82,10 @@ namespace BakeryEngine
             return localVars.ContainsKey(key) || globalVars.ContainsKey(key);
         }
 
-        public bool LocalContainsKey(string key)
+        public bool ContainsKey(VarsType type, string key)
         {
-            return localVars.ContainsKey(key);
-        }
-
-        public bool GlobalContainsKey(string key)
-        {
-            return globalVars.ContainsKey(key);
+            StringDictionary vars = GetVarsMatchesType(type);
+            return vars.ContainsKey(key);
         }
 
         public bool ContainsValue(string key)
@@ -108,14 +93,10 @@ namespace BakeryEngine
             return localVars.ContainsValue(key) || globalVars.ContainsValue(key);
         }
 
-        public bool LocalContainsValue(string key)
+        public bool ContainsValue(VarsType type, string key)
         {
-            return localVars.ContainsValue(key);
-        }
-
-        public bool GlobalContainsValue(string key)
-        {
-            return globalVars.ContainsValue(key);
+            StringDictionary vars = GetVarsMatchesType(type);
+            return vars.ContainsValue(key);
         }
 
         public override string ToString()
@@ -178,58 +159,32 @@ namespace BakeryEngine
         /// Add local variables
         /// </summary>
         /// <param name="section"></param>
-        public void LocalAddVariables(PluginSection section)
+        public void AddVariables(VarsType type, PluginSection section)
         {
-            StringDictionary dict = Helper.ParseVarStyle(section.Lines);
-            InternalAddDictionary(localVars, dict);
-        }
-
-        /// <summary>
-        /// Add local variables
-        /// </summary>
-        /// <param name="section"></param>
-        public void GlobalAddVariables(PluginSection section)
-        {
-            StringDictionary dict = Helper.ParseVarStyle(section.Lines);
-            InternalAddDictionary(globalVars, dict);
+            StringDictionary vars = GetVarsMatchesType(type);
+            StringDictionary dict = IniFile.ParseStringVarStyle(section.Lines);
+            InternalAddDictionary(vars, dict);
         }
 
         /// <summary>
         /// Add local variables
         /// </summary>
         /// <param name="lines"></param>
-        public void LocalAddVariables(string[] lines)
+        public void AddVariables(VarsType type, string[] lines)
         {
-            StringDictionary dict = Helper.ParseVarStyle(lines);
-            InternalAddDictionary(globalVars, dict);
-        }
-
-        /// <summary>
-        /// Add local variables
-        /// </summary>
-        /// <param name="lines"></param>
-        public void GlobalAddVariables(string[] lines)
-        {
-            StringDictionary dict = Helper.ParseVarStyle(lines);
-            InternalAddDictionary(globalVars, dict);
+            StringDictionary vars = GetVarsMatchesType(type);
+            StringDictionary dict = IniFile.ParseStringVarStyle(lines);
+            InternalAddDictionary(vars, dict);
         }
 
         /// <summary>
         /// Add local variables
         /// </summary>
         /// <param name="dict"></param>
-        public void LocalAddVariables(StringDictionary dict)
+        public void AddVariables(VarsType type, StringDictionary dict)
         {
-            InternalAddDictionary(localVars, dict);
-        }
-
-        /// <summary>
-        /// Add local variables
-        /// </summary>
-        /// <param name="dict"></param>
-        public void GlobalAddVariables(StringDictionary dict)
-        {
-            InternalAddDictionary(globalVars, dict);
+            StringDictionary vars = GetVarsMatchesType(type);
+            InternalAddDictionary(vars, dict);
         }
 
         /// <summary>

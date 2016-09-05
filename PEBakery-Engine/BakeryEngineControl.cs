@@ -57,13 +57,13 @@ namespace BakeryEngine
             bool isVarCreated = false;
             if (global || permanent)
             {
-                isVarCreated = variables.GlobalContainsKey(varKey);
-                variables.GlobalSetValue(varKey, varValue);
+                isVarCreated = variables.ContainsKey(VarsType.Global, varKey);
+                variables.SetValue(VarsType.Global, varKey, varValue);
             }
             else
             {
-                isVarCreated = variables.LocalContainsKey(varKey);
-                variables.LocalSetValue(varKey, varValue);
+                isVarCreated = variables.ContainsKey(VarsType.Local, varKey);
+                variables.SetValue(VarsType.Local, varKey, varValue);
             }
 
             if (isVarCreated)
@@ -117,22 +117,22 @@ namespace BakeryEngine
             bool isVarCreated = false;
             if (global || permanent)
             {
-                isVarCreated = variables.GlobalContainsKey(varKey);
-                variables.GlobalSetValue(varKey, varValue);
+                isVarCreated = variables.ContainsKey(VarsType.Global, varKey);
+                variables.SetValue(VarsType.Global, varKey, varValue);
             }
             else
             {
-                isVarCreated = variables.LocalContainsKey(varKey);
-                variables.LocalSetValue(varKey, varValue);
+                isVarCreated = variables.ContainsKey(VarsType.Local, varKey);
+                variables.SetValue(VarsType.Local, varKey, varValue);
             }
 
             if (isVarCreated)
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% set to ", varValue), LogState.Success));
+                logs.Add(new LogInfo(cmd, string.Concat("Var [%", varKey, "%] set to [", varValue, "]"), LogState.Success));
             }
             else
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% created, set to ", varValue), LogState.Success));
+                logs.Add(new LogInfo(cmd, string.Concat("Var [%", varKey, "%] created, set to [", varValue, "]"), LogState.Success));
             }
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];

@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 namespace BakeryEngine
 {
     using StringDictionary = Dictionary<string, string>;
+    using SectionDictionary = Dictionary<string, PluginSection>;
 
     public class PluginParseException : Exception
     {
@@ -19,35 +20,44 @@ namespace BakeryEngine
 
     public class Plugin
     {
-        // Fields
-        private string fileName;
-        public string FileName
+        // Fields, Properties
+        private string fullPath;
+        public string FullPath
         {
             get
             {
-                return fileName;
+                return fullPath;
             }
         }
-        public string PluginName
+        private string shortPath;
+        public string ShortPath
         {
-            get { return mainInfo["Title"]; }
+            get
+            {
+                return shortPath;
+            }
         }
         private StringDictionary mainInfo;
         public StringDictionary MainInfo
         {
             get { return mainInfo; }
         }
-        private Dictionary<string, PluginSection> sections;
-        public Dictionary<string, PluginSection> Sections
+        private SectionDictionary sections;
+        public SectionDictionary Sections
         {
             get { return sections; }
         }
+        public string PluginName
+        {
+            get { return mainInfo["Title"]; }
+        }
 
         // Constructor
-        public Plugin(string fileName)
+        public Plugin(string fullPath, string baseDir)
         {
-            this.fileName = fileName;
-            this.sections = new Dictionary<string, PluginSection>(StringComparer.OrdinalIgnoreCase);
+            this.fullPath = fullPath;
+            this.shortPath = fullPath.Remove(0, baseDir.Length + 1);
+            this.sections = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
             this.mainInfo = new StringDictionary(StringComparer.OrdinalIgnoreCase);
             this.ReadFile();
         }
@@ -58,7 +68,7 @@ namespace BakeryEngine
             try
             {
                 // Read and parse plugin file
-                ParseSection(Helper.ReadTextFile(this.fileName));
+                ParseSection(Helper.ReadTextFile(this.fullPath));
                 foreach (var kv in sections)
                     DetectSectionStyle(kv.Value);
                 ParseMainSection();
@@ -94,15 +104,11 @@ namespace BakeryEngine
 
         private void ParseMainSection()
         {
-            mainInfo = Helper.ParseIniStyle(sections["Main"].Lines);
-            if (Path.GetFileName(fileName) == "Macro_Library.script")
-            {
-                if (!(mainInfo.ContainsKey("Title") && mainInfo.ContainsKey("Description") && mainInfo.ContainsKey("Level")))
-                {
-                    Console.Write(mainInfo["Description"]);
-                    throw new PluginParseException(fileName + " is invalid, check [Main] Section");
-                }
-            }
+            if (!sections.ContainsKey("Main"))
+                throw new PluginParseException(fullPath + " is invalid, please Add [Main] Section");
+            mainInfo = IniFile.ParseStringIniStyle(sections["Main"].Lines);
+            if (!(mainInfo.ContainsKey("Title") && mainInfo.ContainsKey("Description") && mainInfo.ContainsKey("Level")))
+                throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
         }
 
         private bool IsSectionEncodedFolders(PluginSection section)
@@ -122,30 +128,30 @@ namespace BakeryEngine
             return ret;
         }
 
-        private SectionStyle DetectSectionStyle(PluginSection section)
+        private SectionType DetectSectionStyle(PluginSection section)
         {
-            SectionStyle style;
+            SectionType style;
             if (string.Equals(section.Name, "Main", StringComparison.OrdinalIgnoreCase))
-                style = SectionStyle.Ini;
+                style = SectionType.Ini;
             else if (string.Equals(section.Name, "Variables", StringComparison.OrdinalIgnoreCase))
-                style = SectionStyle.Variables;
+                style = SectionType.Variables;
             else if (string.Equals(section.Name, "EncodedFolders", StringComparison.OrdinalIgnoreCase))
-                style = SectionStyle.AttachFolderList;
+                style = SectionType.AttachFolderList;
             else if (string.Equals(section.Name, "AuthorEncoded", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(section.Name, "InterfaceEncoded", StringComparison.OrdinalIgnoreCase))
-                style = SectionStyle.AttachFileList;
+                style = SectionType.AttachFileList;
             else if (IsSectionEncodedFolders(section))
-                style = SectionStyle.AttachFileList;
+                style = SectionType.AttachFileList;
             else if (string.Compare(section.Name, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0)
-                style = SectionStyle.AttachEncode;
+                style = SectionType.AttachEncode;
             else
-                style = SectionStyle.Code;
+                style = SectionType.Code;
             section.Style = style;
             return style;
         }
     }
 
-    public enum SectionStyle
+    public enum SectionType
     {
         None = 0, Ini, Variables, Code, AttachFolderList, AttachFileList, AttachEncode
     }
@@ -161,8 +167,8 @@ namespace BakeryEngine
                 return name;
             }
         }
-        private SectionStyle style;
-        public SectionStyle Style
+        private SectionType style;
+        public SectionType Style
         {
             get { return style; }
             set { style = value; }
@@ -177,7 +183,7 @@ namespace BakeryEngine
         public PluginSection(string name, string[] lines)
         {
             this.name = name;
-            this.style = SectionStyle.None;
+            this.style = SectionType.None;
             this.lines = lines;
         }
     }

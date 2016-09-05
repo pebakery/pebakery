@@ -9,8 +9,6 @@ using System.Text.RegularExpressions;
 
 namespace BakeryEngine
 {
-    using StringDictionary = Dictionary<string, string>;
-
     /// <summary>
     /// Contains static helper methods.
     /// </summary>
@@ -43,16 +41,9 @@ namespace BakeryEngine
             byte[] bom = new byte[4];
             FileStream fs = null;
 
-            try
-            {
-                fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                fs.Read(bom, 0, bom.Length);
-                fs.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
-            }
+            fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            fs.Read(bom, 0, bom.Length);
+            fs.Close();
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
@@ -81,45 +72,37 @@ namespace BakeryEngine
         /// <returns></returns>
         public static FileStream WriteTextBOM(FileStream fs, Encoding encoding)
         {
-            try
+            if (encoding == Encoding.UTF8)
             {
-                if (encoding == Encoding.UTF8)
-                {
-                    byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding == Encoding.Unicode)
-                {
-                    byte[] bom = new byte[] { 0xFF, 0xFE };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding == Encoding.BigEndianUnicode)
-                {
-                    byte[] bom = new byte[] { 0xFE, 0xFF };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding != Encoding.Default)
-                { // Unsupported Encoding
-                    throw new UnsupportedEncodingException(encoding.ToString() + " is not supported");
-                }
+                byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+                fs.Write(bom, 0, bom.Length);
             }
-            catch (Exception e)
+            else if (encoding == Encoding.Unicode)
             {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
+                byte[] bom = new byte[] { 0xFF, 0xFE };
+                fs.Write(bom, 0, bom.Length);
+            }
+            else if (encoding == Encoding.BigEndianUnicode)
+            {
+                byte[] bom = new byte[] { 0xFE, 0xFF };
+                fs.Write(bom, 0, bom.Length);
+            }
+            else if (encoding != Encoding.Default)
+            { // Unsupported Encoding
+                throw new UnsupportedEncodingException(encoding.ToString() + " is not supported");
             }
 
             return fs;
         }
 
         /// <summary>
-        /// Read full text from file.
-        /// Automatically detect encoding.
+        /// Read full text from file, detecting encoding by BOM.
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
         public static string ReadTextFile(string fileName)
         {
-            FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
             char[] buffer = new char[fs.Length];
             StreamReader sr = new StreamReader(fs, Helper.DetectTextEncoding(fileName));
             sr.Read(buffer, 0, buffer.Length);
@@ -129,11 +112,13 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// return Compile DateTime
+        /// return compile date and time
         /// </summary>
-        /// <returns></returns>
+        /// <remarks>
         /// Add to pre-build event : echo %date% %time% > "$(ProjectDir)\Resources\BuildDate.txt"
         /// Add to "Resources\BuildData.txt" as resources
+        /// </remarks>
+        /// <returns></returns>
         /// http://stackoverflow.com/questions/1600962/displaying-the-build-date
         public static DateTime GetBuildDate()
         {
@@ -155,7 +140,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Read program's version from manifest
+        /// Read program's version from assembly
         /// </summary>
         /// <returns></returns>
         public static Version GetProgramVersion()
@@ -166,10 +151,11 @@ namespace BakeryEngine
             return Assembly.GetExecutingAssembly().GetName().Version;
         }
 
-        public static string GetProgramPath()
+        public static string GetProgramAbsolutePath()
         {
             return Helper.RemoveLastDirChar(AppDomain.CurrentDomain.BaseDirectory);
         }
+
         /// <summary>
         /// Remove last \ in the path.
         /// </summary>
@@ -183,8 +169,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Remove last newline in the string.
-        /// Also removes whitespace.
+        /// Remove last newline in the string, removes whitespaces also.
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -192,8 +177,6 @@ namespace BakeryEngine
         {
             return str.Trim().TrimEnd(Environment.NewLine.ToCharArray()).Trim();
         }
-
-        
 
         /// <summary>
         /// Extends Path.GetDirectoryName().
@@ -210,7 +193,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Get Parent Dir Name, not full path.
+        /// Get Parent directory name, not full path.
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
@@ -227,49 +210,38 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Parse INI style string into dictionary
+        /// Create temp file and mark with temp attribute.
         /// </summary>
-        /// <param name="lines"></param>
         /// <returns></returns>
-        public static StringDictionary ParseIniStyle(string[] lines)
+        public static string CreateTempFile()
         {
-            return InternalParseIniVarStyle(@"^([^=]+)=(.+)$", lines);
+            string path = Path.GetTempFileName();
+            FileInfo fileInfo = new FileInfo(path);
+            fileInfo.Attributes = FileAttributes.Temporary;
+            
+            return path;
         }
 
         /// <summary>
-        /// Parse PEBakery-Variable style strings into dictionary
+        /// Replace src with dest. 
         /// </summary>
-        /// There in format of %VarKey%=VarValue
-        /// <param name="lines"></param>
-        /// <returns></returns>
-        public static StringDictionary ParseVarStyle(string[] lines)
+        /// <param name="src"></param>
+        /// <param name="dest"></param>
+        public static void FileReplaceEx(string src, string dest)
         {
-            return InternalParseIniVarStyle(@"^%([^=]+)%=(.+)$", lines);
-        }
-
-        private static StringDictionary InternalParseIniVarStyle(string regex, string[] lines)
-        {
-            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
-            foreach (string line in lines)
+            try
             {
-                try
-                {
-                    MatchCollection matches = Regex.Matches(line, regex, RegexOptions.Compiled);
-
-                    // Make instances of sections
-                    for (int i = 0; i < matches.Count; i++)
-                    {
-                        string key = matches[i].Groups[1].Value.Trim();
-                        string value = matches[i].Groups[2].Value.Trim();
-                        dict[key] = value;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
-                }
+                // File.Copy removes ACL and ADS.
+                // Instead, use File.Replace
+                File.Replace(src, dest, null);
             }
-            return dict;
+            catch (IOException)
+            {
+                // However, File.Replace throws IOException if src and dest files are in different volume.
+                // In this case, use File.Copy as fallback.
+                File.Copy(src, dest, true);
+                File.Delete(src);
+            }
         }
     }
 }

@@ -130,19 +130,17 @@ namespace BakeryEngine
             foreach (var local in vars.LocalVars)
             {
                 str = string.Concat(str, local.Key, " (Raw)   = ", local.Value, "\n");
-                str = string.Concat(str, local.Key, " (Value) = ", vars.LocalGetValue(local.Key), "\n");
+                str = string.Concat(str, local.Key, " (Value) = ", vars.GetValue(VarsType.Local, local.Key), "\n");
             }
             str += "\n[Global Variables]\n";
             foreach (var global in vars.GlobalVars)
             {
                 str = string.Concat(str, global.Key, " (Raw)   = ", global.Value, "\n");
-                str = string.Concat(str, global.Key, " (Value) = ", vars.GlobalGetValue(global.Key), "\n");
+                str = string.Concat(str, global.Key, " (Value) = ", vars.GetValue(VarsType.Global, global.Key), "\n");
             }
             sw.Write(str);
             sw.Flush();
         }
-
-
 
         public void Close()
         {

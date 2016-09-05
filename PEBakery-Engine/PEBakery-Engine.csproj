@@ -71,6 +71,7 @@
     <Compile Include="BakeryEngineRegistry.cs" />
     <Compile Include="BakeryEngineText.cs" />
     <Compile Include="Helper.cs" />
+    <Compile Include="IniFile.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Program.cs" />

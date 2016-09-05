@@ -28,48 +28,49 @@ namespace BakeryEngine
          */
 
         /// <summary>
-        /// RegHiveLoad,<KeyName>,<HiveFileName>
-        /// 
-        /// Load HiveFile into local machine's key
+        /// RegHiveLoad,<KeyName>,<HiveFile>
         /// </summary>
+        /// <remarks>
+        /// Load Hive into local machine
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
         private LogInfo[] RegHiveLoad(BakeryCommand cmd)
         {
             ArrayList logs = new ArrayList();
 
-            // Must-have operand : 2
-            if (cmd.Operands.Length < 2)
-                throw new InvalidOperandException("Not enough operand");
-            else if (2 < cmd.Operands.Length)
-                throw new InvalidOperandException("Too many operands");
+            // Necessary operand : 2, optional operand : 0
+            const int necessaryOperandNum = 2;
+            const int optionalOperandNum = 0;
+            if (cmd.Operands.Length < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+                throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = cmd.Operands[0];
-            string hiveFileName = cmd.Operands[1];
+            string keyName = variables.Expand(cmd.Operands[0]);
+            string hiveFile = variables.Expand(cmd.Operands[1]);
+            string rawHiveFile = cmd.Operands[1];
 
-            if (!File.Exists(hiveFileName))
+            if (!File.Exists(hiveFile))
             {
-                throw new FileNotFoundException(hiveFileName + " does not exists");
+                throw new FileNotFoundException(hiveFile + " does not exists");
             }
 
-            int ret = RegLoadKey(HKLM, keyName, hiveFileName);
+            int ret = RegLoadKey(HKLM, keyName, hiveFile);
             if (ret == ResultWin32.ERROR_SUCCESS)
-            {
-                logs.Add(new LogInfo(cmd, string.Concat("Loaded ", hiveFileName, " into HKLM\\", keyName), LogState.Success));
-            }
+                logs.Add(new LogInfo(cmd, string.Concat("Loaded [", rawHiveFile, @"] into [HKLM\", keyName, "]"), LogState.Success));
             else
-            {
                 logs.Add(new LogInfo(cmd, string.Concat("RegLoadKey API returned error : ", ret, " (", ResultWin32.GetErrorName(ret), ")"), LogState.Error));
-            }
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
 
         /// <summary>
         /// RegHiveUnload,<KeyName>
-        /// 
-        /// Unload HiveFile from local machine
         /// </summary>
+        /// <remarks>
+        /// Unload Hive from local machine
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
         private LogInfo[] RegHiveUnload(BakeryCommand cmd)
@@ -79,26 +80,27 @@ namespace BakeryEngine
             string logResult = string.Empty;
             LogState resState = LogState.Success;
 
-            // Must-have operand : 2
-            if (cmd.Operands.Length < 2)
-                throw new InvalidOperandException("Not enough operand");
-            else if (2 < cmd.Operands.Length)
-                throw new InvalidOperandException("Too many operands");
+            // Necessary operand : 1, optional operand : 0
+            const int necessaryOperandNum = 1;
+            const int optionalOperandNum = 0;
+            if (cmd.Operands.Length < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+                throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = cmd.Operands[0];
-            string hiveFileName = cmd.Operands[1];
+            string keyName = variables.Expand(cmd.Operands[0]);
+            string rawKeyName = cmd.Operands[0];
 
-            if (!File.Exists(hiveFileName))
+            if (!File.Exists(keyName))
             {
-                throw new FileNotFoundException(hiveFileName + " does not exists");
+                throw new FileNotFoundException(keyName + " does not exists");
             }
 
-            int ret = RegLoadKey(HKLM, keyName, hiveFileName);
-            if (ret != ResultWin32.ERROR_SUCCESS)
-            {
-                logResult = string.Format("RegLoadKey API returned {0}:{1}", ret, ResultWin32.GetErrorName(ret));
-                resState = LogState.Error;
-            }
+            int ret = RegUnLoadKey(HKLM, keyName);
+            if (ret == ResultWin32.ERROR_SUCCESS)
+                logs.Add(new LogInfo(cmd, string.Concat(@"Unloaded [HKLM\", rawKeyName, "]"), LogState.Success));
+            else
+                logs.Add(new LogInfo(cmd, string.Concat("RegUnLoadKey API returned error : ", ret, " (", ResultWin32.GetErrorName(ret), ")"), LogState.Error));
 
             logs.Add(new LogInfo(cmd, logResult, resState));
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];

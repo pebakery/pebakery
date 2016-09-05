@@ -47,7 +47,7 @@ namespace BakeryEngine
             if (currentPlugin)
             {
                 if (!plugins[curPluginIdx].Sections.ContainsKey(sectionName))
-                    throw new InvalidOperandException(string.Concat("'", Path.GetFileName(pluginFile), "' does not have section '", sectionName, "'"), cmd);
+                    throw new InvalidOperandException(string.Concat("[", Path.GetFileName(pluginFile), "] does not have section [", sectionName, "]"), cmd);
 
                 // Branch to new section
                 returnAddress.Push(new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
@@ -62,7 +62,7 @@ namespace BakeryEngine
             }
 
             cmd.SectionDepth += 1; // For proper log indentation
-            logs.Add(new LogInfo(cmd, string.Concat("Running section '", sectionName, "'"), LogState.Success));
+            logs.Add(new LogInfo(cmd, string.Concat("Running section [", sectionName, "]"), LogState.Success));
 
             return logs.ToArray(typeof(LogInfo)) as LogInfo[];
         }
