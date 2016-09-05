@@ -144,7 +144,7 @@ namespace BakeryEngine
 
             try
             {
-                string value = IniFile.GetIniKey(fileName, section, key);
+                string value = IniFile.GetKey(fileName, section, key);
                 if (value != null)
                 variables.SetValue(VarsType.Local, varName, value);
                 logs.Add(new LogInfo(cmd, string.Concat("[%", varName, "%] set to [", value, "], read from [", rawFileName, "]"), LogState.Success));
@@ -181,7 +181,7 @@ namespace BakeryEngine
             string value = variables.Expand(cmd.Operands[3]);
             string rawFileName = cmd.Operands[0];
 
-            bool result = IniFile.SetIniKey(fileName, section, key, value);
+            bool result = IniFile.SetKey(fileName, section, key, value);
             if (result)
                 logs.Add(new LogInfo(cmd, string.Concat("Key [", key, "] and its value [", value, "]' wrote to [", rawFileName, "]"), LogState.Success));
             else

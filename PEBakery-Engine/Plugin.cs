@@ -106,7 +106,7 @@ namespace BakeryEngine
         {
             if (!sections.ContainsKey("Main"))
                 throw new PluginParseException(fullPath + " is invalid, please Add [Main] Section");
-            mainInfo = IniFile.ParseStringIniStyle(sections["Main"].Lines);
+            mainInfo = IniFile.ParseLinesIniStyle(sections["Main"].Lines);
             if (!(mainInfo.ContainsKey("Title") && mainInfo.ContainsKey("Description") && mainInfo.ContainsKey("Level")))
                 throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
         }

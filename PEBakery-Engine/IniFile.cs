@@ -21,6 +21,26 @@ namespace BakeryEngine
         public KeyNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
 
+    /// <summary>
+    /// When parsing ini file, specified section is not found.
+    /// </summary>
+    public class SectionNotFoundException : Exception
+    {
+        public SectionNotFoundException() { }
+        public SectionNotFoundException(string message) : base(message) { }
+        public SectionNotFoundException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// INI file is invalid
+    /// </summary>
+    public class InvalidIniFormatException : Exception
+    {
+        public InvalidIniFormatException() { }
+        public InvalidIniFormatException(string message) : base(message) { }
+        public InvalidIniFormatException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public struct IniKey
     {
         public string section;
@@ -52,53 +72,7 @@ namespace BakeryEngine
 
     public static class IniFile
     {
-        /// <summary>
-        /// Parse INI style string into dictionary
-        /// </summary>
-        /// <param name="lines"></param>
-        /// <returns></returns>
-        public static StringDictionary ParseStringIniStyle(string[] lines)
-        {
-            return InternalParseStringIniVarStyle(@"^([^=]+)=(.+)$", lines);
-        }
-        /// <summary>
-        /// Parse PEBakery-Variable style strings into dictionary
-        /// </summary>
-        /// There in format of %VarKey%=VarValue
-        /// <param name="lines"></param>
-        /// <returns></returns>
-        public static StringDictionary ParseStringVarStyle(string[] lines)
-        {
-            return InternalParseStringIniVarStyle(@"^%([^=]+)%=(.+)$", lines);
-        }
-        private static StringDictionary InternalParseStringIniVarStyle(string regex, string[] lines)
-        {
-            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
-            foreach (string line in lines)
-            {
-                try
-                {
-                    MatchCollection matches = Regex.Matches(line, regex, RegexOptions.Compiled);
-
-                    // Make instances of sections
-                    for (int i = 0; i < matches.Count; i++)
-                    {
-                        string key = matches[i].Groups[1].Value.Trim();
-                        string value = matches[i].Groups[2].Value.Trim();
-                        dict[key] = value;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
-                }
-            }
-            return dict;
-        }
-
-
-        
-        // TODO : The codes below are too nasty. Needs refactoring.
+        // TODO Start : The codes below are too nasty. Needs refactoring.
         
         /// <summary>
         /// Get key's value from ini file.
@@ -107,9 +81,9 @@ namespace BakeryEngine
         /// <param name="section"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string GetIniKey(string file, IniKey iniKey)
+        public static string GetKey(string file, IniKey iniKey)
         {
-            return InternalGetIniKey(file, iniKey.section, iniKey.key);
+            return InternalGetKey(file, iniKey.section, iniKey.key);
         }
         /// <summary>
         /// Get key's value from ini file.
@@ -118,11 +92,11 @@ namespace BakeryEngine
         /// <param name="section"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string GetIniKey(string file, string section, string key)
+        public static string GetKey(string file, string section, string key)
         {
-            return InternalGetIniKey(file, section, key);
+            return InternalGetKey(file, section, key);
         }
-        private static string InternalGetIniKey(string file, string section, string key)
+        private static string InternalGetKey(string file, string section, string key)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
@@ -137,9 +111,8 @@ namespace BakeryEngine
                 throw new KeyNotFoundException(string.Concat("Unable to find key [", key, "], file is empty"));
             }
 
-            while ((line = sr.ReadLine()) != null)
+            while ((line = sr.ReadLine().Trim()) != null)
             { // Read text line by line
-                line = line.Trim(); // Remove whitespace
                 if (line.StartsWith("#", stricmp) || line.StartsWith(";", stricmp) || line.StartsWith("//", stricmp)) // Ignore comment
                     continue;
 
@@ -182,9 +155,9 @@ namespace BakeryEngine
         /// <param name="section"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public static bool SetIniKey(string file, string section, string key, string value)
+        public static bool SetKey(string file, string section, string key, string value)
         {
-            return InternalSetIniKey(file, section, key, value);
+            return InternalSetKey(file, section, key, value);
         }
         /// <summary>
         /// Add key into ini file. Return true if success.
@@ -193,11 +166,11 @@ namespace BakeryEngine
         /// <param name="section"></param>
         /// <param name="key"></param>
         /// <param name="value"></param>
-        public static bool SetIniKey(string file, IniKey iniKey)
+        public static bool SetKey(string file, IniKey iniKey)
         {
-            return InternalSetIniKey(file, iniKey.section, iniKey.key, iniKey.value);
+            return InternalSetKey(file, iniKey.section, iniKey.key, iniKey.value);
         }
-        private static bool InternalSetIniKey(string file, string section, string key, string value)
+        private static bool InternalSetKey(string file, string section, string key, string value)
         {
             bool fileExist = File.Exists(file);
 
@@ -313,7 +286,6 @@ namespace BakeryEngine
             return wroteKey;
         }
 
-
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
@@ -322,11 +294,11 @@ namespace BakeryEngine
         /// <returns>
         /// Found values are stroed in returned IniKey.
         /// </returns>
-        public static IniKey[] GetIniKeys(string file, IniKey[] iniKeys)
+        public static IniKey[] GetKeys(string file, IniKey[] iniKeys)
         {
-            return InternalGetIniKeys(file, iniKeys);
+            return InternalGetKeys(file, iniKeys);
         }
-        private static IniKey[] InternalGetIniKeys(string file, IniKey[] iniKeys)
+        private static IniKey[] InternalGetKeys(string file, IniKey[] iniKeys)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
@@ -412,7 +384,11 @@ namespace BakeryEngine
             sr.Close();
             return iniKeys;
         }
+        
+        // TODO End : Need-refactor block end
 
+
+        // Refactored
         /// <summary>
         /// Add key into ini file.
         /// </summary>
@@ -423,12 +399,12 @@ namespace BakeryEngine
         /// /// <returns>
         /// Found values are stroed in returned IniKey.
         /// </returns>
-        public static bool SetIniKeys(string file, IniKey[] iniKeys)
+        public static bool SetKeys(string file, IniKey[] iniKeys)
         {
-            return InternalSetIniKeys(file, iniKeys);
+            return InternalSetKeys(file, iniKeys);
         }
-        private static bool InternalSetIniKeys(string file, IniKey[] iniKeys)
-        {
+        private static bool InternalSetKeys(string file, IniKey[] iniKeys) 
+        { 
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             bool fileExist = File.Exists(file);
 
@@ -619,132 +595,6 @@ namespace BakeryEngine
 
                 if (!thisLineWritten)
                     sw.WriteLine(rawLine);
-
-                /* if (inTargetSection)
-                {
-                    int idx = line.IndexOf('=');
-                    if (idx != -1 && idx != 0)
-                    {
-                        string keyOfLine = line.Substring(0, idx);
-                        bool wroteKeyAtHere = false; // TODO : More suitable name?
-                        for (int i = 0; i < len; i++)
-                        {
-                            if (wroteKey[i])
-                                continue;
-                            if (string.Equals(currentSection, iniKeys[i].section, stricmp) && string.Equals(keyOfLine, iniKeys[i].key, stricmp))
-                            { // key exists, so overwrite
-                                wroteKeyAtHere = true;
-                                wroteKey[i] = true;
-                                wroteKeyCount++;
-                                sw.WriteLine(string.Concat(keyOfLine, "=", iniKeys[i].value));
-                            }
-                        }
-                        if (!wroteKeyAtHere)
-                            sw.WriteLine(rawLine);
-                    }
-                    else
-                    {
-                        // Find end or blank line of current section, and write a key
-                        if (string.Equals(line, string.Empty)) // Find blank line after section
-                        {
-                            for (int i = 0; i < len; i++)
-                            {
-                                if (wroteKey[i])
-                                    continue;
-                                if (string.Equals(currentSection, iniKeys[i].section, stricmp))
-                                {
-                                    wroteKey[i] = true;
-                                    wroteKeyCount++;
-                                    sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
-                                }
-                            }
-                        }
-                        else if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp)) // Next section starts
-                        {
-                            inTargetSection = false;
-                            string foundSection = line.Substring(1, line.Length - 2);
-                            for (int i = 0; i < len; i++)
-                            {
-                                if (wroteKey[i])
-                                    continue;
-                                if (string.Equals(currentSection, iniKeys[i].section, stricmp))
-                                {
-                                    wroteKey[i] = true;
-                                    wroteKeyCount++;
-                                    inTargetSection = true;
-                                    sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
-                                    sw.WriteLine(rawLine);
-                                }
-                            }
-                            if (inTargetSection)
-                                currentSection = foundSection;
-                        }
-                        else if (sr.Peek() == -1) // End of file
-                        {
-                            for (int i = 0; i < len; i++)
-                            {
-                                if (wroteKey[i])
-                                    continue;
-                                if (string.Equals(currentSection, iniKeys[i].section, stricmp))
-                                {
-                                    wroteKey[i] = true;
-                                    wroteKeyCount++;
-                                    sw.WriteLine(rawLine);
-                                    sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
-                                }
-                            }
-                        }
-                        else
-                            sw.WriteLine(rawLine);
-                    }
-                }
-                else
-                {
-                    // Check if encountered section head Ex) [Process]
-                    if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
-                    {
-                        // Only sections contained in iniKeys will be targeted
-                        string foundSection = line.Substring(1, line.Length - 2);
-                        for (int i = 0; i < len; i++)
-                        {
-                            if (string.Equals(iniKeys[i].section, foundSection, stricmp))
-                            {
-                                inTargetSection = true;
-                                currentSection = foundSection;
-                                break; // for shorter O(n)
-                            }
-                        }
-                    }
-                    sw.WriteLine(rawLine); // Copy ths line
-                }
-
-                // End of file
-                if (sr.Peek() == -1)
-                {
-                    for (int i = 0; i < len; i++)
-                    {
-                        if (wroteKey[i])
-                            continue;
-
-                        // Currently in section? check currentSection
-                        if (inTargetSection && string.Equals(iniKeys[i].section, currentSection, stricmp))
-                        {
-                            wroteKeyCount++;
-                            wroteKey[i] = true;
-                            sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
-                        }
-                        else
-                        { // Not in section, so create new section
-                            wroteKeyCount++;
-                            wroteKey[i] = true;
-                            sw.WriteLine(string.Concat(Environment.NewLine, "[", iniKeys[i].section, "]"));
-                            sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
-                            inTargetSection = true;
-                            currentSection = iniKeys[i].section;
-                        }
-                    }
-                }
-                */
             }
             sr.Close();
             sw.Close();
@@ -756,6 +606,199 @@ namespace BakeryEngine
             }
             else
                 return false;
+        }
+
+
+        /// <summary>
+        /// Parse INI style strings into dictionary
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseLinesIniStyle(string[] lines)
+        {
+            return InternalParseLinesRegex(@"^([^=]+)=(.*)$", lines);
+        }
+        /// <summary>
+        /// Parse PEBakery-Variable style strings into dictionary
+        /// </summary>
+        /// There in format of %VarKey%=VarValue
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseLinesVarStyle(string[] lines)
+        {
+            return InternalParseLinesRegex(@"^%([^=]+)%=(.*)$", lines);
+        }
+        /// <summary>
+        /// Parse strings with regex.
+        /// </summary>
+        /// <param name="regex"></param>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        private static StringDictionary InternalParseLinesRegex(string regex, string[] lines)
+        {
+            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            foreach (string line in lines)
+            {
+                try
+                {
+                    MatchCollection matches = Regex.Matches(line, regex, RegexOptions.Compiled);
+
+                    // Make instances of sections
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        string key = matches[i].Groups[1].Value.Trim();
+                        string value = matches[i].Groups[2].Value.Trim();
+                        dict[key] = value;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
+                }
+            }
+            return dict;
+        }
+
+
+        /// <summary>
+        /// Parse section to dictionary.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseSectionToDict(string file, string section)
+        {
+            string[] lines = ParseSectionToStrings(file, section);
+            return ParseLinesIniStyle(lines);
+        }
+        /// <summary>
+        /// Parse section to string array.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static string[] ParseSectionToStrings(string file, string section)
+        {
+            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            // StringBuilder str = new StringBuilder();
+
+            // If file is blank
+            if (sr.Peek() == -1)
+            {
+                sr.Close();
+                throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
+            }
+
+            string line = string.Empty;
+            bool appendState = false;
+            int idx = 0;
+            ArrayList lines = new ArrayList();
+            while ((line = sr.ReadLine()) != null)
+            { // Read text line by line
+                line = line.Trim();
+                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
+                { // Start of section
+                    if (appendState)
+                        break;
+                    else
+                    {
+                        string foundSection = line.Substring(1, line.Length - 2);
+                        if (string.Equals(section, foundSection, stricmp))
+                            appendState = true;
+                    }
+                }
+                else if ((idx = line.IndexOf('=')) != -1)
+                { // valid ini key
+                    if (idx == 0) // key is empty
+                        throw new InvalidIniFormatException("[" + line + "] has invalid format");
+                    lines.Add(line);
+                }
+
+            }
+
+            return lines.ToArray(typeof(string)) as string[];
+        }
+
+        /// <summary>
+        /// Parse section to dictionary array.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static StringDictionary[] ParseSectionsToDicts(string file, string[] sections)
+        {
+            string[][] lines = ParseSectionsToStrings(file, sections);
+            StringDictionary[] dicts = new StringDictionary[lines.Length];
+            for (int i = 0; i < lines.Length; i++)
+                 dicts[i] = ParseLinesIniStyle(lines[i]);
+            return dicts;
+        }
+        /// <summary>
+        /// Parse sections to string 2D array.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static string[][] ParseSectionsToStrings(string file, string[] sections)
+        {
+            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            sections = sections.Distinct().ToArray(); // Remove duplicate
+
+            // If file is blank
+            if (sr.Peek() == -1)
+            {
+                sr.Close();
+                throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
+            }
+
+            int len = sections.Length;
+            string line = string.Empty;
+            int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
+            int parsedCount = 0;
+            int idx = 0;
+            ArrayList[] lines = new ArrayList[len];
+            for (int i = 0; i < len; i++)
+                lines[i] = new ArrayList();
+            
+            while ((line = sr.ReadLine()) != null)
+            { // Read text line by line
+                if (len < parsedCount)
+                    break;
+
+                line = line.Trim();
+                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
+                { // Start of section
+                    bool isSectionFound = false;
+                    string foundSection = line.Substring(1, line.Length - 2);
+                    for (int i = 0; i < len; i++)
+                    {
+                        if (string.Equals(sections[i], foundSection, stricmp))
+                        {
+                            isSectionFound = true;
+                            parsedCount++;
+                            currentSection = i;
+                            break;
+                        }
+                    }
+                    if (!isSectionFound)
+                        currentSection = -1;
+                }
+                else if ((idx = line.IndexOf('=')) != -1)
+                { // valid ini key
+                    if (idx == 0) // current section is target, and key is empty
+                        throw new InvalidIniFormatException("[" + line + "] has invalid format");
+                    if (currentSection != -1)
+                        lines[currentSection].Add(line);
+                }
+
+            }
+
+            string[][] strArrays = new string[len][];
+            for (int i = 0; i < len; i++)
+                strArrays[i] = lines[i].ToArray(typeof(string)) as string[];
+            return strArrays;
         }
     }
 }

@@ -16,8 +16,14 @@ namespace BakeryEngine
             BakeryEngine engine = new BakeryEngine(plugins, logger);
             engine.RunPlugin();
 
-            IniKey[] ini = new IniKey[] { new IniKey("Main", "A", "1"), new IniKey("Main", "B", "2"), new IniKey("MainC", "C", "3") };
-            IniFile.SetIniKeys("new.ini", ini);
+            Dictionary<string,string>[] dicts = IniFile.ParseSectionsToDicts("test.script", new string[] { "Main", "Interface", "Variables" });
+            foreach (var dict in dicts)
+            {
+                foreach (var kv in dict)
+                    Console.WriteLine(kv.Key + " = " + kv.Value);
+            }
+
+
             return 0;
         }
     }
