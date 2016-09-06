@@ -14,7 +14,7 @@ namespace BakeryEngine
 
     public class PluginParseException : Exception
     {
-        public PluginParseException() { }
+        public PluginParseException() { }script.project
         public PluginParseException(string message) : base(message) { }
         public PluginParseException(string message, Exception inner) : base(message, inner) { }
     }
@@ -25,6 +25,7 @@ namespace BakeryEngine
         private string fullPath;
         private string shortPath;
         private SectionDictionary sections;
+        private bool fullyParsed;
 
         // Properties
         public string FullPath
@@ -62,6 +63,7 @@ namespace BakeryEngine
             try
             {
                 sections = ParsePlugin();
+                InspectTypeOfUninspectedCodeSection();
                 CheckMainSection();
             }
             catch (Exception e)
@@ -102,7 +104,7 @@ namespace BakeryEngine
                     }
 
                     currentSection = line.Substring(1, line.Length - 2);
-                    type = DetectSectionType(currentSection, false);
+                    type = DetectTypeOfSection(currentSection, false);
                     if (LoadSectionAtPluginLoadTime(type))
                         loadSection = true;
                     inSection = true;
@@ -113,10 +115,39 @@ namespace BakeryEngine
                 }
             }
 
+            fullyParsed = true;
             return dict;
         }
 
-        private SectionType DetectSectionType(string sectionName, bool inspectCode)
+        private bool IsSectionEncodedFolders(string sectionName)
+        {
+            string[] encodedFolders;
+            try
+            {
+                if (fullyParsed)
+                {
+                    if (sections.ContainsKey("EncodedFolders"))
+                        encodedFolders = sections["EncodedFolders"].Get() as string[];
+                    else
+                        return false;
+                }
+                else
+                    encodedFolders = IniFile.ParseSectionToStrings(fullPath, "EncodedFolders");
+            }
+            catch (SectionNotFoundException) // No EncodedFolders section, exit
+            {
+                return false;
+            }
+
+            foreach (string folder in encodedFolders)
+            {
+                if (string.Equals(folder, sectionName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
             SectionType type;
             if (string.Equals(sectionName, "Main", StringComparison.OrdinalIgnoreCase))
@@ -133,18 +164,32 @@ namespace BakeryEngine
             else
             {
                 if (inspectCode)
-                {
-                    if (IsSectionEncodedFolders(sectionName))
-                        type = SectionType.AttachFileList;
-                    else // Load it!
-                        type = SectionType.Code;
-                }
+                    type = DetectTypeOfUninspectedCodeSection(sectionName);
                 else
                     type = SectionType.UninspectedCode;
             }
             return type;
         }
 
+        private void InspectTypeOfUninspectedCodeSection()
+        {
+            // SectionDictionary
+            foreach (var key in sections.Keys)
+            {
+                if (sections[key].Type == SectionType.UninspectedCode)
+                    sections[key].Type = DetectTypeOfUninspectedCodeSection(sections[key].SectionName);
+            }
+        }
+
+        private SectionType DetectTypeOfUninspectedCodeSection(string sectionName)
+        {
+            SectionType type;
+            if (IsSectionEncodedFolders(sectionName))
+                type = SectionType.AttachFileList;
+            else // Load it!
+                type = SectionType.Code;
+            return type;
+        }
         private static bool LoadSectionAtPluginLoadTime(SectionType type)
         {
             switch (type)
@@ -200,25 +245,7 @@ namespace BakeryEngine
             }
         }
 
-        private bool IsSectionEncodedFolders(string sectionName)
-        {
-            string[] encodedFolders;
-            try
-            {
-                encodedFolders = IniFile.ParseSectionToStrings(fullPath, "EncodedFolders");
-            }
-            catch (SectionNotFoundException) // No EncodedFolders section, exit
-            {
-                return false;
-            }
-
-            foreach (string folder in encodedFolders)
-            {
-                if (string.Equals(folder, sectionName, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-            return false;
-        }
+        
     }
 
     public enum SectionType
@@ -247,6 +274,7 @@ namespace BakeryEngine
         public SectionType Type
         {
             get { return type; }
+            set { type = value; }
         }
         protected bool loaded;
         public bool Loaded

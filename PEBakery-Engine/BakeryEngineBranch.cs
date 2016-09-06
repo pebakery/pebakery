@@ -38,20 +38,20 @@ namespace BakeryEngine
             if (necessaryOperandNum < cmd.Operands.Length)
                 Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
 
-            bool currentPlugin = false;
+            bool inCurrentPlugin = false;
             if (String.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                currentPlugin = true;
+                inCurrentPlugin = true;
             else if (String.Equals(rawPluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                currentPlugin = true;
+                inCurrentPlugin = true;
 
-            if (currentPlugin)
+            if (inCurrentPlugin)
             {
-                if (!plugins[curPluginIdx].Sections.ContainsKey(sectionName))
+                if (!currentPlugin.Sections.ContainsKey(sectionName))
                     throw new InvalidOperandException(string.Concat("[", Path.GetFileName(pluginFile), "] does not have section [", sectionName, "]"), cmd);
 
                 // Branch to new section
-                returnAddress.Push(new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
-                nextCommand = new CommandAddress(plugins[curPluginIdx].Sections[sectionName], 0, plugins[curPluginIdx].Sections[sectionName].Count);
+                returnAddress.Push(new CommandAddress(cmd.Address.plugin, cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
+                nextCommand = new CommandAddress(currentPlugin, currentPlugin.Sections[sectionName], 0, currentPlugin.Sections[sectionName].Count);
                 currentSectionParams = parameters;
 
                 // Exec utilizes [Variables] section of the plugin

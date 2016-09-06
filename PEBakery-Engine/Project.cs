@@ -6,19 +6,47 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
-using System.Threading;
+using System.Threading.Tasks;
 
 namespace BakeryEngine
 {
-    using System.Threading.Tasks;
     using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
+
+    public class PluginNotFoundException : Exception
+    {
+        public PluginNotFoundException() { }
+        public PluginNotFoundException(string message) : base(message) { }
+        public PluginNotFoundException(string message, Exception inner) : base(message, inner) { }
+    }
+
     class Project
     {
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;
         private PluginDictionary plugins;
-        private int[] levels;
+        private int[] pluginLevels;
+
+        public string ProjectName
+        {
+            get { return projectName; }
+        }
+        public string ProjectRoot
+        {
+            get { return projectRoot; }
+        }
+        public Plugin MainPlugin
+        {
+            get { return MainPlugin; }
+        }
+        public PluginDictionary Plugins
+        {
+            get { return plugins;}
+        }
+        public int[] PluginLevels
+        {
+            get { return pluginLevels; }
+        }
 
         public Project(string projectName)
         {
@@ -27,62 +55,48 @@ namespace BakeryEngine
             this.projectRoot = Path.Combine(Helper.GetProgramAbsolutePath(), "Projects", projectName);
             this.mainPlugin = new Plugin(Path.Combine(projectRoot, "script.project"), projectRoot);
             this.plugins = new PluginDictionary();
-            SearchAndLoadPlugins();
+            LoadPlugins(CollectPlugins());
             stopwatch.Stop();
             Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
-
         }
 
-        private void SearchAndLoadPlugins()
+        private Dictionary<int, ArrayList> CollectPlugins()
         {
             // Search all *.script
             ArrayList levelList = new ArrayList();
-            Dictionary<int, ArrayList> pluginsPathByLevel = new Dictionary<int, ArrayList>();
+            Dictionary<int, ArrayList> pluginsByLevel = new Dictionary<int, ArrayList>();
             string[] files = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 int level = int.Parse(IniFile.GetKey(file, "Main", "Level"));
                 if (!levelList.Contains(level))
                     levelList.Add(level);
-                if (!pluginsPathByLevel.ContainsKey(level))
-                    pluginsPathByLevel[level] = new ArrayList();
-                pluginsPathByLevel[level].Add(file);
+                if (!pluginsByLevel.ContainsKey(level))
+                    pluginsByLevel[level] = new ArrayList();
+                pluginsByLevel[level].Add(file);
             }
-
+            
             levelList.Sort();
-            levels = levelList.ToArray(typeof(int)) as int[];
+            pluginLevels = levelList.ToArray(typeof(int)) as int[];
+            foreach (int level in pluginLevels)
+                pluginsByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically
+            return pluginsByLevel;
+        }
 
-            Task[] parseTasks = new Task[levels.Length];
-            for (int i = 0; i < levels.Length; i++)
+        private void LoadPlugins(Dictionary<int, ArrayList> pluginsByLevel)
+        {
+            Task[] parseTasks = new Task[pluginLevels.Length];
+            for (int i = 0; i < pluginLevels.Length; i++)
             {
-                int level = levels[i];
-                pluginsPathByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically                
-                parseTasks[i] = new Task(() => { LoadPlugins(pluginsPathByLevel[level].ToArray(typeof(string)) as string[], level); });
+                int level = pluginLevels[i];
+                pluginsByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically                
+                parseTasks[i] = new Task(() => { InternalLoadPlugins(pluginsByLevel[level].ToArray(typeof(string)) as string[], level); });
                 parseTasks[i].Start();
             }
             Task.WaitAll(parseTasks);
-
-
-
-            /*
-                for (int i = 0; i < levels.Length; i++)
-                {
-                    parsePlugin = new Thread();
-                    int level = levels[i];
-                    pluginsPathByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically 
-                    ArrayList pluginsByLevel = new ArrayList();
-                    foreach (string file in pluginsPathByLevel[level].ToArray(typeof(string)) as string[])
-                    {
-                        Console.WriteLine(level + " " + file);
-                        pluginsByLevel.Add(new Plugin(file, projectRoot));
-                    }
-                    plugins[level] = pluginsByLevel.ToArray(typeof(Plugin)) as Plugin[];
-                }
-                */
-
         }
 
-        private void LoadPlugins(string[] pluginsPaths, int level)
+        private void InternalLoadPlugins(string[] pluginsPaths, int level)
         {
             foreach (string file in pluginsPaths)
             {
@@ -91,6 +105,20 @@ namespace BakeryEngine
                 pluginsByLevel.Add(new Plugin(file, projectRoot));
                 plugins[level] = pluginsByLevel.ToArray(typeof(Plugin)) as Plugin[];
             }
+        }
+
+        public Plugin SearchPluginByName(string pluginName)
+        {
+            foreach (int level in plugins.Keys)
+            {
+                for (int i = 0; i < plugins[level].Length; i++)
+                {
+                    if (string.Equals(pluginName, plugins[level][i].PluginName, StringComparison.OrdinalIgnoreCase))
+                        return plugins[level][i];
+                }
+            }
+            // not found
+            throw new PluginNotFoundException("Plugin [" + pluginName + "] not found");
         }
     }
 }

@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
-using System.Text.RegularExpressions;
-using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace BakeryEngine
 {
+    using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
     using StringDictionary = Dictionary<string, string>;
 
     public enum Opcode
@@ -290,30 +290,33 @@ namespace BakeryEngine
     /// </summary>
     public struct CommandAddress
     { // Return address format = <Section>'s <n'th line>
+        public Plugin plugin;
         public PluginSection section;
         public int line;
         public int secLength;
-        public CommandAddress(PluginSection section, int line, int secLength)
+        public CommandAddress(Plugin plugin,PluginSection section, int line, int secLength)
         {
+            this.plugin = plugin;
             this.section = section;
             this.line = line;
             this.secLength = secLength;
         }
     }
 
+
     /// <summary>
     /// Interpreter of raw codes
     /// </summary>
     public partial class BakeryEngine
     {
+
         // Fields used globally
         private Project project;
-        private Plugin[] plugins;
         private BakeryVariables variables;
         private Logger logger;
 
         // Fields : Engine's state (plugins)
-        private int curPluginIdx; // currentPluginIndex
+        private Plugin currentPlugin; // currentPlugin
 
         // Fields : Engine's state (in-plugin)
         private BakeryCommand currentCommand;
@@ -321,29 +324,34 @@ namespace BakeryEngine
         private CommandAddress nextCommand; // ProgramCounter
         private Stack<CommandAddress> returnAddress;
 
+        // Properties
+        private PluginDictionary Plugins
+        {
+            get { return project.Plugins; }
+        }
+
         // Enum
         private enum ParseState { Normal, Merge }
 
         // Constructors
-        public BakeryEngine(Plugin[] plugins, Logger logger)
+        public BakeryEngine(string projectName, Logger logger)
         {
-            InternalConstructor(plugins, 0, logger);
+            InternalConstructor(projectName, "script.project", logger);
         }
 
-        public BakeryEngine(Plugin[] plugins, int pluginIndex, Logger logger)
+        public BakeryEngine(string projectName, string entryPlugin, Logger logger)
         {
-            InternalConstructor(plugins, pluginIndex, logger);
+            InternalConstructor(projectName, entryPlugin, logger);
         }
 
-        private void InternalConstructor(Plugin[] plugins, int pluginIndex, Logger logger)
+        private void InternalConstructor(string projectName, string entryPlugin, Logger logger)
         {
-            this.project = new Project("Win10PESE"); 
-            this.plugins = plugins;
+            this.project = new Project(projectName); 
             this.logger = logger;
             this.variables = new BakeryVariables();
 
             LoadDefaultGlobalVariables();
-            curPluginIdx = pluginIndex;
+            currentPlugin = project.SearchPluginByName(entryPlugin);
             currentCommand = null;
             returnAddress = new Stack<CommandAddress>();
             currentSectionParams = new string[0];
@@ -371,9 +379,9 @@ namespace BakeryEngine
         private void LoadDefaultPluginVariables()
         {
             // ScriptFile, PluginFile
-            variables.SetValue(VarsType.Local, "PluginFile", plugins[curPluginIdx].FullPath);
-            variables.SetValue(VarsType.Local, "ScriptFile", plugins[curPluginIdx].FullPath);
-            variables.AddVariables(VarsType.Local, plugins[curPluginIdx].Sections["Variables"]);
+            variables.SetValue(VarsType.Local, "PluginFile", currentPlugin.FullPath);
+            variables.SetValue(VarsType.Local, "ScriptFile", currentPlugin.FullPath);
+            variables.AddVariables(VarsType.Local, currentPlugin.Sections["Variables"]);
         }
 
         /// <summary>
@@ -382,8 +390,8 @@ namespace BakeryEngine
         public void RunPlugin()
         {
             LoadDefaultPluginVariables();
-            PluginSection section = plugins[curPluginIdx].Sections["Process"];
-            nextCommand = new CommandAddress(section, 0, section.Count);
+            PluginSection section = currentPlugin.Sections["Process"];
+            nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             RunCommands();
             return;
         }
@@ -420,7 +428,7 @@ namespace BakeryEngine
 
                 try
                 {
-                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.section, i, nextCommand.secLength));
+                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
                     
                     try
                     {

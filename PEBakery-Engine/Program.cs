@@ -11,9 +11,8 @@ namespace BakeryEngine
     {
         static int Main(string[] args)
         {
-            Plugin[] plugins = new Plugin[] { new Plugin(Helper.GetProgramAbsolutePath() + "\\test.script", Helper.GetProgramAbsolutePath()) };
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            BakeryEngine engine = new BakeryEngine(plugins, logger);
+            BakeryEngine engine = new BakeryEngine("Win10PESE", "script.project", logger);
             engine.RunPlugin();
 
             return 0;
