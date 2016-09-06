@@ -18,7 +18,7 @@ namespace BakeryEngine
         private StringDictionary globalVars;
         public StringDictionary GlobalVars
         {
-            get { return globalVars ; }
+            get { return globalVars; }
         }
         private StringDictionary localVars;
         public StringDictionary LocalVars
@@ -156,7 +156,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Add local variables
+        /// Add variables
         /// </summary>
         /// <param name="section"></param>
         public void AddVariables(VarsType type, PluginSection section)
@@ -166,7 +166,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Add local variables
+        /// Add variables
         /// </summary>
         /// <param name="lines"></param>
         public void AddVariables(VarsType type, string[] lines)
