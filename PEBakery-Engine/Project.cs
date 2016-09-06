@@ -36,61 +36,35 @@ namespace BakeryEngine
         private void SearchAndLoadPlugins()
         {
             // Search all *.script
-            ArrayList levelList = new ArrayList();
-            Dictionary<int, ArrayList> pluginsPathByLevel = new Dictionary<int, ArrayList>();
+            Dictionary<int, List<string>> pluginsPathByLevel = new Dictionary<int, List<string>>();
             string[] files = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 int level = int.Parse(IniFile.GetKey(file, "Main", "Level"));
-                if (!levelList.Contains(level))
-                    levelList.Add(level);
                 if (!pluginsPathByLevel.ContainsKey(level))
-                    pluginsPathByLevel[level] = new ArrayList();
+                {
+                    pluginsPathByLevel.Add(level, new List<string>());
+                }
                 pluginsPathByLevel[level].Add(file);
             }
+            
+            levels = pluginsPathByLevel.Keys.OrderBy(i => i).ToArray();
 
-            levelList.Sort();
-            levels = levelList.ToArray(typeof(int)) as int[];
-
-            Task[] parseTasks = new Task[levels.Length];
-            for (int i = 0; i < levels.Length; i++)
-            {
-                int level = levels[i];
-                pluginsPathByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically                
-                parseTasks[i] = new Task(() => { LoadPlugins(pluginsPathByLevel[level].ToArray(typeof(string)) as string[], level); });
-                parseTasks[i].Start();
-            }
-            Task.WaitAll(parseTasks);
-
-
-
-            /*
-                for (int i = 0; i < levels.Length; i++)
-                {
-                    parsePlugin = new Thread();
-                    int level = levels[i];
-                    pluginsPathByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically 
-                    ArrayList pluginsByLevel = new ArrayList();
-                    foreach (string file in pluginsPathByLevel[level].ToArray(typeof(string)) as string[])
-                    {
-                        Console.WriteLine(level + " " + file);
-                        pluginsByLevel.Add(new Plugin(file, projectRoot));
-                    }
-                    plugins[level] = pluginsByLevel.ToArray(typeof(Plugin)) as Plugin[];
-                }
-                */
-
+            var parseTasks = levels.SelectMany(l => LoadPlugins(pluginsPathByLevel[l].OrderBy(p => p.ToLower()).ToArray(), l));
+            Task.WaitAll(parseTasks.ToArray());
         }
 
-        private void LoadPlugins(string[] pluginsPaths, int level)
+        private IEnumerable<Task> LoadPlugins(string[] pluginsPaths, int level)
         {
-            foreach (string file in pluginsPaths)
+            plugins[level] = new Plugin[pluginsPaths.Length];
+
+            var i = 0;
+            return pluginsPaths.Select(p =>
             {
-                ArrayList pluginsByLevel = new ArrayList();
-                Console.WriteLine(level + " " + file);
-                pluginsByLevel.Add(new Plugin(file, projectRoot));
-                plugins[level] = pluginsByLevel.ToArray(typeof(Plugin)) as Plugin[];
-            }
+                var t = i++;
+                Console.WriteLine($"{level} {p}");
+                return Task.Run(() => plugins[level][t] = new Plugin(p, projectRoot));
+            });
         }
     }
 }
