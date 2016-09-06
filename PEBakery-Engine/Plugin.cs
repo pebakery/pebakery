@@ -14,7 +14,7 @@ namespace BakeryEngine
 
     public class PluginParseException : Exception
     {
-        public PluginParseException() { }script.project
+        public PluginParseException() { }
         public PluginParseException(string message) : base(message) { }
         public PluginParseException(string message, Exception inner) : base(message, inner) { }
     }
@@ -91,7 +91,7 @@ namespace BakeryEngine
             bool inSection = false;
             bool loadSection = false;
             SectionType type = SectionType.None;
-            ArrayList lines = new ArrayList();
+            List<string> lines = new List<string>();
             while ((line = sr.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
@@ -100,7 +100,7 @@ namespace BakeryEngine
                     if (inSection)
                     { // End of section
                         dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
-                        lines = new ArrayList(); // original ArrayList will be deleted after GC
+                        lines = new List<string>(); // original List<string> will be deleted after GC
                     }
 
                     currentSection = line.Substring(1, line.Length - 2);
@@ -205,7 +205,7 @@ namespace BakeryEngine
                     return false;
             }
         }
-        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, ArrayList lines)
+        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
         {
             StringDictionary sectionKeys;
             switch (type)
@@ -213,15 +213,15 @@ namespace BakeryEngine
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                    sectionKeys = IniFile.ParseLinesIniStyle(lines.ToArray(typeof(string)) as string[]);
+                    sectionKeys = IniFile.ParseLinesIniStyle(lines.ToArray());
                     return new PluginIniSection(fullPath, sectionName, type, sectionKeys);
                 case SectionType.Variables:
-                    sectionKeys = IniFile.ParseLinesVarStyle(lines.ToArray(typeof(string)) as string[]);
+                    sectionKeys = IniFile.ParseLinesVarStyle(lines.ToArray());
                     return new PluginIniSection(fullPath, sectionName, type, sectionKeys);
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
-                    return new PluginRawLineSection(fullPath, sectionName, lines.ToArray(typeof(string)) as string[]);
+                    return new PluginRawLineSection(fullPath, sectionName, lines.ToArray());
                 case SectionType.AttachEncode: // do not load now
                     return new PluginIniSection(fullPath, sectionName, type);
                 default:

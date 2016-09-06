@@ -37,7 +37,7 @@ namespace BakeryEngine
         /// <returns></returns>
         private LogInfo[] RegHiveLoad(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2, optional operand : 0
             const int necessaryOperandNum = 2;
@@ -53,16 +53,16 @@ namespace BakeryEngine
 
             if (!File.Exists(hiveFile))
             {
-                throw new FileNotFoundException(hiveFile + " does not exists");
+                throw new FileNotFoundException($"[{keyName}] does not exists");
             }
 
             int ret = RegLoadKey(HKLM, keyName, hiveFile);
             if (ret == ResultWin32.ERROR_SUCCESS)
-                logs.Add(new LogInfo(cmd, string.Concat("Loaded [", rawHiveFile, @"] into [HKLM\", keyName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Loaded [{rawHiveFile}] into [HKLM\\{keyName}]", LogState.Success));
             else
-                logs.Add(new LogInfo(cmd, string.Concat("RegLoadKey API returned error : ", ret, " (", ResultWin32.GetErrorName(ret), ")"), LogState.Error));
+                logs.Add(new LogInfo(cmd, $"RegLoadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace BakeryEngine
         /// <returns></returns>
         private LogInfo[] RegHiveUnload(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             string logResult = string.Empty;
             LogState resState = LogState.Success;
@@ -93,17 +93,17 @@ namespace BakeryEngine
 
             if (!File.Exists(keyName))
             {
-                throw new FileNotFoundException(keyName + " does not exists");
+                throw new FileNotFoundException($"[{keyName}] does not exists");
             }
 
             int ret = RegUnLoadKey(HKLM, keyName);
             if (ret == ResultWin32.ERROR_SUCCESS)
-                logs.Add(new LogInfo(cmd, string.Concat(@"Unloaded [HKLM\", rawKeyName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Unloaded [HKLM\\{rawKeyName}]", LogState.Success));
             else
-                logs.Add(new LogInfo(cmd, string.Concat("RegUnLoadKey API returned error : ", ret, " (", ResultWin32.GetErrorName(ret), ")"), LogState.Error));
+                logs.Add(new LogInfo(cmd, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
 
             logs.Add(new LogInfo(cmd, logResult, resState));
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
     }
 }

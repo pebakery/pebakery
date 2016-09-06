@@ -20,7 +20,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] Set(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2, optional operand : 1
             const int necessaryOperandNum = 2;
@@ -47,7 +47,7 @@ namespace BakeryEngine
                         permanent = true;
                         break;
                     default:
-                        throw new InvalidOperandException("Invalid operand : " + cmd.Operands[2]);
+                        throw new InvalidOperandException($"Invalid operand [{cmd.Operands[2]}");
                 }
             }
 
@@ -68,19 +68,19 @@ namespace BakeryEngine
 
             if (isVarCreated)
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% set to ", varValue), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] set to [{varValue}]", LogState.Success));
             }
             else
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var %", varKey, "% created, set to ", varValue), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] created, set to [{varValue}]", LogState.Success));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         public LogInfo[] AddVariables(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2, optional operand : 1
             const int necessaryOperandNum = 2;
@@ -107,7 +107,7 @@ namespace BakeryEngine
                         permanent = true;
                         break;
                     default:
-                        throw new InvalidOperandException("Invalid operand : " + cmd.Operands[2]);
+                        throw new InvalidOperandException($"Invalid operand [{cmd.Operands[2]}]");
                 }
             }
 
@@ -128,14 +128,14 @@ namespace BakeryEngine
 
             if (isVarCreated)
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var [%", varKey, "%] set to [", varValue, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] set to [{varValue}]", LogState.Success));
             }
             else
             {
-                logs.Add(new LogInfo(cmd, string.Concat("Var [%", varKey, "%] created, set to [", varValue, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] created, set to [{varValue}]", LogState.Success));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
     }
 }

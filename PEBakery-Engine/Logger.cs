@@ -95,7 +95,7 @@ namespace BakeryEngine
         private void PrintBanner()
         {
             PEBakeryInfo info = new PEBakeryInfo();
-            sw.WriteLine(string.Concat("PEBakery-Engine r", info.Ver.Build, " (v", info.Ver.ToString(), ") Alpha Log"));
+            sw.WriteLine($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log");
             sw.Flush();
         }
 
@@ -106,9 +106,9 @@ namespace BakeryEngine
             for (int i = 0; i < logInfo.Command.SectionDepth; i++)
                 sw.Write("  ");
             if (logInfo.Command.Opcode == Opcode.None)
-                sw.WriteLine(string.Format("[{0}] {1} ({2})", logInfo.State.ToString(), logInfo.Result, logInfo.Command.RawCode));
+                sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Result} ({logInfo.Command.RawCode})");
             else
-                sw.WriteLine(string.Format("[{0}] {1} - {2} ({3})", logInfo.State.ToString(), logInfo.Command.Opcode.ToString(), logInfo.Result, logInfo.Command.RawCode));
+                sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Command.Opcode.ToString()} - {logInfo.Result} ({logInfo.Command.RawCode})");
             sw.Flush();
         }
 

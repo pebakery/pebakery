@@ -25,7 +25,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] TXTAddLine(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 3, optional operand : 1
             const int necessaryOperandNum = 3;
@@ -115,7 +115,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, string.Concat("Placed [", line, "] to [", placeLineNum, "]th row of [", rawFileName, "]"), LogState.Success));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] INIRead(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 4, optional operand : 0
             const int necessaryOperandNum = 4;
@@ -154,7 +154,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, string.Concat("[", rawFileName, "] does not exists"), LogState.Error));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] INIWrite(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 4, optional operand : 0
             const int necessaryOperandNum = 4;
@@ -183,10 +183,10 @@ namespace BakeryEngine
 
             bool result = IniFile.SetKey(fileName, section, key, value);
             if (result)
-                logs.Add(new LogInfo(cmd, string.Concat("Key [", key, "] and its value [", value, "]' wrote to [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, string.Concat($"Key [{key}] and its value [{value}] wrote to [{rawFileName}]"), LogState.Success));
             else
-                logs.Add(new LogInfo(cmd, string.Concat("Could not wrote key [", key, "] and its value [", value, "] to [", rawFileName, "]"), LogState.Error));
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+                logs.Add(new LogInfo(cmd, string.Concat($"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]"), LogState.Error));
+            return logs.ToArray();
         }
     }
 }

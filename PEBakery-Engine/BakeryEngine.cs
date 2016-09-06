@@ -334,19 +334,19 @@ namespace BakeryEngine
         private enum ParseState { Normal, Merge }
 
         // Constructors
-        public BakeryEngine(string projectName, Logger logger)
+        public BakeryEngine(Project project, Logger logger)
         {
-            InternalConstructor(projectName, "script.project", logger);
+            InternalConstructor(project, "script.project", logger);
         }
 
-        public BakeryEngine(string projectName, string entryPlugin, Logger logger)
+        public BakeryEngine(Project project, string entryPlugin, Logger logger)
         {
-            InternalConstructor(projectName, entryPlugin, logger);
+            InternalConstructor(project, entryPlugin, logger);
         }
 
-        private void InternalConstructor(string projectName, string entryPlugin, Logger logger)
+        private void InternalConstructor(Project project, string entryPlugin, Logger logger)
         {
-            this.project = new Project(projectName); 
+            this.project = project; 
             this.logger = logger;
             this.variables = new BakeryVariables();
 
@@ -408,7 +408,7 @@ namespace BakeryEngine
                 {
                     currentSectionParams = new string[0];
                     BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
-                    string logMsg = string.Concat("Section '", nextCommand.section.SectionName, "' End");
+                    string logMsg = string.Concat("Section [", nextCommand.section.SectionName, "] End");
                     logger.Write(new LogInfo(logCmd, logMsg, LogState.Infomation));
                     try
                     {
@@ -517,7 +517,7 @@ namespace BakeryEngine
                         log = new LogInfo(cmd, "Comment", LogState.Ignore);
                         break;
                     default:
-                        throw new InvalidOpcodeException("Cannot execute [" + cmd.Opcode.ToString() + "] command", cmd);
+                        throw new InvalidOpcodeException($"Cannot execute [{cmd.Opcode.ToString()}] command", cmd);
                 }
             }
             catch (Exception e)
@@ -540,7 +540,7 @@ namespace BakeryEngine
         private BakeryCommand ParseCommand(string rawCode, CommandAddress address)
         {
             Opcode opcode = Opcode.None;
-            ArrayList operandList = new ArrayList();
+            List<string> operandList = new List<string>();
 
             // Remove whitespace of rawCode's start and end
             rawCode = rawCode.Trim();
@@ -550,7 +550,7 @@ namespace BakeryEngine
                 return new BakeryCommand(string.Empty, Opcode.None, new string[0], address, returnAddress.Count);
 
             // Comment Format : starts with '//' or '#', ';'
-            if (rawCode.Substring(0, 2) == "//" || rawCode.Substring(0, 1) == "#" || rawCode.Substring(0, 1) == ";")
+            if (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";"))
             {
                 return new BakeryCommand(rawCode, Opcode.Comment, new string[0], address, returnAddress.Count);
             }
@@ -568,14 +568,14 @@ namespace BakeryEngine
                     if (opcodeValue != Opcode.None && opcodeValue != Opcode.Comment)
                         opcode = opcodeValue;
                     else
-                        throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
+                        throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
                 }
                 else
-                    throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
+                    throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException("Unknown command \'" + slices[0].Trim() + "\'", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
+                throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address));
             } // Do nothing
             
             // Check doublequote's occurence - must be 2n
@@ -652,9 +652,9 @@ namespace BakeryEngine
 
             // doublequote is not matched by two!
             if (state == ParseState.Merge)
-                throw new InvalidOperandException("ParseState == Merge");
+                throw new InvalidOperandException("When parsing ends, ParseState must not be in state of Merge");
 
-            string[] operands  = operandList.ToArray(typeof(string)) as string[];
+            string[] operands = operandList.ToArray();
             for (int i = 0; i < operands.Length; i++)
             {
                 // Process Escape Characters

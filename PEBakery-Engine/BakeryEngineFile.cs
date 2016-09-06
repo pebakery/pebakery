@@ -62,7 +62,7 @@ namespace BakeryEngine
         /// <returns>LogInfo[]</returns>
         public LogInfo[] FileCopy(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2, optional operand : 3
             const int necessaryOperandNum = 2;
@@ -114,7 +114,7 @@ namespace BakeryEngine
                         noRec = true;
                         break;
                     default:
-                        throw new InvalidOperandException(string.Concat("Invalid operand ", operand), cmd);
+                        throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
                 }
             }
 
@@ -138,15 +138,15 @@ namespace BakeryEngine
                             string destFullPath = Path.Combine(Helper.RemoveLastDirChar(destPath), destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             if (File.Exists(destFullPath) && !noWarn)
-                                logs.Add(new LogInfo(cmd, string.Concat("[", Path.Combine(rawSrcDirToFind, destPathTail), "] will be overwritten"), LogState.Warning));
+                                logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten", LogState.Warning));
                             File.Copy(searchedFilePath, destFullPath, !preserve);
-                            logs.Add(new LogInfo(cmd, string.Concat("[", Path.Combine(rawSrcDirToFind, destPathTail), "] copied to '", Path.Combine(rawDestPathDir, destPathTail), "["), LogState.Success));
+                            logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] copied to [{Path.Combine(rawDestPathDir, destPathTail)}]", LogState.Success));
                         }
                         else
                             throw new PathNotDirException("<DestPath> must be directory when using wildcard in <SrcFileName>", cmd);
                     }
                     if (listToCopy.Length == 0)
-                        logs.Add(new LogInfo(cmd, string.Concat("[", rawDestPath, "] not found"), noWarn ? LogState.Ignore : LogState.Warning));
+                        logs.Add(new LogInfo(cmd, $"[{rawDestPath}] not found", noWarn ? LogState.Ignore : LogState.Warning));
                 }
                 else
                 {
@@ -157,18 +157,18 @@ namespace BakeryEngine
                         string destPathTail = srcFileName.Remove(0, Helper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
                         string destFullPath = string.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
                         if (File.Exists(destFullPath))
-                            logs.Add(new LogInfo(cmd, string.Concat("[", Path.Combine(rawDestPathDir, destPathTail), "] will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
+                            logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawDestPathDir, destPathTail)}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
                             
                         File.Copy(srcFileName, destFullPath, !preserve);
-                        logs.Add(new LogInfo(cmd, string.Concat("[", rawSrcFileName, "] copied to [", rawDestPath, "]"), LogState.Success));
+                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] copied to [{rawDestPath}]", LogState.Success));
                     }
                     else
                     {
                         Directory.CreateDirectory(Helper.GetDirNameEx(destPath));
                         if (destPathExists)
-                            logs.Add(new LogInfo(cmd, string.Concat("[", rawDestPath, "] will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
+                            logs.Add(new LogInfo(cmd, $"[{rawDestPath}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
                         File.Copy(srcFileName, destPath, !preserve);
-                        logs.Add(new LogInfo(cmd, string.Concat("[", rawSrcFileName, "] copied to [", rawDestPath, "]"), LogState.Success));                        
+                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] copied to [{rawDestPath}]", LogState.Success));                        
                     }
                 }
                 
@@ -177,7 +177,7 @@ namespace BakeryEngine
             {
                 if (preserve && noWarn)
                 {
-                    logs.Add(new LogInfo(cmd, string.Concat("Cannot overwrite ", destPath), LogState.Ignore));
+                    logs.Add(new LogInfo(cmd, $"Cannot overwrite [{destPath}]", LogState.Ignore));
                 }
                 else
                 {
@@ -185,7 +185,7 @@ namespace BakeryEngine
                 }
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] FileDelete(BakeryCommand cmd)
         { 
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 1, optional operand : 2
             const int necessaryOperandNum = 1;
@@ -216,7 +216,7 @@ namespace BakeryEngine
                 filePathContainsWildcard = false;
             // Check destPath is directory
             if (Directory.Exists(filePath))
-                throw new PathNotFileException(string.Concat(filePath, " cannot be directory"), cmd);
+                throw new PathNotFileException($"[{filePath}] cannot be directory", cmd);
 
             bool noWarn = false;
             bool noRec = false;
@@ -233,47 +233,40 @@ namespace BakeryEngine
                         noRec = true;
                         break;
                     default:
-                        throw new InvalidOperandException(string.Concat("Invalid operand ", operand), cmd);
+                        throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
                 }
             }
 
-            try
-            {
-                if (filePathContainsWildcard) // wildcard exists
-                {                   
-                    string srcDirToFind = Helper.GetDirNameEx(filePath);
-                    string rawSrcDirToFind = Helper.GetDirNameEx(rawFilePath);
-                    string[] listToDelete;
-                    if (noRec)
-                        listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
-                    else
-                        listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
-                    foreach (string searchedFilePath in listToDelete)
-                    {
-                        File.Delete(searchedFilePath);
-                        string searchedFileName = searchedFilePath.Remove(0, srcDirToFind.Length + 1); // 1 for \\
-                        logs.Add(new LogInfo(cmd, string.Concat("[", Path.Combine(rawSrcDirToFind, searchedFileName), "] deleted"), LogState.Success));
-                    }
-                    if (listToDelete.Length == 0)
-                    {
-                        if (!noWarn) // file is not found
-                            logs.Add(new LogInfo(cmd, string.Concat("[", rawFilePath, "] not found"), LogState.Warning));
-                    }
-                }
-                else // No wildcard
+            if (filePathContainsWildcard) // wildcard exists
+            {                   
+                string srcDirToFind = Helper.GetDirNameEx(filePath);
+                string rawSrcDirToFind = Helper.GetDirNameEx(rawFilePath);
+                string[] listToDelete;
+                if (noRec)
+                    listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
+                else
+                    listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
+                foreach (string searchedFilePath in listToDelete)
                 {
-                    if (!noWarn && !File.Exists(filePath)) // File.Delete does not throw exception when file is not found
-                        logs.Add(new LogInfo(cmd, string.Concat("[", rawFilePath, "] not found"), LogState.Warning));
-                    File.Delete(filePath); 
-                    logs.Add(new LogInfo(cmd, string.Concat("[", rawFilePath, "] deleted"), LogState.Success));
+                    File.Delete(searchedFilePath);
+                    string searchedFileName = searchedFilePath.Remove(0, srcDirToFind.Length + 1); // 1 for \\
+                    logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, searchedFileName)}] deleted", LogState.Success));
+                }
+                if (listToDelete.Length == 0)
+                {
+                    if (!noWarn) // file is not found
+                        logs.Add(new LogInfo(cmd, $"[{rawFilePath}] not found", LogState.Warning));
                 }
             }
-            catch (Exception e)
+            else // No wildcard
             {
-                logs.Add(new LogInfo(cmd, string.Concat(e.GetType(), ": ", e.Message), LogState.Error));
+                if (!noWarn && !File.Exists(filePath)) // File.Delete does not throw exception when file is not found
+                    logs.Add(new LogInfo(cmd, $"[{rawFilePath}] not found", LogState.Warning));
+                File.Delete(filePath); 
+                logs.Add(new LogInfo(cmd, $"[{rawFilePath}] deleted", LogState.Success));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -284,7 +277,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] FileMove(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2, optional operand : 0
             const int necessaryOperandNum = 2;
@@ -302,11 +295,11 @@ namespace BakeryEngine
 
             // Check if srcFileName exists
             if (File.Exists(srcFileName) == false)
-                throw new FileNotFoundException(string.Concat("[", rawSrcFileName, "] does not exist"));
+                throw new FileNotFoundException($"[{rawSrcFileName}] does not exist");
 
             // src and dest filename is same, so log it
             if (string.Equals(Helper.RemoveLastDirChar(srcFileName), Helper.RemoveLastDirChar(destFileName), StringComparison.OrdinalIgnoreCase))
-                logs.Add(new LogInfo(cmd, string.Concat("Cannot rename to same filename"), LogState.Warning));
+                logs.Add(new LogInfo(cmd, "Cannot rename to same filename", LogState.Warning));
             else
             {
                 // File.Move cannot move file if volume is different.
@@ -315,7 +308,7 @@ namespace BakeryEngine
                 if (string.Equals(srcFileDrive, destFileDrive, StringComparison.OrdinalIgnoreCase))
                 { // Same volume. Just use File.Move.
                     File.Move(srcFileName, destFileName);
-                    logs.Add(new LogInfo(cmd, string.Concat("[", rawSrcFileName, "] moved to [", rawDestFileName, "["), LogState.Success));
+                    logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] moved to [{rawDestFileName}]", LogState.Success));
                 }
                 else
                 { // Use File.Copy and File.Delete instead.
@@ -323,17 +316,17 @@ namespace BakeryEngine
                     {
                         File.Copy(srcFileName, destFileName, false);
                         File.Delete(srcFileName);
-                        logs.Add(new LogInfo(cmd, string.Concat("[", rawSrcFileName, "] moved to [", rawDestFileName, "["), LogState.Success));
+                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] moved to [{rawDestFileName}]", LogState.Success));
                     }
                     catch (IOException)
                     {
-                        logs.Add(new LogInfo(cmd, string.Concat("Cannot overwrite \'", rawDestFileName, "["), LogState.Warning));
+                        logs.Add(new LogInfo(cmd, $"Cannot overwrite [{rawDestFileName}]", LogState.Warning));
                     }
                 }
             }
 
             
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
 
         /// <summary>
@@ -343,7 +336,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] FileCreateBlank(BakeryCommand cmd)
         {
-            ArrayList logs = new ArrayList();
+            List<LogInfo> logs = new List<LogInfo>();
             // Necessary operand : 1, optional operand : 3
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 3;
@@ -402,7 +395,7 @@ namespace BakeryEngine
                             throw new InvalidOperandException("Encoding operand only can be used once");
                         break;
                     default:
-                        throw new InvalidOperandException(string.Concat("Invalid operand ", operand), cmd);
+                        throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
                 }
             }
 
@@ -414,22 +407,22 @@ namespace BakeryEngine
             if (File.Exists(fileName))
             {
                 if (!preserve)
-                    logs.Add(new LogInfo(cmd, string.Concat("[", rawFileName, "] will be overwritten"), noWarn ? LogState.Ignore : LogState.Warning));
+                    logs.Add(new LogInfo(cmd, $"[{rawFileName}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
             }
 
             try
             {
                 FileStream fs = new FileStream(fileName, preserve ? FileMode.CreateNew : FileMode.Create, FileAccess.Write, FileShare.Write);
                 Helper.WriteTextBOM(fs, encoding).Close();
-                logs.Add(new LogInfo(cmd, string.Concat("Created blank text file [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Created blank text file [{rawFileName}]", LogState.Success));
             }
             catch (IOException)
             {
                 if (preserve)
-                    logs.Add(new LogInfo(cmd, string.Concat("Cannot overwrite [", rawFileName, "]"), noWarn ? LogState.Ignore : LogState.Warning));
+                    logs.Add(new LogInfo(cmd, $"Cannot overwrite [{rawFileName}]", noWarn ? LogState.Ignore : LogState.Warning));
             }
 
-            return logs.ToArray(typeof(LogInfo)) as LogInfo[];
+            return logs.ToArray();
         }
     }
 }

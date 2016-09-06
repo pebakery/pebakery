@@ -11,9 +11,10 @@ namespace BakeryEngine
     {
         static int Main(string[] args)
         {
+            Project project = new Project("Win10PESE");
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            BakeryEngine engine = new BakeryEngine("Win10PESE", "script.project", logger);
-            engine.RunPlugin();
+            BakeryEngine engine = new BakeryEngine(project, logger);
+            // engine.RunPlugin();
 
             return 0;
         }

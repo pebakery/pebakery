@@ -451,7 +451,7 @@ namespace BakeryEngine
             string line = string.Empty;
             bool inTargetSection = false;
             string currentSection = null;
-            ArrayList processedSection = new ArrayList();
+            List<string> processedSection = new List<string>();
             int wroteKeyCount = 0;
             bool[] wroteKey = new bool[len];
             for (int i = 0; i < len; i++)
@@ -693,7 +693,7 @@ namespace BakeryEngine
             string line = string.Empty;
             bool appendState = false;
             int idx = 0;
-            ArrayList lines = new ArrayList();
+            List<string> lines = new List<string>();
             while ((line = sr.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
@@ -717,7 +717,7 @@ namespace BakeryEngine
 
             }
 
-            return lines.ToArray(typeof(string)) as string[];
+            return lines.ToArray();
         }
 
         /// <summary>
@@ -758,9 +758,9 @@ namespace BakeryEngine
             int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
             int parsedCount = 0;
             int idx = 0;
-            ArrayList[] lines = new ArrayList[len];
+            List<string>[] lines = new List<string>[len];
             for (int i = 0; i < len; i++)
-                lines[i] = new ArrayList();
+                lines[i] = new List<string>();
             
             while ((line = sr.ReadLine()) != null)
             { // Read text line by line
@@ -797,7 +797,7 @@ namespace BakeryEngine
 
             string[][] strArrays = new string[len][];
             for (int i = 0; i < len; i++)
-                strArrays[i] = lines[i].ToArray(typeof(string)) as string[];
+                strArrays[i] = lines[i].ToArray();
             return strArrays;
         }
 
@@ -819,7 +819,7 @@ namespace BakeryEngine
             }
 
             string line = string.Empty;
-            ArrayList sections = new ArrayList();
+            List<string> sections = new List<string>();
 
             while ((line = sr.ReadLine()) != null)
             { // Read text line by line
@@ -828,7 +828,7 @@ namespace BakeryEngine
                     sections.Add(line.Substring(1, line.Length - 2));
             }
 
-            return sections.ToArray(typeof(string)) as string[];
+            return sections.ToArray();
         }
     }
 }

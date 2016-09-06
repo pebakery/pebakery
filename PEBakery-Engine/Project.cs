@@ -19,14 +19,16 @@ namespace BakeryEngine
         public PluginNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
 
-    class Project
+    public class Project
     {
+        // Fiels
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;
         private PluginDictionary plugins;
         private int[] pluginLevels;
 
+        // Properties
         public string ProjectName
         {
             get { return projectName; }
@@ -55,56 +57,42 @@ namespace BakeryEngine
             this.projectRoot = Path.Combine(Helper.GetProgramAbsolutePath(), "Projects", projectName);
             this.mainPlugin = new Plugin(Path.Combine(projectRoot, "script.project"), projectRoot);
             this.plugins = new PluginDictionary();
-            LoadPlugins(CollectPlugins());
+            CollectPlugins();
             stopwatch.Stop();
             Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
         }
 
-        private Dictionary<int, ArrayList> CollectPlugins()
+        private void CollectPlugins()
         {
-            // Search all *.script
-            ArrayList levelList = new ArrayList();
-            Dictionary<int, ArrayList> pluginsByLevel = new Dictionary<int, ArrayList>();
+            // Colect all *.script
+            Dictionary<int, List<string>> pluginsByLevel = new Dictionary<int, List<string>>();
             string[] files = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
             foreach (string file in files)
             {
                 int level = int.Parse(IniFile.GetKey(file, "Main", "Level"));
-                if (!levelList.Contains(level))
-                    levelList.Add(level);
+
                 if (!pluginsByLevel.ContainsKey(level))
-                    pluginsByLevel[level] = new ArrayList();
+                    pluginsByLevel.Add(level, new List<string>());
                 pluginsByLevel[level].Add(file);
             }
-            
-            levelList.Sort();
-            pluginLevels = levelList.ToArray(typeof(int)) as int[];
-            foreach (int level in pluginLevels)
-                pluginsByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically
-            return pluginsByLevel;
+
+            pluginLevels = pluginsByLevel.Keys.OrderBy(i => i).ToArray();
+
+            var parseTasks = pluginLevels.SelectMany(l => LoadPlugins(pluginsByLevel[l].OrderBy(p => p.ToLower()).ToArray(), l));
+            Task.WaitAll(parseTasks.ToArray());
         }
 
-        private void LoadPlugins(Dictionary<int, ArrayList> pluginsByLevel)
+        private IEnumerable<Task> LoadPlugins(string[] pluginsPaths, int level)
         {
-            Task[] parseTasks = new Task[pluginLevels.Length];
-            for (int i = 0; i < pluginLevels.Length; i++)
-            {
-                int level = pluginLevels[i];
-                pluginsByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically                
-                parseTasks[i] = new Task(() => { InternalLoadPlugins(pluginsByLevel[level].ToArray(typeof(string)) as string[], level); });
-                parseTasks[i].Start();
-            }
-            Task.WaitAll(parseTasks);
-        }
+            plugins[level] = new Plugin[pluginsPaths.Length];
 
-        private void InternalLoadPlugins(string[] pluginsPaths, int level)
-        {
-            foreach (string file in pluginsPaths)
+            var i = 0;
+            return pluginsPaths.Select(p =>
             {
-                ArrayList pluginsByLevel = new ArrayList();
-                Console.WriteLine(level + " " + file);
-                pluginsByLevel.Add(new Plugin(file, projectRoot));
-                plugins[level] = pluginsByLevel.ToArray(typeof(Plugin)) as Plugin[];
-            }
+                var t = i++;
+                Console.WriteLine($"{level} {p}");
+                return Task.Run(() => plugins[level][t] = new Plugin(p, projectRoot));
+            });
         }
 
         public Plugin SearchPluginByName(string pluginName)
@@ -118,7 +106,7 @@ namespace BakeryEngine
                 }
             }
             // not found
-            throw new PluginNotFoundException("Plugin [" + pluginName + "] not found");
+            throw new PluginNotFoundException($"Plugin [{pluginName}] not found");
         }
     }
 }
