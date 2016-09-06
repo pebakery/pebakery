@@ -16,14 +16,6 @@ namespace BakeryEngine
             BakeryEngine engine = new BakeryEngine(plugins, logger);
             engine.RunPlugin();
 
-            Dictionary<string,string>[] dicts = IniFile.ParseSectionsToDicts("test.script", new string[] { "Main", "Interface", "Variables" });
-            foreach (var dict in dicts)
-            {
-                foreach (var kv in dict)
-                    Console.WriteLine(kv.Key + " = " + kv.Value);
-            }
-
-
             return 0;
         }
     }

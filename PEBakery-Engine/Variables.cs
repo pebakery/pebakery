@@ -162,8 +162,7 @@ namespace BakeryEngine
         public void AddVariables(VarsType type, PluginSection section)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            StringDictionary dict = IniFile.ParseLinesVarStyle(section.Lines);
-            InternalAddDictionary(vars, dict);
+            InternalAddDictionary(vars, section.Get() as StringDictionary);
         }
 
         /// <summary>

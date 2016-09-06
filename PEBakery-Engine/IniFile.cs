@@ -641,7 +641,8 @@ namespace BakeryEngine
             {
                 try
                 {
-                    MatchCollection matches = Regex.Matches(line, regex, RegexOptions.Compiled);
+                    Regex regexInstance = new Regex(regex, RegexOptions.Compiled);
+                    MatchCollection matches = regexInstance.Matches(line);
 
                     // Make instances of sections
                     for (int i = 0; i < matches.Count; i++)
@@ -681,7 +682,6 @@ namespace BakeryEngine
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
-            // StringBuilder str = new StringBuilder();
 
             // If file is blank
             if (sr.Peek() == -1)
@@ -799,6 +799,36 @@ namespace BakeryEngine
             for (int i = 0; i < len; i++)
                 strArrays[i] = lines[i].ToArray(typeof(string)) as string[];
             return strArrays;
+        }
+
+        /// <summary>
+        /// Get name of sections from INI file
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
+        public static string[] GetSectionNames(string file)
+        {
+            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+
+            // If file is blank
+            if (sr.Peek() == -1)
+            {
+                sr.Close();
+                return new string[0]; // No section, empty file
+            }
+
+            string line = string.Empty;
+            ArrayList sections = new ArrayList();
+
+            while ((line = sr.ReadLine()) != null)
+            { // Read text line by line
+                line = line.Trim();
+                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp)) // Count sections
+                    sections.Add(line.Substring(1, line.Length - 2));
+            }
+
+            return sections.ToArray(typeof(string)) as string[];
         }
     }
 }

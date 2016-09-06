@@ -51,7 +51,7 @@ namespace BakeryEngine
 
                 // Branch to new section
                 returnAddress.Push(new CommandAddress(cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
-                nextCommand = new CommandAddress(plugins[curPluginIdx].Sections[sectionName], 0, plugins[curPluginIdx].Sections[sectionName].Lines.Length);
+                nextCommand = new CommandAddress(plugins[curPluginIdx].Sections[sectionName], 0, plugins[curPluginIdx].Sections[sectionName].Count);
                 currentSectionParams = parameters;
 
                 // Exec utilizes [Variables] section of the plugin

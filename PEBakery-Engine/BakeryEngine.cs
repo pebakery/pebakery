@@ -350,22 +350,6 @@ namespace BakeryEngine
         }
 
         // Methods
-        /// <summary>
-        /// Print debug information
-        /// </summary>
-        public void Debug()
-        {
-            try
-            {
-                // Variables
-                Console.WriteLine(variables);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
-            }
-        }
-
         private void DisplayOperation(BakeryCommand cmd)
         {
             for (int i = 0; i < cmd.SectionDepth; i++)
@@ -399,7 +383,7 @@ namespace BakeryEngine
         {
             LoadDefaultPluginVariables();
             PluginSection section = plugins[curPluginIdx].Sections["Process"];
-            nextCommand = new CommandAddress(section, 0, section.Lines.Length);
+            nextCommand = new CommandAddress(section, 0, section.Count);
             RunCommands();
             return;
         }
@@ -416,7 +400,7 @@ namespace BakeryEngine
                 {
                     currentSectionParams = new string[0];
                     BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
-                    string logMsg = string.Concat("Section '", nextCommand.section.Name, "' End");
+                    string logMsg = string.Concat("Section '", nextCommand.section.SectionName, "' End");
                     logger.Write(new LogInfo(logCmd, logMsg, LogState.Infomation));
                     try
                     {
@@ -432,7 +416,7 @@ namespace BakeryEngine
 
                 // Fetch instructions
                 int i = nextCommand.line;
-                string rawCode = nextCommand.section.Lines[i].Trim();
+                string rawCode = (nextCommand.section.Get() as string[])[i].Trim();
 
                 try
                 {
@@ -525,7 +509,7 @@ namespace BakeryEngine
                         log = new LogInfo(cmd, "Comment", LogState.Ignore);
                         break;
                     default:
-                        throw new InvalidOpcodeException("Cannot execute \'" + cmd.Opcode.ToString() + "\' command", cmd);
+                        throw new InvalidOpcodeException("Cannot execute [" + cmd.Opcode.ToString() + "] command", cmd);
                 }
             }
             catch (Exception e)
