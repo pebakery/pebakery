@@ -10,6 +10,7 @@ using System.Threading;
 
 namespace BakeryEngine
 {
+    using System.Threading.Tasks;
     using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
     class Project
     {
@@ -51,16 +52,15 @@ namespace BakeryEngine
             levelList.Sort();
             levels = levelList.ToArray(typeof(int)) as int[];
 
-            Thread[] parseThreads = new Thread[levels.Length];
+            Task[] parseTasks = new Task[levels.Length];
             for (int i = 0; i < levels.Length; i++)
             {
                 int level = levels[i];
                 pluginsPathByLevel[level].Sort(StringComparer.OrdinalIgnoreCase); // Sort lexicographically                
-                parseThreads[i] = new Thread(new ThreadStart(() => LoadPlugins(pluginsPathByLevel[level].ToArray(typeof(string)) as string[], level)));
-                parseThreads[i].Start();
+                parseTasks[i] = new Task(() => { LoadPlugins(pluginsPathByLevel[level].ToArray(typeof(string)) as string[], level); });
+                parseTasks[i].Start();
             }
-            foreach (var thread in parseThreads)
-                thread.Join();
+            Task.WaitAll(parseTasks);
 
 
 
