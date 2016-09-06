@@ -47,12 +47,18 @@ namespace BakeryEngine
         public void Add(VarsType type, string key, string rawValue)
         {
             StringDictionary vars = GetVarsMatchesType(type);
+            int idx = rawValue.IndexOf("%" + key + "%"); // Check and remove circular reference
+            if (idx != -1) // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
+                rawValue.Remove(idx, key.Length + 2); // Ex) %Joveler%=Variel\ied206.txt
             vars.Add(key, rawValue);
         }
 
         public void SetValue(VarsType type, string key, string rawValue)
         {
             StringDictionary vars = GetVarsMatchesType(type);
+            int idx = rawValue.IndexOf("%" + key + "%"); // Check and remove circular reference
+            if (idx != -1) // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
+                rawValue.Remove(idx, key.Length + 2); // Ex) %Joveler%=Variel\ied206.txt
             vars[key] = rawValue;
         }
 
@@ -129,7 +135,7 @@ namespace BakeryEngine
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 MatchCollection matches = Regex.Matches(str, @"%(.+)%", RegexOptions.Compiled);
-                string dest = string.Empty;
+                StringBuilder builder = new StringBuilder();
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].ToString();
@@ -139,17 +145,17 @@ namespace BakeryEngine
                     else
                         startOffset = matches[x - 1].Index;
 
-                    dest = string.Concat(dest, str.Substring(startOffset, matches[x].Index));
+                    builder.Append(str.Substring(startOffset, matches[x].Index));
                     if (globalVars.ContainsKey(varName))
-                        dest = string.Concat(dest, globalVars[varName]);
+                        builder.Append(globalVars[varName]);
                     else if (localVars.ContainsKey(varName))
-                        dest = string.Concat(dest, localVars[varName]);
+                        builder.Append(localVars[varName]);
 
                     if (x + 1 == matches.Count) // Last iteration
-                        dest = string.Concat(dest, str.Substring(matches[x].Index + matches[x].Value.Length));
+                        builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
                 if (0 < matches.Count) // Only copy it if variable exists
-                    str = dest;
+                    str = builder.ToString();
             }
 
             return str;

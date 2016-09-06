@@ -275,6 +275,8 @@ namespace BakeryEngine
         public InternalParseException(string message, Exception inner) : base(message, inner) { }
     }
 
+    
+
     /// <summary>
     /// Exception used in BakerOperations
     /// </summary>
@@ -304,6 +306,8 @@ namespace BakeryEngine
     }
 
 
+
+
     /// <summary>
     /// Interpreter of raw codes
     /// </summary>
@@ -314,11 +318,12 @@ namespace BakeryEngine
         private Project project;
         private BakeryVariables variables;
         private Logger logger;
+        private bool runOnePlugin;
 
-        // Fields : Engine's state (plugins)
-        private Plugin currentPlugin; // currentPlugin
 
-        // Fields : Engine's state (in-plugin)
+        // Fields : Engine's state
+        private Plugin currentPlugin;
+        private PluginAddress curPluginAddr;
         private BakeryCommand currentCommand;
         private string[] currentSectionParams;
         private CommandAddress nextCommand; // ProgramCounter
@@ -330,28 +335,52 @@ namespace BakeryEngine
             get { return project.Plugins; }
         }
 
+        private int[] PluginLevels
+        {
+            get { return project.PluginLevels; }
+        }
+
         // Enum
         private enum ParseState { Normal, Merge }
 
         // Constructors
         public BakeryEngine(Project project, Logger logger)
         {
-            InternalConstructor(project, "script.project", logger);
+            InternalConstructor(project, project.MainPlugin, logger, false);
         }
 
-        public BakeryEngine(Project project, string entryPlugin, Logger logger)
+        public BakeryEngine(Project project, Logger logger, bool runOnePlugin)
         {
-            InternalConstructor(project, entryPlugin, logger);
+            InternalConstructor(project, project.MainPlugin, logger, runOnePlugin);
         }
 
-        private void InternalConstructor(Project project, string entryPlugin, Logger logger)
+        public BakeryEngine(Project project, Logger logger, string entryPlugin)
+        {
+            InternalConstructor(project, project.SearchPluginByName(entryPlugin), logger, false);
+        }
+
+        public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
+        {
+            InternalConstructor(project, project.SearchPluginByName(entryPlugin), logger, runOnePlugin);
+        }
+
+        /// <summary>
+        /// Internel Constructor
+        /// </summary>
+        /// <param name="project">Project Instance</param>
+        /// <param name="entryPlugin">Plugin to start</param>
+        /// <param name="logger">Logger Instance</param>
+        /// <param name="runOnePlugin">Run one plugin (entryPlugin) and exit</param>
+        private void InternalConstructor(Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin)
         {
             this.project = project; 
             this.logger = logger;
             this.variables = new BakeryVariables();
+            this.runOnePlugin = runOnePlugin;
 
             LoadDefaultGlobalVariables();
-            currentPlugin = project.SearchPluginByName(entryPlugin);
+            this.currentPlugin = entryPlugin;
+            this.curPluginAddr = project.GetPluginAddress(entryPlugin);
             currentCommand = null;
             returnAddress = new Stack<CommandAddress>();
             currentSectionParams = new string[0];
@@ -392,6 +421,7 @@ namespace BakeryEngine
             LoadDefaultPluginVariables();
             PluginSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
+            curPluginAddr = project.GetPluginAddress(currentPlugin);
             RunCommands();
             return;
         }
@@ -417,8 +447,20 @@ namespace BakeryEngine
                             continue;
                     }
                     catch (InvalidOperationException)
-                    { // The Stack<T> is empty, terminate function
-                        break;
+                    { // The Stack<T> is empty, readed plugin's end
+                        if (runOnePlugin) // Just run one plugin
+                            break; // Work is done, so exit
+                        try
+                        {
+                            curPluginAddr = project.GetNextPluginAddress(curPluginAddr);
+                            currentPlugin = project.GetPluginFromAddress(curPluginAddr);
+                            PluginSection section = currentPlugin.Sections["Process"];
+                            nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
+                        }   
+                        catch (EndOfPluginLevelException)
+                        { // End of sectoin, so exit
+                            break;
+                        }
                     } 
                 }
 
