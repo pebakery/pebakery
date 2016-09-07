@@ -96,20 +96,25 @@ namespace BakeryEngine
         {
             PEBakeryInfo info = new PEBakeryInfo();
             sw.WriteLine($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log");
+#if DEBUG
             sw.Flush();
+#endif
         }
 
         public void Write(LogInfo logInfo)
         {
             if (logInfo == null || logInfo.State == LogState.None) // null means do not log
                 return;
-            for (int i = 0; i < logInfo.Command.SectionDepth; i++)
+            for (int i = 0; i <= logInfo.Command.SectionDepth; i++)
                 sw.Write("  ");
             if (logInfo.Command.Opcode == Opcode.None)
                 sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Result} ({logInfo.Command.RawCode})");
             else
                 sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Command.Opcode.ToString()} - {logInfo.Result} ({logInfo.Command.RawCode})");
+
+#if DEBUG
             sw.Flush();
+#endif
         }
 
         public void Write(LogInfo[] logInfos)
@@ -121,7 +126,9 @@ namespace BakeryEngine
         public void Write(string log)
         {
             sw.WriteLine(log);
+#if DEBUG
             sw.Flush();
+#endif
         }
 
         public void WriteVariables(BakeryVariables vars)
@@ -139,7 +146,9 @@ namespace BakeryEngine
                 str = string.Concat(str, global.Key, " (Value) = ", vars.GetValue(VarsType.Global, global.Key), "\n");
             }
             sw.Write(str);
+#if DEBUG
             sw.Flush();
+#endif
         }
 
         public void Close()

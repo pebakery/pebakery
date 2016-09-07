@@ -154,6 +154,8 @@ namespace BakeryEngine
                 type = SectionType.Main;
             else if (string.Equals(sectionName, "Variables", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Variables;
+            else if (string.Equals(sectionName, "Interface", StringComparison.OrdinalIgnoreCase))
+                type = SectionType.Ini;
             else if (string.Equals(sectionName, "EncodedFolders", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFolderList;
             else if (string.Equals(sectionName, "AuthorEncoded", StringComparison.OrdinalIgnoreCase)

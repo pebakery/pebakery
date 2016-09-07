@@ -202,5 +202,10 @@ namespace BakeryEngine
             foreach (var d in dict)
                 vars[d.Key] = d.Value;
         }
+        
+        public void ResetLocalVaribles()
+        {
+            localVars = new StringDictionary();
+        }
     }
 }

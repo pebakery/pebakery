@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace BakeryEngine
 {
@@ -13,8 +14,13 @@ namespace BakeryEngine
         {
             Project project = new Project("Win10PESE");
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            BakeryEngine engine = new BakeryEngine(project, logger, true);
+            // BakeryEngine engine = new BakeryEngine(project, logger, true);
+            BakeryEngine engine = new BakeryEngine(project, logger);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            Console.WriteLine("BakeryEngine start...");
             engine.RunPlugin();
+            Console.WriteLine("BakeryEngine done");
+            Console.WriteLine("Time elapsed: {0}\n", stopwatch.Elapsed);
 
             return 0;
         }
