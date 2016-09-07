@@ -69,6 +69,7 @@
     <Compile Include="IniFile.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="PluginCollection.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Project.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

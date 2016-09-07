@@ -313,13 +313,11 @@ namespace BakeryEngine
     /// </summary>
     public partial class BakeryEngine
     {
-
         // Fields used globally
         private Project project;
         private BakeryVariables variables;
         private Logger logger;
         private bool runOnePlugin;
-
 
         // Fields : Engine's state
         private Plugin currentPlugin;
@@ -330,15 +328,7 @@ namespace BakeryEngine
         private Stack<CommandAddress> returnAddress;
 
         // Properties
-        private PluginDictionary Plugins
-        {
-            get { return project.ActivePlugins; }
-        }
-
-        private int[] PluginLevels
-        {
-            get { return project.ActiveLevels; }
-        }
+        private PluginCollection Plugins { get { return project.ActivePlugins; } }
 
         // Enum
         private enum ParseState { Normal, Merge }
@@ -356,12 +346,12 @@ namespace BakeryEngine
 
         public BakeryEngine(Project project, Logger logger, string entryPlugin)
         {
-            InternalConstructor(project, project.SearchPluginByName(entryPlugin), logger, false);
+            InternalConstructor(project, project.ActivePlugins.SearchByName(entryPlugin), logger, false);
         }
 
         public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
         {
-            InternalConstructor(project, project.SearchPluginByName(entryPlugin), logger, runOnePlugin);
+            InternalConstructor(project, project.ActivePlugins.SearchByName(entryPlugin), logger, runOnePlugin);
         }
 
         /// <summary>
@@ -380,7 +370,7 @@ namespace BakeryEngine
 
             LoadDefaultGlobalVariables();
             this.currentPlugin = entryPlugin;
-            this.curPluginAddr = project.GetActivePluginAddress(entryPlugin);
+            this.curPluginAddr = project.ActivePlugins.GetAddress(entryPlugin);
             currentCommand = null;
             returnAddress = new Stack<CommandAddress>();
             currentSectionParams = new string[0];
@@ -422,8 +412,8 @@ namespace BakeryEngine
             LoadDefaultPluginVariables();
             PluginSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
-            curPluginAddr = project.GetActivePluginAddress(currentPlugin);
-            logger.Write($"\nRunning plugin [{currentPlugin.ShortPath}] ({project.GetFullIndexOfActivePlugin(curPluginAddr)}/{project.ActivePluginCount})");
+            curPluginAddr = Plugins.GetAddress(currentPlugin);
+            logger.Write($"\nRunning plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
             RunCommands();
             return;
         }
@@ -456,11 +446,11 @@ namespace BakeryEngine
                         try
                         {
                             variables.ResetLocalVaribles();
-                            curPluginAddr = project.GetNextActivePluginAddress(curPluginAddr);
-                            currentPlugin = project.GetActivePluginFromAddress(curPluginAddr);
+                            curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
+                            currentPlugin = Plugins.GetFromAddress(curPluginAddr);
                             PluginSection section = currentPlugin.Sections["Process"];
                             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
-                            logger.Write($"Running plugin [{currentPlugin.ShortPath}] ({project.GetFullIndexOfActivePlugin(curPluginAddr)}/{project.ActivePluginCount})");
+                            logger.Write($"Running plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
                         }   
                         catch (EndOfPluginLevelException)
                         { // End of sectoin, so exit
