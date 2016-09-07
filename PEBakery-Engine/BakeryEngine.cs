@@ -392,7 +392,13 @@ namespace BakeryEngine
             // Version
             variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString());
             // Build
-            variables.SetValue(VarsType.Global, "Build", string.Format("{0:yyyy-MM-dd HH:mm}", info.Ver.ToString()));
+            variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}");
+            // ProjectDir
+            variables.SetValue(VarsType.Global, "ProjectDir", project.ProjectRoot);
+            // TargetDir
+            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine(info.BaseDir, "Target"));
+            // ProjectTemp
+            variables.SetValue(VarsType.Global, "ProjectTemp", Path.Combine(info.BaseDir, "Temp", project.ProjectName));
         }
 
         private void LoadDefaultPluginVariables()
@@ -402,8 +408,11 @@ namespace BakeryEngine
             variables.SetValue(VarsType.Local, "ScriptFile", currentPlugin.FullPath);
 
             // [Variables]
+            VarsType type = VarsType.Local;
+            if (currentPlugin == project.MainPlugin)
+                type = VarsType.Global;
             logger.Write(LogState.Information, $"Processing [Variables] Section", 0);
-            variables.AddVariables(VarsType.Local, currentPlugin.Sections["Variables"]);
+            variables.AddVariables(type, currentPlugin.Sections["Variables"]);
             foreach (var kv in (currentPlugin.Sections["Variables"].Get() as StringDictionary))
                 logger.Write(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", 1);
             logger.Write(LogState.Information, $"Section [Variables] End", 0);
