@@ -400,7 +400,13 @@ namespace BakeryEngine
             // ScriptFile, PluginFile
             variables.SetValue(VarsType.Local, "PluginFile", currentPlugin.FullPath);
             variables.SetValue(VarsType.Local, "ScriptFile", currentPlugin.FullPath);
+
+            // [Variables]
+            logger.Write(LogState.Information, $"Processing [Variables] Section", 0);
             variables.AddVariables(VarsType.Local, currentPlugin.Sections["Variables"]);
+            foreach (var kv in (currentPlugin.Sections["Variables"].Get() as StringDictionary))
+                logger.Write(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", 1);
+            logger.Write(LogState.Information, $"Section [Variables] End", 0);
         }
 
         /// <summary>
@@ -408,14 +414,15 @@ namespace BakeryEngine
         /// </summary>
         public void RunPlugin()
         {
-            variables.ResetLocalVaribles();
-            LoadDefaultPluginVariables();
             PluginSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             curPluginAddr = Plugins.GetAddress(currentPlugin);
             logger.Write($"\nRunning plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
+
+            variables.ResetLocalVaribles();
+            LoadDefaultPluginVariables();
+
             RunCommands();
-            return;
         }
 
         /// <summary>
@@ -431,7 +438,7 @@ namespace BakeryEngine
                     currentSectionParams = new string[0];
                     BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
                     string logMsg = string.Concat("Section [", nextCommand.section.SectionName, "] End");
-                    logger.Write(new LogInfo(logCmd, logMsg, LogState.Infomation));
+                    logger.Write(new LogInfo(logCmd, logMsg, LogState.Information));
                     try
                     {
                         nextCommand = returnAddress.Pop();

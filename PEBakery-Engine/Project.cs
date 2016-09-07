@@ -30,7 +30,6 @@ namespace BakeryEngine
         public PluginCollection AllPlugins { get { return allPlugins; } }
         public PluginCollection ActivePlugins { get { return activePlugins; } }
 
-
         /// <summary>
         /// Constructor
         /// </summary>
@@ -102,7 +101,9 @@ namespace BakeryEngine
         /// </summary>
         /// <remarks>
         /// Took 1ms, Tested on i5-6200U, 151 plugins (Win10PESE 2016-09-01 default)
-        /// Time elapsed: 00:00:13.2500294 -> 00:00:13.2501122
+        /// Time elapsed: 00:00:14.0766582 -> 00:00:14.0767675
+        /// 
+        /// All Plugins : 155
         /// </remarks>
         private PluginCollection CollectActivePlugins(PluginCollection allPlugins)
         {

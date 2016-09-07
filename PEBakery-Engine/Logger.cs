@@ -17,7 +17,7 @@ namespace BakeryEngine
     public enum LogState
     {
         None = 0,
-        Success, Warning, Error, Infomation, Ignore
+        Success, Warning, Error, Information, Ignore
     }
 
     public class LogInfo
@@ -131,21 +131,35 @@ namespace BakeryEngine
 #endif
         }
 
+        public void Write(LogState state, string log)
+        {
+            sw.WriteLine($"[{state.ToString()}] {log}");
+#if DEBUG
+            sw.Flush();
+#endif
+        }
+
+        public void Write(LogState state, string log, int depth)
+        {
+            for (int i = 0; i <= depth; i++)
+                sw.Write("  ");
+            sw.WriteLine($"[{state.ToString()}] {log}");
+#if DEBUG
+            sw.Flush();
+#endif
+        }
+
         public void WriteVariables(BakeryVariables vars)
         {
-            string str = "\n\n[Local Variables]\n";
-            foreach (var local in vars.LocalVars)
-            {
-                str = string.Concat(str, local.Key, " (Raw)   = ", local.Value, "\n");
-                str = string.Concat(str, local.Key, " (Value) = ", vars.GetValue(VarsType.Local, local.Key), "\n");
-            }
-            str += "\n[Global Variables]\n";
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("[Global Variables]\n");
             foreach (var global in vars.GlobalVars)
             {
-                str = string.Concat(str, global.Key, " (Raw)   = ", global.Value, "\n");
-                str = string.Concat(str, global.Key, " (Value) = ", vars.GetValue(VarsType.Global, global.Key), "\n");
+                builder.Append($"{global.Key} (Raw)   = {global.Value}\n");
+                builder.Append($"{global.Key} (Value) = {vars.GetValue(VarsType.Global, global.Key)}\n");
             }
-            sw.Write(str);
+            sw.Write(builder.ToString());
 #if DEBUG
             sw.Flush();
 #endif

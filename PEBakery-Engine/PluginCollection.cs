@@ -115,6 +115,11 @@ namespace BakeryEngine
                 throw new PluginNotFoundException();
         }
 
+        public PluginAddress GetNextAddress(PluginAddress plugin)
+        {
+            return InternalGetNextAddress(plugin);
+        }
+
         public PluginAddress GetNextAddress(Plugin plugin)
         {
             return InternalGetNextAddress(GetAddress(plugin));
