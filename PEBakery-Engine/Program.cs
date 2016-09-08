@@ -14,8 +14,8 @@ namespace BakeryEngine
         {
             Project project = new Project("Win10PESE");
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            // BakeryEngine engine = new BakeryEngine(project, logger, true);
-            BakeryEngine engine = new BakeryEngine(project, logger);
+            BakeryEngine engine = new BakeryEngine(project, logger, Path.Combine(project.ProjectRoot, "joveler.script"), true); // For Debugging
+            // BakeryEngine engine = new BakeryEngine(project, logger);
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
             engine.RunPlugin();

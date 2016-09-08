@@ -346,12 +346,12 @@ namespace BakeryEngine
 
         public BakeryEngine(Project project, Logger logger, string entryPlugin)
         {
-            InternalConstructor(project, project.ActivePlugins.SearchByName(entryPlugin), logger, false);
+            InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false);
         }
 
         public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
         {
-            InternalConstructor(project, project.ActivePlugins.SearchByName(entryPlugin), logger, runOnePlugin);
+            InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin);
         }
 
         /// <summary>
@@ -371,9 +371,9 @@ namespace BakeryEngine
             LoadDefaultGlobalVariables();
             this.currentPlugin = entryPlugin;
             this.curPluginAddr = project.ActivePlugins.GetAddress(entryPlugin);
-            currentCommand = null;
-            returnAddress = new Stack<CommandAddress>();
-            currentSectionParams = new string[0];
+            this.currentCommand = null;
+            this.returnAddress = new Stack<CommandAddress>();
+            this.currentSectionParams = new string[0];
         }
 
         // Methods
@@ -411,11 +411,11 @@ namespace BakeryEngine
             VarsType type = VarsType.Local;
             if (currentPlugin == project.MainPlugin)
                 type = VarsType.Global;
-            logger.Write(LogState.Information, $"Processing [Variables] Section", 0);
+            logger.Write(LogState.Information, $"Processing section [Variables]", 0);
             variables.AddVariables(type, currentPlugin.Sections["Variables"]);
             foreach (var kv in (currentPlugin.Sections["Variables"].Get() as StringDictionary))
                 logger.Write(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", 1);
-            logger.Write(LogState.Information, $"Section [Variables] End", 0);
+            logger.Write(LogState.Information, $"End of section [Variables]", 0);
         }
 
         /// <summary>
@@ -426,7 +426,7 @@ namespace BakeryEngine
             PluginSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             curPluginAddr = Plugins.GetAddress(currentPlugin);
-            logger.Write($"\nRunning plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
+            logger.Write($"\nProcessing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
 
             variables.ResetLocalVaribles();
             LoadDefaultPluginVariables();
@@ -445,9 +445,7 @@ namespace BakeryEngine
                 if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
                     currentSectionParams = new string[0];
-                    BakeryCommand logCmd = new BakeryCommand("End of section", Opcode.None, new string[0], returnAddress.Count);
-                    string logMsg = string.Concat("Section [", nextCommand.section.SectionName, "] End");
-                    logger.Write(new LogInfo(logCmd, logMsg, LogState.Information));
+                    logger.Write(LogState.Information, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count);
                     try
                     {
                         nextCommand = returnAddress.Pop();
@@ -456,7 +454,7 @@ namespace BakeryEngine
                     }
                     catch (InvalidOperationException)
                     { // The Stack<T> is empty, readed plugin's end
-                        logger.Write($"Plugin End [{currentPlugin.ShortPath}]\n");
+                        logger.Write(LogState.Information, $"End of plugin [{currentPlugin.ShortPath}]\n");
                         if (runOnePlugin) // Just run one plugin
                             break; // Work is done, so exit
                         try
@@ -466,7 +464,7 @@ namespace BakeryEngine
                             currentPlugin = Plugins.GetFromAddress(curPluginAddr);
                             PluginSection section = currentPlugin.Sections["Process"];
                             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
-                            logger.Write($"Running plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
+                            logger.Write($"Processing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
                         }   
                         catch (EndOfPluginLevelException)
                         { // End of sectoin, so exit
@@ -482,7 +480,6 @@ namespace BakeryEngine
                 try
                 {
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
-                    
                     try
                     {
                         ExecuteCommand(currentCommand, logger);
@@ -502,6 +499,7 @@ namespace BakeryEngine
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
                     logger.Write(new LogInfo(e.Command, e.Message, LogState.Error));
                 }
+
                 nextCommand.line += 1;
             }
 

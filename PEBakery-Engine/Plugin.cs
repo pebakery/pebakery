@@ -314,6 +314,7 @@ namespace BakeryEngine
             }
 
             fullyParsed = true;
+            sr.Close();
             return dict;
         }
 
@@ -443,9 +444,7 @@ namespace BakeryEngine
             {
                 throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
             }
-        }
-
-        
+        }   
     }
 
     public enum SectionType

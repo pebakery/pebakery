@@ -76,7 +76,7 @@ namespace BakeryEngine
             // Convert dict's key to int array
             int[] levels = pluginsByLevel.Keys.OrderBy(level => level).ToArray();
 
-            var parseTasks = levels.SelectMany(level => LoadPlugins(plugins, pluginsByLevel[level].OrderBy(p => p.ToLower()).ToArray(), level));
+            var parseTasks = levels.SelectMany(level => LoadPlugins(plugins, pluginsByLevel[level].OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToArray(), level));
             Task.WaitAll(parseTasks.ToArray());
 
             // mainPlugin is mainLevel's first element, since mainLevel's element is always one.
@@ -92,7 +92,14 @@ namespace BakeryEngine
             return pluginsPaths.Select(p =>
             {
                 var t = i++;
-                return Task.Run(() => plugins[level][t] = new Plugin(p, projectRoot));
+                return Task.Run(() =>
+                {
+                    plugins[level][t] = new Plugin(p, projectRoot);
+#if DEBUG
+                    Console.WriteLine($"{level} {p}");
+#endif
+                    // Interlocked.Increment(ref allPluginsCount);
+                });
             });
         }
 

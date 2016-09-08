@@ -88,12 +88,12 @@ namespace BakeryEngine
                 sr.Close();
                 sw.Close();
                 Helper.FileReplaceEx(temp, fileName);
-                logs.Add(new LogInfo(cmd, string.Concat("Prepened [", line, "] to [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Prepened [{line}] to [{rawFileName}]", LogState.Success));
             }
             else if (mode == 1) // Append
             {
                 File.AppendAllText(fileName, line + "\r\n", encoding);
-                logs.Add(new LogInfo(cmd, string.Concat("Appended [", line, "] to [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Appended [{line}] to [{rawFileName}]", LogState.Success));
             }
             else if (mode == 2) // Place
             { // In Place mode, placeLineNum starts from 1;
@@ -112,7 +112,7 @@ namespace BakeryEngine
                 sr.Close();
                 sw.Close();
                 Helper.FileReplaceEx(temp, fileName);
-                logs.Add(new LogInfo(cmd, string.Concat("Placed [", line, "] to [", placeLineNum, "]th row of [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]", LogState.Success));
             }
 
             return logs.ToArray();
@@ -147,11 +147,11 @@ namespace BakeryEngine
                 string value = IniFile.GetKey(fileName, section, key);
                 if (value != null)
                 variables.SetValue(VarsType.Local, varName, value);
-                logs.Add(new LogInfo(cmd, string.Concat("[%", varName, "%] set to [", value, "], read from [", rawFileName, "]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Var [%{varName}%] set to [{value}], read from [{rawFileName}]", LogState.Success));
             }
             catch (FileNotFoundException)
             {
-                logs.Add(new LogInfo(cmd, string.Concat("[", rawFileName, "] does not exists"), LogState.Error));
+                logs.Add(new LogInfo(cmd, $"Var [{rawFileName}] does not exists", LogState.Error));
             }
 
             return logs.ToArray();
@@ -183,9 +183,9 @@ namespace BakeryEngine
 
             bool result = IniFile.SetKey(fileName, section, key, value);
             if (result)
-                logs.Add(new LogInfo(cmd, string.Concat($"Key [{key}] and its value [{value}] wrote to [{rawFileName}]"), LogState.Success));
+                logs.Add(new LogInfo(cmd, $"Key [{key}] and its value [{value}] wrote to [{rawFileName}]", LogState.Success));
             else
-                logs.Add(new LogInfo(cmd, string.Concat($"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]"), LogState.Error));
+                logs.Add(new LogInfo(cmd, $"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]", LogState.Error));
             return logs.ToArray();
         }
     }

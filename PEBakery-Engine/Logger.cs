@@ -107,6 +107,7 @@ namespace BakeryEngine
                 return;
             for (int i = 0; i <= logInfo.Command.SectionDepth; i++)
                 sw.Write("  ");
+           
             if (logInfo.Command.Opcode == Opcode.None)
                 sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Result} ({logInfo.Command.RawCode})");
             else

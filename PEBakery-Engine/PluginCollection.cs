@@ -63,21 +63,32 @@ namespace BakeryEngine
             this.count = count;
         }
 
-        public Plugin SearchByName(string pluginName)
+        public Plugin SearchByShortPath(string shortPath)
         {
             foreach (int level in dict.Keys)
             {
                 for (int i = 0; i < dict[level].Length; i++)
                 {
-                    if (string.Equals(pluginName, dict[level][i].PluginName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Interlocked.Increment(ref allPluginsCount);
+                    if (string.Equals(shortPath, dict[level][i].ShortPath, StringComparison.OrdinalIgnoreCase))
                         return dict[level][i];
-                    }
                 }
             }
             // not found
-            throw new PluginNotFoundException($"Plugin [{pluginName}] not found");
+            throw new PluginNotFoundException($"Plugin [{shortPath}] not found");
+        }
+
+        public Plugin SearchByFullPath(string fullPath)
+        {
+            foreach (int level in dict.Keys)
+            {
+                for (int i = 0; i < dict[level].Length; i++)
+                {
+                    if (string.Equals(fullPath, dict[level][i].FullPath, StringComparison.OrdinalIgnoreCase))
+                        return dict[level][i];
+                }
+            }
+            // not found
+            throw new PluginNotFoundException($"Plugin [{fullPath}] not found");
         }
 
         public Plugin GetNext(Plugin plugin)
