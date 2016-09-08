@@ -15,17 +15,19 @@ namespace BakeryEngine
          * Variables 우선순위
          * local variables > global variables
          */
+        
+        // Fields
         private StringDictionary globalVars;
-        public StringDictionary GlobalVars
-        {
-            get { return globalVars; }
-        }
         private StringDictionary localVars;
-        public StringDictionary LocalVars
-        {
-            get { return localVars; }
-        }
 
+        // Properties
+        public StringDictionary GlobalVars { get { return globalVars; } }
+        public StringDictionary LocalVars { get { return localVars; } }
+
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public BakeryVariables()
         {
             localVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
@@ -134,18 +136,20 @@ namespace BakeryEngine
 
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
-                MatchCollection matches = Regex.Matches(str, @"%(.+)%", RegexOptions.Compiled);
+                MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
                 StringBuilder builder = new StringBuilder();
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].ToString();
-                    int startOffset;
                     if (x == 0)
-                        startOffset = 0;
+                        builder.Append(str.Substring(0, matches[0].Index));
                     else
-                        startOffset = matches[x - 1].Index;
-
-                    builder.Append(str.Substring(startOffset, matches[x].Index));
+                    {
+                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                        int endOffset = matches[x].Index - startOffset;
+                        builder.Append(str.Substring(startOffset, endOffset));
+                    }
+                    
                     if (globalVars.ContainsKey(varName))
                         builder.Append(globalVars[varName]);
                     else if (localVars.ContainsKey(varName))
@@ -155,7 +159,9 @@ namespace BakeryEngine
                         builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
                 if (0 < matches.Count) // Only copy it if variable exists
+                {
                     str = builder.ToString();
+                }
             }
 
             return str;
