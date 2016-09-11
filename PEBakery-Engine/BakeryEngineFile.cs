@@ -73,9 +73,9 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = variables.Expand(cmd.Operands[0]);
+            string srcFileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawSrcFileName = cmd.Operands[0];
-            string destPath = variables.Expand(cmd.Operands[1]);
+            string destPath = EscapeString(variables.Expand(cmd.Operands[1]));
             string rawDestPath = cmd.Operands[1];
 
             // Check srcFileName contains wildcard
@@ -207,7 +207,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string filePath = variables.Expand(cmd.Operands[0]);
+            string filePath = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawFilePath = cmd.Operands[0];
 
             // Check srcFileName contains wildcard
@@ -288,9 +288,9 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = variables.Expand(cmd.Operands[0]);
+            string srcFileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawSrcFileName = cmd.Operands[0];
-            string destFileName = variables.Expand(cmd.Operands[1]);
+            string destFileName = EscapeString(variables.Expand(cmd.Operands[1]));
             string rawDestFileName = cmd.Operands[1];
 
             // Check if srcFileName exists
@@ -346,7 +346,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string fileName = variables.Expand(cmd.Operands[0]);
+            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawFileName = cmd.Operands[0];
 
             bool preserve = false;

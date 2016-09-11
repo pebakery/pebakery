@@ -28,9 +28,9 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             // Get necesssary operand
-            string pluginFile = variables.Expand(cmd.Operands[0]);
+            string pluginFile = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawPluginFile = cmd.Operands[0];
-            string sectionName = variables.Expand(cmd.Operands[1]);
+            string sectionName = EscapeString(variables.Expand(cmd.Operands[1]));
             string rawSectoinName = cmd.Operands[1];
 
             // Get optional operand 

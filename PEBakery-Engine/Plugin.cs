@@ -275,12 +275,12 @@ namespace BakeryEngine
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             SectionDictionary dict = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
-            StreamReader sr = new StreamReader(new FileStream(fullPath, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(fullPath));
+            StreamReader reader = new StreamReader(new FileStream(fullPath, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(fullPath));
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
             }
 
@@ -290,7 +290,7 @@ namespace BakeryEngine
             bool loadSection = false;
             SectionType type = SectionType.None;
             List<string> lines = new List<string>();
-            while ((line = sr.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
                 if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
@@ -311,10 +311,19 @@ namespace BakeryEngine
                 { // line of section
                     lines.Add(line);
                 }
+
+                if (reader.Peek() == -1)
+                { // End of .script
+                    if (inSection)
+                    {
+                        dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
+                        lines = new List<string>(); // original List<string> will be deleted after GC
+                    }
+                }
             }
 
             fullyParsed = true;
-            sr.Close();
+            reader.Close();
             return dict;
         }
 

@@ -13,6 +13,7 @@ namespace BakeryEngine
         static int Main(string[] args)
         {
             Project project = new Project("Win10PESE");
+            // Project project = new Project("Joveler");
             Logger logger = new Logger("log.txt", LogFormat.Text);
             // BakeryEngine engine = new BakeryEngine(project, logger, Path.Combine(project.ProjectRoot, "joveler.script"), true); // For Debugging
             BakeryEngine engine = new BakeryEngine(project, logger);

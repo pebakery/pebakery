@@ -17,26 +17,20 @@ namespace BakeryEngine
     public enum LogState
     {
         None = 0,
-        Success, Warning, Error, Information, Ignore
+        Success, Warning, Error, Info, Ignore, Muted
     }
 
     public class LogInfo
     {
         private BakeryCommand command;
-        public BakeryCommand Command
-        {
-            get { return command; }
-        }
+        private BakerySubCommand subCommand;
         private string result;
-        public string Result
-        {
-            get { return result; }
-        }
-        private LogState state;
-        public LogState State
-        {
-            get { return state;  }
-        }
+        public LogState State;
+
+        public BakeryCommand Command { get { return command; } }
+        public BakerySubCommand SubCommand { get { return subCommand;  } }
+        public string Result { get { return result; } }
+        
 
         /// <summary>
         /// Forge an log info
@@ -48,7 +42,21 @@ namespace BakeryEngine
         {
             this.command = command;
             this.result = result;
-            this.state = state;
+            this.State = state;
+        }
+
+        /// <summary>
+        /// Forge an log info
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="result"></param>
+        /// <param name="state"></param>
+        public LogInfo(BakeryCommand command, BakerySubCommand subCommand, string result, LogState state)
+        {
+            this.command = command;
+            this.subCommand = subCommand;
+            this.result = result;
+            this.State = state;
         }
     }
 
@@ -57,27 +65,34 @@ namespace BakeryEngine
         /// <summary>
         /// Fields
         /// </summary>
-        private string logFileName;
+        private string logFile;
         private LogFormat logFormat;
-        private StreamWriter sw;
+        private StreamWriter writer;
+        public uint ErrorOff;
+        public bool SuspendLog;
+
+        public string LogFile { get { return logFile; } }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="logFileName"></param>
         /// <param name="logFormat"></param>
-        public Logger(string logFileName, LogFormat logFormat)
+        public Logger(string logFile, LogFormat logFormat)
         {
             try
             {
-                this.logFileName = logFileName;
+                this.logFile = logFile;
                 this.logFormat = logFormat;
+                this.ErrorOff = 0;
+                this.SuspendLog = false;
 
-                FileStream fs = new FileStream(this.logFileName, FileMode.Create, FileAccess.Write, FileShare.Write);
+                Encoding encoding;
                 if (logFormat == LogFormat.Text)
-                    sw = new StreamWriter(fs, Encoding.UTF8); // With BOM, for txt
+                    encoding = Encoding.UTF8; // With BOM, for txt
                 else
-                    sw = new StreamWriter(fs, new UTF8Encoding(false)); // Without BOM, for HTML
+                    encoding = new UTF8Encoding(false); // Without BOM, for HTML
+                this.writer = new StreamWriter(new FileStream(this.logFile, FileMode.Create, FileAccess.Write), encoding); // With BOM, for txt
 
                 PrintBanner();
             }
@@ -92,62 +107,65 @@ namespace BakeryEngine
             Close();
         }
 
+        public void Flush()
+        {
+            writer.Flush();
+        }
+
         private void PrintBanner()
         {
             PEBakeryInfo info = new PEBakeryInfo();
-            sw.WriteLine($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log");
-#if DEBUG
-            sw.Flush();
-#endif
+            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log", false);
         }
 
-        public void Write(LogInfo logInfo)
+        public void Write(LogInfo log)
         {
-            if (logInfo == null || logInfo.State == LogState.None) // null means do not log
-                return;
-            for (int i = 0; i <= logInfo.Command.SectionDepth; i++)
-                sw.Write("  ");
-           
-            if (logInfo.Command.Opcode == Opcode.None)
-                sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Result} ({logInfo.Command.RawCode})");
-            else
-                sw.WriteLine($"[{logInfo.State.ToString()}] {logInfo.Command.Opcode.ToString()} - {logInfo.Result} ({logInfo.Command.RawCode})");
-
-#if DEBUG
-            sw.Flush();
-#endif
+            InternalWriter(log, false);
         }
 
-        public void Write(LogInfo[] logInfos)
+        public void Write(LogInfo log, bool errorOff)
         {
-            foreach (LogInfo logInfo in logInfos)
-                Write(logInfo);
+            InternalWriter(log, errorOff);
+        }
+
+        public void Write(LogInfo[] logs)
+        {
+            InternalWriter(logs, false);
+        }
+
+        public void Write(LogInfo[] logs, bool errorOff)
+        {
+            InternalWriter(logs, errorOff);
         }
 
         public void Write(string log)
         {
-            sw.WriteLine(log);
-#if DEBUG
-            sw.Flush();
-#endif
+            InternalWriter(log, false);
+        }
+
+        public void Write(string log, bool errorOff)
+        {
+            InternalWriter(log, errorOff);
         }
 
         public void Write(LogState state, string log)
         {
-            sw.WriteLine($"[{state.ToString()}] {log}");
-#if DEBUG
-            sw.Flush();
-#endif
+            InternalWriter(state, log, 0, false);
+        }
+
+        public void Write(LogState state, string log, bool errorOff)
+        {
+            InternalWriter(state, log, 0, errorOff);
         }
 
         public void Write(LogState state, string log, int depth)
         {
-            for (int i = 0; i <= depth; i++)
-                sw.Write("  ");
-            sw.WriteLine($"[{state.ToString()}] {log}");
-#if DEBUG
-            sw.Flush();
-#endif
+            InternalWriter(state, log, depth, false);
+        }
+
+        public void Write(LogState state, string log, int depth, bool errorOff)
+        {
+            InternalWriter(state, log, depth, errorOff);
         }
 
         public void WriteVariables(BakeryVariables vars)
@@ -160,9 +178,85 @@ namespace BakeryEngine
                 builder.Append($"{global.Key} (Raw)   = {global.Value}\n");
                 builder.Append($"{global.Key} (Value) = {vars.GetValue(VarsType.Global, global.Key)}\n");
             }
-            sw.Write(builder.ToString());
+            InternalWriter(builder.ToString(), false);
+        }
+
+        private void InternalWriter(string log, bool errorOff)
+        {
+            if (SuspendLog == true)
+                return;
+            writer.WriteLine(log);
+            if (errorOff && 0 < ErrorOff)
+                ErrorOff -= 1;
 #if DEBUG
-            sw.Flush();
+            writer.Flush();
+#endif
+        }
+
+        public void InternalWriter(LogState state, string log, int depth, bool errorOff)
+        {
+            if (SuspendLog == true)
+                return;
+            if (errorOff && 0 < ErrorOff)
+            {
+                if (state == LogState.Error)
+                    state = LogState.Muted;
+            }
+                
+            for (uint i = 0; i <= depth; i++)
+                writer.Write("  ");
+            writer.WriteLine($"[{state.ToString()}] {log}");
+
+            if (errorOff && 0 < ErrorOff)
+                ErrorOff -= 1;
+#if DEBUG
+            writer.Flush();
+#endif
+        }
+
+        private void InternalWriter(LogInfo[] logs, bool errorOff)
+        {
+            if (SuspendLog == true)
+                return;
+            
+            foreach (LogInfo log in logs)
+            {
+                if (errorOff && 0 < ErrorOff)
+                {
+                    if (log.State == LogState.Error)
+                        log.State = LogState.Muted;
+                }
+                InternalWriter(log, false);
+            }
+
+            if (errorOff && 0 < ErrorOff)
+                ErrorOff -= 1;
+        }
+
+        private void InternalWriter(LogInfo log, bool errorOff)
+        {
+            if (SuspendLog == true)
+                return;
+            if (errorOff && 0 < ErrorOff)
+            {
+                if (log.State == LogState.Error)
+                    log.State = LogState.Muted;
+            }
+
+            if (log == null || log.State == LogState.None) // null means do not log
+                return;
+            for (int i = 0; i <= log.Command.SectionDepth; i++)
+                writer.Write("  ");
+
+            if (log.Command.Opcode == Opcode.None)
+                writer.WriteLine($"[{log.State.ToString()}] {log.Result} ({log.Command.RawCode})");
+            else
+                writer.WriteLine($"[{log.State.ToString()}] {log.Command.Opcode.ToString()} - {log.Result} ({log.Command.RawCode})");
+
+            if (errorOff && 0 < ErrorOff)
+                ErrorOff -= 1;
+#if DEBUG
+            writer.Flush();
 #endif
         }
 
@@ -170,7 +264,7 @@ namespace BakeryEngine
         {
             try
             {
-                sw.Close();
+                writer.Close();
             }
             catch (ObjectDisposedException)
             {

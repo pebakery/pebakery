@@ -149,144 +149,6 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Add key into ini file. Return true if success.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        public static bool SetKey(string file, string section, string key, string value)
-        {
-            return InternalSetKey(file, section, key, value);
-        }
-        /// <summary>
-        /// Add key into ini file. Return true if success.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        public static bool SetKey(string file, IniKey iniKey)
-        {
-            return InternalSetKey(file, iniKey.section, iniKey.key, iniKey.value);
-        }
-        private static bool InternalSetKey(string file, string section, string key, string value)
-        {
-            bool fileExist = File.Exists(file);
-
-            Encoding encoding = null;
-            StreamReader sr = null;
-            StreamWriter sw = null;
-            if (fileExist)
-            {
-                encoding = Helper.DetectTextEncoding(file);
-                sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), encoding);
-
-                if (sr.Peek() == -1)
-                {
-                    sr.Close();
-                    fileExist = false;
-                }
-            }
-
-            // If file do not exists or blank, just create new file
-            if (!fileExist)
-            {
-                sw = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write), Encoding.UTF8);
-                sw.WriteLine(string.Concat("[", section, "]"));
-                sw.WriteLine(string.Concat(key, "=", value));
-                sw.Close();
-                return true;
-            }
-
-            string temp = Helper.CreateTempFile();
-            sw = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
-            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            string rawLine = string.Empty;
-            string line = string.Empty;
-            bool inSection = false;
-            bool wroteKey = false;
-
-            while ((rawLine = sr.ReadLine()) != null)
-            { // Read text line by line
-                line = rawLine.Trim(); // Remove whitespace
-                if (wroteKey || line.StartsWith("#", stricmp) || line.StartsWith(";", stricmp) || line.StartsWith("//", stricmp))
-                { // Ignore comments. If you wrote key successfully, also skip.
-                    sw.WriteLine(rawLine); // Copy ths line
-                    continue;
-                }
-
-                if (inSection)
-                {
-                    int idx = line.IndexOf('=');
-                    if (idx != -1 && idx != 0)
-                    {
-                        string keyOfLine = line.Substring(0, idx);
-                        if (string.Equals(keyOfLine, key, stricmp))
-                        { // key exists, so overwrite
-                            wroteKey = true;
-                            sw.WriteLine(string.Concat(keyOfLine, "=", value)); // Copy ths line
-                            continue;
-                        }
-                    }
-
-                    // Find end or blank line of current section, and write a key
-                    if (string.Equals(line, string.Empty)) // Find blank line after section
-                    {
-                        wroteKey = true;
-                        sw.WriteLine(string.Concat(key, "=", value, Environment.NewLine));
-                    }
-                    else if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp)) // Next section starts
-                    {
-                        wroteKey = true;
-                        sw.WriteLine(string.Concat(key, "=", value));
-                        sw.WriteLine(rawLine);
-                    }
-                    else if (sr.Peek() == -1) // End of file
-                    {
-                        wroteKey = true;
-                        sw.WriteLine(rawLine);
-                        sw.WriteLine(string.Concat(key, "=", value));
-                    }
-                    else
-                        sw.WriteLine(rawLine);
-                }
-                else
-                { // not in correct section
-                    // Check if encountered section head Ex) [Process]
-                    if (line.StartsWith("[", StringComparison.OrdinalIgnoreCase) && line.EndsWith("]", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(section, line.Substring(1, line.Length - 2), StringComparison.OrdinalIgnoreCase))
-                    {
-                        inSection = true; // Found correct section
-                    }
-                    sw.WriteLine(rawLine); // Copy ths line
-                }
-
-                // End of file
-                if (sr.Peek() == -1)
-                {
-                    if (inSection)
-                    { // Found section, but file has end
-                        wroteKey = true;
-                        sw.WriteLine(string.Concat(key, "=", value));
-                    }
-                    else
-                    { // No sectoin found! -> so create section
-                        wroteKey = true;
-                        sw.WriteLine(string.Concat(Environment.NewLine, "[", section, "]"));
-                        sw.WriteLine(string.Concat(key, "=", value));
-                    }
-                }
-            }
-            sr.Close();
-            sw.Close();
-
-            if (wroteKey)            
-                Helper.FileReplaceEx(temp, file);
-            return wroteKey;
-        }
-
-        /// <summary>
         /// Get key's value from ini file.
         /// </summary>
         /// <param name="file"></param>
@@ -384,11 +246,33 @@ namespace BakeryEngine
             sr.Close();
             return iniKeys;
         }
-        
+
         // TODO End : Need-refactor block end
 
 
         // Refactored
+        /// <summary>
+        /// Add key into ini file. Return true if success.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static bool SetKey(string file, string section, string key, string value)
+        {
+            return InternalSetKeys(file, new IniKey[] { new IniKey(section, key, value) });
+        }
+        /// <summary>
+        /// Add key into ini file. Return true if success.
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static bool SetKey(string file, IniKey iniKey)
+        {
+            return InternalSetKeys(file, new IniKey[] { iniKey });
+        }
         /// <summary>
         /// Add key into ini file.
         /// </summary>
@@ -410,16 +294,16 @@ namespace BakeryEngine
 
             int len = iniKeys.Length;
             Encoding encoding = null;
-            StreamReader sr = null;
-            StreamWriter sw = null;
+            StreamReader reader = null;
+            StreamWriter writer = null;
             if (fileExist)
             {
                 encoding = Helper.DetectTextEncoding(file);
-                sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), encoding);
+                reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), encoding);
 
-                if (sr.Peek() == -1)
+                if (reader.Peek() == -1)
                 {
-                    sr.Close();
+                    reader.Close();
                     fileExist = false;
                 }
             }
@@ -427,7 +311,7 @@ namespace BakeryEngine
             // If file do not exists or blank, just create new file and insert keys
             if (!fileExist)
             {
-                sw = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write), Encoding.UTF8);
+                writer = new StreamWriter(new FileStream(file, FileMode.Create, FileAccess.Write), Encoding.UTF8);
                 Array.Sort(iniKeys, new IniKeyComparer());
                 string beforeSection = string.Empty;
                 for (int i = 0; i < len; i++)
@@ -435,18 +319,18 @@ namespace BakeryEngine
                     if (!string.Equals(beforeSection, iniKeys[i].section, stricmp))
                     {
                         if (0 < i)
-                            sw.WriteLine();
-                        sw.WriteLine(string.Concat("[", iniKeys[i].section, "]"));
+                            writer.WriteLine();
+                        writer.WriteLine(string.Concat("[", iniKeys[i].section, "]"));
                     }
-                    sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
+                    writer.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
                     beforeSection = iniKeys[i].section;
                 }
-                sw.Close();
+                writer.Close();
                 return true;
             }
 
             string temp = Helper.CreateTempFile();
-            sw = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
+            writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
             string rawLine = string.Empty;
             string line = string.Empty;
             bool inTargetSection = false;
@@ -457,7 +341,7 @@ namespace BakeryEngine
             for (int i = 0; i < len; i++)
                 wroteKey[i] = false;
 
-            while ((rawLine = sr.ReadLine()) != null)
+            while ((rawLine = reader.ReadLine()) != null)
             { // Read text line by line
                 bool thisLineWritten = false;
                 line = rawLine.Trim(); // Remove whitespace
@@ -466,7 +350,8 @@ namespace BakeryEngine
                 if (len == wroteKeyCount || line.StartsWith("#", stricmp) || line.StartsWith(";", stricmp) || line.StartsWith("//", stricmp))
                 {
                     thisLineWritten = true;
-                    sw.WriteLine(rawLine);
+                    writer.WriteLine(rawLine);
+                    continue;
                 }
 
                 // Check if encountered section head Ex) [Process]
@@ -482,7 +367,7 @@ namespace BakeryEngine
                             {
                                 wroteKey[i] = true;
                                 wroteKeyCount++;
-                                sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
+                                writer.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
                             }
                         }
                     }
@@ -501,7 +386,7 @@ namespace BakeryEngine
                         }
                     }
                     thisLineWritten = true;
-                    sw.WriteLine(rawLine);
+                    writer.WriteLine(rawLine);
                 }
 
                 // key=value
@@ -518,19 +403,19 @@ namespace BakeryEngine
                                 wroteKey[i] = true;
                                 wroteKeyCount++;
                                 thisLineWritten = true;
-                                sw.WriteLine(string.Concat(keyOfLine, "=", iniKeys[i].value));
+                                writer.WriteLine(string.Concat(keyOfLine, "=", iniKeys[i].value));
                             }
                         }
                         if (!thisLineWritten)
                         {
                             thisLineWritten = true;
-                            sw.WriteLine(rawLine);
+                            writer.WriteLine(rawLine);
                         }
                     }
                     else
                     {
                         thisLineWritten = true;
-                        sw.WriteLine(rawLine);
+                        writer.WriteLine(rawLine);
                     }
                 }
 
@@ -546,16 +431,16 @@ namespace BakeryEngine
                                 wroteKey[i] = true;
                                 wroteKeyCount++;
                                 thisLineWritten = true;
-                                sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
+                                writer.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
                             }
                         }
                     }
                     thisLineWritten = true;
-                    sw.WriteLine();
+                    writer.WriteLine();
                 }
 
                 // End of file
-                if (sr.Peek() == -1)
+                if (reader.Peek() == -1)
                 {
                     if (inTargetSection)
                     { // Currently in section? check currentSection
@@ -566,9 +451,9 @@ namespace BakeryEngine
                                 wroteKey[i] = true;
                                 wroteKeyCount++;
                                 if (!thisLineWritten)
-                                    sw.WriteLine(rawLine);
+                                    writer.WriteLine(rawLine);
                                 thisLineWritten = true;
-                                sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
+                                writer.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
                             }
                         }
                     }
@@ -583,9 +468,9 @@ namespace BakeryEngine
                             if (!processedSection.Contains(iniKeys[i].section))
                             {
                                 processedSection.Add(iniKeys[i].section);
-                                sw.WriteLine(string.Concat(Environment.NewLine, "[", iniKeys[i].section, "]"));
+                                writer.WriteLine(string.Concat(Environment.NewLine, "[", iniKeys[i].section, "]"));
                             }
-                            sw.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
+                            writer.WriteLine(string.Concat(iniKeys[i].key, "=", iniKeys[i].value));
                             inTargetSection = true;
                             currentSection = iniKeys[i].section;
                             thisLineWritten = true;
@@ -594,10 +479,10 @@ namespace BakeryEngine
                 }
 
                 if (!thisLineWritten)
-                    sw.WriteLine(rawLine);
+                    writer.WriteLine(rawLine);
             }
-            sr.Close();
-            sw.Close();
+            reader.Close();
+            writer.Close();
 
             if (wroteKeyCount == len)
             {
@@ -681,12 +566,12 @@ namespace BakeryEngine
         public static string[] ParseSectionToStrings(string file, string section)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
             }
 
@@ -694,7 +579,7 @@ namespace BakeryEngine
             bool appendState = false;
             int idx = 0;
             List<string> lines = new List<string>();
-            while ((line = sr.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
                 if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))

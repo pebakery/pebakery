@@ -36,9 +36,9 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = variables.Expand(cmd.Operands[0]);
+            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawFileName = cmd.Operands[0];
-            string line = variables.Expand(cmd.Operands[1]);
+            string line = EscapeString(variables.Expand(cmd.Operands[1]));
             int mode = 1;
             int placeLineNum = 0;
 
@@ -136,11 +136,16 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = variables.Expand(cmd.Operands[0]);
-            string section = variables.Expand(cmd.Operands[1]);
-            string key = variables.Expand(cmd.Operands[2]);
+            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
+            string key = cmd.Operands[2]; // 문서화 : 여기 값은 변수 Expand 안한다.
             string varName = cmd.Operands[3].Trim('%');
             string rawFileName = cmd.Operands[0];
+
+            if (string.Equals(section, string.Empty, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperandException("Section name can not be empty", cmd);
+            if (string.Equals(key, string.Empty, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperandException("Key name can not be empty", cmd);
 
             try
             {
@@ -151,7 +156,7 @@ namespace BakeryEngine
             }
             catch (FileNotFoundException)
             {
-                logs.Add(new LogInfo(cmd, $"Var [{rawFileName}] does not exists", LogState.Error));
+                logs.Add(new LogInfo(cmd, $"File [{rawFileName}] does not exists", LogState.Error));
             }
 
             return logs.ToArray();
@@ -175,11 +180,16 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = variables.Expand(cmd.Operands[0]);
-            string section = variables.Expand(cmd.Operands[1]);
-            string key = variables.Expand(cmd.Operands[2]);
-            string value = variables.Expand(cmd.Operands[3]);
+            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
+            string key = cmd.Operands[2]; // 문서화 : 여기 값은 변수 Expand 안한다.
+            string value = EscapeString(variables.Expand(cmd.Operands[3]));
             string rawFileName = cmd.Operands[0];
+
+            if (string.Equals(section, string.Empty, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperandException("Section name can not be empty", cmd);
+            if (string.Equals(key, string.Empty, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperandException("Key name can not be empty", cmd);
 
             bool result = IniFile.SetKey(fileName, section, key, value);
             if (result)

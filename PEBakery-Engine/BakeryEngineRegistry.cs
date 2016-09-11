@@ -47,8 +47,8 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = variables.Expand(cmd.Operands[0]);
-            string hiveFile = variables.Expand(cmd.Operands[1]);
+            string keyName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string hiveFile = EscapeString(variables.Expand(cmd.Operands[1]));
             string rawHiveFile = cmd.Operands[1];
 
             if (!File.Exists(hiveFile))
@@ -88,7 +88,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = variables.Expand(cmd.Operands[0]);
+            string keyName = EscapeString(variables.Expand(cmd.Operands[0]));
             string rawKeyName = cmd.Operands[0];
 
             if (!File.Exists(keyName))
@@ -98,7 +98,7 @@ namespace BakeryEngine
 
             int ret = RegUnLoadKey(HKLM, keyName);
             if (ret == ResultWin32.ERROR_SUCCESS)
-                logs.Add(new LogInfo(cmd, $"Unloaded [HKLM\\{rawKeyName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, $@"Unloaded [HKLM\{rawKeyName}]", LogState.Success));
             else
                 logs.Add(new LogInfo(cmd, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
 
