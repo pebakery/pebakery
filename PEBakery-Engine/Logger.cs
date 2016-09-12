@@ -209,10 +209,10 @@ namespace BakeryEngine
         private void PrintBanner()
         {
             PEBakeryInfo info = new PEBakeryInfo();
-            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log", false, false);
+            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log\n", false, false);
         }
 
-        public void WriteVariables(BakeryVariables vars)
+        public void WriteGlobalVariables(BakeryVariables vars)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -317,9 +317,9 @@ namespace BakeryEngine
                 else
                     writer.WriteLine($"[{log.State.ToString()}] {log.Command.Opcode.ToString()} - {log.Result} ({log.Command.RawCode})");
             }
-            else
+            else 
             { // No BakeryCommand
-                writer.WriteLine(log.Result);
+                writer.WriteLine($"[{log.State.ToString()}] {log.Result}");
             }
             
 

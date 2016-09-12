@@ -33,7 +33,7 @@ namespace BakeryEngine
         // StringFormat
         StrFormat,
         // System
-        System, ShellExecute,
+        System, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // Branch
         Run, Exec, If, Else, Loop, End,
         // Control
@@ -363,8 +363,8 @@ namespace BakeryEngine
         private Stack<CommandAddress> returnAddress;
 
         // Fields : System Commands 
-        private CommandAddress? onBuildExit;
-        private CommandAddress? onPluginExit;
+        private BakeryCommand onBuildExit;
+        private BakeryCommand onPluginExit;
 
         // Properties
         private PluginCollection Plugins { get { return project.ActivePlugins; } }
@@ -408,6 +408,8 @@ namespace BakeryEngine
             this.runOnePlugin = runOnePlugin;
 
             LoadDefaultGlobalVariables();
+            logger.WriteGlobalVariables(variables);
+
             this.currentPlugin = entryPlugin;
             this.curPluginAddr = project.ActivePlugins.GetAddress(entryPlugin);
             this.currentCommand = null;
@@ -430,18 +432,18 @@ namespace BakeryEngine
         {
             PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
-            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir);
+            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir, false, false);
             // Tools
-            variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
+            variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"), false, false);
 
             // Version
-            variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString());
+            variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString(), false, false);
             // Build
-            variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}");
+            variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}", false, false);
             // ProjectDir
-            variables.SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName));
+            variables.SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName), false, false);
             // TargetDir
-            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName));
+            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName), false, false);
         }
 
         private void LoadDefaultPluginVariables()
@@ -475,7 +477,7 @@ namespace BakeryEngine
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             logger.Write($"Processing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
 
-            variables.ResetLocalVaribles();
+            variables.ResetVariables(VarsType.Local);
             LoadDefaultPluginVariables();
         }
 
@@ -510,11 +512,23 @@ namespace BakeryEngine
                             break; // Work is done, so exit
                         try
                         {
+                            if (onPluginExit != null) // PluginExit event callback
+                            {
+                                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnPluginExit]"));
+                                ExecuteCommand(onPluginExit);
+                                logger.Write(new LogInfo(LogState.Info, $"End of callback [OnPluginExit]\n"));
+                            }
                             curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
                             ReadyToRunPlugin();
                         }   
                         catch (EndOfPluginLevelException)
-                        { // End of section, so exit
+                        { // End of plugins, build done. Exit.
+                            if (onBuildExit != null) // OnBuildExit event callback
+                            {
+                                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnBuildExit]"));
+                                ExecuteCommand(onBuildExit);
+                                logger.Write(new LogInfo(LogState.Info, $"End of callback [OnBuildExit]\n"));
+                            }
                             break;
                         }
                     } 
@@ -529,7 +543,7 @@ namespace BakeryEngine
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
                     try
                     {
-                        ExecuteCommand(currentCommand, logger);
+                        ExecuteCommand(currentCommand);
                     }
                     catch (InvalidOpcodeException e)
                     {
@@ -549,8 +563,6 @@ namespace BakeryEngine
 
                 nextCommand.line += 1;
             }
-
-            logger.WriteVariables(variables);
         }
 
         /// <summary>
@@ -558,7 +570,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="logger"></param>
-        private void ExecuteCommand(BakeryCommand cmd, Logger logger)
+        private void ExecuteCommand(BakeryCommand cmd)
         {
             LogInfo log = null;
             LogInfo[] logs = null;
@@ -602,6 +614,11 @@ namespace BakeryEngine
                     case Opcode.System:
                         logs = this.SystemCommands(cmd);
                         break;
+                    case Opcode.ShellExecute:
+                    case Opcode.ShellExecuteEx:
+                    case Opcode.ShellExecuteDelete:
+                        logs = this.ShellExecute(cmd);
+                        break;
                     // Branch
                     case Opcode.Run:
                     case Opcode.Exec:
@@ -628,13 +645,11 @@ namespace BakeryEngine
             
             if (log != null) logger.Write(log);
             if (logs != null) logger.Write(logs, true);
-        }       
+        }
 
         /// <summary>
         /// Parse raw command in string into BakeryCommand instance.
         /// </summary>
-        /// <param name="rawCode"></param>
-        /// <returns></returns>
         private BakeryCommand ParseCommand(string rawCode, CommandAddress address)
         {
             Opcode opcode = Opcode.None;
@@ -657,24 +672,18 @@ namespace BakeryEngine
             string[] slices = rawCode.Split(',');
 
             // Parse opcode
+            string opcodeStr = slices[0].Trim();
             try
             {
-                Opcode opcodeValue = (Opcode)Enum.Parse(typeof(Opcode), slices[0].Trim(), true);
-                if (Enum.IsDefined(typeof(Opcode), opcodeValue))
-                {
-                    if (opcodeValue != Opcode.None && opcodeValue != Opcode.Comment)
-                        opcode = opcodeValue;
-                    else
-                        throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address, returnAddress.Count));
-                }
-                else
-                    throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address, returnAddress.Count));
+                opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
+                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.Comment)
+                    throw new ArgumentException();
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException($"Unknown command [{slices[0].Trim()}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address, returnAddress.Count));
-            } // Do nothing
-            
+                throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address, returnAddress.Count));
+            }
+
             // Check doublequote's occurence - must be 2n
             if (Helper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");

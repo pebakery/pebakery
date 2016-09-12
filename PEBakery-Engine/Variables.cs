@@ -17,6 +17,13 @@ namespace BakeryEngine
         public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
     }
 
+    public class VariableInvalidFormatException : Exception
+    {
+        public VariableInvalidFormatException() { }
+        public VariableInvalidFormatException(string message) : base(message) { }
+        public VariableInvalidFormatException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public class BakeryVariables
     {
         /*
@@ -75,39 +82,44 @@ namespace BakeryEngine
             }
         }
 
-        public void Add(VarsType type, string key, string rawValue)
+        public bool SetValue(VarsType type, string key, string rawValue)
         {
-            InternalSetValue(type, key, rawValue, 0, true);
+            return InternalSetValue(type, key, rawValue, 0, true, true);
         }
 
-        public void Add(VarsType type, string key, string rawValue, int sectionDepth)
+        public bool SetValue(VarsType type, string key, string rawValue, int depth)
         {
-            InternalSetValue(type, key, rawValue, sectionDepth, true);
+            return InternalSetValue(type, key, rawValue, depth, true, true);
         }
 
-        public void SetValue(VarsType type, string key, string rawValue)
+        public bool SetValue(VarsType type, string key, string rawValue, bool errorOff, bool doLog)
         {
-            InternalSetValue(type, key, rawValue, 0, true);
+            return InternalSetValue(type, key, rawValue, 0, errorOff, doLog);
         }
 
-        public void SetValue(VarsType type, string key, string rawValue, int sectionDepth)
+        public bool SetValue(VarsType type, string key, string rawValue, int depth, bool errorOff, bool doLog)
         {
-            InternalSetValue(type, key, rawValue, sectionDepth, true);
+            return InternalSetValue(type, key, rawValue, depth, errorOff, doLog);
         }
 
-        public void InternalSetValue(VarsType type, string key, string rawValue, int sectionDepth, bool errorOff)
+        public bool InternalSetValue(VarsType type, string key, string rawValue, int depth, bool errorOff, bool doLog)
         {
+            bool success = true;
             StringDictionary vars = GetVarsMatchesType(type);
             // Check and remove circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                logger.Write(new LogInfo(LogState.Error, $"Var [%{key}%] contains itself in [{rawValue}]", sectionDepth, errorOff));
+                success = false;
+                if (doLog)
+                    logger.Write(new LogInfo(LogState.Error, $"Var [%{key}%] contains itself in [{rawValue}]", depth, errorOff));
             }
             else
             { // Ex) %Joveler%=Variel\ied206.txt
                 vars[key] = rawValue;
-                logger.Write(new LogInfo(LogState.Success, $"Var [%{key}%] set to [{rawValue}]", sectionDepth, errorOff));
+                if (doLog)
+                    logger.Write(new LogInfo(LogState.Success, $"Var [%{key}%] set to [{rawValue}]", depth, errorOff));
             }
+            return success;
         }
 
         public string GetValue(string key)
@@ -215,50 +227,80 @@ namespace BakeryEngine
             return str;
         }
 
-        /// <summary>
-        /// Add variables
-        /// </summary>
-        /// <param name="section"></param>
-        public void AddVariables(VarsType type, PluginSection section, int sectionDepth)
-        {
-            if ((section.Get() as StringDictionary).Count != 0)
-            {
-                logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", sectionDepth));
-                StringDictionary vars = GetVarsMatchesType(type);
-                InternalAddDictionary(vars, section.Get() as StringDictionary, sectionDepth + 1, true);
-                logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", sectionDepth));
-            }
-        }
-
-        /// <summary>
-        /// Add variables
-        /// </summary>
-        /// <param name="section"></param>
-        public void AddVariables(VarsType type, PluginSection section)
+        public bool AddVariables(VarsType type, PluginSection section)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            InternalAddDictionary(vars, section.Get() as StringDictionary, 0, true);
+            return InternalAddDictionary(vars, section.Get() as StringDictionary, -1, true, true);
         }
+
+        public bool AddVariables(VarsType type, PluginSection section, bool doLog)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, section.Get() as StringDictionary, -1, true, doLog);
+        }
+
+        public bool AddVariables(VarsType type, PluginSection section, int depth)
+        {
+            bool result = false;
+            if ((section.Get() as StringDictionary).Count != 0)
+            {
+                logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
+                StringDictionary vars = GetVarsMatchesType(type);
+                result = InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, true, true);
+                logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
+            }
+            return result;
+        }
+
+        public bool AddVariables(VarsType type, PluginSection section, int depth, bool doLog)
+        {
+            bool result = false;
+            if ((section.Get() as StringDictionary).Count != 0)
+            {
+                if (doLog)
+                    logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
+                StringDictionary vars = GetVarsMatchesType(type);
+                result = InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, true, doLog);
+                if (doLog)
+                    logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
+            }
+            return result;
+        }
+
+        
 
         /// <summary>
         /// Add variables
         /// </summary>
         /// <param name="lines"></param>
-        public void AddVariables(VarsType type, string[] lines)
+        public bool AddVariables(VarsType type, string[] lines)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
-            InternalAddDictionary(vars, dict, 0, true);
+            return InternalAddDictionary(vars, dict, 0, true, true);
+        }
+
+        public bool AddVariables(VarsType type, string[] lines, bool doLog)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
+            return InternalAddDictionary(vars, dict, 0, true, doLog);
         }
 
         /// <summary>
         /// Add local variables
         /// </summary>
         /// <param name="dict"></param>
-        public void AddVariables(VarsType type, StringDictionary dict)
+        public bool AddVariables(VarsType type, StringDictionary dict)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            InternalAddDictionary(vars, dict, 0, true);
+            return InternalAddDictionary(vars, dict, 0, true, true);
+        }
+
+        public bool AddVariables(VarsType type, StringDictionary dict, bool doLog)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, dict, 0, true, doLog);
         }
 
         /// <summary>
@@ -269,7 +311,7 @@ namespace BakeryEngine
         /// <param name="sectionDepth"></param>
         /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
-        private bool InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff)
+        private bool InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff, bool doLog)
         {
             bool success = true;
             foreach (var kv in dict)
@@ -277,21 +319,41 @@ namespace BakeryEngine
                 if (kv.Value.IndexOf("%" + kv.Key + "%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
                     vars[kv.Key] = kv.Value;
-                    logger.Write(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth, errorOff));
+                    if (doLog)
+                        logger.Write(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth, errorOff));
                 }
                 else
                 {
                     success = false;
-                    logger.Write(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
+                    if (doLog)
+                        logger.Write(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
                 }
             }
 
             return success;
         }
 
-        public void ResetLocalVaribles()
+        public void ResetVariables(VarsType type)
         {
-            localVars = new StringDictionary();
+            switch (type)
+            {
+                case VarsType.Local:
+                    localVars = new StringDictionary();
+                    break;
+                case VarsType.Global:
+                    globalVars = new StringDictionary();
+                    break;
+            }
+        }
+
+        public static string TrimPercentMark(string varName)
+        {
+            if (!(varName.StartsWith("%", StringComparison.OrdinalIgnoreCase) && varName.EndsWith("%", StringComparison.OrdinalIgnoreCase)))
+                throw new VariableInvalidFormatException($"[{varName}] is not enclosed with %");
+            varName = varName.Substring(1, varName.Length - 2);
+            if (varName.Contains('%'))
+                throw new VariableInvalidFormatException($"% cannot be placed in the middle of [{varName}]");
+            return varName;
         }
     }
 }

@@ -78,7 +78,6 @@ namespace BakeryEngine
             List<LogInfo> logs = new List<LogInfo>();
 
             string logResult = string.Empty;
-            LogState resState = LogState.Success;
 
             // Necessary operand : 1, optional operand : 0
             const int necessaryOperandNum = 1;
