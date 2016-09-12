@@ -1,8 +1,0 @@
-BakeryEngine.cs:                        logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
-BakeryEngine.cs:                    logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
-BakeryEngine.cs:                    logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
-BakeryEngine.cs:                logger.Write(new LogInfo(cmd, string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)), LogState.Error));
-BakeryEngineRegistry.cs:                logs.Add(new LogInfo(cmd, $"RegLoadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
-BakeryEngineRegistry.cs:                logs.Add(new LogInfo(cmd, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
-BakeryEngineText.cs:                logs.Add(new LogInfo(cmd, $"Var [{rawFileName}] does not exists", LogState.Error));
-BakeryEngineText.cs:                logs.Add(new LogInfo(cmd, $"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]", LogState.Error));

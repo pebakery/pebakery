@@ -30,8 +30,8 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string varKey;
-            string varValue;
+            string varKey = cmd.Operands[0].Trim(new char[] { '%' });
+            string varValue = cmd.Operands[1];
             bool global = false;
             bool permanent = false;
 
@@ -51,33 +51,29 @@ namespace BakeryEngine
                 }
             }
 
-            varKey = cmd.Operands[0].Trim(new char[] { '%' });
-            varValue = cmd.Operands[1];
-
-            bool isVarCreated = false;
-            if (global || permanent)
+            // Logs are written in variables.SetValue method
+            if (global)
             {
-                isVarCreated = variables.ContainsKey(VarsType.Global, varKey);
                 variables.SetValue(VarsType.Global, varKey, varValue);
             }
+            if (permanent)
+            {
+                variables.SetValue(VarsType.Global, varKey, varValue);
+                IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue);
+            }
             else
             {
-                isVarCreated = variables.ContainsKey(VarsType.Local, varKey);
                 variables.SetValue(VarsType.Local, varKey, varValue);
-            }
-
-            if (isVarCreated)
-            {
-                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] set to [{varValue}]", LogState.Success));
-            }
-            else
-            {
-                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] created, set to [{varValue}]", LogState.Success));
             }
 
             return logs.ToArray();
         }
 
+        /// <summary>
+        /// AddVariables,<%PluginFile%><Section>[,GLOBAL]
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
         public LogInfo[] AddVariables(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -90,10 +86,9 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string varKey;
-            string varValue;
-            bool global = false;
-            bool permanent = false;
+            string plugin = cmd.Operands[0];
+            string section = cmd.Operands[1];
+            VarsType vars = VarsType.Local;
 
             // Get optional operand
             if (cmd.Operands.Length == 3)
@@ -101,38 +96,20 @@ namespace BakeryEngine
                 switch (cmd.Operands[2].ToUpper())
                 {
                     case "GLOBAL":
-                        global = true;
-                        break;
-                    case "PERMANENT":
-                        permanent = true;
+                        vars = VarsType.Global;
                         break;
                     default:
                         throw new InvalidOperandException($"Invalid operand [{cmd.Operands[2]}]");
                 }
             }
 
-            varKey = cmd.Operands[0].Trim(new char[] { '%' });
-            varValue = cmd.Operands[1];
-
-            bool isVarCreated = false;
-            if (global || permanent)
-            {
-                isVarCreated = variables.ContainsKey(VarsType.Global, varKey);
-                variables.SetValue(VarsType.Global, varKey, varValue);
-            }
+            if (string.Equals(plugin, "%PluginFile%", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(plugin, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                variables.AddVariables(vars, currentPlugin.Sections[section]);
             else
             {
-                isVarCreated = variables.ContainsKey(VarsType.Local, varKey);
-                variables.SetValue(VarsType.Local, varKey, varValue);
-            }
-
-            if (isVarCreated)
-            {
-                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] set to [{varValue}]", LogState.Success));
-            }
-            else
-            {
-                logs.Add(new LogInfo(cmd, $"Var [%{varKey}%] created, set to [{varValue}]", LogState.Success));
+                Plugin p = project.ActivePlugins.SearchByFullPath(variables.Expand(plugin));
+                variables.AddVariables(vars, p.Sections[section]);
             }
 
             return logs.ToArray();

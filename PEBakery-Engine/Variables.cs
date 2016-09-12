@@ -27,6 +27,7 @@ namespace BakeryEngine
         // Fields
         private StringDictionary globalVars;
         private StringDictionary localVars;
+        private Logger logger;
 
         // Properties
         public StringDictionary GlobalVars { get { return globalVars; } }
@@ -36,10 +37,11 @@ namespace BakeryEngine
         /// <summary>
         /// Constructor
         /// </summary>
-        public BakeryVariables()
+        public BakeryVariables(Logger logger)
         {
-            localVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
-            globalVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            this.logger = logger;
+            this.localVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            this.globalVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
         }
 
         private StringDictionary GetVarsMatchesType(VarsType type)
@@ -55,42 +57,56 @@ namespace BakeryEngine
             }
         }
 
+        /// <summary>
+        /// Check variables' circular reference.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="rawValue"></param>
+        /// <returns>Return true if circular reference exists.</returns>
+        public static bool CheckCircularReference(string key, string rawValue)
+        {
+            if (rawValue.IndexOf("%" + key + "%", StringComparison.OrdinalIgnoreCase) == -1)
+            { // Ex) %Joveler%=Variel\ied206.txt
+                return false;
+            }
+            else
+            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
+                return true;
+            }
+        }
+
         public void Add(VarsType type, string key, string rawValue)
         {
-            SetValue(type, key, rawValue);
+            InternalSetValue(type, key, rawValue, 0, true);
+        }
+
+        public void Add(VarsType type, string key, string rawValue, int sectionDepth)
+        {
+            InternalSetValue(type, key, rawValue, sectionDepth, true);
         }
 
         public void SetValue(VarsType type, string key, string rawValue)
         {
+            InternalSetValue(type, key, rawValue, 0, true);
+        }
+
+        public void SetValue(VarsType type, string key, string rawValue, int sectionDepth)
+        {
+            InternalSetValue(type, key, rawValue, sectionDepth, true);
+        }
+
+        public void InternalSetValue(VarsType type, string key, string rawValue, int sectionDepth, bool errorOff)
+        {
             StringDictionary vars = GetVarsMatchesType(type);
             // Check and remove circular reference
-            if (rawValue.IndexOf("%" + key + "%", StringComparison.OrdinalIgnoreCase) == -1)
-            { // Ex) %Joveler%=Variel\ied206.txt
-                vars[key] = rawValue; 
+            if (CheckCircularReference(key, rawValue))
+            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
+                logger.Write(new LogInfo(LogState.Error, $"Var [%{key}%] contains itself in [{rawValue}]", sectionDepth, errorOff));
             }
             else
-            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                throw new VariableCircularReferenceException($"Var [%{key}%] contains itself in [{rawValue}]");
-            }
-        }
-
-        public void Add(VarsType type, string key, string rawValue, Logger logger, int sectionDepth)
-        {
-            SetValue(type, key, rawValue, logger, sectionDepth);
-        }
-
-        public void SetValue(VarsType type, string key, string rawValue, Logger logger, int sectionDepth)
-        {
-            StringDictionary vars = GetVarsMatchesType(type);
-            // Check and remove circular reference
-            if (rawValue.IndexOf("%" + key + "%", StringComparison.OrdinalIgnoreCase) == -1)
             { // Ex) %Joveler%=Variel\ied206.txt
                 vars[key] = rawValue;
-                logger.Write(LogState.Success, $"Var [%{key}%] set to [{rawValue}]", sectionDepth, true);
-            }
-            else
-            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                logger.Write(LogState.Error, $"Var [%{key}%] contains itself in [{rawValue}]", sectionDepth, true);
+                logger.Write(new LogInfo(LogState.Success, $"Var [%{key}%] set to [{rawValue}]", sectionDepth, errorOff));
             }
         }
 
@@ -203,14 +219,14 @@ namespace BakeryEngine
         /// Add variables
         /// </summary>
         /// <param name="section"></param>
-        public void AddVariables(VarsType type, PluginSection section, Logger logger, int sectionDepth)
+        public void AddVariables(VarsType type, PluginSection section, int sectionDepth)
         {
             if ((section.Get() as StringDictionary).Count != 0)
             {
-                logger.Write(LogState.Info, $"Processing section [{section.SectionName}]", sectionDepth);
+                logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", sectionDepth));
                 StringDictionary vars = GetVarsMatchesType(type);
-                InternalAddDictionary(vars, section.Get() as StringDictionary, logger, sectionDepth + 1);
-                logger.Write(LogState.Info, $"End of section [{section.SectionName}]", sectionDepth);
+                InternalAddDictionary(vars, section.Get() as StringDictionary, sectionDepth + 1, true);
+                logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", sectionDepth));
             }
         }
 
@@ -221,7 +237,7 @@ namespace BakeryEngine
         public void AddVariables(VarsType type, PluginSection section)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            InternalAddDictionary(vars, section.Get() as StringDictionary);
+            InternalAddDictionary(vars, section.Get() as StringDictionary, 0, true);
         }
 
         /// <summary>
@@ -232,7 +248,7 @@ namespace BakeryEngine
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
-            InternalAddDictionary(vars, dict);
+            InternalAddDictionary(vars, dict, 0, true);
         }
 
         /// <summary>
@@ -242,7 +258,7 @@ namespace BakeryEngine
         public void AddVariables(VarsType type, StringDictionary dict)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            InternalAddDictionary(vars, dict);
+            InternalAddDictionary(vars, dict, 0, true);
         }
 
         /// <summary>
@@ -250,36 +266,27 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="vars"></param>
         /// <param name="dict"></param>
-        private void InternalAddDictionary(StringDictionary vars, StringDictionary dict)
+        /// <param name="sectionDepth"></param>
+        /// <param name="errorOff"></param>
+        /// <returns>Return true if success</returns>
+        private bool InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff)
         {
-            foreach (var kv in dict)
-            {
-                if (kv.Value.IndexOf("%" + kv.Key + "%", StringComparison.OrdinalIgnoreCase) == -1)
-                    vars[kv.Key] = kv.Value;
-                else
-                    throw new VariableCircularReferenceException($"Var [%{kv.Key}%] contains itself in [{kv.Value}]");
-            }
-        }
-
-        /// <summary>
-        /// Add local variables
-        /// </summary>
-        /// <param name="vars"></param>
-        /// <param name="dict"></param>
-        private void InternalAddDictionary(StringDictionary vars, StringDictionary dict, Logger logger, int sectionDepth)
-        {
+            bool success = true;
             foreach (var kv in dict)
             {
                 if (kv.Value.IndexOf("%" + kv.Key + "%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
                     vars[kv.Key] = kv.Value;
-                    logger.Write(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth);
+                    logger.Write(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth, errorOff));
                 }
                 else
                 {
-                    logger.Write(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, true);
+                    success = false;
+                    logger.Write(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
                 }
             }
+
+            return success;
         }
 
         public void ResetLocalVaribles()

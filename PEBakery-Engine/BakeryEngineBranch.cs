@@ -62,7 +62,7 @@ namespace BakeryEngine
             }
 
             cmd.SectionDepth += 1; // For proper log indentation
-            logs.Add(new LogInfo(cmd, $"Processing section [{sectionName}]", LogState.Success));
+            logs.Add(new LogInfo(cmd, LogState.Success, $"Processing section [{sectionName}]"));
 
             return logs.ToArray();
         }

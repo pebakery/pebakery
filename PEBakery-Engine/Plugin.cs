@@ -357,6 +357,9 @@ namespace BakeryEngine
 
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
+            /*
+             * OnProcessEntry, OnProcessExit : deprecated, it is not used in WinPESE
+             */
             SectionType type;
             if (string.Equals(sectionName, "Main", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Main;

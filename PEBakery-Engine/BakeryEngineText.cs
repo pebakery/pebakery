@@ -88,19 +88,19 @@ namespace BakeryEngine
                 sr.Close();
                 sw.Close();
                 Helper.FileReplaceEx(temp, fileName);
-                logs.Add(new LogInfo(cmd, $"Prepened [{line}] to [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Prepened [{line}] to [{rawFileName}]"));
             }
             else if (mode == 1) // Append
             {
                 File.AppendAllText(fileName, line + "\r\n", encoding);
-                logs.Add(new LogInfo(cmd, $"Appended [{line}] to [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Appended [{line}] to [{rawFileName}]"));
             }
             else if (mode == 2) // Place
             { // In Place mode, placeLineNum starts from 1;
                 int count = 1;
                 string temp = Helper.CreateTempFile();
                 StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
-                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write), encoding);
+                StreamWriter sw = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
                 string lineFromSrc;
                 while ((lineFromSrc = sr.ReadLine()) != null)
                 {
@@ -112,7 +112,7 @@ namespace BakeryEngine
                 sr.Close();
                 sw.Close();
                 Helper.FileReplaceEx(temp, fileName);
-                logs.Add(new LogInfo(cmd, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]"));
             }
 
             return logs.ToArray();
@@ -138,7 +138,7 @@ namespace BakeryEngine
             // Get operands
             string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
-            string key = cmd.Operands[2]; // 문서화 : 여기 값은 변수 Expand 안한다.
+            string key = EscapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand는 안 하나, but do escaping.
             string varName = cmd.Operands[3].Trim('%');
             string rawFileName = cmd.Operands[0];
 
@@ -152,11 +152,11 @@ namespace BakeryEngine
                 string value = IniFile.GetKey(fileName, section, key);
                 if (value != null)
                 variables.SetValue(VarsType.Local, varName, value);
-                logs.Add(new LogInfo(cmd, $"Var [%{varName}%] set to [{value}], read from [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{rawFileName}]"));
             }
             catch (FileNotFoundException)
             {
-                logs.Add(new LogInfo(cmd, $"File [{rawFileName}] does not exists", LogState.Error));
+                logs.Add(new LogInfo(cmd, LogState.Error, $"File [{rawFileName}] does not exists"));
             }
 
             return logs.ToArray();
@@ -182,7 +182,7 @@ namespace BakeryEngine
             // Get operands
             string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
-            string key = cmd.Operands[2]; // 문서화 : 여기 값은 변수 Expand 안한다.
+            string key = EscapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand 안한다, but do escaping.
             string value = EscapeString(variables.Expand(cmd.Operands[3]));
             string rawFileName = cmd.Operands[0];
 
@@ -193,9 +193,9 @@ namespace BakeryEngine
 
             bool result = IniFile.SetKey(fileName, section, key, value);
             if (result)
-                logs.Add(new LogInfo(cmd, $"Key [{key}] and its value [{value}] wrote to [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Key [{key}] and its value [{value}] wrote to [{rawFileName}]"));
             else
-                logs.Add(new LogInfo(cmd, $"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]", LogState.Error));
+                logs.Add(new LogInfo(cmd, LogState.Error, $"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]"));
             return logs.ToArray();
         }
     }

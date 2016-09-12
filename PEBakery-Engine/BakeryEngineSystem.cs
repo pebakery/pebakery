@@ -21,7 +21,9 @@ namespace BakeryEngine
         GetEnv, IsAdmin, 
         OnBuildExit, OnScriptExit, OnPluginExit,
         RefreshInterface, RescanScript,
-        ShellExecute
+        ShellExecute,
+        // Deprecated
+        Comp80, FileRedirect, HasUAC, IsTerminal, RebuildVars, RegRedirect, SplitParameters
     }
 
     public partial class BakeryEngine
@@ -119,12 +121,12 @@ namespace BakeryEngine
             if (string.Equals(action, "Wait", StringComparison.OrdinalIgnoreCase))
             {
                 Cursor.Current = Cursors.WaitCursor;
-                logs.Add(new LogInfo(cmd, "Set mouse cursor to [Wait]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, "Set mouse cursor to [Wait]"));
             }
             else if (string.Equals(action, "Normal", StringComparison.OrdinalIgnoreCase))
             {                
                 Cursor.Current = Cursors.Default;
-                logs.Add(new LogInfo(cmd, "Set mouse cursor to [Normal]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, "Set mouse cursor to [Normal]"));
             }
             else
             {
@@ -162,8 +164,8 @@ namespace BakeryEngine
                     throw new InvalidSubOperandException($"[{subCmd.Operands[0]}] must be greater than 0", cmd);
             }
 
-            logger.ErrorOff = lines + 1; // 1 is for ErrorOff itself
-            logs.Add(new LogInfo(cmd, $"Error log is off for [{lines}] lines", LogState.Success));
+            logger.ErrorOffCount = lines + 1; // 1 is for ErrorOff itself
+            logs.Add(new LogInfo(cmd, LogState.Success, $"Error log is off for [{lines}] lines"));
 
             return logs.ToArray();
         }
@@ -191,12 +193,12 @@ namespace BakeryEngine
             if (string.Equals(action, "On", StringComparison.OrdinalIgnoreCase))
             {
                 logger.SuspendLog = true;
-                logs.Add(new LogInfo(cmd, subCmd, $"Logging turned on for plugin [{cmd.Address.plugin.ShortPath}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Logging turned on for plugin [{cmd.Address.plugin.ShortPath}]"));
             }
             else if (string.Equals(action, "Off", StringComparison.OrdinalIgnoreCase))
             {
                 logger.SuspendLog = false;
-                logs.Add(new LogInfo(cmd, subCmd, $"Logging turned off for plugin [{cmd.Address.plugin.ShortPath}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Logging turned off for plugin [{cmd.Address.plugin.ShortPath}]"));
             }
             else
             {

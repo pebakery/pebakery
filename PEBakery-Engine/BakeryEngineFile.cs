@@ -138,15 +138,15 @@ namespace BakeryEngine
                             string destFullPath = Path.Combine(Helper.RemoveLastDirChar(destPath), destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             if (File.Exists(destFullPath) && !noWarn)
-                                logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten", LogState.Warning));
+                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten"));
                             File.Copy(searchedFilePath, destFullPath, !preserve);
-                            logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] copied to [{Path.Combine(rawDestPathDir, destPathTail)}]", LogState.Success));
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] copied to [{Path.Combine(rawDestPathDir, destPathTail)}]"));
                         }
                         else
                             throw new PathNotDirException("<DestPath> must be directory when using wildcard in <SrcFileName>", cmd);
                     }
                     if (listToCopy.Length == 0)
-                        logs.Add(new LogInfo(cmd, $"[{rawDestPath}] not found", noWarn ? LogState.Ignore : LogState.Warning));
+                        logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawDestPath}] not found"));
                 }
                 else
                 {
@@ -157,18 +157,18 @@ namespace BakeryEngine
                         string destPathTail = srcFileName.Remove(0, Helper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
                         string destFullPath = string.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
                         if (File.Exists(destFullPath))
-                            logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawDestPathDir, destPathTail)}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
+                            logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{Path.Combine(rawDestPathDir, destPathTail)}] will be overwritten"));
                             
                         File.Copy(srcFileName, destFullPath, !preserve);
-                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] copied to [{rawDestPath}]", LogState.Success));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] copied to [{rawDestPath}]"));
                     }
                     else
                     {
                         Directory.CreateDirectory(Helper.GetDirNameEx(destPath));
                         if (destPathExists)
-                            logs.Add(new LogInfo(cmd, $"[{rawDestPath}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
+                            logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawDestPath}] will be overwritten"));
                         File.Copy(srcFileName, destPath, !preserve);
-                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] copied to [{rawDestPath}]", LogState.Success));                        
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] copied to [{rawDestPath}]"));                        
                     }
                 }
                 
@@ -177,7 +177,7 @@ namespace BakeryEngine
             {
                 if (preserve && noWarn)
                 {
-                    logs.Add(new LogInfo(cmd, $"Cannot overwrite [{destPath}]", LogState.Ignore));
+                    logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destPath}]"));
                 }
                 else
                 {
@@ -250,20 +250,20 @@ namespace BakeryEngine
                 {
                     File.Delete(searchedFilePath);
                     string searchedFileName = searchedFilePath.Remove(0, srcDirToFind.Length + 1); // 1 for \\
-                    logs.Add(new LogInfo(cmd, $"[{Path.Combine(rawSrcDirToFind, searchedFileName)}] deleted", LogState.Success));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, searchedFileName)}] deleted"));
                 }
                 if (listToDelete.Length == 0)
                 {
                     if (!noWarn) // file is not found
-                        logs.Add(new LogInfo(cmd, $"[{rawFilePath}] not found", LogState.Warning));
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawFilePath}] not found"));
                 }
             }
             else // No wildcard
             {
                 if (!noWarn && !File.Exists(filePath)) // File.Delete does not throw exception when file is not found
-                    logs.Add(new LogInfo(cmd, $"[{rawFilePath}] not found", LogState.Warning));
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawFilePath}] not found"));
                 File.Delete(filePath); 
-                logs.Add(new LogInfo(cmd, $"[{rawFilePath}] deleted", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawFilePath}] deleted"));
             }
 
             return logs.ToArray();
@@ -299,7 +299,7 @@ namespace BakeryEngine
 
             // src and dest filename is same, so log it
             if (string.Equals(Helper.RemoveLastDirChar(srcFileName), Helper.RemoveLastDirChar(destFileName), StringComparison.OrdinalIgnoreCase))
-                logs.Add(new LogInfo(cmd, "Cannot rename to same filename", LogState.Warning));
+                logs.Add(new LogInfo(cmd, LogState.Warning, "Cannot rename to same filename"));
             else
             {
                 // File.Move cannot move file if volume is different.
@@ -308,7 +308,7 @@ namespace BakeryEngine
                 if (string.Equals(srcFileDrive, destFileDrive, StringComparison.OrdinalIgnoreCase))
                 { // Same volume. Just use File.Move.
                     File.Move(srcFileName, destFileName);
-                    logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] moved to [{rawDestFileName}]", LogState.Success));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] moved to [{rawDestFileName}]"));
                 }
                 else
                 { // Use File.Copy and File.Delete instead.
@@ -316,11 +316,11 @@ namespace BakeryEngine
                     {
                         File.Copy(srcFileName, destFileName, false);
                         File.Delete(srcFileName);
-                        logs.Add(new LogInfo(cmd, $"[{rawSrcFileName}] moved to [{rawDestFileName}]", LogState.Success));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] moved to [{rawDestFileName}]"));
                     }
                     catch (IOException)
                     {
-                        logs.Add(new LogInfo(cmd, $"Cannot overwrite [{rawDestFileName}]", LogState.Warning));
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{rawDestFileName}]"));
                     }
                 }
             }
@@ -407,19 +407,19 @@ namespace BakeryEngine
             if (File.Exists(fileName))
             {
                 if (!preserve)
-                    logs.Add(new LogInfo(cmd, $"[{rawFileName}] will be overwritten", noWarn ? LogState.Ignore : LogState.Warning));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawFileName}] will be overwritten"));
             }
 
             try
             {
                 FileStream fs = new FileStream(fileName, preserve ? FileMode.CreateNew : FileMode.Create, FileAccess.Write, FileShare.Write);
                 Helper.WriteTextBOM(fs, encoding).Close();
-                logs.Add(new LogInfo(cmd, $"Created blank text file [{rawFileName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Created blank text file [{rawFileName}]"));
             }
             catch (IOException)
             {
                 if (preserve)
-                    logs.Add(new LogInfo(cmd, $"Cannot overwrite [{rawFileName}]", noWarn ? LogState.Ignore : LogState.Warning));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{rawFileName}]"));
             }
 
             return logs.ToArray();

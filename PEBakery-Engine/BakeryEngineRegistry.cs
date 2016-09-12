@@ -58,9 +58,9 @@ namespace BakeryEngine
 
             int ret = RegLoadKey(HKLM, keyName, hiveFile);
             if (ret == ResultWin32.ERROR_SUCCESS)
-                logs.Add(new LogInfo(cmd, $"Loaded [{rawHiveFile}] into [HKLM\\{keyName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Loaded [{rawHiveFile}] into [HKLM\\{keyName}]"));
             else
-                logs.Add(new LogInfo(cmd, $"RegLoadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
+                logs.Add(new LogInfo(cmd, LogState.Error, $"RegLoadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]"));
 
             return logs.ToArray();
         }
@@ -98,11 +98,9 @@ namespace BakeryEngine
 
             int ret = RegUnLoadKey(HKLM, keyName);
             if (ret == ResultWin32.ERROR_SUCCESS)
-                logs.Add(new LogInfo(cmd, $@"Unloaded [HKLM\{rawKeyName}]", LogState.Success));
+                logs.Add(new LogInfo(cmd, LogState.Success, $@"Unloaded [HKLM\{rawKeyName}]"));
             else
-                logs.Add(new LogInfo(cmd, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]", LogState.Error));
-
-            logs.Add(new LogInfo(cmd, logResult, resState));
+                logs.Add(new LogInfo(cmd, LogState.Error, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]"));
             return logs.ToArray();
         }
     }

@@ -363,10 +363,8 @@ namespace BakeryEngine
         private Stack<CommandAddress> returnAddress;
 
         // Fields : System Commands 
-        private bool isOnBuildExitSet;
-        private CommandAddress onBuildExit;
-        private bool isOnPluginExitSet;
-        private CommandAddress onPluginExit;
+        private CommandAddress? onBuildExit;
+        private CommandAddress? onPluginExit;
 
         // Properties
         private PluginCollection Plugins { get { return project.ActivePlugins; } }
@@ -406,7 +404,7 @@ namespace BakeryEngine
         {
             this.project = project; 
             this.logger = logger;
-            this.variables = new BakeryVariables();
+            this.variables = new BakeryVariables(logger);
             this.runOnePlugin = runOnePlugin;
 
             LoadDefaultGlobalVariables();
@@ -416,8 +414,8 @@ namespace BakeryEngine
             this.returnAddress = new Stack<CommandAddress>();
             this.currentSectionParams = new string[0];
 
-            this.isOnBuildExitSet = false;
-            this.isOnPluginExitSet = false;
+            this.onBuildExit = null;
+            this.onPluginExit = null;
         }
 
         // Methods
@@ -433,14 +431,17 @@ namespace BakeryEngine
             PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
             variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir);
+            // Tools
+            variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
+
             // Version
             variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString());
             // Build
             variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}");
             // ProjectDir
-            variables.SetValue(VarsType.Global, "ProjectDir", project.ProjectRoot);
+            variables.SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName));
             // TargetDir
-            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine(info.BaseDir, "Target"));
+            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName));
         }
 
         private void LoadDefaultPluginVariables()
@@ -455,7 +456,7 @@ namespace BakeryEngine
                 VarsType type = VarsType.Local;
                 if (currentPlugin == project.MainPlugin)
                     type = VarsType.Global;
-                variables.AddVariables(type, currentPlugin.Sections["Variables"], logger, 0);
+                variables.AddVariables(type, currentPlugin.Sections["Variables"], 0);
             }
         }
 
@@ -465,7 +466,7 @@ namespace BakeryEngine
         private void ReadyToRunPlugin()
         {
             // Turn off System,ErrorOff
-            logger.ErrorOff = 0;
+            logger.ErrorOffCount = 0;
             // Turn off System,Log,Off
             logger.SuspendLog = false;
 
@@ -495,7 +496,7 @@ namespace BakeryEngine
                 if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
                     currentSectionParams = new string[0];
-                    logger.Write(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count);
+                    logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count));
                     try
                     {
                         nextCommand = returnAddress.Pop();
@@ -504,7 +505,7 @@ namespace BakeryEngine
                     }
                     catch (InvalidOperationException)
                     { // The Stack<T> is empty, readed plugin's end
-                        logger.Write(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n");
+                        logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
                         if (runOnePlugin) // Just run one plugin
                             break; // Work is done, so exit
                         try
@@ -532,18 +533,18 @@ namespace BakeryEngine
                     }
                     catch (InvalidOpcodeException e)
                     {
-                        logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
+                        logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                     }
                 }
                 catch (InvalidOpcodeException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
+                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
-                    logger.Write(new LogInfo(e.Cmd, e.Message, LogState.Error));
+                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
 
                 nextCommand.line += 1;
@@ -611,10 +612,10 @@ namespace BakeryEngine
                         logs = this.Set(cmd);
                         break;
                     case Opcode.None:
-                        log = new LogInfo(cmd, "NOP", LogState.None);
+                        log = new LogInfo(cmd, LogState.None, "NOP");
                         break;
                     case Opcode.Comment:
-                        log = new LogInfo(cmd, "Comment", LogState.Ignore);
+                        log = new LogInfo(cmd, LogState.Ignore, "Comment");
                         break;
                     default:
                         throw new InvalidOpcodeException($"Cannot execute [{cmd.Opcode.ToString()}] command", cmd);
@@ -622,10 +623,10 @@ namespace BakeryEngine
             }
             catch (Exception e)
             {
-                logger.Write(new LogInfo(cmd, string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)), LogState.Error), true);
+                logger.Write(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message), true));
             }
             
-            if (log != null) logger.Write(log, true);
+            if (log != null) logger.Write(log);
             if (logs != null) logger.Write(logs, true);
         }       
 
