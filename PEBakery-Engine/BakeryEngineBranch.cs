@@ -99,19 +99,21 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             // Get Condition SubOpcode
-            string subOpcodeString = cmd.Operands[0];
+            string subOpcodeString;
             IfConditionSubOpcode subOpcode = IfConditionSubOpcode.None;
             BakerySubCommand subCmd;
 
-            // Check if rawCode is Empty
-            if (string.Equals(subOpcodeString, string.Empty))
-                throw new InvalidSubOpcodeException($"Invalid sub command [System.{subOpcodeString}]", cmd);
-
             // Parse opcode
-            int subOpcodeIdx = 1;
+            int subOpcodeIdx = 0;
             bool notFlag = false;
             do
             {
+                // Get condition SubOpcode string
+                subOpcodeString = cmd.Operands[subOpcodeIdx];
+                // Check if rawCode is Empty
+                if (string.Equals(subOpcodeString, string.Empty))
+                    throw new InvalidSubOpcodeException($"Invalid sub command [System.{subOpcodeString}]", cmd);
+
                 try
                 {
                     subOpcode = (IfConditionSubOpcode)Enum.Parse(typeof(IfConditionSubOpcode), subOpcodeString, true);
@@ -132,7 +134,7 @@ namespace BakeryEngine
                 }
             }
             while (subOpcode == IfConditionSubOpcode.Not);
-            subCmd = new BakerySubCommand(SubCommandType.IfCondition, subOpcode, cmd.Operands.Skip(subOpcodeIdx).ToArray(), notFlag);
+            subCmd = new BakerySubCommand(SubCommandType.IfCondition, subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToArray(), notFlag);
 
             // Call sub command methods
             switch (subOpcode)
@@ -208,7 +210,11 @@ namespace BakeryEngine
                 throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
             }
 
-            return new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(opcodeIdx + 1).ToArray(), returnAddress.Count + 1);
+            int sectionDepth = returnAddress.Count + 1;
+            if (opcode == Opcode.Run)
+                sectionDepth -= 1;
+
+            return new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(opcodeIdx + 1).ToArray(), cmd.Address, sectionDepth);
         }
 
         /// <summary>

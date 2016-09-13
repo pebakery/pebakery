@@ -82,39 +82,41 @@ namespace BakeryEngine
             }
         }
 
-        public bool SetValue(VarsType type, string key, string rawValue)
+        public LogInfo SetValue(VarsType type, string key, string rawValue)
         {
-            return InternalSetValue(type, key, rawValue, -1, false, false, false);
+            return InternalSetValue(type, key, rawValue, -1, false);
         }
 
-        public bool SetValueLog(VarsType type, string key, string rawValue, bool errorOff, bool errorCount)
+        public LogInfo SetValue(VarsType type, string key, string rawValue, int depth)
         {
-            return InternalSetValue(type, key, rawValue, -1, true, errorOff, errorCount);
+            return InternalSetValue(type, key, rawValue, depth, false);
         }
 
-        public bool SetValueLog(VarsType type, string key, string rawValue, int depth, bool errorOff, bool errorCount)
+        public LogInfo SetValue(VarsType type, string key, string rawValue, bool errorOff)
         {
-            return InternalSetValue(type, key, rawValue, depth, true, errorOff, errorCount);
+            return InternalSetValue(type, key, rawValue, -1, errorOff);
         }
 
-        public bool InternalSetValue(VarsType type, string key, string rawValue, int depth, bool doLog, bool errorOff, bool errorCount)
+        public LogInfo SetValue(VarsType type, string key, string rawValue, int depth, bool errorOff)
         {
-            bool success = true;
+            return InternalSetValue(type, key, rawValue, depth, errorOff);
+        }
+
+        public LogInfo InternalSetValue(VarsType type, string key, string rawValue, int depth, bool errorOff)
+        {
             StringDictionary vars = GetVarsMatchesType(type);
+            LogInfo log;
             // Check and remove circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                success = false;
-                if (doLog)
-                    logger.Write(new LogInfo(LogState.Error, $"Var [%{key}%] contains itself in [{rawValue}]", depth, errorOff));
+                log = new LogInfo(LogState.Error, $"Variable [%{key}%] contains itself in [{rawValue}]", depth, errorOff);
             }
             else
             { // Ex) %Joveler%=Variel\ied206.txt
                 vars[key] = rawValue;
-                if (doLog)
-                    logger.Write(new LogInfo(LogState.Success, $"Var [%{key}%] set to [{rawValue}]", depth, errorOff));
+                log = new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]", depth, errorOff);
             }
-            return success;
+            return log;
         }
 
         public string GetValue(string key)
@@ -222,80 +224,108 @@ namespace BakeryEngine
             return str;
         }
 
-        public bool AddVariables(VarsType type, PluginSection section)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section)
         {
+            List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            return InternalAddDictionary(vars, section.Get() as StringDictionary, -1, true, true);
-        }
-
-        public bool AddVariables(VarsType type, PluginSection section, bool doLog)
-        {
-            StringDictionary vars = GetVarsMatchesType(type);
-            return InternalAddDictionary(vars, section.Get() as StringDictionary, -1, true, doLog);
-        }
-
-        public bool AddVariables(VarsType type, PluginSection section, int depth)
-        {
-            bool result = false;
             if ((section.Get() as StringDictionary).Count != 0)
             {
-                logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                StringDictionary vars = GetVarsMatchesType(type);
-                result = InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, true, true);
-                logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
+                logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
+                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, 0, false));
+                logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
             }
-            return result;
+            return logs.ToArray();
         }
 
-        public bool AddVariables(VarsType type, PluginSection section, int depth, bool doLog)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth)
         {
-            bool result = false;
+            List<LogInfo> logs = new List<LogInfo>();
+            StringDictionary vars = GetVarsMatchesType(type);
             if ((section.Get() as StringDictionary).Count != 0)
             {
-                if (doLog)
-                    logger.Write(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                StringDictionary vars = GetVarsMatchesType(type);
-                result = InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, true, doLog);
-                if (doLog)
-                    logger.Write(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
+                logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
+                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, false));
+                logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
             }
-            return result;
+            return logs.ToArray();
         }
 
-        
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, bool errorOff)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            StringDictionary vars = GetVarsMatchesType(type);
+            if ((section.Get() as StringDictionary).Count != 0)
+            {
+                logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
+                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, 0, errorOff));
+                logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
+            }
+            return logs.ToArray();
+        }
 
-        /// <summary>
-        /// Add variables
-        /// </summary>
-        /// <param name="lines"></param>
-        public bool AddVariables(VarsType type, string[] lines)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth, bool errorOff)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            StringDictionary vars = GetVarsMatchesType(type);
+            if ((section.Get() as StringDictionary).Count != 0)
+            {
+                logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
+                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, errorOff));
+                logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
+            }
+            return logs.ToArray();
+        }
+
+        public LogInfo[] AddVariables(VarsType type, string[] lines)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
-            return InternalAddDictionary(vars, dict, 0, true, true);
+            return InternalAddDictionary(vars, dict, -1, false);
         }
 
-        public bool AddVariables(VarsType type, string[] lines, bool doLog)
+        public LogInfo[] AddVariables(VarsType type, string[] lines, int depth)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
-            return InternalAddDictionary(vars, dict, 0, true, doLog);
+            return InternalAddDictionary(vars, dict, depth, false);
         }
 
-        /// <summary>
-        /// Add local variables
-        /// </summary>
-        /// <param name="dict"></param>
-        public bool AddVariables(VarsType type, StringDictionary dict)
+        public LogInfo[] AddVariables(VarsType type, string[] lines, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            return InternalAddDictionary(vars, dict, 0, true, true);
+            StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
+            return InternalAddDictionary(vars, dict, -1, errorOff);
         }
 
-        public bool AddVariables(VarsType type, StringDictionary dict, bool doLog)
+        public LogInfo[] AddVariables(VarsType type, string[] lines, int depth, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
-            return InternalAddDictionary(vars, dict, 0, true, doLog);
+            StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
+            return InternalAddDictionary(vars, dict, depth, errorOff);
+        }
+
+        public LogInfo[] AddVariables(VarsType type, StringDictionary dict)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, dict, -1, false);
+        }
+
+        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, int depth)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, dict, depth, false);
+        }
+
+        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, bool errorOff)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, dict, -1, errorOff);
+        }
+
+        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, int depth, bool errorOff)
+        {
+            StringDictionary vars = GetVarsMatchesType(type);
+            return InternalAddDictionary(vars, dict, depth, errorOff);
         }
 
         /// <summary>
@@ -306,26 +336,22 @@ namespace BakeryEngine
         /// <param name="sectionDepth"></param>
         /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
-        private bool InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff, bool doLog)
+        private LogInfo[] InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff)
         {
-            bool success = true;
+            List<LogInfo> logs = new List<LogInfo>();
             foreach (var kv in dict)
             {
                 if (kv.Value.IndexOf("%" + kv.Key + "%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
                     vars[kv.Key] = kv.Value;
-                    if (doLog)
-                        logger.Write(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth, errorOff));
+                    logs.Add(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]", sectionDepth, errorOff));
                 }
                 else
                 {
-                    success = false;
-                    if (doLog)
-                        logger.Write(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
+                    logs.Add(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
                 }
             }
-
-            return success;
+            return logs.ToArray();
         }
 
         public void ResetVariables(VarsType type)

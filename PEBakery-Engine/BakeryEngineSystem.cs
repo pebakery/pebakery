@@ -283,11 +283,13 @@ namespace BakeryEngine
                 }
             }
 
-            bool varSet = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":");
-            if (varSet == false)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{lastFreeDriveLetter}:] has circular reference"));
-            else
+            LogInfo log = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":", cmd.SectionDepth);
+            if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Last free drive letter is [{lastFreeDriveLetter}:], saved into variable [%{varName}%]"));
+            else if (log.State == LogState.Error)
+                logs.Add(log);
+            else
+                throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
             return logs.ToArray();
         }
@@ -315,11 +317,14 @@ namespace BakeryEngine
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[1]);
             string driveLetter = Path.GetPathRoot(Path.GetFullPath(path));
             long freeSpace = new DriveInfo(driveLetter).AvailableFreeSpace / (1024 * 1024); // Convert to MB
-            bool varSet = variables.SetValue(VarsType.Local, varName, freeSpace.ToString());
-            if (varSet == false)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{freeSpace}] has circular reference"));
-            else
+
+            LogInfo log = variables.SetValue(VarsType.Local, varName, freeSpace.ToString(), cmd.SectionDepth);
+            if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Free Space of Drive [{driveLetter.Substring(0, 1)}:] is [{freeSpace}MB], saved into variable [%{varName}%]"));
+            else if (log.State == LogState.Error)
+                logs.Add(log);
+            else
+                throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
             return logs.ToArray();
         }
@@ -348,11 +353,14 @@ namespace BakeryEngine
             string envVarValue = Environment.GetEnvironmentVariable(envVarName); // return null when envVarName does not exist
             if (envVarValue == null)
                 throw new InvalidSubOperandException($"There is no envrionment variable named [{envVarName}]");
-            bool varSet = variables.SetValue(VarsType.Local, envVarName, envVarValue);
-            if (varSet == false)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{bakeryVarName}%]'s value [{envVarValue}] has circular reference"));
-            else
+
+            LogInfo log = variables.SetValue(VarsType.Local, envVarName, envVarValue, cmd.SectionDepth);
+            if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Variable [%{bakeryVarName}%] set to envrionment variable [{envVarName}]'s value [{envVarValue}]"));
+            else if (log.State == LogState.Error)
+                logs.Add(log);
+            else
+                throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
             return logs.ToArray();
         }
@@ -378,9 +386,9 @@ namespace BakeryEngine
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
             bool isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-            bool varSet = variables.SetValue(VarsType.Local, varName, isAdmin.ToString());
-            if (varSet == false)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{isAdmin}] has circular reference"));
+            LogInfo log = variables.SetValue(VarsType.Local, varName, isAdmin.ToString(), cmd.SectionDepth);
+            if (log.State == LogState.Error)
+                logs.Add(log);
             else
             {
                 if (isAdmin)
@@ -523,11 +531,13 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, LogState.Success, $"Executed [{rawFilePath}] with shell, returning [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
-                        bool varSet = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString());
-                        if (varSet == false)
-                            logs.Add(new LogInfo(cmd, LogState.Error, $"Variable [%{exitCodeVar}%]'s value [{proc.ExitCode}] has circular reference"));
-                        else
+                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);
+                        if (log.State == LogState.Success)
                             logs.Add(new LogInfo(cmd, LogState.Success, $"Exit code is [{proc.ExitCode}], saved into variable [%{exitCodeVar}%]"));
+                        else if (log.State == LogState.Error)
+                            logs.Add(log);
+                        else
+                            throw new InvalidLogFormatException($"Unknown internal log format error", cmd);                            
                     }
                     break;
                 case Opcode.ShellExecuteEx:
@@ -539,11 +549,13 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, LogState.Success, $"Executed and deleted [{rawFilePath}] with shell, returning [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
-                        bool varSet = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString());
-                        if (varSet == false)
-                            logs.Add(new LogInfo(cmd, LogState.Error, $"Variable [%{exitCodeVar}%]'s value [{proc.ExitCode}] has circular reference"));
-                        else
+                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);
+                        if (log.State == LogState.Success)
                             logs.Add(new LogInfo(cmd, LogState.Success, $"Exit code is [{proc.ExitCode}], saved into variable [%{exitCodeVar}%]"));
+                        else if (log.State == LogState.Error)
+                            logs.Add(log);
+                        else
+                            throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
                     }
                     break;
                 default:

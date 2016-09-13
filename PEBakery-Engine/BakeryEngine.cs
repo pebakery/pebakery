@@ -70,6 +70,7 @@ namespace BakeryEngine
             set { sectionDepth = value; }
         }
 
+
         /// <summary>
         /// Hold command information.
         /// </summary>
@@ -113,6 +114,7 @@ namespace BakeryEngine
             this.address = address;
             this.sectionDepth = 0;
         }
+        
 
         /// <summary>
         /// Hold command information, with address
@@ -238,6 +240,17 @@ namespace BakeryEngine
         public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
     }
 
+    public class InvalidLogFormatException : Exception
+    {
+        private BakeryCommand cmd;
+        public BakeryCommand Cmd { get { return cmd; } }
+        public InvalidLogFormatException() { }
+        public InvalidLogFormatException(string message) : base(message) { }
+        public InvalidLogFormatException(BakeryCommand cmd) { this.cmd = cmd; }
+        public InvalidLogFormatException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
+        public InvalidLogFormatException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public class InvalidSubCommandException : Exception
     {
         private BakeryCommand cmd;
@@ -305,10 +318,8 @@ namespace BakeryEngine
     }
 
 
-
-
     /// <summary>
-    /// Interpreter of raw codes
+    /// Interpreter of codes
     /// </summary>
     public partial class BakeryEngine
     {
@@ -479,7 +490,7 @@ namespace BakeryEngine
                             if (onPluginExit != null) // PluginExit event callback
                             {
                                 logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnPluginExit]"));
-                                logger.Write(ExecuteCommand(onPluginExit), true, false); 
+                                logger.Write(ExecuteCommand(onPluginExit)); 
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnPluginExit]\n"));
                             }
                             curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
@@ -490,7 +501,7 @@ namespace BakeryEngine
                             if (onBuildExit != null) // OnBuildExit event callback
                             {
                                 logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnBuildExit]"));
-                                logger.Write(ExecuteCommand(onBuildExit), true, false);
+                                logger.Write(ExecuteCommand(onBuildExit));
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnBuildExit]\n"));
                             }
                             break;
@@ -507,7 +518,7 @@ namespace BakeryEngine
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
                     try
                     {
-                        logger.Write(ExecuteCommand(currentCommand), true, true);
+                        logger.Write(ExecuteCommand(currentCommand), true);
                     }
                     catch (InvalidOpcodeException e)
                     {

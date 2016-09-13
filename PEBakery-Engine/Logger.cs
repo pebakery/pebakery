@@ -28,8 +28,6 @@ namespace BakeryEngine
         private int depth;
         
         public LogState State;
-        public bool ErrorOff;
-        public bool CountError;
 
         public BakeryCommand Command { get { return command; } }
         public BakerySubCommand SubCommand { get { return subCommand;  } }
@@ -50,8 +48,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = command.SectionDepth;
-            this.ErrorOff = false;
-            this.CountError = true;
         }
 
         public LogInfo(BakeryCommand command, LogState state, string result, bool errorOff)
@@ -61,19 +57,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = command.SectionDepth;
-            this.ErrorOff = errorOff;
-            this.CountError = true;
-        }
-
-        public LogInfo(BakeryCommand command, LogState state, string result, bool errorOff, bool countError)
-        {
-            this.command = command;
-            this.subCommand = null;
-            this.result = result;
-            this.State = state;
-            this.depth = command.SectionDepth;
-            this.ErrorOff = errorOff;
-            this.CountError = countError;
         }
 
         public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result)
@@ -83,8 +66,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = command.SectionDepth;
-            this.ErrorOff = false;
-            this.CountError = true;
         }
 
         public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result, bool errorOff)
@@ -94,20 +75,8 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = command.SectionDepth;
-            this.ErrorOff = errorOff;
-            this.CountError = true;
         }
 
-        public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result, bool errorOff, bool countError)
-        {
-            this.command = command;
-            this.subCommand = subCommand;
-            this.result = result;
-            this.State = state;
-            this.depth = command.SectionDepth;
-            this.ErrorOff = errorOff;
-            this.CountError = countError;
-        }
 
         public LogInfo(LogState state, string result)
         {
@@ -116,8 +85,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = -1;
-            this.ErrorOff = false;
-            this.CountError = true;
         }
 
         public LogInfo(LogState state, string result, int depth)
@@ -127,8 +94,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = depth;
-            this.ErrorOff = false;
-            this.CountError = true;
         }
 
         public LogInfo(LogState state, string result, int depth, bool errorOff)
@@ -138,19 +103,6 @@ namespace BakeryEngine
             this.result = result;
             this.State = state;
             this.depth = depth;
-            this.ErrorOff = errorOff;
-            this.CountError = true;
-        }
-
-        public LogInfo(LogState state, string result, int depth, bool errorOff, bool countError)
-        {
-            this.command = null;
-            this.subCommand = null;
-            this.result = result;
-            this.State = state;
-            this.depth = depth;
-            this.ErrorOff = errorOff;
-            this.CountError = countError;
         }
     }
 
@@ -209,7 +161,7 @@ namespace BakeryEngine
         private void PrintBanner()
         {
             PEBakeryInfo info = new PEBakeryInfo();
-            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log\n", false, false);
+            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log\n", false);
         }
 
         public void WriteGlobalVariables(BakeryVariables vars)
@@ -222,83 +174,70 @@ namespace BakeryEngine
                 builder.Append($"{global.Key} (Raw)   = {global.Value}\n");
                 builder.Append($"{global.Key} (Value) = {vars.GetValue(VarsType.Global, global.Key)}\n");
             }
-            InternalWriter(builder.ToString(), false, true);
+            InternalWriter(builder.ToString(), false);
         }
 
         public void Write(LogInfo log)
         {
-            InternalWriter(log);
+            InternalWriter(log, false, false);
         }
 
         public void Write(LogInfo[] logs)
         {
-            InternalWriter(logs, false, true);
+            InternalWriter(logs, false);
         }
 
         public void Write(LogInfo[] logs, bool errorOff)
         {
-            InternalWriter(logs, errorOff, true);
-        }
-
-        public void Write(LogInfo[] logs, bool errorOff, bool countError)
-        {
-            InternalWriter(logs, errorOff, countError);
+            InternalWriter(logs, errorOff);
         }
 
         public void Write(string log)
         {
-            InternalWriter(log, false, true);
+            InternalWriter(log, false);
         }
 
         public void Write(string log, bool errorOff)
         {
-            InternalWriter(log, errorOff, true);
+            InternalWriter(log, errorOff);
         }
 
-        public void Write(string log, bool errorOff, bool countError)
-        {
-            InternalWriter(log, errorOff, countError);
-        }
-
-        private void InternalWriter(string log, bool errorOff, bool countError)
+        private void InternalWriter(string log, bool errorOff)
         {
             if (SuspendLog == true)
                 return;
             writer.WriteLine(log);
-            if (errorOff && countError && 0 < ErrorOffCount)
+            if (errorOff && 0 < ErrorOffCount)
                 ErrorOffCount -= 1;
 #if DEBUG
             writer.Flush();
 #endif
         }
 
-        private void InternalWriter(LogInfo[] logs, bool errorOff, bool countError)
+        private void InternalWriter(LogInfo[] logs, bool errorOff)
         {
             if (SuspendLog == true)
                 return;
 
             foreach (LogInfo log in logs)
             {
-                if (log.ErrorOff && 0 < ErrorOffCount)
+                if (errorOff && 0 < ErrorOffCount)
                 {
-                    errorOff = true;
                     if (log.State == LogState.Error)
                         log.State = LogState.Muted;
-                    if (log.CountError)
-                        log.CountError = false;
                 }
-                InternalWriter(log);
+                InternalWriter(log, errorOff, false);
             }
 
-            if (errorOff && countError && 0 < ErrorOffCount)
+            if (errorOff && 0 < ErrorOffCount)
                 ErrorOffCount -= 1;
         }
 
-        private void InternalWriter(LogInfo log)
+        private void InternalWriter(LogInfo log, bool errorOff, bool decErrorOffCount)
         {
             if (SuspendLog == true)
                 return;
-            if (log.ErrorOff && 0 < ErrorOffCount)
+            if (errorOff && 0 < ErrorOffCount)
             {
                 if (log.State == LogState.Error)
                     log.State = LogState.Muted;
@@ -322,8 +261,7 @@ namespace BakeryEngine
                 writer.WriteLine($"[{log.State.ToString()}] {log.Result}");
             }
             
-
-            if (log.ErrorOff && log.CountError && 0 < ErrorOffCount)
+            if (errorOff && decErrorOffCount && 0 < ErrorOffCount)
                 ErrorOffCount -= 1;
 #if DEBUG
             writer.Flush();

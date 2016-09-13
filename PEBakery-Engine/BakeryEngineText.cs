@@ -151,7 +151,7 @@ namespace BakeryEngine
             {
                 string value = IniFile.GetKey(fileName, section, key);
                 if (value != null)
-                variables.SetValue(VarsType.Local, varName, value);
+                variables.SetValue(VarsType.Local, varName, value, cmd.SectionDepth);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{rawFileName}]"));
             }
             catch (FileNotFoundException)
