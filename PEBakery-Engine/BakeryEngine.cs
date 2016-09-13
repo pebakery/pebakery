@@ -35,7 +35,7 @@ namespace BakeryEngine
         // System
         System, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // Branch
-        Run, Exec, If, Else, Loop, End,
+        Run, Exec, If, Begin, Else, Loop, End,
         // Control
         Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep
     }
@@ -43,7 +43,7 @@ namespace BakeryEngine
     public enum NextCommand
     {
         None = 0,
-        Next, // Noremal case : execute next command
+        Next, // Normal case : execute next command
         Last, // Last command of section
         Jump, // In Run command : execute target command
         IgnoreUntilEnd, // Begin not executed : ignore until find End
@@ -57,14 +57,12 @@ namespace BakeryEngine
         private string rawCode;
         private Opcode opcode;
         private string[] operands;
-        private BakeryCommand subCommand;
         private CommandAddress address;
         private int sectionDepth;
 
         public string RawCode { get { return rawCode; } }
         public Opcode Opcode { get { return opcode; } }
         public string[] Operands { get { return operands; } }
-        public BakeryCommand SubCommand { get { return subCommand; } }
         public CommandAddress Address { get { return address; } }
         public int SectionDepth
         {
@@ -83,7 +81,6 @@ namespace BakeryEngine
             this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
-            this.subCommand = null;
             this.sectionDepth = 0;
         }
 
@@ -103,22 +100,6 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Hold command information, with sub command.
-        /// </summary>
-        /// <param name="rawCode"></param>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="subCommand"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, BakeryCommand subCommand)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.subCommand = subCommand;
-            this.sectionDepth = 0;
-        }
-
-        /// <summary>
         /// Hold command information, with address
         /// </summary>
         /// <param name="opcode"></param>
@@ -130,24 +111,7 @@ namespace BakeryEngine
             this.opcode = opcode;
             this.operands = operands;
             this.address = address;
-            this.subCommand = null;
             this.sectionDepth = 0;
-        }
-
-        /// <summary>
-        /// Hold command information, with sub command.
-        /// </summary>
-        /// <param name="rawCode"></param>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="subCommand"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, BakeryCommand subCommand, int sectionDepth)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.subCommand = subCommand;
-            this.sectionDepth = sectionDepth;
         }
 
         /// <summary>
@@ -162,54 +126,18 @@ namespace BakeryEngine
             this.opcode = opcode;
             this.operands = operands;
             this.address = address;
-            this.subCommand = null;
-            this.sectionDepth = sectionDepth;
-        }
-
-        /// <summary>
-        /// Hold command information, with address and subcommand
-        /// </summary>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, BakeryCommand subCommand)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.address = address;
-            this.subCommand = subCommand;
-        }
-
-        /// <summary>
-        /// Hold command information, with address and subcommand
-        /// </summary>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, BakeryCommand subCommand, int sectionDepth)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.address = address;
-            this.subCommand = subCommand;
             this.sectionDepth = sectionDepth;
         }
 
         public override string ToString()
         {
-            string str = string.Concat("[", this.rawCode, "]\n", this.opcode.ToString());
-            foreach (string operand in this.operands)
-                str = string.Concat(str, "_", operand);
-
-            return str;
+            return rawCode;
         }
     }
 
     public enum SubCommandType
     {
-        System, Retrieve, StrFormat
+        System, Retrieve, StrFormat, IfCondition
     }
 
     /// <summary>
@@ -220,16 +148,41 @@ namespace BakeryEngine
         private SubCommandType subCommandType;
         private Enum subOpcode;
         private string[] operands;
+        // For IfCondition
+        private bool? notFlag;
 
         public SubCommandType SubCommandType { get { return subCommandType; } }
         public Enum SubOpcode { get { return subOpcode; } }
         public string[] Operands { get { return operands; } }
+        public bool NotFlag
+        {
+            get
+            {
+                if (notFlag == null)
+                    throw new InvalidSubCommandException();
+                else
+                    return (bool)notFlag;
+            }
+            set
+            {
+                notFlag = value;
+            }
+        }
 
         public BakerySubCommand(SubCommandType subCommandType, Enum subOpcode, string[] operands)
         {
             this.subCommandType = subCommandType;
             this.subOpcode = subOpcode;
             this.operands = operands;
+            this.notFlag = null;
+        }
+
+        public BakerySubCommand(SubCommandType subCommandType, Enum subOpcode, string[] operands, bool notFlag)
+        {
+            this.subCommandType = subCommandType;
+            this.subOpcode = subOpcode;
+            this.operands = operands;
+            this.notFlag = notFlag;
         }
     }
 
@@ -283,6 +236,17 @@ namespace BakeryEngine
         public InvalidOperandException(BakeryCommand cmd) { this.cmd = cmd; }
         public InvalidOperandException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class InvalidSubCommandException : Exception
+    {
+        private BakeryCommand cmd;
+        public BakeryCommand Cmd { get { return cmd; } }
+        public InvalidSubCommandException() { }
+        public InvalidSubCommandException(string message) : base(message) { }
+        public InvalidSubCommandException(BakeryCommand cmd) { this.cmd = cmd; }
+        public InvalidSubCommandException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
+        public InvalidSubCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>
@@ -432,18 +396,18 @@ namespace BakeryEngine
         {
             PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
-            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir, false, false);
+            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir);
             // Tools
-            variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"), false, false);
+            variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
 
             // Version
-            variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString(), false, false);
+            variables.SetValue(VarsType.Global, "Version", info.Ver.Build.ToString());
             // Build
-            variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}", false, false);
+            variables.SetValue(VarsType.Global, "Build", $"{info.Ver.ToString():yyyy-MM-dd HH:mm}");
             // ProjectDir
-            variables.SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName), false, false);
+            variables.SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName));
             // TargetDir
-            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName), false, false);
+            variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName));
         }
 
         private void LoadDefaultPluginVariables()
@@ -510,12 +474,12 @@ namespace BakeryEngine
                         logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
                         if (runOnePlugin) // Just run one plugin
                             break; // Work is done, so exit
-                        try
+                        try 
                         {
                             if (onPluginExit != null) // PluginExit event callback
                             {
                                 logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnPluginExit]"));
-                                ExecuteCommand(onPluginExit);
+                                logger.Write(ExecuteCommand(onPluginExit), true, false); 
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnPluginExit]\n"));
                             }
                             curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
@@ -526,7 +490,7 @@ namespace BakeryEngine
                             if (onBuildExit != null) // OnBuildExit event callback
                             {
                                 logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnBuildExit]"));
-                                ExecuteCommand(onBuildExit);
+                                logger.Write(ExecuteCommand(onBuildExit), true, false);
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnBuildExit]\n"));
                             }
                             break;
@@ -543,7 +507,7 @@ namespace BakeryEngine
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
                     try
                     {
-                        ExecuteCommand(currentCommand);
+                        logger.Write(ExecuteCommand(currentCommand), true, true);
                     }
                     catch (InvalidOpcodeException e)
                     {
@@ -570,10 +534,9 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="logger"></param>
-        private void ExecuteCommand(BakeryCommand cmd)
+        private LogInfo[] ExecuteCommand(BakeryCommand cmd)
         {
-            LogInfo log = null;
-            LogInfo[] logs = null;
+            LogInfo[] logs;
 
             // DisplayOperation(cmd);
             try
@@ -624,15 +587,18 @@ namespace BakeryEngine
                     case Opcode.Exec:
                         logs = this.RunExec(cmd);
                         break;
+                    case Opcode.If:
+                        logs = this.IfCondition(cmd);
+                        break;
                     // Control
                     case Opcode.Set:
                         logs = this.Set(cmd);
                         break;
                     case Opcode.None:
-                        log = new LogInfo(cmd, LogState.None, "NOP");
+                        logs = new LogInfo[] { new LogInfo(cmd, LogState.None, "NOP") };
                         break;
                     case Opcode.Comment:
-                        log = new LogInfo(cmd, LogState.Ignore, "Comment");
+                        logs = new LogInfo[] { new LogInfo(cmd, LogState.Ignore, "Comment") };
                         break;
                     default:
                         throw new InvalidOpcodeException($"Cannot execute [{cmd.Opcode.ToString()}] command", cmd);
@@ -640,11 +606,10 @@ namespace BakeryEngine
             }
             catch (Exception e)
             {
-                logger.Write(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message), true));
+                logs = new LogInfo[] { new LogInfo(cmd, LogState.Error, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message)) };
             }
-            
-            if (log != null) logger.Write(log);
-            if (logs != null) logger.Write(logs, true);
+
+            return logs;
         }
 
         /// <summary>

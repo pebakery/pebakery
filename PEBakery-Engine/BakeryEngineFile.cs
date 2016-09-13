@@ -67,7 +67,6 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 3
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 3;
-
             if (cmd.Operands.Length < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)

@@ -52,19 +52,42 @@ namespace BakeryEngine
             }
 
             // Logs are written in variables.SetValue method
+            VarsType vars;
             if (global)
             {
-                variables.SetValue(VarsType.Global, varKey, varValue);
+                if (variables.SetValue(VarsType.Global, varKey, varValue))
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Global variable [%{varKey}%] set to [{varValue}]"));
+                else
+                    logs.Add(new LogInfo(cmd, LogState.Error, $"Var [%{varKey}%] contains itself in [{varValue}]"));
             }
             if (permanent)
             {
-                variables.SetValue(VarsType.Global, varKey, varValue);
-                IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue);
+                bool varResult = variables.SetValue(VarsType.Global, varKey, varValue);
+                bool iniResult = IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue);
+                if (varResult)
+                {
+                    if (iniResult)
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Var [%{varKey}%] contains itself in [{varValue}]"));
+                }
+                else
+                {
+                    if (iniResult)
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Var [%{varKey}%] contains itself in [{varValue}]"));
+                }
             }
             else
             {
-                variables.SetValue(VarsType.Local, varKey, varValue);
+                if (variables.SetValue(VarsType.Local, varKey, varValue))
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Local variable [%{varKey}%] set to [{varValue}]"));
+                else
+                    logs.Add(new LogInfo(cmd, LogState.Error, $"Var [%{varKey}%] contains itself in [{varValue}]"));
             }
+
+            
 
             return logs.ToArray();
         }

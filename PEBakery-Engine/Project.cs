@@ -19,7 +19,7 @@ namespace BakeryEngine
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;
-        private Plugin entryPlugin;
+        //private Plugin entryPlugin;
         private PluginCollection allPlugins;
         private PluginCollection activePlugins;
         public const int mainLevel = -256; // Reserved level for script.project
@@ -28,7 +28,7 @@ namespace BakeryEngine
         public string ProjectName { get { return projectName; } }
         public string ProjectRoot { get { return projectRoot; } }
         public Plugin MainPlugin { get { return mainPlugin; } }
-        public Plugin EntryPlugin { get { return entryPlugin; } }
+        //public Plugin EntryPlugin { get { return entryPlugin; } }
         public PluginCollection AllPlugins { get { return allPlugins; } }
         public PluginCollection ActivePlugins { get { return activePlugins; } }
 

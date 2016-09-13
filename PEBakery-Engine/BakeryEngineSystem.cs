@@ -34,18 +34,16 @@ namespace BakeryEngine
          */
 
         /// <summary>
-        /// FileCopy,<SrcFileName>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
-        /// Wildcard supported in <SrcFileName>
+        /// System,<SubOpcode>
         /// </summary>
         /// <param name="cmd"></param>
-        /// <returns>LogInfo[]</returns>
+        /// <returns></returns>
         public LogInfo[] SystemCommands(BakeryCommand cmd)
         {
             LogInfo[] logs;
 
             // Necessary operand : 1, optional operand : 0+
             const int necessaryOperandNum = 1;
-
             if (cmd.Operands.Length < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
@@ -285,7 +283,7 @@ namespace BakeryEngine
                 }
             }
 
-            bool varSet = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":", false, false);
+            bool varSet = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":");
             if (varSet == false)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{lastFreeDriveLetter}:] has circular reference"));
             else
@@ -317,7 +315,7 @@ namespace BakeryEngine
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[1]);
             string driveLetter = Path.GetPathRoot(Path.GetFullPath(path));
             long freeSpace = new DriveInfo(driveLetter).AvailableFreeSpace / (1024 * 1024); // Convert to MB
-            bool varSet = variables.SetValue(VarsType.Local, varName, freeSpace.ToString(), false, false);
+            bool varSet = variables.SetValue(VarsType.Local, varName, freeSpace.ToString());
             if (varSet == false)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{freeSpace}] has circular reference"));
             else
@@ -350,7 +348,7 @@ namespace BakeryEngine
             string envVarValue = Environment.GetEnvironmentVariable(envVarName); // return null when envVarName does not exist
             if (envVarValue == null)
                 throw new InvalidSubOperandException($"There is no envrionment variable named [{envVarName}]");
-            bool varSet = variables.SetValue(VarsType.Local, envVarName, envVarValue, false, false);
+            bool varSet = variables.SetValue(VarsType.Local, envVarName, envVarValue);
             if (varSet == false)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{bakeryVarName}%]'s value [{envVarValue}] has circular reference"));
             else
@@ -380,7 +378,7 @@ namespace BakeryEngine
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
             bool isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-            bool varSet = variables.SetValue(VarsType.Local, varName, isAdmin.ToString(), false, false);
+            bool varSet = variables.SetValue(VarsType.Local, varName, isAdmin.ToString());
             if (varSet == false)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Variable [%{varName}%]'s value [{isAdmin}] has circular reference"));
             else
@@ -489,6 +487,8 @@ namespace BakeryEngine
             if (cmd.Operands.Length < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+                throw new InvalidOperandException("Too many operands", cmd);
+            if (cmd.Opcode == Opcode.ShellExecuteEx && cmd.Operands.Length == necessaryOperandNum + optionalOperandNum)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             string verb = EscapeString(variables.Expand(cmd.Operands[0]));

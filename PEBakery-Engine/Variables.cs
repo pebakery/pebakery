@@ -84,25 +84,20 @@ namespace BakeryEngine
 
         public bool SetValue(VarsType type, string key, string rawValue)
         {
-            return InternalSetValue(type, key, rawValue, 0, true, true);
+            return InternalSetValue(type, key, rawValue, -1, false, false, false);
         }
 
-        public bool SetValue(VarsType type, string key, string rawValue, int depth)
+        public bool SetValueLog(VarsType type, string key, string rawValue, bool errorOff, bool errorCount)
         {
-            return InternalSetValue(type, key, rawValue, depth, true, true);
+            return InternalSetValue(type, key, rawValue, -1, true, errorOff, errorCount);
         }
 
-        public bool SetValue(VarsType type, string key, string rawValue, bool errorOff, bool doLog)
+        public bool SetValueLog(VarsType type, string key, string rawValue, int depth, bool errorOff, bool errorCount)
         {
-            return InternalSetValue(type, key, rawValue, 0, errorOff, doLog);
+            return InternalSetValue(type, key, rawValue, depth, true, errorOff, errorCount);
         }
 
-        public bool SetValue(VarsType type, string key, string rawValue, int depth, bool errorOff, bool doLog)
-        {
-            return InternalSetValue(type, key, rawValue, depth, errorOff, doLog);
-        }
-
-        public bool InternalSetValue(VarsType type, string key, string rawValue, int depth, bool errorOff, bool doLog)
+        public bool InternalSetValue(VarsType type, string key, string rawValue, int depth, bool doLog, bool errorOff, bool errorCount)
         {
             bool success = true;
             StringDictionary vars = GetVarsMatchesType(type);
