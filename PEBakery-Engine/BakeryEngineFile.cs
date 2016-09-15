@@ -304,27 +304,17 @@ namespace BakeryEngine
                 // File.Move cannot move file if volume is different.
                 string srcFileDrive = Path.GetPathRoot(Path.GetFullPath(srcFileName));
                 string destFileDrive = Path.GetPathRoot(Path.GetFullPath(destFileName));
-                if (string.Equals(srcFileDrive, destFileDrive, StringComparison.OrdinalIgnoreCase))
-                { // Same volume. Just use File.Move.
+                try
+                {
                     File.Move(srcFileName, destFileName);
                     logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] moved to [{rawDestFileName}]"));
                 }
-                else
-                { // Use File.Copy and File.Delete instead.
-                    try
-                    {
-                        File.Copy(srcFileName, destFileName, false);
-                        File.Delete(srcFileName);
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] moved to [{rawDestFileName}]"));
-                    }
-                    catch (IOException)
-                    {
-                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{rawDestFileName}]"));
-                    }
+                catch (IOException)
+                {
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{rawDestFileName}]"));
                 }
             }
 
-            
             return logs.ToArray();
         }
 

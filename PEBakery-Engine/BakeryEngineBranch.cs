@@ -32,111 +32,93 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] RunExec(BakeryCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            // Necessary operand : 2, optional operand : variable length
-            const int necessaryOperandNum = 2;
-            if (cmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidOperandException("Necessary operands does not exist", cmd);
-
-            // Get necesssary operand
-            string pluginFile = EscapeString(variables.Expand(cmd.Operands[0]));
-            string sectionName = EscapeString(variables.Expand(cmd.Operands[1]));
-            string rawPluginFile = cmd.Operands[0];
-            string rawSectoinName = cmd.Operands[1];
-
-            // Get optional operand 
-            string[] parameters = new string[cmd.Operands.Length - necessaryOperandNum];
-            if (necessaryOperandNum < cmd.Operands.Length)
-                Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
-
-            bool inCurrentPlugin = false;
-            if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (string.Equals(rawPluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-                targetPlugin = currentPlugin;
-            else
-                targetPlugin = project.ActivePlugins.SearchByFullPath(variables.Expand(pluginFile));
-
-            // Does section exists?
-            if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new InvalidOperandException($"[{rawPluginFile}] does not have section [{sectionName}]", cmd);
-
-            // Branch to new section
-            returnAddress.Push(new CommandAddress(cmd.Address.plugin, cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
-            nextCommand = new CommandAddress(targetPlugin, targetPlugin.Sections[sectionName], -1, targetPlugin.Sections[sectionName].Count);
-            currentSectionParams = parameters;
-
-            if (inCurrentPlugin)
-                logs.Add(new LogInfo(cmd, LogState.Success, $"Processing section [{sectionName}]"));
-            else
-                logs.Add(new LogInfo(cmd, LogState.Success, $"Processing [{rawPluginFile}]'s section [{sectionName}]"));
-            // Exec utilizes [Variables] section of the plugin
-            if (cmd.Opcode == Opcode.Exec)
-                variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"], returnAddress.Count, true);
-
-            return logs.ToArray();
+            return InternalRunExec(cmd, false, 0);
         }
 
         private LogInfo[] RunExecCallback(BakeryCommand cmd, int depth)
         {
+            return InternalRunExec(cmd, true, depth);
+        }
+
+        private LogInfo[] InternalRunExec(BakeryCommand cmd, bool callback, int depth)
+        {
             List<LogInfo> logs = new List<LogInfo>();
 
-            // Necessary operand : 2, optional operand : variable length
-            const int necessaryOperandNum = 2;
-            if (cmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidOperandException("Necessary operands does not exist", cmd);
-
-            // Get necesssary operand
-            string pluginFile = EscapeString(variables.Expand(cmd.Operands[0]));
-            string sectionName = EscapeString(variables.Expand(cmd.Operands[1]));
-            string rawPluginFile = cmd.Operands[0];
-            string rawSectoinName = cmd.Operands[1];
-
-            // Get optional operand 
-            string[] parameters = new string[cmd.Operands.Length - necessaryOperandNum];
-            if (necessaryOperandNum < cmd.Operands.Length)
-                Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
-
-            bool inCurrentPlugin = false;
-            if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (string.Equals(rawPluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-                targetPlugin = currentPlugin;
-            else
-                targetPlugin = project.ActivePlugins.SearchByFullPath(variables.Expand(pluginFile));
-
-            // Does section exists?
-            if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new InvalidOperandException($"[{rawPluginFile}] does not have section [{sectionName}]", cmd);
-
-            // Branch to new section
-            CommandAddress nextAddr = new CommandAddress(targetPlugin, targetPlugin.Sections[sectionName], 0, targetPlugin.Sections[sectionName].Count);
-            if (depth != 0)
+            try
             {
-                if (inCurrentPlugin)
-                    logger.Write(new LogInfo(cmd, LogState.Success, $"Processing section [{sectionName}]"));
-                else
-                    logger.Write(new LogInfo(cmd, LogState.Success, $"Processing [{rawPluginFile}]'s section [{sectionName}]"));
-            }
+                // Necessary operand : 2, optional operand : variable length
+                const int necessaryOperandNum = 2;
+                if (cmd.Operands.Length < necessaryOperandNum)
+                    throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            // Exec utilizes [Variables] section of the plugin
-            if (cmd.Opcode == Opcode.Exec)
-                variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"], returnAddress.Count, true);
-            RunCallbackSection(nextAddr, parameters, depth);
+                // Get necesssary operand
+                string pluginFile = EscapeString(variables.Expand(cmd.Operands[0]));
+                string sectionName = EscapeString(variables.Expand(cmd.Operands[1]));
+                string rawPluginFile = cmd.Operands[0];
+                string rawSectoinName = cmd.Operands[1];
+
+                // Get optional operand 
+                string[] parameters = new string[cmd.Operands.Length - necessaryOperandNum];
+                if (necessaryOperandNum < cmd.Operands.Length)
+                    Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
+
+                bool inCurrentPlugin = false;
+                if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                    inCurrentPlugin = true;
+                else if (string.Equals(rawPluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                    inCurrentPlugin = true;
+
+                Plugin targetPlugin;
+                if (inCurrentPlugin)
+                    targetPlugin = currentPlugin;
+                else
+                    targetPlugin = project.ActivePlugins.SearchByFullPath(variables.Expand(pluginFile));
+
+                // Does section exists?
+                if (!targetPlugin.Sections.ContainsKey(sectionName))
+                    throw new InvalidOperandException($"[{rawPluginFile}] does not have section [{sectionName}]", cmd);
+
+                // Branch to new section
+                CommandAddress nextAddr = new CommandAddress(); // Blank value
+                if (callback)
+                {
+                    nextAddr = new CommandAddress(targetPlugin, targetPlugin.Sections[sectionName], 0, targetPlugin.Sections[sectionName].Count);
+                    if (depth != 0)
+                    {
+                        if (inCurrentPlugin)
+                            logger.Write(new LogInfo(cmd, LogState.Success, $"Processing section [{sectionName}]"), true);
+                        else
+                            logger.Write(new LogInfo(cmd, LogState.Success, $"Processing [{rawPluginFile}]'s section [{sectionName}]"), true);
+                    }
+                }
+                else
+                {
+                    returnAddress.Push(new CommandAddress(cmd.Address.plugin, cmd.Address.section, cmd.Address.line + 1, cmd.Address.secLength));
+                    nextCommand = new CommandAddress(targetPlugin, targetPlugin.Sections[sectionName], -1, targetPlugin.Sections[sectionName].Count);
+                    currentSectionParams = parameters;
+                    if (inCurrentPlugin)
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Processing section [{sectionName}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Processing [{rawPluginFile}]'s section [{sectionName}]"));
+                }
+
+                // Exec utilizes [Variables] section of the plugin
+                if (cmd.Opcode == Opcode.Exec)
+                    variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"], returnAddress.Count, true);
+
+                if (callback)
+                    RunCallbackSection(nextAddr, parameters, depth);
+            }
+            catch (Exception e)
+            {
+                if (callback)
+                    logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message)));
+                else
+                    throw e;
+            }
 
             return logs.ToArray();
         }
-
-
 
         /// <summary>
         /// If,<Condition>,<Command>

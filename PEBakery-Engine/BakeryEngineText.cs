@@ -74,7 +74,8 @@ namespace BakeryEngine
             if (File.Exists(fileName))
                 encoding = Helper.DetectTextEncoding(fileName);
             else
-                Helper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8);
+                Helper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8).Close();
+                
 
             if (mode == 0) // Prepend
             {

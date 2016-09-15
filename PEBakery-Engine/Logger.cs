@@ -182,6 +182,11 @@ namespace BakeryEngine
             InternalWriter(log, false, false);
         }
 
+        public void Write(LogInfo log, bool errorOff)
+        {
+            InternalWriter(log, errorOff, true);
+        }
+
         public void Write(LogInfo[] logs)
         {
             InternalWriter(logs, false);

@@ -515,32 +515,16 @@ namespace BakeryEngine
                             break; // Work is done, so exit
                         try
                         {
-                            if (onPluginExit != null) // PluginExit event callback
-                            {
-                                logger.Write(new LogInfo(LogState.Info, "Processing callback of event [OnPluginExit]"));
-                                if (onPluginExit.Opcode == Opcode.Run || onPluginExit.Opcode == Opcode.Exec)
-                                    RunExecCallback(onPluginExit, 0);
-                                else
-                                    logger.Write(ExecuteCommand(onPluginExit));
-                                logger.Write(new LogInfo(LogState.Info, $"End of callback [OnPluginExit]\n"));
-                                onPluginExit = null;
-                            }
+                            // PluginExit event callback
+                            CheckAndRunCallback(ref onPluginExit, "OnPluginExit");
                             // Run next plugin
                             curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
                             ReadyToRunPlugin();
                         }
                         catch (EndOfPluginLevelException)
                         { // End of plugins, build done. Exit.
-                            if (onBuildExit != null)// OnBuildExit event callback
-                            {
-                                logger.Write(new LogInfo(LogState.Info, "Processing callback of event [OnBuildExit]"));
-                                if (onBuildExit.Opcode == Opcode.Run || onBuildExit.Opcode == Opcode.Exec)
-                                    RunExecCallback(onBuildExit, 0);
-                                else
-                                    logger.Write(ExecuteCommand(onBuildExit));
-                                logger.Write(new LogInfo(LogState.Info, $"End of callback [OnBuildExit]\n"));
-                                onBuildExit = null;
-                            }
+                            // OnBuildExit event callback
+                            CheckAndRunCallback(ref onBuildExit, "OnBuildExit");
                             break;
                         }
                     }
@@ -569,7 +553,7 @@ namespace BakeryEngine
                 }
                 catch (InvalidOperandException e)
                 {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
 
@@ -577,43 +561,51 @@ namespace BakeryEngine
             }
         }
 
-        private enum CodeBlockType
+        private void CheckAndRunCallback(ref BakeryCommand callback, string eventName)
         {
-            OnPluginExit, OnBuildExit
+            if (callback != null)
+            {
+                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [{eventName}]"));
+                if (callback.Opcode == Opcode.Run || callback.Opcode == Opcode.Exec)
+                    logger.Write(RunExecCallback(callback, 0));
+                else
+                    logger.Write(ExecuteCommand(callback));
+                logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\n"));
+                callback = null;
+            }
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <remarks>TODO : var name refactoring</remarks>
         /// <param name="type"></param>
-        private void RunCallbackSection(CommandAddress nextAddr, string[] sectionParams, int depth)
+        private void RunCallbackSection(CommandAddress nextCommand, string[] sectionParams, int depth)
         {
-            BakeryCommand currCode;
+            BakeryCommand currentCommand;
             while (true)
             {
-                if (!(nextAddr.line < nextAddr.secLength)) // End of section
+                if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
                     // End of callback section
                     if (depth != 0)
-                        logger.Write(new LogInfo(LogState.Info, $"End of section [{nextAddr.section.SectionName}]", depth - 1));
+                        logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", depth - 1));
                     break;
                 }
 
                 // Fetch instructions
-                int i = nextAddr.line;
-                string rawCode = (nextAddr.section.Get() as string[])[i].Trim();
+                int i = nextCommand.line;
+                string rawCode = (nextCommand.section.Get() as string[])[i].Trim();
 
                 try
                 {
-                    currCode = ParseCommand(rawCode, new CommandAddress(nextAddr.plugin, nextAddr.section, i, nextAddr.secLength));
-                    currCode.SectionDepth = depth;
+                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
+                    currentCommand.SectionDepth = depth;
                     try
                     {
-                        if (currCode.Opcode == Opcode.Run || currCode.Opcode == Opcode.Exec)
-                            logger.Write(RunExecCallback(currCode, depth + 1));
+                        if (currentCommand.Opcode == Opcode.Run || currentCommand.Opcode == Opcode.Exec)
+                            logger.Write(RunExecCallback(currentCommand, depth + 1), true);
                         else
-                            logger.Write(ExecuteCommand(currCode), true);
+                            logger.Write(ExecuteCommand(currentCommand), true);
                     }
                     catch (InvalidOpcodeException e)
                     {
@@ -622,16 +614,16 @@ namespace BakeryEngine
                 }
                 catch (InvalidOpcodeException e)
                 {
-                    currCode = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
-                    currCode = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
 
-                nextAddr.line++;
+                nextCommand.line++;
             }
         }
 
