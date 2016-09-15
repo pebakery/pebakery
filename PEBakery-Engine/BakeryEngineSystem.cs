@@ -431,7 +431,10 @@ namespace BakeryEngine
                     throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
                 }
 
-                onBuildExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray());
+                Plugin lastPlugin = project.ActivePlugins.LastPlugin;
+                int lastSecLines = (lastPlugin.Sections["Process"].Get() as string[]).Length;
+                CommandAddress addr = new CommandAddress(lastPlugin, lastPlugin.Sections["Process"], lastSecLines, lastSecLines);
+                onBuildExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray(), addr); // Project's last plugin's last address
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
             }
 
@@ -463,17 +466,15 @@ namespace BakeryEngine
                     opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
                     if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None)
                         throw new ArgumentException();
-                    if (opcode == Opcode.Run)
-                    {
-
-                    }
                 }
                 catch (ArgumentException)
                 {
                     throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
                 }
 
-                onPluginExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray());
+                int lastSecLines = (currentPlugin.Sections["Process"].Get() as string[]).Length;
+                CommandAddress addr = new CommandAddress(currentPlugin, currentPlugin.Sections["Process"], lastSecLines, lastSecLines);
+                onPluginExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray(), addr); // Current Plugin's last address
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
             }
             
@@ -501,7 +502,7 @@ namespace BakeryEngine
 
             string verb = EscapeString(variables.Expand(cmd.Operands[0]));
             if (!(string.Equals(verb, "Open", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Hide", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(verb, "Print", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Exploe", StringComparison.OrdinalIgnoreCase)))
+                || string.Equals(verb, "Print", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Explore", StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperandException($"Invalid verb [{verb}]", cmd);
             string filePath = EscapeString(variables.Expand(cmd.Operands[1]));
             string rawFilePath = cmd.Operands[1];
@@ -516,19 +517,31 @@ namespace BakeryEngine
                 exitCodeVar = BakeryVariables.TrimPercentMark(cmd.Operands[4]);
 
             Process proc = new Process();
-            proc.StartInfo.UseShellExecute = true;
-            proc.StartInfo.Verb = verb;
             proc.StartInfo.FileName = filePath;
             proc.StartInfo.Arguments = parameters;
             proc.StartInfo.WorkingDirectory = workDir;
+            if (string.Equals(verb, "Open", StringComparison.OrdinalIgnoreCase))
+            {
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.Verb = "Open";
+            }
+            else if (string.Equals(verb, "Hide", StringComparison.OrdinalIgnoreCase))
+            {
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.RedirectStandardError = true;
+            }
+            else
+                proc.StartInfo.Verb = verb;
             proc.Start();
-
             
             switch (cmd.Opcode)
             {
                 case Opcode.ShellExecute:
                     proc.WaitForExit();
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"Executed [{rawFilePath}] with shell, returning [{proc.ExitCode}]"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Executed [{rawFilePath}] with shell, returned exit code [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
                         LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);
@@ -546,7 +559,7 @@ namespace BakeryEngine
                 case Opcode.ShellExecuteDelete:
                     proc.WaitForExit();
                     File.Delete(filePath);
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"Executed and deleted [{rawFilePath}] with shell, returning [{proc.ExitCode}]"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Executed and deleted [{rawFilePath}] with shell, returned exit code [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
                         LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);

@@ -315,6 +315,34 @@ namespace BakeryEngine
             this.line = line;
             this.secLength = secLength;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is CommandAddress))
+                return false;
+
+            CommandAddress addr = (CommandAddress)obj;
+
+            bool result = true;
+            if (plugin != addr.plugin || section != addr.section || line != addr.line || secLength != addr.secLength)
+                result = false;
+            return result;
+        }
+
+        public static bool operator ==(CommandAddress c1, CommandAddress c2)
+        {
+            return c1.Equals(c2);
+        }
+
+        public static bool operator !=(CommandAddress c1, CommandAddress c2)
+        {
+            return !c1.Equals(c2);
+        }
+
+        public override int GetHashCode()
+        {
+            return plugin.ShortPath.Length + section.SectionName.Length + (line ^ secLength);
+        }
     }
 
 
@@ -337,7 +365,7 @@ namespace BakeryEngine
         private CommandAddress nextCommand; // ProgramCounter
         private Stack<CommandAddress> returnAddress;
 
-        // Fields : System Commands 
+        // Fields : System Commands
         private BakeryCommand onBuildExit;
         private BakeryCommand onPluginExit;
 
@@ -447,10 +475,11 @@ namespace BakeryEngine
             // Turn off System,Log,Off
             logger.SuspendLog = false;
 
-            currentPlugin = Plugins.GetFromAddress(curPluginAddr);
+            currentPlugin = Plugins.GetPlugin(curPluginAddr);
             PluginSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             logger.Write($"Processing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
+            logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
 
             variables.ResetVariables(VarsType.Local);
             LoadDefaultPluginVariables();
@@ -465,7 +494,6 @@ namespace BakeryEngine
         /// <summary>
         /// Run array of commands.
         /// </summary>
-        /// <param name="nextCommand"></param>
         private void RunCommands()
         {
             while (true)
@@ -473,40 +501,49 @@ namespace BakeryEngine
                 if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
                     currentSectionParams = new string[0];
-                    logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count));
+                    logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count - 1));
+
                     try
                     {
                         nextCommand = returnAddress.Pop();
-                        if (!(nextCommand.line < nextCommand.secLength)) // Is return address end of section?
-                            continue;
+                        continue;
                     }
                     catch (InvalidOperationException)
                     { // The Stack<T> is empty, readed plugin's end
                         logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
                         if (runOnePlugin) // Just run one plugin
                             break; // Work is done, so exit
-                        try 
+                        try
                         {
                             if (onPluginExit != null) // PluginExit event callback
                             {
-                                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnPluginExit]"));
-                                logger.Write(ExecuteCommand(onPluginExit)); 
+                                logger.Write(new LogInfo(LogState.Info, "Processing callback of event [OnPluginExit]"));
+                                if (onPluginExit.Opcode == Opcode.Run || onPluginExit.Opcode == Opcode.Exec)
+                                    RunExecCallback(onPluginExit, 0);
+                                else
+                                    logger.Write(ExecuteCommand(onPluginExit));
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnPluginExit]\n"));
+                                onPluginExit = null;
                             }
+                            // Run next plugin
                             curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
                             ReadyToRunPlugin();
-                        }   
+                        }
                         catch (EndOfPluginLevelException)
                         { // End of plugins, build done. Exit.
-                            if (onBuildExit != null) // OnBuildExit event callback
+                            if (onBuildExit != null)// OnBuildExit event callback
                             {
-                                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [OnBuildExit]"));
-                                logger.Write(ExecuteCommand(onBuildExit));
+                                logger.Write(new LogInfo(LogState.Info, "Processing callback of event [OnBuildExit]"));
+                                if (onBuildExit.Opcode == Opcode.Run || onBuildExit.Opcode == Opcode.Exec)
+                                    RunExecCallback(onBuildExit, 0);
+                                else
+                                    logger.Write(ExecuteCommand(onBuildExit));
                                 logger.Write(new LogInfo(LogState.Info, $"End of callback [OnBuildExit]\n"));
+                                onBuildExit = null;
                             }
                             break;
                         }
-                    } 
+                    }
                 }
 
                 // Fetch instructions
@@ -536,7 +573,65 @@ namespace BakeryEngine
                     logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
                 }
 
-                nextCommand.line += 1;
+                nextCommand.line++;
+            }
+        }
+
+        private enum CodeBlockType
+        {
+            OnPluginExit, OnBuildExit
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <remarks>TODO : var name refactoring</remarks>
+        /// <param name="type"></param>
+        private void RunCallbackSection(CommandAddress nextAddr, string[] sectionParams, int depth)
+        {
+            BakeryCommand currCode;
+            while (true)
+            {
+                if (!(nextAddr.line < nextAddr.secLength)) // End of section
+                {
+                    // End of callback section
+                    if (depth != 0)
+                        logger.Write(new LogInfo(LogState.Info, $"End of section [{nextAddr.section.SectionName}]", depth - 1));
+                    break;
+                }
+
+                // Fetch instructions
+                int i = nextAddr.line;
+                string rawCode = (nextAddr.section.Get() as string[])[i].Trim();
+
+                try
+                {
+                    currCode = ParseCommand(rawCode, new CommandAddress(nextAddr.plugin, nextAddr.section, i, nextAddr.secLength));
+                    currCode.SectionDepth = depth;
+                    try
+                    {
+                        if (currCode.Opcode == Opcode.Run || currCode.Opcode == Opcode.Exec)
+                            logger.Write(RunExecCallback(currCode, depth + 1));
+                        else
+                            logger.Write(ExecuteCommand(currCode), true);
+                    }
+                    catch (InvalidOpcodeException e)
+                    {
+                        logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                    }
+                }
+                catch (InvalidOpcodeException e)
+                {
+                    currCode = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                }
+                catch (InvalidOperandException e)
+                {
+                    currCode = new BakeryCommand(rawCode, Opcode.Unknown, new string[0]);
+                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                }
+
+                nextAddr.line++;
             }
         }
 

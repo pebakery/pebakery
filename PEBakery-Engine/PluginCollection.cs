@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace BakeryEngine
 {
@@ -55,6 +56,13 @@ namespace BakeryEngine
         public PluginDictionary Dict { get { return dict; } }
         public int[] Levels { get { return levels; } }
         public int Count { get { return count; } }
+        public Plugin LastPlugin
+        {
+            get
+            {
+                return GetPlugin(GetLastPluginAddress());
+            }
+        }
         
         public PluginCollection(PluginDictionary dict, int[] levels, int count)
         {
@@ -77,8 +85,9 @@ namespace BakeryEngine
             throw new PluginNotFoundException($"Plugin [{shortPath}] not found");
         }
 
-        public Plugin SearchByFullPath(string fullPath)
+        public Plugin SearchByFullPath(string rawFullPath)
         {
+            string fullPath = Path.GetFullPath(rawFullPath);
             foreach (int level in dict.Keys)
             {
                 for (int i = 0; i < dict[level].Length; i++)
@@ -88,15 +97,20 @@ namespace BakeryEngine
                 }
             }
             // not found
-            throw new PluginNotFoundException($"Plugin [{fullPath}] not found");
+            throw new PluginNotFoundException($"Plugin [{rawFullPath}] not found");
         }
 
-        public Plugin GetNext(Plugin plugin)
+        public Plugin GetNextPlugin(Plugin plugin)
         {
-            return GetFromAddress(InternalGetNextAddress(GetAddress(plugin)));
+            return GetPlugin(InternalGetNextAddress(GetAddress(plugin)));
         }
 
-        public Plugin GetFromAddress(PluginAddress addr)
+        public Plugin GetNextPlugin(PluginAddress addr)
+        {
+            return GetPlugin(InternalGetNextAddress(addr));
+        }
+
+        public Plugin GetPlugin(PluginAddress addr)
         {
             return dict[addr.level][addr.index];
         }
@@ -151,6 +165,19 @@ namespace BakeryEngine
             }
 
             return addr;
+        }
+
+        public PluginAddress GetLastPluginAddress()
+        {
+            PluginAddress addr = new PluginAddress();
+            addr.level = levels[levels.Length - 1];
+            addr.index = dict[addr.level].Length - 1;
+            return addr;
+        }
+
+        public Plugin GetLastPlugin()
+        {
+            return GetPlugin(GetLastPluginAddress());
         }
 
         public int GetFullIndex(PluginAddress addr)

@@ -694,26 +694,64 @@ namespace BakeryEngine
         public static string[] GetSectionNames(string file)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 return new string[0]; // No section, empty file
             }
 
             string line = string.Empty;
             List<string> sections = new List<string>();
 
-            while ((line = sr.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
                 if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp)) // Count sections
                     sections.Add(line.Substring(1, line.Length - 2));
             }
 
+            reader.Close();
             return sections.ToArray();
+        }
+
+        /// <summary>
+        /// Check if INI file has specified section
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static bool CheckSectionExist(string file, string section)
+        {
+            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+
+            // If file is blank
+            if (reader.Peek() == -1)
+            {
+                reader.Close();
+                return false; // No section, empty file
+            }
+
+            string line;
+            bool result = false;
+            while ((line = reader.ReadLine()) != null)
+            { // Read text line by line
+                line = line.Trim();
+                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp)) // Count sections
+                {
+                    if (string.Equals(line.Substring(1, line.Length - 2), section, stricmp))
+                    {
+                        result = true;
+                        break;
+                    }
+                }
+            }
+
+            reader.Close();
+            return result;
         }
     }
 }
