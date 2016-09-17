@@ -18,7 +18,7 @@ namespace BakeryEngine
         {
             None = 0,
             ExistFile, ExistDir, ExistSection, ExistRegSection, ExistRegKey, ExistVar,
-            Equal, Smaller, Bigger,
+            Equal, Smaller, Bigger, SmallerEqual, BiggerEqual,
             Not, 
             Online, Question, ExistMacro,
             // Deprecated
@@ -156,13 +156,17 @@ namespace BakeryEngine
                     throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
                 subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
-                if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
                     subOpcode = IfConditionSubOpcode.Equal;
-                else if (string.Equals(subOpcodeString, "Smaller", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(subOpcodeString, "Smaller", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<", StringComparison.OrdinalIgnoreCase))
                     subOpcode = IfConditionSubOpcode.Smaller;
-                else if (string.Equals(subOpcodeString, "Bigger", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(subOpcodeString, "Bigger", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">", StringComparison.OrdinalIgnoreCase))
                     subOpcode = IfConditionSubOpcode.Bigger;
-                else if (string.Equals(subOpcodeString, "NotEqual", StringComparison.OrdinalIgnoreCase)) // deprecated
+                else if (string.Equals(subOpcodeString, "SmallerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<=", StringComparison.OrdinalIgnoreCase))
+                    subOpcode = IfConditionSubOpcode.SmallerEqual;
+                else if (string.Equals(subOpcodeString, "BiggerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">=", StringComparison.OrdinalIgnoreCase))
+                    subOpcode = IfConditionSubOpcode.BiggerEqual;
+                else if (string.Equals(subOpcodeString, "NotEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "!=", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
@@ -178,7 +182,7 @@ namespace BakeryEngine
                 // -> new string[] { "%Joveler%",ied206,Set,%A%,True}
                 List<string> operandList = new List<string>();
                 operandList.Add(cmd.Operands[0]);
-                operandList.AddRange(cmd.Operands.Skip(subOpcodeIdx + 1));
+                operandList.AddRange(cmd.Operands.Skip(subOpcodeIdx + 2));
                 subCmd = new BakerySubCommand(SubCommandType.IfCondition, subOpcode, operandList.ToArray(), notFlag);
             }
             else
@@ -257,16 +261,20 @@ namespace BakeryEngine
                     logs = this.IfExistSection(cmd, subCmd);
                     break;
                 case IfConditionSubOpcode.ExistRegSection:
+                    logs = this.IfExistRegSection(cmd, subCmd);
                     break;
                 case IfConditionSubOpcode.ExistRegKey:
+                    logs = this.IfExistRegKey(cmd, subCmd);
                     break;
                 case IfConditionSubOpcode.ExistVar:
+                    logs = this.IfExistVar(cmd, subCmd);
                     break;
                 case IfConditionSubOpcode.Equal:
-                    break;
                 case IfConditionSubOpcode.Smaller:
-                    break;
                 case IfConditionSubOpcode.Bigger:
+                case IfConditionSubOpcode.SmallerEqual:
+                case IfConditionSubOpcode.BiggerEqual:
+                    logs = this.IfCompare(cmd, subCmd);
                     break;
                 case IfConditionSubOpcode.Online:
                     break;
@@ -321,7 +329,6 @@ namespace BakeryEngine
 
             string filePath = EscapeString(variables.Expand(subCmd.Operands[0]));
             string rawFilePath = subCmd.Operands[0];
-            BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
 
             // Check filePath contains wildcard
             bool filePathContainsWildcard = true;
@@ -329,30 +336,33 @@ namespace BakeryEngine
                 filePathContainsWildcard = false;
 
             // Check if file exists
-            bool exist;
+            bool run;
             if (filePathContainsWildcard)
             {
                 string[] list = Directory.GetFiles(Helper.GetDirNameEx(filePath), Path.GetFileName(filePath));
                 if (0 < list.Length)
-                    exist = true;
+                    run = true;
                 else
-                    exist = false;
+                    run = false;
             }
             else
-                exist = File.Exists(filePath);
-            if (subCmd.NotFlag)
-                exist = !exist;
+                run = File.Exists(filePath);
 
-            if (exist)
+            string resMessage;
+            if (run) // Exists
+                resMessage = $"File [{rawFilePath}] exists";
+            else
+                resMessage = $"File [{rawFilePath}] does not exists";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"File [{rawFilePath}] exists"));
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
                 logs.AddRange(ExecuteCommand(ifCmd));
             }
             else
-            {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, $"File [{rawFilePath}] does not exists"));
-            }
-            
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
+
             return logs.ToArray();
         }
 
@@ -374,7 +384,6 @@ namespace BakeryEngine
 
             string dirPath = EscapeString(variables.Expand(subCmd.Operands[0]));
             string rawFilePath = subCmd.Operands[0];
-            BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
 
             // Check filePath contains wildcard
             bool dirPathContainsWildcard = true;
@@ -382,29 +391,32 @@ namespace BakeryEngine
                 dirPathContainsWildcard = false;
 
             // Check if file exists
-            bool exist;
+            bool run;
             if (dirPathContainsWildcard)
             {
                 string[] list = Directory.GetDirectories(Helper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
                 if (0 < list.Length)
-                    exist = true;
+                    run = true;
                 else
-                    exist = false;
+                    run = false;
             }
             else
-                exist = Directory.Exists(dirPath);
-            if (subCmd.NotFlag)
-                exist = !exist;
+                run = Directory.Exists(dirPath);
 
-            if (exist)
+            string resMessage;
+            if (run) // Exists
+                resMessage = $"Directory [{rawFilePath}] exists";
+            else
+                resMessage = $"Directory [{rawFilePath}] does not exists";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Directory [{rawFilePath}] exists"));
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
                 logs.AddRange(ExecuteCommand(ifCmd));
             }
             else
-            {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, $"Directory [{rawFilePath}] does not exists"));
-            }
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
 
             return logs.ToArray();
         }
@@ -428,23 +440,28 @@ namespace BakeryEngine
             string section = EscapeString(variables.Expand(subCmd.Operands[1]));
             string rawIniFile = subCmd.Operands[0];
             string rawSection = subCmd.Operands[1];
-            BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
 
-            if (IniFile.CheckSectionExist(iniFile, section))
+            string resMessage;
+            bool run = IniFile.CheckSectionExist(iniFile, section);
+            if (run) // Exists
+                resMessage = $"Section [{rawSection}] exists in [{rawIniFile}]";
+            else
+                resMessage = $"Section [{rawSection}] does not exists in [{rawIniFile}]";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Section [{rawSection}] exists in [{rawIniFile}]"));
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
                 logs.AddRange(ExecuteCommand(ifCmd));
             }
             else
-            {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Section [{rawSection}] does not exists in [{rawIniFile}]"));
-            }
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
 
             return logs.ToArray();
         }
 
         /// <summary>
-        /// If,ExistRegSection,<IniFile>,<Section>,<Command>
+        /// If,ExistRegSection,<RegRootKey>,<SubKey>,<Command>
         /// </summary>
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
@@ -458,21 +475,195 @@ namespace BakeryEngine
             if (cmd.Operands.Length < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string iniFile = EscapeString(variables.Expand(subCmd.Operands[0]));
-            string section = EscapeString(variables.Expand(subCmd.Operands[1]));
-            string rawIniFile = subCmd.Operands[0];
-            string rawSection = subCmd.Operands[1];
-            BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
+            string rootKey = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string subKey = EscapeString(variables.Expand(subCmd.Operands[1]));
+            string rawRootKey = subCmd.Operands[0];
+            string rawSubKey = subCmd.Operands[1];
 
-            if (IniFile.CheckSectionExist(iniFile, section))
+            RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey);
+            if (regRoot == null)
+                throw new InvalidOperandException($"Invalid registry root key [{rawRootKey}]", cmd);
+            RegistryKey regSubKey = regRoot.OpenSubKey(subKey);
+
+            string resMessage;
+            bool run = (regSubKey != null);
+            if (run) // Exists
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Section [{rawSection}] exists in [{rawIniFile}]"));
+                resMessage = $"Registry sub key [{rawRootKey}\\{rawSubKey}] exists";
+                regSubKey.Close();
+            }
+            else
+                resMessage = $"Registry sub key [{rawRootKey}\\{rawSubKey}] does not exists";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
+            {
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
                 logs.AddRange(ExecuteCommand(ifCmd));
             }
             else
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
+
+            regRoot.Close();
+            return logs.ToArray();
+        }
+
+        /// <summary>
+        /// If,ExistRegKey,<RegRootKey>,<SubKey>,<ValueName>,<Command>
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="subCmd"></param>
+        /// <returns></returns>
+        public LogInfo[] IfExistRegKey(BakeryCommand cmd, BakerySubCommand subCmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 3 for condition and 1 for command
+            const int necessaryOperandNum = 3;
+            if (cmd.Operands.Length < necessaryOperandNum + 1)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+
+            string rootKey = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string subKey = EscapeString(variables.Expand(subCmd.Operands[1]));
+            string valueName = EscapeString(variables.Expand(subCmd.Operands[2]));
+            string rawRootKey = subCmd.Operands[0];
+            string rawSubKey = subCmd.Operands[1];
+            string rawValueName = subCmd.Operands[2];
+
+            RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey);
+            if (regRoot == null)
+                throw new InvalidOperandException($"Invalid registry root key [{rawRootKey}]", cmd);
+            object value = regRoot.OpenSubKey(subKey).GetValue(valueName);
+
+            string resMessage;
+            bool run = (value != null);
+            if (run) // Exists
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Error, $"Section [{rawSection}] does not exists in [{rawIniFile}]"));
+                resMessage = $"Registry value [{rootKey}\\{subKey}\\{valueName}] exists";
+                regRoot.Close();
             }
+            else
+                resMessage = $"Registry value [{rootKey}\\{subKey}\\{valueName}] does not exists";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
+            {
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
+                logs.AddRange(ExecuteCommand(ifCmd));
+            }
+            else
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
+
+            regRoot.Close();
+            return logs.ToArray();
+        }
+
+        /// <summary>
+        /// If,ExistVar,<%Variable%>,<Command>
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="subCmd"></param>
+        /// <returns></returns>
+        public LogInfo[] IfExistVar(BakeryCommand cmd, BakerySubCommand subCmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 1 for condition and 1 for command
+            const int necessaryOperandNum = 1;
+            if (cmd.Operands.Length < necessaryOperandNum + 1)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+
+            string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
+
+            string resMessage;
+            bool run = variables.ContainsKey(varName);
+            if (run) // Exists
+                resMessage = $"Varaible [%{varName}%] exists";
+            else
+                resMessage = $"Varaible [%{varName}%] does not exists";
+
+            if ((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag))
+            {
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
+                logs.AddRange(ExecuteCommand(ifCmd));
+            }
+            else
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
+
+            return logs.ToArray();
+        }
+
+        /// <summary>
+        /// If,<%Variable%>,Equal,<Value><Command>
+        /// </summary>
+        /// <remarks>
+        /// Equal can be substituded by Smaller, Bigger, SmallerEqual, BiggerEqual
+        /// ==, <, >, <=, =>, != also supported
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <param name="subCmd"></param>
+        /// <returns></returns>
+        public LogInfo[] IfCompare(BakeryCommand cmd, BakerySubCommand subCmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 1 for condition and 1 for command
+            const int necessaryOperandNum = 2;
+            if (cmd.Operands.Length < necessaryOperandNum + 1)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+
+            string value1 = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string value2 = EscapeString(variables.Expand(subCmd.Operands[1]));
+
+            string resMessage;
+            CompareStringNumberResult comp = NumberHelper.CompareStringNumber(value1, value2);
+
+            bool run = false;
+            bool notEqual = ((comp & CompareStringNumberResult.NotEqual) == CompareStringNumberResult.NotEqual);
+            if ((comp & CompareStringNumberResult.Equal) != 0)
+            {
+                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Equal
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual)
+                    run = true;
+                resMessage = $"[{value1}] is equal to [{value2}]";
+            }
+            else if ((comp & CompareStringNumberResult.Smaller) != 0)
+            {
+                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Smaller
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Bigger && subCmd.NotFlag
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual && subCmd.NotFlag)
+                    run = true;
+                resMessage = $"[{value1}] is smaller than [{value2}]";
+            }
+            else if ((comp & CompareStringNumberResult.Bigger) != 0)
+            {
+                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Bigger
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Smaller && subCmd.NotFlag
+                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual && subCmd.NotFlag)
+                    run = true;
+                resMessage = $"[{value1}] is bigger than [{value2}]";
+            }
+            else if ((comp & CompareStringNumberResult.NotEqual) != 0)
+            {
+                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Equal && subCmd.NotFlag)
+                    run = true;
+                resMessage = $"[{value1}] is not equal to [{value2}]";
+            }
+            else
+                throw new InternalUnknownException($"Cannot compare [{value1}] and [{value2}]");
+            
+            if (run)
+            {
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, resMessage));
+                BakeryCommand ifCmd = IfInternalCommand(cmd, subCmd, necessaryOperandNum);
+                logs.AddRange(ExecuteCommand(ifCmd));
+            }
+            else
+                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, resMessage));
 
             return logs.ToArray();
         }

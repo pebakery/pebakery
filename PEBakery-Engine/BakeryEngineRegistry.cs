@@ -16,8 +16,6 @@ namespace BakeryEngine
     /// </summary>
     public partial class BakeryEngine
     {
-        const UInt32 HKLM = 0x80000002;
-
         [DllImport("advapi32.dll", SetLastError = true)]
         static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
@@ -56,7 +54,7 @@ namespace BakeryEngine
                 throw new FileNotFoundException($"[{keyName}] does not exists");
             }
 
-            int ret = RegLoadKey(HKLM, keyName, hiveFile);
+            int ret = RegLoadKey(RegistryHelper.HKLM, keyName, hiveFile);
             if (ret == ResultWin32.ERROR_SUCCESS)
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Loaded [{rawHiveFile}] into [HKLM\\{keyName}]"));
             else
@@ -95,7 +93,7 @@ namespace BakeryEngine
                 throw new FileNotFoundException($"[{keyName}] does not exists");
             }
 
-            int ret = RegUnLoadKey(HKLM, keyName);
+            int ret = RegUnLoadKey(RegistryHelper.HKLM, keyName);
             if (ret == ResultWin32.ERROR_SUCCESS)
                 logs.Add(new LogInfo(cmd, LogState.Success, $@"Unloaded [HKLM\{rawKeyName}]"));
             else

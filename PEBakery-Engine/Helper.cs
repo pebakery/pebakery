@@ -5,8 +5,6 @@ using System.Text;
 using System.IO;
 using System.Globalization;
 using System.Reflection;
-using System.Text.RegularExpressions;
-using System.ComponentModel;
 
 namespace BakeryEngine
 {
@@ -245,84 +243,8 @@ namespace BakeryEngine
             }
         }
 
-        /// <summary>
-        /// integer parser, supports base 10 and 16 at same time
-        /// </summary>
-        /// <returns></returns>
-        public static bool ParseInt32(string str, out Int32 value)
-        {
-            if (string.Equals(str, string.Empty))
-            {
-                value = 0;
-                return false;
-            }
-
-            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    value = Convert.ToInt32(str, 16);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    value = 0;
-                    return false;
-                }   
-            }
-            else
-            {
-                try
-                {
-                    value = Convert.ToInt32(str, 10);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    value = 0;
-                    return false;
-                }
-            }
-        }
-
-        /// <summary>
-        /// integer parser, supports base 10 and 16 at same time
-        /// </summary>
-        /// <returns></returns>
-        public static bool ParseUInt32(string str, out UInt32 value)
-        {
-            if (string.Equals(str, string.Empty))
-            {
-                value = 0;
-                return false;
-            }
-
-            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    value = Convert.ToUInt32(str, 16);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    value = 0;
-                    return false;
-                }
-            }
-            else
-            {
-                try
-                {
-                    value = Convert.ToUInt32(str, 10);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    value = 0;
-                    return false;
-                }
-            }
-        }
+        
     }
+
+    
 }

@@ -85,6 +85,7 @@
     <Compile Include="Helper.cs" />
     <Compile Include="IniFile.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="NumberHelper.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="PluginCollection.cs" />
     <Compile Include="Program.cs" />
@@ -95,6 +96,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="RegistryHelper.cs" />
     <Compile Include="ResultWin32.cs" />
     <Compile Include="Variables.cs" />
   </ItemGroup>

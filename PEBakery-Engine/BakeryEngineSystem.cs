@@ -171,7 +171,7 @@ namespace BakeryEngine
             uint lines = 1; // must be (0 < lines)
             if (subCmd.Operands.Length == necessaryOperandNum + optionalOperandNum)
             {
-                if (Helper.ParseUInt32(subCmd.Operands[0], out lines) == false)
+                if (NumberHelper.ParseUInt32(subCmd.Operands[0], out lines) == false)
                     throw new InvalidSubOperandException($"[{subCmd.Operands[0]}] is not valid number", cmd);
                 if (lines <= 0)
                     throw new InvalidSubOperandException($"[{subCmd.Operands[0]}] must be greater than 0", cmd);
