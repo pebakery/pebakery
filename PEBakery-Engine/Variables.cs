@@ -84,37 +84,53 @@ namespace BakeryEngine
 
         public LogInfo SetValue(VarsType type, string key, string rawValue)
         {
-            return InternalSetValue(type, key, rawValue, -1, false);
+            return InternalSetValue(type, null, key, rawValue, -1, false);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, int depth)
         {
-            return InternalSetValue(type, key, rawValue, depth, false);
+            return InternalSetValue(type, null, key, rawValue, depth, false);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, bool errorOff)
         {
-            return InternalSetValue(type, key, rawValue, -1, errorOff);
+            return InternalSetValue(type, null, key, rawValue, -1, errorOff);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, int depth, bool errorOff)
         {
-            return InternalSetValue(type, key, rawValue, depth, errorOff);
+            return InternalSetValue(type, null, key, rawValue, depth, errorOff);
         }
 
-        public LogInfo InternalSetValue(VarsType type, string key, string rawValue, int depth, bool errorOff)
+        public LogInfo SetValue(VarsType type, BakeryCommand cmd, string key, string rawValue)
+        {
+            return InternalSetValue(type, cmd, key, rawValue, -1, false);
+        }
+
+        public LogInfo SetValue(VarsType type, BakeryCommand cmd, string key, string rawValue, bool errorOff)
+        {
+            return InternalSetValue(type, cmd, key, rawValue, -1, errorOff);
+        }
+
+        public LogInfo InternalSetValue(VarsType type, BakeryCommand cmd, string key, string rawValue, int depth, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             LogInfo log;
             // Check and remove circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
-                log = new LogInfo(LogState.Error, $"Variable [%{key}%] contains itself in [{rawValue}]", depth, errorOff);
+                if (cmd == null)
+                    log = new LogInfo(LogState.Error, $"Variable [%{key}%] contains itself in [{rawValue}]", depth, errorOff);
+                else
+                    log = new LogInfo(cmd, LogState.Error, $"Variable [%{key}%] contains itself in [{rawValue}]", errorOff);
             }
             else
             { // Ex) %Joveler%=Variel\ied206.txt
                 vars[key] = rawValue;
-                log = new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]", depth, errorOff);
+                if (cmd == null)
+                    log = new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]", depth, errorOff);
+                else
+                    log = new LogInfo(cmd, LogState.Error, $"{type} variable [%{key}%] set to [{rawValue}]", errorOff);
             }
             return log;
         }

@@ -40,15 +40,6 @@ namespace BakeryEngine
         Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep
     }
 
-    public enum NextCommand
-    {
-        None = 0,
-        Next, // Normal case : execute next command
-        Last, // Last command of section
-        Jump, // In Run command : execute target command
-        IgnoreUntilEnd, // Begin not executed : ignore until find End
-    }
-
     /// <summary>
     /// Class to hold info of commands
     /// </summary>
@@ -58,18 +49,12 @@ namespace BakeryEngine
         private Opcode opcode;
         private string[] operands;
         private CommandAddress address;
-        private int sectionDepth;
+        public int Depth;
 
         public string RawCode { get { return rawCode; } }
         public Opcode Opcode { get { return opcode; } }
         public string[] Operands { get { return operands; } }
         public CommandAddress Address { get { return address; } }
-        public int SectionDepth
-        {
-            get { return sectionDepth; }
-            set { sectionDepth = value; }
-        }
-
 
         /// <summary>
         /// Hold command information.
@@ -82,7 +67,7 @@ namespace BakeryEngine
             this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
-            this.sectionDepth = 0;
+            this.Depth = 0;
         }
 
         /// <summary>
@@ -92,12 +77,12 @@ namespace BakeryEngine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="subCommand"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, int sectionDepth)
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, int depth)
         {
             this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
-            this.sectionDepth = sectionDepth;
+            this.Depth = depth;
         }
 
         /// <summary>
@@ -112,7 +97,7 @@ namespace BakeryEngine
             this.opcode = opcode;
             this.operands = operands;
             this.address = address;
-            this.sectionDepth = 0;
+            this.Depth = 0;
         }
         
 
@@ -122,13 +107,13 @@ namespace BakeryEngine
         /// <param name="opcode"></param>
         /// <param name="operands"></param>
         /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, int sectionDepth)
+        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, int depth)
         {
             this.rawCode = rawCode;
             this.opcode = opcode;
             this.operands = operands;
             this.address = address;
-            this.sectionDepth = sectionDepth;
+            this.Depth = depth;
         }
 
         public override string ToString()
@@ -196,6 +181,20 @@ namespace BakeryEngine
         public InvalidCommandException() { }
         public InvalidCommandException(string message) : base(message) { }
         public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// Exception used in BakeryEngine::ParseCommand
+    /// </summary>
+    public class CriticalErrorException : Exception
+    {
+        private BakeryCommand cmd;
+        public BakeryCommand Cmd { get { return cmd; } }
+        public CriticalErrorException() { }
+        public CriticalErrorException(string message) : base(message) { }
+        public CriticalErrorException(BakeryCommand cmd) { this.cmd = cmd; }
+        public CriticalErrorException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
+        public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>
@@ -364,6 +363,9 @@ namespace BakeryEngine
         private string[] currentSectionParams;
         private CommandAddress nextCommand; // ProgramCounter
         private Stack<CommandAddress> returnAddress;
+        private int beginEndBlockCount;
+        private int elseFlag; // 1, 0 : valid, -1 : invalid
+        private int beginFlag; // 1, 0 : valid, -1 : invalid
 
         // Fields : System Commands
         private BakeryCommand onBuildExit;
@@ -418,6 +420,9 @@ namespace BakeryEngine
             this.currentCommand = null;
             this.returnAddress = new Stack<CommandAddress>();
             this.currentSectionParams = new string[0];
+            this.beginEndBlockCount = 0;
+            this.beginFlag = -1;
+            this.elseFlag = -1;
 
             this.onBuildExit = null;
             this.onPluginExit = null;
@@ -426,7 +431,7 @@ namespace BakeryEngine
         // Methods
         private void DisplayOperation(BakeryCommand cmd)
         {
-            for (int i = 0; i < cmd.SectionDepth; i++)
+            for (int i = 0; i < cmd.Depth; i++)
                 Console.Write("  ");
             Console.WriteLine(cmd.RawCode);
         }
@@ -541,22 +546,28 @@ namespace BakeryEngine
                     {
                         logger.Write(ExecuteCommand(currentCommand), true);
                     }
+                    catch (CriticalErrorException)
+                    { // Critical Error, stop build
+                        break;
+                    }
                     catch (InvalidOpcodeException e)
                     {
-                        logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                        logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                     }
                 }
                 catch (InvalidOpcodeException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
 
+                if (0 <= elseFlag)
+                    elseFlag--;
                 nextCommand.line++;
             }
         }
@@ -599,7 +610,7 @@ namespace BakeryEngine
                 try
                 {
                     currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
-                    currentCommand.SectionDepth = depth;
+                    currentCommand.Depth = depth;
                     try
                     {
                         if (currentCommand.Opcode == Opcode.Run || currentCommand.Opcode == Opcode.Exec)
@@ -607,20 +618,24 @@ namespace BakeryEngine
                         else
                             logger.Write(ExecuteCommand(currentCommand), true);
                     }
+                    catch (CriticalErrorException)
+                    { // Critical Error, stop build
+                        break;
+                    }
                     catch (InvalidOpcodeException e)
                     {
-                        logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                        logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                     }
                 }
                 catch (InvalidOpcodeException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
                     currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.Error, e.Message));
+                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
 
                 nextCommand.line++;
@@ -685,8 +700,17 @@ namespace BakeryEngine
                     case Opcode.Exec:
                         logs = this.RunExec(cmd);
                         break;
+                    case Opcode.Begin:
+                        logs = this.Begin(cmd);
+                        break;
+                    case Opcode.End:
+                        logs = this.End(cmd);
+                        break;
                     case Opcode.If:
                         logs = this.IfCondition(cmd);
+                        break;
+                    case Opcode.Else:
+                        logs = this.Else(cmd);
                         break;
                     // Control
                     case Opcode.Set:
@@ -701,6 +725,11 @@ namespace BakeryEngine
                     default:
                         throw new InvalidOpcodeException($"Cannot execute [{cmd.Opcode.ToString()}] command", cmd);
                 }
+            }
+            catch (CriticalErrorException e)
+            {
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message)));
+                throw e;
             }
             catch (Exception e)
             {

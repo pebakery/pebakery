@@ -283,7 +283,7 @@ namespace BakeryEngine
                 }
             }
 
-            LogInfo log = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":", cmd.SectionDepth);
+            LogInfo log = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":", cmd.Depth);
             if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Last free drive letter is [{lastFreeDriveLetter}:], saved into variable [%{varName}%]"));
             else if (log.State == LogState.Error)
@@ -318,7 +318,7 @@ namespace BakeryEngine
             string driveLetter = Path.GetPathRoot(Path.GetFullPath(path));
             long freeSpace = new DriveInfo(driveLetter).AvailableFreeSpace / (1024 * 1024); // Convert to MB
 
-            LogInfo log = variables.SetValue(VarsType.Local, varName, freeSpace.ToString(), cmd.SectionDepth);
+            LogInfo log = variables.SetValue(VarsType.Local, varName, freeSpace.ToString(), cmd.Depth);
             if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Free Space of Drive [{driveLetter.Substring(0, 1)}:] is [{freeSpace}MB], saved into variable [%{varName}%]"));
             else if (log.State == LogState.Error)
@@ -354,7 +354,7 @@ namespace BakeryEngine
             if (envVarValue == null)
                 throw new InvalidSubOperandException($"There is no envrionment variable named [{envVarName}]");
 
-            LogInfo log = variables.SetValue(VarsType.Local, envVarName, envVarValue, cmd.SectionDepth);
+            LogInfo log = variables.SetValue(VarsType.Local, envVarName, envVarValue, cmd.Depth);
             if (log.State == LogState.Success)
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Variable [%{bakeryVarName}%] set to envrionment variable [{envVarName}]'s value [{envVarValue}]"));
             else if (log.State == LogState.Error)
@@ -386,7 +386,7 @@ namespace BakeryEngine
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
             bool isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-            LogInfo log = variables.SetValue(VarsType.Local, varName, isAdmin.ToString(), cmd.SectionDepth);
+            LogInfo log = variables.SetValue(VarsType.Local, varName, isAdmin.ToString(), cmd.Depth);
             if (log.State == LogState.Error)
                 logs.Add(log);
             else
@@ -544,7 +544,7 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, LogState.Success, $"Executed [{rawFilePath}] with shell, returned exit code [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
-                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);
+                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.Depth);
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(cmd, LogState.Success, $"Exit code is [{proc.ExitCode}], saved into variable [%{exitCodeVar}%]"));
                         else if (log.State == LogState.Error)
@@ -562,7 +562,7 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, LogState.Success, $"Executed and deleted [{rawFilePath}] with shell, returned exit code [{proc.ExitCode}]"));
                     if (exitCodeVar != null)
                     {
-                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.SectionDepth);
+                        LogInfo log = variables.SetValue(VarsType.Local, exitCodeVar, proc.ExitCode.ToString(), cmd.Depth);
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(cmd, LogState.Success, $"Exit code is [{proc.ExitCode}], saved into variable [%{exitCodeVar}%]"));
                         else if (log.State == LogState.Error)

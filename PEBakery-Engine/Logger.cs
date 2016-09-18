@@ -17,7 +17,7 @@ namespace BakeryEngine
     public enum LogState
     {
         None = 0,
-        Success, Warning, Error, Info, Ignore, Muted
+        Success, Warning, Error, CriticalError, Info, Ignore, Muted
     }
 
     public class LogInfo
@@ -47,7 +47,7 @@ namespace BakeryEngine
             this.subCommand = null;
             this.result = result;
             this.State = state;
-            this.depth = command.SectionDepth;
+            this.depth = command.Depth;
         }
 
         public LogInfo(BakeryCommand command, LogState state, string result, bool errorOff)
@@ -56,7 +56,7 @@ namespace BakeryEngine
             this.subCommand = null;
             this.result = result;
             this.State = state;
-            this.depth = command.SectionDepth;
+            this.depth = command.Depth;
         }
 
         public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result)
@@ -65,7 +65,7 @@ namespace BakeryEngine
             this.subCommand = subCommand;
             this.result = result;
             this.State = state;
-            this.depth = command.SectionDepth;
+            this.depth = command.Depth;
         }
 
         public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result, bool errorOff)
@@ -74,7 +74,7 @@ namespace BakeryEngine
             this.subCommand = subCommand;
             this.result = result;
             this.State = state;
-            this.depth = command.SectionDepth;
+            this.depth = command.Depth;
         }
 
 

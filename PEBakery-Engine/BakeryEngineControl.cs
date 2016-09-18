@@ -54,11 +54,11 @@ namespace BakeryEngine
             // Logs are written in variables.SetValue method
             if (global)
             {
-                logs.Add(variables.SetValue(VarsType.Global, varKey, varValue, cmd.SectionDepth));
+                logs.Add(variables.SetValue(VarsType.Global, cmd, varKey, varValue));
             }
             if (permanent)
             {
-                LogInfo log = variables.SetValue(VarsType.Global, varKey, varValue, cmd.SectionDepth);
+                LogInfo log = variables.SetValue(VarsType.Global, cmd, varKey, varValue);
                 if (log.State == LogState.Success)
                 { // SetValue success, write to IniFile
                     if (IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue))
@@ -73,7 +73,7 @@ namespace BakeryEngine
             }
             else // Local
             {
-                logs.Add(variables.SetValue(VarsType.Local, varKey, varValue, cmd.SectionDepth));
+                logs.Add(variables.SetValue(VarsType.Local, cmd, varKey, varValue));
             }
 
             
