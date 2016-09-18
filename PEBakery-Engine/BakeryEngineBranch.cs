@@ -9,6 +9,13 @@ using Microsoft.Win32;
 
 namespace BakeryEngine
 {
+    /*
+     * Warning!!!
+     *   This shit of codes needs a looooooooooooot of refactoring!
+     *   TODO: JIT Compiler to convert Begin~End into goto-style simplified script
+     *   TODO: Begin~End 부분을 goto로 바꾸고, If의 중첩이 없는 행복한 JIT 컴파일러가 필요합니다
+     */
+
     /// <summary>
     /// Implementation of commands
     /// </summary>
@@ -431,7 +438,7 @@ namespace BakeryEngine
             else // Do not run
             {
                 logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, message));
-                if (ifCmd.Opcode == Opcode.Begin)
+                if (ifCmd.Opcode == Opcode.If || ifCmd.Opcode == Opcode.Begin)
                 { // Find End
                     nextCommand = MatchBeginWithProperEnd(cmd.Address);
                 }
@@ -511,7 +518,10 @@ namespace BakeryEngine
             }
 
             if (nestedBeginEnd == 0) // Success
-                return new CommandAddress(addr.plugin, addr.section, i + 1, addr.secLength); // 1 for proper next command
+            {
+                elseFlag = 1;
+                return new CommandAddress(addr.plugin, addr.section, i, addr.secLength);
+            }
             else
                 throw new CriticalErrorException("End must match with Begin");
         }
