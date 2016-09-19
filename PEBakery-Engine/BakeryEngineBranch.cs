@@ -216,6 +216,8 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] IfCondition(BakeryCommand cmd)
         {
+            elseFlag = 1;
+
             LogInfo[] logs = new LogInfo[0]; // TODO: Delete this init sentence if If command is implemented
 
             // Necessary operand : 3, 2 for condition and 1 for embeded command
@@ -425,10 +427,6 @@ namespace BakeryEngine
             BakeryCommand ifCmd = ForgeEmbeddedCommand(cmd, necessaryOperandNum + 1);
             if (ifCmd.Opcode == Opcode.End)
                 throw new CriticalErrorException("End cannot be used with If", cmd);
-            else if (ifCmd.Opcode == Opcode.Begin)
-                beginFlag = 1;
-            else
-                elseFlag = 1;
 
             if (run)
             {
@@ -513,7 +511,8 @@ namespace BakeryEngine
                 }
                 catch (Exception e)
                 {
-                    throw new CriticalErrorException(e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message));
+                    // Tempororay measure
+                    // throw new CriticalErrorException(e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message));
                 }
             }
 
