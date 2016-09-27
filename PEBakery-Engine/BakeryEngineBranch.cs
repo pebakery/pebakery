@@ -9,11 +9,36 @@ using Microsoft.Win32;
 
 namespace BakeryEngine
 {
+    public enum IfSubOpcode
+    {
+        None = 0,
+        ExistFile, ExistDir, ExistSection, ExistRegSection, ExistRegKey, ExistVar,
+        Equal, Smaller, Bigger, SmallerEqual, BiggerEqual,
+        Not,
+        Ping, Online, Question, ExistMacro,
+        // Deprecated
+        EqualX, License, ExistRegMulti
+    }
+
+    public class BakeryIfCommand
+    {
+        // For IfCondition
+        public IfSubOpcode SubOpcode;
+        public string[] Operands;
+        public bool NotFlag;
+
+        public BakeryIfCommand(IfSubOpcode subOpcode, string[] operands, bool notFlag)
+        {
+            this.SubOpcode = subOpcode;
+            this.Operands = operands;
+            this.NotFlag = notFlag;
+        }
+    }
+
     /*
      * Warning!!!
      *   This shit of codes needs a looooooooooooot of refactoring!
-     *   TODO: JIT Compiler to convert Begin~End into goto-style simplified script
-     *   TODO: Begin~End 부분을 goto로 바꾸고, If의 중첩이 없는 행복한 JIT 컴파일러가 필요합니다
+     *   TODO: Compiler to convert Begin~End into goto-style simplified script (like babel)
      */
 
     /// <summary>
@@ -21,16 +46,7 @@ namespace BakeryEngine
     /// </summary>
     public partial class BakeryEngine
     {
-        public enum IfConditionSubOpcode
-        {
-            None = 0,
-            ExistFile, ExistDir, ExistSection, ExistRegSection, ExistRegKey, ExistVar,
-            Equal, Smaller, Bigger, SmallerEqual, BiggerEqual,
-            Not, 
-            Ping, Online, Question, ExistMacro,
-            // Deprecated
-            EqualX, License, ExistRegMulti
-        }
+        
 
         /// <summary>
         /// Run,%PluginFile%,<Section>[,PARAMS]
@@ -55,19 +71,20 @@ namespace BakeryEngine
             {
                 // Necessary operand : 2, optional operand : variable length
                 const int necessaryOperandNum = 2;
-                if (cmd.Operands.Length < necessaryOperandNum)
+                if (cmd.Operands.Count < necessaryOperandNum)
                     throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
                 // Get necesssary operand
-                string pluginFile = EscapeString(variables.Expand(cmd.Operands[0]));
-                string sectionName = EscapeString(variables.Expand(cmd.Operands[1]));
+                string pluginFile = UnescapeString(variables.Expand(cmd.Operands[0]));
+                string sectionName = UnescapeString(variables.Expand(cmd.Operands[1]));
                 string rawPluginFile = cmd.Operands[0];
                 string rawSectoinName = cmd.Operands[1];
 
                 // Get optional operand 
-                string[] parameters = new string[cmd.Operands.Length - necessaryOperandNum];
-                if (necessaryOperandNum < cmd.Operands.Length)
-                    Array.Copy(cmd.Operands, 2, parameters, 0, cmd.Operands.Length - necessaryOperandNum);
+                List<string> parameters = new List<string>();//  string[cmd.Operands.Count - necessaryOperandNum];
+                if (necessaryOperandNum < cmd.Operands.Count)
+                    parameters.AddRange(cmd.Operands.Skip(2).Take(cmd.Operands.Count - necessaryOperandNum));
+
 
                 bool inCurrentPlugin = false;
                 if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
@@ -127,6 +144,7 @@ namespace BakeryEngine
             return logs.ToArray();
         }
         
+        /*
         /// <summary>
         /// Begin
         /// </summary>
@@ -139,9 +157,9 @@ namespace BakeryEngine
             // Necessary operand : 0, optional operand : 0
             const int necessaryOperandNum = 0;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             beginEndBlockCount++;
@@ -163,9 +181,9 @@ namespace BakeryEngine
             // Necessary operand : 0, optional operand : 0
             const int necessaryOperandNum = 0;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             if (0 < beginEndBlockCount)
@@ -192,12 +210,12 @@ namespace BakeryEngine
 
             // Necessary operand : 0, optional operand : 0+
             const int necessaryOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             if (0 <= elseFlag)
             {
-                BakeryCommand elseCmd = ForgeEmbeddedCommand(cmd, 0);
+                BakeryCommand elseCmd = ForgeEmbedCommand(cmd, 0, returnAddress.Count);
                 logs.Add(new LogInfo(cmd, LogState.Success, "Else condition"));
                 logs.AddRange(ExecuteCommand(elseCmd));
             }
@@ -209,6 +227,8 @@ namespace BakeryEngine
             return logs.ToArray();
         }
 
+        */
+
         /// <summary>
         /// If,<Condition>,<Command>
         /// </summary>
@@ -216,49 +236,49 @@ namespace BakeryEngine
         /// <returns></returns>
         public LogInfo[] IfCondition(BakeryCommand cmd)
         {
-            elseFlag = 1;
+            // elseFlag = 1;
 
             LogInfo[] logs = new LogInfo[0]; // TODO: Delete this init sentence if If command is implemented
 
             // Necessary operand : 3, 2 for condition and 1 for embeded command
             const int necessaryOperandNum = 3;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             // Get Condition SubOpcode
-            BakerySubCommand subCmd = ForgeIfSubCommand(cmd);
+            BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
 
             // Call sub command methods
-            switch ((IfConditionSubOpcode) subCmd.SubOpcode)
+            switch ((IfSubOpcode) subCmd.SubOpcode)
             {
-                case IfConditionSubOpcode.Equal:
-                case IfConditionSubOpcode.Smaller:
-                case IfConditionSubOpcode.Bigger:
-                case IfConditionSubOpcode.SmallerEqual:
-                case IfConditionSubOpcode.BiggerEqual:
+                case IfSubOpcode.Equal:
+                case IfSubOpcode.Smaller:
+                case IfSubOpcode.Bigger:
+                case IfSubOpcode.SmallerEqual:
+                case IfSubOpcode.BiggerEqual:
                     logs = this.IfCompare(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistFile:
+                case IfSubOpcode.ExistFile:
                     logs = this.IfExistFile(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistDir:
+                case IfSubOpcode.ExistDir:
                     logs = this.IfExistDir(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistSection:
+                case IfSubOpcode.ExistSection:
                     logs = this.IfExistSection(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistRegSection:
+                case IfSubOpcode.ExistRegSection:
                     logs = this.IfExistRegSection(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistRegKey:
+                case IfSubOpcode.ExistRegKey:
                     logs = this.IfExistRegKey(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.ExistVar:
+                case IfSubOpcode.ExistVar:
                     logs = this.IfExistVar(cmd, subCmd);
                     break;
-                case IfConditionSubOpcode.Ping:
+                case IfSubOpcode.Ping:
                     break;
-                case IfConditionSubOpcode.Online:
+                case IfSubOpcode.Online:
                     break;
                 default: // In fact, Enum.Parse logic must handle this. If this logic is called in production, it is definitely a BUG
                     throw new InvalidSubOpcodeException($"INTERNAL ERROR! Invalid sub command [If,{subCmd.SubOpcode}]", cmd);
@@ -267,11 +287,11 @@ namespace BakeryEngine
             return logs;
         }
 
-        private BakerySubCommand ForgeIfSubCommand(BakeryCommand cmd)
+        public static BakeryIfCommand ForgeIfSubCommand(BakeryCommand cmd)
         {
             // Get Condition SubOpcode
-            IfConditionSubOpcode subOpcode = IfConditionSubOpcode.None;
-            BakerySubCommand subCmd;
+            IfSubOpcode subOpcode = IfSubOpcode.None;
+            BakeryIfCommand subCmd;
 
             // Parse opcode
             int subOpcodeIdx = 0;
@@ -287,29 +307,29 @@ namespace BakeryEngine
             // Check if subOpcodeString starts and ends with % -> Equal, Smaller, Bigger
             if (cmd.Operands[subOpcodeIdx].StartsWith("%") && cmd.Operands[subOpcodeIdx].EndsWith("%"))
             {
-                if (cmd.Operands.Length < 4) // 3 for %A%,Equal,%B% and 1 for embeded command
+                if (cmd.Operands.Count < 4) // 3 for %A%,Equal,%B% and 1 for embeded command
                     throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
                 subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
                 if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.Equal;
+                    subOpcode = IfSubOpcode.Equal;
                 else if (string.Equals(subOpcodeString, "Smaller", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.Smaller;
+                    subOpcode = IfSubOpcode.Smaller;
                 else if (string.Equals(subOpcodeString, "Bigger", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.Bigger;
+                    subOpcode = IfSubOpcode.Bigger;
                 else if (string.Equals(subOpcodeString, "SmallerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<=", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.SmallerEqual;
+                    subOpcode = IfSubOpcode.SmallerEqual;
                 else if (string.Equals(subOpcodeString, "BiggerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">=", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.BiggerEqual;
+                    subOpcode = IfSubOpcode.BiggerEqual;
                 else if (string.Equals(subOpcodeString, "NotEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "!=", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.Equal;
+                    subOpcode = IfSubOpcode.Equal;
                 }
                 else if (string.Equals(subOpcodeString, "EqualX", StringComparison.OrdinalIgnoreCase)) // deprecated 
-                    subOpcode = IfConditionSubOpcode.EqualX;
+                    subOpcode = IfSubOpcode.EqualX;
                 else
                     throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
 
@@ -318,79 +338,100 @@ namespace BakeryEngine
                 List<string> operandList = new List<string>();
                 operandList.Add(cmd.Operands[subOpcodeIdx]);
                 operandList.AddRange(cmd.Operands.Skip(subOpcodeIdx + 2));
-                subCmd = new BakerySubCommand(SubCommandType.IfCondition, subOpcode, operandList.ToArray(), notFlag);
+                subCmd = new BakeryIfCommand(subOpcode, operandList.ToArray(), notFlag);
             }
             else
             {
                 // Get condition SubOpcode string
                 subOpcodeString = cmd.Operands[subOpcodeIdx];
                 if (string.Equals(subOpcodeString, "ExistFile", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistFile;
+                    subOpcode = IfSubOpcode.ExistFile;
                 else if (string.Equals(subOpcodeString, "ExistDir", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistDir;
+                    subOpcode = IfSubOpcode.ExistDir;
                 else if (string.Equals(subOpcodeString, "ExistSection", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistSection;
+                    subOpcode = IfSubOpcode.ExistSection;
                 else if (string.Equals(subOpcodeString, "ExistRegSection", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistRegSection;
+                    subOpcode = IfSubOpcode.ExistRegSection;
                 else if (string.Equals(subOpcodeString, "ExistRegKey", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistRegKey;
+                    subOpcode = IfSubOpcode.ExistRegKey;
                 else if (string.Equals(subOpcodeString, "ExistVar", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.ExistVar;
+                    subOpcode = IfSubOpcode.ExistVar;
                 else if (string.Equals(subOpcodeString, "NotExistFile", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistFile;
+                    subOpcode = IfSubOpcode.ExistFile;
                 }
                 else if (string.Equals(subOpcodeString, "NotExistDir", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistDir;
+                    subOpcode = IfSubOpcode.ExistDir;
                 }
                 else if (string.Equals(subOpcodeString, "NotExistSection", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistSection;
+                    subOpcode = IfSubOpcode.ExistSection;
                 }
                 else if (string.Equals(subOpcodeString, "NotExistRegSection", StringComparison.OrdinalIgnoreCase)) // deprecated
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistRegSection;
+                    subOpcode = IfSubOpcode.ExistRegSection;
                 }
                 else if (string.Equals(subOpcodeString, "NotExistRegKey", StringComparison.OrdinalIgnoreCase)) // deprecated 
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistRegKey;
+                    subOpcode = IfSubOpcode.ExistRegKey;
                 }
                 else if (string.Equals(subOpcodeString, "NotExistVar", StringComparison.OrdinalIgnoreCase))  // deprecated 
                 {
                     if (notFlag)
                         throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
                     notFlag = true;
-                    subOpcode = IfConditionSubOpcode.ExistVar;
+                    subOpcode = IfSubOpcode.ExistVar;
                 }
                 else if (string.Equals(subOpcodeString, "Ping", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.Ping;
+                    subOpcode = IfSubOpcode.Ping;
                 else if (string.Equals(subOpcodeString, "Online", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfConditionSubOpcode.Online;
+                    subOpcode = IfSubOpcode.Online;
                 else
                     throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
-                subCmd = new BakerySubCommand(SubCommandType.IfCondition, subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToArray(), notFlag);
+                subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToArray(), notFlag);
             }
 
             return subCmd;
         }
 
-        private BakeryCommand ForgeEmbeddedCommand(BakeryCommand cmd, int opcodeIdx)
+        public static BakeryCommand ForgeIfEmbedCommand(BakeryCommand cmd, int depth)
+        {
+            BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
+            int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
+            return BakeryEngine.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
+        }
+
+        public static BakeryCommand ForgeIfEmbedCommand(BakeryCommand cmd, BakeryIfCommand subCmd, int depth)
+        {
+            int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
+            return BakeryEngine.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
+        }
+
+        public static BakeryCommand ForgeIfConditionCommand(BakeryCommand cmd)
+        {
+            BakeryIfCommand subCmd = BakeryEngine.ForgeIfSubCommand(cmd);
+            BakeryCommand embCmd = BakeryEngine.ForgeIfEmbedCommand(cmd, subCmd, 0);
+            int operandCount = BakeryEngine.GetIfSubCmdOperandNum(subCmd.SubOpcode);
+            return new BakeryCommand(Opcode.If, cmd.Operands.Take(operandCount + 1).ToList()); // 1 for sub opcode itself
+        }
+
+        public static BakeryCommand ForgeEmbedCommand(BakeryCommand cmd, int opcodeIdx, int depth)
         {
             // If,   ExistFile,Joveler.txt,Echo,ied206
             // [cmd] 0,        1,          2,   3 -> opcodeIdx must be 2 
@@ -409,33 +450,33 @@ namespace BakeryEngine
                 throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
             }
 
-            int sectionDepth = returnAddress.Count + 1;
+            int cmdDepth = depth + 1;
             if (opcode == Opcode.Run)
-                sectionDepth -= 1;
+                cmdDepth -= 1;
 
-            string[] operands;
-            if (opcodeIdx == 0 && cmd.Operands.Length == 1) // Ex) Begin
-                operands = new string[0];
+            List<string> operands;
+            if (opcodeIdx == 0 && cmd.Operands.Count == 1) // Ex) Begin
+                operands = new List<string>();
             else // Ex) Set,%A%,B
-                operands = cmd.Operands.Skip(opcodeIdx + 1).ToArray();
-            return new BakeryCommand(cmd.RawCode, opcode, operands, cmd.Address, sectionDepth);
+                operands = cmd.Operands.Skip(opcodeIdx + 1).ToList();
+            return new BakeryCommand(cmd.Origin, opcode, operands, cmd.Address, cmdDepth);
         }
 
-        private void ProcessIfEmbeddedCommand(ref List<LogInfo> logs, bool run, BakeryCommand cmd, BakerySubCommand subCmd, string message)
+        private void ProcessIfEmbeddedCommand(ref List<LogInfo> logs, bool run, BakeryCommand cmd, BakeryIfCommand subCmd, string message)
         { // ref for performance
-            int necessaryOperandNum = GetIfCommandNecessaryOperandNum(cmd, subCmd);
-            BakeryCommand ifCmd = ForgeEmbeddedCommand(cmd, necessaryOperandNum + 1);
+            int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
+            BakeryCommand ifCmd = ForgeEmbedCommand(cmd, necessaryOperandNum + 1, returnAddress.Count);
             if (ifCmd.Opcode == Opcode.End)
                 throw new CriticalErrorException("End cannot be used with If", cmd);
 
             if (run)
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, message));
+                logs.Add(new LogInfo(cmd, LogState.Success, message));
                 logs.AddRange(ExecuteCommand(ifCmd));
             }
             else // Do not run
             {
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Ignore, message));
+                logs.Add(new LogInfo(cmd, LogState.Ignore, message));
                 if (ifCmd.Opcode == Opcode.If || ifCmd.Opcode == Opcode.Begin)
                 { // Find End
                     nextCommand = MatchBeginWithProperEnd(cmd.Address);
@@ -462,9 +503,9 @@ namespace BakeryEngine
                     {
                         while (true)
                         {
-                            BakerySubCommand subCmd = ForgeIfSubCommand(cmd);
-                            int necessaryOperandNum = GetIfCommandNecessaryOperandNum(cmd, subCmd);
-                            BakeryCommand embedded = ForgeEmbeddedCommand(cmd, necessaryOperandNum + 1);
+                            BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
+                            int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
+                            BakeryCommand embedded = ForgeEmbedCommand(cmd, necessaryOperandNum + 1, returnAddress.Count);
                             if (embedded.Opcode == Opcode.If) // Nested If
                             {
                                 cmd = embedded;
@@ -477,14 +518,14 @@ namespace BakeryEngine
                     }
                     else if (cmd.Opcode == Opcode.Else)
                     {
-                        BakeryCommand embedded = ForgeEmbeddedCommand(cmd, 0);
+                        BakeryCommand embedded = ForgeEmbedCommand(cmd, 0, returnAddress.Count);
                         if (embedded.Opcode == Opcode.If) // Nested If
                         {
                             while (true)
                             {
-                                BakerySubCommand subCmd = ForgeIfSubCommand(cmd);
-                                int necessaryOperandNum = GetIfCommandNecessaryOperandNum(cmd, subCmd);
-                                embedded = ForgeEmbeddedCommand(cmd, necessaryOperandNum + 1);
+                                BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
+                                int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
+                                embedded = ForgeEmbedCommand(cmd, necessaryOperandNum + 1, returnAddress.Count);
                                 if (embedded.Opcode == Opcode.If) // Nested If
                                 {
                                     cmd = embedded;
@@ -509,7 +550,7 @@ namespace BakeryEngine
                             break;
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // Tempororay measure
                     // throw new CriticalErrorException(e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message));
@@ -518,46 +559,46 @@ namespace BakeryEngine
 
             if (nestedBeginEnd == 0) // Success
             {
-                elseFlag = 1;
+                // elseFlag = 1;
                 return new CommandAddress(addr.plugin, addr.section, i, addr.secLength);
             }
             else
                 throw new CriticalErrorException("End must match with Begin");
         }
 
-        private int GetIfCommandNecessaryOperandNum(BakeryCommand cmd, BakerySubCommand subCmd)
+        public static int GetIfOperandNum(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode) subCmd.SubOpcode);
-            if (1 <= cmd.Operands.Length && string.Equals(cmd.Operands[0], "Not", StringComparison.OrdinalIgnoreCase))
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode) subCmd.SubOpcode);
+            if (1 <= cmd.Operands.Count && string.Equals(cmd.Operands[0], "Not", StringComparison.OrdinalIgnoreCase))
                 necessaryOperandNum += 1;
             return necessaryOperandNum;
         }
 
-        private int GetIfSubCommandNecessaryOperandNum(IfConditionSubOpcode subOpcode)
+        public static int GetIfSubCmdOperandNum(IfSubOpcode subOpcode)
         {
             switch(subOpcode)
             {
-                case IfConditionSubOpcode.Equal:
-                case IfConditionSubOpcode.Smaller:
-                case IfConditionSubOpcode.Bigger:
-                case IfConditionSubOpcode.SmallerEqual:
-                case IfConditionSubOpcode.BiggerEqual:
+                case IfSubOpcode.Equal:
+                case IfSubOpcode.Smaller:
+                case IfSubOpcode.Bigger:
+                case IfSubOpcode.SmallerEqual:
+                case IfSubOpcode.BiggerEqual:
                     return 2;
-                case IfConditionSubOpcode.ExistFile:
+                case IfSubOpcode.ExistFile:
                     return 1;
-                case IfConditionSubOpcode.ExistDir:
+                case IfSubOpcode.ExistDir:
                     return 1;
-                case IfConditionSubOpcode.ExistSection:
+                case IfSubOpcode.ExistSection:
                     return 2;
-                case IfConditionSubOpcode.ExistRegSection:
+                case IfSubOpcode.ExistRegSection:
                     return 2;
-                case IfConditionSubOpcode.ExistRegKey:
+                case IfSubOpcode.ExistRegKey:
                     return 3;
-                case IfConditionSubOpcode.ExistVar:
+                case IfSubOpcode.ExistVar:
                     return 1;
-                case IfConditionSubOpcode.Ping:
+                case IfSubOpcode.Ping:
                     return 0; // Not implemented
-                case IfConditionSubOpcode.Online:
+                case IfSubOpcode.Online:
                     return 0; // Not implemented
                 default: // If this logic is called in production, it is definitely a BUG
                     return -1;
@@ -574,17 +615,17 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfCompare(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfCompare(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode) subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode) subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string value1 = EscapeString(variables.Expand(subCmd.Operands[0]));
-            string value2 = EscapeString(variables.Expand(subCmd.Operands[1]));
+            string value1 = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string value2 = UnescapeString(variables.Expand(subCmd.Operands[1]));
 
             string resMessage;
             CompareStringNumberResult comp = NumberHelper.CompareStringNumber(value1, value2);
@@ -593,33 +634,33 @@ namespace BakeryEngine
             bool notEqual = ((comp & CompareStringNumberResult.NotEqual) == CompareStringNumberResult.NotEqual);
             if ((comp & CompareStringNumberResult.Equal) != 0)
             {
-                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Equal
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual)
+                if ((IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Equal
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.SmallerEqual
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.BiggerEqual)
                     run = true;
                 resMessage = $"[{value1}] is equal to [{value2}]";
             }
             else if ((comp & CompareStringNumberResult.Smaller) != 0)
             {
-                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Smaller
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Bigger && subCmd.NotFlag
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual && subCmd.NotFlag)
+                if ((IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Smaller
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.SmallerEqual
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Bigger && subCmd.NotFlag
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.BiggerEqual && subCmd.NotFlag)
                     run = true;
                 resMessage = $"[{value1}] is smaller than [{value2}]";
             }
             else if ((comp & CompareStringNumberResult.Bigger) != 0)
             {
-                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Bigger
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.BiggerEqual
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Smaller && subCmd.NotFlag
-                    || (IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.SmallerEqual && subCmd.NotFlag)
+                if ((IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Bigger
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.BiggerEqual
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Smaller && subCmd.NotFlag
+                    || (IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.SmallerEqual && subCmd.NotFlag)
                     run = true;
                 resMessage = $"[{value1}] is bigger than [{value2}]";
             }
             else if ((comp & CompareStringNumberResult.NotEqual) != 0)
             {
-                if ((IfConditionSubOpcode)subCmd.SubOpcode == IfConditionSubOpcode.Equal && subCmd.NotFlag)
+                if ((IfSubOpcode)subCmd.SubOpcode == IfSubOpcode.Equal && subCmd.NotFlag)
                     run = true;
                 resMessage = $"[{value1}] is not equal to [{value2}]";
             }
@@ -638,16 +679,16 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistFile(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistFile(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 1 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode)subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode)subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string filePath = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string filePath = UnescapeString(variables.Expand(subCmd.Operands[0]));
             string rawFilePath = subCmd.Operands[0];
 
             // Check filePath contains wildcard
@@ -686,16 +727,16 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistDir(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistDir(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 1 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode)subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode)subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string dirPath = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string dirPath = UnescapeString(variables.Expand(subCmd.Operands[0]));
             string rawFilePath = subCmd.Operands[0];
 
             // Check filePath contains wildcard
@@ -733,17 +774,17 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistSection(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistSection(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode)subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode)subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string iniFile = EscapeString(variables.Expand(subCmd.Operands[0]));
-            string section = EscapeString(variables.Expand(subCmd.Operands[1]));
+            string iniFile = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string section = UnescapeString(variables.Expand(subCmd.Operands[1]));
             string rawIniFile = subCmd.Operands[0];
             string rawSection = subCmd.Operands[1];
 
@@ -765,17 +806,17 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistRegSection(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistRegSection(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 2 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode)subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode)subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string rootKey = EscapeString(variables.Expand(subCmd.Operands[0]));
-            string subKey = EscapeString(variables.Expand(subCmd.Operands[1]));
+            string rootKey = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string subKey = UnescapeString(variables.Expand(subCmd.Operands[1]));
             string rawRootKey = subCmd.Operands[0];
             string rawSubKey = subCmd.Operands[1];
 
@@ -806,18 +847,18 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistRegKey(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistRegKey(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 3 for condition and 1 for command
-            int necessaryOperandNum = GetIfSubCommandNecessaryOperandNum((IfConditionSubOpcode)subCmd.SubOpcode);
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            int necessaryOperandNum = GetIfSubCmdOperandNum((IfSubOpcode)subCmd.SubOpcode);
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
-            string rootKey = EscapeString(variables.Expand(subCmd.Operands[0]));
-            string subKey = EscapeString(variables.Expand(subCmd.Operands[1]));
-            string valueName = EscapeString(variables.Expand(subCmd.Operands[2]));
+            string rootKey = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string subKey = UnescapeString(variables.Expand(subCmd.Operands[1]));
+            string valueName = UnescapeString(variables.Expand(subCmd.Operands[2]));
             string rawRootKey = subCmd.Operands[0];
             string rawSubKey = subCmd.Operands[1];
             string rawValueName = subCmd.Operands[2];
@@ -849,13 +890,13 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfExistVar(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] IfExistVar(BakeryCommand cmd, BakeryIfCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 1 for condition and 1 for command
             const int necessaryOperandNum = 1;
-            if (cmd.Operands.Length < necessaryOperandNum + 1)
+            if (cmd.Operands.Count < necessaryOperandNum + 1)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);

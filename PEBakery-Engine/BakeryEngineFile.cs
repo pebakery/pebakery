@@ -67,14 +67,14 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 3
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 3;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string srcFileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawSrcFileName = cmd.Operands[0];
-            string destPath = EscapeString(variables.Expand(cmd.Operands[1]));
+            string destPath = UnescapeString(variables.Expand(cmd.Operands[1]));
             string rawDestPath = cmd.Operands[1];
 
             // Check srcFileName contains wildcard
@@ -96,7 +96,7 @@ namespace BakeryEngine
             bool noWarn = false;
             bool noRec = false;
 
-            for (int i = necessaryOperandNum; i < cmd.Operands.Length; i++)
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
             {
                 string operand = cmd.Operands[i];
                 switch (operand.ToUpper())
@@ -201,12 +201,12 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 2;
 
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string filePath = EscapeString(variables.Expand(cmd.Operands[0]));
+            string filePath = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawFilePath = cmd.Operands[0];
 
             // Check srcFileName contains wildcard
@@ -220,7 +220,7 @@ namespace BakeryEngine
             bool noWarn = false;
             bool noRec = false;
 
-            for (int i = necessaryOperandNum; i < cmd.Operands.Length; i++)
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
             {
                 string operand = cmd.Operands[i];
                 switch (operand.ToUpper())
@@ -282,14 +282,14 @@ namespace BakeryEngine
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 0;
 
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string srcFileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawSrcFileName = cmd.Operands[0];
-            string destFileName = EscapeString(variables.Expand(cmd.Operands[1]));
+            string destFileName = UnescapeString(variables.Expand(cmd.Operands[1]));
             string rawDestFileName = cmd.Operands[1];
 
             // Check if srcFileName exists
@@ -330,19 +330,19 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 3;
 
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawFileName = cmd.Operands[0];
 
             bool preserve = false;
             bool noWarn = false;
             Encoding encoding = null;
 
-            for (int i = necessaryOperandNum; i < cmd.Operands.Length; i++)
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
             {
                 string operand = cmd.Operands[i];
                 switch (operand.ToUpper())

@@ -25,9 +25,9 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 1
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 1;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             string varKey = BakeryVariables.TrimPercentMark(cmd.Operands[0]);
@@ -36,7 +36,7 @@ namespace BakeryEngine
             bool permanent = false;
 
             // Get optional operand
-            if (cmd.Operands.Length == 3)
+            if (cmd.Operands.Count == 3)
             {
                 switch (cmd.Operands[2].ToUpper())
                 {
@@ -93,9 +93,9 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 1
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 1;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             string plugin = cmd.Operands[0];
@@ -103,7 +103,7 @@ namespace BakeryEngine
             VarsType vars = VarsType.Local;
 
             // Get optional operand
-            if (cmd.Operands.Length == 3)
+            if (cmd.Operands.Count == 3)
             {
                 switch (cmd.Operands[2].ToUpper())
                 {

@@ -27,6 +27,21 @@ namespace BakeryEngine
         Comp80, FileRedirect, HasUAC, IsTerminal, RebuildVars, RegRedirect, SplitParameters
     }
 
+    /// <summary>
+    /// Class to hold info of commands
+    /// </summary>
+    public class BakerySystemCommand
+    {
+        public SystemSubOpcode SubOpcode;
+        public List<string> Operands;
+
+        public BakerySystemCommand(SystemSubOpcode subOpcode, List<string> operands)
+        {
+            this.SubOpcode = subOpcode;
+            this.Operands = operands;
+        }
+    }
+
     public partial class BakeryEngine
     {
         /*
@@ -44,12 +59,12 @@ namespace BakeryEngine
 
             // Necessary operand : 1, optional operand : 0+
             const int necessaryOperandNum = 1;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             string subOpcodeString = cmd.Operands[0];
             SystemSubOpcode subOpcode = SystemSubOpcode.None;
-            BakerySubCommand subCmd;
+            BakerySystemCommand subCmd;
 
             // Check if rawCode is Empty
             if (string.Equals(subOpcodeString, string.Empty))
@@ -60,7 +75,7 @@ namespace BakeryEngine
             {
                 subOpcode = (SystemSubOpcode)Enum.Parse(typeof(SystemSubOpcode), subOpcodeString, true);
                 if (Enum.IsDefined(typeof(SystemSubOpcode), subOpcode) && subOpcode != SystemSubOpcode.None)
-                    subCmd = new BakerySubCommand(SubCommandType.System, subOpcode, cmd.Operands.Skip(1).ToArray());
+                    subCmd = new BakerySystemCommand(subOpcode, cmd.Operands.Skip(1).ToList());
                 else
                     throw new ArgumentException();
             }
@@ -114,9 +129,9 @@ namespace BakeryEngine
         /// System,Cursor,<Wait|Normal>
         /// </summary>
         /// <param name="cmd">BakeryCommand</param>
-        /// /// <param name="subCmd">BakerySubCommand</param>
+        /// /// <param name="subCmd">BakerySystemCommand</param>
         /// <returns></returns>
-        public LogInfo[] SystemCursor(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemCursor(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -124,10 +139,10 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
             string action = subCmd.Operands[0];
 
@@ -143,7 +158,7 @@ namespace BakeryEngine
             }
             else
             {
-                throw new InvalidSubOperandException($"Invalid operand [{action}]", cmd);
+                throw new InvalidOperandException($"Invalid operand [{action}]", cmd);
             }
 
             return logs.ToArray();
@@ -155,7 +170,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemErrorOff(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemErrorOff(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -163,18 +178,18 @@ namespace BakeryEngine
             const int necessaryOperandNum = 0;
             const int optionalOperandNum = 1;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
             uint lines = 1; // must be (0 < lines)
-            if (subCmd.Operands.Length == necessaryOperandNum + optionalOperandNum)
+            if (subCmd.Operands.Count == necessaryOperandNum + optionalOperandNum)
             {
                 if (NumberHelper.ParseUInt32(subCmd.Operands[0], out lines) == false)
-                    throw new InvalidSubOperandException($"[{subCmd.Operands[0]}] is not valid number", cmd);
+                    throw new InvalidOperandException($"[{subCmd.Operands[0]}] is not valid number", cmd);
                 if (lines <= 0)
-                    throw new InvalidSubOperandException($"[{subCmd.Operands[0]}] must be greater than 0", cmd);
+                    throw new InvalidOperandException($"[{subCmd.Operands[0]}] must be greater than 0", cmd);
             }
 
             logger.ErrorOffCount = lines + 1; // 1 is for ErrorOff itself
@@ -189,7 +204,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemLog(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemLog(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -197,25 +212,25 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
             string action = subCmd.Operands[0];
             if (string.Equals(action, "On", StringComparison.OrdinalIgnoreCase))
             {
                 logger.SuspendLog = true;
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Logging turned on for plugin [{cmd.Address.plugin.ShortPath}]"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Logging turned on for plugin [{cmd.Address.plugin.ShortPath}]"));
             }
             else if (string.Equals(action, "Off", StringComparison.OrdinalIgnoreCase))
             {
                 logger.SuspendLog = false;
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Logging turned off for plugin [{cmd.Address.plugin.ShortPath}]"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Logging turned off for plugin [{cmd.Address.plugin.ShortPath}]"));
             }
             else
             {
-                throw new InvalidSubOperandException($"Invalid operand [{action}]", cmd);
+                throw new InvalidOperandException($"Invalid operand [{action}]", cmd);
             }
 
             return logs.ToArray();
@@ -227,18 +242,18 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemSaveLog(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemSaveLog(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             // Necessary operand : 1, optional operand : 0
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
-            string dest = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string dest = UnescapeString(variables.Expand(subCmd.Operands[0]));
             string rawDest = subCmd.Operands[0];
             logger.Flush();
             File.Copy(logger.LogFile, dest, true);
@@ -252,7 +267,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetFreeDrive(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemGetFreeDrive(BakeryCommand cmd, BakerySystemCommand subCmd)
         { // Get Free Drive Letters
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -260,10 +275,10 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
 
@@ -285,7 +300,7 @@ namespace BakeryEngine
 
             LogInfo log = variables.SetValue(VarsType.Local, varName, lastFreeDriveLetter + ":", cmd.Depth);
             if (log.State == LogState.Success)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Last free drive letter is [{lastFreeDriveLetter}:], saved into variable [%{varName}%]"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Last free drive letter is [{lastFreeDriveLetter}:], saved into variable [%{varName}%]"));
             else if (log.State == LogState.Error)
                 logs.Add(log);
             else
@@ -300,7 +315,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetFreeSpace(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemGetFreeSpace(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -308,19 +323,19 @@ namespace BakeryEngine
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
-            string path = EscapeString(variables.Expand(subCmd.Operands[0]));
+            string path = UnescapeString(variables.Expand(subCmd.Operands[0]));
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[1]);
             string driveLetter = Path.GetPathRoot(Path.GetFullPath(path));
             long freeSpace = new DriveInfo(driveLetter).AvailableFreeSpace / (1024 * 1024); // Convert to MB
 
             LogInfo log = variables.SetValue(VarsType.Local, varName, freeSpace.ToString(), cmd.Depth);
             if (log.State == LogState.Success)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Free Space of Drive [{driveLetter.Substring(0, 1)}:] is [{freeSpace}MB], saved into variable [%{varName}%]"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Free Space of Drive [{driveLetter.Substring(0, 1)}:] is [{freeSpace}MB], saved into variable [%{varName}%]"));
             else if (log.State == LogState.Error)
                 logs.Add(log);
             else
@@ -335,7 +350,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetEnv(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemGetEnv(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -343,20 +358,20 @@ namespace BakeryEngine
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
-            string envVarName = EscapeString(subCmd.Operands[0]);
+            string envVarName = UnescapeString(subCmd.Operands[0]);
             string bakeryVarName = BakeryVariables.TrimPercentMark(subCmd.Operands[1]);
             string envVarValue = Environment.GetEnvironmentVariable(envVarName); // return null when envVarName does not exist
             if (envVarValue == null)
-                throw new InvalidSubOperandException($"There is no envrionment variable named [{envVarName}]");
+                throw new InvalidOperandException($"There is no envrionment variable named [{envVarName}]");
 
             LogInfo log = variables.SetValue(VarsType.Local, envVarName, envVarValue, cmd.Depth);
             if (log.State == LogState.Success)
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Variable [%{bakeryVarName}%] set to envrionment variable [{envVarName}]'s value [{envVarValue}]"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Variable [%{bakeryVarName}%] set to envrionment variable [{envVarName}]'s value [{envVarValue}]"));
             else if (log.State == LogState.Error)
                 logs.Add(log);
             else
@@ -371,7 +386,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemIsAdmin(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemIsAdmin(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -379,10 +394,10 @@ namespace BakeryEngine
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
 
-            if (subCmd.Operands.Length < necessaryOperandNum)
-                throw new InvalidSubOperandException("Necessary operands does not exist", cmd, subCmd);
-            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Length)
-                throw new InvalidSubOperandException("Too many operands", cmd, subCmd);
+            if (subCmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
 
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[0]);
             bool isAdmin = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
@@ -392,9 +407,9 @@ namespace BakeryEngine
             else
             {
                 if (isAdmin)
-                    logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"PEBakery has admin privileges, variable [%{varName}%] set to [{isAdmin}]"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"PEBakery has admin privileges, variable [%{varName}%] set to [{isAdmin}]"));
                 else
-                    logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"PEBakery does not have admin privileges, variable [%{varName}%] set to [{isAdmin}]"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"PEBakery does not have admin privileges, variable [%{varName}%] set to [{isAdmin}]"));
             }
 
             return logs.ToArray();
@@ -406,15 +421,15 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemOnBuildExit(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemOnBuildExit(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 0, optional operand : 0+
-            if (subCmd.Operands.Length == 0)
+            if (subCmd.Operands.Count == 0)
             { // Remove onBuildExit callback
                 onBuildExit = null; 
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnBuildExit] removed"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnBuildExit] removed"));
             }
             else
             { // Register onBuildExit callback
@@ -434,8 +449,8 @@ namespace BakeryEngine
                 Plugin lastPlugin = project.ActivePlugins.LastPlugin;
                 int lastSecLines = (lastPlugin.Sections["Process"].Get() as string[]).Length;
                 CommandAddress addr = new CommandAddress(lastPlugin, lastPlugin.Sections["Process"], lastSecLines, lastSecLines);
-                onBuildExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray(), addr); // Project's last plugin's last address
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
+                onBuildExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList(), addr); // Project's last plugin's last address
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
             }
 
             return logs.ToArray();
@@ -447,15 +462,15 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemOnPluginExit(BakeryCommand cmd, BakerySubCommand subCmd)
+        public LogInfo[] SystemOnPluginExit(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // Necessary operand : 0, optional operand : 0+
-            if (subCmd.Operands.Length == 0)
+            if (subCmd.Operands.Count == 0)
             { // Remove onBuildExit callback
                 onPluginExit = null; 
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnPluginExit] removed"));
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnPluginExit] removed"));
             }
             else
             { // Register onBuildExit callback
@@ -474,8 +489,8 @@ namespace BakeryEngine
 
                 int lastSecLines = (currentPlugin.Sections["Process"].Get() as string[]).Length;
                 CommandAddress addr = new CommandAddress(currentPlugin, currentPlugin.Sections["Process"], lastSecLines, lastSecLines);
-                onPluginExit = new BakeryCommand(cmd.RawCode, opcode, subCmd.Operands.Skip(1).ToArray(), addr); // Current Plugin's last address
-                logs.Add(new LogInfo(cmd, subCmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
+                onPluginExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList(), addr); // Current Plugin's last address
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
             }
             
             return logs.ToArray();
@@ -493,27 +508,27 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 3
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 3;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
-            if (cmd.Opcode == Opcode.ShellExecuteEx && cmd.Operands.Length == necessaryOperandNum + optionalOperandNum)
+            if (cmd.Opcode == Opcode.ShellExecuteEx && cmd.Operands.Count == necessaryOperandNum + optionalOperandNum)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string verb = EscapeString(variables.Expand(cmd.Operands[0]));
+            string verb = UnescapeString(variables.Expand(cmd.Operands[0]));
             if (!(string.Equals(verb, "Open", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Hide", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(verb, "Print", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Explore", StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperandException($"Invalid verb [{verb}]", cmd);
-            string filePath = EscapeString(variables.Expand(cmd.Operands[1]));
+            string filePath = UnescapeString(variables.Expand(cmd.Operands[1]));
             string rawFilePath = cmd.Operands[1];
             string parameters = string.Empty;
-            if (3 <= cmd.Operands.Length)
-                parameters = EscapeString(variables.Expand(cmd.Operands[2]));
+            if (3 <= cmd.Operands.Count)
+                parameters = UnescapeString(variables.Expand(cmd.Operands[2]));
             string workDir = Directory.GetCurrentDirectory();
-            if (4 <= cmd.Operands.Length)
-                workDir = EscapeString(variables.Expand(cmd.Operands[3]));
+            if (4 <= cmd.Operands.Count)
+                workDir = UnescapeString(variables.Expand(cmd.Operands[3]));
             string exitCodeVar = null;
-            if (5 <= cmd.Operands.Length)
+            if (5 <= cmd.Operands.Count)
                 exitCodeVar = BakeryVariables.TrimPercentMark(cmd.Operands[4]);
 
             Process proc = new Process();

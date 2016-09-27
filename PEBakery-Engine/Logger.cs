@@ -23,14 +23,12 @@ namespace BakeryEngine
     public class LogInfo
     {
         private BakeryCommand command;
-        private BakerySubCommand subCommand;
         private string result;
         private int depth;
         
         public LogState State;
 
         public BakeryCommand Command { get { return command; } }
-        public BakerySubCommand SubCommand { get { return subCommand;  } }
         public string Result { get { return result; } }
         public int Depth { get { return depth; } }
         
@@ -44,7 +42,6 @@ namespace BakeryEngine
         public LogInfo(BakeryCommand command, LogState state, string result)
         {
             this.command = command;
-            this.subCommand = null;
             this.result = result;
             this.State = state;
             this.depth = command.Depth;
@@ -53,35 +50,14 @@ namespace BakeryEngine
         public LogInfo(BakeryCommand command, LogState state, string result, bool errorOff)
         {
             this.command = command;
-            this.subCommand = null;
             this.result = result;
             this.State = state;
             this.depth = command.Depth;
         }
-
-        public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result)
-        {
-            this.command = command;
-            this.subCommand = subCommand;
-            this.result = result;
-            this.State = state;
-            this.depth = command.Depth;
-        }
-
-        public LogInfo(BakeryCommand command, BakerySubCommand subCommand, LogState state, string result, bool errorOff)
-        {
-            this.command = command;
-            this.subCommand = subCommand;
-            this.result = result;
-            this.State = state;
-            this.depth = command.Depth;
-        }
-
 
         public LogInfo(LogState state, string result)
         {
             this.command = null;
-            this.subCommand = null;
             this.result = result;
             this.State = state;
             this.depth = -1;
@@ -90,7 +66,6 @@ namespace BakeryEngine
         public LogInfo(LogState state, string result, int depth)
         {
             this.command = null;
-            this.subCommand = null;
             this.result = result;
             this.State = state;
             this.depth = depth;
@@ -99,7 +74,6 @@ namespace BakeryEngine
         public LogInfo(LogState state, string result, int depth, bool errorOff)
         {
             this.command = null;
-            this.subCommand = null;
             this.result = result;
             this.State = state;
             this.depth = depth;
@@ -257,9 +231,9 @@ namespace BakeryEngine
             if (log.Command != null)
             { // BakeryCommand exists
                 if (log.Command.Opcode == Opcode.None)
-                    writer.WriteLine($"[{log.State.ToString()}] {log.Result} ({log.Command.RawCode})");
+                    writer.WriteLine($"[{log.State.ToString()}] {log.Result} ({log.Command.Origin})");
                 else
-                    writer.WriteLine($"[{log.State.ToString()}] {log.Command.Opcode.ToString()} - {log.Result} ({log.Command.RawCode})");
+                    writer.WriteLine($"[{log.State.ToString()}] {log.Command.Opcode.ToString()} - {log.Result} ({log.Command.Origin})");
             }
             else 
             { // No BakeryCommand

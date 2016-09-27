@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 
 namespace BakeryEngine
 {
-    using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
     using StringDictionary = Dictionary<string, string>;
 
     public enum Opcode
@@ -36,8 +35,10 @@ namespace BakeryEngine
         System, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // Branch
         Run, Exec, If, Begin, Else, Loop, End,
+        // Branch - Compiled microcode
+        IfCompact, Jump,
         // Control
-        Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep
+        Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep,
     }
 
     /// <summary>
@@ -45,131 +46,112 @@ namespace BakeryEngine
     /// </summary>
     public class BakeryCommand
     {
-        private string rawCode;
-        private Opcode opcode;
-        private string[] operands;
-        private CommandAddress address;
+        public string Origin;
+        public Opcode Opcode;
+        public List<string> Operands;
+        public CommandAddress Address;
         public int Depth;
 
-        public string RawCode { get { return rawCode; } }
-        public Opcode Opcode { get { return opcode; } }
-        public string[] Operands { get { return operands; } }
-        public CommandAddress Address { get { return address; } }
-
-        /// <summary>
-        /// Hold command information.
-        /// </summary>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands)
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands)
         {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
+            this.Origin = origin;
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = new CommandAddress();
             this.Depth = 0;
         }
 
-        /// <summary>
-        /// Hold command information, with sub command.
-        /// </summary>
-        /// <param name="rawCode"></param>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="subCommand"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, int depth)
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth)
         {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
+            this.Origin = origin;
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = new CommandAddress();
+            this.Depth = depth;
+        }
+
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address)
+        {
+            this.Origin = origin;
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = address;
+            this.Depth = 0;
+        }
+
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address, int depth)
+        {
+            this.Origin = origin;
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = address;
+            this.Depth = depth;
+        }
+
+        public BakeryCommand(Opcode opcode, List<string> operands)
+        {
+            this.Origin = ForgeRawCode(opcode, operands);
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = new CommandAddress();
+            this.Depth = 0;
+        }
+
+        public BakeryCommand(Opcode opcode, List<string> operands, int depth)
+        {
+            this.Origin = ForgeRawCode(opcode, operands);
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = new CommandAddress();
+            this.Depth = depth;
+        }
+
+        public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address)
+        {
+            this.Origin = ForgeRawCode(opcode, operands);
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = address;
+            this.Depth = 0;
+        }
+
+        public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address, int depth)
+        {
+            this.Origin = ForgeRawCode(opcode, operands);
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = address;
             this.Depth = depth;
         }
 
         /// <summary>
-        /// Hold command information, with address
+        /// Return RawCode, built from opcode and operand itself
         /// </summary>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.address = address;
-            this.Depth = 0;
-        }
-        
-
-        /// <summary>
-        /// Hold command information, with address
-        /// </summary>
-        /// <param name="opcode"></param>
-        /// <param name="operands"></param>
-        /// <param name="optional"></param>
-        public BakeryCommand(string rawCode, Opcode opcode, string[] operands, CommandAddress address, int depth)
-        {
-            this.rawCode = rawCode;
-            this.opcode = opcode;
-            this.operands = operands;
-            this.address = address;
-            this.Depth = depth;
-        }
-
+        /// <returns></returns>
         public override string ToString()
         {
-            return rawCode;
+            return ForgeRawCode(Opcode, Operands);
         }
-    }
 
-    public enum SubCommandType
-    {
-        System, Retrieve, StrFormat, IfCondition
-    }
-
-    /// <summary>
-    /// Class to hold info of commands
-    /// </summary>
-    public class BakerySubCommand
-    {
-        private SubCommandType subCommandType;
-        private Enum subOpcode;
-        private string[] operands;
-        // For IfCondition
-        private bool? notFlag;
-
-        public SubCommandType SubCommandType { get { return subCommandType; } }
-        public Enum SubOpcode { get { return subOpcode; } }
-        public string[] Operands { get { return operands; } }
-        public bool NotFlag
+        public static string ForgeRawCode(Opcode opcode, List<string> operands)
         {
-            get
+            StringBuilder builder = new StringBuilder(opcode.ToString());
+            for (int i = 0; i < operands.Count; i++)
             {
-                if (notFlag == null)
-                    throw new InvalidSubCommandException();
+                if (operands[i].Contains(" "))
+                {
+                    builder.Append(",\"");
+                    builder.Append(operands[i]);
+                    builder.Append("\"");
+                }
                 else
-                    return (bool)notFlag;
+                {
+                    builder.Append(",");
+                    builder.Append(operands[i]);
+                }
             }
-            set
-            {
-                notFlag = value;
-            }
-        }
 
-        public BakerySubCommand(SubCommandType subCommandType, Enum subOpcode, string[] operands)
-        {
-            this.subCommandType = subCommandType;
-            this.subOpcode = subOpcode;
-            this.operands = operands;
-            this.notFlag = null;
-        }
-
-        public BakerySubCommand(SubCommandType subCommandType, Enum subOpcode, string[] operands, bool notFlag)
-        {
-            this.subCommandType = subCommandType;
-            this.subOpcode = subOpcode;
-            this.operands = operands;
-            this.notFlag = notFlag;
+            return builder.ToString();
         }
     }
 
@@ -264,23 +246,6 @@ namespace BakeryEngine
     /// <summary>
     /// Exception used in BakeryEngine::ParseCommand
     /// </summary>
-    public class InvalidSubOperandException : Exception
-    {
-        private BakeryCommand cmd;
-        public BakeryCommand Cmd { get { return cmd; } }
-        private BakerySubCommand subCmd;
-        public BakerySubCommand SubCmd { get { return subCmd; } }
-        public InvalidSubOperandException(string message) : base(message) { }
-        public InvalidSubOperandException(BakeryCommand cmd) { this.cmd = cmd; }
-        public InvalidSubOperandException(BakeryCommand cmd, BakerySubCommand subCmd) { this.cmd = cmd; this.subCmd = subCmd; }
-        public InvalidSubOperandException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidSubOperandException(string message, BakeryCommand cmd, BakerySubCommand subCmd) : base(message) { this.cmd = cmd; this.subCmd = subCmd; }
-        public InvalidSubOperandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
-    /// </summary>
     public class InternalParseException : Exception
     {
         public InternalParseException() { }
@@ -360,12 +325,9 @@ namespace BakeryEngine
         private Plugin currentPlugin;
         private PluginAddress curPluginAddr;
         private BakeryCommand currentCommand;
-        private string[] currentSectionParams;
+        private List<string> currentSectionParams;
         private CommandAddress nextCommand; // ProgramCounter
         private Stack<CommandAddress> returnAddress;
-        private int beginEndBlockCount;
-        private int elseFlag; // 1, 0 : valid, -1 : invalid
-        private int beginFlag; // 1, 0 : valid, -1 : invalid
 
         // Fields : System Commands
         private BakeryCommand onBuildExit;
@@ -373,9 +335,6 @@ namespace BakeryEngine
 
         // Properties
         private PluginCollection Plugins { get { return project.ActivePlugins; } }
-
-        // Enum
-        private enum ParseState { Normal, Merge }
 
         // Constructors
         public BakeryEngine(Project project, Logger logger)
@@ -407,7 +366,7 @@ namespace BakeryEngine
         /// <param name="runOnePlugin">Run one plugin (entryPlugin) and exit</param>
         private void InternalConstructor(Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin)
         {
-            this.project = project; 
+            this.project = project;
             this.logger = logger;
             this.variables = new BakeryVariables(logger);
             this.runOnePlugin = runOnePlugin;
@@ -419,10 +378,7 @@ namespace BakeryEngine
             this.curPluginAddr = project.ActivePlugins.GetAddress(entryPlugin);
             this.currentCommand = null;
             this.returnAddress = new Stack<CommandAddress>();
-            this.currentSectionParams = new string[0];
-            this.beginEndBlockCount = 0;
-            this.beginFlag = -1;
-            this.elseFlag = -1;
+            this.currentSectionParams = new List<string>();
 
             this.onBuildExit = null;
             this.onPluginExit = null;
@@ -433,7 +389,7 @@ namespace BakeryEngine
         {
             for (int i = 0; i < cmd.Depth; i++)
                 Console.Write("  ");
-            Console.WriteLine(cmd.RawCode);
+            Console.WriteLine(cmd.Origin);
         }
 
         private void LoadDefaultGlobalVariables()
@@ -505,7 +461,7 @@ namespace BakeryEngine
             {
                 if (!(nextCommand.line < nextCommand.secLength)) // End of section
                 {
-                    currentSectionParams = new string[0];
+                    currentSectionParams = new List<string>();
                     logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count - 1));
 
                     try
@@ -557,17 +513,20 @@ namespace BakeryEngine
                 }
                 catch (InvalidOpcodeException e)
                 {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
 
+                /*
                 if (0 <= elseFlag)
                     elseFlag--;
+
+                */
                 nextCommand.line++;
             }
         }
@@ -590,7 +549,7 @@ namespace BakeryEngine
         /// 
         /// </summary>
         /// <param name="type"></param>
-        private void RunCallbackSection(CommandAddress nextCommand, string[] sectionParams, int depth)
+        private void RunCallbackSection(CommandAddress nextCommand, List<string> sectionParams, int depth)
         {
             BakeryCommand currentCommand;
             while (true)
@@ -629,12 +588,12 @@ namespace BakeryEngine
                 }
                 catch (InvalidOpcodeException e)
                 {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
                 catch (InvalidOperandException e)
                 {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new string[0], returnAddress.Count);
+                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
                     logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
                 }
 
@@ -700,18 +659,6 @@ namespace BakeryEngine
                     case Opcode.Exec:
                         logs = this.RunExec(cmd);
                         break;
-                    case Opcode.Begin:
-                        logs = this.Begin(cmd);
-                        break;
-                    case Opcode.End:
-                        logs = this.End(cmd);
-                        break;
-                    case Opcode.If:
-                        logs = this.IfCondition(cmd);
-                        break;
-                    case Opcode.Else:
-                        logs = this.Else(cmd);
-                        break;
                     // Control
                     case Opcode.Set:
                         logs = this.Set(cmd);
@@ -745,19 +692,18 @@ namespace BakeryEngine
         private BakeryCommand ParseCommand(string rawCode, CommandAddress address)
         {
             Opcode opcode = Opcode.None;
-            List<string> operandList = new List<string>();
 
             // Remove whitespace of rawCode's start and end
             rawCode = rawCode.Trim();
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
-                return new BakeryCommand(string.Empty, Opcode.None, new string[0], address, returnAddress.Count);
+                return new BakeryCommand(string.Empty, Opcode.None, new List<string>(), address, returnAddress.Count);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";"))
             {
-                return new BakeryCommand(rawCode, Opcode.Comment, new string[0], address, returnAddress.Count);
+                return new BakeryCommand(rawCode, Opcode.Comment, new List<string>(), address, returnAddress.Count);
             }
 
             // Splice with spaces
@@ -773,14 +719,30 @@ namespace BakeryEngine
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new string[0], address, returnAddress.Count));
+                throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), address, returnAddress.Count));
             }
 
             // Check doublequote's occurence - must be 2n
             if (Helper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
-            /// Parse operand
+            // forge BakeryCommand
+            return new BakeryCommand(rawCode, opcode, ParseOperands(slices), address, returnAddress.Count);
+        }
+
+        /// <summary>
+        /// ParseState enum
+        /// </summary>
+        private enum ParseState { Normal, Merge }
+
+        /// <summary>
+        /// Parse operands, especially with doublequote
+        /// </summary>
+        /// <param name="slices"></param>
+        /// <returns></returns>
+        public static List<string> ParseOperands(string[] slices)
+        {
+            List<string> operandList = new List<string>();
             ParseState state = ParseState.Normal;
             StringBuilder builder = new StringBuilder();
 
@@ -793,7 +755,7 @@ namespace BakeryEngine
                 int idx = slices[i].IndexOf("\"");
                 if (idx == -1) // Do not have doublequote
                 {
-                    switch(state)
+                    switch (state)
                     {
                         case ParseState.Normal: // Add to operand
                             operandList.Add(slices[i]);
@@ -811,9 +773,9 @@ namespace BakeryEngine
                     switch (state)
                     {
                         case ParseState.Normal: // Add to operand
-                            if (slices[i].IndexOf("\"", idx+1) != -1) // This operand starts and end with doublequote
+                            if (slices[i].IndexOf("\"", idx + 1) != -1) // This operand starts and end with doublequote
                             { // Ex) FileCopy,"1 2.dll",34.dll
-                                operandList.Add(slices[i].Substring(1, slices[i].Length-2)); // Remove doublequote
+                                operandList.Add(slices[i].Substring(1, slices[i].Length - 2)); // Remove doublequote
                             }
                             else
                             {
@@ -828,7 +790,7 @@ namespace BakeryEngine
                             throw new InternalParseException();
                     }
                 }
-                else if (idx == slices[i].Length-1) // Endes with doublequote
+                else if (idx == slices[i].Length - 1) // Endes with doublequote
                 {
                     switch (state)
                     {
@@ -855,14 +817,10 @@ namespace BakeryEngine
             if (state == ParseState.Merge)
                 throw new InvalidOperandException("When parsing ends, ParseState must not be in state of Merge");
 
-            // string[] operands = EscapeStrings(operandList.ToArray());
-            string[] operands = operandList.ToArray();
-
-            // forge BakeryCommand
-            return new BakeryCommand(rawCode, opcode, operands, address, returnAddress.Count);
+            return operandList;
         }
 
-        private static readonly StringDictionary escapeChars = new StringDictionary()
+        private static readonly StringDictionary unescapeChars = new StringDictionary()
         {
             { @"#$c", @"," },
             { @"#$p", @"%" },
@@ -870,17 +828,31 @@ namespace BakeryEngine
             { @"#$s", @" " },
             { @"#$t", @"\t"},
             { @"#$x", @"\n"},
-            { @"#$z", @"\x00\x00"},
+            { @"#$h", @"#" }, // Extended
+            //{ @"#$z", @"\x00\x00"},
         };
+
+        public string UnescapeString(string operand)
+        {
+            return unescapeChars.Keys.Aggregate(operand, (from, to) => from.Replace(to, unescapeChars[to]));
+        }
+
+        public List<string> UnescapeStrings(List<string> operands)
+        {
+            for (int i = 0; i < operands.Count; i++)
+                operands[i] = UnescapeString(operands[i]);
+            return operands;
+        }
 
         public string EscapeString(string operand)
         {
+            StringDictionary escapeChars = unescapeChars.ToDictionary(kp => kp.Value, kp => kp.Key);
             return escapeChars.Keys.Aggregate(operand, (from, to) => from.Replace(to, escapeChars[to]));
         }
 
-        public string[] EscapeStrings(string[] operands)
+        public List<string> EscapeStrings(List<string> operands)
         {
-            for (int i = 0; i < operands.Length; i++)
+            for (int i = 0; i < operands.Count; i++)
                 operands[i] = EscapeString(operands[i]);
             return operands;
         }

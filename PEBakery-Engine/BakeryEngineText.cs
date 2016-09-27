@@ -30,34 +30,34 @@ namespace BakeryEngine
             // Necessary operand : 3, optional operand : 1
             const int necessaryOperandNum = 3;
             const int optionalOperandNum = 1;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawFileName = cmd.Operands[0];
-            string line = EscapeString(variables.Expand(cmd.Operands[1]));
+            string line = UnescapeString(variables.Expand(cmd.Operands[1]));
             int mode = 1;
             int placeLineNum = 0;
 
             if (string.Equals(cmd.Operands[2], "Prepend", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 0;
-                if (necessaryOperandNum < cmd.Operands.Length)
+                if (necessaryOperandNum < cmd.Operands.Count)
                     throw new InvalidOperandException("Too many operands");
             }
             else if (string.Equals(cmd.Operands[2], "Append", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 1;
-                if (necessaryOperandNum < cmd.Operands.Length)
+                if (necessaryOperandNum < cmd.Operands.Count)
                     throw new InvalidOperandException("Too many operands");
             }
             else if (string.Equals(cmd.Operands[2], "Place", StringComparison.OrdinalIgnoreCase))
             {
                 mode = 2;
-                if (necessaryOperandNum + 1 < cmd.Operands.Length)
+                if (necessaryOperandNum + 1 < cmd.Operands.Count)
                     throw new InvalidOperandException("Too many operands");
                 placeLineNum = int.Parse(cmd.Operands[3]);
                 if (placeLineNum <= 0) // In Place mode, placeLineNum starts from 1;
@@ -131,15 +131,15 @@ namespace BakeryEngine
             // Necessary operand : 4, optional operand : 0
             const int necessaryOperandNum = 4;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
-            string key = EscapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand는 안 하나, but do escaping.
+            string key = UnescapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand는 안 하나, but do escaping.
             string varName = cmd.Operands[3].Trim('%');
             string rawFileName = cmd.Operands[0];
 
@@ -175,16 +175,16 @@ namespace BakeryEngine
             // Necessary operand : 4, optional operand : 0
             const int necessaryOperandNum = 4;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
-            string key = EscapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand 안한다, but do escaping.
-            string value = EscapeString(variables.Expand(cmd.Operands[3]));
+            string key = UnescapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand 안한다, but do escaping.
+            string value = UnescapeString(variables.Expand(cmd.Operands[3]));
             string rawFileName = cmd.Operands[0];
 
             if (string.Equals(section, string.Empty, StringComparison.OrdinalIgnoreCase))

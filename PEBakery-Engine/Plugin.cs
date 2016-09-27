@@ -157,10 +157,9 @@ namespace BakeryEngine
                 return lines;
             }
         }
-        public override int Count
-        {
-            get { return lines.Length; }
-        }
+        private string[] compiled;
+        public string[] Compiled { get { return compiled; } }
+        public override int Count { get { return lines.Length; } }
 
         /// <summary>
         /// Constructor for code sections, loaded
@@ -207,6 +206,11 @@ namespace BakeryEngine
         public override object Get()
         {
             return Lines;
+        }
+
+        public void SetCompiledCode(string[] compiled)
+        {
+            this.compiled = compiled;
         }
     }
 

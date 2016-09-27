@@ -82,6 +82,7 @@
     <Compile Include="BakeryEngineRegistry.cs" />
     <Compile Include="BakeryEngineSystem.cs" />
     <Compile Include="BakeryEngineText.cs" />
+    <Compile Include="BakeryCompiler.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="IniFile.cs" />
     <Compile Include="Logger.cs" />

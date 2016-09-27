@@ -40,13 +40,13 @@ namespace BakeryEngine
             // Necessary operand : 2, optional operand : 0
             const int necessaryOperandNum = 2;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = EscapeString(variables.Expand(cmd.Operands[0]));
-            string hiveFile = EscapeString(variables.Expand(cmd.Operands[1]));
+            string keyName = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string hiveFile = UnescapeString(variables.Expand(cmd.Operands[1]));
             string rawHiveFile = cmd.Operands[1];
 
             if (!File.Exists(hiveFile))
@@ -80,12 +80,12 @@ namespace BakeryEngine
             // Necessary operand : 1, optional operand : 0
             const int necessaryOperandNum = 1;
             const int optionalOperandNum = 0;
-            if (cmd.Operands.Length < necessaryOperandNum)
+            if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
-            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Length)
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = EscapeString(variables.Expand(cmd.Operands[0]));
+            string keyName = UnescapeString(variables.Expand(cmd.Operands[0]));
             string rawKeyName = cmd.Operands[0];
 
             if (!File.Exists(keyName))
