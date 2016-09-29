@@ -23,11 +23,11 @@ namespace BakeryEngine
     /// <summary>
     /// The compiler to convert If~Else, Begin~End to If+Jump (assembly) style
     /// </summary>
-    public static class BakeryCompiler
+    public class BakeryCompiler
     {
         private enum CompileState
         {
-            Normal, IfMultiLine, ElseMultiLine
+            Normal, IfSingleLine, IfMultiLine, ElseSingleLine, ElseMultiLine
         }
 
         private enum LastCommand
@@ -35,7 +35,9 @@ namespace BakeryEngine
             Normal, If, Else, Begin, End
         }
 
-        public static void Compile(Plugin plugin)
+        private int cmdIndex = 0;
+
+        public void Compile(Plugin plugin)
         {
             foreach (PluginSection rawSection in plugin.Sections.Values)
             {
@@ -45,30 +47,34 @@ namespace BakeryEngine
                 PluginRawLineSection section = (PluginRawLineSection)rawSection;
                 string[] rawCodes = section.Get() as string[];
 
-                List<BakeryCommand> compiledList = CompileSection(rawCodes);
+                List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
+                for (int i = 0; i < rawCodes.Length; i++)
+                    rawCodeList.Add(ParseCommand(rawCodes[i]));
+                List<BakeryCommand> compiledList = CompileSection(rawCodeList);
             }
         }
 
-        public static List<BakeryCommand> CompileSection(string[] rawCodes)
+        public List<BakeryCommand> CompileSection(List<BakeryCommand> rawCodeList)
         {
             CompileState state = CompileState.Normal;
             LastCommand last = LastCommand.Normal;
             BakeryCommand cmd;
             List<BakeryCommand> compiledList = new List<BakeryCommand>();
             List<BakeryCommand> codeBlockList = new List<BakeryCommand>();
-            int nestIfCount = 0;
-            int codeBlockLine = 0;
-            for (int i = 0; i < rawCodes.Length; i++)
+            int nestIfCount = 0; // If 문이 몇중첩인가
+            
+            for (cmdIndex = 0; cmdIndex < rawCodeList.Count; cmdIndex++)
             {
-                cmd = ParseCommand(rawCodes[i]);
+                cmd = rawCodeList[cmdIndex];
 
                 switch (state)
                 {
                     case CompileState.Normal:
+                    case CompileState.IfSingleLine:
                         if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
                         {
                             last = LastCommand.If;
-                            CompileNestedIf(cmd, ref state, ref codeBlockList, ref nestIfCount);
+                            state = CompileNestedIf(cmd, state, ref codeBlockList, ref nestIfCount);
                         }
                         else if (cmd.Opcode == Opcode.Else) // SingleLine or MultiLine?
                         {
@@ -109,7 +115,7 @@ namespace BakeryEngine
                         if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
                         {
                             last = LastCommand.If;
-                            CompileNestedIf(cmd, ref state, ref codeBlockList, ref nestIfCount);
+                            state = CompileNestedIf(cmd, state, ref codeBlockList, ref nestIfCount);
                         }
                         else if (cmd.Opcode == Opcode.Else) // SingleLine or MultiLine?
                         {
@@ -139,22 +145,50 @@ namespace BakeryEngine
 
             return compiledList;
         }
-        private static void CompileNestedIf(BakeryCommand cmd, ref CompileState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
+
+        private CompileState CompileNestedIf(BakeryCommand cmd, CompileState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
         {
             nestIfCount = 0;
-            BakeryCommand ifCmd = cmd;
-            BakeryIfCommand subCmd;
-            BakeryCommand embCmd;
+            BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
+            BakeryIfCommand subCmd; // Condition : Equal,%A%,B,Echo,Success
+            BakeryCommand embCmd; // Run if condition is met : Echo,Success
+
+            /* <Raw>
+             * If,%A%,Equal,B,Echo,Success
+             * <Compiled>
+             * IfCompact,Equal,%A%,B
+             * Jump,Relative,2
+             * Jump,Relative,2
+             * Echo,Success
+             */
+
             while (true)
             {
                 nestIfCount++;
-                subCmd = ForgeIfSubCommand(ifCmd);
+                subCmd = ForgeIfSubCommand(ifCmd); 
                 embCmd = ForgeIfEmbedCommand(ifCmd, subCmd, 0);
+
                 int operandCount = GetIfSubCmdOperandNum(subCmd.SubOpcode);
-                // Prepare If's conditions - Ex) If,%A%,Equal,B,Echo,Success
                 List<string> operands = new List<string>();
-                operands.AddRange(ifCmd.Operands.Take(operandCount + 1)); // +1 for subOpcode
-                tempList.Add(new BakeryCommand(ifCmd.Origin, Opcode.IfCompact, operands)); // Ex) If,Not,%A%,Equal,B,Jump,Relative - N will be added in later
+
+                // Ex) IfCompact,Equal,%A%,B
+                operands.Add(subCmd.SubOpcode.ToString());
+                operands.AddRange(subCmd.Operands.Take(operandCount));
+                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.IfCompact, operands)); 
+                operands.Clear();
+
+                // Ex) Jump,Relative,2
+                operands.Add(Opcode.Jump.ToString());
+                operands.Add("Relative");
+                operands.Add("2");
+                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
+                operands.Clear();
+
+                // Ex) Jump,Relative,X - X to be assigned later
+                operands.Add(Opcode.Jump.ToString());
+                operands.Add("Relative");
+                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
+                operands.Clear();
 
                 if (embCmd.Opcode == Opcode.If)
                 { // Nested If
@@ -164,15 +198,19 @@ namespace BakeryEngine
                 else if (embCmd.Opcode == Opcode.Begin)
                 { // Multiline If (Begin-End)
                     state = CompileState.IfMultiLine;
-                    tempList.Add(embCmd); // Ex) Echo,Success
+                    tempList.Add(embCmd);
+                    // cmdIndex
                 }
                 else
                 { // Singleline If
-                    // Add Jump,Relative - addr will be added in else or normal
+                    state = CompileState.IfSingleLine; // Enable Else
+                    tempList.Last().Operands.Add("2");
                     tempList.Add(embCmd); // Ex) Echo,Success
                 }
                 break;
             }
+
+            return state;
         }
 
         private static void CompileNestedElse(BakeryCommand cmd, ref CompileState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
@@ -194,7 +232,7 @@ namespace BakeryEngine
             }
         }
 
-        private static BakeryCommand ParseCommand(string rawCode)
+        private BakeryCommand ParseCommand(string rawCode)
         {
             Opcode opcode = Opcode.None;
 
@@ -241,7 +279,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="slices"></param>
         /// <returns></returns>
-        public static List<string> ParseOperands(string[] slices)
+        public List<string> ParseOperands(string[] slices)
         {
             List<string> operandList = new List<string>();
             ParseState state = ParseState.Normal;
