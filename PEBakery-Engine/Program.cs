@@ -19,14 +19,11 @@ namespace BakeryEngine
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
 
-
-            BakeryCodeParser.CodeParsePlugin(project.MainPlugin);
+            project.MainPlugin.Sections["Process"] = BakeryCodeParser.ParsePluginSection(project.MainPlugin.Sections["Process"] as PluginLineSection);
             List<BakeryCommand> cmds = project.MainPlugin.Sections["Process"].Get() as List<BakeryCommand>;
             for (int i = 0; i < project.MainPlugin.Sections["Process"].Count; i++)
-            {
                 Console.WriteLine(cmds[i]);
-            }
-
+            
             // engine.Build();
 
             Console.WriteLine("BakeryEngine done");

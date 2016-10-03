@@ -23,28 +23,20 @@ namespace BakeryEngine
     /// <summary>
     /// The compiler to convert If~Else, Begin~End to If+Jump (assembly) style
     /// </summary>
-    public class BakeryCodeParser
+    public static class BakeryCodeParser
     {
-        public static void CodeParsePlugin(Plugin plugin)
+        /// <summary>
+        /// Will be deprecated
+        /// </summary>
+        /// <param name="plugin"></param>
+        public static void ParsePlugin(Plugin plugin)
         {
             List<PluginCodeSection> codeSecList = new List<PluginCodeSection>();
-            foreach (PluginSection rawSection in plugin.Sections.Values)
+            foreach (PluginSection section in plugin.Sections.Values)
             {
                 // Select Code sections and compile
-                // if (rawSection.Type == SectionType.Code)
-                if (string.Equals(rawSection.SectionName, "Process", StringComparison.OrdinalIgnoreCase))
-                {
-                    PluginLineSection section = (PluginLineSection)rawSection;
-                    string[] rawCodes = section.Get() as string[];
-
-                    List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
-                    for (int i = 0; i < rawCodes.Length; i++)
-                        rawCodeList.Add(ParseCommand(rawCodes[i]));
-
-                    List<BakeryCommand> compiledList = rawCodeList;
-                    while (CodeParseSectionOnce(compiledList, out compiledList));
-                    codeSecList.Add(new PluginCodeSection(section, compiledList));
-                }
+                if (section.Type == SectionType.Code) // Has an bug, cannot detect unpredefined ini-style section
+                    codeSecList.Add(ParsePluginSection(section as PluginLineSection));
             }
 
             foreach (PluginCodeSection codeSection in codeSecList)
@@ -53,13 +45,28 @@ namespace BakeryEngine
             }
         }
 
+        public static PluginCodeSection ParsePluginSection(PluginLineSection section)
+        {
+            // Select Code sections and compile
+            // if (rawSection.Type == SectionType.Code)
+            string[] rawCodes = section.Get() as string[];
+
+            List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
+            for (int i = 0; i < rawCodes.Length; i++)
+                rawCodeList.Add(ParseCommand(rawCodes[i]));
+
+            List<BakeryCommand> compiledList = rawCodeList;
+            while (ParseSectionOnce(compiledList, out compiledList));
+            return new PluginCodeSection(section, compiledList);
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="rawCmdList"></param>
         /// <param name="compiledList"></param>
         /// <returns>Return true if this section need more iterate</returns>
-        public static bool CodeParseSectionOnce(List<BakeryCommand> rawCmdList, out List<BakeryCommand> compiledList)
+        public static bool ParseSectionOnce(List<BakeryCommand> rawCmdList, out List<BakeryCommand> compiledList)
         {
             compiledList = new List<BakeryCommand>();
             bool elseFlag = false;
@@ -87,7 +94,7 @@ namespace BakeryEngine
                 }
                 else if (cmd.Opcode == Opcode.IfCompiled || cmd.Opcode == Opcode.ElseCompiled)
                 { // Follow Link
-                    if (CodeParseSectionOnce(cmd.Link, out cmd.Link))
+                    if (ParseSectionOnce(cmd.Link, out cmd.Link))
                         iterate = true;
                     compiledList.Add(cmd);
                 }
