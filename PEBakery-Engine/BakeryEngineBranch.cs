@@ -33,6 +33,86 @@ namespace BakeryEngine
             this.Operands = operands;
             this.NotFlag = notFlag;
         }
+
+        public List<string> ToOperands()
+        {
+            List<string> operands = new List<string>();
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            return operands;
+        }
+
+        public List<string> ToOperands(bool prefix, string add)
+        {
+            List<string> operands = new List<string>();
+            if (prefix)
+                operands.Add(add);
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            if (!prefix)
+                operands.Add(add);
+            return operands;
+        }
+
+        public List<string> ToOperands(bool prefix, List<string> add)
+        {
+            List<string> operands = new List<string>();
+            if (prefix)
+                operands.AddRange(add);
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            if (!prefix)
+                operands.AddRange(add);
+            return operands;
+        }
+        public List<string> ToOperandsPrefix(string add)
+        {
+            List<string> operands = new List<string>();
+            operands.Add(add);
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            return operands;
+        }
+
+        public List<string> ToOperandsPrefix(List<string> add)
+        {
+            List<string> operands = new List<string>();
+            operands.AddRange(add);
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            return operands;
+        }
+        public List<string> ToOperandsPostfix(string add)
+        {
+            List<string> operands = new List<string>();
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            operands.Add(add);
+            return operands;
+        }
+
+        public List<string> ToOperandsPostfix(List<string> add)
+        {
+            List<string> operands = new List<string>();
+            if (NotFlag)
+                operands.Add("Not");
+            operands.Add(SubOpcode.ToString());
+            operands.AddRange(Operands.Take(BakeryCodeParser.GetIfSubCmdOperandNum(SubOpcode)));
+            operands.AddRange(add);
+            return operands;
+        }
     }
 
     /*

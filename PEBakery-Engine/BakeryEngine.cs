@@ -36,7 +36,7 @@ namespace BakeryEngine
         // Branch
         Run, Exec, If, Begin, Else, Loop, End,
         // Branch - Compiled microcode
-        IfCompact, Jump,
+        IfCompact, Link,
         // Control
         Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep,
     }
@@ -51,96 +51,55 @@ namespace BakeryEngine
         public List<string> Operands;
         public CommandAddress Address;
         public int Depth;
-        public BakeryCommand link;
+        public List<BakeryCommand> Link;
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands)
-        {
-            this.Origin = origin;
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = new CommandAddress();
-            this.Depth = 0;
-            this.link = null;
-        }
-
+        { InternalConstructor(origin, opcode, operands, new CommandAddress(), 0, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth)
-        {
-            this.Origin = origin;
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = new CommandAddress();
-            this.Depth = depth;
-            this.link = null;
-        }
-
+        { InternalConstructor(origin, opcode, operands, new CommandAddress(), depth, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address)
-        {
-            this.Origin = origin;
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = address;
-            this.Depth = 0;
-            this.link = null;
-        }
-
+        { InternalConstructor(origin, opcode, operands, address, 0, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address, int depth)
-        {
-            this.Origin = origin;
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = address;
-            this.Depth = depth;
-            this.link = null;
-        }
+        { InternalConstructor(origin, opcode, operands, address, depth, null); }
 
         public BakeryCommand(Opcode opcode, List<string> operands)
-        {
-            this.Origin = ForgeRawCode(opcode, operands);
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = new CommandAddress();
-            this.Depth = 0;
-            this.link = null;
-        }
-
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new CommandAddress(), 0, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, int depth)
-        {
-            this.Origin = ForgeRawCode(opcode, operands);
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = new CommandAddress();
-            this.Depth = depth;
-            this.link = null;
-        }
-
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new CommandAddress(), depth, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address)
-        {
-            this.Origin = ForgeRawCode(opcode, operands);
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = address;
-            this.Depth = 0;
-            this.link = null;
-        }
-
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, 0, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address, int depth)
-        {
-            this.Origin = ForgeRawCode(opcode, operands);
-            this.Opcode = opcode;
-            this.Operands = operands;
-            this.Address = address;
-            this.Depth = depth;
-            this.link = null;
-        }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, depth, null); }
 
-        public BakeryCommand(string origin, BakeryCommand link)
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, List<BakeryCommand> link)
+        { InternalConstructor(origin, opcode, operands, new CommandAddress(), 0, link); }
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth, List<BakeryCommand> link)
+        { InternalConstructor(origin, opcode, operands, new CommandAddress(), depth, link); }
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address, List<BakeryCommand> link)
+        { InternalConstructor(origin, opcode, operands, address, 0, link); }
+        public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address, int depth, List<BakeryCommand> link)
+        { InternalConstructor(origin, opcode, operands, address, depth, link); }
+
+        public BakeryCommand(Opcode opcode, List<string> operands, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new CommandAddress(), 0, link); }
+        public BakeryCommand(Opcode opcode, List<string> operands, int depth, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new CommandAddress(), depth, link); }
+        public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, 0, link); }
+        public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address, int depth, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, depth, link); }
+
+        public BakeryCommand(string origin, List<BakeryCommand> link)
+        { InternalConstructor(origin, Opcode.None, null, new CommandAddress(), 0, link); }
+
+        public void InternalConstructor(string origin, Opcode opcode, List<string> operands, CommandAddress address, int depth, List<BakeryCommand> link)
         {
             this.Origin = origin;
-            this.Opcode = Opcode.None;
-            this.Operands = null;
-            this.Address = new CommandAddress();
-            this.Depth = 0;
-            this.link = link;
+            this.Opcode = opcode;
+            this.Operands = operands;
+            this.Address = address;
+            this.Depth = depth;
+            this.Link = link;
         }
 
         /// <summary>

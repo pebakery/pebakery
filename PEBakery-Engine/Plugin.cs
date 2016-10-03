@@ -23,33 +23,15 @@ namespace BakeryEngine
     {
         // Fields
         protected string pluginPath;
-        public string PluginPath
-        {
-            get { return pluginPath; }
-        }
         protected string sectionName;
-        public string SectionName
-        {
-            get
-            {
-                return sectionName;
-            }
-        }
         protected SectionType type;
-        public SectionType Type
-        {
-            get { return type; }
-            set { type = value; }
-        }
         protected bool loaded;
-        public bool Loaded
-        {
-            get { return loaded; }
-        }
-        public virtual int Count
-        {
-            get { return 0; }
-        }
+
+        public string PluginPath { get { return pluginPath; } }
+        public string SectionName { get { return sectionName; } }
+        public SectionType Type { get { return type; } set { type = value; } }
+        public bool Loaded { get { return loaded; } }
+        public virtual int Count { get { return 0; } }
 
         /// <summary>
         /// Constructor
@@ -144,7 +126,7 @@ namespace BakeryEngine
         }
     }
 
-    public class PluginRawLineSection : PluginSection
+    public class PluginLineSection : PluginSection
     {
         // Fields
         private string[] lines;
@@ -157,8 +139,6 @@ namespace BakeryEngine
                 return lines;
             }
         }
-        private string[] compiled;
-        public string[] Compiled { get { return compiled; } }
         public override int Count { get { return lines.Length; } }
 
         /// <summary>
@@ -167,7 +147,7 @@ namespace BakeryEngine
         /// <param name="pluginPath"></param>
         /// <param name="sectionName"></param>
         /// <param name="codes"></param>
-        public PluginRawLineSection(string pluginPath, string sectionName, string[] codes) : base(pluginPath, sectionName, SectionType.Code)
+        public PluginLineSection(string pluginPath, string sectionName, string[] codes) : base(pluginPath, sectionName, SectionType.Code)
         {
             this.lines = codes;
             loaded = true;
@@ -179,7 +159,7 @@ namespace BakeryEngine
         /// <param name="pluginPath"></param>
         /// <param name="sectionName"></param>
         /// <param name="codes"></param>
-        public PluginRawLineSection(string pluginPath, string sectionName) : base(pluginPath, sectionName, SectionType.Code)
+        public PluginLineSection(string pluginPath, string sectionName) : base(pluginPath, sectionName, SectionType.Code)
         {
             this.lines = null;
             loaded = false;
@@ -207,10 +187,43 @@ namespace BakeryEngine
         {
             return Lines;
         }
+    }
 
-        public void SetCompiledCode(string[] compiled)
+    public class PluginCodeSection : PluginSection
+    {
+        // Fields
+        private List<BakeryCommand> codes;
+        public List<BakeryCommand> Codes
         {
-            this.compiled = compiled;
+            get
+            {
+                if (!loaded)
+                    Load();
+                return codes;
+            }
+        }
+        public override int Count { get { return codes.Count; } }
+
+        /// <summary>
+        /// Constructor for code sections, compiled
+        /// </summary>
+        public PluginCodeSection(PluginLineSection section, List<BakeryCommand> codes) : base(section.PluginPath, section.SectionName, SectionType.Code)
+        {
+            this.loaded = section.Loaded;
+            this.codes = codes;
+        }
+
+        public override void Load()
+        {
+        }
+
+        public override void Unload()
+        {
+        }
+
+        public override object Get()
+        {
+            return codes;
         }
     }
 
@@ -438,7 +451,7 @@ namespace BakeryEngine
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
-                    return new PluginRawLineSection(fullPath, sectionName, lines.ToArray());
+                    return new PluginLineSection(fullPath, sectionName, lines.ToArray());
                 case SectionType.AttachEncode: // do not load now
                     return new PluginIniSection(fullPath, sectionName, type);
                 default:

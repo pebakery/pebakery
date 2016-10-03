@@ -12,14 +12,24 @@ namespace BakeryEngine
     {
         static int Main(string[] args)
         {
-            Project project = new Project("Win10PESE");
-            // Project project = new Project("Joveler");
+            // Project project = new Project("Win10PESE");
+            Project project = new Project("Joveler");
             Logger logger = new Logger("log.txt", LogFormat.Text);
             BakeryEngine engine = new BakeryEngine(project, logger);
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
-            BakeryCompiler.Compile(project.MainPlugin);
-            engine.Build();
+
+
+            BakeryCodeParser codeParser = new BakeryCodeParser();
+            codeParser.CodeParsePlugin(project.MainPlugin);
+            List<BakeryCommand> cmds = (List<BakeryCommand>) project.MainPlugin.Sections["Main"].Get();
+            for (int i = 0; i < project.MainPlugin.Sections["Main"].Count; i++)
+            {
+                Console.WriteLine(cmds[i]);
+            }
+
+            // engine.Build();
+
             Console.WriteLine("BakeryEngine done");
             Console.WriteLine("Time elapsed: {0}\n", stopwatch.Elapsed);
 

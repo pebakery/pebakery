@@ -23,42 +23,279 @@ namespace BakeryEngine
     /// <summary>
     /// The compiler to convert If~Else, Begin~End to If+Jump (assembly) style
     /// </summary>
-    public class BakeryCompiler
+    public class BakeryCodeParser
     {
-        private enum CompileState
+        public void CodeParsePlugin(Plugin plugin)
         {
-            Normal, IfSingleLine, IfMultiLine, ElseSingleLine, ElseMultiLine
-        }
-
-        private enum LastCommand
-        {
-            Normal, If, Else, Begin, End
-        }
-
-        private int cmdIndex = 0;
-        private bool trackCodeBlock = false;
-        private int codeBlockCount = 0;
-
-        public void Compile(Plugin plugin)
-        {
+            List<PluginCodeSection> codeSecList = new List<PluginCodeSection>();
             foreach (PluginSection rawSection in plugin.Sections.Values)
             {
                 // Select Code sections and compile
-                if (rawSection.Type != SectionType.Code)
-                    continue;
-                PluginRawLineSection section = (PluginRawLineSection)rawSection;
-                string[] rawCodes = section.Get() as string[];
+                // if (rawSection.Type == SectionType.Code)
+                if (string.Equals(rawSection.SectionName, "Process", StringComparison.OrdinalIgnoreCase))
+                {
+                    PluginLineSection section = (PluginLineSection)rawSection;
+                    string[] rawCodes = section.Get() as string[];
 
-                List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
-                for (int i = 0; i < rawCodes.Length; i++)
-                    rawCodeList.Add(ParseCommand(rawCodes[i]));
-                List<BakeryCommand> compiledList = CompileSection(rawCodeList);
+                    List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
+                    for (int i = 0; i < rawCodes.Length; i++)
+                        rawCodeList.Add(ParseCommand(rawCodes[i]));
+                    List<BakeryCommand> compiledList = CodeParseSectionOnce(rawCodeList);
+                    codeSecList.Add(new PluginCodeSection(section, compiledList));
+                }
+            }
+
+            foreach (PluginCodeSection codeSection in codeSecList)
+            {
+                plugin.Sections[codeSection.SectionName] = codeSection;
             }
         }
 
-        public List<BakeryCommand> CompileSection(List<BakeryCommand> rawCodeList)
+        public List<BakeryCommand> CodeParseSectionOnce(List<BakeryCommand> rawCmdList)
         {
-            CompileState state = CompileState.Normal;
+            List<BakeryCommand> compiledList = new List<BakeryCommand>();
+            bool elseFlag = false;
+
+            for (int i = 0; i < rawCmdList.Count; i++)
+            {
+                BakeryCommand cmd = rawCmdList[i];
+                if (cmd.Opcode == Opcode.If)
+                {
+                    int dest = CompileNestedIf(cmd, out elseFlag, ref rawCmdList, i, ref compiledList);
+                    i = dest;
+                }
+                else if (cmd.Opcode == Opcode.Else) // SingleLine or MultiLine?
+                {
+                    if (elseFlag)
+                    {
+                        int dest = CompileNestedElse(cmd, out elseFlag, ref rawCmdList, i, ref compiledList);
+                        i = dest;
+                    }
+                    else
+                        throw new InvalidGrammarException("Else must be used after If", cmd);
+                }
+                else if (cmd.Opcode == Opcode.Begin)
+                    throw new InvalidGrammarException("Begin must be used with If or Else", cmd);
+                else if (cmd.Opcode == Opcode.End)
+                    throw new InvalidGrammarException("End must be matched with Begin", cmd);
+                else
+                { // The other operands - just copy
+                    compiledList.Add(cmd);
+                }
+            }
+
+            return compiledList;
+        }
+
+        private int CompileNestedIf(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> compiledList)
+        {
+            BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
+            BakeryIfCommand ifSubCmd; // Condition : Equal,%A%,B,Echo,Success
+            BakeryCommand ifEmbCmd; // Run if condition is met : Echo,Success
+            // BakeryCommand compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
+            List<BakeryCommand> ifCmdList = compiledList;
+            elseFlag = false;
+
+            // <Raw>
+            // If,%A%,Equal,B,Echo,Success
+            int depth = 0;
+            while (true)
+            {
+                ifSubCmd = ForgeIfSubCommand(ifCmd); 
+                ifEmbCmd = ForgeIfEmbedCommand(ifCmd, ifSubCmd, 0);
+
+                // Ex) IfCompact,Equal,%A%,B
+                BakeryCommand ifCompiledCmd = new BakeryCommand(cmd.Origin, Opcode.IfCompact, ifSubCmd.ToOperands(), depth, new List<BakeryCommand>());
+                ifCmdList.Add(ifCompiledCmd);
+
+                if (ifEmbCmd.Opcode == Opcode.If) // Nested If
+                {
+                    ifCmd = ifEmbCmd;
+                    ifCompiledCmd.Operands.Add(Opcode.Link.ToString());
+                    ifCmdList = ifCompiledCmd.Link;
+                    depth++;
+                    continue;
+                }
+                else if (ifEmbCmd.Opcode == Opcode.Begin) // Multiline If (Begin-End)
+                {
+                    // Find proper End
+                    int endIdx = MatchBeginWithEnd(ref cmdList, cmdListIdx);
+                    if (endIdx == -1)
+                        throw new InvalidGrammarException("End must be matched with Begin", cmd);
+                    ifCompiledCmd.Operands.Add(Opcode.Link.ToString());
+                    for (int i = cmdListIdx + 1; i < endIdx; i++)
+                        ifCompiledCmd.Link.Add(cmdList[i]);
+                    elseFlag = true; // Enable Else
+                    ifSubCmd.NotFlag = !ifSubCmd.NotFlag;
+                    return endIdx;
+                }
+                else // Singleline If
+                {
+                    ifCompiledCmd.Link.Add(ifEmbCmd);
+                    elseFlag = true; // Enable Else
+                    ifSubCmd.NotFlag = !ifSubCmd.NotFlag;
+                    return cmdListIdx + 1;
+                }
+            }
+        }
+
+        private int CompileNestedElse(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> compiledList)
+        {
+            BakeryCommand elseEmbCmd = ForgeEmbedCommand(cmd, 0, 0);
+            
+            if (elseEmbCmd.Opcode == Opcode.If) // Nested If
+            {
+                int depth = 0;
+                BakeryCommand compiledCmd = new BakeryCommand(cmd.Origin, Opcode.Else, elseEmbCmd.Operands, 0, new List<BakeryCommand>());
+                compiledList.Add(compiledCmd);
+
+                BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
+                BakeryIfCommand ifSubCmd; // Condition : Equal,%A%,B,Echo,Success
+                BakeryCommand ifEmbCmd; // Run if condition is met : Echo,Success
+                List<BakeryCommand> ifCmdList = compiledCmd.Link;
+                while (true)
+                {
+                    ifSubCmd = ForgeIfSubCommand(ifCmd);
+                    ifEmbCmd = ForgeIfEmbedCommand(ifCmd, ifSubCmd, 0);
+
+                    // Ex) IfCompact,Equal,%A%,B
+                    BakeryCommand ifCompiledCmd = new BakeryCommand(cmd.Origin, Opcode.IfCompact, ifSubCmd.ToOperands(), depth, new List<BakeryCommand>());
+                    ifCmdList.Add(ifCompiledCmd);
+
+                    if (ifEmbCmd.Opcode == Opcode.If) // Nested If
+                    {
+                        ifCmd = ifEmbCmd;
+                        ifCompiledCmd.Operands.Add(Opcode.Link.ToString());
+                        ifCmdList = ifCompiledCmd.Link;
+                        depth++;
+                        continue;
+                    }
+                    else if (ifEmbCmd.Opcode == Opcode.Begin) // Multiline If (Begin-End)
+                    {
+                        // Find proper End
+                        int endIdx = MatchBeginWithEnd(ref cmdList, cmdListIdx);
+                        if (endIdx == -1)
+                            throw new InvalidGrammarException("End must be matched with Begin", cmd);
+                        ifCompiledCmd.Operands.Add(Opcode.Link.ToString());
+                        for (int i = cmdListIdx + 1; i < endIdx; i++)
+                            ifCompiledCmd.Link.Add(cmdList[i]);
+                        elseFlag = true; // Enable Else
+                        ifSubCmd.NotFlag = !ifSubCmd.NotFlag;
+                        return endIdx;
+                    }
+                    else // Singleline If
+                    {
+                        ifCompiledCmd.Link.Add(ifEmbCmd);
+                        elseFlag = true; // Enable Else
+                        ifSubCmd.NotFlag = !ifSubCmd.NotFlag;
+                        return cmdListIdx + 1;
+                    }
+                }
+            }
+            else if (elseEmbCmd.Opcode == Opcode.Begin)
+            {
+                BakeryCommand compiledCmd = new BakeryCommand(cmd.Origin, Opcode.Else, elseEmbCmd.Operands, 0, new List<BakeryCommand>());
+                compiledCmd.Operands.Add(Opcode.Link.ToString());
+                compiledList.Add(compiledCmd);
+                // Find proper End
+                int endIdx = MatchBeginWithEnd(ref cmdList, cmdListIdx);
+                if (endIdx == -1)
+                    throw new InvalidGrammarException("End must be matched with Begin", cmd);
+                for (int i = cmdListIdx + 1; i < endIdx; i++)
+                    compiledCmd.Link.Add(cmdList[i]);
+                elseFlag = false;
+                return endIdx;
+            }
+            else if (elseEmbCmd.Opcode == Opcode.Else || elseEmbCmd.Opcode == Opcode.End)
+            {
+                throw new InvalidGrammarException($"{elseEmbCmd.Opcode} cannot be used with Else", cmd);
+            }
+            else // Normal opcodes
+            {
+                elseFlag = false;
+                return cmdListIdx + 1;
+            }
+        }
+
+        private static int MatchBeginWithEnd(ref List<BakeryCommand> cmdList, int cmdListIdx)
+        { // To process nested Begin~End block
+            int nestedBeginEnd = 0;
+            bool beginExist = false;
+            bool finalizedWithEnd = false;
+
+            // start command must be If or Begin, and its last embCmd must be Begin
+            if (!(cmdList[cmdListIdx].Opcode == Opcode.If || cmdList[cmdListIdx].Opcode == Opcode.Else))
+                return -1;
+
+            for (; cmdListIdx < cmdList.Count; cmdListIdx++)
+            {
+                BakeryCommand cmd = cmdList[cmdListIdx];
+                if (cmd.Opcode == Opcode.If) // To check If,<Condition>,Begin
+                {
+                    while (true)
+                    {
+                        BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
+                        BakeryCommand embCmd = ForgeIfEmbedCommand(cmd, subCmd, 0);
+                        if (embCmd.Opcode == Opcode.If) // Nested If
+                        {
+                            cmd = embCmd;
+                            continue;
+                        }
+                        else if (embCmd.Opcode == Opcode.Begin)
+                        {
+                            beginExist = true;
+                            nestedBeginEnd++;
+                        }
+                        break;
+                    }
+                }
+                else if (cmd.Opcode == Opcode.Else)
+                {
+                    BakeryCommand embCmd = ForgeEmbedCommand(cmd, 0, 0);
+                    if (embCmd.Opcode == Opcode.If) // Nested If
+                    {
+                        while (true)
+                        {
+                            BakeryIfCommand ifSubCmd = ForgeIfSubCommand(cmd);
+                            BakeryCommand ifEmbCmd = ForgeIfEmbedCommand(cmd, ifSubCmd, 0);
+                            if (ifEmbCmd.Opcode == Opcode.If) // Nested If
+                            {
+                                cmd = embCmd;
+                                continue;
+                            }
+                            else if (ifEmbCmd.Opcode == Opcode.Begin)
+                            {
+                                nestedBeginEnd++;
+                                beginExist = true;
+                            }
+                            break;
+                        }
+                    }
+                    else if (embCmd.Opcode == Opcode.Begin)
+                        nestedBeginEnd++;
+                }
+                else if (cmd.Opcode == Opcode.End)
+                {
+                    nestedBeginEnd--;
+                    if (nestedBeginEnd == 0)
+                    {
+                        finalizedWithEnd = true;
+                        break;
+                    }
+                }
+            }
+
+            // Met Begin, End and returned, success
+            if (beginExist && finalizedWithEnd && nestedBeginEnd == 0)
+                return cmdListIdx;                
+            else
+                return -1;
+        }
+
+        /*
+        public List<BakeryCommand> CodeParseSection(List<BakeryCommand> rawCodeList)
+        {
+            ParseState state = ParseState.Normal;
             LastCommand last = LastCommand.Normal;
             BakeryCommand cmd;
             List<BakeryCommand> compiledList = new List<BakeryCommand>();
@@ -72,8 +309,8 @@ namespace BakeryEngine
 
                 switch (state)
                 {
-                    case CompileState.Normal:
-                    case CompileState.IfSingleLine:
+                    case ParseState.Normal:
+                    case ParseState.IfSingleLine:
                         if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
                         {
                             last = LastCommand.If;
@@ -84,6 +321,7 @@ namespace BakeryEngine
                             if (last == LastCommand.If)
                             {
                                 last = LastCommand.Else;
+                                state = CompileNestedElse(cmd, state, ref codeBlockList, ref nestIfCount);
                             }
                             else
                                 throw new InvalidGrammarException("Else must be used after If", cmd);
@@ -110,11 +348,11 @@ namespace BakeryEngine
                                 }
                                 compiledList.AddRange(codeBlockList.Select(x => x));
                                 codeBlockList.Clear();
-                                state = CompileState.Normal;
+                                state = ParseState.Normal;
                             }
                         }
                         break;
-                    case CompileState.IfMultiLine:
+                    case ParseState.IfMultiLine:
                         if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
                         {
                             last = LastCommand.If;
@@ -141,7 +379,7 @@ namespace BakeryEngine
                             codeBlockList.Add(cmd);
                         }
                         break;
-                    case CompileState.ElseMultiLine:
+                    case ParseState.ElseMultiLine:
                         break;
                 }
             }
@@ -149,7 +387,7 @@ namespace BakeryEngine
             return compiledList;
         }
 
-        private CompileState CompileNestedIf(BakeryCommand cmd, CompileState state, ref List<BakeryCommand> codeBlockList, ref int nestIfCount)
+        private ParseState CompileNestedIf(BakeryCommand cmd, ParseState state, ref List<BakeryCommand> codeBlockList, ref int nestIfCount)
         {
             nestIfCount = 0;
             BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
@@ -157,14 +395,14 @@ namespace BakeryEngine
             BakeryCommand embCmd; // Run if condition is met : Echo,Success
             nestIfCount++;
 
-            /* <Raw>
-             * If,%A%,Equal,B,Echo,Success
-             * <Compiled>
-             * IfCompact,Equal,%A%,B
-             * Jump,Relative,2
-             * Jump,Relative,2
-             * Echo,Success
-             */
+             //<Raw>
+             //If,%A%,Equal,B,Echo,Success
+             //<Compiled>
+             //IfCompact,Equal,%A%,B
+             //Jump,Relative,2
+             //Jump,Relative,2
+             //Echo,Success
+             //
 
             while (true)
             {
@@ -200,7 +438,7 @@ namespace BakeryEngine
                 }
                 else if (embCmd.Opcode == Opcode.Begin)
                 { // Multiline If (Begin-End)
-                    state = CompileState.IfMultiLine;
+                    state = ParseState.IfMultiLine;
 
                     // Start Count
                     trackCodeBlock = true;
@@ -208,7 +446,7 @@ namespace BakeryEngine
                 }
                 else
                 { // Singleline If
-                    state = CompileState.IfSingleLine; // Enable Else
+                    state = ParseState.IfSingleLine; // Enable Else
                     codeBlockList.Last().Operands.Add("2");
                     codeBlockList.Add(embCmd); // Ex) Echo,Success
 
@@ -221,8 +459,8 @@ namespace BakeryEngine
 
             return state;
         }
-
-        private static void CompileNestedElse(BakeryCommand cmd, ref CompileState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
+        
+        private static void CompileNestedElse(BakeryCommand cmd, ref ParseState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
         {
             // Ex) Else, Set,%A%,B
             // elseCmd = Set,%A%,B
@@ -234,13 +472,13 @@ namespace BakeryEngine
             else if (emdCmd.Opcode == Opcode.Begin) // ElseMultiline
             {
                 // Add Jump,Relative to tempList
-                state = CompileState.ElseMultiLine;
+                state = ParseState.ElseMultiLine;
                 List<string> operands = new List<string>();
                 operands.Add("Relative");
                 BakeryCommand embCmd = new BakeryCommand(cmd.Origin, Opcode.Jump, operands);
             }
         }
-
+        */
         private BakeryCommand ParseCommand(string rawCode)
         {
             Opcode opcode = Opcode.None;
@@ -279,6 +517,7 @@ namespace BakeryEngine
             // forge BakeryCommand
             return new BakeryCommand(rawCode, opcode, ParseOperands(slices));
         }
+        
         /// <summary>
         /// ParseState enum
         /// </summary>
@@ -367,6 +606,7 @@ namespace BakeryEngine
 
             return operandList;
         }
+        
 
         public static BakeryIfCommand ForgeIfSubCommand(BakeryCommand cmd)
         {
