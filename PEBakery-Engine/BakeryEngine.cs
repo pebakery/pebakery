@@ -51,6 +51,7 @@ namespace BakeryEngine
         public List<string> Operands;
         public CommandAddress Address;
         public int Depth;
+        public BakeryCommand link;
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands)
         {
@@ -59,6 +60,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = new CommandAddress();
             this.Depth = 0;
+            this.link = null;
         }
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth)
@@ -68,6 +70,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = new CommandAddress();
             this.Depth = depth;
+            this.link = null;
         }
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address)
@@ -77,6 +80,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = address;
             this.Depth = 0;
+            this.link = null;
         }
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, CommandAddress address, int depth)
@@ -86,6 +90,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = address;
             this.Depth = depth;
+            this.link = null;
         }
 
         public BakeryCommand(Opcode opcode, List<string> operands)
@@ -95,6 +100,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = new CommandAddress();
             this.Depth = 0;
+            this.link = null;
         }
 
         public BakeryCommand(Opcode opcode, List<string> operands, int depth)
@@ -104,6 +110,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = new CommandAddress();
             this.Depth = depth;
+            this.link = null;
         }
 
         public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address)
@@ -113,6 +120,7 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = address;
             this.Depth = 0;
+            this.link = null;
         }
 
         public BakeryCommand(Opcode opcode, List<string> operands, CommandAddress address, int depth)
@@ -122,6 +130,17 @@ namespace BakeryEngine
             this.Operands = operands;
             this.Address = address;
             this.Depth = depth;
+            this.link = null;
+        }
+
+        public BakeryCommand(string origin, BakeryCommand link)
+        {
+            this.Origin = origin;
+            this.Opcode = Opcode.None;
+            this.Operands = null;
+            this.Address = new CommandAddress();
+            this.Depth = 0;
+            this.link = link;
         }
 
         /// <summary>

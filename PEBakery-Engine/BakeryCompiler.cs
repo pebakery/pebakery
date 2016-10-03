@@ -36,6 +36,8 @@ namespace BakeryEngine
         }
 
         private int cmdIndex = 0;
+        private bool trackCodeBlock = false;
+        private int codeBlockCount = 0;
 
         public void Compile(Plugin plugin)
         {
@@ -61,6 +63,7 @@ namespace BakeryEngine
             BakeryCommand cmd;
             List<BakeryCommand> compiledList = new List<BakeryCommand>();
             List<BakeryCommand> codeBlockList = new List<BakeryCommand>();
+            List<BakeryCommand> jumpAddrList = new List<BakeryCommand>();
             int nestIfCount = 0; // If 문이 몇중첩인가
             
             for (cmdIndex = 0; cmdIndex < rawCodeList.Count; cmdIndex++)
@@ -135,7 +138,7 @@ namespace BakeryEngine
                         }
                         else
                         {
-                            compiledList.Add(cmd);
+                            codeBlockList.Add(cmd);
                         }
                         break;
                     case CompileState.ElseMultiLine:
@@ -146,12 +149,13 @@ namespace BakeryEngine
             return compiledList;
         }
 
-        private CompileState CompileNestedIf(BakeryCommand cmd, CompileState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
+        private CompileState CompileNestedIf(BakeryCommand cmd, CompileState state, ref List<BakeryCommand> codeBlockList, ref int nestIfCount)
         {
             nestIfCount = 0;
             BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
             BakeryIfCommand subCmd; // Condition : Equal,%A%,B,Echo,Success
             BakeryCommand embCmd; // Run if condition is met : Echo,Success
+            nestIfCount++;
 
             /* <Raw>
              * If,%A%,Equal,B,Echo,Success
@@ -164,7 +168,6 @@ namespace BakeryEngine
 
             while (true)
             {
-                nestIfCount++;
                 subCmd = ForgeIfSubCommand(ifCmd); 
                 embCmd = ForgeIfEmbedCommand(ifCmd, subCmd, 0);
 
@@ -174,20 +177,20 @@ namespace BakeryEngine
                 // Ex) IfCompact,Equal,%A%,B
                 operands.Add(subCmd.SubOpcode.ToString());
                 operands.AddRange(subCmd.Operands.Take(operandCount));
-                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.IfCompact, operands)); 
+                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.IfCompact, operands)); 
                 operands.Clear();
 
                 // Ex) Jump,Relative,2
                 operands.Add(Opcode.Jump.ToString());
                 operands.Add("Relative");
                 operands.Add("2");
-                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
+                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
                 operands.Clear();
 
                 // Ex) Jump,Relative,X - X to be assigned later
                 operands.Add(Opcode.Jump.ToString());
                 operands.Add("Relative");
-                tempList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
+                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
                 operands.Clear();
 
                 if (embCmd.Opcode == Opcode.If)
@@ -198,14 +201,20 @@ namespace BakeryEngine
                 else if (embCmd.Opcode == Opcode.Begin)
                 { // Multiline If (Begin-End)
                     state = CompileState.IfMultiLine;
-                    tempList.Add(embCmd);
-                    // cmdIndex
+
+                    // Start Count
+                    trackCodeBlock = true;
+                    codeBlockCount = 0;
                 }
                 else
                 { // Singleline If
                     state = CompileState.IfSingleLine; // Enable Else
-                    tempList.Last().Operands.Add("2");
-                    tempList.Add(embCmd); // Ex) Echo,Success
+                    codeBlockList.Last().Operands.Add("2");
+                    codeBlockList.Add(embCmd); // Ex) Echo,Success
+
+                    // Do not start count
+                    trackCodeBlock = false;
+                    codeBlockCount = 0;
                 }
                 break;
             }
