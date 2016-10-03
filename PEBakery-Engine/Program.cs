@@ -20,10 +20,9 @@ namespace BakeryEngine
             Console.WriteLine("BakeryEngine start...");
 
 
-            BakeryCodeParser codeParser = new BakeryCodeParser();
-            codeParser.CodeParsePlugin(project.MainPlugin);
-            List<BakeryCommand> cmds = (List<BakeryCommand>) project.MainPlugin.Sections["Main"].Get();
-            for (int i = 0; i < project.MainPlugin.Sections["Main"].Count; i++)
+            BakeryCodeParser.CodeParsePlugin(project.MainPlugin);
+            List<BakeryCommand> cmds = project.MainPlugin.Sections["Process"].Get() as List<BakeryCommand>;
+            for (int i = 0; i < project.MainPlugin.Sections["Process"].Count; i++)
             {
                 Console.WriteLine(cmds[i]);
             }

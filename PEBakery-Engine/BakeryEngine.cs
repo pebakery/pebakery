@@ -36,7 +36,7 @@ namespace BakeryEngine
         // Branch
         Run, Exec, If, Begin, Else, Loop, End,
         // Branch - Compiled microcode
-        IfCompact, Link,
+        IfCompiled, ElseCompiled, Link,
         // Control
         Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep,
     }
