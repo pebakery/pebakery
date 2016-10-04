@@ -25,13 +25,21 @@ namespace BakeryEngine
     /// </summary>
     public static class BakeryCodeParser
     {
-        public static List<BakeryCommand> ParseRawLines(List<string> lines)
+        public static List<BakeryCommand> ParseRawLines(List<string> lines, SectionAddress addr)
         {
             // Select Code sections and compile
             // if (rawSection.Type == SectionType.Code)
             List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
             foreach (string line in lines)
-                rawCodeList.Add(ParseCommand(line));
+            {
+                try
+                {
+                    rawCodeList.Add(ParseCommand(line, addr));
+                }
+                catch
+                {
+                }
+            }
 
             List<BakeryCommand> compiledList = rawCodeList;
             while (ParseSectionOnce(compiledList, out compiledList));
@@ -287,7 +295,7 @@ namespace BakeryEngine
                 return -1;
         }
 
-        private static BakeryCommand ParseCommand(string rawCode)
+        private static BakeryCommand ParseCommand(string rawCode, SectionAddress addr)
         {
             Opcode opcode = Opcode.None;
 
@@ -296,11 +304,11 @@ namespace BakeryEngine
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
-                return new BakeryCommand(string.Empty, Opcode.None, new List<string>());
+                return new BakeryCommand(string.Empty, Opcode.None, new List<string>(), addr);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";"))
-                return new BakeryCommand(rawCode, Opcode.Comment, new List<string>());
+                return new BakeryCommand(rawCode, Opcode.Comment, new List<string>(), addr);
 
             // Splice with spaces
             string[] slices = rawCode.Split(',');
@@ -315,7 +323,7 @@ namespace BakeryEngine
             }
             catch (ArgumentException)
             {
-                throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new List<string>()));
+                throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), addr));
             }
 
             // Check doublequote's occurence - must be 2n
@@ -323,7 +331,7 @@ namespace BakeryEngine
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
             // forge BakeryCommand
-            return new BakeryCommand(rawCode, opcode, ParseOperands(slices));
+            return new BakeryCommand(rawCode, opcode, ParseOperands(slices), addr);
         }
         
         /// <summary>
@@ -541,12 +549,12 @@ namespace BakeryEngine
         {
             BakeryIfCommand subCmd = ForgeIfSubCommand(cmd);
             int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
-            return BakeryEngine.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
+            return ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
         }
         public static BakeryCommand ForgeIfEmbedCommand(BakeryCommand cmd, BakeryIfCommand subCmd, int depth)
         {
             int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
-            return BakeryEngine.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
+            return ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
         }
         public static BakeryCommand ForgeIfConditionCommand(BakeryCommand cmd)
         {

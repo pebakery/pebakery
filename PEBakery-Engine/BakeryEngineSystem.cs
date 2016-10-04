@@ -448,8 +448,7 @@ namespace BakeryEngine
 
                 Plugin lastPlugin = project.ActivePlugins.LastPlugin;
                 int lastSecLines = (lastPlugin.Sections["Process"].Get() as string[]).Length;
-                CommandAddress addr = new CommandAddress(lastPlugin, lastPlugin.Sections["Process"], lastSecLines, lastSecLines);
-                onBuildExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList(), addr); // Project's last plugin's last address
+                onBuildExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList()); // Project's last plugin's last address
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
             }
 
@@ -488,8 +487,7 @@ namespace BakeryEngine
                 }
 
                 int lastSecLines = (currentPlugin.Sections["Process"].Get() as string[]).Length;
-                CommandAddress addr = new CommandAddress(currentPlugin, currentPlugin.Sections["Process"], lastSecLines, lastSecLines);
-                onPluginExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList(), addr); // Current Plugin's last address
+                onPluginExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList()); // Current Plugin's last address
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
             }
             

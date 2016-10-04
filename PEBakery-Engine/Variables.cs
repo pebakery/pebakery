@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace BakeryEngine
 {
     using StringDictionary = Dictionary<string, string>;
-    public enum VarsType { Local, Global };
+    public enum VarsType { Local, Global, Fixed };
 
     public class VariableCircularReferenceException : Exception
     {
@@ -28,15 +28,17 @@ namespace BakeryEngine
     {
         /*
          * Variables 우선순위
-         * local variables > global variables
+         * local variables > global variables > fixed variables
          */
-        
+
         // Fields
+        private StringDictionary fixedVars; // Once constructed, it must be read-only.
         private StringDictionary globalVars;
         private StringDictionary localVars;
         private Logger logger;
 
         // Properties
+        public StringDictionary FixedVars { get { return fixedVars; } }
         public StringDictionary GlobalVars { get { return globalVars; } }
         public StringDictionary LocalVars { get { return localVars; } }
 
@@ -49,6 +51,7 @@ namespace BakeryEngine
             this.logger = logger;
             this.localVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
             this.globalVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            this.fixedVars = new StringDictionary(StringComparer.OrdinalIgnoreCase);
         }
 
         private StringDictionary GetVarsMatchesType(VarsType type)
@@ -59,6 +62,8 @@ namespace BakeryEngine
                     return localVars;
                 case VarsType.Global:
                     return globalVars;
+                case VarsType.Fixed:
+                    return fixedVars;
                 default:
                     return null;
             }
@@ -82,38 +87,46 @@ namespace BakeryEngine
             }
         }
 
+        public LogInfo SetFixedValue(string key, string rawValue)
+        {
+            return InternalSetValue(VarsType.Fixed, null, key, rawValue, -1, false, true);
+        }
+
         public LogInfo SetValue(VarsType type, string key, string rawValue)
         {
-            return InternalSetValue(type, null, key, rawValue, -1, false);
+            return InternalSetValue(type, null, key, rawValue, -1, false, false);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, int depth)
         {
-            return InternalSetValue(type, null, key, rawValue, depth, false);
+            return InternalSetValue(type, null, key, rawValue, depth, false, false);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, bool errorOff)
         {
-            return InternalSetValue(type, null, key, rawValue, -1, errorOff);
+            return InternalSetValue(type, null, key, rawValue, -1, errorOff, false);
         }
 
         public LogInfo SetValue(VarsType type, string key, string rawValue, int depth, bool errorOff)
         {
-            return InternalSetValue(type, null, key, rawValue, depth, errorOff);
+            return InternalSetValue(type, null, key, rawValue, depth, errorOff, false);
         }
 
         public LogInfo SetValue(VarsType type, BakeryCommand cmd, string key, string rawValue)
         {
-            return InternalSetValue(type, cmd, key, rawValue, -1, false);
+            return InternalSetValue(type, cmd, key, rawValue, -1, false, false);
         }
 
         public LogInfo SetValue(VarsType type, BakeryCommand cmd, string key, string rawValue, bool errorOff)
         {
-            return InternalSetValue(type, cmd, key, rawValue, -1, errorOff);
+            return InternalSetValue(type, cmd, key, rawValue, -1, errorOff, false);
         }
 
-        public LogInfo InternalSetValue(VarsType type, BakeryCommand cmd, string key, string rawValue, int depth, bool errorOff)
+        public LogInfo InternalSetValue(VarsType type, BakeryCommand cmd, string key, string rawValue, int depth, bool errorOff, bool privFixed)
         {
+            if (!privFixed && type == VarsType.Fixed)
+                throw new InternalUnknownException("Fixed variables cannot be written without privilege!");
+
             StringDictionary vars = GetVarsMatchesType(type);
             LogInfo log;
             // Check and remove circular reference

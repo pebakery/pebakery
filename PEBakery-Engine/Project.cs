@@ -43,12 +43,12 @@ namespace BakeryEngine
             this.allPlugins = CollectAllPlugins();
             Console.WriteLine("Parsing plugins done.");
             Console.WriteLine($"All Plugins : {allPlugins.Count}");
-            Console.WriteLine("Time elapsed: {0}\n", stopwatch.Elapsed);
+            Console.WriteLine("Time elapsed : {0}\n", stopwatch.Elapsed);
             stopwatch.Stop();
             this.activePlugins = CollectActivePlugins(this.allPlugins);
             Console.WriteLine("Selected active plugins.");
             Console.WriteLine($"Active Plugins : {activePlugins.Count}");
-            Console.WriteLine("Time elapsed: {0}\n", stopwatch.Elapsed);
+            Console.WriteLine("Time elapsed : {0}\n", stopwatch.Elapsed);
         }
 
         private PluginCollection CollectAllPlugins()
@@ -88,10 +88,10 @@ namespace BakeryEngine
         {
             plugins[level] = new Plugin[pluginsPaths.Length];
 
-            var i = 0;
+            int i = 0;
             return pluginsPaths.Select(p =>
             {
-                var t = i++;
+                int t = i++;
                 return Task.Run(() =>
                 {
                     plugins[level][t] = new Plugin(p, projectRoot);
