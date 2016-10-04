@@ -208,11 +208,11 @@ namespace BakeryEngine
 
 
         /// <summary>
-        /// If,<Condition>,<Command>
+        /// IfCompact,<Condition>,Link
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] IfCompiled(BakeryCommand cmd)
+        public LogInfo[] IfCompact(BakeryCommand cmd)
         {
             // elseFlag = 1;
 
@@ -224,7 +224,7 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
 
             // Get Condition SubOpcode
-            BakeryIfCommand subCmd = BakeryCodeParser.ForgeIfSubCommand(cmd);
+            BakeryIfCommand subCmd = BakeryCodeParser.ForgeIfSubCommand(cmd, false);
 
             // Call sub command methods
             switch (subCmd.SubOpcode)
@@ -268,8 +268,8 @@ namespace BakeryEngine
         private void RunIfLink(ref List<LogInfo> logs, bool run, BakeryCommand cmd, BakeryIfCommand subCmd, string message)
         { // ref for performance
             int necessaryOperandNum = BakeryCodeParser.GetIfOperandNum(cmd, subCmd);
-            BakeryCommand ifCmd = BakeryCodeParser.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, cmd.Depth);
-            if (ifCmd.Opcode != Opcode.Link)
+            BakeryCommand embCmd = BakeryCodeParser.ForgeEmbedCommand(cmd, necessaryOperandNum + 1, cmd.Depth);
+            if (embCmd.Opcode != Opcode.Link)
                 throw new CriticalErrorException($"[{cmd.Opcode.ToString()}] must be used with Link", cmd);
 
             if (run)
@@ -593,12 +593,12 @@ namespace BakeryEngine
             return logs.ToArray();
         }
 
-        private LogInfo[] ElseCompiled(BakeryCommand cmd)
+        private LogInfo[] ElseCompact(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             BakeryCommand embCmd = BakeryCodeParser.ForgeEmbedCommand(cmd, 0, 0);
-            if (cmd.Opcode != Opcode.Link)
+            if (embCmd.Opcode != Opcode.Link)
                 throw new CriticalErrorException($"[{cmd.Opcode.ToString()}] must be used with Link", cmd);
 
             if (runElse)

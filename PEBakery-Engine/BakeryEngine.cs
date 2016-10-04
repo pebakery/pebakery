@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Collections;
-using System.Collections.Concurrent;
 
 namespace BakeryEngine
 {
@@ -38,9 +36,11 @@ namespace BakeryEngine
         // Branch - Will be compiled
         If, Else, Begin, End,
         // Branch - Compiled microcode
-        IfCompiled, ElseCompiled, Link,
+        IfCompact, ElseCompact, Link,
         // Control
         Set, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep,
+        // External Macro
+        External,
     }
 
     /// <summary>
@@ -50,51 +50,85 @@ namespace BakeryEngine
     {
         public string Origin;
         public Opcode Opcode;
+        public string ExternalOpcode;
         public List<string> Operands;
         public SectionAddress Address;
         public int Depth;
         public List<BakeryCommand> Link;
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands)
-        { InternalConstructor(origin, opcode, operands, new SectionAddress(), 0, null); }
+        { InternalConstructor(origin, opcode, null, operands, new SectionAddress(), 0, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth)
-        { InternalConstructor(origin, opcode, operands, new SectionAddress(), depth, null); }
+        { InternalConstructor(origin, opcode, null, operands, new SectionAddress(), depth, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, SectionAddress address)
-        { InternalConstructor(origin, opcode, operands, address, 0, null); }
+        { InternalConstructor(origin, opcode, null, operands, address, 0, null); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, SectionAddress address, int depth)
-        { InternalConstructor(origin, opcode, operands, address, depth, null); }
+        { InternalConstructor(origin, opcode, null, operands, address, depth, null); }
 
         public BakeryCommand(Opcode opcode, List<string> operands)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new SectionAddress(), 0, null); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), 0, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, int depth)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new SectionAddress(), depth, null); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), depth, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, SectionAddress address)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, 0, null); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, 0, null); }
         public BakeryCommand(Opcode opcode, List<string> operands, SectionAddress address, int depth)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, depth, null); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, depth, null); }
 
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, List<BakeryCommand> link)
-        { InternalConstructor(origin, opcode, operands, new SectionAddress(), 0, link); }
+        { InternalConstructor(origin, opcode, null, operands, new SectionAddress(), 0, link); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, int depth, List<BakeryCommand> link)
-        { InternalConstructor(origin, opcode, operands, new SectionAddress(), depth, link); }
+        { InternalConstructor(origin, opcode, null, operands, new SectionAddress(), depth, link); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, SectionAddress address, List<BakeryCommand> link)
-        { InternalConstructor(origin, opcode, operands, address, 0, link); }
+        { InternalConstructor(origin, opcode, null, operands, address, 0, link); }
         public BakeryCommand(string origin, Opcode opcode, List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
-        { InternalConstructor(origin, opcode, operands, address, depth, link); }
+        { InternalConstructor(origin, opcode, null, operands, address, depth, link); }
 
         public BakeryCommand(Opcode opcode, List<string> operands, List<BakeryCommand> link)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new SectionAddress(), 0, link); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), 0, link); }
         public BakeryCommand(Opcode opcode, List<string> operands, int depth, List<BakeryCommand> link)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, new SectionAddress(), depth, link); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), depth, link); }
         public BakeryCommand(Opcode opcode, List<string> operands, SectionAddress address, List<BakeryCommand> link)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, 0, link); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, 0, link); }
         public BakeryCommand(Opcode opcode, List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
-        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, operands, address, depth, link); }
+        { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, depth, link); }
 
-        public BakeryCommand(string origin, List<BakeryCommand> link)
-        { InternalConstructor(origin, Opcode.None, null, new SectionAddress(), 0, link); }
+        public BakeryCommand(string origin, string externalOpcode, List<string> operands)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, new SectionAddress(), 0, null); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, int depth)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, new SectionAddress(), depth, null); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, SectionAddress address)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, address, 0, null); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, SectionAddress address, int depth)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, address, depth, null); }
 
-        public void InternalConstructor(string origin, Opcode opcode, List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
+        public BakeryCommand(string externalOpcode,  List<string> operands)
+        { InternalConstructor(ForgeRawCode(externalOpcode,  operands), Opcode.External, externalOpcode, operands, new SectionAddress(), 0, null); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, int depth)
+        { InternalConstructor(ForgeRawCode(externalOpcode,  operands), Opcode.External, externalOpcode, operands, new SectionAddress(), depth, null); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, SectionAddress address)
+        { InternalConstructor(ForgeRawCode(externalOpcode,  operands), Opcode.External, externalOpcode, operands, address, 0, null); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, SectionAddress address, int depth)
+        { InternalConstructor(ForgeRawCode(externalOpcode,  operands), Opcode.External, externalOpcode, operands, address, depth, null); }
+
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, List<BakeryCommand> link)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, new SectionAddress(), 0, link); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, int depth, List<BakeryCommand> link)
+        { InternalConstructor(origin, Opcode.External, externalOpcode, operands, new SectionAddress(), depth, link); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, SectionAddress address, List<BakeryCommand> link)
+        { InternalConstructor(origin, Opcode.External, externalOpcode,  operands, address, 0, link); }
+        public BakeryCommand(string origin, string externalOpcode,  List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
+        { InternalConstructor(origin, Opcode.External, externalOpcode,  operands, address, depth, link); }
+
+        public BakeryCommand(string externalOpcode,  List<string> operands, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(externalOpcode, operands), Opcode.External, externalOpcode,  operands, new SectionAddress(), 0, link); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, int depth, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(externalOpcode, operands), Opcode.External, externalOpcode,  operands, new SectionAddress(), depth, link); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, SectionAddress address, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(externalOpcode, operands), Opcode.External, externalOpcode,  operands, address, 0, link); }
+        public BakeryCommand(string externalOpcode,  List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
+        { InternalConstructor(ForgeRawCode(externalOpcode, operands), Opcode.External, externalOpcode,  operands, address, depth, link); }
+
+        public void InternalConstructor(string origin, Opcode opcode, string externalOpcode, List<string> operands, SectionAddress address, int depth, List<BakeryCommand> link)
         {
             this.Origin = origin;
             this.Opcode = opcode;
@@ -116,6 +150,27 @@ namespace BakeryEngine
         public static string ForgeRawCode(Opcode opcode, List<string> operands)
         {
             StringBuilder builder = new StringBuilder(opcode.ToString());
+            for (int i = 0; i < operands.Count; i++)
+            {
+                if (operands[i].Contains(" "))
+                {
+                    builder.Append(",\"");
+                    builder.Append(operands[i]);
+                    builder.Append("\"");
+                }
+                else
+                {
+                    builder.Append(",");
+                    builder.Append(operands[i]);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        public static string ForgeRawCode(string externalOpcode, List<string> operands)
+        {
+            StringBuilder builder = new StringBuilder(externalOpcode);
             for (int i = 0; i < operands.Count; i++)
             {
                 if (operands[i].Contains(" "))
@@ -732,11 +787,11 @@ namespace BakeryEngine
                         // logs = this.RunExec(cmd);
                         logs = this.RunExecCallback(cmd, cmd.Depth + 1);
                         break;
-                    case Opcode.IfCompiled:
-                        logs = this.IfCompiled(cmd);
+                    case Opcode.IfCompact:
+                        logs = this.IfCompact(cmd);
                         break;
-                    case Opcode.ElseCompiled:
-                        logs = this.ElseCompiled(cmd);
+                    case Opcode.ElseCompact:
+                        logs = this.ElseCompact(cmd);
                         break;
                     // Control
                     case Opcode.Set:
