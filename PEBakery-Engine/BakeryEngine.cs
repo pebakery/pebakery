@@ -34,7 +34,9 @@ namespace BakeryEngine
         // System
         System, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // Branch
-        Run, Exec, If, Begin, Else, Loop, End,
+        Run, Exec, Loop,
+        // Branch - Will be compiled
+        If, Else, Begin, End,
         // Branch - Compiled microcode
         IfCompiled, ElseCompiled, Link,
         // Control
@@ -247,10 +249,10 @@ namespace BakeryEngine
     public struct CommandAddress
     { // Return address format = <Section>'s <n'th line>
         public Plugin plugin;
-        public PluginSection section;
+        public PluginNewSection section;
         public int line;
         public int secLength;
-        public CommandAddress(Plugin plugin,PluginSection section, int line, int secLength)
+        public CommandAddress(Plugin plugin, PluginNewSection section, int line, int secLength)
         {
             this.plugin = plugin;
             this.section = section;
@@ -415,7 +417,7 @@ namespace BakeryEngine
             logger.SuspendLog = false;
 
             currentPlugin = Plugins.GetPlugin(curPluginAddr);
-            PluginSection section = currentPlugin.Sections["Process"];
+            PluginNewSection section = currentPlugin.Sections["Process"];
             nextCommand = new CommandAddress(currentPlugin, section, 0, section.Count);
             logger.Write($"Processing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
             logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));

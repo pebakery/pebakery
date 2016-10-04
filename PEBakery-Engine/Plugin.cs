@@ -10,7 +10,7 @@ using System.Collections;
 namespace BakeryEngine
 {
     using StringDictionary = Dictionary<string, string>;
-    using SectionDictionary = Dictionary<string, PluginSection>;
+    using SectionDictionary = Dictionary<string, PluginNewSection>;
 
     public class PluginParseException : Exception
     {
@@ -32,7 +32,7 @@ namespace BakeryEngine
         public string PluginPath { get { return pluginPath; } }
         public string SectionName { get { return sectionName; } }
         public SectionType Type { get { return type; } set { type = value; } }
-        protected SectionDataType DataType { get { return dataType; } set { dataType = value; } }
+        public SectionDataType DataType { get { return dataType; } set { dataType = value; } }
         public bool Loaded { get { return loaded; } }
 
         // Ini-Type Section
@@ -47,8 +47,8 @@ namespace BakeryEngine
             }
         }
         // RawLine-Type Section
-        private string[] lines;
-        public string[] Lines
+        private List<string> lines;
+        public List<string> Lines
         {
             get
             {
@@ -72,7 +72,7 @@ namespace BakeryEngine
                     case SectionDataType.IniDict:
                         return iniDict.Count;
                     case SectionDataType.Lines:
-                        return lines.Length;
+                        return lines.Count;
                     case SectionDataType.Codes:
                         return codes.Count;
                     default:
@@ -92,24 +92,63 @@ namespace BakeryEngine
             this.pluginPath = pluginPath;
             this.sectionName = sectionName;
             this.type = type;
+            this.dataType = SelectDataType(type);
+            this.loaded = false;
         }
 
-        public void NewIniSection()
+        public PluginNewSection(string pluginPath, string sectionName, SectionType type, bool load)
         {
-
+            this.pluginPath = pluginPath;
+            this.sectionName = sectionName;
+            this.type = type;
+            this.dataType = SelectDataType(type);
+            this.loaded = false;
+            if (load)
+                Load();
         }
 
-        public void NewLineSection()
+        public PluginNewSection(string pluginPath, string sectionName, SectionType type, SectionDataType dataType, bool load)
         {
-
+            this.pluginPath = pluginPath;
+            this.sectionName = sectionName;
+            this.type = type;
+            this.dataType = dataType;
+            this.loaded = false;
+            if (load)
+                Load();
         }
 
-        public void NewCodesSection()
+        public PluginNewSection(string pluginPath, string sectionName, SectionType type, StringDictionary iniDict)
         {
-
+            this.pluginPath = pluginPath;
+            this.sectionName = sectionName;
+            this.type = type;
+            this.dataType = SectionDataType.IniDict;
+            this.loaded = true;
+            this.iniDict = iniDict;
         }
 
-        public SectionDataType SelectDataType()
+        public PluginNewSection(string pluginPath, string sectionName, SectionType type, List<string> lines)
+        {
+            this.pluginPath = pluginPath;
+            this.sectionName = sectionName;
+            this.type = type;
+            this.dataType = SectionDataType.Lines;
+            this.loaded = true;
+            this.lines = lines;
+        }
+
+        public PluginNewSection(string pluginPath, string sectionName, SectionType type, List<BakeryCommand> codes)
+        {
+            this.pluginPath = pluginPath;
+            this.sectionName = sectionName;
+            this.type = type;
+            this.dataType = SectionDataType.Codes;
+            this.loaded = true;
+            this.codes = codes;
+        }
+
+        public SectionDataType SelectDataType(SectionType type)
         {
             switch (type)
             {
@@ -141,10 +180,11 @@ namespace BakeryEngine
                         iniDict = IniFile.ParseSectionToDict(PluginPath, SectionName);
                         break;
                     case SectionDataType.Lines:
-                        lines = IniFile.ParseSectionToStrings(pluginPath, sectionName);
+                        lines = IniFile.ParseSectionToStringList(pluginPath, sectionName);
                         break;
                     case SectionDataType.Codes:
-                        throw new InternalUnknownException($"SectionDataType.Codes must be always loaded");
+                        codes = BakeryCodeParser.ParseRawLines(IniFile.ParseSectionToStringList(pluginPath, sectionName));
+                        break;
                     default:
                         throw new InternalUnknownException($"Invalid SectionType {type}");
                 }
@@ -165,7 +205,8 @@ namespace BakeryEngine
                         lines = null;
                         break;
                     case SectionDataType.Codes:
-                        throw new InternalUnknownException($"SectionDataType.Codes must be always loaded");
+                        codes = null;
+                        break;
                     default:
                         throw new InternalUnknownException($"Invalid SectionType {type}");
                 }
@@ -173,12 +214,60 @@ namespace BakeryEngine
             }
         }
 
-        public object Get()
+        public void ConvertLineToCodeSection(List<string> lines)
         {
-            return null;
+            if (dataType == SectionDataType.Lines)
+            {
+                Load();
+                codes = BakeryCodeParser.ParseRawLines(lines);
+                lines = null;
+                dataType = SectionDataType.Codes;
+            }
+            else
+                throw new InternalUnknownException($"Section [{sectionName}] is not a Line section");
+        }
+
+        public dynamic Get()
+        {
+            switch (dataType)
+            {
+                case SectionDataType.IniDict:
+                    return iniDict;
+                case SectionDataType.Lines:
+                    return lines;
+                case SectionDataType.Codes:
+                    return codes;
+                default:
+                    throw new InternalUnknownException($"Invalid SectionType {type}");
+            }
+        }
+
+        public StringDictionary GetIniDict()
+        {
+            if (dataType == SectionDataType.IniDict)
+                return iniDict;
+            else
+                throw new InternalUnknownException("GetIniDict must be used with SectionDataType.IniDict");
+        }
+
+        public List<string> GetLines()
+        {
+            if (dataType == SectionDataType.Lines)
+                return lines;
+            else
+                throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
+        }
+
+        public List<BakeryCommand> GetCodes()
+        {
+            if (dataType == SectionDataType.Codes)
+                return codes;
+            else
+                throw new InternalUnknownException("GetCodes must be used with SectionDataType.Codes");
         }
     }
 
+    /*
     public class PluginSection
     {
         // Fields
@@ -214,7 +303,7 @@ namespace BakeryEngine
         {
         }
 
-        public virtual object Get()
+        public virtual dynamic Get()
         {
             return null;
         }
@@ -280,7 +369,7 @@ namespace BakeryEngine
             }
         }
 
-        public override object Get()
+        public override dynamic Get()
         {
             return IniDict;
         }
@@ -289,8 +378,8 @@ namespace BakeryEngine
     public class PluginLineSection : PluginSection
     {
         // Fields
-        private string[] lines;
-        public string[] Lines
+        private List<string> lines;
+        public List<string> Lines
         {
             get
             {
@@ -299,7 +388,7 @@ namespace BakeryEngine
                 return lines;
             }
         }
-        public override int Count { get { return lines.Length; } }
+        public override int Count { get { return lines.Count; } }
 
         /// <summary>
         /// Constructor for code sections, loaded
@@ -307,7 +396,7 @@ namespace BakeryEngine
         /// <param name="pluginPath"></param>
         /// <param name="sectionName"></param>
         /// <param name="codes"></param>
-        public PluginLineSection(string pluginPath, string sectionName, string[] codes) : base(pluginPath, sectionName, SectionType.Code)
+        public PluginLineSection(string pluginPath, string sectionName, List<string> codes) : base(pluginPath, sectionName, SectionType.Code)
         {
             this.lines = codes;
             loaded = true;
@@ -329,7 +418,7 @@ namespace BakeryEngine
         {
             if (!loaded)
             {
-                lines = IniFile.ParseSectionToStrings(pluginPath, sectionName);
+                lines = IniFile.ParseSectionToStringList(pluginPath, sectionName);
                 loaded = true;
             }
         }
@@ -343,7 +432,7 @@ namespace BakeryEngine
             }
         }
 
-        public override object Get()
+        public override dynamic Get()
         {
             return Lines;
         }
@@ -371,12 +460,12 @@ namespace BakeryEngine
             this.codes = codes;
         }
 
-        public override object Get()
+        public override dynamic Get()
         {
             return codes;
         }
     }
-
+    */
     public class PluginSectionNotFoundException : Exception
     {
         public PluginSectionNotFoundException() { }
@@ -484,7 +573,7 @@ namespace BakeryEngine
                     if (inSection)
                     {
                         dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
-                        lines = new List<string>(); // original List<string> will be deleted after GC
+                        lines = new List<string>();
                     }
                 }
             }
@@ -507,7 +596,7 @@ namespace BakeryEngine
                         return false;
                 }
                 else
-                    encodedFolders = IniFile.ParseSectionToStrings(fullPath, "EncodedFolders");
+                    encodedFolders = IniFile.ParseSectionToStringArray(fullPath, "EncodedFolders");
             }
             catch (SectionNotFoundException) // No EncodedFolders section, exit
             {
@@ -585,7 +674,7 @@ namespace BakeryEngine
                     return false;
             }
         }
-        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
+        private PluginNewSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
         {
             StringDictionary sectionKeys;
             switch (type)
@@ -594,16 +683,16 @@ namespace BakeryEngine
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                     sectionKeys = IniFile.ParseLinesIniStyle(lines.ToArray());
-                    return new PluginIniSection(fullPath, sectionName, type, sectionKeys);
+                    return new PluginNewSection(fullPath, sectionName, type, sectionKeys);
                 case SectionType.Variables:
                     sectionKeys = IniFile.ParseLinesVarStyle(lines.ToArray());
-                    return new PluginIniSection(fullPath, sectionName, type, sectionKeys);
+                    return new PluginNewSection(fullPath, sectionName, type, sectionKeys);
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
-                    return new PluginLineSection(fullPath, sectionName, lines.ToArray());
+                    return new PluginNewSection(fullPath, sectionName, type, lines);
                 case SectionType.AttachEncode: // do not load now
-                    return new PluginIniSection(fullPath, sectionName, type);
+                    return new PluginNewSection(fullPath, sectionName, type, false);
                 default:
                     throw new PluginParseException("Invalid SectionType " + type.ToString());
             }
@@ -614,9 +703,10 @@ namespace BakeryEngine
             {
                 throw new PluginParseException(fullPath + " is invalid, please Add [Main] Section");
             }
-            if (!((sections["Main"] as PluginIniSection).IniDict.ContainsKey("Title")
-                && (sections["Main"] as PluginIniSection).IniDict.ContainsKey("Description")
-                && (sections["Main"] as PluginIniSection).IniDict.ContainsKey("Level")))
+            if (!(sections["Main"].DataType == SectionDataType.IniDict
+                && sections["Main"].IniDict.ContainsKey("Title")
+                && sections["Main"].IniDict.ContainsKey("Description")
+                && sections["Main"].IniDict.ContainsKey("Level")))
             {
                 throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
             }

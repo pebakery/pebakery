@@ -240,53 +240,53 @@ namespace BakeryEngine
             return str;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section)
+        public LogInfo[] AddVariables(VarsType type, PluginNewSection section)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if ((section.Get() as StringDictionary).Count != 0)
+            if (section.GetIniDict().Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
-                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, 0, false));
+                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), 0, false));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
             }
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth)
+        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, int depth)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if ((section.Get() as StringDictionary).Count != 0)
+            if (section.GetIniDict().Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, false));
+                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), depth + 1, false));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
             }
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, bool errorOff)
+        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if ((section.Get() as StringDictionary).Count != 0)
+            if (section.GetIniDict().Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
-                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, 0, errorOff));
+                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), 0, errorOff));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
             }
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth, bool errorOff)
+        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, int depth, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if ((section.Get() as StringDictionary).Count != 0)
+            if (section.GetIniDict().Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                logs.AddRange(InternalAddDictionary(vars, section.Get() as StringDictionary, depth + 1, errorOff));
+                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), depth + 1, errorOff));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
             }
             return logs.ToArray();

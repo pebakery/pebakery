@@ -25,39 +25,17 @@ namespace BakeryEngine
     /// </summary>
     public static class BakeryCodeParser
     {
-        /// <summary>
-        /// Will be deprecated
-        /// </summary>
-        /// <param name="plugin"></param>
-        public static void ParsePlugin(Plugin plugin)
-        {
-            List<PluginCodeSection> codeSecList = new List<PluginCodeSection>();
-            foreach (PluginSection section in plugin.Sections.Values)
-            {
-                // Select Code sections and compile
-                if (section.Type == SectionType.Code) // Has an bug, cannot detect unpredefined ini-style section
-                    codeSecList.Add(ParsePluginSection(section as PluginLineSection));
-            }
-
-            foreach (PluginCodeSection codeSection in codeSecList)
-            {
-                plugin.Sections[codeSection.SectionName] = codeSection;
-            }
-        }
-
-        public static PluginCodeSection ParsePluginSection(PluginLineSection section)
+        public static List<BakeryCommand> ParseRawLines(List<string> lines)
         {
             // Select Code sections and compile
             // if (rawSection.Type == SectionType.Code)
-            string[] rawCodes = section.Get() as string[];
-
             List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
-            for (int i = 0; i < rawCodes.Length; i++)
-                rawCodeList.Add(ParseCommand(rawCodes[i]));
+            foreach (string line in lines)
+                rawCodeList.Add(ParseCommand(line));
 
             List<BakeryCommand> compiledList = rawCodeList;
             while (ParseSectionOnce(compiledList, out compiledList));
-            return new PluginCodeSection(section, compiledList);
+            return compiledList;
         }
 
         /// <summary>
@@ -309,193 +287,6 @@ namespace BakeryEngine
                 return -1;
         }
 
-        /*
-        public List<BakeryCommand> CodeParseSection(List<BakeryCommand> rawCodeList)
-        {
-            ParseState state = ParseState.Normal;
-            LastCommand last = LastCommand.Normal;
-            BakeryCommand cmd;
-            List<BakeryCommand> compiledList = new List<BakeryCommand>();
-            List<BakeryCommand> codeBlockList = new List<BakeryCommand>();
-            List<BakeryCommand> jumpAddrList = new List<BakeryCommand>();
-            int nestIfCount = 0; // If 문이 몇중첩인가
-            
-            for (cmdIndex = 0; cmdIndex < rawCodeList.Count; cmdIndex++)
-            {
-                cmd = rawCodeList[cmdIndex];
-
-                switch (state)
-                {
-                    case ParseState.Normal:
-                    case ParseState.IfSingleLine:
-                        if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
-                        {
-                            last = LastCommand.If;
-                            state = CompileNestedIf(cmd, state, ref codeBlockList, ref nestIfCount);
-                        }
-                        else if (cmd.Opcode == Opcode.Else) // SingleLine or MultiLine?
-                        {
-                            if (last == LastCommand.If)
-                            {
-                                last = LastCommand.Else;
-                                state = CompileNestedElse(cmd, state, ref codeBlockList, ref nestIfCount);
-                            }
-                            else
-                                throw new InvalidGrammarException("Else must be used after If", cmd);
-                        }
-                        else if (cmd.Opcode == Opcode.Begin)
-                            throw new InvalidGrammarException("Begin must be used with If or Else", cmd);
-                        else if (cmd.Opcode == Opcode.End)
-                            throw new InvalidGrammarException("End must be matched with Begin", cmd);
-                        else
-                        { // The other operands - just copy
-                            if (last == LastCommand.Normal)
-                                compiledList.Add(cmd);
-                            else if (last == LastCommand.If)
-                            { // The other operands - finalize single line if, by adding addr info to Jump
-                                for (int x = 0; x < codeBlockList.Count; x++)
-                                {
-                                    if (codeBlockList[x].Opcode == Opcode.If)
-                                    {
-                                        codeBlockList[x].Operands.Add((nestIfCount + 1).ToString());
-                                        nestIfCount--;
-                                    }
-                                    else if (x + 1 != codeBlockList.Count) // Last
-                                        throw new InternalUnknownException("Check Compiler Logic, IfSingleLine");
-                                }
-                                compiledList.AddRange(codeBlockList.Select(x => x));
-                                codeBlockList.Clear();
-                                state = ParseState.Normal;
-                            }
-                        }
-                        break;
-                    case ParseState.IfMultiLine:
-                        if (cmd.Opcode == Opcode.If) // SingleLine or MultiLine?
-                        {
-                            last = LastCommand.If;
-                            state = CompileNestedIf(cmd, state, ref codeBlockList, ref nestIfCount);
-                        }
-                        else if (cmd.Opcode == Opcode.Else) // SingleLine or MultiLine?
-                        {
-                            if (last == LastCommand.End)
-                            {
-                                last = LastCommand.Else;
-
-                            }
-                            else
-                                throw new InvalidGrammarException("Else must be used after If", cmd);
-                        }
-                        else if (cmd.Opcode == Opcode.Begin)
-                            throw new InvalidGrammarException("Begin must be used with If or Else", cmd);
-                        else if (cmd.Opcode == Opcode.End)
-                        {
-                            throw new InvalidGrammarException("End must be matched with Begin", cmd);
-                        }
-                        else
-                        {
-                            codeBlockList.Add(cmd);
-                        }
-                        break;
-                    case ParseState.ElseMultiLine:
-                        break;
-                }
-            }
-
-            return compiledList;
-        }
-
-        private ParseState CompileNestedIf(BakeryCommand cmd, ParseState state, ref List<BakeryCommand> codeBlockList, ref int nestIfCount)
-        {
-            nestIfCount = 0;
-            BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
-            BakeryIfCommand subCmd; // Condition : Equal,%A%,B,Echo,Success
-            BakeryCommand embCmd; // Run if condition is met : Echo,Success
-            nestIfCount++;
-
-             //<Raw>
-             //If,%A%,Equal,B,Echo,Success
-             //<Compiled>
-             //IfCompact,Equal,%A%,B
-             //Jump,Relative,2
-             //Jump,Relative,2
-             //Echo,Success
-             //
-
-            while (true)
-            {
-                subCmd = ForgeIfSubCommand(ifCmd); 
-                embCmd = ForgeIfEmbedCommand(ifCmd, subCmd, 0);
-
-                int operandCount = GetIfSubCmdOperandNum(subCmd.SubOpcode);
-                List<string> operands = new List<string>();
-
-                // Ex) IfCompact,Equal,%A%,B
-                operands.Add(subCmd.SubOpcode.ToString());
-                operands.AddRange(subCmd.Operands.Take(operandCount));
-                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.IfCompact, operands)); 
-                operands.Clear();
-
-                // Ex) Jump,Relative,2
-                operands.Add(Opcode.Jump.ToString());
-                operands.Add("Relative");
-                operands.Add("2");
-                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
-                operands.Clear();
-
-                // Ex) Jump,Relative,X - X to be assigned later
-                operands.Add(Opcode.Jump.ToString());
-                operands.Add("Relative");
-                codeBlockList.Add(new BakeryCommand(cmd.Origin, Opcode.Jump, operands));
-                operands.Clear();
-
-                if (embCmd.Opcode == Opcode.If)
-                { // Nested If
-                    ifCmd = embCmd;
-                    continue;
-                }
-                else if (embCmd.Opcode == Opcode.Begin)
-                { // Multiline If (Begin-End)
-                    state = ParseState.IfMultiLine;
-
-                    // Start Count
-                    trackCodeBlock = true;
-                    codeBlockCount = 0;
-                }
-                else
-                { // Singleline If
-                    state = ParseState.IfSingleLine; // Enable Else
-                    codeBlockList.Last().Operands.Add("2");
-                    codeBlockList.Add(embCmd); // Ex) Echo,Success
-
-                    // Do not start count
-                    trackCodeBlock = false;
-                    codeBlockCount = 0;
-                }
-                break;
-            }
-
-            return state;
-        }
-        
-        private static void CompileNestedElse(BakeryCommand cmd, ref ParseState state, ref List<BakeryCommand> tempList, ref int nestIfCount)
-        {
-            // Ex) Else, Set,%A%,B
-            // elseCmd = Set,%A%,B
-            BakeryCommand emdCmd = BakeryEngine.ForgeEmbedCommand(cmd, 0, 0);
-            if (emdCmd.Opcode == Opcode.If) // Nested If
-            {
-
-            }
-            else if (emdCmd.Opcode == Opcode.Begin) // ElseMultiline
-            {
-                // Add Jump,Relative to tempList
-                state = ParseState.ElseMultiLine;
-                List<string> operands = new List<string>();
-                operands.Add("Relative");
-                BakeryCommand embCmd = new BakeryCommand(cmd.Origin, Opcode.Jump, operands);
-            }
-        }
-        */
         private static BakeryCommand ParseCommand(string rawCode)
         {
             Opcode opcode = Opcode.None;
@@ -624,7 +415,6 @@ namespace BakeryEngine
             return operandList;
         }
         
-
         public static BakeryIfCommand ForgeIfSubCommand(BakeryCommand cmd)
         {
             // Get Condition SubOpcode

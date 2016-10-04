@@ -115,19 +115,11 @@ namespace BakeryEngine
         }
     }
 
-    /*
-     * Warning!!!
-     *   This shit of codes needs a looooooooooooot of refactoring!
-     *   TODO: Compiler to convert Begin~End into goto-style simplified script (like babel)
-     */
-
     /// <summary>
     /// Implementation of commands
     /// </summary>
     public partial class BakeryEngine
     {
-        
-
         /// <summary>
         /// Run,%PluginFile%,<Section>[,PARAMS]
         /// </summary>
@@ -164,7 +156,6 @@ namespace BakeryEngine
                 List<string> parameters = new List<string>();//  string[cmd.Operands.Count - necessaryOperandNum];
                 if (necessaryOperandNum < cmd.Operands.Count)
                     parameters.AddRange(cmd.Operands.Skip(2).Take(cmd.Operands.Count - necessaryOperandNum));
-
 
                 bool inCurrentPlugin = false;
                 if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))

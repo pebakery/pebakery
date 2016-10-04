@@ -554,7 +554,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public static StringDictionary ParseSectionToDict(string file, string section)
         {
-            string[] lines = ParseSectionToStrings(file, section);
+            string[] lines = ParseSectionToStringArray(file, section);
             return ParseLinesIniStyle(lines);
         }
         /// <summary>
@@ -563,7 +563,12 @@ namespace BakeryEngine
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static string[] ParseSectionToStrings(string file, string section)
+        public static string[] ParseSectionToStringArray(string file, string section)
+        {
+            return ParseSectionToStringList(file, section).ToArray();
+        }
+
+        public static List<string> ParseSectionToStringList(string file, string section)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
@@ -602,7 +607,7 @@ namespace BakeryEngine
 
             }
 
-            return lines.ToArray();
+            return lines;
         }
 
         /// <summary>
