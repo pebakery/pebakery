@@ -18,7 +18,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] Set(BakeryCommand cmd)
+        public List<LogInfo> Set(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -78,7 +78,7 @@ namespace BakeryEngine
 
             
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] AddVariables(BakeryCommand cmd)
+        public List<LogInfo> AddVariables(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -117,14 +117,14 @@ namespace BakeryEngine
 
             if (string.Equals(plugin, "%PluginFile%", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(plugin, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                variables.AddVariables(vars, currentPlugin.Sections[section]);
+                logs.AddRange(variables.AddVariables(vars, currentPlugin.Sections[section], cmd.Depth));
             else
             {
-                Plugin p = project.ActivePlugins.SearchByFullPath(variables.Expand(plugin));
-                variables.AddVariables(vars, p.Sections[section]);
+                Plugin p = project.AllPlugins.SearchByFullPath(variables.Expand(plugin));
+                logs.AddRange(variables.AddVariables(vars, p.Sections[section], cmd.Depth));
             }
 
-            return logs.ToArray();
+            return logs;
         }
     }
 }

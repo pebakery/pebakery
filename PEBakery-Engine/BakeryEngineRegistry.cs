@@ -33,7 +33,7 @@ namespace BakeryEngine
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        private LogInfo[] RegHiveLoad(BakeryCommand cmd)
+        private List<LogInfo> RegHiveLoad(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -60,7 +60,7 @@ namespace BakeryEngine
             else
                 logs.Add(new LogInfo(cmd, LogState.Error, $"RegLoadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]"));
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace BakeryEngine
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        private LogInfo[] RegHiveUnload(BakeryCommand cmd)
+        private List<LogInfo> RegHiveUnload(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -98,7 +98,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $@"Unloaded [HKLM\{rawKeyName}]"));
             else
                 logs.Add(new LogInfo(cmd, LogState.Error, $"RegUnloadKey API returned error = [{ret}, {ResultWin32.GetErrorName(ret)}]"));
-            return logs.ToArray();
+            return logs;
         }
     }
 }

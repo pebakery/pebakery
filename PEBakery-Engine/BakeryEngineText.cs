@@ -23,7 +23,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] TXTAddLine(BakeryCommand cmd)
+        public List<LogInfo> TXTAddLine(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -116,7 +116,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] INIRead(BakeryCommand cmd)
+        public List<LogInfo> INIRead(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -160,7 +160,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Error, $"File [{rawFileName}] does not exists"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] INIWrite(BakeryCommand cmd)
+        public List<LogInfo> INIWrite(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -197,7 +197,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Key [{key}] and its value [{value}] wrote to [{rawFileName}]"));
             else
                 logs.Add(new LogInfo(cmd, LogState.Error, $"Could not wrote key [{key}] and its value [{value}] to [{rawFileName}]"));
-            return logs.ToArray();
+            return logs;
         }
     }
 }

@@ -60,7 +60,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns>LogInfo[]</returns>
-        public LogInfo[] FileCopy(BakeryCommand cmd)
+        public List<LogInfo> FileCopy(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -184,7 +184,7 @@ namespace BakeryEngine
                 }
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] FileDelete(BakeryCommand cmd)
+        public List<LogInfo> FileDelete(BakeryCommand cmd)
         { 
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -265,7 +265,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawFilePath}] deleted"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -274,7 +274,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] FileMove(BakeryCommand cmd)
+        public List<LogInfo> FileMove(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -315,7 +315,7 @@ namespace BakeryEngine
                 }
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -323,7 +323,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] FileCreateBlank(BakeryCommand cmd)
+        public List<LogInfo> FileCreateBlank(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
             // Necessary operand : 1, optional operand : 3
@@ -411,7 +411,7 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{rawFileName}]"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
     }
 }

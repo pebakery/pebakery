@@ -319,7 +319,7 @@ namespace BakeryEngine
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
             // forge BakeryCommand
-            if (opcode == Opcode.External)
+            if (opcode == Opcode.Macro)
                return new BakeryCommand(rawCode, externalOpcode, ParseOperands(slices), addr);
             else
                 return new BakeryCommand(rawCode, opcode, ParseOperands(slices), addr);
@@ -333,14 +333,14 @@ namespace BakeryEngine
             try
             {
                 opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
-                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.External)
+                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.Macro)
                     throw new ArgumentException();
             }
             catch (ArgumentException)
             {
                 // Assume this command is Macro
                 // Checking if this command is Macro or not will be determined in BakeryEngine.ExecuteCommand
-                opcode = Opcode.External;
+                opcode = Opcode.Macro;
                 externalOpcode = opcodeStr;
                 // throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
             }
@@ -434,7 +434,13 @@ namespace BakeryEngine
 
             return operandList;
         }
-        
+
+        /// <summary>
+        /// Forge an BakeryIfSubCommand from BakeryCommand
+        /// </summary>
+        /// <param name="cmd">Source BakeryConmand to extract BakeryIfSubCommand</param>
+        /// <param name="rawComparePosition">true - If grammar (%A%,Equal,A), false - IfCompact grammar (Equal,%A%,A)</param>
+        /// <returns></returns>
         public static BakeryIfCommand ForgeIfSubCommand(BakeryCommand cmd, bool rawComparePosition)
         {
             // Get Condition SubOpcode
@@ -444,7 +450,6 @@ namespace BakeryEngine
             // Parse opcode
             int subOpcodeIdx = 0;
             bool notFlag = false;
-            string subOpcodeString = cmd.Operands[subOpcodeIdx];
 
             if (string.Equals(cmd.Operands[0], "Not", StringComparison.OrdinalIgnoreCase))
             {
@@ -452,133 +457,137 @@ namespace BakeryEngine
                 subOpcodeIdx++;
             }
 
-            // Check if subOpcodeString contains pair of % -> Equal, Smaller, Bigger
-            // if (cmd.Operands[subOpcodeIdx].StartsWith("%") && cmd.Operands[subOpcodeIdx].EndsWith("%"))
-            int occurence = Helper.CountStringOccurrences(cmd.Operands[rawComparePosition ? subOpcodeIdx : subOpcodeIdx + 1], "%");
-            if (occurence != 0 && occurence % 2 == 0)
-            {
-                if (cmd.Operands.Count < 4) // 3 for %A%,Equal,%B% and 1 for embeded command
-                    throw new InvalidOperandException("Necessary operands does not exist", cmd);
-
-                if (rawComparePosition) // 이거 켜져 있으면 RawCode 문법 (Equal이 LeftVar 다음에 옴). 이거 꺼져 있으면 이미 한번 컴파일된 IfCompact의 문법 (Equal이 IfCompact 바로 다음에 옴)
-                    subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
-                else
-                    subOpcodeString = cmd.Operands[subOpcodeIdx];
-
-                if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.Equal;
-                else if (string.Equals(subOpcodeString, "Smaller", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.Smaller;
-                else if (string.Equals(subOpcodeString, "Bigger", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.Bigger;
-                else if (string.Equals(subOpcodeString, "SmallerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<=", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.SmallerEqual;
-                else if (string.Equals(subOpcodeString, "BiggerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">=", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.BiggerEqual;
-                else if (string.Equals(subOpcodeString, "NotEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "!=", StringComparison.OrdinalIgnoreCase))
+            if (rawComparePosition)
+            { // 컴파일되기 전의 If 문법 (%A%,Equal,A)
+                int occurence = Helper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%");
+                if (occurence != 0 && occurence % 2 == 0) // IfSubOpcode - Compare series
                 {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.Equal;
-                }
-                else if (string.Equals(subOpcodeString, "EqualX", StringComparison.OrdinalIgnoreCase)) // deprecated 
-                    subOpcode = IfSubOpcode.EqualX;
-                else
-                    throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
-
-                // Ex) If,%Joveler%,Equal,ied206,Set,%A%,True
-                // -> new string[] { "%Joveler%",ied206,Set,%A%,True}
-                List<string> operandList = new List<string>();
-                if (rawComparePosition)
-                {
+                    string subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
+                    if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                        throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
+                    List<string> operandList = new List<string>();
                     operandList.Add(cmd.Operands[subOpcodeIdx]);
                     operandList.AddRange(cmd.Operands.Skip(subOpcodeIdx + 2));
+                    subCmd = new BakeryIfCommand(subOpcode, operandList, notFlag);
                 }
-                else
+                else // IfSubOpcode - Non-Compare series
                 {
-                    operandList.AddRange(cmd.Operands.Skip(subOpcodeIdx + 1));
+                    string subOpcodeString = cmd.Operands[subOpcodeIdx];
+                    if (ParseNonCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                        throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
+                    subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToList(), notFlag);
                 }
-                    
-                subCmd = new BakeryIfCommand(subOpcode, operandList.ToArray(), notFlag);
             }
             else
-            {
-                // Get condition SubOpcode string
-                subOpcodeString = cmd.Operands[subOpcodeIdx];
-                if (string.Equals(subOpcodeString, "ExistFile", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistFile;
-                else if (string.Equals(subOpcodeString, "ExistDir", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistDir;
-                else if (string.Equals(subOpcodeString, "ExistSection", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistSection;
-                else if (string.Equals(subOpcodeString, "ExistRegSection", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistRegSection;
-                else if (string.Equals(subOpcodeString, "ExistRegKey", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistRegKey;
-                else if (string.Equals(subOpcodeString, "ExistVar", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistVar;
-                else if (string.Equals(subOpcodeString, "ExistMacro", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.ExistMacro;
-                else if (string.Equals(subOpcodeString, "NotExistFile", StringComparison.OrdinalIgnoreCase))
+            { // 한번 컴파일된 후의 IfCompact 문법 (Equal,%A%,A)
+                string subOpcodeString = cmd.Operands[subOpcodeIdx];
+                if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
                 {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistFile;
+                    if (ParseNonCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                        throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
                 }
-                else if (string.Equals(subOpcodeString, "NotExistDir", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistDir;
-                }
-                else if (string.Equals(subOpcodeString, "NotExistSection", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistSection;
-                }
-                else if (string.Equals(subOpcodeString, "NotExistRegSection", StringComparison.OrdinalIgnoreCase)) // deprecated
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistRegSection;
-                }
-                else if (string.Equals(subOpcodeString, "NotExistRegKey", StringComparison.OrdinalIgnoreCase)) // deprecated 
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistRegKey;
-                }
-                else if (string.Equals(subOpcodeString, "NotExistVar", StringComparison.OrdinalIgnoreCase))  // deprecated 
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistVar;
-                }
-                else if (string.Equals(subOpcodeString, "NotExistMacro", StringComparison.OrdinalIgnoreCase))  // deprecated 
-                {
-                    if (notFlag)
-                        throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
-                    notFlag = true;
-                    subOpcode = IfSubOpcode.ExistMacro;
-                }
-                else if (string.Equals(subOpcodeString, "Ping", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.Ping;
-                else if (string.Equals(subOpcodeString, "Online", StringComparison.OrdinalIgnoreCase))
-                    subOpcode = IfSubOpcode.Online;
-                else
-                    throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
-                subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToArray(), notFlag);
+                subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToList(), notFlag);
             }
 
             return subCmd;
+        }
+        public static bool ParseCompareIfSubOpcode(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        {
+            if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.Equal;
+            else if (string.Equals(subOpcodeString, "Smaller", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.Smaller;
+            else if (string.Equals(subOpcodeString, "Bigger", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.Bigger;
+            else if (string.Equals(subOpcodeString, "SmallerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "<=", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.SmallerEqual;
+            else if (string.Equals(subOpcodeString, "BiggerEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, ">=", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.BiggerEqual;
+            else if (string.Equals(subOpcodeString, "NotEqual", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "!=", StringComparison.OrdinalIgnoreCase))
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
+                notFlag = true;
+                subOpcode = IfSubOpcode.Equal;
+            }
+            else if (string.Equals(subOpcodeString, "EqualX", StringComparison.OrdinalIgnoreCase)) // deprecated 
+                subOpcode = IfSubOpcode.EqualX;
+            else
+                return false;
+            return true;
+        }
+        public static bool ParseNonCompareIfSubOpcode(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        {
+            if (string.Equals(subOpcodeString, "ExistFile", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistFile;
+            else if (string.Equals(subOpcodeString, "ExistDir", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistDir;
+            else if (string.Equals(subOpcodeString, "ExistSection", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistSection;
+            else if (string.Equals(subOpcodeString, "ExistRegSection", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistRegSection;
+            else if (string.Equals(subOpcodeString, "ExistRegKey", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistRegKey;
+            else if (string.Equals(subOpcodeString, "ExistVar", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistVar;
+            else if (string.Equals(subOpcodeString, "ExistMacro", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.ExistMacro;
+            else if (string.Equals(subOpcodeString, "NotExistFile", StringComparison.OrdinalIgnoreCase))
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistFile;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistDir", StringComparison.OrdinalIgnoreCase))
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistDir;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistSection", StringComparison.OrdinalIgnoreCase))
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd); // deprecated 
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistSection;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistRegSection", StringComparison.OrdinalIgnoreCase)) // deprecated
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistRegSection;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistRegKey", StringComparison.OrdinalIgnoreCase)) // deprecated 
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistRegKey;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistVar", StringComparison.OrdinalIgnoreCase))  // deprecated 
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistVar;
+            }
+            else if (string.Equals(subOpcodeString, "NotExistMacro", StringComparison.OrdinalIgnoreCase))  // deprecated 
+            {
+                if (notFlag)
+                    throw new InvalidSubOpcodeException("Condition [Not] cannot be duplicated", cmd);
+                notFlag = true;
+                subOpcode = IfSubOpcode.ExistMacro;
+            }
+            else if (string.Equals(subOpcodeString, "Ping", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.Ping;
+            else if (string.Equals(subOpcodeString, "Online", StringComparison.OrdinalIgnoreCase))
+                subOpcode = IfSubOpcode.Online;
+            else
+                return false;
+            return true;
         }
         public static BakeryCommand ForgeIfEmbedCommand(BakeryCommand cmd, int depth)
         {
@@ -618,7 +627,7 @@ namespace BakeryEngine
             else // Ex) Set,%A%,B
                 operands = cmd.Operands.Skip(opcodeIdx + 1).ToList();
 
-            if (opcode == Opcode.External)
+            if (opcode == Opcode.Macro)
                 return new BakeryCommand(cmd.Origin, externalOpcode, operands, cmd.Address, cmdDepth);
             else
                 return new BakeryCommand(cmd.Origin, opcode, operands, cmd.Address, cmdDepth);
@@ -641,22 +650,18 @@ namespace BakeryEngine
                 case IfSubOpcode.BiggerEqual:
                     return 2;
                 case IfSubOpcode.ExistFile:
-                    return 1;
                 case IfSubOpcode.ExistDir:
                     return 1;
                 case IfSubOpcode.ExistSection:
-                    return 2;
                 case IfSubOpcode.ExistRegSection:
                     return 2;
                 case IfSubOpcode.ExistRegKey:
                     return 3;
                 case IfSubOpcode.ExistVar:
-                    return 1;
                 case IfSubOpcode.ExistMacro:
                     return 1;
-                case IfSubOpcode.Ping:
-                    return 0; // Not implemented
-                case IfSubOpcode.Online:
+                case IfSubOpcode.Ping: // Not implemented
+                case IfSubOpcode.Online: // Not implemented
                     return 0; // Not implemented
                 default: // If this logic is called in production, it is definitely a BUG
                     return -1;

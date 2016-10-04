@@ -173,11 +173,11 @@ namespace BakeryEngine
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                 case SectionType.Variables:
-                case SectionType.AttachEncode:
                     return SectionDataType.IniDict;
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
+                case SectionType.AttachEncode:
                     return SectionDataType.Lines;
                 case SectionType.CompiledCode:
                     return SectionDataType.Codes;
@@ -436,9 +436,7 @@ namespace BakeryEngine
 
         private SectionType DetectTypeOfSection(string sectionName, bool inspectCode)
         {
-            /*
-             * OnProcessEntry, OnProcessExit : deprecated, it is not used in WinPESE
-             */
+            // OnProcessEntry, OnProcessExit : deprecated, it is not used in WinPESE
             SectionType type;
             if (string.Equals(sectionName, "Main", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Main;
@@ -505,10 +503,10 @@ namespace BakeryEngine
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                    sectionKeys = IniFile.ParseLinesIniStyle(lines.ToArray());
+                    sectionKeys = IniFile.ParseLinesIniStyle(lines);
                     return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
                 case SectionType.Variables:
-                    sectionKeys = IniFile.ParseLinesVarStyle(lines.ToArray());
+                    sectionKeys = IniFile.ParseLinesVarStyle(lines);
                     return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
                 case SectionType.Code:
                 case SectionType.AttachFolderList:

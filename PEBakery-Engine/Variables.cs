@@ -253,105 +253,125 @@ namespace BakeryEngine
             return str;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section)
+        public List<LogInfo> AddVariables(VarsType type, PluginSection section)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if (section.GetIniDict().Count != 0)
+            StringDictionary dict = null;
+            if (section.DataType == SectionDataType.IniDict)
+                dict = section.GetIniDict();
+            else if (section.DataType == SectionDataType.Lines)
+                dict = IniFile.ParseLinesVarStyle(section.GetLines());
+            if (section.Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
-                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), 0, false));
+                logs.AddRange(InternalAddDictionary(vars, dict, 0, false));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
             }
-            return logs.ToArray();
+            return logs;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth)
+        public List<LogInfo> AddVariables(VarsType type, PluginSection section, int depth)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if (section.GetIniDict().Count != 0)
+            StringDictionary dict = null;
+            if (section.DataType == SectionDataType.IniDict)
+                dict = section.GetIniDict();
+            else if (section.DataType == SectionDataType.Lines)
+                dict = IniFile.ParseLinesVarStyle(section.GetLines());
+            if (section.Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), depth + 1, false));
+                logs.AddRange(InternalAddDictionary(vars, dict, depth + 1, false));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
             }
-            return logs.ToArray();
+            return logs;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, PluginSection section, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if (section.GetIniDict().Count != 0)
+            StringDictionary dict = null;
+            if (section.DataType == SectionDataType.IniDict)
+                dict = section.GetIniDict();
+            else if (section.DataType == SectionDataType.Lines)
+                dict = IniFile.ParseLinesVarStyle(section.GetLines());
+            if (section.Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", -1));
-                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), 0, errorOff));
+                logs.AddRange(InternalAddDictionary(vars, dict, 0, errorOff));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", -1));
             }
-            return logs.ToArray();
+            return logs;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, PluginSection section, int depth, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
-            if (section.GetIniDict().Count != 0)
+            StringDictionary dict = null;
+            if (section.DataType == SectionDataType.IniDict)
+                dict = section.GetIniDict();
+            else if (section.DataType == SectionDataType.Lines)
+                dict = IniFile.ParseLinesVarStyle(section.GetLines());
+            if (section.Count != 0)
             {
                 logs.Add(new LogInfo(LogState.Info, $"Processing section [{section.SectionName}]", depth));
-                logs.AddRange(InternalAddDictionary(vars, section.GetIniDict(), depth + 1, errorOff));
+                logs.AddRange(InternalAddDictionary(vars, dict, depth + 1, errorOff));
                 logs.Add(new LogInfo(LogState.Info, $"End of section [{section.SectionName}]", depth));
             }
-            return logs.ToArray();
+            return logs;
         }
 
-        public LogInfo[] AddVariables(VarsType type, string[] lines)
+        public List<LogInfo> AddVariables(VarsType type, string[] lines)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict, -1, false);
         }
 
-        public LogInfo[] AddVariables(VarsType type, string[] lines, int depth)
+        public List<LogInfo> AddVariables(VarsType type, string[] lines, int depth)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict, depth, false);
         }
 
-        public LogInfo[] AddVariables(VarsType type, string[] lines, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, string[] lines, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict, -1, errorOff);
         }
 
-        public LogInfo[] AddVariables(VarsType type, string[] lines, int depth, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, string[] lines, int depth, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             StringDictionary dict = IniFile.ParseLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict, depth, errorOff);
         }
 
-        public LogInfo[] AddVariables(VarsType type, StringDictionary dict)
+        public List<LogInfo> AddVariables(VarsType type, StringDictionary dict)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             return InternalAddDictionary(vars, dict, -1, false);
         }
 
-        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, int depth)
+        public List<LogInfo> AddVariables(VarsType type, StringDictionary dict, int depth)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             return InternalAddDictionary(vars, dict, depth, false);
         }
 
-        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, StringDictionary dict, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             return InternalAddDictionary(vars, dict, -1, errorOff);
         }
 
-        public LogInfo[] AddVariables(VarsType type, StringDictionary dict, int depth, bool errorOff)
+        public List<LogInfo> AddVariables(VarsType type, StringDictionary dict, int depth, bool errorOff)
         {
             StringDictionary vars = GetVarsMatchesType(type);
             return InternalAddDictionary(vars, dict, depth, errorOff);
@@ -365,7 +385,7 @@ namespace BakeryEngine
         /// <param name="sectionDepth"></param>
         /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
-        private LogInfo[] InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff)
+        private List<LogInfo> InternalAddDictionary(StringDictionary vars, StringDictionary dict, int sectionDepth, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             foreach (var kv in dict)
@@ -380,7 +400,7 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(LogState.Error, $"Var [%{kv.Key}%] contains itself in [{kv.Value}]", sectionDepth, errorOff));
                 }
             }
-            return logs.ToArray();
+            return logs;
         }
 
         public void ResetVariables(VarsType type)

@@ -171,6 +171,16 @@ namespace BakeryEngine
             InternalWriter(logs, errorOff);
         }
 
+        public void Write(List<LogInfo> logs)
+        {
+            InternalWriter(logs, false);
+        }
+
+        public void Write(List<LogInfo> logs, bool errorOff)
+        {
+            InternalWriter(logs, errorOff);
+        }
+
         public void Write(string log)
         {
             InternalWriter(log, false);
@@ -194,6 +204,25 @@ namespace BakeryEngine
         }
 
         private void InternalWriter(LogInfo[] logs, bool errorOff)
+        {
+            if (SuspendLog == true)
+                return;
+
+            foreach (LogInfo log in logs)
+            {
+                if (errorOff && 0 < ErrorOffCount)
+                {
+                    if (log.State == LogState.Error)
+                        log.State = LogState.Muted;
+                }
+                InternalWriter(log, errorOff, false);
+            }
+
+            if (errorOff && 0 < ErrorOffCount)
+                ErrorOffCount -= 1;
+        }
+
+        private void InternalWriter(List<LogInfo> logs, bool errorOff)
         {
             if (SuspendLog == true)
                 return;

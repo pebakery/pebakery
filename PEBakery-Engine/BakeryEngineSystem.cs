@@ -51,9 +51,9 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemCommands(BakeryCommand cmd)
+        public List<LogInfo> SystemCommands(BakeryCommand cmd)
         {
-            LogInfo[] logs;
+            List<LogInfo> logs;
 
             // Necessary operand : 1, optional operand : 0+
             const int necessaryOperandNum = 1;
@@ -129,7 +129,7 @@ namespace BakeryEngine
         /// <param name="cmd">BakeryCommand</param>
         /// /// <param name="subCmd">BakerySystemCommand</param>
         /// <returns></returns>
-        public LogInfo[] SystemCursor(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemCursor(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -159,7 +159,7 @@ namespace BakeryEngine
                 throw new InvalidOperandException($"Invalid operand [{action}]", cmd);
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemErrorOff(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemErrorOff(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -193,7 +193,7 @@ namespace BakeryEngine
             logger.ErrorOffCount = lines + 1; // 1 is for ErrorOff itself
             logs.Add(new LogInfo(cmd, LogState.Success, $"Error log is off for [{lines}] lines"));
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemLog(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemLog(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -231,7 +231,7 @@ namespace BakeryEngine
                 throw new InvalidOperandException($"Invalid operand [{action}]", cmd);
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -240,7 +240,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemSaveLog(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemSaveLog(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             // Necessary operand : 1, optional operand : 0
             const int necessaryOperandNum = 1;
@@ -256,7 +256,7 @@ namespace BakeryEngine
             logger.Flush();
             File.Copy(logger.LogFile, dest, true);
 
-            return new LogInfo[0];
+            return new List<LogInfo>();
         }
 
         /// <summary>
@@ -265,7 +265,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetFreeDrive(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemGetFreeDrive(BakeryCommand cmd, BakerySystemCommand subCmd)
         { // Get Free Drive Letters
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -304,7 +304,7 @@ namespace BakeryEngine
             else
                 throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetFreeSpace(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemGetFreeSpace(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -339,7 +339,7 @@ namespace BakeryEngine
             else
                 throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
-            return logs.ToArray();
+            return logs;
         }
          /// <summary>
         /// System,GetEnv,<EnvVar>,%Variable%
@@ -348,7 +348,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemGetEnv(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemGetEnv(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -375,7 +375,7 @@ namespace BakeryEngine
             else
                 throw new InvalidLogFormatException($"Unknown internal log format error", cmd);
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -384,7 +384,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemIsAdmin(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemIsAdmin(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -410,7 +410,7 @@ namespace BakeryEngine
                     logs.Add(new LogInfo(cmd, LogState.Success, $"PEBakery does not have admin privileges, variable [%{varName}%] set to [{isAdmin}]"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -419,7 +419,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemOnBuildExit(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemOnBuildExit(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -437,7 +437,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
             }
 
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -446,7 +446,7 @@ namespace BakeryEngine
         /// <param name="cmd"></param>
         /// <param name="subCmd"></param>
         /// <returns></returns>
-        public LogInfo[] SystemOnPluginExit(BakeryCommand cmd, BakerySystemCommand subCmd)
+        public List<LogInfo> SystemOnPluginExit(BakeryCommand cmd, BakerySystemCommand subCmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -464,7 +464,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
             }
             
-            return logs.ToArray();
+            return logs;
         }
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public LogInfo[] ShellExecute(BakeryCommand cmd)
+        public List<LogInfo> ShellExecute(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -562,7 +562,7 @@ namespace BakeryEngine
             }
             
 
-            return logs.ToArray();
+            return logs;
         }
     }
 }

@@ -501,6 +501,15 @@ namespace BakeryEngine
         /// <returns></returns>
         public static StringDictionary ParseLinesIniStyle(string[] lines)
         {
+            return InternalParseLinesRegex(@"^([^=]+)=(.*)$", lines.ToList());
+        }
+        /// <summary>
+        /// Parse INI style strings into dictionary
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseLinesIniStyle(List<string> lines)
+        {
             return InternalParseLinesRegex(@"^([^=]+)=(.*)$", lines);
         }
         /// <summary>
@@ -511,6 +520,16 @@ namespace BakeryEngine
         /// <returns></returns>
         public static StringDictionary ParseLinesVarStyle(string[] lines)
         {
+            return InternalParseLinesRegex(@"^%([^=]+)%=(.*)$", lines.ToList());
+        }
+        /// <summary>
+        /// Parse PEBakery-Variable style strings into dictionary
+        /// </summary>
+        /// There in format of %VarKey%=VarValue
+        /// <param name="lines"></param>
+        /// <returns></returns>
+        public static StringDictionary ParseLinesVarStyle(List<string> lines)
+        {
             return InternalParseLinesRegex(@"^%([^=]+)%=(.*)$", lines);
         }
         /// <summary>
@@ -519,7 +538,7 @@ namespace BakeryEngine
         /// <param name="regex"></param>
         /// <param name="lines"></param>
         /// <returns></returns>
-        private static StringDictionary InternalParseLinesRegex(string regex, string[] lines)
+        private static StringDictionary InternalParseLinesRegex(string regex, List<string> lines)
         {
             StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
             foreach (string line in lines)
