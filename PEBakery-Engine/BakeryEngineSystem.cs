@@ -11,8 +11,6 @@ using System.Diagnostics;
 
 namespace BakeryEngine
 {
-    using VariableDictionary = Dictionary<string, string>;
-
     public enum SystemSubOpcode
     {
         None = 0,
@@ -433,21 +431,8 @@ namespace BakeryEngine
             }
             else
             { // Register onBuildExit callback
-                string opcodeStr = subCmd.Operands[0];
-                Opcode opcode = Opcode.None;
-                try
-                {
-                    opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
-                    if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None)
-                        throw new ArgumentException();
-                }
-                catch (ArgumentException)
-                {
-                    throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
-                }
-
-                Plugin lastPlugin = project.ActivePlugins.LastPlugin;
-                int lastSecLines = (lastPlugin.Sections["Process"].Get() as string[]).Length;
+                string externalOpcode;
+                Opcode opcode = BakeryCodeParser.ParseOpcode(subCmd.Operands[0], out externalOpcode);
                 onBuildExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList()); // Project's last plugin's last address
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnBuildExit] registered"));
             }
@@ -473,20 +458,8 @@ namespace BakeryEngine
             }
             else
             { // Register onBuildExit callback
-                string opcodeStr = subCmd.Operands[0];
-                Opcode opcode = Opcode.None;
-                try
-                {
-                    opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
-                    if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None)
-                        throw new ArgumentException();
-                }
-                catch (ArgumentException)
-                {
-                    throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
-                }
-
-                int lastSecLines = (currentPlugin.Sections["Process"].Get() as string[]).Length;
+                string externalOpcode;
+                Opcode opcode = BakeryCodeParser.ParseOpcode(subCmd.Operands[0], out externalOpcode);
                 onPluginExit = new BakeryCommand(cmd.Origin, opcode, subCmd.Operands.Skip(1).ToList()); // Current Plugin's last address
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Callback of event [OnPluginExit] registered"));
             }

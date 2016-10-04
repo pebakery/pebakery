@@ -312,22 +312,8 @@ namespace BakeryEngine
             string[] slices = rawCode.Split(',');
 
             // Parse opcode
-            string opcodeStr = slices[0].Trim();
-            try
-            {
-                opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
-                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.Comment)
-                    throw new ArgumentException();
-            }
-            catch (ArgumentException)
-            {
-                // Assume this command is Macro
-                // Checking if this command is Macro or not will be determined in BakeryEngine.ExecuteCommand
-                opcode = Opcode.External;
-                externalOpcode = opcodeStr;
-                // throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), addr));
-            }
-
+            opcode = ParseOpcode(slices[0].Trim(), out externalOpcode);
+            
             // Check doublequote's occurence - must be 2n
             if (Helper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
@@ -338,7 +324,28 @@ namespace BakeryEngine
             else
                 return new BakeryCommand(rawCode, opcode, ParseOperands(slices), addr);
         }
-        
+
+        public static Opcode ParseOpcode(string opcodeStr, out string externalOpcode)
+        {
+            Opcode opcode = Opcode.None;
+            externalOpcode = null;
+            // string opcodeStr = cmd.Operands[opcodeIdx];
+            try
+            {
+                opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
+                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.External)
+                    throw new ArgumentException();
+            }
+            catch (ArgumentException)
+            {
+                // Assume this command is Macro
+                // Checking if this command is Macro or not will be determined in BakeryEngine.ExecuteCommand
+                opcode = Opcode.External;
+                externalOpcode = opcodeStr;
+                // throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
+            }
+            return opcode;
+        }
         /// <summary>
         /// ParseState enum
         /// </summary>
@@ -591,29 +598,15 @@ namespace BakeryEngine
             int operandCount = GetIfSubCmdOperandNum(subCmd.SubOpcode);
             return new BakeryCommand(Opcode.If, cmd.Operands.Take(operandCount + 1).ToList()); // 1 for sub opcode itself
         }
+       
         public static BakeryCommand ForgeEmbedCommand(BakeryCommand cmd, int opcodeIdx, int depth)
         {
             // If,   ExistFile,Joveler.txt,Echo,ied206
             // [cmd] 0,        1,          2,   3 -> opcodeIdx must be 2 
 
             // Parse opcode
-            Opcode opcode = Opcode.None;
             string externalOpcode = null;
-            string opcodeStr = cmd.Operands[opcodeIdx];
-            try
-            {
-                opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
-                if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None)
-                    throw new ArgumentException();
-            }
-            catch (ArgumentException)
-            {
-                // Assume this command is Macro
-                // Checking if this command is Macro or not will be determined in BakeryEngine.ExecuteCommand
-                opcode = Opcode.External;
-                externalOpcode = opcodeStr;
-                // throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
-            }
+            Opcode opcode = ParseOpcode(cmd.Operands[opcodeIdx], out externalOpcode);
 
             int cmdDepth = depth + 1;
             if (opcode == Opcode.Run)

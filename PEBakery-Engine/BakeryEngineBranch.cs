@@ -276,7 +276,7 @@ namespace BakeryEngine
             {
                 runElse = false;
                 logs.Add(new LogInfo(cmd, LogState.Success, message));
-                RunCommands(cmd.Link, new List<string>(), cmd.Depth);
+                RunCommands(cmd.Link, new List<string>(), cmd.Depth + 1);
             }
             else // Do not run
             {
@@ -604,7 +604,7 @@ namespace BakeryEngine
             if (runElse)
             {
                 logs.Add(new LogInfo(cmd, LogState.Success, "Running Else"));
-                RunCommands(cmd.Link, new List<string>(), cmd.Depth);
+                RunCommands(cmd.Link, new List<string>(), cmd.Depth + 1);
                 runElse = false;
             }
 

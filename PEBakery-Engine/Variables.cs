@@ -253,7 +253,7 @@ namespace BakeryEngine
             return str;
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginNewSection section)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
@@ -266,7 +266,7 @@ namespace BakeryEngine
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, int depth)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
@@ -279,7 +279,7 @@ namespace BakeryEngine
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, bool errorOff)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);
@@ -292,7 +292,7 @@ namespace BakeryEngine
             return logs.ToArray();
         }
 
-        public LogInfo[] AddVariables(VarsType type, PluginNewSection section, int depth, bool errorOff)
+        public LogInfo[] AddVariables(VarsType type, PluginSection section, int depth, bool errorOff)
         {
             List<LogInfo> logs = new List<LogInfo>();
             StringDictionary vars = GetVarsMatchesType(type);

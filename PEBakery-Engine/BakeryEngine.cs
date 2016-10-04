@@ -298,57 +298,11 @@ namespace BakeryEngine
         public InternalUnknownException(string message, Exception inner) : base(message, inner) { }
     }
 
-    /// <summary>
-    /// Struct to point command's address
-    /// </summary>
-    public struct CommandAddress
-    { // Return address format = <Section>'s <n'th line>
-        public Plugin plugin;
-        public PluginNewSection section;
-        public int line;
-        public int secLength;
-        public CommandAddress(Plugin plugin, PluginNewSection section, int line, int secLength)
-        {
-            this.plugin = plugin;
-            this.section = section;
-            this.line = line;
-            this.secLength = secLength;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (!(obj is CommandAddress))
-                return false;
-
-            CommandAddress addr = (CommandAddress)obj;
-
-            bool result = true;
-            if (plugin != addr.plugin || section != addr.section || line != addr.line || secLength != addr.secLength)
-                result = false;
-            return result;
-        }
-
-        public static bool operator ==(CommandAddress c1, CommandAddress c2)
-        {
-            return c1.Equals(c2);
-        }
-
-        public static bool operator !=(CommandAddress c1, CommandAddress c2)
-        {
-            return !c1.Equals(c2);
-        }
-
-        public override int GetHashCode()
-        {
-            return plugin.ShortPath.Length + section.SectionName.Length + (line ^ secLength);
-        }
-    }
-
     public struct SectionAddress
     {
         public Plugin plugin;
-        public PluginNewSection section;
-        public SectionAddress(Plugin plugin, PluginNewSection section)
+        public PluginSection section;
+        public SectionAddress(Plugin plugin, PluginSection section)
         {
             this.plugin = plugin;
             this.section = section;;
@@ -508,7 +462,7 @@ namespace BakeryEngine
             logger.SuspendLog = false;
 
             currentPlugin = Plugins.GetPlugin(curPluginAddr);
-            PluginNewSection section = currentPlugin.Sections["Process"];
+            PluginSection section = currentPlugin.Sections["Process"];
             logger.Write($"Processing plugin [{currentPlugin.ShortPath}] ({Plugins.GetFullIndex(curPluginAddr)}/{Plugins.Count})");
             logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
 
@@ -550,9 +504,10 @@ namespace BakeryEngine
             {
                 if (!(idx < codes.Count)) // End of section
                 {
-                    logger.Write(new LogInfo(LogState.Info, $"End of section [{currentCommand.Address.section.SectionName}]", depth));
-                    if (depth == 0) // End of plugins
+                    logger.Write(new LogInfo(LogState.Info, $"End of section [{currentCommand.Address.section.SectionName}]", depth - 1));
+                    if (depth == 0) // End of plugin
                         logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
+                        
                     // PluginExit event callback
                     CheckAndRunCallback(ref onPluginExit, "OnPluginExit");
                     break;

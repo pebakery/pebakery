@@ -10,7 +10,7 @@ using System.Collections;
 namespace BakeryEngine
 {
     using StringDictionary = Dictionary<string, string>;
-    using SectionDictionary = Dictionary<string, PluginNewSection>;
+    using SectionDictionary = Dictionary<string, PluginSection>;
 
     public class PluginParseException : Exception
     {
@@ -20,7 +20,7 @@ namespace BakeryEngine
     }
 
     // Preparing to use
-    public class PluginNewSection
+    public class PluginSection
     {
         // Common Fields
         protected string pluginPath;
@@ -97,7 +97,7 @@ namespace BakeryEngine
         /// <param name="pluginPath"></param>
         /// <param name="sectionName"></param>
         /// <param name="type"></param>
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -107,7 +107,7 @@ namespace BakeryEngine
             this.loaded = false;
         }
 
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, bool load)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, bool load)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -119,7 +119,7 @@ namespace BakeryEngine
                 Load();
         }
 
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -131,7 +131,7 @@ namespace BakeryEngine
                 Load();
         }
 
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, StringDictionary iniDict)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, StringDictionary iniDict)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -142,7 +142,7 @@ namespace BakeryEngine
             this.iniDict = iniDict;
         }
 
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<string> lines)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<string> lines)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -153,7 +153,7 @@ namespace BakeryEngine
             this.lines = lines;
         }
 
-        public PluginNewSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<BakeryCommand> codes)
+        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<BakeryCommand> codes)
         {
             this.pluginPath = pluginPath;
             this.plugin = plugin;
@@ -296,205 +296,6 @@ namespace BakeryEngine
         }
     }
 
-    /*
-    public class PluginSection
-    {
-        // Fields
-        protected string pluginPath;
-        protected string sectionName;
-        protected SectionType type;
-        protected bool loaded;
-
-        public string PluginPath { get { return pluginPath; } }
-        public string SectionName { get { return sectionName; } }
-        public SectionType Type { get { return type; } set { type = value; } }
-        public bool Loaded { get { return loaded; } }
-        public virtual int Count { get { return 0; } }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="pluginPath"></param>
-        /// <param name="sectionName"></param>
-        /// <param name="type"></param>
-        public PluginSection(string pluginPath, string sectionName, SectionType type)
-        {
-            this.pluginPath = pluginPath;
-            this.sectionName = sectionName;
-            this.type = type;
-        }
-
-        public virtual void Load()
-        {
-        }
-
-        public virtual void Unload()
-        {
-        }
-
-        public virtual dynamic Get()
-        {
-            return null;
-        }
-    }
-
-    public class PluginIniSection : PluginSection
-    {
-        // Fields
-        private StringDictionary iniDict;
-        public StringDictionary IniDict
-        {
-            get
-            {
-                if (!loaded)
-                    Load();
-                return iniDict;
-            }
-        }
-        public override int Count
-        {
-            get { return iniDict.Count; }
-        }
-
-        /// <summary>
-        /// Constructor for non-code sections
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="type"></param>
-        /// <param name="codes"></param>
-        public PluginIniSection(string pluginPath, string sectionName, SectionType type, StringDictionary dict) : base(pluginPath, sectionName, type)
-        {
-            this.loaded = true;
-            this.iniDict = dict;
-        }
-
-        /// <summary>
-        /// Constructor for non-code sections
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="type"></param>
-        /// <param name="codes"></param>
-        public PluginIniSection(string pluginPath, string sectionName, SectionType type) : base(pluginPath, sectionName, type)
-        {
-            this.loaded = false;
-            this.iniDict = null;
-        }
-
-        public override void Load()
-        {
-            if (!loaded)
-            {
-                iniDict = IniFile.ParseSectionToDict(PluginPath, SectionName);
-                loaded = true;
-            }
-        }
-
-        public override void Unload()
-        {
-            if (loaded)
-            {
-                iniDict = null; // dict will be deleted at next gc run
-                loaded = false;
-            }
-        }
-
-        public override dynamic Get()
-        {
-            return IniDict;
-        }
-    }
-
-    public class PluginLineSection : PluginSection
-    {
-        // Fields
-        private List<string> lines;
-        public List<string> Lines
-        {
-            get
-            {
-                if (!loaded)
-                    Load();
-                return lines;
-            }
-        }
-        public override int Count { get { return lines.Count; } }
-
-        /// <summary>
-        /// Constructor for code sections, loaded
-        /// </summary>
-        /// <param name="pluginPath"></param>
-        /// <param name="sectionName"></param>
-        /// <param name="codes"></param>
-        public PluginLineSection(string pluginPath, string sectionName, List<string> codes) : base(pluginPath, sectionName, SectionType.Code)
-        {
-            this.lines = codes;
-            loaded = true;
-        }
-
-        /// <summary>
-        /// Constructor for code sections, unloaded 
-        /// </summary>
-        /// <param name="pluginPath"></param>
-        /// <param name="sectionName"></param>
-        /// <param name="codes"></param>
-        public PluginLineSection(string pluginPath, string sectionName) : base(pluginPath, sectionName, SectionType.Code)
-        {
-            this.lines = null;
-            loaded = false;
-        }
-
-        public override void Load()
-        {
-            if (!loaded)
-            {
-                lines = IniFile.ParseSectionToStringList(pluginPath, sectionName);
-                loaded = true;
-            }
-        }
-
-        public override void Unload()
-        {
-            if (loaded)
-            {
-                lines = null; // Delete this at next gc run
-                loaded = false;
-            }
-        }
-
-        public override dynamic Get()
-        {
-            return Lines;
-        }
-    }
-
-    public class PluginCodeSection : PluginSection
-    {
-        // Fields
-        private List<BakeryCommand> codes;
-        public List<BakeryCommand> Codes
-        {
-            get
-            {
-                return codes;
-            }
-        }
-        public override int Count { get { return codes.Count; } }
-
-        /// <summary>
-        /// Constructor for code sections, compiled
-        /// </summary>
-        public PluginCodeSection(PluginLineSection section, List<BakeryCommand> codes) : base(section.PluginPath, section.SectionName, SectionType.Code)
-        {
-            this.loaded = section.Loaded;
-            this.codes = codes;
-        }
-
-        public override dynamic Get()
-        {
-            return codes;
-        }
-    }
-    */
     public class PluginSectionNotFoundException : Exception
     {
         public PluginSectionNotFoundException() { }
@@ -696,7 +497,7 @@ namespace BakeryEngine
                     return false;
             }
         }
-        private PluginNewSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
+        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
         {
             StringDictionary sectionKeys;
             switch (type)
@@ -705,16 +506,16 @@ namespace BakeryEngine
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                     sectionKeys = IniFile.ParseLinesIniStyle(lines.ToArray());
-                    return new PluginNewSection(fullPath, this, sectionName, type, sectionKeys);
+                    return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
                 case SectionType.Variables:
                     sectionKeys = IniFile.ParseLinesVarStyle(lines.ToArray());
-                    return new PluginNewSection(fullPath, this, sectionName, type, sectionKeys);
+                    return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
-                    return new PluginNewSection(fullPath, this, sectionName, type, lines);
+                    return new PluginSection(fullPath, this, sectionName, type, lines);
                 case SectionType.AttachEncode: // do not load now
-                    return new PluginNewSection(fullPath, this, sectionName, type, false);
+                    return new PluginSection(fullPath, this, sectionName, type, false);
                 default:
                     throw new PluginParseException("Invalid SectionType " + type.ToString());
             }
