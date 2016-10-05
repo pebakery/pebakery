@@ -143,7 +143,7 @@ namespace BakeryEngine
                 if (cmd == null)
                     log = new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]", depth, errorOff);
                 else
-                    log = new LogInfo(cmd, LogState.Error, $"{type} variable [%{key}%] set to [{rawValue}]", errorOff);
+                    log = new LogInfo(cmd, LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]", errorOff);
             }
             return log;
         }
@@ -204,6 +204,7 @@ namespace BakeryEngine
 
         public bool TryGetValue(string key, out string value)
         {
+            bool fixedResult = fixedVars.TryGetValue(key, out value);
             bool globalResult = globalVars.TryGetValue(key, out value);
             bool localResult = localVars.TryGetValue(key, out value);
             value = Expand(value);
@@ -238,6 +239,8 @@ namespace BakeryEngine
                         builder.Append(globalVars[varName]);
                     else if (localVars.ContainsKey(varName))
                         builder.Append(localVars[varName]);
+                    else if (fixedVars.ContainsKey(varName))
+                        builder.Append(fixedVars[varName]);
                     else // variable not found
                         builder.Append("#$p").Append(varName).Append("#$p");
 

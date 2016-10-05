@@ -251,7 +251,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string dest = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string dest = UnescapeString(ExpandVariables(subCmd.Operands[0]));
             string rawDest = subCmd.Operands[0];
             logger.Flush();
             File.Copy(logger.LogFile, dest, true);
@@ -326,7 +326,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < subCmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string path = UnescapeString(variables.Expand(subCmd.Operands[0]));
+            string path = UnescapeString(ExpandVariables(subCmd.Operands[0]));
             string varName = BakeryVariables.TrimPercentMark(subCmd.Operands[1]);
             string driveLetter = Path.GetPathRoot(Path.GetFullPath(path));
             long freeSpace = new DriveInfo(driveLetter).AvailableFreeSpace / (1024 * 1024); // Convert to MB
@@ -486,18 +486,18 @@ namespace BakeryEngine
             if (cmd.Opcode == Opcode.ShellExecuteEx && cmd.Operands.Count == necessaryOperandNum + optionalOperandNum)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string verb = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string verb = UnescapeString(ExpandVariables(cmd.Operands[0]));
             if (!(string.Equals(verb, "Open", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Hide", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(verb, "Print", StringComparison.OrdinalIgnoreCase) || string.Equals(verb, "Explore", StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperandException($"Invalid verb [{verb}]", cmd);
-            string filePath = UnescapeString(variables.Expand(cmd.Operands[1]));
+            string filePath = UnescapeString(ExpandVariables(cmd.Operands[1]));
             string rawFilePath = cmd.Operands[1];
             string parameters = string.Empty;
             if (3 <= cmd.Operands.Count)
-                parameters = UnescapeString(variables.Expand(cmd.Operands[2]));
+                parameters = UnescapeString(ExpandVariables(cmd.Operands[2]));
             string workDir = Directory.GetCurrentDirectory();
             if (4 <= cmd.Operands.Count)
-                workDir = UnescapeString(variables.Expand(cmd.Operands[3]));
+                workDir = UnescapeString(ExpandVariables(cmd.Operands[3]));
             string exitCodeVar = null;
             if (5 <= cmd.Operands.Count)
                 exitCodeVar = BakeryVariables.TrimPercentMark(cmd.Operands[4]);

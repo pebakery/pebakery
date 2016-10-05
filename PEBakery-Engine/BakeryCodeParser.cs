@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace BakeryEngine
@@ -459,8 +460,9 @@ namespace BakeryEngine
 
             if (rawComparePosition)
             { // 컴파일되기 전의 If 문법 (%A%,Equal,A)
-                int occurence = Helper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%");
-                if (occurence != 0 && occurence % 2 == 0) // IfSubOpcode - Compare series
+                int occurence = Helper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%"); // %Joveler%
+                Match match = Regex.Match(cmd.Operands[subOpcodeIdx], @"(#\d+)", RegexOptions.Compiled); // #1
+                if ((occurence != 0 && occurence % 2 == 0) || match.Success) // IfSubOpcode - Compare series
                 {
                     string subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
                     if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)

@@ -7,6 +7,7 @@ using System.IO;
 
 namespace BakeryEngine
 {
+    using System.Text.RegularExpressions;
     using StringDictionary = Dictionary<string, string>;
 
     public enum Opcode
@@ -351,7 +352,7 @@ namespace BakeryEngine
         // Fields : Engine's state
         private Plugin currentPlugin;
         private PluginAddress curPluginAddr;
-        private List<string> currentSectionParams;
+        private List<string> curSectionParams;
         private bool runElse;
 
         // Fields : System Commands
@@ -401,7 +402,7 @@ namespace BakeryEngine
 
             this.currentPlugin = entryPlugin;
             this.curPluginAddr = project.ActivePlugins.GetAddress(entryPlugin);
-            this.currentSectionParams = new List<string>();
+            this.curSectionParams = new List<string>();
             this.runElse = false;
 
             this.onBuildExit = null;
@@ -468,6 +469,8 @@ namespace BakeryEngine
 
             variables.ResetVariables(VarsType.Local);
             LoadDefaultPluginVariables();
+
+            curSectionParams = new List<string>();
         }
 
         public void Build()
@@ -475,7 +478,7 @@ namespace BakeryEngine
             while(true)
             {
                 ReadyToRunPlugin();
-                RunSection(new SectionAddress(currentPlugin, currentPlugin.Sections["Process"]), new List<string>(), 0);
+                RunSection(new SectionAddress(currentPlugin, currentPlugin.Sections["Process"]), new List<string>(), 0, false);
                 try
                 {
                     curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
@@ -490,13 +493,18 @@ namespace BakeryEngine
             
         }
 
-        private void RunSection(SectionAddress addr, List<string> sectionParams, int depth)
+        private void RunSection(SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
             List<BakeryCommand> codes = addr.section.GetCodes(true);
-            RunCommands(codes, sectionParams, depth, true);
+            RunCommands(codes, sectionParams, depth, callback, true);
         }
 
-        private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth, bool inSection)
+        private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth)
+        {
+            RunCommands(codes, sectionParams, depth, false, false);
+        }
+
+        private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth, bool callback, bool startOfSection)
         {
             int idx = 0;
             BakeryCommand currentCommand = codes[0];
@@ -504,9 +512,12 @@ namespace BakeryEngine
             {
                 if (!(idx < codes.Count)) // End of section
                 {
-                    if (inSection)
+                    if (startOfSection)
                         logger.Write(new LogInfo(LogState.Info, $"End of section [{currentCommand.Address.section.SectionName}]", depth - 1));
-                    if (depth == 0) // End of plugin
+                    else // For IfCompact + Run/Exec case
+                        logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
+
+                    if (!callback && startOfSection && depth == 0) // End of plugin
                         logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
                         
                     // PluginExit event callback
@@ -517,6 +528,8 @@ namespace BakeryEngine
                 try
                 {
                     currentCommand = codes[idx];
+                    currentCommand.Depth = depth;
+                    curSectionParams = sectionParams;
                     logger.Write(ExecuteCommand(currentCommand), true);
                 }
                 catch (CriticalErrorException)
@@ -614,76 +627,24 @@ namespace BakeryEngine
         {
             if (callback != null)
             {
-                logger.Write(new LogInfo(LogState.Info, $"Processing callback of event [{eventName}]"));
+                logger.Write($"Processing callback of event [{eventName}]");
+                
+                
                 if (callback.Opcode == Opcode.Run || callback.Opcode == Opcode.Exec)
                 {
-                    callback.Depth = 0;
-                    logger.Write(RunExec(callback, 0));
+                    callback.Depth = -1;
+                    RunExec(callback, 0, true);
                 }
                 else
+                {
+                    callback.Depth = 0;
                     logger.Write(ExecuteCommand(callback));
+                }
                 logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\n"));
                 callback = null;
             }
         }
 
-        /*
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="type"></param>
-        private void RunCallbackSection(CommandAddress nextCommand, List<string> sectionParams, int depth)
-        {
-            BakeryCommand currentCommand;
-            while (true)
-            {
-                if (!(nextCommand.line < nextCommand.secLength)) // End of section
-                {
-                    // End of callback section
-                    if (depth != 0)
-                        logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", depth - 1));
-                    break;
-                }
-
-                // Fetch instructions
-                int i = nextCommand.line;
-                string rawCode = (nextCommand.section.Get() as string[])[i].Trim();
-
-                try
-                {
-                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
-                    currentCommand.Depth = depth;
-                    try
-                    {
-                        if (currentCommand.Opcode == Opcode.Run || currentCommand.Opcode == Opcode.Exec)
-                            logger.Write(RunExecCallback(currentCommand, depth + 1), true);
-                        else
-                            logger.Write(ExecuteCommand(currentCommand), true);
-                    }
-                    catch (CriticalErrorException)
-                    { // Critical Error, stop build
-                        break;
-                    }
-                    catch (InvalidOpcodeException e)
-                    {
-                        logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                    }
-                }
-                catch (InvalidOpcodeException e)
-                {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                }
-                catch (InvalidOperandException e)
-                {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                }
-
-                nextCommand.line++;
-            }
-        }
-        */
         /// <summary>
         /// Execute one command.
         /// </summary>
@@ -740,8 +701,8 @@ namespace BakeryEngine
                     // Branch
                     case Opcode.Run:
                     case Opcode.Exec:
-                        // logs = this.RunExec(cmd);
-                        logs = this.RunExec(cmd, cmd.Depth + 1);
+                        logs = new List<LogInfo>();
+                        this.RunExec(cmd);
                         break;
                     case Opcode.IfCompact:
                         logs = new List<LogInfo>();
@@ -797,6 +758,57 @@ namespace BakeryEngine
             { @"#$h", @"#" }, // Extended
             //{ @"#$z", @"\x00\x00"},
         };
+
+        public string ExpandVariables(string str)
+        {
+            return variables.Expand(ExpandSectionParams(str));
+        }
+
+        /// <summary>
+        /// Expand #1, #2, #3, etc...
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public string ExpandSectionParams(string str)
+        {
+            // Expand #1 into its value
+            MatchCollection matches = Regex.Matches(str, @"(#\d+)", RegexOptions.Compiled);
+            StringBuilder builder = new StringBuilder();
+            for (int x = 0; x < matches.Count; x++)
+            {
+                int paramNum;
+                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out paramNum) == false)
+                    throw new InternalUnknownException("ExpandVariables failure");
+                if (x == 0)
+                    builder.Append(str.Substring(0, matches[0].Index));
+                else
+                {
+                    int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                    int endOffset = matches[x].Index - startOffset;
+                    builder.Append(str.Substring(startOffset, endOffset));
+                }
+
+                string param;
+                try
+                {
+                    param = curSectionParams[paramNum];
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    param = matches[x].Value;
+                }
+                builder.Append(param);
+
+                if (x + 1 == matches.Count) // Last iteration
+                    builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+            }
+            if (0 < matches.Count) // Only copy it if variable exists
+            {
+                str = builder.ToString();
+            }
+
+            return str;
+        }
 
         public string UnescapeString(string operand)
         {

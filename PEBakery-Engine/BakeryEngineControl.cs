@@ -120,7 +120,7 @@ namespace BakeryEngine
                 logs.AddRange(variables.AddVariables(vars, currentPlugin.Sections[section], cmd.Depth));
             else
             {
-                Plugin p = project.AllPlugins.SearchByFullPath(variables.Expand(plugin));
+                Plugin p = project.AllPlugins.SearchByFullPath(ExpandVariables(plugin));
                 logs.AddRange(variables.AddVariables(vars, p.Sections[section], cmd.Depth));
             }
 

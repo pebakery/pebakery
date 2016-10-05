@@ -36,9 +36,9 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(ExpandVariables(cmd.Operands[0]));
             string rawFileName = cmd.Operands[0];
-            string line = UnescapeString(variables.Expand(cmd.Operands[1]));
+            string line = UnescapeString(ExpandVariables(cmd.Operands[1]));
             int mode = 1;
             int placeLineNum = 0;
 
@@ -137,7 +137,7 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(ExpandVariables(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
             string key = UnescapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand는 안 하나, but do escaping.
             string varName = cmd.Operands[3].Trim('%');
@@ -181,10 +181,10 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             // Get operands
-            string fileName = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string fileName = UnescapeString(ExpandVariables(cmd.Operands[0]));
             string section = cmd.Operands[1]; // 문서화 : 여기 값은 변수 Expand 안한다.
             string key = UnescapeString(cmd.Operands[2]); // 문서화 : 여기 값은 변수 Expand 안한다, but do escaping.
-            string value = UnescapeString(variables.Expand(cmd.Operands[3]));
+            string value = UnescapeString(ExpandVariables(cmd.Operands[3]));
             string rawFileName = cmd.Operands[0];
 
             if (string.Equals(section, string.Empty, StringComparison.OrdinalIgnoreCase))

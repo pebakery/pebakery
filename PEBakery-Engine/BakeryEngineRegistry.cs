@@ -45,8 +45,8 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = UnescapeString(variables.Expand(cmd.Operands[0]));
-            string hiveFile = UnescapeString(variables.Expand(cmd.Operands[1]));
+            string keyName = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string hiveFile = UnescapeString(ExpandVariables(cmd.Operands[1]));
             string rawHiveFile = cmd.Operands[1];
 
             if (!File.Exists(hiveFile))
@@ -85,7 +85,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string keyName = UnescapeString(variables.Expand(cmd.Operands[0]));
+            string keyName = UnescapeString(ExpandVariables(cmd.Operands[0]));
             string rawKeyName = cmd.Operands[0];
 
             if (!File.Exists(keyName))
