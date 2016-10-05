@@ -147,10 +147,12 @@ namespace BakeryEngine
             string rawPluginFile = cmd.Operands[0];
             string rawSectoinName = cmd.Operands[1];
 
-            // Get optional operand 
-            List<string> parameters = new List<string>();//  string[cmd.Operands.Count - necessaryOperandNum];
+            // Get parameters 
+            List<string> parameters = new List<string>();
             if (necessaryOperandNum < cmd.Operands.Count)
-                parameters.AddRange(cmd.Operands.Skip(2).Take(cmd.Operands.Count - necessaryOperandNum));
+                parameters.AddRange(cmd.Operands.Skip(2));
+            for (int i = 0; i < parameters.Count; i++)
+                parameters[i] = ExpandVariables(parameters[i]);
 
             bool inCurrentPlugin = false;
             if (string.Equals(rawPluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
@@ -248,7 +250,7 @@ namespace BakeryEngine
             {
                 runElse = false;
                 logger.Write(new LogInfo(cmd, LogState.Success, message));
-                RunCommands(cmd.Link, new List<string>(), cmd.Depth + 1);
+                RunCommands(cmd.Link, curSectionParams, cmd.Depth + 1);
             }
             else // Do not run
             {

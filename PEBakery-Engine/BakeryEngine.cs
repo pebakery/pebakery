@@ -504,7 +504,7 @@ namespace BakeryEngine
             RunCommands(codes, sectionParams, depth, false, false);
         }
 
-        private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth, bool callback, bool startOfSection)
+        private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth, bool callback, bool sectionStart)
         {
             int idx = 0;
             BakeryCommand currentCommand = codes[0];
@@ -512,12 +512,12 @@ namespace BakeryEngine
             {
                 if (!(idx < codes.Count)) // End of section
                 {
-                    if (startOfSection)
+                    if (sectionStart)
                         logger.Write(new LogInfo(LogState.Info, $"End of section [{currentCommand.Address.section.SectionName}]", depth - 1));
                     else // For IfCompact + Run/Exec case
                         logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
 
-                    if (!callback && startOfSection && depth == 0) // End of plugin
+                    if (!callback && sectionStart && depth == 0) // End of plugin
                         logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
                         
                     // PluginExit event callback
@@ -728,7 +728,6 @@ namespace BakeryEngine
                         logs = new List<LogInfo>();
                         logs.Add(new LogInfo(cmd, LogState.Ignore, "Comment"));
                         break;
-                    
                     default:
                         throw new InvalidOpcodeException($"Cannot execute [{cmd.Opcode.ToString()}] command", cmd);
                 }
@@ -791,7 +790,7 @@ namespace BakeryEngine
                 string param;
                 try
                 {
-                    param = curSectionParams[paramNum];
+                    param = curSectionParams[paramNum - 1]; // In C#, index starts from 0. In PEBakery, index starts from 1.
                 }
                 catch (ArgumentOutOfRangeException)
                 {

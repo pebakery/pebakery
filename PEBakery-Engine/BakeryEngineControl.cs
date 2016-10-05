@@ -31,7 +31,7 @@ namespace BakeryEngine
                 throw new InvalidOperandException("Too many operands", cmd);
 
             string varKey = BakeryVariables.TrimPercentMark(cmd.Operands[0]);
-            string varValue = cmd.Operands[1];
+            string varValue = ExpandSectionParams(cmd.Operands[1]);
             bool global = false;
             bool permanent = false;
 
@@ -75,8 +75,6 @@ namespace BakeryEngine
             {
                 logs.Add(variables.SetValue(VarsType.Local, cmd, varKey, varValue));
             }
-
-            
 
             return logs;
         }
