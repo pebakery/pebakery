@@ -445,7 +445,6 @@ namespace BakeryEngine
         /// </summary>
         private void ReadyToRunPlugin()
         {
-            
             // Turn off System,ErrorOff
             logger.ErrorOffCount = 0;
             // Turn off System,Log,Off
@@ -665,7 +664,14 @@ namespace BakeryEngine
                     // Registry
                     // Text
                     case Opcode.TXTAddLine:
-                        logs = this.TXTAddLine(cmd);
+                        try
+                        {
+                            logs = this.TXTAddLine(cmd);
+                        }
+                        catch (System.IO.IOException e)
+                        {
+                            throw e;
+                        }
                         break;
                     // INI
                     case Opcode.INIRead:
@@ -723,13 +729,21 @@ namespace BakeryEngine
             }
             catch (CriticalErrorException e)
             {
-                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
+#if DEBUG
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)) + "\n" + e.StackTrace + "\n");
+#else
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, FileHelper.RemoveLastNewLine(e.Message)));
+#endif
                 throw e;
             }
             catch (Exception e)
             {
                 logs = new List<LogInfo>();
-                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
+#if DEBUG
+                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n"));
+#else
+                logs.Add(new LogInfo(cmd, LogState.Error, FileHelper.RemoveLastNewLine(e.Message)));
+#endif
             }
 
             return logs;

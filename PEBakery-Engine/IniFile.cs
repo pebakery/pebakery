@@ -626,6 +626,7 @@ namespace BakeryEngine
 
             }
 
+            reader.Close();
             return lines;
         }
 
@@ -652,13 +653,13 @@ namespace BakeryEngine
         public static string[][] ParseSectionsToStrings(string file, string[] sections)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
             sections = sections.Distinct().ToArray(); // Remove duplicate
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
             }
 
@@ -671,7 +672,7 @@ namespace BakeryEngine
             for (int i = 0; i < len; i++)
                 lines[i] = new List<string>();
             
-            while ((line = sr.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 if (len < parsedCount)
                     break;
@@ -704,6 +705,7 @@ namespace BakeryEngine
 
             }
 
+            reader.Close();
             string[][] strArrays = new string[len][];
             for (int i = 0; i < len; i++)
                 strArrays[i] = lines[i].ToArray();

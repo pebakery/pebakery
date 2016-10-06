@@ -428,5 +428,20 @@ namespace BakeryEngine
                 throw new VariableInvalidFormatException($"% cannot be placed in the middle of [{varName}]");
             return varName;
         }
+
+        public static int GetSectionParamIndex(string secParam)
+        {
+            Match matches = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
+            if (matches.Success)
+            {
+                int paramIdx;
+                if (NumberHelper.ParseInt32(secParam.Substring(1), out paramIdx))
+                    return paramIdx;
+                else
+                    return -1; // Error
+            }
+            else
+                return -1; // Error
+        }
     }
 }

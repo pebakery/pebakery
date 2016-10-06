@@ -236,6 +236,7 @@ namespace BakeryEngine
             {
                 Load();
                 codes = BakeryCodeParser.ParseRawLines(lines, new SectionAddress(plugin, this));
+                
                 lines = null;
                 dataType = SectionDataType.Codes;
             }

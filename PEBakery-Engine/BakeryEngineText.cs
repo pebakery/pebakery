@@ -80,14 +80,14 @@ namespace BakeryEngine
             if (mode == 0) // Prepend
             {
                 string temp = FileHelper.CreateTempFile();
-                StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
-                StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write), encoding);
-                sw.WriteLine(line);
+                StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
+                StreamWriter writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
+                writer.WriteLine(line);
                 string lineFromSrc;
-                while ((lineFromSrc = sr.ReadLine()) != null)
-                    sw.WriteLine(lineFromSrc);
-                sr.Close();
-                sw.Close();
+                while ((lineFromSrc = reader.ReadLine()) != null)
+                    writer.WriteLine(lineFromSrc);
+                reader.Close();
+                writer.Close();
                 FileHelper.FileReplaceEx(temp, fileName);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Prepened [{line}] to [{rawFileName}]"));
             }
@@ -100,18 +100,18 @@ namespace BakeryEngine
             { // In Place mode, placeLineNum starts from 1;
                 int count = 1;
                 string temp = FileHelper.CreateTempFile();
-                StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
-                StreamWriter sw = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
+                StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
+                StreamWriter writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
                 string lineFromSrc;
-                while ((lineFromSrc = sr.ReadLine()) != null)
+                while ((lineFromSrc = reader.ReadLine()) != null)
                 {
                     if (count == placeLineNum)
-                        sw.WriteLine(line);
-                    sw.WriteLine(lineFromSrc);
+                        writer.WriteLine(line);
+                    writer.WriteLine(lineFromSrc);
                     count++;
                 }
-                sr.Close();
-                sw.Close();
+                reader.Close();
+                writer.Close();
                 FileHelper.FileReplaceEx(temp, fileName);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]"));
             }

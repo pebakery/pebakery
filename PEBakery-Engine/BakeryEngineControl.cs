@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace BakeryEngine
 {
@@ -30,7 +31,7 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string varKey = BakeryVariables.TrimPercentMark(cmd.Operands[0]);
+            // Get operand
             string varValue = ExpandSectionParams(cmd.Operands[1]);
             bool global = false;
             bool permanent = false;
@@ -51,30 +52,53 @@ namespace BakeryEngine
                 }
             }
 
-            // Logs are written in variables.SetValue method
-            if (global)
+            // Determine varKey's type - %A% vs #1
+            string rawVarValue = cmd.Operands[0];
+            if (rawVarValue.StartsWith("%") && rawVarValue.EndsWith("%")) // %A%
             {
-                logs.Add(variables.SetValue(VarsType.Global, cmd, varKey, varValue));
-            }
-            if (permanent)
-            {
-                LogInfo log = variables.SetValue(VarsType.Global, cmd, varKey, varValue);
-                if (log.State == LogState.Success)
-                { // SetValue success, write to IniFile
-                    if (IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue))
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                string varKey = BakeryVariables.TrimPercentMark(rawVarValue);
+                // Logs are written in variables.SetValue method
+                if (global)
+                {
+                    logs.Add(variables.SetValue(VarsType.Global, cmd, varKey, varValue));
+                }
+                if (permanent)
+                {
+                    LogInfo log = variables.SetValue(VarsType.Global, cmd, varKey, varValue);
+                    if (log.State == LogState.Success)
+                    { // SetValue success, write to IniFile
+                        if (IniFile.SetKey(project.MainPlugin.FullPath, "Variables", varKey, varValue))
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                        else
+                            logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{varValue}] into script.project"));
+                    }
                     else
-                        logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{varValue}] into script.project"));
+                    { // SetValue failed
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Variable [%{varKey}%] contains itself in [{varValue}]"));
+                    }
                 }
-                else
-                { // SetValue failed
-                    logs.Add(new LogInfo(cmd, LogState.Error, $"Variable [%{varKey}%] contains itself in [{varValue}]"));
+                else // Local
+                {
+                    logs.Add(variables.SetValue(VarsType.Local, cmd, varKey, varValue));
                 }
             }
-            else // Local
+            else if (Regex.Match(rawVarValue, @"(#\d+)", RegexOptions.Compiled).Success) // #1
             {
-                logs.Add(variables.SetValue(VarsType.Local, cmd, varKey, varValue));
+                int paramIdx = BakeryVariables.GetSectionParamIndex(rawVarValue) - 1; // -1 for (#1 == curSectionParams[0])
+                if (paramIdx < 0)
+                    throw new InvalidOperandException($"[{rawVarValue}]'s index [{paramIdx + 1}] cannot be negative number", cmd);
+                else if (paramIdx < curSectionParams.Count)
+                    curSectionParams[paramIdx] = varValue;
+                else
+                {
+                    for (int i = curSectionParams.Count; i < paramIdx; i++)
+                        curSectionParams.Add("");
+                    curSectionParams.Add(varValue);
+                }
             }
+            else
+                throw new InvalidOperandException($"Invalid variable name [{rawVarValue}]", cmd);
+
 
             return logs;
         }

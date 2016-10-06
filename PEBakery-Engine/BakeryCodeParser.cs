@@ -33,7 +33,7 @@ namespace BakeryEngine
             List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
             foreach (string line in lines)
             {
-               rawCodeList.Add(ParseCommand(line, addr));
+                rawCodeList.Add(ParseCommand(line, addr));
             }
 
             List<BakeryCommand> compiledList = rawCodeList;
@@ -75,9 +75,15 @@ namespace BakeryEngine
                 }
                 else if (cmd.Opcode == Opcode.IfCompact || cmd.Opcode == Opcode.ElseCompact)
                 { // Follow Link
-                    if (ParseRawLinesOnce(cmd.Link, out cmd.Link, addr))
-                        iterate = true;
-                    compiledList.Add(cmd);
+                    try
+                    {
+                        if (ParseRawLinesOnce(cmd.Link, out cmd.Link, addr))
+                            iterate = true;
+                        compiledList.Add(cmd);
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
                 else if (cmd.Opcode == Opcode.Begin)
                     throw new InvalidGrammarException("Begin must be used with If or Else", cmd);
@@ -88,7 +94,6 @@ namespace BakeryEngine
                     compiledList.Add(cmd);
                 }
             }
-
             return iterate;
         }
 
@@ -343,7 +348,6 @@ namespace BakeryEngine
                 // Checking if this command is Macro or not will be determined in BakeryEngine.ExecuteCommand
                 opcode = Opcode.Macro;
                 externalOpcode = opcodeStr;
-                // throw new InvalidOpcodeException($"Unknown command [{opcodeStr}]", cmd);
             }
             return opcode;
         }
