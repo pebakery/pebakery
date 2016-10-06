@@ -18,9 +18,7 @@ namespace BakeryEngine
             BakeryEngine engine = new BakeryEngine(project, logger);
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
-
             engine.Build();
-
             Console.WriteLine("BakeryEngine done");
             Console.WriteLine("Time elapsed: {0}\n", stopwatch.Elapsed);
 

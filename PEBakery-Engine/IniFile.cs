@@ -99,20 +99,21 @@ namespace BakeryEngine
         private static string InternalGetKey(string file, string section, string key)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
             string line = string.Empty;
             string value = null;
             bool inSection = false;
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 throw new KeyNotFoundException(string.Concat("Unable to find key [", key, "], file is empty"));
             }
 
-            while ((line = sr.ReadLine().Trim()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
+                line = line.Trim(); // Remove whitespace
                 if (line.StartsWith("#", stricmp) || line.StartsWith(";", stricmp) || line.StartsWith("//", stricmp)) // Ignore comment
                     continue;
 
@@ -142,7 +143,7 @@ namespace BakeryEngine
                         inSection = true; // Found correct section
                 }
             }
-            sr.Close();
+            reader.Close();
             if (value == null)
                 throw new KeyNotFoundException(string.Concat("Unable to find key [", key, "]"));
             return value;
@@ -163,7 +164,7 @@ namespace BakeryEngine
         private static IniKey[] InternalGetKeys(string file, IniKey[] iniKeys)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             int len = iniKeys.Length;
             string line = string.Empty;
@@ -172,13 +173,13 @@ namespace BakeryEngine
             int foundKeyCount = 0;
 
             // If file is blank
-            if (sr.Peek() == -1)
+            if (reader.Peek() == -1)
             {
-                sr.Close();
+                reader.Close();
                 throw new KeyNotFoundException(string.Concat("Unable to find keys, file is empty"));
             }
 
-            while ((line = sr.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 if (foundKeyCount == len)
                     break;
@@ -243,7 +244,7 @@ namespace BakeryEngine
                     }
                 }
             }
-            sr.Close();
+            reader.Close();
             return iniKeys;
         }
 

@@ -29,12 +29,9 @@ namespace BakeryEngine
         public static List<BakeryCommand> ParseRawLines(List<string> lines, SectionAddress addr)
         {
             // Select Code sections and compile
-            // if (rawSection.Type == SectionType.Code)
             List<BakeryCommand> rawCodeList = new List<BakeryCommand>();
-            foreach (string line in lines)
-            {
-                rawCodeList.Add(ParseCommand(line, addr));
-            }
+            for (int i = 0; i < lines.Count; i++)
+                rawCodeList.Add(ParseCommand(lines, ref i, addr));
 
             List<BakeryCommand> compiledList = rawCodeList;
             while (ParseRawLinesOnce(compiledList, out compiledList, addr));
@@ -75,15 +72,9 @@ namespace BakeryEngine
                 }
                 else if (cmd.Opcode == Opcode.IfCompact || cmd.Opcode == Opcode.ElseCompact)
                 { // Follow Link
-                    try
-                    {
-                        if (ParseRawLinesOnce(cmd.Link, out cmd.Link, addr))
-                            iterate = true;
-                        compiledList.Add(cmd);
-                    }
-                    catch (Exception)
-                    {
-                    }
+                    if (ParseRawLinesOnce(cmd.Link, out cmd.Link, addr))
+                        iterate = true;
+                    compiledList.Add(cmd);
                 }
                 else if (cmd.Opcode == Opcode.Begin)
                     throw new InvalidGrammarException("Begin must be used with If or Else", cmd);
@@ -298,13 +289,13 @@ namespace BakeryEngine
                 return -1;
         }
 
-        private static BakeryCommand ParseCommand(string rawCode, SectionAddress addr)
+        private static BakeryCommand ParseCommand(List<string> rawCodes, ref int idx, SectionAddress addr)
         {
             Opcode opcode = Opcode.None;
             string externalOpcode = null;
-
+ 
             // Remove whitespace of rawCode's start and end
-            rawCode = rawCode.Trim();
+            string rawCode = rawCodes[idx].Trim();
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
@@ -324,21 +315,40 @@ namespace BakeryEngine
             if (FileHelper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
-            // forge BakeryCommand
+            // Parse Operands
+            List<string> operands = ParseOperands(slices);
+
+            // Check if last operand is \ - MultiLine check - only if one or more operands exists
+            if (0 < operands.Count)
+            {
+                while (string.Equals(operands.Last(), @"\", StringComparison.OrdinalIgnoreCase))
+                { // Split next line and append to List<string> operands
+                    if (rawCodes.Count <= idx) // Section ended with \, invalid grammar!
+                        throw new InvalidCommandException(@"A section's last command cannot end with '\'");
+                    idx++;
+                    operands.AddRange(rawCodes[idx].Trim().Split(','));
+                }
+            }
+
+            // Forge BakeryCommand
             if (opcode == Opcode.Macro)
-               return new BakeryCommand(rawCode, externalOpcode, ParseOperands(slices), addr);
+               return new BakeryCommand(rawCode, externalOpcode, operands, addr);
             else
-                return new BakeryCommand(rawCode, opcode, ParseOperands(slices), addr);
+                return new BakeryCommand(rawCode, opcode, operands, addr);
         }
 
         public static Opcode ParseOpcode(string opcodeStr, out string externalOpcode)
         {
             Opcode opcode = Opcode.None;
             externalOpcode = null;
-            // string opcodeStr = cmd.Operands[opcodeIdx];
+            
+            // There must be no number in opcodeStr
+            if (!Regex.IsMatch(opcodeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException("Only alphabet and underscore can be used as opcode");
+
             try
             {
-                opcode = (Opcode)Enum.Parse(typeof(Opcode), opcodeStr, true);
+                opcode = (Opcode) Enum.Parse(typeof(Opcode), opcodeStr, true);
                 if (!Enum.IsDefined(typeof(Opcode), opcode) || opcode == Opcode.None || opcode == Opcode.Macro)
                     throw new ArgumentException();
             }
@@ -351,6 +361,7 @@ namespace BakeryEngine
             }
             return opcode;
         }
+
         /// <summary>
         /// ParseState enum
         /// </summary>
@@ -465,8 +476,8 @@ namespace BakeryEngine
             if (rawComparePosition)
             { // 컴파일되기 전의 If 문법 (%A%,Equal,A)
                 int occurence = FileHelper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%"); // %Joveler%
-                Match match = Regex.Match(cmd.Operands[subOpcodeIdx], @"(#\d+)", RegexOptions.Compiled); // #1
-                if ((occurence != 0 && occurence % 2 == 0) || match.Success) // IfSubOpcode - Compare series
+                bool match = Regex.IsMatch(cmd.Operands[subOpcodeIdx], @"(#\d+)", RegexOptions.Compiled); // #1
+                if ((occurence != 0 && occurence % 2 == 0) || match) // IfSubOpcode - Compare series
                 {
                     string subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
                     if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)

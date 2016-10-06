@@ -512,13 +512,26 @@ namespace BakeryEngine
             string rawSubKey = subCmd.Operands[1];
             string rawValueName = subCmd.Operands[2];
 
+            bool run = true;
             RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey);
             if (regRoot == null)
                 throw new InvalidOperandException($"Invalid registry root key [{rawRootKey}]", cmd);
-            object value = regRoot.OpenSubKey(subKey).GetValue(valueName);
-
+            else
+            {
+                RegistryKey regSubKey = regRoot.OpenSubKey(subKey);
+                if (regSubKey == null)
+                    run = false;
+                else
+                {
+                    object value = regSubKey.GetValue(valueName);
+                    if (value == null)
+                        run = false;
+                    regSubKey.Close();
+                }
+                regRoot.Close();
+            }
+            
             string resMessage;
-            bool run = (value != null);
             if (run) // Exists
             {
                 resMessage = $"Registry value [{rootKey}\\{subKey}\\{valueName}] exists";
@@ -529,7 +542,7 @@ namespace BakeryEngine
 
             RunIfLink((run && !subCmd.NotFlag) || (!run && subCmd.NotFlag), cmd, subCmd, resMessage);
 
-            regRoot.Close();
+            
         }
 
         /// <summary>

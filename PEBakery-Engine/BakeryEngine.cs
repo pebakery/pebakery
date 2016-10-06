@@ -1,4 +1,7 @@
-﻿using System;
+﻿/// Comment / Uncomment this #define to diagnose BakeryEngine error
+#define DEBUG_EXCEPTION_STACK_TRACE
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -730,7 +733,11 @@ namespace BakeryEngine
             catch (CriticalErrorException e)
             {
 #if DEBUG
+#if DEBUG_EXCEPTION_STACK_TRACE
                 logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)) + "\n" + e.StackTrace + "\n");
+#else
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
+#endif
 #else
                 logger.Write(new LogInfo(cmd, LogState.CriticalError, FileHelper.RemoveLastNewLine(e.Message)));
 #endif
@@ -740,7 +747,11 @@ namespace BakeryEngine
             {
                 logs = new List<LogInfo>();
 #if DEBUG
+#if DEBUG_EXCEPTION_STACK_TRACE
                 logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n"));
+#else
+                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
+#endif
 #else
                 logs.Add(new LogInfo(cmd, LogState.Error, FileHelper.RemoveLastNewLine(e.Message)));
 #endif
