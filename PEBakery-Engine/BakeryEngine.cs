@@ -197,16 +197,6 @@ namespace BakeryEngine
     /// <summary>
     /// Exception used in BakeryEngine::ParseCommand
     /// </summary>
-    public class InvalidCommandException : Exception
-    {
-        public InvalidCommandException() { }
-        public InvalidCommandException(string message) : base(message) { }
-        public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
-    /// </summary>
     public class CriticalErrorException : Exception
     {
         private BakeryCommand cmd;
@@ -486,8 +476,19 @@ namespace BakeryEngine
 
         private void RunSection(SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
-            List<BakeryCommand> codes = addr.section.GetCodes(true);
-            RunCommands(codes, sectionParams, depth, callback, true);
+            try
+            {
+                List<BakeryCommand> codes = addr.section.GetCodes(true);
+                RunCommands(codes, sectionParams, depth, callback, true);
+            }
+            catch (InvalidCommandException e)
+            { // BakeryCodeParser cannot parse commands, halt
+                logger.Write(new LogInfo(LogState.CriticalError, $"Build halt due to malformed command : [{e.Message}]"));
+            }
+            catch (InvalidGrammarException e)
+            { // BakeryCodeParser cannot parse commands, halt
+                logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, $"Build halt due to wrong grammar : [{e.Message}]"));
+            }
         }
 
         private void RunCommands(List<BakeryCommand> codes, List<string> sectionParams, int depth)

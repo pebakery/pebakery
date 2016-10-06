@@ -8,8 +8,24 @@ using System.Threading.Tasks;
 namespace BakeryEngine
 {
     /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
+    /// BakeryCodeParser cannot continue parsing due to malformed command
     /// </summary>
+    /// <remarks>
+    /// Throw this if BakeryCommand is not forged
+    /// </remarks>
+    public class InvalidCommandException : Exception
+    {
+        public InvalidCommandException() { }
+        public InvalidCommandException(string message) : base(message) { }
+        public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// BakeryCodeParser cannot continue parsing due to malformed grammar of command, especially If and Else
+    /// </summary>
+    /// <remarks>
+    /// Throw this if BakeryCommand is already forged
+    /// </remarks>
     public class InvalidGrammarException : Exception
     {
         private BakeryCommand cmd;
@@ -26,6 +42,7 @@ namespace BakeryEngine
     /// </summary>
     public static class BakeryCodeParser
     {
+        // TODO : Handle InvalidCommandException, InvalidGrammarException thrown from BakeryCodeParser - build must be halted
         public static List<BakeryCommand> ParseRawLines(List<string> lines, SectionAddress addr)
         {
             // Select Code sections and compile
