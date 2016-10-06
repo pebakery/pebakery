@@ -364,24 +364,13 @@ namespace BakeryEngine
 
         // Constructors
         public BakeryEngine(Project project, Logger logger)
-        {
-            InternalConstructor(project, project.MainPlugin, logger, false);
-        }
-
+        { InternalConstructor(project, project.MainPlugin, logger, false); }
         public BakeryEngine(Project project, Logger logger, bool runOnePlugin)
-        {
-            InternalConstructor(project, project.MainPlugin, logger, runOnePlugin);
-        }
-
+        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin); }
         public BakeryEngine(Project project, Logger logger, string entryPlugin)
-        {
-            InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false);
-        }
-
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false); }
         public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
-        {
-            InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin);
-        }
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin); }
 
         /// <summary>
         /// Internel Constructor
