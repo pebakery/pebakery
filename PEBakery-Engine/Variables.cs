@@ -213,10 +213,10 @@ namespace BakeryEngine
 
         public string Expand(string str)
         {
-            while (0 < Helper.CountStringOccurrences(str, @"%"))
+            while (0 < FileHelper.CountStringOccurrences(str, @"%"))
             {
                 // Ex) Invalid : %Base%Dir%
-                if (Helper.CountStringOccurrences(str, @"%") % 2 == 1)
+                if (FileHelper.CountStringOccurrences(str, @"%") % 2 == 1)
                     throw new InvalidCommandException(@"Variable names must be enclosed by %");
 
                 // Expand variable's name into value

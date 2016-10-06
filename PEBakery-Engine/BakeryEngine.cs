@@ -723,13 +723,13 @@ namespace BakeryEngine
             }
             catch (CriticalErrorException e)
             {
-                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message)));
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
                 throw e;
             }
             catch (Exception e)
             {
                 logs = new List<LogInfo>();
-                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + Helper.RemoveLastNewLine(e.Message)));
+                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
             }
 
             return logs;

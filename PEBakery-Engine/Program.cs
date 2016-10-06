@@ -55,9 +55,9 @@ namespace BakeryEngine
 
         public PEBakeryInfo()
         {
-            this.baseDir = Helper.GetProgramAbsolutePath();
-            this.ver = Helper.GetProgramVersion();
-            this.build = Helper.GetBuildDate();
+            this.baseDir = FileHelper.GetProgramAbsolutePath();
+            this.ver = FileHelper.GetProgramVersion();
+            this.build = FileHelper.GetBuildDate();
         } 
     }
 }

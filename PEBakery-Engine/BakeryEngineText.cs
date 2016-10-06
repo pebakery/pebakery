@@ -72,14 +72,14 @@ namespace BakeryEngine
             // If text does not exists, create blank file
             Encoding encoding = Encoding.UTF8;
             if (File.Exists(fileName))
-                encoding = Helper.DetectTextEncoding(fileName);
+                encoding = FileHelper.DetectTextEncoding(fileName);
             else
-                Helper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8).Close();
+                FileHelper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8).Close();
                 
 
             if (mode == 0) // Prepend
             {
-                string temp = Helper.CreateTempFile();
+                string temp = FileHelper.CreateTempFile();
                 StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
                 StreamWriter sw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write), encoding);
                 sw.WriteLine(line);
@@ -88,7 +88,7 @@ namespace BakeryEngine
                     sw.WriteLine(lineFromSrc);
                 sr.Close();
                 sw.Close();
-                Helper.FileReplaceEx(temp, fileName);
+                FileHelper.FileReplaceEx(temp, fileName);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Prepened [{line}] to [{rawFileName}]"));
             }
             else if (mode == 1) // Append
@@ -99,7 +99,7 @@ namespace BakeryEngine
             else if (mode == 2) // Place
             { // In Place mode, placeLineNum starts from 1;
                 int count = 1;
-                string temp = Helper.CreateTempFile();
+                string temp = FileHelper.CreateTempFile();
                 StreamReader sr = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding);
                 StreamWriter sw = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
                 string lineFromSrc;
@@ -112,7 +112,7 @@ namespace BakeryEngine
                 }
                 sr.Close();
                 sw.Close();
-                Helper.FileReplaceEx(temp, fileName);
+                FileHelper.FileReplaceEx(temp, fileName);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Placed [{line}] to [{placeLineNum}]th row of [{rawFileName}]"));
             }
 

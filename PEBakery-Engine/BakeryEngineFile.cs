@@ -121,8 +121,8 @@ namespace BakeryEngine
             {
                 if (srcContainWildcard)
                 {
-                    string srcDirToFind = Helper.GetDirNameEx(srcFileName);
-                    string rawSrcDirToFind = Helper.GetDirNameEx(rawSrcFileName);
+                    string srcDirToFind = FileHelper.GetDirNameEx(srcFileName);
+                    string rawSrcDirToFind = FileHelper.GetDirNameEx(rawSrcFileName);
                     string[] listToCopy;
                     if (noRec)
                         listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName));
@@ -132,9 +132,9 @@ namespace BakeryEngine
                     {
                         if (destPathIsDir || !destPathExists)
                         {
-                            string rawDestPathDir = Helper.GetDirNameEx(rawDestPath);
+                            string rawDestPathDir = FileHelper.GetDirNameEx(rawDestPath);
                             string destPathTail = searchedFilePath.Remove(0, srcDirToFind.Length+1); // 1 for \\
-                            string destFullPath = Path.Combine(Helper.RemoveLastDirChar(destPath), destPathTail);
+                            string destFullPath = Path.Combine(FileHelper.RemoveLastDirChar(destPath), destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             if (File.Exists(destFullPath) && !noWarn)
                                 logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten"));
@@ -152,9 +152,9 @@ namespace BakeryEngine
                     if (destPathIsDir)
                     {
                         Directory.CreateDirectory(destPath);
-                        string rawDestPathDir = Helper.GetDirNameEx(rawDestPath);
-                        string destPathTail = srcFileName.Remove(0, Helper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
-                        string destFullPath = string.Concat(Helper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
+                        string rawDestPathDir = FileHelper.GetDirNameEx(rawDestPath);
+                        string destPathTail = srcFileName.Remove(0, FileHelper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
+                        string destFullPath = string.Concat(FileHelper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
                         if (File.Exists(destFullPath))
                             logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{Path.Combine(rawDestPathDir, destPathTail)}] will be overwritten"));
                             
@@ -163,7 +163,7 @@ namespace BakeryEngine
                     }
                     else
                     {
-                        Directory.CreateDirectory(Helper.GetDirNameEx(destPath));
+                        Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
                         if (destPathExists)
                             logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawDestPath}] will be overwritten"));
                         File.Copy(srcFileName, destPath, !preserve);
@@ -238,8 +238,8 @@ namespace BakeryEngine
 
             if (filePathContainsWildcard) // wildcard exists
             {                   
-                string srcDirToFind = Helper.GetDirNameEx(filePath);
-                string rawSrcDirToFind = Helper.GetDirNameEx(rawFilePath);
+                string srcDirToFind = FileHelper.GetDirNameEx(filePath);
+                string rawSrcDirToFind = FileHelper.GetDirNameEx(rawFilePath);
                 string[] listToDelete;
                 if (noRec)
                     listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
@@ -297,7 +297,7 @@ namespace BakeryEngine
                 throw new FileNotFoundException($"[{rawSrcFileName}] does not exist");
 
             // src and dest filename is same, so log it
-            if (string.Equals(Helper.RemoveLastDirChar(srcFileName), Helper.RemoveLastDirChar(destFileName), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(FileHelper.RemoveLastDirChar(srcFileName), FileHelper.RemoveLastDirChar(destFileName), StringComparison.OrdinalIgnoreCase))
                 logs.Add(new LogInfo(cmd, LogState.Warning, "Cannot rename to same filename"));
             else
             {
@@ -402,7 +402,7 @@ namespace BakeryEngine
             try
             {
                 FileStream fs = new FileStream(fileName, preserve ? FileMode.CreateNew : FileMode.Create, FileAccess.Write, FileShare.Write);
-                Helper.WriteTextBOM(fs, encoding).Close();
+                FileHelper.WriteTextBOM(fs, encoding).Close();
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Created blank text file [{rawFileName}]"));
             }
             catch (IOException)

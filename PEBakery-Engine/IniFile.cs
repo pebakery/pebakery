@@ -99,7 +99,7 @@ namespace BakeryEngine
         private static string InternalGetKey(string file, string section, string key)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
             string line = string.Empty;
             string value = null;
             bool inSection = false;
@@ -163,7 +163,7 @@ namespace BakeryEngine
         private static IniKey[] InternalGetKeys(string file, IniKey[] iniKeys)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             int len = iniKeys.Length;
             string line = string.Empty;
@@ -298,7 +298,7 @@ namespace BakeryEngine
             StreamWriter writer = null;
             if (fileExist)
             {
-                encoding = Helper.DetectTextEncoding(file);
+                encoding = FileHelper.DetectTextEncoding(file);
                 reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), encoding);
 
                 if (reader.Peek() == -1)
@@ -329,7 +329,7 @@ namespace BakeryEngine
                 return true;
             }
 
-            string temp = Helper.CreateTempFile();
+            string temp = FileHelper.CreateTempFile();
             writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding);
             string rawLine = string.Empty;
             string line = string.Empty;
@@ -486,7 +486,7 @@ namespace BakeryEngine
 
             if (wroteKeyCount == len)
             {
-                Helper.FileReplaceEx(temp, file);
+                FileHelper.FileReplaceEx(temp, file);
                 return true;
             }
             else
@@ -558,7 +558,7 @@ namespace BakeryEngine
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(string.Concat(e.GetType(), ": ", Helper.RemoveLastNewLine(e.Message)));
+                    Console.WriteLine(string.Concat(e.GetType(), ": ", FileHelper.RemoveLastNewLine(e.Message)));
                 }
             }
             return dict;
@@ -590,7 +590,7 @@ namespace BakeryEngine
         public static List<string> ParseSectionToStringList(string file, string section)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             // If file is blank
             if (reader.Peek() == -1)
@@ -652,7 +652,7 @@ namespace BakeryEngine
         public static string[][] ParseSectionsToStrings(string file, string[] sections)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader sr = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
             sections = sections.Distinct().ToArray(); // Remove duplicate
 
             // If file is blank
@@ -718,7 +718,7 @@ namespace BakeryEngine
         public static string[] GetSectionNames(string file)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             // If file is blank
             if (reader.Peek() == -1)
@@ -750,7 +750,7 @@ namespace BakeryEngine
         public static bool CheckSectionExist(string file, string section)
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
-            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(file));
+            StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             // If file is blank
             if (reader.Peek() == -1)

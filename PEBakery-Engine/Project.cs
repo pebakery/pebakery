@@ -38,7 +38,7 @@ namespace BakeryEngine
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("Parsing plugins start...");
             this.projectName = projectName;
-            this.projectRoot = Path.Combine(Helper.GetProgramAbsolutePath(), "Projects", projectName);
+            this.projectRoot = Path.Combine(FileHelper.GetProgramAbsolutePath(), "Projects", projectName);
             this.allPlugins = CollectAllPlugins();
             Console.WriteLine("Parsing plugins done.");
             Console.WriteLine($"All Plugins : {allPlugins.Count}");

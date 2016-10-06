@@ -354,7 +354,7 @@ namespace BakeryEngine
         {
             const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             SectionDictionary dict = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
-            StreamReader reader = new StreamReader(new FileStream(fullPath, FileMode.Open, FileAccess.Read), Helper.DetectTextEncoding(fullPath));
+            StreamReader reader = new StreamReader(new FileStream(fullPath, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(fullPath));
 
             // If file is blank
             if (reader.Peek() == -1)

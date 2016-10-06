@@ -364,7 +364,7 @@ namespace BakeryEngine
             bool run;
             if (filePathContainsWildcard)
             {
-                string[] list = Directory.GetFiles(Helper.GetDirNameEx(filePath), Path.GetFileName(filePath));
+                string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
                 if (0 < list.Length)
                     run = true;
                 else
@@ -408,7 +408,7 @@ namespace BakeryEngine
             bool run;
             if (dirPathContainsWildcard)
             {
-                string[] list = Directory.GetDirectories(Helper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
+                string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
                 if (0 < list.Length)
                     run = true;
                 else

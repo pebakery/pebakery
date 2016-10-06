@@ -316,7 +316,7 @@ namespace BakeryEngine
             opcode = ParseOpcode(slices[0].Trim(), out externalOpcode);
             
             // Check doublequote's occurence - must be 2n
-            if (Helper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
+            if (FileHelper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
             // forge BakeryCommand
@@ -460,7 +460,7 @@ namespace BakeryEngine
 
             if (rawComparePosition)
             { // 컴파일되기 전의 If 문법 (%A%,Equal,A)
-                int occurence = Helper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%"); // %Joveler%
+                int occurence = FileHelper.CountStringOccurrences(cmd.Operands[subOpcodeIdx], "%"); // %Joveler%
                 Match match = Regex.Match(cmd.Operands[subOpcodeIdx], @"(#\d+)", RegexOptions.Compiled); // #1
                 if ((occurence != 0 && occurence % 2 == 0) || match.Success) // IfSubOpcode - Compare series
                 {
