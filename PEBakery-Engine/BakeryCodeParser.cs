@@ -42,7 +42,6 @@ namespace BakeryEngine
     /// </summary>
     public static class BakeryCodeParser
     {
-        // TODO : Handle InvalidCommandException, InvalidGrammarException thrown from BakeryCodeParser - build must be halted
         public static List<BakeryCommand> ParseRawLines(List<string> lines, SectionAddress addr)
         {
             // Select Code sections and compile

@@ -15,7 +15,8 @@ namespace BakeryEngine
             Project project = new Project("Win10PESE");
             //Project project = new Project("Joveler");
             Logger logger = new Logger("log.txt", LogFormat.Text);
-            BakeryEngine engine = new BakeryEngine(project, logger);
+            BakeryEngine engine = new BakeryEngine(project, logger, DebugLevel.PrintExceptionType);
+            // BakeryEngine engine = new BakeryEngine(project, logger, DebugLevel.PrintExceptionStackTrace);
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
             engine.Build();

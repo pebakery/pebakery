@@ -1,7 +1,4 @@
-﻿/// Comment / Uncomment this #define to diagnose BakeryEngine error
-#define DEBUG_EXCEPTION_STACK_TRACE
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -331,6 +328,17 @@ namespace BakeryEngine
         }
     }
 
+
+    /// <summary>
+    /// How much information will be logged if an Exception is catched in ExecuteCommand?
+    /// </summary>
+    public enum DebugLevel
+    {
+        Production = 0, // Only Exception message
+        PrintExceptionType = 1, // Print Exception message with Exception type
+        PrintExceptionStackTrace = 2, // Print Exception message, type, and stack trace
+    }
+
     /// <summary>
     /// Interpreter of codes
     /// </summary>
@@ -341,6 +349,7 @@ namespace BakeryEngine
         private BakeryVariables variables;
         private Logger logger;
         private bool runOnePlugin;
+        private DebugLevel debugLevel;
 
         // Fields : Engine's state
         private Plugin currentPlugin;
@@ -357,13 +366,22 @@ namespace BakeryEngine
 
         // Constructors
         public BakeryEngine(Project project, Logger logger)
-        { InternalConstructor(project, project.MainPlugin, logger, false); }
+        { InternalConstructor(project, project.MainPlugin, logger, false, DebugLevel.Production); }
         public BakeryEngine(Project project, Logger logger, bool runOnePlugin)
-        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin); }
+        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin, DebugLevel.Production); }
         public BakeryEngine(Project project, Logger logger, string entryPlugin)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false); }
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, DebugLevel.Production); }
         public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin); }
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, DebugLevel.Production); }
+
+        public BakeryEngine(Project project, Logger logger, DebugLevel debugLevel)
+        { InternalConstructor(project, project.MainPlugin, logger, false, debugLevel); }
+        public BakeryEngine(Project project, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
+        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin, debugLevel); }
+        public BakeryEngine(Project project, Logger logger, string entryPlugin, DebugLevel debugLevel)
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, debugLevel); }
+        public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin, DebugLevel debugLevel)
+        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, debugLevel); }
 
         /// <summary>
         /// Internel Constructor
@@ -372,12 +390,13 @@ namespace BakeryEngine
         /// <param name="entryPlugin">Plugin to start</param>
         /// <param name="logger">Logger Instance</param>
         /// <param name="runOnePlugin">Run one plugin (entryPlugin) and exit</param>
-        private void InternalConstructor(Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin)
+        private void InternalConstructor(Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
         {
             this.project = project;
             this.logger = logger;
             this.variables = new BakeryVariables(logger);
             this.runOnePlugin = runOnePlugin;
+            this.debugLevel = debugLevel;
 
             LoadDefaultFixedVariables();
             logger.WriteGlobalVariables(variables);
@@ -733,32 +752,31 @@ namespace BakeryEngine
             }
             catch (CriticalErrorException e)
             {
-#if DEBUG
-#if DEBUG_EXCEPTION_STACK_TRACE
-                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)) + "\n" + e.StackTrace + "\n");
-#else
-                logger.Write(new LogInfo(cmd, LogState.CriticalError, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
-#endif
-#else
-                logger.Write(new LogInfo(cmd, LogState.CriticalError, FileHelper.RemoveLastNewLine(e.Message)));
-#endif
+                logger.Write(new LogInfo(cmd, LogState.CriticalError, LogExceptionMessage(e)));
                 throw e;
             }
             catch (Exception e)
             {
                 logs = new List<LogInfo>();
-#if DEBUG
-#if DEBUG_EXCEPTION_STACK_TRACE
-                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n"));
-#else
-                logs.Add(new LogInfo(cmd, LogState.Error, e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message)));
-#endif
-#else
-                logs.Add(new LogInfo(cmd, LogState.Error, FileHelper.RemoveLastNewLine(e.Message)));
-#endif
+                logs.Add(new LogInfo(cmd, LogState.Error, LogExceptionMessage(e)));
             }
 
             return logs;
+        }
+
+        private string LogExceptionMessage(Exception e)
+        {
+            switch (debugLevel)
+            {
+                case DebugLevel.Production:
+                    return FileHelper.RemoveLastNewLine(e.Message);
+                case DebugLevel.PrintExceptionType:
+                    return e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message);
+                case DebugLevel.PrintExceptionStackTrace:
+                    return e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n";
+                default:
+                    return "Invalid DebugLevel. This is an internal error, PLEASE REPORT to PEBakery developer";
+            }
         }
 
         private static readonly StringDictionary unescapeChars = new StringDictionary()
