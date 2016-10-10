@@ -590,7 +590,6 @@ namespace BakeryEngine
         {
             List<LogInfo> logs;
 
-            // DisplayOperation(cmd);
             try
             {
                 switch (cmd.Opcode)
@@ -612,14 +611,7 @@ namespace BakeryEngine
                     // Registry
                     // Text
                     case Opcode.TXTAddLine:
-                        try
-                        {
-                            logs = this.TXTAddLine(cmd);
-                        }
-                        catch (System.IO.IOException e)
-                        {
-                            throw e;
-                        }
+                        logs = this.TXTAddLine(cmd);
                         break;
                     // INI
                     case Opcode.INIRead:
