@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace BakeryEngine
 {
-    using System.Text.RegularExpressions;
     using StringDictionary = Dictionary<string, string>;
 
     public enum Opcode
@@ -192,7 +192,7 @@ namespace BakeryEngine
     }
 
     /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
+    /// So Critical error that build must be halt
     /// </summary>
     public class CriticalErrorException : Exception
     {
@@ -206,7 +206,7 @@ namespace BakeryEngine
     }
 
     /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
+    /// BakeryCommand contains invalid Opcode
     /// </summary>
     public class InvalidOpcodeException : Exception
     {
@@ -220,7 +220,7 @@ namespace BakeryEngine
     }
 
     /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
+    /// /// BakerySubCommandes contains invalid subOpcode
     /// </summary>
     public class InvalidSubOpcodeException : Exception
     {
@@ -234,7 +234,7 @@ namespace BakeryEngine
     }
 
     /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
+    /// BakeryCommand contains invalid Operand
     /// </summary>
     public class InvalidOperandException : Exception
     {
@@ -247,6 +247,9 @@ namespace BakeryEngine
         public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
     }
 
+    /// <summary>
+    /// LogInfo contains invalid log format
+    /// </summary>
     public class InvalidLogFormatException : Exception
     {
         private BakeryCommand cmd;
@@ -258,6 +261,9 @@ namespace BakeryEngine
         public InvalidLogFormatException(string message, Exception inner) : base(message, inner) { }
     }
 
+    /// <summary>
+    /// BakeryCommand contains invalid SubCommand
+    /// </summary>
     public class InvalidSubCommandException : Exception
     {
         private BakeryCommand cmd;
@@ -267,16 +273,6 @@ namespace BakeryEngine
         public InvalidSubCommandException(BakeryCommand cmd) { this.cmd = cmd; }
         public InvalidSubCommandException(string message, BakeryCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidSubCommandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
-    /// </summary>
-    public class InternalParseException : Exception
-    {
-        public InternalParseException() { }
-        public InternalParseException(string message) : base(message) { }
-        public InternalParseException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>
@@ -504,6 +500,10 @@ namespace BakeryEngine
             { // BakeryCodeParser cannot parse commands, halt
                 logger.Write(new LogInfo(LogState.CriticalError, $"Build halt due to malformed command : [{e.Message}]"));
             }
+            catch (InternalParseException)
+            { // Internal error
+                logger.Write(new LogInfo(LogState.CriticalError, "INTERNAL ERROR, unable to parse command"));
+            }
             catch (InvalidGrammarException e)
             { // BakeryCodeParser cannot parse commands, halt
                 logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, $"Build halt due to wrong grammar : [{e.Message}]"));
@@ -559,81 +559,6 @@ namespace BakeryEngine
             }
         }
 
-        /*
-        /// <summary>
-        /// Run array of commands.
-        /// </summary>
-        private void RunCommands()
-        {
-            while (true)
-            {
-                if (!(nextCommand.line < nextCommand.secLength)) // End of section
-                {
-                    currentSectionParams = new List<string>();
-                    logger.Write(new LogInfo(LogState.Info, $"End of section [{nextCommand.section.SectionName}]", returnAddress.Count - 1));
-
-                    try
-                    {
-                        nextCommand = returnAddress.Pop();
-                        continue;
-                    }
-                    catch (InvalidOperationException)
-                    { // The Stack<T> is empty, readed plugin's end
-                        logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
-                        if (runOnePlugin) // Just run one plugin
-                            break; // Work is done, so exit
-                        try
-                        {
-                            // PluginExit event callback
-                            CheckAndRunCallback(ref onPluginExit, "OnPluginExit");
-                            // Run next plugin
-                            curPluginAddr = Plugins.GetNextAddress(curPluginAddr);
-                            ReadyToRunPlugin();
-                        }
-                        catch (EndOfPluginLevelException)
-                        { // End of plugins, build done. Exit.
-                            // OnBuildExit event callback
-                            CheckAndRunCallback(ref onBuildExit, "OnBuildExit");
-                            break;
-                        }
-                    }
-                }
-
-                // Fetch instructions
-                int i = nextCommand.line;
-                string rawCode = (nextCommand.section.Get() as string[])[i].Trim();
-
-                try
-                {
-                    currentCommand = ParseCommand(rawCode, new CommandAddress(nextCommand.plugin, nextCommand.section, i, nextCommand.secLength));
-                    try
-                    {
-                        logger.Write(ExecuteCommand(currentCommand), true);
-                    }
-                    catch (CriticalErrorException)
-                    { // Critical Error, stop build
-                        break;
-                    }
-                    catch (InvalidOpcodeException e)
-                    {
-                        logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                    }
-                }
-                catch (InvalidOpcodeException e)
-                {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                }
-                catch (InvalidOperandException e)
-                {
-                    currentCommand = new BakeryCommand(rawCode, Opcode.Unknown, new List<string>(), returnAddress.Count);
-                    logger.Write(new LogInfo(e.Cmd, LogState.CriticalError, e.Message));
-                }
-
-                nextCommand.line++;
-            }
-        }
-        */
         private void CheckAndRunCallback(ref BakeryCommand callback, string eventName)
         {
             if (callback != null)
@@ -769,11 +694,11 @@ namespace BakeryEngine
             switch (debugLevel)
             {
                 case DebugLevel.Production:
-                    return FileHelper.RemoveLastNewLine(e.Message);
+                    return StringHelper.RemoveLastNewLine(e.Message);
                 case DebugLevel.PrintExceptionType:
-                    return e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message);
+                    return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message);
                 case DebugLevel.PrintExceptionStackTrace:
-                    return e.GetType() + ": " + FileHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n";
+                    return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n";
                 default:
                     return "Invalid DebugLevel. This is an internal error, PLEASE REPORT to PEBakery developer";
             }

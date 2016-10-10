@@ -38,6 +38,16 @@ namespace BakeryEngine
     }
 
     /// <summary>
+    /// Internal error which unable to continue parsing
+    /// </summary>
+    public class InternalParseException : Exception
+    {
+        public InternalParseException() { }
+        public InternalParseException(string message) : base(message) { }
+        public InternalParseException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
     /// The compiler to convert If~Else, Begin~End to If+Jump (assembly) style
     /// </summary>
     public static class BakeryCodeParser
@@ -71,7 +81,7 @@ namespace BakeryEngine
                 BakeryCommand cmd = rawCmdList[i];
                 if (cmd.Opcode == Opcode.If)
                 {
-                    int dest = CompileNestedIf(cmd, out elseFlag, ref rawCmdList, i, ref compiledList, addr);
+                    int dest = ParseNestedIf(cmd, out elseFlag, ref rawCmdList, i, ref compiledList, addr);
                     i = dest;
                     iterate = true;
                 }
@@ -79,7 +89,7 @@ namespace BakeryEngine
                 {
                     if (elseFlag)
                     {
-                        int dest = CompileNestedElse(cmd, out elseFlag, ref rawCmdList, i, ref compiledList, addr);
+                        int dest = ParseNestedElse(cmd, out elseFlag, ref rawCmdList, i, ref compiledList, addr);
                         i = dest;
                         iterate = true;
                     }
@@ -104,13 +114,23 @@ namespace BakeryEngine
             return iterate;
         }
 
-        private static int CompileNestedIf(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> compiledList, SectionAddress addr)
+        /// <summary>
+        /// Parsed nested if
+        /// </summary>
+        /// <param name="cmd">BakeryCommand</param>
+        /// <param name="elseFlag">Can I use else right after this?</param>
+        /// <param name="cmdList">raw command list</param>
+        /// <param name="cmdListIdx">raw command index of list</param>
+        /// <param name="parsedList">parsed command list</param>
+        /// <param name="addr">section address addr</param>
+        /// <returns>Return next command index</returns>
+        private static int ParseNestedIf(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> parsedList, SectionAddress addr)
         {
             BakeryCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
             BakeryIfCommand ifSubCmd; // Condition : Equal,%A%,B,Echo,Success
             BakeryCommand ifEmbCmd; // Run if condition is met : Echo,Success
             // BakeryCommand compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
-            List<BakeryCommand> ifCmdList = compiledList;
+            List<BakeryCommand> ifCmdList = parsedList;
             elseFlag = false;
 
             // <Raw>
@@ -152,7 +172,17 @@ namespace BakeryEngine
             }
         }
 
-        private static int CompileNestedElse(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> compiledList, SectionAddress addr)
+        /// <summary>
+        /// Parsed nested Else
+        /// </summary>
+        /// <param name="cmd">BakeryCommand else</param>
+        /// <param name="elseFlag">Reset else flag</param>
+        /// <param name="cmdList">raw command list</param>
+        /// <param name="cmdListIdx">raw command index of list</param>
+        /// <param name="parsedList">parsed command list</param>
+        /// <param name="addr">section address addr</param>
+        /// <returns>Return next command index</returns>
+        private static int ParseNestedElse(BakeryCommand cmd, out bool elseFlag, ref List<BakeryCommand> cmdList, int cmdListIdx, ref List<BakeryCommand> compiledList, SectionAddress addr)
         {
             BakeryCommand elseEmbCmd = ForgeEmbedCommand(cmd, 0, 0);
             BakeryCommand compiledCmd = new BakeryCommand(cmd.Origin, Opcode.ElseCompact, new List<string>(), addr, 0, new List<BakeryCommand>());
@@ -305,6 +335,13 @@ namespace BakeryEngine
                 return -1;
         }
 
+        /// <summary>
+        /// Parse command raw string into BakeryCommand
+        /// </summary>
+        /// <param name="rawCodes"></param>
+        /// <param name="idx"></param>
+        /// <param name="addr"></param>
+        /// <returns></returns>
         private static BakeryCommand ParseCommand(List<string> rawCodes, ref int idx, SectionAddress addr)
         {
             Opcode opcode = Opcode.None;
@@ -353,6 +390,12 @@ namespace BakeryEngine
                 return new BakeryCommand(rawCode, opcode, operands, addr);
         }
 
+        /// <summary>
+        /// Parse BakeryCommand opcode
+        /// </summary>
+        /// <param name="opcodeStr"></param>
+        /// <param name="externalOpcode"></param>
+        /// <returns></returns>
         public static Opcode ParseOpcode(string opcodeStr, out string externalOpcode)
         {
             Opcode opcode = Opcode.None;
@@ -377,13 +420,12 @@ namespace BakeryEngine
             }
             return opcode;
         }
-
         /// <summary>
         /// ParseState enum
         /// </summary>
         private enum ParseState { Normal, Merge }
         /// <summary>
-        /// Parse operands, especially with doublequote
+        /// Parse BakeryCommand operands, especially with doublequote
         /// </summary>
         /// <param name="slices"></param>
         /// <returns></returns>
@@ -496,7 +538,7 @@ namespace BakeryEngine
                 if ((occurence != 0 && occurence % 2 == 0) || match) // IfSubOpcode - Compare series
                 {
                     string subOpcodeString = cmd.Operands[subOpcodeIdx + 1];
-                    if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                    if (ParseIfSubOpcodeIfCompare(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
                         throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
                     List<string> operandList = new List<string>();
                     operandList.Add(cmd.Operands[subOpcodeIdx]);
@@ -506,7 +548,7 @@ namespace BakeryEngine
                 else // IfSubOpcode - Non-Compare series
                 {
                     string subOpcodeString = cmd.Operands[subOpcodeIdx];
-                    if (ParseNonCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                    if (ParseIfSubOpcodeIfNonCompare(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
                         throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
                     subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToList(), notFlag);
                 }
@@ -514,9 +556,9 @@ namespace BakeryEngine
             else
             { // 한번 컴파일된 후의 IfCompact 문법 (Equal,%A%,A)
                 string subOpcodeString = cmd.Operands[subOpcodeIdx];
-                if (ParseCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                if (ParseIfSubOpcodeIfCompare(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
                 {
-                    if (ParseNonCompareIfSubOpcode(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
+                    if (ParseIfSubOpcodeIfNonCompare(cmd, subOpcodeString, ref subOpcode, ref notFlag) == false)
                         throw new InvalidSubOpcodeException($"Invalid sub command [If,{subOpcodeString}]", cmd);
                 }
                 subCmd = new BakeryIfCommand(subOpcode, cmd.Operands.Skip(subOpcodeIdx + 1).ToList(), notFlag);
@@ -524,7 +566,15 @@ namespace BakeryEngine
 
             return subCmd;
         }
-        public static bool ParseCompareIfSubOpcode(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        /// <summary>
+        /// Parse If/IfCompact's comparing subOpcode
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="subOpcodeString"></param>
+        /// <param name="subOpcode"></param>
+        /// <param name="notFlag"></param>
+        /// <returns></returns>
+        public static bool ParseIfSubOpcodeIfCompare(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
         {
             if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
                 subOpcode = IfSubOpcode.Equal;
@@ -549,7 +599,15 @@ namespace BakeryEngine
                 return false;
             return true;
         }
-        public static bool ParseNonCompareIfSubOpcode(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        /// <summary>
+        /// Parse If/IfCompact's non-comparing subOpcode
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="subOpcodeString"></param>
+        /// <param name="subOpcode"></param>
+        /// <param name="notFlag"></param>
+        /// <returns></returns>
+        public static bool ParseIfSubOpcodeIfNonCompare(BakeryCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
         {
             if (string.Equals(subOpcodeString, "ExistFile", StringComparison.OrdinalIgnoreCase))
                 subOpcode = IfSubOpcode.ExistFile;
@@ -684,15 +742,14 @@ namespace BakeryEngine
                     return 2;
                 case IfSubOpcode.ExistFile:
                 case IfSubOpcode.ExistDir:
+                case IfSubOpcode.ExistVar:
+                case IfSubOpcode.ExistMacro:
                     return 1;
                 case IfSubOpcode.ExistSection:
                 case IfSubOpcode.ExistRegSection:
                     return 2;
                 case IfSubOpcode.ExistRegKey:
                     return 3;
-                case IfSubOpcode.ExistVar:
-                case IfSubOpcode.ExistMacro:
-                    return 1;
                 case IfSubOpcode.Ping: // Not implemented
                 case IfSubOpcode.Online: // Not implemented
                     return 0; // Not implemented
