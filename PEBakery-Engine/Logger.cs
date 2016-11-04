@@ -47,6 +47,14 @@ namespace BakeryEngine
             this.depth = command.Depth;
         }
 
+        public LogInfo(BakeryCommand command, LogState state, string result, int depth)
+        {
+            this.command = command;
+            this.result = result;
+            this.State = state;
+            this.depth = depth;
+        }
+
         public LogInfo(BakeryCommand command, LogState state, string result, bool errorOff)
         {
             this.command = command;

@@ -559,7 +559,7 @@ namespace BakeryEngine
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(string.Concat(e.GetType(), ": ", FileHelper.RemoveLastNewLine(e.Message)));
+                    Console.WriteLine(string.Concat(e.GetType(), ": ", StringHelper.RemoveLastNewLine(e.Message)));
                 }
             }
             return dict;

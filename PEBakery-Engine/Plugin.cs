@@ -23,14 +23,13 @@ namespace BakeryEngine
     public class PluginSection
     {
         // Common Fields
-        protected string pluginPath;
         protected Plugin plugin;
         protected string sectionName;
         protected SectionType type;
         protected SectionDataType dataType;
         protected bool loaded;
 
-        public string PluginPath { get { return pluginPath; } }
+        public string PluginPath { get { return plugin.FullPath; } }
         public Plugin Plugin { get { return plugin; } }
         public string SectionName { get { return sectionName; } }
         public SectionType Type { get { return type; } set { type = value; } }
@@ -97,9 +96,8 @@ namespace BakeryEngine
         /// <param name="pluginPath"></param>
         /// <param name="sectionName"></param>
         /// <param name="type"></param>
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -107,9 +105,8 @@ namespace BakeryEngine
             this.loaded = false;
         }
 
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, bool load)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, bool load)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -119,9 +116,8 @@ namespace BakeryEngine
                 Load();
         }
 
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -131,9 +127,8 @@ namespace BakeryEngine
                 Load();
         }
 
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, StringDictionary iniDict)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, StringDictionary iniDict)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -142,9 +137,8 @@ namespace BakeryEngine
             this.iniDict = iniDict;
         }
 
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<string> lines)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<string> lines)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -153,9 +147,8 @@ namespace BakeryEngine
             this.lines = lines;
         }
 
-        public PluginSection(string pluginPath, Plugin plugin, string sectionName, SectionType type, List<BakeryCommand> codes)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<BakeryCommand> codes)
         {
-            this.pluginPath = pluginPath;
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
@@ -196,10 +189,10 @@ namespace BakeryEngine
                         iniDict = IniFile.ParseSectionToDict(PluginPath, SectionName);
                         break;
                     case SectionDataType.Lines:
-                        lines = IniFile.ParseSectionToStringList(pluginPath, sectionName);
+                        lines = IniFile.ParseSectionToStringList(PluginPath, sectionName);
                         break;
                     case SectionDataType.Codes:
-                        codes = BakeryCodeParser.ParseRawLines(IniFile.ParseSectionToStringList(pluginPath, sectionName), new SectionAddress(plugin, this));
+                        codes = BakeryCodeParser.ParseRawLines(IniFile.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this));
                         break;
                     default:
                         throw new InternalUnknownException($"Invalid SectionType {type}");
@@ -353,7 +346,6 @@ namespace BakeryEngine
         // Methods
         public SectionDictionary ParsePlugin()
         {
-            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             SectionDictionary dict = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
             StreamReader reader = new StreamReader(new FileStream(fullPath, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(fullPath));
 
@@ -373,7 +365,7 @@ namespace BakeryEngine
             while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
-                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
+                if (line.StartsWith("[", StringComparison.OrdinalIgnoreCase) && line.EndsWith("]", StringComparison.OrdinalIgnoreCase))
                 { // Start of section
                     if (inSection)
                     { // End of section
@@ -505,16 +497,16 @@ namespace BakeryEngine
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                     sectionKeys = IniFile.ParseLinesIniStyle(lines);
-                    return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
+                    return new PluginSection(this, sectionName, type, sectionKeys);
                 case SectionType.Variables:
                     sectionKeys = IniFile.ParseLinesVarStyle(lines);
-                    return new PluginSection(fullPath, this, sectionName, type, sectionKeys);
+                    return new PluginSection(this, sectionName, type, sectionKeys);
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.UninspectedCode:
-                    return new PluginSection(fullPath, this, sectionName, type, lines);
+                    return new PluginSection(this, sectionName, type, lines);
                 case SectionType.AttachEncode: // do not load now
-                    return new PluginSection(fullPath, this, sectionName, type, false);
+                    return new PluginSection(this, sectionName, type, false);
                 default:
                     throw new PluginParseException("Invalid SectionType " + type.ToString());
             }

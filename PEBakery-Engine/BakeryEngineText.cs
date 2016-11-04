@@ -23,7 +23,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> TXTAddLine(BakeryCommand cmd)
+        public List<LogInfo> CmdTXTAddLine(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -123,7 +123,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> INIRead(BakeryCommand cmd)
+        public List<LogInfo> CmdINIRead(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -167,7 +167,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> INIWrite(BakeryCommand cmd)
+        public List<LogInfo> CmdINIWrite(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 

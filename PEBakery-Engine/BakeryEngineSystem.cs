@@ -51,7 +51,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> SystemCommands(BakeryCommand cmd)
+        public List<LogInfo> CmdSystemCommands(BakeryCommand cmd)
         {
             List<LogInfo> logs;
 
@@ -472,7 +472,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> ShellExecute(BakeryCommand cmd)
+        public List<LogInfo> CmdShellExecute(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 

@@ -19,7 +19,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> Set(BakeryCommand cmd)
+        public List<LogInfo> CmdSet(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -108,7 +108,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> AddVariables(BakeryCommand cmd)
+        public List<LogInfo> CmdAddVariables(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
