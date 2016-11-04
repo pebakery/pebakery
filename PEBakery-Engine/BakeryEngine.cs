@@ -595,6 +595,9 @@ namespace BakeryEngine
                 switch (cmd.Opcode)
                 {
                     // File
+                    case Opcode.CopyOrExpand:
+                        logs = this.CmdCopyOrExpand(cmd);
+                        break;
                     case Opcode.Expand:
                         logs = this.CmdExpand(cmd);
                         break;

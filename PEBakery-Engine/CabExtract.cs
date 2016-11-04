@@ -76,7 +76,7 @@ namespace CabExtract
             {
                 string path = Path.Combine(destDir, Name);
                 string parentDir = Path.GetDirectoryName(path);
-                if (!Directory.Exists(parentDir))
+                if (!Directory.Exists(parentDir) && !string.Equals(parentDir, string.Empty, StringComparison.Ordinal))
                     Directory.CreateDirectory(parentDir);
 
                 FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write);

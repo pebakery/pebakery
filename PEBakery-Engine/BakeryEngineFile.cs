@@ -67,6 +67,160 @@ namespace BakeryEngine
          */
 
         /// <summary>
+        /// CopyOrExpand,<SrcFile><DestPath>,[PRESERVE],[NOWARN]
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdCopyOrExpand(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 2, optional operand : 2
+            const int necessaryOperandNum = 2;
+            const int optionalOperandNum = 2;
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string srcFile = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcFile = cmd.Operands[0];
+            string destPath = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestPath = cmd.Operands[1];
+
+            // Check destDir is directory
+            bool destExists = false;
+            bool destIsDir = false;
+            if (Directory.Exists(destPath))
+            {
+                destExists = true;
+                destIsDir = true;
+            }
+            else if (File.Exists(destPath))
+                destExists = true;
+
+            bool preserve = false;
+            bool noWarn = false;
+
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
+            {
+                string operand = cmd.Operands[i];
+                if (string.Equals(operand, "PRESERVE", StringComparison.OrdinalIgnoreCase))
+                    preserve = true;
+                else if (string.Equals(operand, "NOWARN", StringComparison.OrdinalIgnoreCase))
+                    noWarn = true;
+            }
+
+            string srcFileName = Path.GetFileName(srcFile);
+            string destNewPath; // TODO : Need more clearer name...
+            string destFileName;
+            string destDir;
+            if (destIsDir)
+            {
+                destNewPath = Path.Combine(destPath, srcFileName);
+                destFileName = srcFileName;
+                destDir = destPath;
+            }
+            else
+            {
+                destNewPath = Path.Combine(Path.GetDirectoryName(destPath), srcFileName);
+                destFileName = Path.GetFileName(destPath);
+                destDir = Path.GetDirectoryName(destPath);
+            }
+
+            // Filter overwrite
+            if (destExists && !destIsDir) // Check if destPath is file and already exists
+            {
+                if (preserve)
+                {
+                    if (noWarn)
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destPath}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destPath}]"));
+                    return logs;
+                }
+                else
+                {
+                    if (noWarn)
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{destPath}] will be overwritten"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"[{destPath}] will be overwritten"));
+                }
+            }
+            if (destIsDir && File.Exists(destNewPath) && !preserve) // Check if "destDir\srcFileName" already exists
+            {
+                if (preserve)
+                {
+                    if (noWarn)
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destNewPath}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destNewPath}]"));
+                    return logs;
+                }
+                else
+                {
+                    if (noWarn)
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{destNewPath}] will be overwritten"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"[{destNewPath}] will be overwritten"));
+                }
+            }
+
+            if (File.Exists(srcFile))
+            { // SrcFile is uncompressed, just copy!  
+                try
+                {
+                    if (destIsDir)
+                        File.Copy(srcFile, Path.Combine(destPath, srcFileName), !preserve);
+                    else
+                        File.Copy(srcFile, destPath, !preserve);
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFile}] copied to [{rawDestPath}]"));
+                }
+                catch (IOException) when (preserve)
+                {
+                    if (noWarn)
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destPath}]"));
+                    else
+                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destPath}]"));
+                }
+            }
+            else
+            {
+                string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
+                string rawSrcCab = rawSrcFile.Substring(0, rawSrcFile.Length - 1) + "_";
+                if (File.Exists(srcCab))
+                { // Expand SrcCab
+                    if (CompressHelper.ExtractCab(srcCab, destDir))
+                    { // Decompress Success
+                        if (File.Exists(Path.Combine(destDir, srcFileName))) // destFileName == srcFileName?
+                        { // dest filename not specified
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{srcFileName}] extracted from [{rawSrcCab}]"));
+                        }
+                        else // destFileName != srcFileName
+                        { // dest filename specified
+                            File.Move(Path.Combine(destDir, srcFileName), Path.Combine(destDir, destFileName));
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{destFileName}] extracted from [{rawSrcCab}] and renamed from [{srcFileName}]"));
+                        }
+                    }
+                    else
+                    { // Decompress Failure
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to extract [{destFileName}] from [{rawSrcCab}]"));
+                    }
+                    
+                }
+                else
+                { // Error
+                    logs.Add(new LogInfo(cmd, LogState.Error, $"Unable to find [{rawSrcFile}] nor [{rawSrcCab}]"));
+                }
+
+            }
+
+            return logs;
+        }
+
+        /// <summary>
         /// Expand,<SrcCab>,<DestDir>,[SingleFileName],[PRESERVE],[NOWARN]
         /// </summary>
         /// <remarks>
@@ -74,7 +228,7 @@ namespace BakeryEngine
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> CmdExpand(BakeryCommand cmd)
+        private List<LogInfo> CmdExpand(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -126,7 +280,7 @@ namespace BakeryEngine
 
             if (destExists && !destIsDir)
             { // Cannot make an directory, since destination is file
-                throw new PathNotDirException($"[{destDir}] must be directory", cmd);
+                throw new PathNotDirException($"[{rawDestDir}] must be directory", cmd);
             }
             else
             {
@@ -140,6 +294,7 @@ namespace BakeryEngine
                         logs.Add(new LogInfo(cmd, LogState.Success, $"[{extractedList.Count} files] extracted from [{rawSrcCabFile}]"));
                         foreach (string extracted in extractedList)
                             logs.Add(new LogInfo(cmd, LogState.Success, $"[{extracted}] extracted", cmd.Depth + 1));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"End of the list"));
                     }
                     else // Failure
                         logs.Add(new LogInfo(cmd, LogState.Success, $"Failed to extract [{rawSrcCabFile}]"));
@@ -152,7 +307,10 @@ namespace BakeryEngine
                     { // Check PRESERVE, NOWARN 
                         if (preserve)
                         { // Do nothing
-                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
+                            if (noWarn)
+                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
+                            else
+                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
                             return logs;
                         }
                     }
@@ -163,14 +321,14 @@ namespace BakeryEngine
                         if (destSingleFileExists)
                         {
                             if (noWarn)
-                                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSingleFile}] overwritten"));
+                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{rawSingleFile}] overwritten"));
                             else
                                 logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawSingleFile}] overwritten"));
                         }
                     }
                     else // Failure
                     {
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"Failed to extract [{rawSingleFile}] from [{rawSrcCabFile}]"));
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to extract [{rawSingleFile}] from [{rawSrcCabFile}]"));
                     }
                 }
             }
@@ -184,7 +342,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns>LogInfo[]</returns>
-        public List<LogInfo> CmdFileCopy(BakeryCommand cmd)
+        private List<LogInfo> CmdFileCopy(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -296,16 +454,12 @@ namespace BakeryEngine
                 }
                 
             }
-            catch (IOException e)
+            catch (IOException) when (preserve)
             {
-                if (preserve && noWarn)
-                {
+                if (noWarn)
                     logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destPath}]"));
-                }
                 else
-                {
-                    throw new IOException(e.Message, e);
-                }
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destPath}]"));
             }
 
             return logs;
@@ -398,7 +552,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> CmdFileMove(BakeryCommand cmd)
+        private List<LogInfo> CmdFileMove(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -425,9 +579,7 @@ namespace BakeryEngine
                 logs.Add(new LogInfo(cmd, LogState.Warning, "Cannot rename to same filename"));
             else
             {
-                // File.Move cannot move file if volume is different.
-                string srcFileDrive = Path.GetPathRoot(Path.GetFullPath(srcFileName));
-                string destFileDrive = Path.GetPathRoot(Path.GetFullPath(destFileName));
+                // File.Move can move file if volume is different.
                 try
                 {
                     File.Move(srcFileName, destFileName);
@@ -447,7 +599,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> CmdFileCreateBlank(BakeryCommand cmd)
+        private List<LogInfo> CmdFileCreateBlank(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
             // Necessary operand : 1, optional operand : 3
