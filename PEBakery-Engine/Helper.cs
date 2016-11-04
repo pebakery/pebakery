@@ -6,6 +6,9 @@ using System.IO;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
+
+// P/invoke
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Microsoft.Win32.Interop;
@@ -13,6 +16,7 @@ using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
 
+// Cabinet.dll
 
 namespace BakeryEngine
 {
@@ -604,5 +608,51 @@ namespace BakeryEngine
             }
             return hKey;
         }
+    }
+
+    public static class CompressHelper
+    {
+        /// <summary>
+        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
+        /// </summary>
+        /// TODO: Use 
+        /// </remarks>
+        /// <param name="srcPath"></param>
+        /// <param name="destPath"></param>
+        /// <returns>Return true if success</returns>
+        public static bool ExtractCab(string srcCabFile, string destDir)
+        {
+            List<string> nop;
+            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            return cab.ExtractAll(destDir, out nop);
+        }
+
+        /// <summary>
+        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
+        /// </summary>
+        /// TODO: Use 
+        /// </remarks>
+        /// <param name="srcPath"></param>
+        /// <param name="destPath"></param>
+        /// <returns>Return true if success</returns>
+        public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
+        {
+            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            return cab.ExtractAll(destDir, out extractedList);
+        }
+
+        /// <summary>
+        /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
+        /// </summary>
+        /// TODO: Use 
+        /// </remarks>
+        /// <param name="srcPath"></param>
+        /// <param name="destPath"></param>
+        /// <returns>Return true if success</returns>
+        public static bool ExtractCab(string srcCabFile, string destDir, string target)
+        {
+            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            return cab.ExtractSingleFile(target, destDir);
+        }        
     }
 }

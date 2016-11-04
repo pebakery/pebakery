@@ -595,30 +595,33 @@ namespace BakeryEngine
                 switch (cmd.Opcode)
                 {
                     // File
+                    case Opcode.Expand:
+                        logs = this.CmdExpand(cmd);
+                        break;
                     case Opcode.FileCopy:
-                        logs = this.FileCopy(cmd);
+                        logs = this.CmdFileCopy(cmd);
                         break;
                     case Opcode.FileDelete:
-                        logs = this.FileDelete(cmd);
+                        logs = this.CmdFileDelete(cmd);
                         break;
                     case Opcode.FileRename:
                     case Opcode.FileMove:
-                        logs = this.FileMove(cmd);
+                        logs = this.CmdFileMove(cmd);
                         break;
                     case Opcode.FileCreateBlank:
-                        logs = this.FileCreateBlank(cmd);
+                        logs = this.CmdFileCreateBlank(cmd);
                         break;
                     // Registry
                     // Text
                     case Opcode.TXTAddLine:
-                        logs = this.TXTAddLine(cmd);
+                        logs = this.CmdTXTAddLine(cmd);
                         break;
                     // INI
                     case Opcode.INIRead:
-                        logs = this.INIRead(cmd);
+                        logs = this.CmdINIRead(cmd);
                         break;
                     case Opcode.INIWrite:
-                        logs = this.INIWrite(cmd);
+                        logs = this.CmdINIWrite(cmd);
                         break;
                     // Network
                     // Attach
@@ -626,33 +629,33 @@ namespace BakeryEngine
                     // StringFormat
                     // System
                     case Opcode.System:
-                        logs = this.SystemCommands(cmd);
+                        logs = this.CmdSystemCommands(cmd);
                         break;
                     case Opcode.ShellExecute:
                     case Opcode.ShellExecuteEx:
                     case Opcode.ShellExecuteDelete:
-                        logs = this.ShellExecute(cmd);
+                        logs = this.CmdShellExecute(cmd);
                         break;
                     // Branch
                     case Opcode.Run:
                     case Opcode.Exec:
                         logs = new List<LogInfo>();
-                        this.RunExec(cmd);
+                        this.CmdRunExec(cmd);
                         break;
                     case Opcode.IfCompact:
                         logs = new List<LogInfo>();
-                        this.IfCompact(cmd);
+                        this.CmdIfCompact(cmd);
                         break;
                     case Opcode.ElseCompact:
                         logs = new List<LogInfo>();
-                        this.ElseCompact(cmd);
+                        this.CmdElseCompact(cmd);
                         break;
                     // Control
                     case Opcode.Set:
-                        logs = this.Set(cmd);
+                        logs = this.CmdSet(cmd);
                         break;
                     case Opcode.AddVariables:
-                        logs = this.AddVariables(cmd);
+                        logs = this.CmdAddVariables(cmd);
                         break;
                     // Innormal case
                     case Opcode.None:

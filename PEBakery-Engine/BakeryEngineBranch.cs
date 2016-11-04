@@ -124,7 +124,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        private void RunExec(BakeryCommand cmd)
+        private void CmdRunExec(BakeryCommand cmd)
         {
             RunExec(cmd, cmd.Depth + 1, false);
         }
@@ -192,7 +192,7 @@ namespace BakeryEngine
         /// </summary>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public void IfCompact(BakeryCommand cmd)
+        public void CmdIfCompact(BakeryCommand cmd)
         {
             // Necessary operand : 3, 2 for condition and 1 for Link
             const int necessaryOperandNum = 3;
@@ -259,7 +259,7 @@ namespace BakeryEngine
             }
         }
 
-        private void ElseCompact(BakeryCommand cmd)
+        private void CmdElseCompact(BakeryCommand cmd)
         {
             BakeryCommand embCmd = BakeryCodeParser.ForgeEmbedCommand(cmd, 0, 0);
             if (embCmd.Opcode != Opcode.Link)
