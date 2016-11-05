@@ -15,7 +15,7 @@ namespace BakeryEngine
         // Misc
         None = 0, Comment, Error, Unknown,
         // File
-        CopyOrExpand, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileExtractByte,
+        CopyOrExpand, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileByteExtract,
         // Registry
         RegHiveLoad, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
         // Text, INI
@@ -613,6 +613,9 @@ namespace BakeryEngine
                         break;
                     case Opcode.FileCreateBlank:
                         logs = this.CmdFileCreateBlank(cmd);
+                        break;
+                    case Opcode.FileByteExtract:
+                        logs = this.CmdFileByteExtract(cmd);
                         break;
                     // Registry
                     // Text

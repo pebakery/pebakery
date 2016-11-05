@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
+using System.IO.MemoryMappedFiles;
 
 namespace BakeryEngine
 {
@@ -43,21 +44,6 @@ namespace BakeryEngine
             public PathNotDirException(string message, BakeryCommand command) : base(message) { this.command = command; }
             public PathNotDirException(string message, Exception inner) : base(message, inner) { }
         }
-
-        /// <summary>
-        /// Exception used in BakeryEngine file commands
-        /// </summary>
-        public class PathExistsException : Exception
-        {
-            private BakeryCommand command = null;
-            public BakeryCommand Command { get { return command; } }
-            public PathExistsException() { }
-            public PathExistsException(string message) : base(message) { }
-            public PathExistsException(BakeryCommand command) { }
-            public PathExistsException(string message, BakeryCommand command) : base(message) { this.command = command; }
-            public PathExistsException(string message, Exception inner) : base(message, inner) { }
-        }
-
 
         /*
          * File Commands
@@ -135,36 +121,24 @@ namespace BakeryEngine
             {
                 if (preserve)
                 {
-                    if (noWarn)
-                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destPath}]"));
-                    else
-                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destPath}]"));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destPath}]"));
                     return logs;
                 }
                 else
                 {
-                    if (noWarn)
-                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{destPath}] will be overwritten"));
-                    else
-                        logs.Add(new LogInfo(cmd, LogState.Warning, $"[{destPath}] will be overwritten"));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten"));
                 }
             }
             if (destIsDir && File.Exists(destNewPath) && !preserve) // Check if "destDir\srcFileName" already exists
             {
                 if (preserve)
                 {
-                    if (noWarn)
-                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Cannot overwrite [{destNewPath}]"));
-                    else
-                        logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{destNewPath}]"));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destNewPath}]"));
                     return logs;
                 }
                 else
                 {
-                    if (noWarn)
-                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{destNewPath}] will be overwritten"));
-                    else
-                        logs.Add(new LogInfo(cmd, LogState.Warning, $"[{destNewPath}] will be overwritten"));
+                    logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{destNewPath}] will be overwritten"));
                 }
             }
 
@@ -338,8 +312,10 @@ namespace BakeryEngine
 
         /// <summary>
         /// FileCopy,<SrcFileName>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
-        /// Wildcard supported in <SrcFileName>
         /// </summary>
+        /// <remarks>
+        /// Wildcard supported in <SrcFileName>
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <returns>LogInfo[]</returns>
         private List<LogInfo> CmdFileCopy(BakeryCommand cmd)
@@ -410,6 +386,9 @@ namespace BakeryEngine
                         listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName));
                     else
                         listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName), SearchOption.AllDirectories);
+
+                    if (0 < listToCopy.Length)
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{srcFileName}] will be copied to [{destPath}]"));
                     foreach (string searchedFilePath in listToCopy)
                     {
                         if (destPathIsDir || !destPathExists)
@@ -419,15 +398,17 @@ namespace BakeryEngine
                             string destFullPath = Path.Combine(FileHelper.RemoveLastDirChar(destPath), destPathTail);
                             Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             if (File.Exists(destFullPath) && !noWarn)
-                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten"));
+                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] will be overwritten", cmd.Depth + 1));
                             File.Copy(searchedFilePath, destFullPath, !preserve);
-                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] copied to [{Path.Combine(rawDestPathDir, destPathTail)}]"));
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, destPathTail)}] copied to [{Path.Combine(rawDestPathDir, destPathTail)}]", cmd.Depth + 1));
                         }
                         else
                             throw new PathNotDirException("<DestPath> must be directory when using wildcard in <SrcFileName>", cmd);
                     }
-                    if (listToCopy.Length == 0)
-                        logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawDestPath}] not found"));
+                    if (0 < listToCopy.Length)
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{listToCopy.Length}] files copied"));
+                    else if (listToCopy.Length == 0)
+                        logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Files matches wildcard [{rawSrcFileName}] not found"));
                 }
                 else
                 {
@@ -467,8 +448,10 @@ namespace BakeryEngine
 
         /// <summary>
         /// FileDelete,<FileName>,[,NOWARN][,NOREC]
-        /// Wildcard supported in <FileName>
         /// </summary>
+        /// <remarks>
+        /// Wildcard supported in <FileName>
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
         public List<LogInfo> CmdFileDelete(BakeryCommand cmd)
@@ -548,8 +531,10 @@ namespace BakeryEngine
 
         /// <summary>
         /// FileRename,<srcFileName>,<destFileName>
-        /// Wildcard not supported
         /// </summary>
+        /// <remarks>
+        /// Wildcard not supported
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
         private List<LogInfo> CmdFileMove(BakeryCommand cmd)
@@ -685,6 +670,102 @@ namespace BakeryEngine
             {
                 if (preserve)
                     logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{rawFileName}]"));
+            }
+
+            return logs;
+        }
+
+        /// <summary>
+        /// FileByteExtract,<SrcFiles>,<DestFile>,<Signature>,<CopyLength> 
+        /// </summary>
+        /// <remarks>
+        /// <SrcFiles> can have wildcard, <DestFile> will be thought as file
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdFileByteExtract(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            // Necessary operand : 4, optional operand : 0
+            const int necessaryOperandNum = 4;
+            const int optionalOperandNum = 0;
+
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string srcFiles = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcFiles = cmd.Operands[0];
+            string destFile = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestFile = cmd.Operands[1];
+            byte[] signature;
+            if (!NumberHelper.ParseHexStringToByteArray(cmd.Operands[2], out signature))
+                throw new InvalidOperandException($"[CopyLength] must be valid hex string, Ex) A0B1C2", cmd);
+            long copyLength;
+            if (!NumberHelper.ParseInt64(cmd.Operands[3], out copyLength))
+                throw new InvalidOperandException($"[CopyLength] must be valid integer", cmd);
+
+            // Check srcFileName contains wildcard
+            bool srcContainWildcard = true;
+            if (srcFiles.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                srcContainWildcard = false;
+
+            // Check destPath already exists
+            if (Directory.Exists(destFile))
+                throw new InvalidOperandException($"[{destFile}] is existing directory", cmd);
+            else if (File.Exists(destFile))
+                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{destFile}] can be overwritten"));
+
+            string parentDir = Path.GetDirectoryName(destFile);
+            if (!Directory.Exists(parentDir) && !string.Equals(parentDir, string.Empty, StringComparison.Ordinal))
+                Directory.CreateDirectory(parentDir);
+
+            if (srcContainWildcard)
+            {               
+                string srcDirToFind = FileHelper.GetDirNameEx(srcFiles);
+                string rawSrcDirToFind = FileHelper.GetDirNameEx(rawSrcFiles);
+                string[] listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFiles));
+
+                if (0 < listToCopy.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{srcFiles}] will be searched"));
+                int idx = 0;
+                foreach (string searchedFilePath in listToCopy)
+                {
+                    idx++;
+                    long offset;
+                    bool result = FileHelper.FindByteSignature(searchedFilePath, signature, out offset);
+                    if (result)
+                    {
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Signature found at [{Path.Combine(rawSrcDirToFind, Path.GetFileName(searchedFilePath))}]'s offset [{offset}]", cmd.Depth + 1));
+                        FileHelper.CopyOffset(searchedFilePath, destFile, offset, copyLength);
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully coped [{copyLength}] bytes to [{rawDestFile}]", cmd.Depth + 1));
+                        break;
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(cmd, LogState.Ignore, $"Signature not found from [{Path.Combine(rawSrcDirToFind, Path.GetFileName(searchedFilePath))}]", cmd.Depth + 1));
+                    }
+                }
+                if (0 < listToCopy.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{idx}/{listToCopy.Length}] files searched"));
+                else if (listToCopy.Length == 0)
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Files matches wildcard [{rawSrcFiles}] not found"));
+            }
+            else
+            {
+                long offset;
+                bool result = FileHelper.FindByteSignature(srcFiles, signature, out offset);
+                if (result)
+                {
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Signature found at [{rawSrcFiles}]'s offset [{offset}]"));
+                    FileHelper.CopyOffset(srcFiles, destFile, offset, copyLength);
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully coped [{copyLength}] bytes to [{rawDestFile}]"));
+                }
+                else
+                {
+                    logs.Add(new LogInfo(cmd, LogState.Ignore, $"Signature not found from [{rawSrcFiles}]"));
+                }
             }
 
             return logs;
