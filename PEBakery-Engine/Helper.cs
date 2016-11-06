@@ -15,6 +15,7 @@ using Microsoft.Win32.Interop;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
+using System.IO.MemoryMappedFiles;
 
 // Cabinet.dll
 
@@ -184,6 +185,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public static string GetDirNameEx(string path)
         {
+            path = FileHelper.RemoveLastDirChar(path);
             string dirName = Path.GetDirectoryName(path);
             if (dirName == string.Empty)
                 dirName = ".";
@@ -241,6 +243,100 @@ namespace BakeryEngine
                 File.Delete(src);
             }
         }
+
+        public static long GetFileSize(string srcFile)
+        {
+            FileInfo info = new FileInfo(srcFile);
+            return info.Length;
+        }
+
+        public static bool FindByteSignature (string srcFile, byte[] signature, out long offset)
+        {
+            long size = FileHelper.GetFileSize(srcFile);
+
+            MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open);
+            MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor();
+
+            byte[] buffer = new byte[signature.Length];
+            bool found = false;
+
+            offset = 0;
+
+            for (long i = 0; i < size - signature.Length; i++)
+            {
+                accessor.ReadArray(i, buffer, 0, buffer.Length);
+                if (signature.SequenceEqual(buffer))
+                {
+                    found = true;
+                    offset = i;
+                    break;
+                }
+            }
+
+            accessor.Dispose();
+            mmap.Dispose();
+
+            return found;
+        }
+
+        public static void CopyOffset(string srcFile, string destFile, long offset, long length)
+        {
+            long size = FileHelper.GetFileSize(srcFile);
+
+            MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open);
+            MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor();
+
+            FileStream stream = new FileStream(destFile, FileMode.Create, FileAccess.Write);
+
+            const int block = 4096; // Memory Page is 4KB!
+            byte[] buffer = new byte[block];
+            for (long i = offset - (offset % block); i < offset + length; i += block)
+            {
+                if (i == offset - (offset % block)) // First block
+                {
+                    accessor.ReadArray(i, buffer, 0, block);
+                    stream.Write(buffer, (int) (offset % block), block - (int) (offset % block));
+                }
+                else if (offset + length - block <= i) // Last block // i < offset + length + block - ((offset + length) % block)
+                {
+                    accessor.ReadArray(i, buffer, 0, (int)((offset + length) % block));
+                    stream.Write(buffer, 0, (int) ((offset + length) % block));
+                }
+                else // Middle. Just copy whole block
+                {
+                    accessor.ReadArray(i, buffer, 0, block);
+                    stream.Write(buffer, 0, block);
+                }
+            }
+
+            stream.Close();
+            accessor.Dispose();
+            mmap.Dispose();
+        }
+
+        /// <summary>
+        /// Delete directory, handling open of the handle of the files
+        /// </summary>
+        /// <remarks>
+        /// http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
+        /// </remarks>
+        /// <param name="path"></param>
+        /// <param name="recursive"></param>
+        public static void DirectoryDeleteEx(string path, bool recursive)
+        {
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (IOException)
+            {
+                Directory.Delete(path, true);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Directory.Delete(path, true);
+            }
+        }
     }
 
     public static class StringHelper
@@ -276,7 +372,7 @@ namespace BakeryEngine
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Return false if failed</returns>
         public static bool ParseInt32(string str, out Int32 value)
         {
             if (str == null || string.Equals(str, string.Empty))
@@ -307,6 +403,42 @@ namespace BakeryEngine
                 return UInt32.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
                 return UInt32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns>Return false if failed</returns>
+        public static bool ParseInt64(string str, out Int64 value)
+        {
+            if (str == null || string.Equals(str, string.Empty))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return Int64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return Int64.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseUInt64(string str, out UInt64 value)
+        {
+            if (str == null || string.Equals(str, string.Empty))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return UInt64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return UInt64.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
@@ -427,6 +559,26 @@ namespace BakeryEngine
                 else
                     return CompareStringNumberResult.NotEqual | CompareStringNumberResult.Bigger;
             }
+        }
+
+        /// <summary>
+        /// Parse hex string into byte array. Hex string must be in form of A0B1C2. Return true if success.
+        /// </summary>
+        /// <param name="hex"></param>
+        /// <param name="array"></param>
+        /// <returns>Return true if success.</returns>
+        public static bool ParseHexStringToByteArray(string hex, out byte[] array)
+        {
+            if (hex.Length % 2 == 1) // hex's length must be even number
+            {
+                array = new byte[0];
+                return false;
+            }
+
+            array = new byte[hex.Length / 2];
+            for (int i = 0; i < hex.Length; i += 2)
+                array[i/2] = Convert.ToByte(hex.Substring(i, 2), 16);
+            return true;
         }
     }
 

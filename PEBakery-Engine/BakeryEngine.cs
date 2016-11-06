@@ -15,7 +15,7 @@ namespace BakeryEngine
         // Misc
         None = 0, Comment, Error, Unknown,
         // File
-        CopyOrExpand, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileExtractByte,
+        CopyOrExpand, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileByteExtract,
         // Registry
         RegHiveLoad, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
         // Text, INI
@@ -595,11 +595,23 @@ namespace BakeryEngine
                 switch (cmd.Opcode)
                 {
                     // File
+                    case Opcode.Expand:
+                        logs = this.CmdExpand(cmd);
+                        break;
                     case Opcode.CopyOrExpand:
                         logs = this.CmdCopyOrExpand(cmd);
                         break;
-                    case Opcode.Expand:
-                        logs = this.CmdExpand(cmd);
+                    case Opcode.DirCopy:
+                        logs = this.CmdDirCopy(cmd);
+                        break;
+                    case Opcode.DirDelete:
+                        logs = this.CmdDirDelete(cmd);
+                        break;
+                    case Opcode.DirMove:
+                        logs = this.CmdDirMove(cmd);
+                        break;
+                    case Opcode.DirMake:
+                        logs = this.CmdDirMake(cmd);
                         break;
                     case Opcode.FileCopy:
                         logs = this.CmdFileCopy(cmd);
@@ -613,6 +625,9 @@ namespace BakeryEngine
                         break;
                     case Opcode.FileCreateBlank:
                         logs = this.CmdFileCreateBlank(cmd);
+                        break;
+                    case Opcode.FileByteExtract:
+                        logs = this.CmdFileByteExtract(cmd);
                         break;
                     // Registry
                     // Text
