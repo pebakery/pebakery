@@ -53,6 +53,122 @@ namespace BakeryEngine
          */
 
         /// <summary>
+        /// Expand,<SrcCab>,<DestDir>,[SingleFileName],[PRESERVE],[NOWARN]
+        /// </summary>
+        /// <remarks>
+        /// SingleFileName to extract must come as third parameter
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdExpand(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 2, optional operand : 3
+            const int necessaryOperandNum = 2;
+            const int optionalOperandNum = 3;
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string srcCabFile = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcCabFile = cmd.Operands[0];
+            string destDir = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestDir = cmd.Operands[1];
+
+            // Check destDir is directory
+            bool destExists = false;
+            bool destIsDir = false;
+            if (Directory.Exists(destDir))
+            {
+                destExists = true;
+                destIsDir = true;
+            }
+            else if (File.Exists(destDir))
+                destExists = true;
+
+            string singleFile = string.Empty;
+            string rawSingleFile = string.Empty;
+
+            if (necessaryOperandNum + 1 <= cmd.Operands.Count)
+            {
+                string operand = cmd.Operands[necessaryOperandNum];
+                singleFile = UnescapeString(ExpandVariables(operand));
+                rawSingleFile = operand;
+            }
+
+            bool preserve = false;
+            bool noWarn = false;
+
+            for (int i = necessaryOperandNum + 1; i < cmd.Operands.Count; i++)
+            {
+                string operand = cmd.Operands[i];
+                if (string.Equals(operand, "PRESERVE", StringComparison.OrdinalIgnoreCase))
+                    preserve = true;
+                else if (string.Equals(operand, "NOWARN", StringComparison.OrdinalIgnoreCase))
+                    noWarn = true;
+            }
+
+            if (destExists && !destIsDir)
+            { // Cannot make an directory, since destination is file
+                throw new PathNotDirException($"[{rawDestDir}] must be directory", cmd);
+            }
+            else
+            {
+                if (!destExists) // Destination not exists, make an dir
+                    Directory.CreateDirectory(destDir);
+                if (string.Equals(singleFile, string.Empty, StringComparison.Ordinal))
+                { // No singleFile operand, Extract all
+                    List<string> extractedList;
+                    if (CompressHelper.ExtractCab(srcCabFile, destDir, out extractedList)) // Success
+                    {
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{extractedList.Count} files] extracted from [{rawSrcCabFile}]"));
+                        foreach (string extracted in extractedList)
+                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{extracted}] extracted", cmd.Depth + 1));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"End of the list"));
+                    }
+                    else // Failure
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Failed to extract [{rawSrcCabFile}]"));
+                }
+                else
+                { // singleFile specified, Extract only that file
+                    string destSingleFile = Path.Combine(destDir, singleFile);
+                    bool destSingleFileExists = File.Exists(destSingleFile);
+                    if (destSingleFileExists)
+                    { // Check PRESERVE, NOWARN 
+                        if (preserve)
+                        { // Do nothing
+                            if (noWarn)
+                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
+                            else
+                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
+                            return logs;
+                        }
+                    }
+
+                    if (CompressHelper.ExtractCab(srcCabFile, destDir, singleFile)) // Success
+                    {
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSingleFile}] extracted from [{rawSrcCabFile}]"));
+                        if (destSingleFileExists)
+                        {
+                            if (noWarn)
+                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{rawSingleFile}] overwritten"));
+                            else
+                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawSingleFile}] overwritten"));
+                        }
+                    }
+                    else // Failure
+                    {
+                        logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to extract [{rawSingleFile}] from [{rawSrcCabFile}]"));
+                    }
+                }
+            }
+
+            return logs;
+        }
+
+        /// <summary>
         /// CopyOrExpand,<SrcFile><DestPath>,[PRESERVE],[NOWARN]
         /// </summary>
         /// <remarks>
@@ -182,7 +298,7 @@ namespace BakeryEngine
                     { // Decompress Failure
                         logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to extract [{destFileName}] from [{rawSrcCab}]"));
                     }
-                    
+
                 }
                 else
                 { // Error
@@ -195,115 +311,175 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Expand,<SrcCab>,<DestDir>,[SingleFileName],[PRESERVE],[NOWARN]
+        /// DirCopy,<SrcDir>,<DestDir>
         /// </summary>
         /// <remarks>
-        /// SingleFileName to extract must come as third parameter
+        /// Wildcard supported in <SrcDir>
+        /// Option [SHOW] deprecated, not used in WinPESE
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        private List<LogInfo> CmdExpand(BakeryCommand cmd)
+        private List<LogInfo> CmdDirCopy(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            // Necessary operand : 2, optional operand : 3
+            // Necessary operand : 2, optional operand : 1
             const int necessaryOperandNum = 2;
-            const int optionalOperandNum = 3;
+            const int optionalOperandNum = 1;
             if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcCabFile = UnescapeString(ExpandVariables(cmd.Operands[0]));
-            string rawSrcCabFile = cmd.Operands[0];
-            string destDir = UnescapeString(ExpandVariables(cmd.Operands[1]));
-            string rawDestDir = cmd.Operands[1];
+            string srcDir = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcDir = cmd.Operands[0];
+            string destPath = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestPath = cmd.Operands[1];
 
-            // Check destDir is directory
-            bool destExists = false;
-            bool destIsDir = false;
-            if (Directory.Exists(destDir))
-            {
-                destExists = true;
-                destIsDir = true;
-            }
-            else if (File.Exists(destDir))
-                destExists = true;
-
-            string singleFile = string.Empty;
-            string rawSingleFile = string.Empty;
-
-            if (necessaryOperandNum + 1 <= cmd.Operands.Count)
-            {
-                string operand = cmd.Operands[necessaryOperandNum];
-                singleFile = UnescapeString(ExpandVariables(operand));
-                rawSingleFile = operand;
-            }
-
-            bool preserve = false;
-            bool noWarn = false;
-
-            for (int i = necessaryOperandNum + 1; i < cmd.Operands.Count; i++)
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
             {
                 string operand = cmd.Operands[i];
-                if (string.Equals(operand, "PRESERVE", StringComparison.OrdinalIgnoreCase))
-                    preserve = true;
-                else if (string.Equals(operand, "NOWARN", StringComparison.OrdinalIgnoreCase))
-                    noWarn = true;
+                if (string.Equals(operand, "SHOW", StringComparison.OrdinalIgnoreCase)) // for compability with WB082
+                { }
+                else
+                    throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
             }
 
-            if (destExists && !destIsDir)
-            { // Cannot make an directory, since destination is file
-                throw new PathNotDirException($"[{rawDestDir}] must be directory", cmd);
-            }
-            else
+            // Check destPath is directory
+            if (File.Exists(destPath))
+                throw new PathNotDirException($"Destination [{rawDestPath}] must be directory", cmd);
+            else if (!Directory.Exists(destPath))
+                Directory.CreateDirectory(destPath);
+
+            // Check srcFileName contains wildcard
+            if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                srcDir = Path.Combine(FileHelper.RemoveLastDirChar(srcDir), "*");
+
+            string srcDirToFind = FileHelper.GetDirNameEx(srcDir);
+            string rawSrcDirToFind = FileHelper.GetDirNameEx(rawSrcDir);
+                
+            string[] dirListToCreate = Directory.GetDirectories(srcDirToFind, Path.GetFileName(srcDir), SearchOption.AllDirectories);
+            string[] fileListToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcDir), SearchOption.AllDirectories);
+
+            if (0 < dirListToCreate.Length || 0 < fileListToCopy.Length)
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcDir}] will be copied to [{rawDestPath}]"));
+
+            foreach (string searchedDir in dirListToCreate)
             {
-                if (!destExists) // Destination not exists, make an dir
-                    Directory.CreateDirectory(destDir);
-                if (string.Equals(singleFile, string.Empty, StringComparison.Ordinal))
-                { // No singleFile operand, Extract all
-                    List<string> extractedList;
-                    if (CompressHelper.ExtractCab(srcCabFile, destDir, out extractedList)) // Success
-                    {
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{extractedList.Count} files] extracted from [{rawSrcCabFile}]"));
-                        foreach (string extracted in extractedList)
-                            logs.Add(new LogInfo(cmd, LogState.Success, $"[{extracted}] extracted", cmd.Depth + 1));
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"End of the list"));
-                    }
-                    else // Failure
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"Failed to extract [{rawSrcCabFile}]"));
+                string rawSearchedFile = searchedDir.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(rawSrcDirToFind));
+                string destFullPath = searchedDir.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(destPath));
+                string rawDestFullPath = searchedDir.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(rawDestPath));
+                if (Directory.Exists(destFullPath))
+                {
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Directory [{rawDestFullPath}] already exists", cmd.Depth + 1));
                 }
                 else
-                { // singleFile specified, Extract only that file
-                    string destSingleFile = Path.Combine(destDir, singleFile);
-                    bool destSingleFileExists = File.Exists(destSingleFile);
-                    if (destSingleFileExists)
-                    { // Check PRESERVE, NOWARN 
-                        if (preserve)
-                        { // Do nothing
-                            if (noWarn)
-                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
-                            else
-                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{Path.Combine(rawDestDir, rawSingleFile)}] already exists, cannot extract from [{rawSrcCabFile}]"));
-                            return logs;
-                        }
-                    }
+                {
+                    Directory.CreateDirectory(destFullPath);
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Directory [{rawDestFullPath}] created", cmd.Depth + 1));
+                }
+            }
 
-                    if (CompressHelper.ExtractCab(srcCabFile, destDir, singleFile)) // Success
-                    {
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSingleFile}] extracted from [{rawSrcCabFile}]"));
-                        if (destSingleFileExists)
-                        {
-                            if (noWarn)
-                                logs.Add(new LogInfo(cmd, LogState.Ignore, $"[{rawSingleFile}] overwritten"));
-                            else
-                                logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawSingleFile}] overwritten"));
-                        }
-                    }
-                    else // Failure
-                    {
-                        logs.Add(new LogInfo(cmd, LogState.Error, $"Failed to extract [{rawSingleFile}] from [{rawSrcCabFile}]"));
-                    }
+            foreach (string searchedFile in fileListToCopy)
+            {
+                string rawSearchedFile = searchedFile.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(rawSrcDirToFind));
+                string destFullPath = searchedFile.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(destPath));
+                string rawDestFullPath = searchedFile.Replace(srcDirToFind, FileHelper.RemoveLastDirChar(rawDestPath));
+
+                if (!Directory.Exists(FileHelper.GetDirNameEx(destFullPath)))
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destFullPath));
+
+                if (File.Exists(destFullPath))
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawDestFullPath}] will be overwritten", cmd.Depth + 1));
+                File.Copy(searchedFile, destFullPath, true);
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSearchedFile}] copied to [{rawDestFullPath}]", cmd.Depth + 1));
+            }
+
+            if (0 < dirListToCreate.Length)
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{dirListToCreate.Length}] directories created"));
+
+            if (0 < fileListToCopy.Length)
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{fileListToCopy.Length}] files copied"));
+
+            if (dirListToCreate.Length == 0 && fileListToCopy.Length == 0)
+            {
+                logs.Add(new LogInfo(cmd, LogState.Warning, $"Directory matches wildcard [{rawSrcDir}] not found"));
+                logs.Add(new LogInfo(cmd, LogState.Warning, $"File matches wildcard [{rawSrcDir}] not found"));
+            }
+
+            return logs;
+        }
+
+        /// <summary>
+        /// DirDelete,<DirPath>
+        /// </summary>
+        /// <remarks>
+        /// [FAST] optional command deprecated
+        /// Wildcard supported in <DirPath>
+        /// This command only deletes directory, not file
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdDirDelete(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 1, optional operand : 0
+            const int necessaryOperandNum = 1;
+            const int optionalOperandNum = 0;
+
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string dirPath = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawDirPath = cmd.Operands[0];
+
+            // Check srcFileName contains wildcard
+            bool dirPathContainsWildcard = true;
+            if (dirPath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                dirPathContainsWildcard = false;
+            // Check destPath is directory
+            if (File.Exists(dirPath))
+                throw new PathNotDirException($"[{dirPath}] must be directory", cmd);
+
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
+            {
+                string operand = cmd.Operands[i];
+                if (string.Equals(operand, "FAST", StringComparison.OrdinalIgnoreCase))
+                { // Do nothing. FAST option is deprecated in PEBakery
+                }
+                else
+                    throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
+            }
+
+            if (dirPathContainsWildcard) // wildcard exists
+            {
+                string srcDirToFind = FileHelper.GetDirNameEx(dirPath);
+                string rawSrcDirToFind = FileHelper.GetDirNameEx(rawDirPath);
+                string[] listToDelete = Directory.GetDirectories(srcDirToFind, Path.GetFileName(dirPath), SearchOption.AllDirectories);
+                if (0 < listToDelete.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawDirPath}] will be deleted"));
+                foreach (string searchedPath in listToDelete)
+                {
+                    FileHelper.DirectoryDeleteEx(searchedPath, true);
+                    string searchedDirName = searchedPath.Remove(0, srcDirToFind.Length + 1); // 1 for \\
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, searchedDirName)}] deleted", cmd.Depth + 1));
+                }
+                if (0 < listToDelete.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{listToDelete.Length}] directories deleted"));
+                else if (listToDelete.Length == 0) // Directory not found
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Directory matches [{rawDirPath}] not found"));
+            }
+            else // No wildcard
+            {
+                if (!Directory.Exists(dirPath))
+                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Directory [{rawDirPath}] not found"));
+                else
+                {
+                    FileHelper.DirectoryDeleteEx(dirPath, true);
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawDirPath}] deleted"));
                 }
             }
 
@@ -311,10 +487,83 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// FileCopy,<SrcFileName>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
+        /// DirMove,<SrcDir>,<DestDir>
         /// </summary>
         /// <remarks>
-        /// Wildcard supported in <SrcFileName>
+        /// Wildcard not supported
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdDirMove(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Necessary operand : 2, optional operand : 0
+            const int necessaryOperandNum = 2;
+            const int optionalOperandNum = 0;
+
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string srcDir = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcDir = cmd.Operands[0];
+            string destDir = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestDir = cmd.Operands[1];
+
+            // Check if srcDir exists
+            if (!Directory.Exists(srcDir))
+                throw new InvalidOperandException($"Directory [{rawSrcDir}] does not exist");
+            // Check if destDir exists
+            if (Directory.Exists(destDir))
+                throw new InvalidOperandException($"Directory [{rawDestDir}] already exists");
+            else if (File.Exists(destDir))
+                throw new InvalidOperandException($"File [{rawDestDir}] already exists");
+
+            // src and dest directory name is same, so log it
+            if (string.Equals(FileHelper.RemoveLastDirChar(srcDir), FileHelper.RemoveLastDirChar(destDir), StringComparison.OrdinalIgnoreCase))
+                logs.Add(new LogInfo(cmd, LogState.Warning, "Cannot move to same directory"));
+            else
+            {
+                Directory.Move(srcDir, destDir);
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcDir}] moved to [{rawDestDir}]"));
+            }
+
+            return logs;
+        }
+
+        /// <summary>
+        /// DirMake,<DestDir> 
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdDirMake(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            // Necessary operand : 1, optional operand : 0
+            const int necessaryOperandNum = 1;
+            const int optionalOperandNum = 0;
+
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string destDir = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawDestDir = cmd.Operands[0];
+
+            Directory.CreateDirectory(destDir);
+            logs.Add(new LogInfo(cmd, LogState.Success, $"Created directory [{rawDestDir}]"));
+
+            return logs;
+        }
+
+        /// <summary>
+        /// FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
+        /// </summary>
+        /// <remarks>
+        /// Wildcard supported in <SrcFile>
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns>LogInfo[]</returns>
@@ -330,14 +579,14 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = UnescapeString(ExpandVariables(cmd.Operands[0]));
-            string rawSrcFileName = cmd.Operands[0];
+            string srcFile = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcFile = cmd.Operands[0];
             string destPath = UnescapeString(ExpandVariables(cmd.Operands[1]));
             string rawDestPath = cmd.Operands[1];
 
             // Check srcFileName contains wildcard
             bool srcContainWildcard = true;
-            if (srcFileName.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+            if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
                 srcContainWildcard = false;
             // Check destPath is directory
             bool destPathExists = false;
@@ -357,38 +606,32 @@ namespace BakeryEngine
             for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
             {
                 string operand = cmd.Operands[i];
-                switch (operand.ToUpper())
-                {
-                    case "PRESERVE":
-                        preserve = true;
-                        break;
-                    case "NOWARN":
-                        noWarn = true;
-                        break;
-                    case "SHOW": // for compability with WB082
-                        break;
-                    case "NOREC": // no recursive wildcard copy
-                        noRec = true;
-                        break;
-                    default:
-                        throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
-                }
+                if (string.Equals(operand, "PRESERVE", StringComparison.OrdinalIgnoreCase))
+                    preserve = true;
+                else if (string.Equals(operand, "NOWARN", StringComparison.OrdinalIgnoreCase))
+                    noWarn = true;
+                else if (string.Equals(operand, "SHOW", StringComparison.OrdinalIgnoreCase)) // for compability with WB082
+                { }
+                else if (string.Equals(operand, "NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
+                    noRec = true;
+                else
+                    throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
             }
 
             try
             {
                 if (srcContainWildcard)
                 {
-                    string srcDirToFind = FileHelper.GetDirNameEx(srcFileName);
-                    string rawSrcDirToFind = FileHelper.GetDirNameEx(rawSrcFileName);
+                    string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
+                    string rawSrcDirToFind = FileHelper.GetDirNameEx(rawSrcFile);
                     string[] listToCopy;
                     if (noRec)
-                        listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName));
+                        listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile));
                     else
-                        listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFileName), SearchOption.AllDirectories);
+                        listToCopy = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
 
                     if (0 < listToCopy.Length)
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{srcFileName}] will be copied to [{destPath}]"));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
                     foreach (string searchedFilePath in listToCopy)
                     {
                         if (destPathIsDir || !destPathExists)
@@ -408,7 +651,7 @@ namespace BakeryEngine
                     if (0 < listToCopy.Length)
                         logs.Add(new LogInfo(cmd, LogState.Success, $"[{listToCopy.Length}] files copied"));
                     else if (listToCopy.Length == 0)
-                        logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Files matches wildcard [{rawSrcFileName}] not found"));
+                        logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"Files matches wildcard [{rawSrcFile}] not found"));
                 }
                 else
                 {
@@ -416,21 +659,21 @@ namespace BakeryEngine
                     {
                         Directory.CreateDirectory(destPath);
                         string rawDestPathDir = FileHelper.GetDirNameEx(rawDestPath);
-                        string destPathTail = srcFileName.Remove(0, FileHelper.GetDirNameEx(srcFileName).Length + 1); // 1 for \\
+                        string destPathTail = srcFile.Remove(0, FileHelper.GetDirNameEx(srcFile).Length + 1); // 1 for \\
                         string destFullPath = string.Concat(FileHelper.RemoveLastDirChar(destPath), Path.DirectorySeparatorChar, destPathTail);
                         if (File.Exists(destFullPath))
                             logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{Path.Combine(rawDestPathDir, destPathTail)}] will be overwritten"));
                             
-                        File.Copy(srcFileName, destFullPath, !preserve);
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] copied to [{rawDestPath}]"));
+                        File.Copy(srcFile, destFullPath, !preserve);
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFile}] copied to [{rawDestPath}]"));
                     }
                     else
                     {
                         Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
                         if (destPathExists)
                             logs.Add(new LogInfo(cmd, noWarn ? LogState.Ignore : LogState.Warning, $"[{rawDestPath}] will be overwritten"));
-                        File.Copy(srcFileName, destPath, !preserve);
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] copied to [{rawDestPath}]"));                        
+                        File.Copy(srcFile, destPath, !preserve);
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFile}] copied to [{rawDestPath}]"));                        
                     }
                 }
                 
@@ -447,14 +690,14 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// FileDelete,<FileName>,[,NOWARN][,NOREC]
+        /// FileDelete,<FilePath>,[,NOWARN][,NOREC]
         /// </summary>
         /// <remarks>
-        /// Wildcard supported in <FileName>
+        /// Wildcard supported in <FilePath>
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
-        public List<LogInfo> CmdFileDelete(BakeryCommand cmd)
+        private List<LogInfo> CmdFileDelete(BakeryCommand cmd)
         { 
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -506,13 +749,18 @@ namespace BakeryEngine
                     listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
                 else
                     listToDelete = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
+
+                if (0 < listToDelete.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawFilePath}] will be deleted"));
                 foreach (string searchedFilePath in listToDelete)
                 {
                     File.Delete(searchedFilePath);
                     string searchedFileName = searchedFilePath.Remove(0, srcDirToFind.Length + 1); // 1 for \\
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, searchedFileName)}] deleted"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{Path.Combine(rawSrcDirToFind, searchedFileName)}] deleted", cmd.Depth + 1));
                 }
-                if (listToDelete.Length == 0)
+                if (0 < listToDelete.Length)
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{listToDelete.Length}] files deleted"));
+                else if (listToDelete.Length == 0)
                 {
                     if (!noWarn) // file is not found
                         logs.Add(new LogInfo(cmd, LogState.Warning, $"[{rawFilePath}] not found"));
@@ -530,7 +778,7 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// FileRename,<srcFileName>,<destFileName>
+        /// FileRename,<srcFile>,<destFile>
         /// </summary>
         /// <remarks>
         /// Wildcard not supported
@@ -550,30 +798,27 @@ namespace BakeryEngine
             else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
                 throw new InvalidOperandException("Too many operands", cmd);
 
-            string srcFileName = UnescapeString(ExpandVariables(cmd.Operands[0]));
-            string rawSrcFileName = cmd.Operands[0];
-            string destFileName = UnescapeString(ExpandVariables(cmd.Operands[1]));
-            string rawDestFileName = cmd.Operands[1];
+            string srcFile = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawSrcFile = cmd.Operands[0];
+            string destFile = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestFile = cmd.Operands[1];
 
             // Check if srcFileName exists
-            if (File.Exists(srcFileName) == false)
-                throw new FileNotFoundException($"[{rawSrcFileName}] does not exist");
+            if (File.Exists(srcFile) == false)
+                throw new FileNotFoundException($"[{rawSrcFile}] does not exist");
+            // Check if destFileName exists
+            if (Directory.Exists(destFile))
+                throw new InvalidOperandException($"Directory [{rawDestFile}] already exists");
+            else if (File.Exists(destFile))
+                throw new InvalidOperandException($"File [{rawDestFile}] already exists");
 
             // src and dest filename is same, so log it
-            if (string.Equals(FileHelper.RemoveLastDirChar(srcFileName), FileHelper.RemoveLastDirChar(destFileName), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(FileHelper.RemoveLastDirChar(srcFile), FileHelper.RemoveLastDirChar(destFile), StringComparison.OrdinalIgnoreCase))
                 logs.Add(new LogInfo(cmd, LogState.Warning, "Cannot rename to same filename"));
             else
             {
-                // File.Move can move file if volume is different.
-                try
-                {
-                    File.Move(srcFileName, destFileName);
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFileName}] moved to [{rawDestFileName}]"));
-                }
-                catch (IOException)
-                {
-                    logs.Add(new LogInfo(cmd, LogState.Warning, $"Cannot overwrite [{rawDestFileName}]"));
-                }
+                File.Move(srcFile, destFile);
+                logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawSrcFile}] moved to [{rawDestFile}]"));
             }
 
             return logs;
@@ -679,7 +924,8 @@ namespace BakeryEngine
         /// FileByteExtract,<SrcFiles>,<DestFile>,<Signature>,<CopyLength> 
         /// </summary>
         /// <remarks>
-        /// <SrcFiles> can have wildcard, <DestFile> will be thought as file
+        /// Wildcard supported in <SrcFiles>
+        /// <DestFile> will regarded as file
         /// </remarks>
         /// <param name="cmd"></param>
         /// <returns></returns>
@@ -748,7 +994,7 @@ namespace BakeryEngine
                     }
                 }
                 if (0 < listToCopy.Length)
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{idx}/{listToCopy.Length}] files searched"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{idx}] of [{listToCopy.Length}] files searched"));
                 else if (listToCopy.Length == 0)
                     logs.Add(new LogInfo(cmd, LogState.Warning, $"Files matches wildcard [{rawSrcFiles}] not found"));
             }

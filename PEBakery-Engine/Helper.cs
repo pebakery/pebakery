@@ -185,6 +185,7 @@ namespace BakeryEngine
         /// <returns></returns>
         public static string GetDirNameEx(string path)
         {
+            path = FileHelper.RemoveLastDirChar(path);
             string dirName = Path.GetDirectoryName(path);
             if (dirName == string.Empty)
                 dirName = ".";
@@ -311,6 +312,30 @@ namespace BakeryEngine
             stream.Close();
             accessor.Dispose();
             mmap.Dispose();
+        }
+
+        /// <summary>
+        /// Delete directory, handling open of the handle of the files
+        /// </summary>
+        /// <remarks>
+        /// http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
+        /// </remarks>
+        /// <param name="path"></param>
+        /// <param name="recursive"></param>
+        public static void DirectoryDeleteEx(string path, bool recursive)
+        {
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (IOException)
+            {
+                Directory.Delete(path, true);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Directory.Delete(path, true);
+            }
         }
     }
 
