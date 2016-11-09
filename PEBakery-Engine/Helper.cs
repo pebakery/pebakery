@@ -8,6 +8,9 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
+// Hash
+using System.Security.Cryptography;
+
 // P/invoke
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -16,8 +19,8 @@ using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
 using System.IO.MemoryMappedFiles;
-
-// Cabinet.dll
+using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace BakeryEngine
 {
@@ -314,6 +317,22 @@ namespace BakeryEngine
             mmap.Dispose();
         }
 
+        public static void CopyStream(Stream srcStream, string destFile)
+        {
+            FileStream destStream = new FileStream(destFile, FileMode.Create, FileAccess.Write);
+
+            const int block = 4096; // Memory Page is 4KB!
+            byte[] buffer = new byte[block];
+            int len = 1;
+            while (0 < len)
+            {
+                len = srcStream.Read(buffer, 0, block);
+                destStream.Write(buffer, 0, len);
+            }
+
+            destStream.Close();
+        }
+
         /// <summary>
         /// Delete directory, handling open of the handle of the files
         /// </summary>
@@ -339,6 +358,172 @@ namespace BakeryEngine
         }
     }
 
+    public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 };
+
+    public static class HashHelper
+    {
+        public const int MD5Len = 128 / 8;
+        public const int SHA1Len = 160 / 8;
+        public const int SHA256Len = 256 / 8;
+        public const int SHA384Len = 384 / 8;
+        public const int SHA512Len = 512 / 8;
+
+        public static byte[] CalcHash(HashType type, byte[] data)
+        {
+            return InternalCalcHash(type, data);
+        }
+
+        public static byte[] CalcHash(HashType type, string hex)
+        {
+            byte[] data;
+            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+                throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
+            return InternalCalcHash(type, data);
+        }
+
+        public static byte[] CalcHash(HashType type, Stream stream)
+        {
+            return InternalCalcHash(type, stream);
+        }
+
+        public static string CalcHashString(HashType type, byte[] data)
+        {
+            byte[] h = InternalCalcHash(type, data);
+            StringBuilder builder = new StringBuilder();
+            foreach (byte b in h)
+                builder.Append(b.ToString("X2"));
+            return builder.ToString();
+        }
+
+        public static string CalcHashString(HashType type, string hex)
+        {
+            byte[] data;
+            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+                throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
+            byte[] h = InternalCalcHash(type, data);
+            StringBuilder builder = new StringBuilder();
+            foreach (byte b in h)
+                builder.Append(b.ToString("X2"));
+            return builder.ToString();
+        }
+
+        public static string CalcHashString(HashType type, Stream stream)
+        {
+            byte[] h = InternalCalcHash(type, stream);
+            StringBuilder builder = new StringBuilder();
+            foreach (byte b in h)
+                builder.Append(b.ToString("X2"));
+            return builder.ToString();
+        }
+
+        private static byte[] InternalCalcHash(HashType type, byte[] data)
+        {
+            HashAlgorithm hash;
+            switch (type)
+            {
+                case HashType.MD5:
+                    hash = MD5.Create();
+                    break;
+                case HashType.SHA1:
+                    hash = SHA1.Create();
+                    break;
+                case HashType.SHA256:
+                    hash = SHA256.Create();
+                    break;
+                case HashType.SHA384: 
+                    hash = SHA384.Create();
+                    break;
+                case HashType.SHA512:
+                    hash = SHA512.Create();
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid Hash Type");
+            }
+            return hash.ComputeHash(data);
+        }
+
+        private static byte[] InternalCalcHash(HashType type, Stream stream)
+        {
+            HashAlgorithm hash;
+            switch (type)
+            {
+                case HashType.MD5:
+                    hash = MD5.Create();
+                    break;
+                case HashType.SHA1:
+                    hash = SHA1.Create();
+                    break;
+                case HashType.SHA256:
+                    hash = SHA256.Create();
+                    break;
+                case HashType.SHA384:
+                    hash = SHA384.Create();
+                    break;
+                case HashType.SHA512:
+                    hash = SHA512.Create();
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid Hash Type");
+            }
+            return hash.ComputeHash(stream);
+        }
+
+        public static HashType DetectHashType(byte[] data)
+        {
+            return InternalDetectHashType(data.Length);
+        }
+
+        public static HashType DetectHashType(string hex)
+        {
+            byte[] hashByte;
+            if (StringHelper.IsHex(hex))
+                return HashType.None;
+            if (!NumberHelper.ParseHexStringToBytes(hex, out hashByte))
+                return HashType.None;
+
+            return InternalDetectHashType(hashByte.Length);
+        }
+
+        private static HashType InternalDetectHashType(int length)
+        {
+            HashType hashType = HashType.None;
+
+            switch (length)
+            {
+                case HashHelper.MD5Len * 2:
+                    hashType = HashType.MD5;
+                    break;
+                case HashHelper.SHA1Len * 2:
+                    hashType = HashType.SHA1;
+                    break;
+                case HashHelper.SHA256Len * 2:
+                    hashType = HashType.SHA256;
+                    break;
+                case HashHelper.SHA384Len * 2:
+                    hashType = HashType.SHA384;
+                    break;
+                case HashHelper.SHA512Len * 2:
+                    hashType = HashType.SHA512;
+                    break;
+                default:
+                    throw new InvalidOperandException($"Cannot recognize valid hash string");
+            }
+
+            return hashType;
+        }
+    }
+
+    public static class WebHelper
+    {
+        public static async Task<Stream> GetStreamAsync(string url)
+        {
+            HttpClient client = new HttpClient();
+            // http://blog.stephencleary.com/2012/07/dont-block-on-async-code.html
+            // Set GetStreamAsync to use Thread Pool, to evade deadlock
+            return await client.GetStreamAsync(url).ConfigureAwait(false);
+        }
+    }
+
     public static class StringHelper
     {
         /// <summary>
@@ -349,6 +534,23 @@ namespace BakeryEngine
         public static string RemoveLastNewLine(string str)
         {
             return str.Trim().TrimEnd(Environment.NewLine.ToCharArray()).Trim();
+        }
+
+        /// <summary>
+        /// Check if string is hex or not
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static bool IsHex(string str)
+        {
+            str = str.Trim();
+            if (str.Length % 2 == 1)
+                return false;
+
+            if (Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled))
+                return true;
+            else
+                return false;
         }
     }
 
@@ -567,8 +769,10 @@ namespace BakeryEngine
         /// <param name="hex"></param>
         /// <param name="array"></param>
         /// <returns>Return true if success.</returns>
-        public static bool ParseHexStringToByteArray(string hex, out byte[] array)
+        public static bool ParseHexStringToBytes(string hex, out byte[] array)
         {
+            // Encoding.UTF8.GetBytes
+
             if (hex.Length % 2 == 1) // hex's length must be even number
             {
                 array = new byte[0];

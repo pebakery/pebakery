@@ -1,0 +1,23 @@
+[Main]
+Title=DirCopy
+Type=Plugin
+Author=ied206
+Description=UnitTest of DirCopy
+Credits=
+Version=001
+Level=05
+Selected=True
+Mandatory=False
+NoWarning=False
+
+[HelpMessage]
+DirCopy,<SrcDir>,<DestDir>
+Wildcard supported in <SrcDir>
+Option [SHOW] deprecated, not used in WinPESE
+
+[Process]
+Echo,"Testing %ScriptTitle% ..."
+// Testing Wildcard Mode
+DirCopy,%TestSrc%\01_DirCopy\*.txt,%TestDest%\01_DirCopy\Wildcard
+// Testing Normal Mode
+DirCopy,%TestSrc%\01_DirCopy,%TestDest%\01_DirCopy\Normal

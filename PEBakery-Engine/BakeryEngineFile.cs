@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
-using System.IO.MemoryMappedFiles;
+using System.Net.Http;
 
 namespace BakeryEngine
 {
@@ -946,7 +946,7 @@ namespace BakeryEngine
             string destFile = UnescapeString(ExpandVariables(cmd.Operands[1]));
             string rawDestFile = cmd.Operands[1];
             byte[] signature;
-            if (!NumberHelper.ParseHexStringToByteArray(cmd.Operands[2], out signature))
+            if (!NumberHelper.ParseHexStringToBytes(cmd.Operands[2], out signature))
                 throw new InvalidOperandException($"[CopyLength] must be valid hex string, Ex) A0B1C2", cmd);
             long copyLength;
             if (!NumberHelper.ParseInt64(cmd.Operands[3], out copyLength))
@@ -985,7 +985,7 @@ namespace BakeryEngine
                     {
                         logs.Add(new LogInfo(cmd, LogState.Success, $"Signature found at [{Path.Combine(rawSrcDirToFind, Path.GetFileName(searchedFilePath))}]'s offset [{offset}]", cmd.Depth + 1));
                         FileHelper.CopyOffset(searchedFilePath, destFile, offset, copyLength);
-                        logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully coped [{copyLength}] bytes to [{rawDestFile}]", cmd.Depth + 1));
+                        logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully copied [{copyLength}] bytes to [{rawDestFile}]", cmd.Depth + 1));
                         break;
                     }
                     else
@@ -1006,11 +1006,166 @@ namespace BakeryEngine
                 {
                     logs.Add(new LogInfo(cmd, LogState.Success, $"Signature found at [{rawSrcFiles}]'s offset [{offset}]"));
                     FileHelper.CopyOffset(srcFiles, destFile, offset, copyLength);
-                    logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully coped [{copyLength}] bytes to [{rawDestFile}]"));
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully copied [{copyLength}] bytes to [{rawDestFile}]"));
                 }
                 else
                 {
                     logs.Add(new LogInfo(cmd, LogState.Ignore, $"Signature not found from [{rawSrcFiles}]"));
+                }
+            }
+
+            return logs;
+        }
+
+        /// <summary>
+        /// WebGet,<URL>,<DestPath>,[HASH]
+        /// </summary>
+        /// <remarks>
+        /// [ASK], [TIMEOUT] deprecated
+        /// [HASH] : <HashType><HashHex>
+        ///   HashType = MD5, SHA1, SHA256, SHA512
+        ///   Ex) SHA256,f23530b86b6cfa1f41f46fc4352951fe2773b25791a347383e851c720431ef9a
+        /// </remarks>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
+        private List<LogInfo> CmdWebGet(BakeryCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            // Necessary operand : 3, optional operand : 1
+            const int necessaryOperandNum = 3;
+            const int optionalOperandNum = 1;
+
+            if (cmd.Operands.Count < necessaryOperandNum)
+                throw new InvalidOperandException("Necessary operands does not exist", cmd);
+            else if (necessaryOperandNum + optionalOperandNum < cmd.Operands.Count)
+                throw new InvalidOperandException("Too many operands", cmd);
+
+            string urlString = UnescapeString(ExpandVariables(cmd.Operands[0]));
+            string rawUrlString = cmd.Operands[0];
+            string destPath = UnescapeString(ExpandVariables(cmd.Operands[1]));
+            string rawDestPath = cmd.Operands[1];
+
+            Uri uri = new Uri(urlString);
+
+            // Check destPath is directory
+            bool destPathExists = false;
+            bool destPathIsDir = false;
+            if (Directory.Exists(destPath))
+            {
+                destPathExists = true;
+                destPathIsDir = true;
+            }
+            else if (File.Exists(destPath))
+                destPathExists = true;
+
+            HashType hashType = HashType.None;
+            string hashString = string.Empty;
+            for (int i = necessaryOperandNum; i < cmd.Operands.Count; i++)
+            {
+                string operand = cmd.Operands[i];
+                if (string.Equals(operand, "ASK", StringComparison.OrdinalIgnoreCase)) // for compability with WB082
+                { }
+                else if (string.Equals(operand, "TIMEOUT", StringComparison.OrdinalIgnoreCase)) // for compability with WB082
+                { }
+                else if (string.Equals(operand, "MD5", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(i + 1 < cmd.Operands.Count))
+                        throw new InvalidOperandException($"Hash string is not provided", cmd);
+                    hashString = cmd.Operands[i];
+                    if (!StringHelper.IsHex(hashString))
+                        throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
+                    if (hashString.Length == HashHelper.MD5Len * 2) // * 2 for Hexadecimal
+                        throw new InvalidOperandException($"[{hashString}] is not a valid MD5 hash string", cmd);
+                    hashType = HashType.MD5;
+                }
+                else if (string.Equals(operand, "SHA1", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(i + 1 < cmd.Operands.Count))
+                        throw new InvalidOperandException($"Hash string is not provided", cmd);
+                    hashString = cmd.Operands[i];
+                    if (!StringHelper.IsHex(hashString))
+                        throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
+                    if (hashString.Length == HashHelper.SHA1Len * 2) // * 2 for Hexadecimal
+                        throw new InvalidOperandException($"[{hashString}] is not a valid SHA1 hash string", cmd);
+                    hashType = HashType.SHA1;
+                }
+                else if (string.Equals(operand, "SHA256", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(i + 1 < cmd.Operands.Count))
+                        throw new InvalidOperandException($"Hash string is not provided", cmd);
+                    hashString = cmd.Operands[i];
+                    if (!StringHelper.IsHex(hashString))
+                        throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
+                    if (hashString.Length == HashHelper.SHA256Len * 2) // * 2 for Hexadecimal
+                        throw new InvalidOperandException($"[{hashString}] is not a valid SHA256 hash string", cmd);
+                    hashType = HashType.SHA256;
+                }
+                else if (string.Equals(operand, "SHA384", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(i + 1 < cmd.Operands.Count))
+                        throw new InvalidOperandException($"Hash string is not provided", cmd);
+                    hashString = cmd.Operands[i];
+                    if (!StringHelper.IsHex(hashString))
+                        throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
+                    if (hashString.Length == HashHelper.SHA384Len * 2) // * 2 for Hexadecimal
+                        throw new InvalidOperandException($"[{hashString}] is not a valid SHA384 hash string", cmd);
+                    hashType = HashType.SHA256;
+                }
+                else if (string.Equals(operand, "SHA512", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!(i + 1 < cmd.Operands.Count))
+                        throw new InvalidOperandException($"Hash string is not provided", cmd);
+                    hashString = cmd.Operands[i];
+                    if (!StringHelper.IsHex(hashString))
+                        throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
+                    if (hashString.Length == HashHelper.SHA512Len * 2) // * 2 for Hexadecimal
+                        throw new InvalidOperandException($"[{hashString}] is not a valid SHA512 hash string", cmd);
+                    hashType = HashType.SHA512;
+                }
+                else
+                    throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
+            }
+
+            if (destPathExists)
+            {
+                if (destPathIsDir)
+                {
+                    string urlFileName = uri.Segments[uri.Segments.Length - 1];
+                    if (string.Equals(urlFileName, string.Empty, StringComparison.OrdinalIgnoreCase))
+                        uri = new Uri(uri, "index");
+                    destPath = Path.Combine(destPath, urlFileName);
+                    rawDestPath = Path.Combine(rawDestPath, urlFileName);
+                }
+                else
+                {
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"[{rawDestPath}] will be overwritten"));
+                }
+            }
+
+            string parentDir = Path.GetDirectoryName(destPath);
+            if (!Directory.Exists(parentDir) && !string.Equals(parentDir, string.Empty, StringComparison.Ordinal))
+                Directory.CreateDirectory(parentDir);
+
+            Task<Stream> t = WebHelper.GetStreamAsync(urlString);
+            Stream read = t.Result;
+            FileHelper.CopyStream(read, destPath);
+            read.Close();
+
+            if (hashType == HashType.None)
+            {
+                logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully downloaded [{urlString}] into [{rawDestPath}]"));
+            }
+            else
+            {
+                FileStream file = new FileStream(destPath, FileMode.Create, FileAccess.Write);
+                string compareHash = HashHelper.CalcHashString(hashType, file);
+                file.Close();
+                if (string.Equals(compareHash, hashString, StringComparison.OrdinalIgnoreCase)) // Success
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Sucessfully downloaded [{urlString}] into [{rawDestPath}], integrity checked"));
+                else // Failure
+                {
+                    File.Delete(destPath);
+                    logs.Add(new LogInfo(cmd, LogState.Success, $"Downloaded [{urlString}], but integrity is broken"));
                 }
             }
 

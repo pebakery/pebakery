@@ -12,8 +12,9 @@ namespace BakeryEngine
     {
         static int Main(string[] args)
         {
+
+
             // Project project = new Project("Win10PESE");
-            // Project project = new Project("Joveler");
             Project project = new Project("TestSuite");
             Logger logger = new Logger("log.txt", LogFormat.Text);
             // BakeryEngine engine = new BakeryEngine(project, logger, DebugLevel.PrintExceptionType);

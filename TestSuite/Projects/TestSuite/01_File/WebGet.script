@@ -1,0 +1,22 @@
+[Main]
+Title=WebGet
+Type=Plugin
+Author=ied206
+Description=UnitTest of WebGet
+Credits=
+Version=001
+Level=05
+Selected=True
+Mandatory=False
+NoWarning=False
+
+[HelpMessage]
+DirMake,<DestDir>
+
+[Process]
+Echo,"Testing %ScriptTitle% ..."
+// Normal
+WebGet,https://raw.githubusercontent.com/ied206/PEBakery/master/README.md,%TestDest%/01_WebGet
+WebGet,https://raw.githubusercontent.com/ied206/PEBakery/master/LICENSE,%TestDest%/01_WebGet/MIT
+// Download with Hash
+WebGet,https://raw.githubusercontent.com/ied206/PEBakery/TestSuite/TestSuite/Src/01_WebGet/BatteryLine32.exe,SHA256,b5f61a3d7e8644502ff870efe40394fc64ec030118f9c3e010e1d095adaa5824

@@ -629,6 +629,9 @@ namespace BakeryEngine
                     case Opcode.FileByteExtract:
                         logs = this.CmdFileByteExtract(cmd);
                         break;
+                    case Opcode.WebGet:
+                        logs = this.CmdWebGet(cmd);
+                        break;
                     // Registry
                     // Text
                     case Opcode.TXTAddLine:
@@ -640,6 +643,9 @@ namespace BakeryEngine
                         break;
                     case Opcode.INIWrite:
                         logs = this.CmdINIWrite(cmd);
+                        break;
+                    case Opcode.Echo:
+                        // Not implemented
                         break;
                     // Network
                     // Attach
