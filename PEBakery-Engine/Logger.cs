@@ -126,7 +126,7 @@ namespace BakeryEngine
             }
             catch (Exception e)
             {
-                Console.WriteLine("[ERR]\n{0}", e.ToString());
+                Console.WriteLine("[ERR]\r\n{0}", e.ToString());
             }
         }
 
@@ -143,18 +143,18 @@ namespace BakeryEngine
         private void PrintBanner()
         {
             PEBakeryInfo info = new PEBakeryInfo();
-            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log\n", false);
+            InternalWriter($"PEBakery-Engine r{info.Ver.Build} (v{info.Ver.ToString()}) Alpha Log\r\n", false);
         }
 
         public void WriteGlobalVariables(BakeryVariables vars)
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.Append("[Global Variables]\n");
+            builder.Append("[Global Variables]\r\n");
             foreach (var global in vars.GlobalVars)
             {
-                builder.Append($"{global.Key} (Raw)   = {global.Value}\n");
-                builder.Append($"{global.Key} (Value) = {vars.GetValue(VarsType.Global, global.Key)}\n");
+                builder.Append($"{global.Key} (Raw)   = {global.Value}\r\n");
+                builder.Append($"{global.Key} (Value) = {vars.GetValue(VarsType.Global, global.Key)}\r\n");
             }
             InternalWriter(builder.ToString(), false);
         }

@@ -92,7 +92,7 @@ namespace BakeryEngine
             }
             else if (mode == 1) // Append
             {
-                File.AppendAllText(fileName, line + "\r\n", encoding);
+                File.AppendAllText(fileName, line + "\r\r\n", encoding);
                 logs.Add(new LogInfo(cmd, LogState.Success, $"Appended [{line}] to [{rawFileName}]"));
             }
             else if (mode == 2) // Place

@@ -346,6 +346,7 @@ namespace BakeryEngine
         private Logger logger;
         private bool runOnePlugin;
         private DebugLevel debugLevel;
+        private string baseDir;
 
         // Fields : Engine's state
         private Plugin currentPlugin;
@@ -361,23 +362,23 @@ namespace BakeryEngine
         private PluginCollection Plugins { get { return project.ActivePlugins; } }
 
         // Constructors
-        public BakeryEngine(Project project, Logger logger)
-        { InternalConstructor(project, project.MainPlugin, logger, false, DebugLevel.Production); }
-        public BakeryEngine(Project project, Logger logger, bool runOnePlugin)
-        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin, DebugLevel.Production); }
-        public BakeryEngine(Project project, Logger logger, string entryPlugin)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, DebugLevel.Production); }
-        public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, DebugLevel.Production); }
+        public BakeryEngine(string baseDir, Project project, Logger logger)
+        { InternalConstructor(baseDir, project, project.MainPlugin, logger, false, DebugLevel.Production); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, bool runOnePlugin)
+        { InternalConstructor(baseDir, project, project.MainPlugin, logger, runOnePlugin, DebugLevel.Production); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, string entryPlugin)
+        { InternalConstructor(baseDir, project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, DebugLevel.Production); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, string entryPlugin, bool runOnePlugin)
+        { InternalConstructor(baseDir, project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, DebugLevel.Production); }
 
-        public BakeryEngine(Project project, Logger logger, DebugLevel debugLevel)
-        { InternalConstructor(project, project.MainPlugin, logger, false, debugLevel); }
-        public BakeryEngine(Project project, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
-        { InternalConstructor(project, project.MainPlugin, logger, runOnePlugin, debugLevel); }
-        public BakeryEngine(Project project, Logger logger, string entryPlugin, DebugLevel debugLevel)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, debugLevel); }
-        public BakeryEngine(Project project, Logger logger, string entryPlugin, bool runOnePlugin, DebugLevel debugLevel)
-        { InternalConstructor(project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, debugLevel); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, DebugLevel debugLevel)
+        { InternalConstructor(baseDir, project, project.MainPlugin, logger, false, debugLevel); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
+        { InternalConstructor(baseDir, project, project.MainPlugin, logger, runOnePlugin, debugLevel); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, string entryPlugin, DebugLevel debugLevel)
+        { InternalConstructor(baseDir, project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, false, debugLevel); }
+        public BakeryEngine(string baseDir, Project project, Logger logger, string entryPlugin, bool runOnePlugin, DebugLevel debugLevel)
+        { InternalConstructor(baseDir, project, project.ActivePlugins.SearchByFullPath(entryPlugin), logger, runOnePlugin, debugLevel); }
 
         /// <summary>
         /// Internel Constructor
@@ -386,8 +387,9 @@ namespace BakeryEngine
         /// <param name="entryPlugin">Plugin to start</param>
         /// <param name="logger">Logger Instance</param>
         /// <param name="runOnePlugin">Run one plugin (entryPlugin) and exit</param>
-        private void InternalConstructor(Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
+        private void InternalConstructor(string baseDir, Project project, Plugin entryPlugin, Logger logger, bool runOnePlugin, DebugLevel debugLevel)
         {
+            this.baseDir = baseDir;
             this.project = project;
             this.logger = logger;
             this.variables = new BakeryVariables(logger);
@@ -418,7 +420,7 @@ namespace BakeryEngine
         {
             PEBakeryInfo info = new PEBakeryInfo();
             // BaseDir
-            variables.SetValue(VarsType.Global, "BaseDir", info.BaseDir);
+            variables.SetValue(VarsType.Global, "BaseDir", this.baseDir);
             // Tools
             variables.SetValue(VarsType.Global, "Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
 
@@ -529,7 +531,7 @@ namespace BakeryEngine
                         logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
 
                     if (!callback && sectionStart && depth == 0) // End of plugin
-                        logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\n"));
+                        logger.Write(new LogInfo(LogState.Info, $"End of plugin [{currentPlugin.ShortPath}]\r\n"));
                         
                     // PluginExit event callback
                     CheckAndRunCallback(ref onPluginExit, "OnPluginExit");
@@ -565,7 +567,6 @@ namespace BakeryEngine
             {
                 logger.Write($"Processing callback of event [{eventName}]");
                 
-                
                 if (callback.Opcode == Opcode.Run || callback.Opcode == Opcode.Exec)
                 {
                     callback.Depth = -1;
@@ -576,7 +577,7 @@ namespace BakeryEngine
                     callback.Depth = 0;
                     logger.Write(ExecuteCommand(callback));
                 }
-                logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\n"));
+                logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n"));
                 callback = null;
             }
         }
@@ -646,6 +647,7 @@ namespace BakeryEngine
                         break;
                     case Opcode.Echo:
                         // Not implemented
+                        logs = new List<LogInfo>();
                         break;
                     // Network
                     // Attach
@@ -713,11 +715,60 @@ namespace BakeryEngine
             switch (debugLevel)
             {
                 case DebugLevel.Production:
-                    return StringHelper.RemoveLastNewLine(e.Message);
+                    if (e.GetType() == typeof(AggregateException))
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
+                        foreach (var inEx in (e as AggregateException).InnerExceptions)
+                        {
+                            builder.Append("\r\n    ");
+                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                        }
+                        builder.Append("\r\n ");
+                        return builder.ToString();
+                    }
+                    else
+                        return StringHelper.RemoveLastNewLine(e.Message);
                 case DebugLevel.PrintExceptionType:
-                    return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message);
+                    if (e.GetType() == typeof(AggregateException))
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(e.GetType());
+                        builder.Append(": ");
+                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
+                        foreach (var inEx in (e as AggregateException).InnerExceptions)
+                        {
+                            builder.Append("\r\n    ");
+                            builder.Append(inEx.GetType());
+                            builder.Append(": ");
+                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                        }
+                        builder.Append("\r\n ");
+                        return builder.ToString();
+                    }
+                    else
+                        return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message);
                 case DebugLevel.PrintExceptionStackTrace:
-                    return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message) + "\n" + e.StackTrace + "\n";
+                    if (e.GetType() == typeof(AggregateException))
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        builder.Append(e.GetType());
+                        builder.Append(": ");
+                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
+                        foreach (var inEx in (e as AggregateException).InnerExceptions)
+                        {
+                            builder.Append("\r\n    ");
+                            builder.Append(inEx.GetType());
+                            builder.Append(": ");
+                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                        }
+                        builder.Append("\r\n");
+                        builder.Append(e.StackTrace);
+                        builder.Append("\r\n ");
+                        return builder.ToString();
+                    }
+                    else
+                        return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message) + "\r\n" + e.StackTrace + "\r\n ";
                 default:
                     return "Invalid DebugLevel. This is an internal error, PLEASE REPORT to PEBakery developer";
             }
@@ -730,7 +781,7 @@ namespace BakeryEngine
             { @"#$q", @""""},
             { @"#$s", @" " },
             { @"#$t", @"\t"},
-            { @"#$x", @"\n"},
+            { @"#$x", @"\r\n"},
             { @"#$h", @"#" }, // Extended
             //{ @"#$z", @"\x00\x00"},
         };

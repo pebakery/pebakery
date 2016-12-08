@@ -1031,9 +1031,9 @@ namespace BakeryEngine
         private List<LogInfo> CmdWebGet(BakeryCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
-            // Necessary operand : 3, optional operand : 1
-            const int necessaryOperandNum = 3;
-            const int optionalOperandNum = 1;
+            // Necessary operand : 2, optional operand : 1
+            const int necessaryOperandNum = 2;
+            const int optionalOperandNum = 2;
 
             if (cmd.Operands.Count < necessaryOperandNum)
                 throw new InvalidOperandException("Necessary operands does not exist", cmd);
@@ -1071,56 +1071,61 @@ namespace BakeryEngine
                 {
                     if (!(i + 1 < cmd.Operands.Count))
                         throw new InvalidOperandException($"Hash string is not provided", cmd);
-                    hashString = cmd.Operands[i];
+                    hashString = cmd.Operands[i + 1];
                     if (!StringHelper.IsHex(hashString))
                         throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
-                    if (hashString.Length == HashHelper.MD5Len * 2) // * 2 for Hexadecimal
+                    if (hashString.Length != HashHelper.MD5Len * 2) // * 2 for Hexadecimal
                         throw new InvalidOperandException($"[{hashString}] is not a valid MD5 hash string", cmd);
                     hashType = HashType.MD5;
+                    i++;
                 }
                 else if (string.Equals(operand, "SHA1", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!(i + 1 < cmd.Operands.Count))
                         throw new InvalidOperandException($"Hash string is not provided", cmd);
-                    hashString = cmd.Operands[i];
+                    hashString = cmd.Operands[i + 1];
                     if (!StringHelper.IsHex(hashString))
                         throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
-                    if (hashString.Length == HashHelper.SHA1Len * 2) // * 2 for Hexadecimal
+                    if (hashString.Length != HashHelper.SHA1Len * 2) // * 2 for Hexadecimal
                         throw new InvalidOperandException($"[{hashString}] is not a valid SHA1 hash string", cmd);
                     hashType = HashType.SHA1;
+                    i++;
                 }
                 else if (string.Equals(operand, "SHA256", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!(i + 1 < cmd.Operands.Count))
                         throw new InvalidOperandException($"Hash string is not provided", cmd);
-                    hashString = cmd.Operands[i];
+                    hashString = cmd.Operands[i + 1];
                     if (!StringHelper.IsHex(hashString))
                         throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
-                    if (hashString.Length == HashHelper.SHA256Len * 2) // * 2 for Hexadecimal
+                    if (hashString.Length != HashHelper.SHA256Len * 2) // * 2 for Hexadecimal
                         throw new InvalidOperandException($"[{hashString}] is not a valid SHA256 hash string", cmd);
                     hashType = HashType.SHA256;
+                    i++;
                 }
                 else if (string.Equals(operand, "SHA384", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!(i + 1 < cmd.Operands.Count))
                         throw new InvalidOperandException($"Hash string is not provided", cmd);
-                    hashString = cmd.Operands[i];
+                    hashString = cmd.Operands[i + 1];
                     if (!StringHelper.IsHex(hashString))
                         throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
-                    if (hashString.Length == HashHelper.SHA384Len * 2) // * 2 for Hexadecimal
+                    if (hashString.Length != HashHelper.SHA384Len * 2) // * 2 for Hexadecimal
                         throw new InvalidOperandException($"[{hashString}] is not a valid SHA384 hash string", cmd);
-                    hashType = HashType.SHA256;
+                    hashType = HashType.SHA384;
+                    i++;
                 }
                 else if (string.Equals(operand, "SHA512", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!(i + 1 < cmd.Operands.Count))
                         throw new InvalidOperandException($"Hash string is not provided", cmd);
-                    hashString = cmd.Operands[i];
+                    hashString = cmd.Operands[i + 1];
                     if (!StringHelper.IsHex(hashString))
                         throw new InvalidOperandException($"[{hashString}] is not a valid hash string", cmd);
-                    if (hashString.Length == HashHelper.SHA512Len * 2) // * 2 for Hexadecimal
+                    if (hashString.Length != HashHelper.SHA512Len * 2) // * 2 for Hexadecimal
                         throw new InvalidOperandException($"[{hashString}] is not a valid SHA512 hash string", cmd);
                     hashType = HashType.SHA512;
+                    i++;
                 }
                 else
                     throw new InvalidOperandException($"Invalid operand [{operand}]", cmd);
