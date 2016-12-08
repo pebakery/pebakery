@@ -1162,7 +1162,7 @@ namespace BakeryEngine
             }
             else
             {
-                FileStream file = new FileStream(destPath, FileMode.Create, FileAccess.Write);
+                FileStream file = new FileStream(destPath, FileMode.Open, FileAccess.Read);
                 string compareHash = HashHelper.CalcHashString(hashType, file);
                 file.Close();
                 if (string.Equals(compareHash, hashString, StringComparison.OrdinalIgnoreCase)) // Success
