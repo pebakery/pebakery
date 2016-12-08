@@ -15,6 +15,7 @@ namespace BakeryEngine
     public class Project
     {
         // Fields
+        private string baseDir;
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;
@@ -33,21 +34,21 @@ namespace BakeryEngine
         /// Constructor
         /// </summary>
         /// <param name="projectName"></param>
-        public Project(string projectName)
+        public Project(string baseDir, string projectName)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("Parsing plugins start...");
             this.projectName = projectName;
-            this.projectRoot = Path.Combine(FileHelper.GetProgramAbsolutePath(), "Projects", projectName);
+            this.projectRoot = Path.Combine(baseDir, "Projects", projectName);
             this.allPlugins = CollectAllPlugins();
             Console.WriteLine("Parsing plugins done.");
             Console.WriteLine($"All Plugins : {allPlugins.Count}");
-            Console.WriteLine("Time elapsed : {0}\n", stopwatch.Elapsed);
+            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
             stopwatch.Stop();
             this.activePlugins = CollectActivePlugins(this.allPlugins);
             Console.WriteLine("Selected active plugins.");
             Console.WriteLine($"Active Plugins : {activePlugins.Count}");
-            Console.WriteLine("Time elapsed : {0}\n", stopwatch.Elapsed);
+            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
         }
 
         private PluginCollection CollectAllPlugins()

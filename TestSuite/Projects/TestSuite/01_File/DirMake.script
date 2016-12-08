@@ -1,0 +1,18 @@
+[Main]
+Title=DirMake
+Type=Plugin
+Author=ied206
+Description=UnitTest of DirMake
+Credits=
+Version=001
+Level=05
+Selected=True
+Mandatory=False
+NoWarning=False
+
+[HelpMessage]
+DirMake,<DestDir>
+
+[Process]
+Echo,"Testing %ScriptTitle% ..."
+DirMake,%TestDest%\01_DirMake

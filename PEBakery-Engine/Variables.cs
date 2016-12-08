@@ -193,12 +193,12 @@ namespace BakeryEngine
 
         public override string ToString()
         {
-            StringBuilder str = new StringBuilder("[Local Variables]\n");
+            StringBuilder str = new StringBuilder("[Local Variables]\r\n");
             foreach (var local in localVars)
-                str.Append($"[{local.Key}, {local.Value}, {Expand(local.Value)}]\n");
-            str.Append("[Global Variables]\n");
+                str.Append($"[{local.Key}, {local.Value}, {Expand(local.Value)}]\r\n");
+            str.Append("[Global Variables]\r\n");
             foreach (var global in globalVars)
-                str.Append($"[{global.Key}, {global.Value}, {Expand(global.Value)}]\n");
+                str.Append($"[{global.Key}, {global.Value}, {Expand(global.Value)}]\r\n");
             return str.ToString();
         }
 

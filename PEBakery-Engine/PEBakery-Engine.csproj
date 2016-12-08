@@ -84,6 +84,7 @@
     <Compile Include="BakeryEngineText.cs" />
     <Compile Include="BakeryCodeParser.cs" />
     <Compile Include="CabExtract.cs" />
+    <Compile Include="Envrionment.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="IniFile.cs" />
     <Compile Include="Logger.cs" />
