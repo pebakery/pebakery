@@ -19,7 +19,7 @@ namespace PEBakery.WPF
         {
             // If no command line arguments were provided, don't process them 
             if (e.Args.Length == 0)
-                return;
+                Args = new string[0];
             else if (e.Args.Length > 0)
             {
                 Args = e.Args;

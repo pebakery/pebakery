@@ -42,7 +42,7 @@ namespace PEBakery.WPF
 
             string[] args = App.Args;
 
-            string argBaseDir = FileHelper.GetProgramAbsolutePath();
+            string argBaseDir = new DirectoryInfo(FileHelper.GetProgramAbsolutePath()).Parent.FullName;
             for (int i = 0; i < args.Length; i++)
             {
                 if (string.Equals(args[i], "/basedir", StringComparison.OrdinalIgnoreCase))
