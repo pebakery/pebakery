@@ -84,9 +84,6 @@ namespace PEBakery.Object
 
         private List<Plugin> CollectAllPlugins()
         {
-            // Dictionary<PluginDictKey, List<string>> pluginsByLevel = new Dictionary<PluginDictKey, List<string>>();
-            // PluginDictionary plugins = new PluginDictionary();
-
             List<string> pPathList = new List<string>();
 
             // Collect mainPlugin (script.project)
@@ -242,7 +239,6 @@ namespace PEBakery.Object
             }
 
             // Sort - Plugin first, Directory last
-            List<Node<Plugin>> list = pTree.Root;
             pTree.Sort((x, y) => {
                 if (x.Data.Level == y.Data.Level)
                 {

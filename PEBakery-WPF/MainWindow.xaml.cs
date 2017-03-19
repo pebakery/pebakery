@@ -18,6 +18,7 @@ using System.Windows.Shapes;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Object;
+using System.IO;
 
 namespace PEBakery.WPF
 {
@@ -26,10 +27,14 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Project project;
+        private List<Project> projects;
+        private int loadedProjectCount;
+        private int allProjectCount;
+        private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
         private Stopwatch stopwatch;
+        private BackgroundWorker loadWorker = new BackgroundWorker();
 
         public MainWindow()
         {
@@ -65,40 +70,66 @@ namespace PEBakery.WPF
             };
             this.bottomDock.Child = loadProgressBar;
 
+            this.projects = new List<Project>();
+            this.loadedProjectCount = 0;
+            this.allProjectCount = 0;
+
+            this.baseDir = argBaseDir;
+
             loadWorker.WorkerReportsProgress = true;
             loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
             loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
             loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
 
-            stopwatch = Stopwatch.StartNew();
-            loadWorker.RunWorkerAsync(argBaseDir);
+            loadWorker.RunWorkerAsync(baseDir);
         }
-
-        private BackgroundWorker loadWorker = new BackgroundWorker();
 
         void bgWorker_LoadProject(object sender, DoWorkEventArgs e)
         {
             string baseDir = (string) e.Argument;
-
             BackgroundWorker worker = sender as BackgroundWorker;
 
-            project = new Project(baseDir, "Win10PESE", worker);
-            project.Load();
+            stopwatch = Stopwatch.StartNew();
+            this.projects = new List<Project>();
+            this.loadedProjectCount = 0;
+            this.allProjectCount = 0;
+
+            string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
+            List<string> projList = new List<string>();
+            foreach (string dir in projArray)
+            {
+                if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
+                    projList.Add(dir);
+            }
+
+            allProjectCount = projList.Count;
+            foreach (string dir in projList)
+            {
+                Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
+                project.Load();
+                projects.Add(project);
+                loadedProjectCount++;
+            }
         }
 
         private void loadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            this.loadProgressBar.Value = e.ProgressPercentage;
+            // this.loadProgressBar.Value = e.ProgressPercentage;
+            this.loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
         }
 
         private void loadWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             stopwatch.Stop();
-            this.statusBar.Text = $"Scan took {stopwatch.Elapsed}";
+            TimeSpan t = stopwatch.Elapsed;
+            this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
             this.bottomDock.Child = statusBar;
 
-            List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-            RecursivePopulateMainTreeView(plugins, this.mainTreeView.Items);
+            foreach (Project project in this.projects)
+            {
+                List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
+                RecursivePopulateMainTreeView(plugins, this.mainTreeView.Items);
+            }   
         }
 
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, ItemCollection treeParent)
@@ -110,6 +141,8 @@ namespace PEBakery.WPF
                 treeParent.Add(item);
                 item.Header = p.Title;
                 item.Tag = p;
+                // if (p.Selected)
+                    // item.CheckBox
                 if (0 < node.Child.Count)
                     RecursivePopulateMainTreeView(node.Child, item.Items);
             }
@@ -123,23 +156,31 @@ namespace PEBakery.WPF
         {
             var tree = sender as TreeView;
 
-            // ... Determine type of SelectedItem.
             if (tree.SelectedItem is TreeViewItem)
             {
-                // ... Handle a TreeViewItem.
-                var item = tree.SelectedItem as TreeViewItem;
-                this.mainContainer.Text = "Selected header: " + item.Header.ToString();
+                TreeViewItem item = tree.SelectedItem as TreeViewItem;
+                Plugin p = item.Tag as Plugin;
+                this.mainContainer.Text = $"Selected: {p.Title}, Level = {p.Level}";
+
             }
-            else if (tree.SelectedItem is string)
+            else
             {
-                // ... Handle a string.
-                this.mainContainer.Text = "Selected: " + tree.SelectedItem.ToString();
+                Debug.Assert(false);
             }
         }
-    }
 
-    class BakeryTreeViewItem : TreeViewItem
-    {
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            mainTreeView.Items.Clear();
+            loadProgressBar.Value = 0;
+            this.bottomDock.Child = loadProgressBar;
 
+            loadWorker = new BackgroundWorker();
+            loadWorker.WorkerReportsProgress = true;
+            loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
+            loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
+            loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
+            loadWorker.RunWorkerAsync(baseDir);
+        }
     }
 }

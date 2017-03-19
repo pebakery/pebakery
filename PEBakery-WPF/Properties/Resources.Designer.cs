@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace PEBakery.WPF.Properties {
+namespace PEBakery_WPF.Properties {
     using System;
     
     

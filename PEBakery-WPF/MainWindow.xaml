@@ -21,7 +21,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Content="Build" Grid.Row="0" Grid.Column="0" Margin="5" />
-                <Button Content="Refresh" Grid.Row="0" Grid.Column="1" Margin="5" />
+                <Button Content="Refresh" Grid.Row="0" Grid.Column="1" Margin="5" Click="Button_Click" />
                 <Button Content="Option" Grid.Row="0" Grid.Column="2" Margin="5" />
                 <Button Content="Upgrade" Grid.Row="0" Grid.Column="3" Margin="5" />
 
