@@ -22,7 +22,7 @@ using System.IO.MemoryMappedFiles;
 using System.Threading.Tasks;
 using System.Net.Http;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     public class UnsupportedEncodingException : Exception
     {

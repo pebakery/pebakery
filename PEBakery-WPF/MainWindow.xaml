@@ -1,0 +1,44 @@
+﻿<Window x:Class="PEBakery.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        mc:Ignorable="d"
+        Title="PEBakery" Width="800" Height="600">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Height="100" Background="LightBlue">
+            <Grid Width="300" HorizontalAlignment="Right">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75*" />
+                    <RowDefinition Height="25*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Width="25*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Content="Build" Grid.Row="0" Grid.Column="0" Margin="5" />
+                <Button Content="Refresh" Grid.Row="0" Grid.Column="1" Margin="5" />
+                <Button Content="Option" Grid.Row="0" Grid.Column="2" Margin="5" />
+                <Button Content="Upgrade" Grid.Row="0" Grid.Column="3" Margin="5" />
+
+                <TextBlock Text="Build" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+                <TextBlock Text="Refresh" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+                <TextBlock Text="Option" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+                <TextBlock Text="Upgrade" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+            </Grid>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock">
+        </Border>
+        <Border DockPanel.Dock="Left" Width="200">
+            <TreeView x:Name="mainTreeView"  Background="PaleGreen" Loaded="mainTreeView_Loaded" SelectedItemChanged="mainTreeView_SelectedItemChanged">
+            </TreeView>
+        </Border>
+        <Border Background="White">
+            <TextBlock x:Name="mainContainer" Text="This content will Fill the remaining space"/>
+        </Border>
+    </DockPanel>
+</Window>

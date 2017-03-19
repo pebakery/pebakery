@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     using StringDictionary = Dictionary<string, string>;
     public enum VarsType { Local, Global, Fixed };

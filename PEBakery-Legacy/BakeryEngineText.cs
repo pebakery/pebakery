@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     /// <summary>
     /// Text, INI commands

@@ -7,7 +7,7 @@ using System.IO;
 using System.Collections;
 using System.Net.Http;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     public partial class BakeryEngine
     {
@@ -1162,7 +1162,7 @@ namespace BakeryEngine
             }
             else
             {
-                FileStream file = new FileStream(destPath, FileMode.Create, FileAccess.Write);
+                FileStream file = new FileStream(destPath, FileMode.Open, FileAccess.Read);
                 string compareHash = HashHelper.CalcHashString(hashType, file);
                 file.Close();
                 if (string.Equals(compareHash, hashString, StringComparison.OrdinalIgnoreCase)) // Success

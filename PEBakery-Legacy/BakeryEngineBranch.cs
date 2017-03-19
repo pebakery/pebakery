@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Win32;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     public enum IfSubOpcode
     {

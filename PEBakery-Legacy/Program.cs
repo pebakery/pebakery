@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Diagnostics;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     public class PEBakery
     {

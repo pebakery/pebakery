@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections;
+using System.Text.RegularExpressions;
+using PEBakery.Helper;
 
-namespace BakeryEngine
+namespace PEBakery.Lib
 {
-    using System.Collections;
-    using System.Text.RegularExpressions;
+
     using StringDictionary = Dictionary<string, string>;
 
     /// <summary>
@@ -61,7 +63,7 @@ namespace BakeryEngine
     }
     public class IniKeyComparer : IComparer
     {
-        public int Compare(Object x, Object y)
+        public int Compare(System.Object x, System.Object y)
         {
             string strX = ((IniKey)x).section;
             string strY = ((IniKey)y).section;
@@ -70,7 +72,7 @@ namespace BakeryEngine
     }
 
 
-    public static class IniFile
+    public static class Ini
     {
         // TODO Start : The codes below are too nasty. Needs refactoring.
         

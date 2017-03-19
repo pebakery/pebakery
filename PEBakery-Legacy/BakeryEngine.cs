@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     using StringDictionary = Dictionary<string, string>;
 
@@ -347,6 +347,7 @@ namespace BakeryEngine
         private bool runOnePlugin;
         private DebugLevel debugLevel;
         private string baseDir;
+        private Macro macro;
 
         // Fields : Engine's state
         private Plugin currentPlugin;
@@ -393,6 +394,7 @@ namespace BakeryEngine
             this.project = project;
             this.logger = logger;
             this.variables = new BakeryVariables(logger);
+
             this.runOnePlugin = runOnePlugin;
             this.debugLevel = debugLevel;
 
@@ -406,6 +408,10 @@ namespace BakeryEngine
 
             this.onBuildExit = null;
             this.onPluginExit = null;
+
+            LoadDefaultPluginVariables(project, entryPlugin, variables);
+            this.macro = new Macro(project, variables, logger);
+
         }
 
         // Methods
@@ -434,19 +440,19 @@ namespace BakeryEngine
             variables.SetValue(VarsType.Global, "TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName));
         }
 
-        private void LoadDefaultPluginVariables()
+        public static void LoadDefaultPluginVariables(Project project, Plugin plugin, BakeryVariables variables)
         {
             // ScriptFile, PluginFile
-            variables.SetValue(VarsType.Local, "PluginFile", currentPlugin.FullPath);
-            variables.SetValue(VarsType.Local, "ScriptFile", currentPlugin.FullPath);
+            variables.SetValue(VarsType.Local, "PluginFile", plugin.FullPath);
+            variables.SetValue(VarsType.Local, "ScriptFile", plugin.FullPath);
 
             // [Variables]
-            if (currentPlugin.Sections.ContainsKey("Variables"))
+            if (plugin.Sections.ContainsKey("Variables"))
             {
                 VarsType type = VarsType.Local;
-                if (currentPlugin == project.MainPlugin)
+                if (plugin == project.MainPlugin)
                     type = VarsType.Global;
-                variables.AddVariables(type, currentPlugin.Sections["Variables"], 0);
+                variables.AddVariables(type, plugin.Sections["Variables"], 0);
             }
         }
 
@@ -466,7 +472,7 @@ namespace BakeryEngine
             logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
 
             variables.ResetVariables(VarsType.Local);
-            LoadDefaultPluginVariables();
+            LoadDefaultPluginVariables(project, currentPlugin, variables);
 
             curSectionParams = new List<string>();
         }
@@ -780,10 +786,10 @@ namespace BakeryEngine
             { @"#$p", @"%" },
             { @"#$q", @""""},
             { @"#$s", @" " },
-            { @"#$t", @"\t"},
-            { @"#$x", @"\r\n"},
+            { @"#$t", "\t"},
+            { @"#$x", "\r\n"},
             { @"#$h", @"#" }, // Extended
-            //{ @"#$z", @"\x00\x00"},
+            //{ @"#$z", "\x00\x00"},
         };
 
         public string ExpandVariables(string str)

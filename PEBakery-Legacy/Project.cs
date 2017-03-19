@@ -8,14 +8,13 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
 
     public class Project
     {
         // Fields
-        private string baseDir;
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;

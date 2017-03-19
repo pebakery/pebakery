@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     using PluginDictionary = ConcurrentDictionary<int, Plugin[]>;
 

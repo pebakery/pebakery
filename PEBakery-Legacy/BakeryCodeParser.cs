@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     /// <summary>
     /// BakeryCodeParser cannot continue parsing due to malformed command
@@ -336,7 +336,22 @@ namespace BakeryEngine
         }
 
         /// <summary>
-        /// Parse command raw string into BakeryCommand
+        /// Parse command raw string into BakeryCommand, wrapper of ParseCommand
+        /// </summary>
+        /// <param name="rawCode"></param>
+        /// <returns></returns>
+        public static BakeryCommand ParseOneCommand(string rawCode)
+        {
+            List<string> list = new List<string>();
+            list.Add(rawCode);
+            int idx = 0;
+            SectionAddress addr = new SectionAddress();
+
+            return ParseCommand(list, ref idx, addr);
+        }
+
+        /// <summary>
+        /// Parse command raw string (from raw code list) into BakeryCommand
         /// </summary>
         /// <param name="rawCodes"></param>
         /// <param name="idx"></param>

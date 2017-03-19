@@ -7,7 +7,7 @@ using System.IO;
 using System.Collections;
 using System.Text.RegularExpressions;
 
-namespace BakeryEngine
+namespace BakeryEngine_Legacy
 {
     /// <summary>
     /// Implementation of commands
