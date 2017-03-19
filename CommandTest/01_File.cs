@@ -203,5 +203,31 @@ namespace CommandTest
             foreach (string f in fileList)
                 Assert.IsTrue(File.Exists(f));
         }
+
+        [TestCategory("01_File")]
+        [TestMethod]
+        public void WebGet_Ready()
+        {
+            // Do nothing
+        }
+
+        [TestCategory("01_File")]
+        [TestMethod]
+        public void WebGet_Result()
+        {
+            string workDir = Path.Combine(testDestDir, "01_WebGet");
+            List<string> fileList = new List<string>();
+            List<string> dirList = new List<string>();
+            dirList.Add(workDir);
+            fileList.Add(Path.Combine(workDir, "MIT"));
+            fileList.Add(Path.Combine(workDir, "README.md"));
+            fileList.Add(Path.Combine(workDir, "BatteryLine32.exe"));
+
+            foreach (string d in dirList)
+                Assert.IsTrue(Directory.Exists(d));
+
+            foreach (string f in fileList)
+                Assert.IsTrue(File.Exists(f));
+        }
     }
 }

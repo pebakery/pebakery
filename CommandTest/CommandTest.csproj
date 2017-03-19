@@ -55,9 +55,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PEBakery-Engine\PEBakery-Engine.csproj">
+    <ProjectReference Include="..\PEBakery-Legacy\PEBakery-Legacy.csproj">
       <Project>{800f7a11-8a3b-4b09-a957-ce0b5a6bb2ac}</Project>
-      <Name>PEBakery-Engine</Name>
+      <Name>PEBakery-Legacy</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>
