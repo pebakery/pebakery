@@ -10,6 +10,11 @@ PEBakery aims to resolve WinBuilder 082's abandoned bugs, provide improved suppo
 All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
 
 # Current State
+## Working
+- PEBakery.WPF (GUI)
+- PEBakery's engine is being rewritten.
+
+# State of PEBakery-Legacy
 ## Implemented
 - Plugin Code Parser
 - Project Recognition
@@ -21,8 +26,6 @@ All implementation is only backed by documentation and blackbox testing, without
 - TestSuite
 - Macro (known as API in WinBuilder 082)
 
-## TODO
-- GUI
 
 ## Command Status
 |   Class  | Implemented | All |
