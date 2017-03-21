@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,9 +17,16 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Collections.ObjectModel;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Object;
+using PEBakery.Engine;
+
+// Used OpenSource
+// Svg.Net (Microsoft Public License)
+// Google's Material Icons (Apache License)
+// Microsoft's Per-Monitor-DPI Images Example (MIT)
 
 namespace PEBakery.WPF
 {
@@ -26,10 +35,17 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Project project;
+        private List<Project> projects;
+        private int loadedProjectCount;
+        private int allProjectCount;
+        private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
         private Stopwatch stopwatch;
+        private BackgroundWorker loadWorker = new BackgroundWorker();
+
+        private TreeViewModel treeModel;
+        public TreeViewModel TreeModel { get => treeModel; }
 
         public MainWindow()
         {
@@ -65,81 +81,365 @@ namespace PEBakery.WPF
             };
             this.bottomDock.Child = loadProgressBar;
 
+            this.projects = new List<Project>();
+            this.loadedProjectCount = 0;
+            this.allProjectCount = 0;
+
+            this.baseDir = argBaseDir;
+            this.treeModel = new TreeViewModel(null);
+            this.DataContext = treeModel;
+
+            LoadButtonsImage();
+
+            StartLoadWorkder();
+        }
+
+        void LoadButtonsImage()
+        {
+            double width = 300;
+            double height = 300;
+            buildButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgBuild, width, height);
+            refreshButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgRefresh, width, height);
+            settingButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgSetting, width, height);
+            updateButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgUpdate, width, height);
+
+            width = 120;
+            height = 120;
+            pluginRunButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgBuild, width, height);
+            pluginEditButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgEdit, width, height);
+        }
+
+        private void StartLoadWorkder()
+        {
+            loadWorker = new BackgroundWorker();
             loadWorker.WorkerReportsProgress = true;
             loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
             loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
             loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
-
-            stopwatch = Stopwatch.StartNew();
-            loadWorker.RunWorkerAsync(argBaseDir);
+            loadWorker.RunWorkerAsync(baseDir);
         }
 
-        private BackgroundWorker loadWorker = new BackgroundWorker();
+        private void refreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (loadWorker.IsBusy == false)
+            {
+                (mainTreeView.DataContext as TreeViewModel).Child.Clear();
+                loadProgressBar.Value = 0;
+                this.bottomDock.Child = loadProgressBar;
+
+                StartLoadWorkder();
+            }
+        }
 
         void bgWorker_LoadProject(object sender, DoWorkEventArgs e)
         {
             string baseDir = (string) e.Argument;
-
             BackgroundWorker worker = sender as BackgroundWorker;
 
-            project = new Project(baseDir, "Win10PESE", worker);
-            project.Load();
+            stopwatch = Stopwatch.StartNew();
+            this.projects = new List<Project>();
+            this.loadedProjectCount = 0;
+            this.allProjectCount = 0;
+
+            string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
+            List<string> projList = new List<string>();
+            foreach (string dir in projArray)
+            {
+                if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
+                    projList.Add(dir);
+            }
+
+            allProjectCount = projList.Count;
+            foreach (string dir in projList)
+            {
+                Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
+                project.Load();
+                projects.Add(project);
+                loadedProjectCount++;
+            }
         }
 
         private void loadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            this.loadProgressBar.Value = e.ProgressPercentage;
+            this.loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
         }
 
         private void loadWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             stopwatch.Stop();
-            this.statusBar.Text = $"Scan took {stopwatch.Elapsed}";
+            TimeSpan t = stopwatch.Elapsed;
+            this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
             this.bottomDock.Child = statusBar;
 
-            List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-            RecursivePopulateMainTreeView(plugins, this.mainTreeView.Items);
+            foreach (Project project in this.projects)
+            {
+                List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
+                RecursivePopulateMainTreeView(plugins, this.treeModel);
+            };
+            mainTreeView.DataContext = treeModel;
         }
 
-        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, ItemCollection treeParent)
+        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
         {
+            double size = mainTreeView.FontSize;
+            DpiScale scale = VisualTreeHelper.GetDpi(this as Visual);
+
             foreach (Node<Plugin> node in plugins)
             {
                 Plugin p = node.Data;
-                TreeViewItem item = new TreeViewItem();
-                treeParent.Add(item);
-                item.Header = p.Title;
-                item.Tag = p;
-                if (0 < node.Child.Count)
-                    RecursivePopulateMainTreeView(node.Child, item.Items);
-            }
-        }
 
-        private void mainTreeView_Loaded(object sender, RoutedEventArgs e)
-        {
+                TreeViewModel item = new TreeViewModel(treeParent);
+                treeParent.Child.Add(item);
+                item.Node = node;
+
+                if (p.Type == PluginType.Directory)
+                {
+                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size, scale);
+                }
+                else if (p.Type == PluginType.Plugin)
+                {
+                    if (p.Level == Project.MainLevel)
+                        item.SetSvgImage(Properties.Resources.SvgProject, size, size, scale);
+                    else if (p.Mandatory)
+                        item.SetSvgImage(Properties.Resources.SvgLock, size, size, scale);
+                    else
+                        item.SetSvgImage(Properties.Resources.SvgFile, size, size, scale);
+                }
+                else if (p.Type == PluginType.Link)
+                {
+                    item.SetSvgImage(Properties.Resources.SvgLink, size, size, scale);
+                }
+
+                if (0 < node.Child.Count)
+                    RecursivePopulateMainTreeView(node.Child, item);
+            }
         }
 
         private void mainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var tree = sender as TreeView;
 
-            // ... Determine type of SelectedItem.
-            if (tree.SelectedItem is TreeViewItem)
+            if (tree.SelectedItem is TreeViewModel)
             {
-                // ... Handle a TreeViewItem.
-                var item = tree.SelectedItem as TreeViewItem;
-                this.mainContainer.Text = "Selected header: " + item.Header.ToString();
+                TreeViewModel item = tree.SelectedItem as TreeViewModel;
+                Plugin p = item.Node.Data;
+                pluginTitle.Text = p.Title;
+                pluginDescription.Text = p.Description;
+                pluginVersion.Text = $"v{p.Version}";
             }
-            else if (tree.SelectedItem is string)
+            else
             {
-                // ... Handle a string.
-                this.mainContainer.Text = "Selected: " + tree.SelectedItem.ToString();
+                Debug.Assert(false);
             }
         }
+
+        private void JumpyStackPanel_KeyDown(object sender, KeyEventArgs e)
+        {
+            StackPanel panel = sender as StackPanel;
+
+            base.OnPreviewKeyDown(e);
+            if (e.Key == Key.Space)
+            {
+                CheckBox checkBox = panel.Children[0] as CheckBox;
+                if (checkBox.IsChecked == true)
+                    checkBox.IsChecked = false;
+                else if (checkBox.IsChecked == false)
+                    checkBox.IsChecked = true;
+            }
+        }
+
+        private void mainTreeView_Loaded(object sender, RoutedEventArgs e)
+        {
+            Window window = Window.GetWindow(this);
+            window.KeyDown += mainTreeView_KeyDown;
+        }
+
+        /// <summary>
+        /// Used to ensure pressing 'Space' to toggle TreeView's checkbox.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void mainTreeView_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Window window = sender as Window;
+            base.OnKeyDown(e);
+
+            if (e.Key == Key.Space)
+            {
+                if (Keyboard.FocusedElement is FrameworkElement focusedElement)
+                {
+                    if (focusedElement.DataContext is TreeViewModel node)
+                    {
+                        if (node.Checked == true)
+                            node.Checked = false;
+                        else if (node.Checked == false)
+                            node.Checked = true;
+                        e.Handled = true;
+                    }
+                }
+            }
+        }
+
+        private void TreeNodeImage_Initialized(object sender, EventArgs e)
+        {
+            /* TODO: Not working, so temporally disabled for performance
+            FrameworkElement element = sender as FrameworkElement;
+            if (element != null)
+            {
+                TreeViewModel model = element.DataContext as TreeViewModel;
+                DpiChanged += model.OnDpiChanged;
+            }
+            */
+        }
+
+        
     }
 
-    class BakeryTreeViewItem : TreeViewItem
+    public class TreeViewModel : INotifyPropertyChanged
     {
+        public void OnDpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            // TODO: Not working! 
+            DpiScale scale = e.NewDpi;
+            ImageSvg = ImageHelper.SvgByteToBitmapImage(imageSrc, imageWidth * scale.DpiScaleX, imageHeight * scale.DpiScaleY);
+        }
 
+        public TreeViewModel(TreeViewModel parent)
+        {
+            this.parent = parent;
+        }
+
+        public bool Checked
+        {
+            get
+            {
+                switch (node.Data.Selected)
+                {
+                    case SelectedState.True:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            set
+            {
+                if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                {
+                    if (value)
+                        node.Data.Selected = SelectedState.True;
+                    else
+                        node.Data.Selected = SelectedState.False;
+
+                    if (0 < this.Child.Count)
+                    { // Set child plugins, too -> Top-down propagation
+                        foreach (TreeViewModel childModel in this.Child)
+                        {
+                            if (value)
+                                childModel.Checked = true;
+                            else
+                                childModel.Checked = false;
+                        }
+                    }
+
+                    ParentCheckedPropagation();
+                    OnPropertyUpdate("Checked");
+                }
+            }
+        }
+
+        public void ParentCheckedPropagation()
+        { // Bottom-up propagation of Checked property
+            if (parent == null)
+                return;
+
+            bool setParentChecked = false;
+
+            foreach (TreeViewModel sibling in parent.Child)
+            { // Siblings
+                if (sibling.Checked)
+                    setParentChecked = true;
+            }
+
+            parent.SetParentChecked(setParentChecked);
+        }
+
+        public void SetParentChecked(bool value)
+        {
+            if (parent == null)
+                return;
+
+            if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+            {
+                if (value)
+                    node.Data.Selected = SelectedState.True;
+                else
+                    node.Data.Selected = SelectedState.False;
+            }
+
+            OnPropertyUpdate("Checked");
+            ParentCheckedPropagation();
+        }
+
+        public Visibility CheckBoxVisible
+        {
+            get
+            {
+                if (node.Data.Selected == SelectedState.None)
+                    return Visibility.Hidden;
+                else
+                    return Visibility.Visible;
+            }
+        }
+
+        public string Text { get => node.Data.Title; }
+
+        private Node<Plugin> node;
+        public Node<Plugin> Node
+        {
+            get => node;
+            set
+            {
+                node = value;
+                OnPropertyUpdate("Node");
+            }
+        }
+
+        private double imageWidth;
+        public double ImageWidth { get => imageWidth; }
+        private double imageHeight;
+        public double ImageHeight { get => imageHeight; }
+        private byte[] imageSrc;
+        public byte[] ImageSrc { get => imageSrc; }
+        private BitmapImage imageSvg;
+        public BitmapImage ImageSvg
+        {
+            get => imageSvg;
+            set
+            {
+                imageSvg = value;
+                OnPropertyUpdate("Image");
+            }
+        }
+
+        private TreeViewModel parent;
+        public TreeViewModel Parent { get => parent; }
+
+        private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
+        public ObservableCollection<TreeViewModel> Child { get => child; }
+        
+        public void SetSvgImage(byte[] src, double width, double height, DpiScale scale)
+        {
+            imageWidth = width;
+            imageHeight = height;
+            imageSrc = src;
+            ImageSvg = ImageHelper.SvgByteToBitmapImage(src, width * scale.DpiScaleX, height * scale.DpiScaleY);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyUpdate(string propertyName)
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

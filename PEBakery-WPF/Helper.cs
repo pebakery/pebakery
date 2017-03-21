@@ -6,7 +6,17 @@ using System.IO;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
+using System.Security;
+using System.Runtime.ConstrainedExecution;
+using System.ComponentModel;
+using System.IO.MemoryMappedFiles;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 // Hash
 using System.Security.Cryptography;
@@ -15,12 +25,9 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Microsoft.Win32.Interop;
-using System.Security;
-using System.Runtime.ConstrainedExecution;
-using System.ComponentModel;
-using System.IO.MemoryMappedFiles;
-using System.Threading.Tasks;
-using System.Net.Http;
+
+// Library
+using Svg;
 
 namespace PEBakery.Helper
 {
@@ -983,4 +990,89 @@ namespace PEBakery.Helper
             return cab.ExtractSingleFile(target, destDir);
         }        
     }
+
+    public static class ImageHelper
+    {
+        public static BitmapImage SvgByteToBitmapImage(byte[] image)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
+        }
+
+        public static BitmapImage SvgByteToBitmapImage(byte[] image, double width, double height)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
+        }
+
+        public static BitmapImage SvgByteToBitmapImage(byte[] image, int width, int height)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
+        }
+
+        public static BitmapImage ToBitmapImage(Bitmap bitmap)
+        {
+            using (var memory = new MemoryStream())
+            {
+                bitmap.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+
+                return bitmapImage;
+            }
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image));
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image, double width, double height)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image, int width, int height)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
+        {
+            return new ImageBrush() { ImageSource = bitmap };
+        }
+    }
+    /*
+    public static class HiDPIHelper
+    {
+        public static bool GetScaleFactor(Visual visual, out double scaleX, out double scaleY)
+        {
+            PresentationSource source = PresentationSource.FromVisual(visual);
+            if (source != null)
+            {
+                scaleX = source.CompositionTarget.TransformToDevice.M11;
+                scaleY = source.CompositionTarget.TransformToDevice.M22;
+                return false;
+            }
+            else
+            {
+                scaleX = 0;
+                scaleY = 0;
+                return true;
+            }
+
+        }
+    }
+    */
+
+   
 }

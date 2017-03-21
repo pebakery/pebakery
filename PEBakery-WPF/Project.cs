@@ -15,8 +15,6 @@ using PEBakery.Exceptions;
 
 namespace PEBakery.Object
 {
-    // using PluginDictionary = ConcurrentDictionary<PluginDictKey, Plugin[]>;
-
     public class Project
     {
         // Fields
@@ -26,7 +24,7 @@ namespace PEBakery.Object
         private Tree<Plugin> allPlugins;
         private Tree<Plugin> visiblePlugins;
         private Tree<Plugin> activePlugins;
-        public const int mainLevel = -256;  // Reserved level for script.project
+        public const int MainLevel = -256;  // Reserved level for script.project
 
         private int loadedPluginCount;
         private int allPluginCount;
@@ -84,9 +82,6 @@ namespace PEBakery.Object
 
         private List<Plugin> CollectAllPlugins()
         {
-            // Dictionary<PluginDictKey, List<string>> pluginsByLevel = new Dictionary<PluginDictKey, List<string>>();
-            // PluginDictionary plugins = new PluginDictionary();
-
             List<string> pPathList = new List<string>();
 
             // Collect mainPlugin (script.project)
@@ -102,7 +97,7 @@ namespace PEBakery.Object
                     level = 0;
                 string directory = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
 
-                if (!(mainLevel < level))
+                if (!(MainLevel < level))
                     continue;
                 pPathList.Add(file);
                 allPluginCount++;
@@ -113,9 +108,10 @@ namespace PEBakery.Object
             Task.WaitAll(parseTasks.ToArray());
 
             // mainPlugin is the first element.
-            this.mainPlugin = pList.Single(p => p.Level == mainLevel);
-            // Sort by level and filename (lexicographic)
-            return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
+            this.mainPlugin = pList.Single(p => p.Level == MainLevel);
+            // Sort by level and filename (lexicographic) - Well, this is done by PluginListToTree() later
+            // return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
+            return pList;
         }
 
         private IEnumerable<Task> LoadPlugins(List<string> pPathList, List<Plugin> pList)
@@ -130,7 +126,7 @@ namespace PEBakery.Object
                 {
                     Plugin p;
                     if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, mainLevel);
+                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, MainLevel);
                     else
                         p = new Plugin(PluginType.Plugin, pPath, projectRoot, null);
 
@@ -242,7 +238,6 @@ namespace PEBakery.Object
             }
 
             // Sort - Plugin first, Directory last
-            List<Node<Plugin>> list = pTree.Root;
             pTree.Sort((x, y) => {
                 if (x.Data.Level == y.Data.Level)
                 {
@@ -255,7 +250,47 @@ namespace PEBakery.Object
                     return x.Data.Level - y.Data.Level;
             });
 
+            // Reflect Directory's Selected value
+            RecursiveDecideDirectorySelectedValue(pTree.Root);
+
             return pTree;
+        }
+
+        // TODO: It violates Tree<T>'s abstraction...
+        private SelectedState RecursiveDecideDirectorySelectedValue(List<Node<Plugin>> list)
+        {
+            SelectedState final = SelectedState.None;
+            foreach (Node<Plugin> node in list)
+            {
+                if (0 < node.Child.Count)
+                { // Has child plugins
+                    SelectedState state = RecursiveDecideDirectorySelectedValue(node.Child);
+                    if (state == SelectedState.True)
+                        final = node.Data.Selected = SelectedState.True;
+                    else if (state == SelectedState.False)
+                    {
+                        if (final != SelectedState.True)
+                            final = SelectedState.False;
+                        if (node.Data.Selected != SelectedState.True)
+                            node.Data.Selected = SelectedState.False;
+                    }
+                }
+                else // Does not have child plugin
+                {
+                    switch (node.Data.Selected)
+                    {
+                        case SelectedState.True:
+                            final = SelectedState.True;
+                            break;
+                        case SelectedState.False:
+                            if (final == SelectedState.None)
+                                final = SelectedState.False;
+                            break;
+                    }
+                }
+            }
+
+            return final;
         }
     }
 }

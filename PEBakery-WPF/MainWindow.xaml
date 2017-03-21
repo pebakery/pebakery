@@ -5,7 +5,29 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
+        FontSize="13"
+        WindowStartupLocation="CenterScreen"
         Title="PEBakery" Width="800" Height="600">
+    <Window.Resources>
+        <Style x:Key="BackgroundButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" BorderThickness="0" BorderBrush="Black" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <DockPanel>
         <Border DockPanel.Dock="Top" Height="100" Background="LightBlue">
             <Grid Width="300" HorizontalAlignment="Right">
@@ -14,31 +36,122 @@
                     <RowDefinition Height="25*" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="25*"/>
+                    <ColumnDefinition Name="mainButtonColumn" Width="25*"/>
                     <ColumnDefinition Width="25*"/>
                     <ColumnDefinition Width="25*"/>
                     <ColumnDefinition Width="25*"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Content="Build" Grid.Row="0" Grid.Column="0" Margin="5" />
-                <Button Content="Refresh" Grid.Row="0" Grid.Column="1" Margin="5" />
-                <Button Content="Option" Grid.Row="0" Grid.Column="2" Margin="5" />
-                <Button Content="Upgrade" Grid.Row="0" Grid.Column="3" Margin="5" />
+                <Button Name="buildButton" Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
+                <Button Name="refreshButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="refreshButton_Click" />
+                <Button Name="settingButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="updateButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" />
 
                 <TextBlock Text="Build" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
                 <TextBlock Text="Refresh" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
-                <TextBlock Text="Option" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
-                <TextBlock Text="Upgrade" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+                <TextBlock Text="Setting" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
+                <TextBlock Text="Update" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" />
             </Grid>
         </Border>
         <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock">
         </Border>
-        <Border DockPanel.Dock="Left" Width="200">
-            <TreeView x:Name="mainTreeView"  Background="PaleGreen" Loaded="mainTreeView_Loaded" SelectedItemChanged="mainTreeView_SelectedItemChanged">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TreeView
+                x:Name="mainTreeView"
+                Grid.Column="0"
+                Background="PaleGreen"
+                SelectedItemChanged="mainTreeView_SelectedItemChanged"
+                ItemsSource="{Binding Child}"
+                Loaded="mainTreeView_Loaded"
+                VirtualizingStackPanel.IsVirtualizing="True"
+                VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Child}">
+                        <StackPanel Orientation="Horizontal" >
+                            <CheckBox Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
+                            <Image Source="{Binding ImageSvg}" Focusable="False" Initialized="TreeNodeImage_Initialized"></Image>
+                            <TextBlock Margin="2,0" Text="{Binding Text}"></TextBlock>
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
             </TreeView>
-        </Border>
-        <Border Background="White">
-            <TextBlock x:Name="mainContainer" Text="This content will Fill the remaining space"/>
-        </Border>
+            <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
+            <DockPanel Grid.Column="1" Background="White">
+                <Border DockPanel.Dock="Top" Height="100" Background="LightYellow">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Image Name="pluginLogo" Grid.Row="0" Grid.Column="0" Margin="5"></Image>
+                        <Grid Grid.Row="0" Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="70" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <DockPanel
+                                Grid.Row="0" Grid.Column="0">
+                                <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Name="pluginVersion"
+                                    Text="v0"
+                                    FontWeight="Bold" FontSize="14" 
+                                    VerticalAlignment="Center"/>
+                                <TextBlock
+                                    Name="pluginTitle"
+                                    Text="Plugin Title" 
+                                    FontWeight="Bold" FontSize="16"
+                                    VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <TextBlock
+                                Grid.Row="1" Grid.Column="0"
+                                Name="pluginDescription" Text="Plugin Description" 
+                                VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button
+                                Name="pluginRunButton"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Style="{StaticResource BackgroundButton}">
+                            </Button>
+                            <Button
+                                Name="pluginEditButton"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Style="{StaticResource BackgroundButton}">
+                            </Button>
+                        </Grid>
+                        
+                    </Grid>
+                </Border>
+                <Border>
+                    <TextBlock x:Name="mainContainer"/>
+                </Border>
+            </DockPanel>
+        </Grid>
     </DockPanel>
 </Window>
