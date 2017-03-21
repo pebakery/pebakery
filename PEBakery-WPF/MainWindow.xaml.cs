@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,10 +17,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Collections.ObjectModel;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Object;
-using System.IO;
+using Svg;
 
 namespace PEBakery.WPF
 {
@@ -35,6 +38,9 @@ namespace PEBakery.WPF
         private TextBlock statusBar;
         private Stopwatch stopwatch;
         private BackgroundWorker loadWorker = new BackgroundWorker();
+
+        private TreeViewModel treeModel;
+        public TreeViewModel TreeModel { get => treeModel; }
 
         public MainWindow()
         {
@@ -75,6 +81,10 @@ namespace PEBakery.WPF
             this.allProjectCount = 0;
 
             this.baseDir = argBaseDir;
+            this.treeModel = new TreeViewModel();
+            this.DataContext = treeModel;
+
+            LoadButtonsImage();
 
             loadWorker.WorkerReportsProgress = true;
             loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
@@ -82,6 +92,16 @@ namespace PEBakery.WPF
             loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
 
             loadWorker.RunWorkerAsync(baseDir);
+        }
+
+        void LoadButtonsImage()
+        {
+            double width = 150;
+            double height = 150;
+            buildButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgBuild, width, height);
+            refreshButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgRefresh, width, height);
+            settingButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgSetting, width, height);
+            updateButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgUpdate, width, height);
         }
 
         void bgWorker_LoadProject(object sender, DoWorkEventArgs e)
@@ -114,7 +134,6 @@ namespace PEBakery.WPF
 
         private void loadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            // this.loadProgressBar.Value = e.ProgressPercentage;
             this.loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
         }
 
@@ -128,23 +147,39 @@ namespace PEBakery.WPF
             foreach (Project project in this.projects)
             {
                 List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                RecursivePopulateMainTreeView(plugins, this.mainTreeView.Items);
-            }   
+                RecursivePopulateMainTreeView(plugins, this.treeModel.Child);
+            };
+            mainTreeView.DataContext = treeModel;
         }
 
-        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, ItemCollection treeParent)
+        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, ObservableCollection<TreeViewModel> treeParent)
         {
+            int size = (int) mainTreeView.FontSize;
+
             foreach (Node<Plugin> node in plugins)
             {
                 Plugin p = node.Data;
-                TreeViewItem item = new TreeViewItem();
+
+                TreeViewModel item = new TreeViewModel();
                 treeParent.Add(item);
-                item.Header = p.Title;
-                item.Tag = p;
-                // if (p.Selected)
-                    // item.CheckBox
+                item.Node = node;
+                
+                if (p.Type == PluginType.Directory)
+                {
+                    item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                }
+                else if (p.Type == PluginType.Plugin)
+                {
+                    if (p.Level == Project.MainLevel)
+                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgProject, size, size);
+                    else if (p.Mandatory)
+                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgLock, size, size);
+                    else
+                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFile, size, size);
+                }
+
                 if (0 < node.Child.Count)
-                    RecursivePopulateMainTreeView(node.Child, item.Items);
+                    RecursivePopulateMainTreeView(node.Child, item.Child);
             }
         }
 
@@ -156,12 +191,11 @@ namespace PEBakery.WPF
         {
             var tree = sender as TreeView;
 
-            if (tree.SelectedItem is TreeViewItem)
+            if (tree.SelectedItem is TreeViewModel)
             {
-                TreeViewItem item = tree.SelectedItem as TreeViewItem;
-                Plugin p = item.Tag as Plugin;
+                TreeViewModel item = tree.SelectedItem as TreeViewModel;
+                Plugin p = item.Node.Data;
                 this.mainContainer.Text = $"Selected: {p.Title}, Level = {p.Level}";
-
             }
             else
             {
@@ -169,18 +203,94 @@ namespace PEBakery.WPF
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void TreeCheckBoxItem_Click(object sender, RoutedEventArgs e)
         {
-            mainTreeView.Items.Clear();
-            loadProgressBar.Value = 0;
-            this.bottomDock.Child = loadProgressBar;
+            
+        }
 
-            loadWorker = new BackgroundWorker();
-            loadWorker.WorkerReportsProgress = true;
-            loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
-            loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
-            loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
-            loadWorker.RunWorkerAsync(baseDir);
+        private void refreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (loadWorker.IsBusy == false)
+            {
+                (mainTreeView.DataContext as TreeViewModel).Child.Clear();
+                loadProgressBar.Value = 0;
+                this.bottomDock.Child = loadProgressBar;
+
+                loadWorker = new BackgroundWorker();
+                loadWorker.WorkerReportsProgress = true;
+                loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
+                loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
+                loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
+                loadWorker.RunWorkerAsync(baseDir);
+            }
+        }
+    }
+
+    public class TreeViewModel : INotifyPropertyChanged
+    {
+        public bool Checked
+        {
+            get
+            {
+                switch (node.Data.Selected)
+                {
+                    case SelectedState.True:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            set
+            {
+                if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                {
+                    if (value)
+                        node.Data.Selected = SelectedState.True;
+                    else
+                        node.Data.Selected = SelectedState.False;
+                    OnPropertyUpdate("Checked");
+                }
+            }
+        }
+
+        public Visibility CheckBoxVisible
+        {
+            get
+            {
+                if (node.Data.Selected == SelectedState.None)
+                    return Visibility.Hidden;
+                else
+                    return Visibility.Visible;
+            }
+        }
+
+        public string Text { get => node.Data.Title; }
+
+        private Node<Plugin> node;
+        public Node<Plugin> Node
+        {
+            get => node;
+            set => node = value;
+        }
+
+        public BitmapImage image;
+        public BitmapImage Image
+        {
+            get => image;
+            set => image = value;
+        }
+
+        private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
+        public ObservableCollection<TreeViewModel> Child
+        {
+            get => child;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyUpdate(string propertyName)
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

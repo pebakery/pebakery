@@ -21,6 +21,11 @@ using System.ComponentModel;
 using System.IO.MemoryMappedFiles;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Windows.Media.Imaging;
+using System.Drawing;
+using System.Drawing.Imaging;
+using Svg;
+using System.Windows.Media;
 
 namespace PEBakery.Helper
 {
@@ -982,5 +987,66 @@ namespace PEBakery.Helper
             CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
             return cab.ExtractSingleFile(target, destDir);
         }        
+    }
+
+    public static class ImageHelper
+    {
+        public static BitmapImage SvgByteToBitmapImage(byte[] image)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
+        }
+
+        public static BitmapImage SvgByteToBitmapImage(byte[] image, double width, double height)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
+        }
+
+        public static BitmapImage SvgByteToBitmapImage(byte[] image, int width, int height)
+        {
+            Stream stream = new MemoryStream(image);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
+        }
+
+        public static BitmapImage ToBitmapImage(Bitmap bitmap)
+        {
+            using (var memory = new MemoryStream())
+            {
+                bitmap.Save(memory, ImageFormat.Png);
+                memory.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+
+                return bitmapImage;
+            }
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image));
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image, double width, double height)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush SvgByteToImageBrush(byte[] image, int width, int height)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
+        {
+            return new ImageBrush() { ImageSource = bitmap };
+        }
     }
 }

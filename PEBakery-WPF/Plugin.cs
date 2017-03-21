@@ -32,7 +32,7 @@ namespace PEBakery.Object
         private string description;
         private int version;
         private int level;
-        private bool selected;
+        private SelectedState selected;
         private bool mandatory;
 
         // Properties
@@ -47,8 +47,18 @@ namespace PEBakery.Object
         public string Description { get => description; }
         public int Version { get => version; }
         public int Level { get => level; }
-        public bool Selected { get => selected; }
         public bool Mandatory { get => mandatory; }
+        public SelectedState Selected
+        {
+            get => selected;
+            set
+            {
+                selected = value;
+                string str = value.ToString();
+                sections["Main"].IniDict["Selected"] = str;
+                Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+            }
+        }
 
         public Plugin(PluginType type, string fullPath, string baseDir, int? level)
         {
@@ -75,7 +85,7 @@ namespace PEBakery.Object
                         // Optional Entries
                         this.author = string.Empty;
                         this.version = 0;
-                        this.selected = true;
+                        this.selected = SelectedState.True;
                         this.mandatory = false;
                     }
                     break;
@@ -109,12 +119,19 @@ namespace PEBakery.Object
                             this.version = int.Parse(sections["Main"].IniDict["Version"]);
                         if (sections["Main"].IniDict.ContainsKey("Selected"))
                         {
-                            if (bool.TryParse(sections["Main"].IniDict["Selected"], out this.selected) == false)
-                                this.selected = false;  
+                            string src = sections["Main"].IniDict["Selected"];
+                            if (string.Equals(src, "True", StringComparison.OrdinalIgnoreCase))
+                                this.selected = SelectedState.True;
+                            else if (string.Equals(src, "None", StringComparison.OrdinalIgnoreCase))
+                                this.selected = SelectedState.None;
+                            else
+                                this.selected = SelectedState.False;
                         }
                         if (sections["Main"].IniDict.ContainsKey("Mandatory"))
                         {
-                            if (bool.TryParse(sections["Main"].IniDict["Mandatory"], out this.mandatory) == false)
+                            if (string.Equals(sections["Main"].IniDict["Mandatory"], "True", StringComparison.OrdinalIgnoreCase))
+                                this.mandatory = true;
+                            else
                                 this.mandatory = false;
                         }
                     }
@@ -317,6 +334,11 @@ namespace PEBakery.Object
     public enum PluginType
     {
         Plugin, Link, Directory
+    }
+
+    public enum SelectedState
+    {
+        True, False, None
     }
 
     public enum SectionType

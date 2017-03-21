@@ -26,7 +26,7 @@ namespace PEBakery.Object
         private Tree<Plugin> allPlugins;
         private Tree<Plugin> visiblePlugins;
         private Tree<Plugin> activePlugins;
-        public const int mainLevel = -256;  // Reserved level for script.project
+        public const int MainLevel = -256;  // Reserved level for script.project
 
         private int loadedPluginCount;
         private int allPluginCount;
@@ -99,7 +99,7 @@ namespace PEBakery.Object
                     level = 0;
                 string directory = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
 
-                if (!(mainLevel < level))
+                if (!(MainLevel < level))
                     continue;
                 pPathList.Add(file);
                 allPluginCount++;
@@ -110,7 +110,7 @@ namespace PEBakery.Object
             Task.WaitAll(parseTasks.ToArray());
 
             // mainPlugin is the first element.
-            this.mainPlugin = pList.Single(p => p.Level == mainLevel);
+            this.mainPlugin = pList.Single(p => p.Level == MainLevel);
             // Sort by level and filename (lexicographic)
             return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
         }
@@ -127,7 +127,7 @@ namespace PEBakery.Object
                 {
                     Plugin p;
                     if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, mainLevel);
+                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, MainLevel);
                     else
                         p = new Plugin(PluginType.Plugin, pPath, projectRoot, null);
 
