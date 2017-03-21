@@ -69,6 +69,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="DpiAwareImage.cs" />
     <Compile Include="Engine.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Plugin.cs" />

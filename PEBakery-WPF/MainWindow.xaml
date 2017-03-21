@@ -59,16 +59,16 @@
             <TreeView
                 x:Name="mainTreeView"
                 Background="PaleGreen"
-                Loaded="mainTreeView_Loaded"
                 SelectedItemChanged="mainTreeView_SelectedItemChanged"
                 ItemsSource="{Binding Child}"
+                Loaded="mainTreeView_Loaded"
                 VirtualizingStackPanel.IsVirtualizing="True"
                 VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Child}">
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}"></CheckBox>
-                            <Image Margin="2,0" Source="{Binding Image}"></Image>
+                        <StackPanel Orientation="Horizontal" >
+                            <CheckBox Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
+                            <Image Source="{Binding ImageSvg}" Focusable="False" Initialized="TreeNodeImage_Initialized"></Image>
                             <TextBlock Margin="2,0" Text="{Binding Text}"></TextBlock>
                         </StackPanel>
                     </HierarchicalDataTemplate>
@@ -76,7 +76,7 @@
             </TreeView>
         </Border>
         <Border Background="White">
-            <TextBlock x:Name="mainContainer" Text="This content will Fill the remaining space"/>
+            <TextBlock x:Name="mainContainer"/>
         </Border>
     </DockPanel>
 </Window>

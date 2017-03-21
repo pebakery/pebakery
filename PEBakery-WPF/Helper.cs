@@ -6,7 +6,17 @@ using System.IO;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Diagnostics;
+using System.Security;
+using System.Runtime.ConstrainedExecution;
+using System.ComponentModel;
+using System.IO.MemoryMappedFiles;
+using System.Threading.Tasks;
+using System.Net.Http;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 // Hash
 using System.Security.Cryptography;
@@ -15,17 +25,9 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Microsoft.Win32.Interop;
-using System.Security;
-using System.Runtime.ConstrainedExecution;
-using System.ComponentModel;
-using System.IO.MemoryMappedFiles;
-using System.Threading.Tasks;
-using System.Net.Http;
-using System.Windows.Media.Imaging;
-using System.Drawing;
-using System.Drawing.Imaging;
+
+// Library
 using Svg;
-using System.Windows.Media;
 
 namespace PEBakery.Helper
 {
@@ -1049,4 +1051,28 @@ namespace PEBakery.Helper
             return new ImageBrush() { ImageSource = bitmap };
         }
     }
+    /*
+    public static class HiDPIHelper
+    {
+        public static bool GetScaleFactor(Visual visual, out double scaleX, out double scaleY)
+        {
+            PresentationSource source = PresentationSource.FromVisual(visual);
+            if (source != null)
+            {
+                scaleX = source.CompositionTarget.TransformToDevice.M11;
+                scaleY = source.CompositionTarget.TransformToDevice.M22;
+                return false;
+            }
+            else
+            {
+                scaleX = 0;
+                scaleY = 0;
+                return true;
+            }
+
+        }
+    }
+    */
+
+   
 }

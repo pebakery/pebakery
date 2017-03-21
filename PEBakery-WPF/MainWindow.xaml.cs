@@ -21,7 +21,8 @@ using System.Collections.ObjectModel;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Object;
-using Svg;
+using System.Windows.Interop;
+using System.Runtime.InteropServices;
 
 namespace PEBakery.WPF
 {
@@ -154,7 +155,8 @@ namespace PEBakery.WPF
 
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, ObservableCollection<TreeViewModel> treeParent)
         {
-            int size = (int) mainTreeView.FontSize;
+            double size = mainTreeView.FontSize;
+            DpiScale scale = VisualTreeHelper.GetDpi(this as Visual);
 
             foreach (Node<Plugin> node in plugins)
             {
@@ -166,25 +168,21 @@ namespace PEBakery.WPF
                 
                 if (p.Type == PluginType.Directory)
                 {
-                    item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size, scale);
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgProject, size, size);
+                        item.SetSvgImage(Properties.Resources.SvgProject, size, size, scale);
                     else if (p.Mandatory)
-                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgLock, size, size);
+                        item.SetSvgImage(Properties.Resources.SvgLock, size, size, scale);
                     else
-                        item.Image = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFile, size, size);
+                        item.SetSvgImage(Properties.Resources.SvgFile, size, size, scale);
                 }
 
                 if (0 < node.Child.Count)
                     RecursivePopulateMainTreeView(node.Child, item.Child);
             }
-        }
-
-        private void mainTreeView_Loaded(object sender, RoutedEventArgs e)
-        {
         }
 
         private void mainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -203,11 +201,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private void TreeCheckBoxItem_Click(object sender, RoutedEventArgs e)
-        {
-            
-        }
-
         private void refreshButton_Click(object sender, RoutedEventArgs e)
         {
             if (loadWorker.IsBusy == false)
@@ -224,10 +217,74 @@ namespace PEBakery.WPF
                 loadWorker.RunWorkerAsync(baseDir);
             }
         }
+
+        private void JumpyStackPanel_KeyDown(object sender, KeyEventArgs e)
+        {
+            StackPanel panel = sender as StackPanel;
+
+            base.OnPreviewKeyDown(e);
+            if (e.Key == Key.Space)
+            {
+                CheckBox checkBox = panel.Children[0] as CheckBox;
+                if (checkBox.IsChecked == true)
+                    checkBox.IsChecked = false;
+                else if (checkBox.IsChecked == false)
+                    checkBox.IsChecked = true;
+            }
+        }
+
+        private void mainTreeView_Loaded(object sender, RoutedEventArgs e)
+        {
+            Window window = Window.GetWindow(this);
+            window.KeyDown += mainTreeView_KeyDown;
+        }
+
+        /// <summary>
+        /// Used to ensure pressing 'Space' to toggle TreeView's checkbox.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void mainTreeView_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Window window = sender as Window;
+            base.OnKeyDown(e);
+
+            if (e.Key == Key.Space)
+            {
+                if (Keyboard.FocusedElement is FrameworkElement focusedElement)
+                {
+                    if (focusedElement.DataContext is TreeViewModel node)
+                    {
+                        if (node.Checked == true)
+                            node.Checked = false;
+                        else if (node.Checked == false)
+                            node.Checked = true;
+                        e.Handled = true;
+                    }
+                }
+            }
+        }
+
+        private void TreeNodeImage_Initialized(object sender, EventArgs e)
+        {
+            FrameworkElement element = sender as FrameworkElement;
+            if (element != null)
+            {
+                TreeViewModel model = element.DataContext as TreeViewModel;
+                DpiChanged += model.OnDpiChanged;
+            }
+        }
     }
 
     public class TreeViewModel : INotifyPropertyChanged
     {
+        public void OnDpiChanged(object sender, DpiChangedEventArgs e)
+        {
+            // TODO: Not working! 
+            DpiScale scale = e.NewDpi;
+            ImageSvg = ImageHelper.SvgByteToBitmapImage(imageSrc, imageWidth * scale.DpiScaleX, imageHeight * scale.DpiScaleY);
+        }
+
         public bool Checked
         {
             get
@@ -270,20 +327,39 @@ namespace PEBakery.WPF
         public Node<Plugin> Node
         {
             get => node;
-            set => node = value;
+            set
+            {
+                node = value;
+                OnPropertyUpdate("Node");
+            }
         }
 
-        public BitmapImage image;
-        public BitmapImage Image
+        private double imageWidth;
+        public double ImageWidth { get => imageWidth; }
+        private double imageHeight;
+        public double ImageHeight { get => imageHeight; }
+        private byte[] imageSrc;
+        public byte[] ImageSrc { get => imageSrc; }
+        private BitmapImage imageSvg;
+        public BitmapImage ImageSvg
         {
-            get => image;
-            set => image = value;
+            get => imageSvg;
+            set
+            {
+                imageSvg = value;
+                OnPropertyUpdate("Image");
+            }
         }
 
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
-        public ObservableCollection<TreeViewModel> Child
+        public ObservableCollection<TreeViewModel> Child { get => child; }
+        
+        public void SetSvgImage(byte[] src, double width, double height, DpiScale scale)
         {
-            get => child;
+            imageWidth = width;
+            imageHeight = height;
+            imageSrc = src;
+            ImageSvg = ImageHelper.SvgByteToBitmapImage(src, width * scale.DpiScaleX, height * scale.DpiScaleY);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
