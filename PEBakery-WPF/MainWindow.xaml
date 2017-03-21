@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
-        FontSize="12"
+        FontSize="13"
         WindowStartupLocation="CenterScreen"
         Title="PEBakery" Width="800" Height="600">
     <Window.Resources>
@@ -55,9 +55,14 @@
         </Border>
         <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock">
         </Border>
-        <Border DockPanel.Dock="Left" Width="200">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
             <TreeView
                 x:Name="mainTreeView"
+                Grid.Column="0"
                 Background="PaleGreen"
                 SelectedItemChanged="mainTreeView_SelectedItemChanged"
                 ItemsSource="{Binding Child}"
@@ -74,9 +79,79 @@
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
-        </Border>
-        <Border Background="White">
-            <TextBlock x:Name="mainContainer"/>
-        </Border>
+            <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
+            <DockPanel Grid.Column="1" Background="White">
+                <Border DockPanel.Dock="Top" Height="100" Background="LightYellow">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="30"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Image Name="pluginLogo" Grid.Row="0" Grid.Column="0" Margin="5"></Image>
+                        <Grid Grid.Row="0" Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="70" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <DockPanel
+                                Grid.Row="0" Grid.Column="0">
+                                <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Name="pluginVersion"
+                                    Text="v0"
+                                    FontWeight="Bold" FontSize="14" 
+                                    VerticalAlignment="Center"/>
+                                <TextBlock
+                                    Name="pluginTitle"
+                                    Text="Plugin Title" 
+                                    FontWeight="Bold" FontSize="16"
+                                    VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <TextBlock
+                                Grid.Row="1" Grid.Column="0"
+                                Name="pluginDescription" Text="Plugin Description" 
+                                VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Button
+                                Name="pluginRunButton"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                Style="{StaticResource BackgroundButton}">
+                            </Button>
+                            <Button
+                                Name="pluginEditButton"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Style="{StaticResource BackgroundButton}">
+                            </Button>
+                        </Grid>
+                        
+                    </Grid>
+                </Border>
+                <Border>
+                    <TextBlock x:Name="mainContainer"/>
+                </Border>
+            </DockPanel>
+        </Grid>
     </DockPanel>
 </Window>

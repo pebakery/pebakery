@@ -82,6 +82,16 @@ namespace PEBakery.WPF.Properties {
         /// <summary>
         ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
         /// </summary>
+        internal static byte[] SvgEdit {
+            get {
+                object obj = ResourceManager.GetObject("SvgEdit", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
         internal static byte[] SvgFile {
             get {
                 object obj = ResourceManager.GetObject("SvgFile", resourceCulture);
@@ -95,6 +105,16 @@ namespace PEBakery.WPF.Properties {
         internal static byte[] SvgFolder {
             get {
                 object obj = ResourceManager.GetObject("SvgFolder", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        internal static byte[] SvgLink {
+            get {
+                object obj = ResourceManager.GetObject("SvgLink", resourceCulture);
                 return ((byte[])(obj));
             }
         }

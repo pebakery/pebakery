@@ -25,6 +25,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -149,6 +150,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Update.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Link.svg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Edit.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

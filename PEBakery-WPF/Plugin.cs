@@ -55,8 +55,11 @@ namespace PEBakery.Object
             {
                 selected = value;
                 string str = value.ToString();
-                sections["Main"].IniDict["Selected"] = str;
-                Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+                if (type == PluginType.Plugin)
+                {
+                    sections["Main"].IniDict["Selected"] = str;
+                    Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+                }
             }
         }
 
@@ -85,7 +88,7 @@ namespace PEBakery.Object
                         // Optional Entries
                         this.author = string.Empty;
                         this.version = 0;
-                        this.selected = SelectedState.True;
+                        this.selected = SelectedState.None; // This Value should be adjusted later!
                         this.mandatory = false;
                     }
                     break;
