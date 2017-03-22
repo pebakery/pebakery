@@ -87,8 +87,13 @@ namespace PEBakery.Core
             // Collect mainPlugin (script.project)
             pPathList.Add(Path.Combine(projectRoot, "script.project"));
 
-            // Collect all *.script
-            string[] files = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
+            // Collect all *.script, plugin, link
+            string[] scripts = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
+            string[] plugins = Directory.GetFiles(projectRoot, "*.plugin", SearchOption.AllDirectories);
+            // TODO : Link files
+            // string[] links = Directory.GetFiles(projectRoot, "*.link", SearchOption.AllDirectories);
+            // string[] files = scripts.Concat(plugins).Concat(links).ToArray();
+            string[] files = scripts.Concat(plugins).ToArray();
             foreach (string file in files)
             {
                 // level must be bigger than mainLevel, and not level 0

@@ -93,13 +93,16 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="CodeParser.cs" />
-    <Compile Include="Command.cs" />
+    <Compile Include="CodeCommand.cs" />
     <Compile Include="DpiAwareImage.cs" />
     <Compile Include="EngineBranch.cs" />
     <Compile Include="EngineCore.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Plugin.cs" />
+    <Compile Include="UICommand.cs" />
+    <Compile Include="UIParser.cs" />
+    <Compile Include="UIRenderer.cs" />
     <Compile Include="ResultWin32.cs" />
     <Compile Include="TreeLib.cs" />
     <Page Include="MainWindow.xaml">

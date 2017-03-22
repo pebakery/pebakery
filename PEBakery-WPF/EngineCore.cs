@@ -45,8 +45,8 @@ namespace PEBakery.Core
         public bool runElse;
 
         // Fields : System Commands
-        private Command onBuildExit;
-        private Command onPluginExit;
+        private CodeCommand onBuildExit;
+        private CodeCommand onPluginExit;
 
         public EngineState(Project project, DebugLevel debugLevel)
         {

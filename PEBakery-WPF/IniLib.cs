@@ -10,9 +10,9 @@ using PEBakery.Helper;
 
 namespace PEBakery.Lib
 {
-
     using StringDictionary = Dictionary<string, string>;
 
+    #region Exceptions
     /// <summary>
     /// When parsing ini file, specified key not found.
     /// </summary>
@@ -42,7 +42,9 @@ namespace PEBakery.Lib
         public InvalidIniFormatException(string message) : base(message) { }
         public InvalidIniFormatException(string message, Exception inner) : base(message, inner) { }
     }
+    #endregion
 
+    #region IniKey
     public struct IniKey
     {
         public string section;
@@ -61,6 +63,7 @@ namespace PEBakery.Lib
             this.value = value;
         }
     }
+
     public class IniKeyComparer : IComparer
     {
         public int Compare(System.Object x, System.Object y)
@@ -70,7 +73,7 @@ namespace PEBakery.Lib
             return (new CaseInsensitiveComparer()).Compare(strX, strY);
         }
     }
-
+    #endregion
 
     public static class Ini
     {

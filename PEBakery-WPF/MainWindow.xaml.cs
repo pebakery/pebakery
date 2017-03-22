@@ -240,6 +240,10 @@ namespace PEBakery.WPF
                 pluginTitle.Text = p.Title;
                 pluginDescription.Text = p.Description;
                 pluginVersion.Text = $"v{p.Version}";
+
+                mainCanvas.Children.Clear();
+                UIRenderer render = new UIRenderer(mainCanvas, p);
+                render.Render();
             }
             else
             {

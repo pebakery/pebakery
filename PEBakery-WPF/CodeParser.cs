@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -14,14 +15,14 @@ namespace PEBakery.Core
     /// </summary>
     public static class CodeParser
     {
-        public static List<Command> ParseRawLines(List<string> lines, SectionAddress addr)
+        public static List<CodeCommand> ParseRawLines(List<string> lines, SectionAddress addr)
         {
             // Select Code sections and compile
-            List<Command> rawCodeList = new List<Command>();
+            List<CodeCommand> rawCodeList = new List<CodeCommand>();
             for (int i = 0; i < lines.Count; i++)
                 rawCodeList.Add(ParseCommand(lines, ref i, addr));
 
-            List<Command> compiledList = rawCodeList;
+            List<CodeCommand> compiledList = rawCodeList;
             while (ParseRawLinesOnce(compiledList, out compiledList, addr));
             return compiledList;
         }
@@ -32,15 +33,15 @@ namespace PEBakery.Core
         /// <param name="rawCmdList"></param>
         /// <param name="compiledList"></param>
         /// <returns>Return true if this section need more iterate</returns>
-        public static bool ParseRawLinesOnce(List<Command> rawCmdList, out List<Command> compiledList, SectionAddress addr)
+        public static bool ParseRawLinesOnce(List<CodeCommand> rawCmdList, out List<CodeCommand> compiledList, SectionAddress addr)
         {
-            compiledList = new List<Command>();
+            compiledList = new List<CodeCommand>();
             bool elseFlag = false;
             bool iterate = false;
 
             for (int i = 0; i < rawCmdList.Count; i++)
             {
-                Command cmd = rawCmdList[i];
+                CodeCommand cmd = rawCmdList[i];
                 if (cmd.Opcode == Opcode.If)
                 {
                     int dest = ParseNestedIf(cmd, out elseFlag, ref rawCmdList, i, ref compiledList, addr);
@@ -86,13 +87,13 @@ namespace PEBakery.Core
         /// <param name="parsedList">parsed command list</param>
         /// <param name="addr">section address addr</param>
         /// <returns>Return next command index</returns>
-        private static int ParseNestedIf(Command cmd, out bool elseFlag, ref List<Command> cmdList, int cmdListIdx, ref List<Command> parsedList, SectionAddress addr)
+        private static int ParseNestedIf(CodeCommand cmd, out bool elseFlag, ref List<CodeCommand> cmdList, int cmdListIdx, ref List<CodeCommand> parsedList, SectionAddress addr)
         {
-            Command ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
+            CodeCommand ifCmd = cmd; // RawCode : If,%A%,Equal,B,Echo,Success
             IfCommand ifSubCmd; // Condition : Equal,%A%,B,Echo,Success
-            Command ifEmbCmd; // Run if condition is met : Echo,Success
+            CodeCommand ifEmbCmd; // Run if condition is met : Echo,Success
             // BakeryCommand compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
-            List<Command> ifCmdList = parsedList;
+            List<CodeCommand> ifCmdList = parsedList;
             elseFlag = false;
 
             // <Raw>
@@ -104,7 +105,7 @@ namespace PEBakery.Core
                 ifEmbCmd = ForgeIfEmbedCommand(ifCmd, ifSubCmd, 0);
 
                 // Ex) IfCompact,Equal,%A%,B
-                Command ifCompiledCmd = new Command(cmd.RawCode, Opcode.IfCompact, ifSubCmd.ToOperandsPostfix(Opcode.Link.ToString()), addr, depth, new List<Command>());
+                CodeCommand ifCompiledCmd = new CodeCommand(cmd.RawCode, Opcode.IfCompact, ifSubCmd.ToOperandsPostfix(Opcode.Link.ToString()), addr, depth, new List<CodeCommand>());
                 ifCmdList.Add(ifCompiledCmd);
 
                 if (ifEmbCmd.Opcode == Opcode.If) // Nested If
@@ -144,10 +145,10 @@ namespace PEBakery.Core
         /// <param name="parsedList">parsed command list</param>
         /// <param name="addr">section address addr</param>
         /// <returns>Return next command index</returns>
-        private static int ParseNestedElse(Command cmd, out bool elseFlag, ref List<Command> cmdList, int cmdListIdx, ref List<Command> compiledList, SectionAddress addr)
+        private static int ParseNestedElse(CodeCommand cmd, out bool elseFlag, ref List<CodeCommand> cmdList, int cmdListIdx, ref List<CodeCommand> compiledList, SectionAddress addr)
         {
-            Command elseEmbCmd = ForgeEmbedCommand(cmd, 0, 0);
-            Command compiledCmd = new Command(cmd.RawCode, Opcode.ElseCompact, new List<string>(), addr, 0, new List<Command>());
+            CodeCommand elseEmbCmd = ForgeEmbedCommand(cmd, 0, 0);
+            CodeCommand compiledCmd = new CodeCommand(cmd.RawCode, Opcode.ElseCompact, new List<string>(), addr, 0, new List<CodeCommand>());
             compiledCmd.Operands.Add(Opcode.Link.ToString());
             compiledList.Add(compiledCmd);
 
@@ -155,17 +156,17 @@ namespace PEBakery.Core
             {
                 int depth = 0;
                 
-                Command ifCmd = elseEmbCmd; // RawCode : If,%A%,Equal,B,Echo,Success
+                CodeCommand ifCmd = elseEmbCmd; // RawCode : If,%A%,Equal,B,Echo,Success
                 IfCommand ifSubCmd; // Condition : Equal,%A%,B,Echo,Success
-                Command ifEmbCmd; // Run if condition is met : Echo,Success
-                List<Command> ifCmdList = compiledCmd.Link;
+                CodeCommand ifEmbCmd; // Run if condition is met : Echo,Success
+                List<CodeCommand> ifCmdList = compiledCmd.Link;
                 while (true)
                 {
                     ifSubCmd = ForgeIfSubCommand(ifCmd, true);
                     ifEmbCmd = ForgeIfEmbedCommand(ifCmd, ifSubCmd, 0);
 
                     // Ex) IfCompact,Equal,%A%,B
-                    Command ifCompiledCmd = new Command(cmd.RawCode, Opcode.IfCompact, ifSubCmd.ToOperandsPostfix(Opcode.Link.ToString()), addr, depth, new List<Command>());
+                    CodeCommand ifCompiledCmd = new CodeCommand(cmd.RawCode, Opcode.IfCompact, ifSubCmd.ToOperandsPostfix(Opcode.Link.ToString()), addr, depth, new List<CodeCommand>());
                     ifCmdList.Add(ifCompiledCmd);
 
                     if (ifEmbCmd.Opcode == Opcode.If) // Nested If
@@ -219,7 +220,7 @@ namespace PEBakery.Core
             }
         }
 
-        private static int MatchBeginWithEnd(ref List<Command> cmdList, int cmdListIdx)
+        private static int MatchBeginWithEnd(ref List<CodeCommand> cmdList, int cmdListIdx)
         { // To process nested Begin~End block
             int nestedBeginEnd = 0;
             bool beginExist = false;
@@ -231,13 +232,13 @@ namespace PEBakery.Core
 
             for (; cmdListIdx < cmdList.Count; cmdListIdx++)
             {
-                Command cmd = cmdList[cmdListIdx];
+                CodeCommand cmd = cmdList[cmdListIdx];
                 if (cmd.Opcode == Opcode.If) // To check If,<Condition>,Begin
                 {
                     while (true)
                     {
                         IfCommand subCmd = ForgeIfSubCommand(cmd, true);
-                        Command embCmd = ForgeIfEmbedCommand(cmd, subCmd, 0);
+                        CodeCommand embCmd = ForgeIfEmbedCommand(cmd, subCmd, 0);
                         if (embCmd.Opcode == Opcode.If) // Nested If
                         {
                             cmd = embCmd;
@@ -253,13 +254,13 @@ namespace PEBakery.Core
                 }
                 else if (cmd.Opcode == Opcode.Else)
                 {
-                    Command embCmd = ForgeEmbedCommand(cmd, 0, 0);
+                    CodeCommand embCmd = ForgeEmbedCommand(cmd, 0, 0);
                     if (embCmd.Opcode == Opcode.If) // Nested If
                     {
                         while (true)
                         {
                             IfCommand ifSubCmd = ForgeIfSubCommand(embCmd, true);
-                            Command ifEmbCmd = ForgeIfEmbedCommand(embCmd, ifSubCmd, 0);
+                            CodeCommand ifEmbCmd = ForgeIfEmbedCommand(embCmd, ifSubCmd, 0);
                             if (ifEmbCmd.Opcode == Opcode.If) // Nested If
                             {
                                 cmd = embCmd;
@@ -302,7 +303,7 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="rawCode"></param>
         /// <returns></returns>
-        public static Command ParseOneCommand(string rawCode)
+        public static CodeCommand ParseOneCommand(string rawCode)
         {
             List<string> list = new List<string>();
             list.Add(rawCode);
@@ -319,7 +320,7 @@ namespace PEBakery.Core
         /// <param name="idx"></param>
         /// <param name="addr"></param>
         /// <returns></returns>
-        private static Command ParseCommand(List<string> rawCodes, ref int idx, SectionAddress addr)
+        private static CodeCommand ParseCommand(List<string> rawCodes, ref int idx, SectionAddress addr)
         {
             Opcode opcode = Opcode.None;
             string externalOpcode = null;
@@ -329,14 +330,14 @@ namespace PEBakery.Core
 
             // Check if rawCode is Empty
             if (string.Equals(rawCode, string.Empty))
-                return new Command(string.Empty, Opcode.None, new List<string>(), addr);
+                return new CodeCommand(string.Empty, Opcode.None, new List<string>(), addr);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";"))
-                return new Command(rawCode, Opcode.Comment, new List<string>(), addr);
+                return new CodeCommand(rawCode, Opcode.Comment, new List<string>(), addr);
 
             // Splice with spaces
-            string[] slices = rawCode.Split(',');
+            List<string> slices = rawCode.Split(',').ToList();
 
             // Parse opcode
             opcode = ParseOpcode(slices[0].Trim(), out externalOpcode);
@@ -346,7 +347,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
             // Parse Operands
-            List<string> operands = ParseOperands(slices);
+            List<string> operands = ParseOperands(slices, 1);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < operands.Count)
@@ -362,9 +363,9 @@ namespace PEBakery.Core
 
             // Forge BakeryCommand
             if (opcode == Opcode.Macro)
-               return new Command(rawCode, externalOpcode, operands, addr);
+               return new CodeCommand(rawCode, externalOpcode, operands, addr);
             else
-                return new Command(rawCode, opcode, operands, addr);
+                return new CodeCommand(rawCode, opcode, operands, addr);
         }
 
         /// <summary>
@@ -397,6 +398,7 @@ namespace PEBakery.Core
             }
             return opcode;
         }
+
         /// <summary>
         /// ParseState enum
         /// </summary>
@@ -406,13 +408,13 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="slices"></param>
         /// <returns></returns>
-        public static List<string> ParseOperands(string[] slices)
+        public static List<string> ParseOperands(List<string> slices, int start)
         {
             List<string> operandList = new List<string>();
             ParseState state = ParseState.Normal;
             StringBuilder builder = new StringBuilder();
 
-            for (int i = 1; i < slices.Length; i++)
+            for (int i = start; i < slices.Count; i++)
             {
                 // Remove whitespace
                 slices[i] = slices[i].Trim();
@@ -473,7 +475,7 @@ namespace PEBakery.Core
                             throw new InternalParseException();
                     }
                 }
-                else // doublequote is in the middle
+                else // doublequote is in the middle - Error
                 {
                     throw new InvalidOperandException();
                 }
@@ -492,7 +494,7 @@ namespace PEBakery.Core
         /// <param name="cmd">Source BakeryConmand to extract BakeryIfSubCommand</param>
         /// <param name="rawComparePosition">true - If grammar (%A%,Equal,A), false - IfCompact grammar (Equal,%A%,A)</param>
         /// <returns></returns>
-        public static IfCommand ForgeIfSubCommand(Command cmd, bool rawComparePosition)
+        public static IfCommand ForgeIfSubCommand(CodeCommand cmd, bool rawComparePosition)
         {
             // Get Condition SubOpcode
             IfSubOpcode subOpcode = IfSubOpcode.None;
@@ -551,7 +553,7 @@ namespace PEBakery.Core
         /// <param name="subOpcode"></param>
         /// <param name="notFlag"></param>
         /// <returns></returns>
-        public static bool ParseIfSubOpcodeIfCompare(Command cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        public static bool ParseIfSubOpcodeIfCompare(CodeCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
         {
             if (string.Equals(subOpcodeString, "Equal", StringComparison.OrdinalIgnoreCase) || string.Equals(subOpcodeString, "==", StringComparison.OrdinalIgnoreCase))
                 subOpcode = IfSubOpcode.Equal;
@@ -584,7 +586,7 @@ namespace PEBakery.Core
         /// <param name="subOpcode"></param>
         /// <param name="notFlag"></param>
         /// <returns></returns>
-        public static bool ParseIfSubOpcodeIfNonCompare(Command cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
+        public static bool ParseIfSubOpcodeIfNonCompare(CodeCommand cmd, string subOpcodeString, ref IfSubOpcode subOpcode, ref bool notFlag)
         {
             if (string.Equals(subOpcodeString, "ExistFile", StringComparison.OrdinalIgnoreCase))
                 subOpcode = IfSubOpcode.ExistFile;
@@ -657,26 +659,26 @@ namespace PEBakery.Core
                 return false;
             return true;
         }
-        public static Command ForgeIfEmbedCommand(Command cmd, int depth)
+        public static CodeCommand ForgeIfEmbedCommand(CodeCommand cmd, int depth)
         {
             IfCommand subCmd = ForgeIfSubCommand(cmd, true);
             int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
             return ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
         }
-        public static Command ForgeIfEmbedCommand(Command cmd, IfCommand subCmd, int depth)
+        public static CodeCommand ForgeIfEmbedCommand(CodeCommand cmd, IfCommand subCmd, int depth)
         {
             int necessaryOperandNum = GetIfOperandNum(cmd, subCmd);
             return ForgeEmbedCommand(cmd, necessaryOperandNum + 1, depth);
         }
-        public static Command ForgeIfConditionCommand(Command cmd)
+        public static CodeCommand ForgeIfConditionCommand(CodeCommand cmd)
         {
             IfCommand subCmd = ForgeIfSubCommand(cmd, true);
-            Command embCmd = ForgeIfEmbedCommand(cmd, subCmd, 0);
+            CodeCommand embCmd = ForgeIfEmbedCommand(cmd, subCmd, 0);
             int operandCount = GetIfSubCmdOperandNum(subCmd.SubOpcode);
-            return new Command(Opcode.If, cmd.Operands.Take(operandCount + 1).ToList()); // 1 for sub opcode itself
+            return new CodeCommand(Opcode.If, cmd.Operands.Take(operandCount + 1).ToList()); // 1 for sub opcode itself
         }
        
-        public static Command ForgeEmbedCommand(Command cmd, int opcodeIdx, int depth)
+        public static CodeCommand ForgeEmbedCommand(CodeCommand cmd, int opcodeIdx, int depth)
         {
             // If,   ExistFile,Joveler.txt,Echo,ied206
             // [cmd] 0,        1,          2,   3 -> opcodeIdx must be 2 
@@ -696,11 +698,11 @@ namespace PEBakery.Core
                 operands = cmd.Operands.Skip(opcodeIdx + 1).ToList();
 
             if (opcode == Opcode.Macro)
-                return new Command(cmd.RawCode, externalOpcode, operands, cmd.Address, cmdDepth);
+                return new CodeCommand(cmd.RawCode, externalOpcode, operands, cmd.Address, cmdDepth);
             else
-                return new Command(cmd.RawCode, opcode, operands, cmd.Address, cmdDepth);
+                return new CodeCommand(cmd.RawCode, opcode, operands, cmd.Address, cmdDepth);
         }
-        public static int GetIfOperandNum(Command cmd, IfCommand subCmd)
+        public static int GetIfOperandNum(CodeCommand cmd, IfCommand subCmd)
         {
             int necessaryOperandNum = GetIfSubCmdOperandNum(subCmd.SubOpcode);
             if (1 <= cmd.Operands.Count && string.Equals(cmd.Operands[0], "Not", StringComparison.OrdinalIgnoreCase))

@@ -50,12 +50,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class CriticalErrorException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public CriticalErrorException() { }
         public CriticalErrorException(string message) : base(message) { }
-        public CriticalErrorException(Command cmd) { this.cmd = cmd; }
-        public CriticalErrorException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public CriticalErrorException(CodeCommand cmd) { this.cmd = cmd; }
+        public CriticalErrorException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -64,12 +64,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class InvalidOpcodeException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidOpcodeException() { }
         public InvalidOpcodeException(string message) : base(message) { }
-        public InvalidOpcodeException(Command cmd) { this.cmd = cmd; }
-        public InvalidOpcodeException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidOpcodeException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidOpcodeException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidOpcodeException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -78,12 +78,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class InvalidSubOpcodeException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidSubOpcodeException() { }
         public InvalidSubOpcodeException(string message) : base(message) { }
-        public InvalidSubOpcodeException(Command cmd) { this.cmd = cmd; }
-        public InvalidSubOpcodeException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidSubOpcodeException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidSubOpcodeException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidSubOpcodeException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -92,12 +92,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class InvalidOperandException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidOperandException() { }
         public InvalidOperandException(string message) : base(message) { }
-        public InvalidOperandException(Command cmd) { this.cmd = cmd; }
-        public InvalidOperandException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidOperandException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidOperandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -106,12 +106,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class InvalidLogFormatException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidLogFormatException() { }
         public InvalidLogFormatException(string message) : base(message) { }
-        public InvalidLogFormatException(Command cmd) { this.cmd = cmd; }
-        public InvalidLogFormatException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidLogFormatException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidLogFormatException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidLogFormatException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -120,12 +120,12 @@ namespace PEBakery.Exceptions
     /// </summary>
     public class InvalidSubCommandException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidSubCommandException() { }
         public InvalidSubCommandException(string message) : base(message) { }
-        public InvalidSubCommandException(Command cmd) { this.cmd = cmd; }
-        public InvalidSubCommandException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidSubCommandException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidSubCommandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidSubCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
@@ -165,12 +165,12 @@ namespace PEBakery.Exceptions
     /// </remarks>
     public class InvalidGrammarException : Exception
     {
-        private Command cmd;
-        public Command Cmd { get { return cmd; } }
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get { return cmd; } }
         public InvalidGrammarException() { }
         public InvalidGrammarException(string message) : base(message) { }
-        public InvalidGrammarException(Command cmd) { this.cmd = cmd; }
-        public InvalidGrammarException(string message, Command cmd) : base(message) { this.cmd = cmd; }
+        public InvalidGrammarException(CodeCommand cmd) { this.cmd = cmd; }
+        public InvalidGrammarException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
         public InvalidGrammarException(string message, Exception inner) : base(message, inner) { }
     }
 

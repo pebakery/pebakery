@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         FontSize="13"
         WindowStartupLocation="CenterScreen"
-        Title="PEBakery" Width="800" Height="600">
+        Title="PEBakery" Width="1024" Height="720">
     <Window.Resources>
         <Style x:Key="BackgroundButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -130,12 +130,13 @@
                                     Name="pluginTitle"
                                     Text="Plugin Title" 
                                     FontWeight="Bold" FontSize="16"
-                                    VerticalAlignment="Center"/>
+                                    VerticalAlignment="Center"
+                                    TextWrapping="Wrap"/>
                             </DockPanel>
                             <TextBlock
                                 Grid.Row="1" Grid.Column="0"
                                 Name="pluginDescription" Text="Plugin Description" 
-                                VerticalAlignment="Center"/>
+                                VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </Grid>
                         
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
@@ -163,9 +164,7 @@
                         
                     </Grid>
                 </Border>
-                <Border>
-                    <TextBlock x:Name="mainContainer"/>
-                </Border>
+                <Canvas Name="mainCanvas"></Canvas>
             </DockPanel>
         </Grid>
     </DockPanel>

@@ -88,94 +88,95 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Command
+    #region CodeCommand
 
     /// <summary>
     /// Class to hold info of commands
     /// </summary>
-    public class Command
+    public class CodeCommand
     {
         public string RawCode;
         public Opcode Opcode;
         public string MacroOpcode;
         public List<string> Operands;
+        public CodeCommandInfo Info; // TODO: 언제 이걸 저 밑의 생성자 리스트들에 전부 더하냐...
         public SectionAddress Address;
         public int Depth;
-        public List<Command> Link;
+        public List<CodeCommand> Link;
 
-        public Command(string rawCode, Opcode opcode, List<string> operands)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands)
         { InternalConstructor(rawCode, opcode, null, operands, new SectionAddress(), 0, null); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, int depth)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, int depth)
         { InternalConstructor(rawCode, opcode, null, operands, new SectionAddress(), depth, null); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, SectionAddress address)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, SectionAddress address)
         { InternalConstructor(rawCode, opcode, null, operands, address, 0, null); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, int depth)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, int depth)
         { InternalConstructor(rawCode, opcode, null, operands, address, depth, null); }
 
-        public Command(Opcode opcode, List<string> operands)
+        public CodeCommand(Opcode opcode, List<string> operands)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), 0, null); }
-        public Command(Opcode opcode, List<string> operands, int depth)
+        public CodeCommand(Opcode opcode, List<string> operands, int depth)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), depth, null); }
-        public Command(Opcode opcode, List<string> operands, SectionAddress address)
+        public CodeCommand(Opcode opcode, List<string> operands, SectionAddress address)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, 0, null); }
-        public Command(Opcode opcode, List<string> operands, SectionAddress address, int depth)
+        public CodeCommand(Opcode opcode, List<string> operands, SectionAddress address, int depth)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, depth, null); }
 
-        public Command(string rawCode, Opcode opcode, List<string> operands, List<Command> link)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, List<CodeCommand> link)
         { InternalConstructor(rawCode, opcode, null, operands, new SectionAddress(), 0, link); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, int depth, List<Command> link)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, int depth, List<CodeCommand> link)
         { InternalConstructor(rawCode, opcode, null, operands, new SectionAddress(), depth, link); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, List<Command> link)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, List<CodeCommand> link)
         { InternalConstructor(rawCode, opcode, null, operands, address, 0, link); }
-        public Command(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, int depth, List<Command> link)
+        public CodeCommand(string rawCode, Opcode opcode, List<string> operands, SectionAddress address, int depth, List<CodeCommand> link)
         { InternalConstructor(rawCode, opcode, null, operands, address, depth, link); }
 
-        public Command(Opcode opcode, List<string> operands, List<Command> link)
+        public CodeCommand(Opcode opcode, List<string> operands, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), 0, link); }
-        public Command(Opcode opcode, List<string> operands, int depth, List<Command> link)
+        public CodeCommand(Opcode opcode, List<string> operands, int depth, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, new SectionAddress(), depth, link); }
-        public Command(Opcode opcode, List<string> operands, SectionAddress address, List<Command> link)
+        public CodeCommand(Opcode opcode, List<string> operands, SectionAddress address, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, 0, link); }
-        public Command(Opcode opcode, List<string> operands, SectionAddress address, int depth, List<Command> link)
+        public CodeCommand(Opcode opcode, List<string> operands, SectionAddress address, int depth, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(opcode, operands), opcode, null, operands, address, depth, link); }
 
-        public Command(string rawCode, string macroOpcode, List<string> operands)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, new SectionAddress(), 0, null); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, int depth)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, int depth)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, new SectionAddress(), depth, null); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, SectionAddress address)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, SectionAddress address)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, address, 0, null); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, int depth)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, int depth)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, address, depth, null); }
 
-        public Command(string macroOpcode, List<string> operands)
+        public CodeCommand(string macroOpcode, List<string> operands)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, new SectionAddress(), 0, null); }
-        public Command(string macroOpcode, List<string> operands, int depth)
+        public CodeCommand(string macroOpcode, List<string> operands, int depth)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, new SectionAddress(), depth, null); }
-        public Command(string macroOpcode, List<string> operands, SectionAddress address)
+        public CodeCommand(string macroOpcode, List<string> operands, SectionAddress address)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, address, 0, null); }
-        public Command(string macroOpcode, List<string> operands, SectionAddress address, int depth)
+        public CodeCommand(string macroOpcode, List<string> operands, SectionAddress address, int depth)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, address, depth, null); }
 
-        public Command(string rawCode, string macroOpcode, List<string> operands, List<Command> link)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, List<CodeCommand> link)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, new SectionAddress(), 0, link); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, int depth, List<Command> link)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, int depth, List<CodeCommand> link)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, new SectionAddress(), depth, link); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, List<Command> link)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, List<CodeCommand> link)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, address, 0, link); }
-        public Command(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, int depth, List<Command> link)
+        public CodeCommand(string rawCode, string macroOpcode, List<string> operands, SectionAddress address, int depth, List<CodeCommand> link)
         { InternalConstructor(rawCode, Opcode.Macro, macroOpcode, operands, address, depth, link); }
 
-        public Command(string macroOpcode, List<string> operands, List<Command> link)
+        public CodeCommand(string macroOpcode, List<string> operands, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, new SectionAddress(), 0, link); }
-        public Command(string macroOpcode, List<string> operands, int depth, List<Command> link)
+        public CodeCommand(string macroOpcode, List<string> operands, int depth, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, new SectionAddress(), depth, link); }
-        public Command(string macroOpcode, List<string> operands, SectionAddress address, List<Command> link)
+        public CodeCommand(string macroOpcode, List<string> operands, SectionAddress address, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, address, 0, link); }
-        public Command(string macroOpcode, List<string> operands, SectionAddress address, int depth, List<Command> link)
+        public CodeCommand(string macroOpcode, List<string> operands, SectionAddress address, int depth, List<CodeCommand> link)
         { InternalConstructor(ForgeRawCode(macroOpcode, operands), Opcode.Macro, macroOpcode, operands, address, depth, link); }
 
-        public void InternalConstructor(string rawCode, Opcode opcode, string macroOpcode, List<string> operands, SectionAddress address, int depth, List<Command> link)
+        public void InternalConstructor(string rawCode, Opcode opcode, string macroOpcode, List<string> operands, SectionAddress address, int depth, List<CodeCommand> link)
         {
             this.RawCode = rawCode;
             this.Opcode = opcode;
@@ -198,9 +199,9 @@ namespace PEBakery.Core
         public string ForgeRawCode()
         {
             if (Opcode == Opcode.Macro)
-                return Command.ForgeRawCode(MacroOpcode, Operands);
+                return CodeCommand.ForgeRawCode(MacroOpcode, Operands);
             else
-                return Command.ForgeRawCode(Opcode, Operands);
+                return CodeCommand.ForgeRawCode(Opcode, Operands);
         }
 
         public static string ForgeRawCode(Opcode opcode, List<string> operands)
@@ -248,15 +249,15 @@ namespace PEBakery.Core
 
     #endregion
 
-    #region Command State
+    #region CodeCommandInfo
 
-    public class CmdState
+    public class CodeCommandInfo
     {
         
     }
 
-    #region Command State - File
-    public class CmdExpandState : CmdState
+    #region CodeCommandInfo - File
+    public class CodeInfo_Expand : CodeCommandInfo
     {
         public string SrcCab;
         public string DestDir;
@@ -266,7 +267,7 @@ namespace PEBakery.Core
         public bool NoWarn;
     }
 
-    public class CmdFileCopyState : CmdState
+    public class CodeInfo_FileCopy : CodeCommandInfo
     {
         public string SrcFile;
         public string DestPath;
