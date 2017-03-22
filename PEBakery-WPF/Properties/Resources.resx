@@ -142,6 +142,9 @@
     <value>..\Resources\Lock.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     <comment>Apache License 2.0, From https://material.io/icons</comment>
   </data>
+  <data name="SvgPlugin" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\DefaultPlugin.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="SvgProject" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Project.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>

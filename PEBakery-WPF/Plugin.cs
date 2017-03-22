@@ -12,7 +12,7 @@ using PEBakery.Exceptions;
 using PEBakery.Lib;
 using System.Diagnostics;
 
-namespace PEBakery.Object
+namespace PEBakery.Core
 {
     using StringDictionary = Dictionary<string, string>;
     using SectionDictionary = Dictionary<string, PluginSection>;
@@ -395,8 +395,8 @@ namespace PEBakery.Object
         }
 
         // Code-Type Section
-        private List<BakeryCommand> codes;
-        public List<BakeryCommand> Codes
+        private List<Command> codes;
+        public List<Command> Codes
         {
             get
             {
@@ -482,7 +482,7 @@ namespace PEBakery.Object
             this.lines = lines;
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<BakeryCommand> codes)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<Command> codes)
         {
             this.plugin = plugin;
             this.sectionName = sectionName;
@@ -603,7 +603,7 @@ namespace PEBakery.Object
                 throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
         }
 
-        public List<BakeryCommand> GetCodes()
+        public List<Command> GetCodes()
         {
             if (dataType == SectionDataType.Codes)
                 return codes;
@@ -611,7 +611,7 @@ namespace PEBakery.Object
                 throw new InternalUnknownException("GetCodes must be used with SectionDataType.Codes");
         }
 
-        public List<BakeryCommand> GetCodes(bool convertIfLine)
+        public List<Command> GetCodes(bool convertIfLine)
         {
             if (dataType == SectionDataType.Codes)
                 return codes;

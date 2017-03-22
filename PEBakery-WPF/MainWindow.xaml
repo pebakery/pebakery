@@ -43,7 +43,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Button Name="buildButton" Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
-                <Button Name="refreshButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="refreshButton_Click" />
+                <Button Name="refreshButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click" />
                 <Button Name="settingButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" />
                 <Button Name="updateButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" />
 
@@ -64,18 +64,33 @@
                 x:Name="mainTreeView"
                 Grid.Column="0"
                 Background="PaleGreen"
-                SelectedItemChanged="mainTreeView_SelectedItemChanged"
+                SelectedItemChanged="MainTreeView_SelectedItemChanged"
                 ItemsSource="{Binding Child}"
-                Loaded="mainTreeView_Loaded"
+                Loaded="MainTreeView_Loaded"
                 VirtualizingStackPanel.IsVirtualizing="True"
                 VirtualizingStackPanel.VirtualizationMode="Recycling">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Child}">
-                        <StackPanel Orientation="Horizontal" >
-                            <CheckBox Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
-                            <Image Source="{Binding ImageSvg}" Focusable="False" Initialized="TreeNodeImage_Initialized"></Image>
-                            <TextBlock Margin="2,0" Text="{Binding Text}"></TextBlock>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox
+                                Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                                Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
+                            <Image
+                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="1"
+                                Source="{Binding ImageSvg}" Focusable="False"></Image>
+                            <TextBlock
+                                Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                                Margin="2,0" Text="{Binding Text}"></TextBlock>
+                        </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
@@ -93,7 +108,7 @@
                             <ColumnDefinition Width="30"/>
                         </Grid.ColumnDefinitions>
 
-                        <Image Name="pluginLogo" Grid.Row="0" Grid.Column="0" Margin="5"></Image>
+                        <Image Name="pluginLogo" Grid.Row="0" Grid.Column="0" Margin="10"></Image>
                         <Grid Grid.Row="0" Grid.Column="1">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="30" />

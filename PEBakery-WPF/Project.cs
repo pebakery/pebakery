@@ -13,7 +13,7 @@ using System.ComponentModel;
 using PEBakery.Lib;
 using PEBakery.Exceptions;
 
-namespace PEBakery.Object
+namespace PEBakery.Core
 {
     public class Project
     {
@@ -21,9 +21,9 @@ namespace PEBakery.Object
         private string projectName;
         private string projectRoot;
         private Plugin mainPlugin;
+        private List<Plugin> allPluginList;
         private Tree<Plugin> allPlugins;
         private Tree<Plugin> visiblePlugins;
-        private Tree<Plugin> activePlugins;
         public const int MainLevel = -256;  // Reserved level for script.project
 
         private int loadedPluginCount;
@@ -35,11 +35,12 @@ namespace PEBakery.Object
         public string ProjectName { get { return projectName; } }
         public string ProjectRoot { get { return projectRoot; } }
         public Plugin MainPlugin { get { return mainPlugin; } }
+        public List<Plugin> AllPluginList { get { return allPluginList; } }
         public Tree<Plugin> AllPlugins { get { return allPlugins; } }
         public Tree<Plugin> VisiblePlugins { get => visiblePlugins; }
-        public Tree<Plugin> ActivePlugins { get { return activePlugins; } }
         public int LoadedPluginCount { get => loadedPluginCount; }
         public int AllPluginCount { get => allPluginCount; }
+        public string BaseDir { get => baseDir; }
 
 
         /// <summary>
@@ -60,24 +61,23 @@ namespace PEBakery.Object
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("Parsing plugins start...");
-            List<Plugin> allPluginList = CollectAllPlugins();
+            this.allPluginList = CollectAllPlugins();
+            this.allPlugins = PluginListToTree(allPluginList);
             Console.WriteLine("Parsing plugins done.");
             Console.WriteLine($"All Plugins : {allPluginList.Count}");
             Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
             List<Plugin> visiblePluginList = CollectVisiblePlugins(allPluginList);
-            Console.WriteLine("Selected visible plugins.");
-            Console.WriteLine($"Active Plugins : {visiblePluginList.Count}");
-            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
-            List<Plugin> activePluginList = CollectActivePlugins(allPluginList);
-            Console.WriteLine("Selected active plugins.");
-            Console.WriteLine($"Active Plugins : {activePluginList.Count}");
-            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
-            this.allPlugins = PluginListToTree(allPluginList);
             this.visiblePlugins = PluginListToTree(visiblePluginList);
-            this.activePlugins = PluginListToTree(activePluginList);
-            Console.WriteLine("Converted to Tree.");
+            Console.WriteLine("Selected visible plugins.");
+            Console.WriteLine($"Visible Plugins : {visiblePluginList.Count}");
             Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
             stopwatch.Stop();
+        }
+
+        public Tree<Plugin> GetActivePlugin()
+        {
+            List<Plugin> activePluginList = CollectActivePlugins(allPluginList);
+            return PluginListToTree(activePluginList);
         }
 
         private List<Plugin> CollectAllPlugins()
@@ -109,9 +109,8 @@ namespace PEBakery.Object
 
             // mainPlugin is the first element.
             this.mainPlugin = pList.Single(p => p.Level == MainLevel);
-            // Sort by level and filename (lexicographic) - Well, this is done by PluginListToTree() later
-            // return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
-            return pList;
+            // Sort by level and filename (lexicographic)
+            return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
         }
 
         private IEnumerable<Task> LoadPlugins(List<string> pPathList, List<Plugin> pList)
@@ -175,18 +174,17 @@ namespace PEBakery.Object
             foreach (Plugin p in allPluginList)
             {
                 bool active = false;
-                if (!(p.MainInfo.ContainsKey("Selected") && string.Equals(p.MainInfo["Selected"], "None", StringComparison.OrdinalIgnoreCase)))
+                if (p.Type == PluginType.Plugin)
                 {
-                    if (p.MainInfo.ContainsKey("Selected") && string.Equals(p.MainInfo["Selected"], "True", StringComparison.OrdinalIgnoreCase))
-                        active = true;
-                    if (p.MainInfo.ContainsKey("Mandatory") && string.Equals(p.MainInfo["Mandatory"], "True", StringComparison.OrdinalIgnoreCase))
-                        active = true;
+                    if (p.Selected != SelectedState.None)
+                    {
+                        if (p.Mandatory || p.Selected == SelectedState.True)
+                            active = true;
+                    }
                 }
-
+                
                 if (active)
-                {
                     activePluginList.Add(p);
-                }
             }
             return activePluginList;
         }

@@ -15,7 +15,7 @@ namespace PEBakery.WPF
     {
         public static string[] Args;
 
-        void app_Startup(object sender, StartupEventArgs e)
+        void App_Startup(object sender, StartupEventArgs e)
         {
             // If no command line arguments were provided, don't process them 
             if (e.Args.Length == 0)
@@ -24,6 +24,15 @@ namespace PEBakery.WPF
             {
                 Args = e.Args;
             }
+
+            /*
+            // Yeay, long path support at last!
+            // https://blogs.msdn.microsoft.com/dotnet/2016/08/02/announcing-net-framework-4-6-2/
+            // Enable long path (~32768) support, applyed from .Net Framework 4.6.2 or up
+            AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
+            // Disable long path (~32768) support
+            AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", true);
+            */
         }
     }
 }

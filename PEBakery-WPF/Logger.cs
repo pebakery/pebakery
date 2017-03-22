@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.SQLite;
 
-namespace PEBakery.Engine
+namespace PEBakery.WPF
 {
-    public class Engine
+    public class Logger
     {
-    }
-
-    public class EngineState
-    {
+        public Logger()
+        {
+        }
     }
 }

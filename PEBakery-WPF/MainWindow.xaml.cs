@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Reflection;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -20,16 +19,17 @@ using System.Windows.Shapes;
 using System.Collections.ObjectModel;
 using PEBakery.Helper;
 using PEBakery.Lib;
-using PEBakery.Object;
-using PEBakery.Engine;
+using PEBakery.Core;
 
 // Used OpenSource
 // Svg.Net (Microsoft Public License)
 // Google's Material Icons (Apache License)
 // Microsoft's Per-Monitor-DPI Images Example (MIT)
+// Main Icon from pixelkit.com, CC BY-NC 3.0 (https://www.iconfinder.com/icons/208267/desert_donut_icon)
 
 namespace PEBakery.WPF
 {
+    #region MainWindow
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
@@ -43,6 +43,8 @@ namespace PEBakery.WPF
         private TextBlock statusBar;
         private Stopwatch stopwatch;
         private BackgroundWorker loadWorker = new BackgroundWorker();
+
+        const int maxDpiScale = 4;
 
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
@@ -113,13 +115,13 @@ namespace PEBakery.WPF
         {
             loadWorker = new BackgroundWorker();
             loadWorker.WorkerReportsProgress = true;
-            loadWorker.DoWork += new DoWorkEventHandler(bgWorker_LoadProject);
-            loadWorker.ProgressChanged += new ProgressChangedEventHandler(loadWorker_ProgressChanged);
-            loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(loadWorker_RunWorkerCompleted);
+            loadWorker.DoWork += new DoWorkEventHandler(LoadWorker_Work);
+            loadWorker.ProgressChanged += new ProgressChangedEventHandler(LoadWorker_ProgressChanged);
+            loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LoadWorker_RunWorkerCompleted);
             loadWorker.RunWorkerAsync(baseDir);
         }
 
-        private void refreshButton_Click(object sender, RoutedEventArgs e)
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             if (loadWorker.IsBusy == false)
             {
@@ -131,7 +133,7 @@ namespace PEBakery.WPF
             }
         }
 
-        void bgWorker_LoadProject(object sender, DoWorkEventArgs e)
+        void LoadWorker_Work(object sender, DoWorkEventArgs e)
         {
             string baseDir = (string) e.Argument;
             BackgroundWorker worker = sender as BackgroundWorker;
@@ -159,12 +161,12 @@ namespace PEBakery.WPF
             }
         }
 
-        private void loadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void LoadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             this.loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
         }
 
-        private void loadWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void LoadWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             stopwatch.Stop();
             TimeSpan t = stopwatch.Elapsed;
@@ -181,8 +183,7 @@ namespace PEBakery.WPF
 
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
         {
-            double size = mainTreeView.FontSize;
-            DpiScale scale = VisualTreeHelper.GetDpi(this as Visual);
+            double size = mainTreeView.FontSize * maxDpiScale;
 
             foreach (Node<Plugin> node in plugins)
             {
@@ -194,20 +195,20 @@ namespace PEBakery.WPF
 
                 if (p.Type == PluginType.Directory)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size, scale);
+                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size);
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.SetSvgImage(Properties.Resources.SvgProject, size, size, scale);
+                        item.SetSvgImage(Properties.Resources.SvgProject, size, size);
                     else if (p.Mandatory)
-                        item.SetSvgImage(Properties.Resources.SvgLock, size, size, scale);
+                        item.SetSvgImage(Properties.Resources.SvgLock, size, size);
                     else
-                        item.SetSvgImage(Properties.Resources.SvgFile, size, size, scale);
+                        item.SetSvgImage(Properties.Resources.SvgFile, size, size);
                 }
                 else if (p.Type == PluginType.Link)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgLink, size, size, scale);
+                    item.SetSvgImage(Properties.Resources.SvgLink, size, size);
                 }
 
                 if (0 < node.Child.Count)
@@ -215,7 +216,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void mainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var tree = sender as TreeView;
 
@@ -223,6 +224,19 @@ namespace PEBakery.WPF
             {
                 TreeViewModel item = tree.SelectedItem as TreeViewModel;
                 Plugin p = item.Node.Data;
+                double size = 400; // pluginLogo.Width * maxDpiScale;
+                switch(p.Type)
+                {
+                    case PluginType.Directory:
+                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                        break;
+                    case PluginType.Plugin:
+                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                        break;
+                    case PluginType.Link:
+                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgLink, size, size);
+                        break;
+                }
                 pluginTitle.Text = p.Title;
                 pluginDescription.Text = p.Description;
                 pluginVersion.Text = $"v{p.Version}";
@@ -233,25 +247,10 @@ namespace PEBakery.WPF
             }
         }
 
-        private void JumpyStackPanel_KeyDown(object sender, KeyEventArgs e)
-        {
-            StackPanel panel = sender as StackPanel;
-
-            base.OnPreviewKeyDown(e);
-            if (e.Key == Key.Space)
-            {
-                CheckBox checkBox = panel.Children[0] as CheckBox;
-                if (checkBox.IsChecked == true)
-                    checkBox.IsChecked = false;
-                else if (checkBox.IsChecked == false)
-                    checkBox.IsChecked = true;
-            }
-        }
-
-        private void mainTreeView_Loaded(object sender, RoutedEventArgs e)
+        private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
         {
             Window window = Window.GetWindow(this);
-            window.KeyDown += mainTreeView_KeyDown;
+            window.KeyDown += MainTreeView_KeyDown;
         }
 
         /// <summary>
@@ -259,7 +258,7 @@ namespace PEBakery.WPF
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void mainTreeView_KeyDown(object sender, KeyEventArgs e)
+        private void MainTreeView_KeyDown(object sender, KeyEventArgs e)
         {
             // Window window = sender as Window;
             base.OnKeyDown(e);
@@ -278,32 +277,13 @@ namespace PEBakery.WPF
                     }
                 }
             }
-        }
-
-        private void TreeNodeImage_Initialized(object sender, EventArgs e)
-        {
-            /* TODO: Not working, so temporally disabled for performance
-            FrameworkElement element = sender as FrameworkElement;
-            if (element != null)
-            {
-                TreeViewModel model = element.DataContext as TreeViewModel;
-                DpiChanged += model.OnDpiChanged;
-            }
-            */
-        }
-
-        
+        }        
     }
+    #endregion
 
+    #region TreeViewModel
     public class TreeViewModel : INotifyPropertyChanged
     {
-        public void OnDpiChanged(object sender, DpiChangedEventArgs e)
-        {
-            // TODO: Not working! 
-            DpiScale scale = e.NewDpi;
-            ImageSvg = ImageHelper.SvgByteToBitmapImage(imageSrc, imageWidth * scale.DpiScaleX, imageHeight * scale.DpiScaleY);
-        }
-
         public TreeViewModel(TreeViewModel parent)
         {
             this.parent = parent;
@@ -427,19 +407,20 @@ namespace PEBakery.WPF
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
         public ObservableCollection<TreeViewModel> Child { get => child; }
         
-        public void SetSvgImage(byte[] src, double width, double height, DpiScale scale)
+        public void SetSvgImage(byte[] src, double width, double height)
         {
             imageWidth = width;
             imageHeight = height;
             imageSrc = src;
-            ImageSvg = ImageHelper.SvgByteToBitmapImage(src, width * scale.DpiScaleX, height * scale.DpiScaleY);
+            ImageSvg = ImageHelper.SvgByteToBitmapImage(src, width, height);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
+    #endregion
+
 }
