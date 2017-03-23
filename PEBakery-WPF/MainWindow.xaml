@@ -138,7 +138,7 @@
                                 Name="pluginDescription" Text="Plugin Description" 
                                 VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </Grid>
-                        
+
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="30" />
@@ -147,7 +147,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
                             </Grid.ColumnDefinitions>
-                            
+
                             <Button
                                 Name="pluginRunButton"
                                 Grid.Row="0"
@@ -161,10 +161,23 @@
                                 Style="{StaticResource BackgroundButton}">
                             </Button>
                         </Grid>
-                        
                     </Grid>
                 </Border>
-                <Canvas Name="mainCanvas"></Canvas>
+                <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Canvas 
+                        Name="mainCanvas"
+                        Grid.Row="0" Grid.Column="1">
+                    </Canvas>
+                </Grid>
+                
             </DockPanel>
         </Grid>
     </DockPanel>

@@ -122,11 +122,23 @@ namespace PEBakery.Core
             switch (type)
             {
                 case UIControlType.TextBox:
-                    break;
+                    {
+                        const int minOpCount = 1;
+                        const int maxOpCount = 1;
+                        const int optOpCount = 1;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        return new UIInfo_TextBox(true, GetInfoTooltip(op, optOpCount), op[0]);
+                    }
                 case UIControlType.TextLabel:
                     {
-                        if (CheckInfoOperandLength(op, 1, 2, 1))
+                        const int minOpCount = 1;
+                        const int maxOpCount = 2;
+                        const int optOpCount = 1;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
+
                         int.TryParse(op[0], out int fontSize);
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
                         if (string.Equals(op[1], "Bold", StringComparison.OrdinalIgnoreCase))
@@ -137,12 +149,25 @@ namespace PEBakery.Core
                             style = UIInfo_TextLabel_Style.Underline;
                         else if (string.Equals(op[1], "Strike", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Strike;
-                        return new UIInfo_TextLabel(true, GetInfoTooltip(op, 2), fontSize, style);
+
+                        return new UIInfo_TextLabel(true, GetInfoTooltip(op, optOpCount), fontSize, style);
                     }
                 case UIControlType.NumberBox:
                     break;
                 case UIControlType.CheckBox:
-                    break;
+                    {
+                        const int minOpCount = 1;
+                        const int maxOpCount = 1;
+                        const int optOpCount = 2; // [SectionToRun],[Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        bool _checked = false;
+                        if (string.Equals(op[0], "True", StringComparison.OrdinalIgnoreCase))
+                            _checked = true;
+
+                        return new UIInfo_CheckBox(true, GetInfoTooltip(op, optOpCount), _checked);
+                    }
                 case UIControlType.ComboBox:
                     break;
                 case UIControlType.Image:
@@ -154,11 +179,27 @@ namespace PEBakery.Core
                 case UIControlType.CheckList:
                     break;
                 case UIControlType.WebLabel:
-                    break;
+                    {
+                        const int minOpCount = 1;
+                        const int maxOpCount = 1;
+                        const int optOpCount = 1;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        return new UIInfo_WebLabel(true, GetInfoTooltip(op, optOpCount), op[0]);
+                    }
                 case UIControlType.RadioButton:
                     break;
                 case UIControlType.Bevel:
-                    break;
+                    {
+                        const int minOpCount = 0;
+                        const int maxOpCount = 0;
+                        const int optOpCount = 1;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        return new UIInfo_Bevel(true, GetInfoTooltip(op, optOpCount));
+                    }
                 case UIControlType.FileBox:
                     break;
                 case UIControlType.RadioGroup:
@@ -179,7 +220,7 @@ namespace PEBakery.Core
         /// <returns>Return true if error.</returns>
         private static bool CheckInfoOperandLength(List<string> op, int min, int max, int optional)
         {
-            if (op.Count < min || max < op.Count)
+            if (op.Count < min || max + optional < op.Count)
                 return true;
             else
                 return false;

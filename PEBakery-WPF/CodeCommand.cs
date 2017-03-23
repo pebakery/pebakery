@@ -209,17 +209,8 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder(opcode.ToString());
             for (int i = 0; i < operands.Count; i++)
             {
-                if (operands[i].Contains(" "))
-                {
-                    builder.Append(",\"");
-                    builder.Append(operands[i]);
-                    builder.Append("\"");
-                }
-                else
-                {
-                    builder.Append(",");
-                    builder.Append(operands[i]);
-                }
+                builder.Append(",");
+                builder.Append(DoublequoteString(operands[i]));
             }
 
             return builder.ToString();
@@ -230,20 +221,19 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder(macroOpcode);
             for (int i = 0; i < operands.Count; i++)
             {
-                if (operands[i].Contains(" "))
-                {
-                    builder.Append(",\"");
-                    builder.Append(operands[i]);
-                    builder.Append("\"");
-                }
-                else
-                {
-                    builder.Append(",");
-                    builder.Append(operands[i]);
-                }
+                builder.Append(",");
+                builder.Append(DoublequoteString(operands[i]));
             }
 
             return builder.ToString();
+        }
+
+        public static string DoublequoteString(string str)
+        {
+            if (str.Contains(" "))
+                return "\"" + str + "\"";
+            else
+                return str;
         }
     }
 

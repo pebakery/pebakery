@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -117,6 +118,40 @@ namespace PEBakery.Core
             this.Rect = rect;
             this.Info = info;
         }
+
+        public override string ToString()
+        {
+            return ForgeRawLine(true);
+        }
+
+        public string ForgeRawLine(bool includeKey)
+        {
+            StringBuilder builder = new StringBuilder();
+            if (includeKey)
+            {
+                builder.Append(CodeCommand.DoublequoteString(Key));
+                builder.Append("=");
+            }
+
+            builder.Append(CodeCommand.DoublequoteString(Text));
+            builder.Append(",");
+            if (Visibility)
+                builder.Append("1,");
+            else
+                builder.Append("0,");
+            builder.Append((int) Type);
+            builder.Append(",");
+            builder.Append(Rect.Left);
+            builder.Append(",");
+            builder.Append(Rect.Top);
+            builder.Append(",");
+            builder.Append(Rect.Width);
+            builder.Append(",");
+            builder.Append(Rect.Height);
+            builder.Append(",");
+            builder.Append(Info.ForgeRawLine());
+            return builder.ToString();
+        }
     }
     #endregion
 
@@ -125,12 +160,30 @@ namespace PEBakery.Core
     public class UICommandInfo
     {
         public bool Valid;
-        public string Tooltip; // optional
+        public string ToolTip; // optional
 
         public UICommandInfo(bool valid, string tooltip)
         {
             this.Valid = valid;
-            this.Tooltip = tooltip;
+            this.ToolTip = tooltip;
+        }
+
+        /// <summary>
+        /// This function should only be called from child Class
+        /// Note : this function includes first ','
+        /// </summary>
+        /// <returns></returns>
+        public virtual string ForgeRawLine()
+        {
+            if (ToolTip != null)
+                return "," + ToolTip;
+            else
+                return string.Empty;
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -142,6 +195,12 @@ namespace PEBakery.Core
             : base(valid, tooltip)
         {
             this.Value = str;
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
     }
 
@@ -161,6 +220,21 @@ namespace PEBakery.Core
             this.FontSize = fontSize;
             this.Style = style;
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FontSize);
+            builder.Append(",");
+            builder.Append(Style.ToString());
+            builder.Append(base.ForgeRawLine());
+            return builder.ToString(); 
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
+        }
     }
 
     public class UIInfo_NumberBox : UICommandInfo
@@ -177,6 +251,12 @@ namespace PEBakery.Core
             this.Min = min;
             this.Max = max;
             this.IncrementUnit = incrementUnit;
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
     }
 
@@ -198,6 +278,27 @@ namespace PEBakery.Core
             this.Value = value;
             this.SectionName = sectionName;
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (Value)
+                builder.Append("True");
+            else
+                builder.Append("False");
+            if (SectionName != null)
+            {
+                builder.Append(",");
+                builder.Append(SectionName);
+            }
+            builder.Append(base.ForgeRawLine());
+            return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
+        }
     }
 
     public class UIInfo_ComboBox : UICommandInfo
@@ -209,6 +310,12 @@ namespace PEBakery.Core
         {
             Items = items;
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
+        }
     }
 
     public class UIInfo_Image : UICommandInfo
@@ -218,6 +325,12 @@ namespace PEBakery.Core
         {
 
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
+        }
     }
 
     public class UIInfo_TextFile : UICommandInfo
@@ -226,6 +339,12 @@ namespace PEBakery.Core
             : base(valid, tooltip)
         {
 
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
     }
 
@@ -247,6 +366,12 @@ namespace PEBakery.Core
             this.SectionName = sectionName;
             this.Picture = picture;
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
+        }
     }
 
     public class UIInfo_CheckList : UICommandInfo
@@ -255,6 +380,12 @@ namespace PEBakery.Core
             : base(valid, tooltip)
         {
 
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
     }
 
@@ -265,6 +396,16 @@ namespace PEBakery.Core
         public UIInfo_WebLabel(bool valid, string tooltip,  string url) : base(valid, tooltip)
         {
             this.URL = url;
+        }
+
+        public override string ForgeRawLine()
+        {
+            return URL;
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -283,6 +424,12 @@ namespace PEBakery.Core
         {
             this.Selected = selected;
             this.SectionName = sectionName;
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
 
     }
@@ -305,6 +452,12 @@ namespace PEBakery.Core
         {
             this.IsFile = isFile;
         }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
+        }
     }
 
     public class UIInfo_RadioGroup : UICommandInfo
@@ -317,6 +470,12 @@ namespace PEBakery.Core
         {
             this.Items = items;
             this.Selected = selected;
+        }
+
+        public override string ForgeRawLine()
+        {
+            StringBuilder builder = new StringBuilder();
+            return builder.ToString();
         }
     }
 
