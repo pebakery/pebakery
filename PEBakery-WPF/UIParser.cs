@@ -171,6 +171,15 @@ namespace PEBakery.Core
                 case UIControlType.ComboBox:
                     break;
                 case UIControlType.Image:
+                    {
+                        const int minOpCount = 0;
+                        const int maxOpCount = 0;
+                        const int optOpCount = 1; // [Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        return new UIInfo_Image(true, GetInfoTooltip(op, optOpCount));
+                    }
                     break;
                 case UIControlType.TextFile:
                     break;

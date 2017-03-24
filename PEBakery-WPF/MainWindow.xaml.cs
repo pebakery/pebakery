@@ -100,15 +100,15 @@ namespace PEBakery.WPF
         {
             double width = 300;
             double height = 300;
-            buildButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgBuild, width, height);
-            refreshButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgRefresh, width, height);
-            settingButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgSetting, width, height);
-            updateButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgUpdate, width, height);
+            buildButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
+            refreshButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgRefresh, width, height);
+            settingButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgSetting, width, height);
+            updateButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgUpdate, width, height);
 
             width = 120;
             height = 120;
-            pluginRunButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgBuild, width, height);
-            pluginEditButton.Background = ImageHelper.SvgByteToImageBrush(Properties.Resources.SvgEdit, width, height);
+            pluginRunButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
+            pluginEditButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgEdit, width, height);
         }
 
         private void StartLoadWorkder()
@@ -225,24 +225,51 @@ namespace PEBakery.WPF
                 TreeViewModel item = tree.SelectedItem as TreeViewModel;
                 Plugin p = item.Node.Data;
                 double size = 400; // pluginLogo.Width * maxDpiScale;
-                switch(p.Type)
+                Thickness margin0 = new Thickness(0);
+                Thickness margin10 = new Thickness(10);
+                switch (p.Type)
                 {
                     case PluginType.Directory:
-                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                        pluginLogo.Stretch = Stretch.Uniform;
+                        pluginLogo.Margin = margin10;
                         break;
                     case PluginType.Plugin:
-                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                        if (EncodedFile.ExtractLogo(p, out MemoryStream mem, out ImageType type) == false)
+                        {
+                            if (type == ImageType.Svg)
+                            {
+                                pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
+                                pluginLogo.Stretch = Stretch.Uniform;
+                                pluginLogo.Margin = margin10;
+                            }
+                            else
+                            {
+                                BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
+                                pluginLogo.Source = image;
+                                pluginLogo.Stretch = Stretch.None;
+                                pluginLogo.Margin = margin0;
+                            }
+                        }
+                        else
+                        {
+                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                            pluginLogo.Stretch = Stretch.Uniform;
+                            pluginLogo.Margin = margin10;
+                        }
                         break;
                     case PluginType.Link:
-                        pluginLogo.Source = ImageHelper.SvgByteToBitmapImage(Properties.Resources.SvgLink, size, size);
+                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
+                        pluginLogo.Stretch = Stretch.Uniform;
+                        pluginLogo.Margin = margin10;
                         break;
                 }
-                pluginTitle.Text = p.Title;
-                pluginDescription.Text = p.Description;
+                pluginTitle.Text = Engine.UnescapeString(p.Title);
+                pluginDescription.Text = Engine.UnescapeString(p.Description);
                 pluginVersion.Text = $"v{p.Version}";
 
                 mainCanvas.Children.Clear();
-                UIRenderer render = new UIRenderer(mainCanvas, p);
+                UIRenderer render = new UIRenderer(mainCanvas, 1, p);
                 render.Render();
             }
             else
@@ -420,7 +447,7 @@ namespace PEBakery.WPF
             imageWidth = width;
             imageHeight = height;
             imageSrc = src;
-            ImageSvg = ImageHelper.SvgByteToBitmapImage(src, width, height);
+            ImageSvg = ImageHelper.SvgToBitmapImage(src, width, height);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

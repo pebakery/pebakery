@@ -6,8 +6,9 @@
         xmlns:local="clr-namespace:PEBakery.WPF"
         mc:Ignorable="d"
         FontSize="13"
+        FontFamily="Segoe UI"
         WindowStartupLocation="CenterScreen"
-        Title="PEBakery" Width="1024" Height="720">
+        Title="PEBakery" Width="800" Height="600">
     <Window.Resources>
         <Style x:Key="BackgroundButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -172,13 +173,12 @@
                         <ColumnDefinition Width="10"/>
                         <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <Canvas 
                         Name="mainCanvas"
                         Grid.Row="0" Grid.Column="1">
                     </Canvas>
                 </Grid>
-                
             </DockPanel>
         </Grid>
     </DockPanel>

@@ -1,4 +1,5 @@
-﻿using PEBakery.Lib;
+﻿using PEBakery.Helper;
+using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,22 +47,65 @@ namespace PEBakery.Core
         // Need more research about Type 2 and its footer
         // public static void AttachFile(Plugin plugin, string dirName, string fileName, string filePath)
 
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="dirName"></param>
+        /// <param name="fileName"></param>
+        /// <param name="mem"></param>
+        /// <returns></returns>
         public static bool ExtractFile(Plugin plugin, string dirName, string fileName, out MemoryStream mem)
         {
-            List<string> dirList = plugin.Sections["EncodedFolders"].GetLines();
-            List<string> fileList = plugin.Sections[dirName].GetLines();
+            // List<string> dirList = plugin.Sections["EncodedFolders"].GetLines();
+            // List<string> fileList = plugin.Sections[dirName].GetLines();
             List<string> encoded = plugin.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
 
             return Decode(encoded, out mem);
         }
-  
+
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="mem"></param>
+        /// <returns></returns>
+        public static bool ExtractLogo(Plugin plugin, out MemoryStream mem, out ImageType type)
+        {
+            mem = null;
+            type = ImageType.Bmp; // Dummy
+            if (plugin.Sections.ContainsKey("AuthorEncoded") == false)
+                return true;
+            Dictionary<string, string> fileDict = plugin.Sections["AuthorEncoded"].GetIniDict();
+            if (fileDict.ContainsKey("Logo") == false)
+                return true;
+            string logoFile = fileDict["Logo"];
+            if (ImageHelper.GetImageType(logoFile, out type))
+                return true;
+            List<string> encoded = plugin.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
+
+            return Decode(encoded, out mem);
+        }
+
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <param name="mem"></param>
+        /// <returns></returns>
+        public static bool ExtractInterfaceEncoded(Plugin plugin, string fileName, out MemoryStream mem)
+        {
+            List<string> encoded = plugin.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
+            return Decode(encoded, out mem);
+        }
+
         /// <summary>
         /// Return true if fail
         /// </summary>
         /// <param name="encodedList"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        public static bool Decode(List<string> encodedList, out MemoryStream mem)
+        private static bool Decode(List<string> encodedList, out MemoryStream mem)
         {
             mem = null;
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))

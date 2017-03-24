@@ -991,39 +991,109 @@ namespace PEBakery.Helper
         }
     }
 
+    public enum ImageType
+    {
+        Bmp, Jpg, Png, Svg
+    }
+
     public static class ImageHelper
     {
-        public static BitmapImage SvgByteToBitmapImage(byte[] image)
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static bool GetImageType(string path, out ImageType type)
+        {
+            type = ImageType.Bmp; // Dummy
+            string logoType = Path.GetExtension(path);
+            if (string.Equals(logoType, ".bmp", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Bmp;
+            else if (string.Equals(logoType, ".jpg", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Jpg;
+            else if (string.Equals(logoType, ".png", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Png;
+            else if (string.Equals(logoType, ".svg", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Svg;
+            else
+                return true;
+            return false;
+        }
+
+        public static BitmapImage ImageToBitmapImage(byte[] image)
+        {
+            BitmapImage bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = new MemoryStream(image);
+            bitmap.EndInit();
+            return bitmap;
+        }
+
+        public static BitmapImage ImageToBitmapImage(Stream stream)
+        {
+            stream.Position = 0;
+            BitmapImage bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = stream;
+            bitmap.EndInit();
+            return bitmap;
+        }
+
+        public static BitmapImage SvgToBitmapImage(byte[] image)
         {
             Stream stream = new MemoryStream(image);
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
             return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
-        public static BitmapImage SvgByteToBitmapImage(byte[] image, double width, double height)
+        public static BitmapImage SvgToBitmapImage(Stream stream)
+        {
+            stream.Position = 0;
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
+        }
+
+        public static BitmapImage SvgToBitmapImage(byte[] image, double width, double height)
         {
             Stream stream = new MemoryStream(image);
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
             return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
         }
 
-        public static BitmapImage SvgByteToBitmapImage(byte[] image, int width, int height)
+        public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
+        {
+            stream.Position = 0;
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
+        }
+
+        public static BitmapImage SvgToBitmapImage(byte[] image, int width, int height)
         {
             Stream stream = new MemoryStream(image);
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
             return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
         }
 
+        public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
+        {
+            stream.Position = 0;
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
+        }
+
         public static BitmapImage ToBitmapImage(Bitmap bitmap)
         {
-            using (var memory = new MemoryStream())
+            using (MemoryStream mem = new MemoryStream())
             {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
+                bitmap.Save(mem, ImageFormat.Png);
+                mem.Position = 0;
 
-                var bitmapImage = new BitmapImage();
+                BitmapImage bitmapImage = new BitmapImage();
                 bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
+                bitmapImage.StreamSource = mem;
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                 bitmapImage.EndInit();
 
@@ -1031,19 +1101,37 @@ namespace PEBakery.Helper
             }
         }
 
-        public static ImageBrush SvgByteToImageBrush(byte[] image)
+        public static ImageBrush SvgToImageBrush(byte[] image)
         {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image));
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image));
         }
 
-        public static ImageBrush SvgByteToImageBrush(byte[] image, double width, double height)
+        public static ImageBrush SvgToImageBrush(Stream stream)
         {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+            stream.Position = 0;
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream));
         }
 
-        public static ImageBrush SvgByteToImageBrush(byte[] image, int width, int height)
+        public static ImageBrush SvgToImageBrush(byte[] image, double width, double height)
         {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgByteToBitmapImage(image, width, height));
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush SvgToImageBrush(Stream stream, double width, double height)
+        {
+            stream.Position = 0;
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream, width, height));
+        }
+
+        public static ImageBrush SvgToImageBrush(byte[] image, int width, int height)
+        {
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image, width, height));
+        }
+
+        public static ImageBrush SvgToImageBrush(Stream stream, int width, int height)
+        {
+            stream.Position = 0;
+            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream, width, height));
         }
 
         public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
