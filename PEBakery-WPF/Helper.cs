@@ -232,7 +232,7 @@ namespace PEBakery.Helper
             return info.Length;
         }
 
-        public static bool FindByteSignature (string srcFile, byte[] signature, out long offset)
+        public static bool FindByteSignature(string srcFile, byte[] signature, out long offset)
         {
             long size = FileHelper.GetFileSize(srcFile);
 
@@ -277,12 +277,12 @@ namespace PEBakery.Helper
                 if (i == offset - (offset % block)) // First block
                 {
                     accessor.ReadArray(i, buffer, 0, block);
-                    stream.Write(buffer, (int) (offset % block), block - (int) (offset % block));
+                    stream.Write(buffer, (int)(offset % block), block - (int)(offset % block));
                 }
                 else if (offset + length - block <= i) // Last block // i < offset + length + block - ((offset + length) % block)
                 {
                     accessor.ReadArray(i, buffer, 0, (int)((offset + length) % block));
-                    stream.Write(buffer, 0, (int) ((offset + length) % block));
+                    stream.Write(buffer, 0, (int)((offset + length) % block));
                 }
                 else // Middle. Just copy whole block
                 {
@@ -409,7 +409,7 @@ namespace PEBakery.Helper
                 case HashType.SHA256:
                     hash = SHA256.Create();
                     break;
-                case HashType.SHA384: 
+                case HashType.SHA384:
                     hash = SHA384.Create();
                     break;
                 case HashType.SHA512:
@@ -760,7 +760,7 @@ namespace PEBakery.Helper
 
             array = new byte[hex.Length / 2];
             for (int i = 0; i < hex.Length; i += 2)
-                array[i/2] = Convert.ToByte(hex.Substring(i, 2), 16);
+                array[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
             return true;
         }
     }
@@ -988,7 +988,7 @@ namespace PEBakery.Helper
         {
             CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
             return cab.ExtractSingleFile(target, destDir);
-        }        
+        }
     }
 
     public static class ImageHelper
@@ -1051,28 +1051,4 @@ namespace PEBakery.Helper
             return new ImageBrush() { ImageSource = bitmap };
         }
     }
-    /*
-    public static class HiDPIHelper
-    {
-        public static bool GetScaleFactor(Visual visual, out double scaleX, out double scaleY)
-        {
-            PresentationSource source = PresentationSource.FromVisual(visual);
-            if (source != null)
-            {
-                scaleX = source.CompositionTarget.TransformToDevice.M11;
-                scaleY = source.CompositionTarget.TransformToDevice.M22;
-                return false;
-            }
-            else
-            {
-                scaleX = 0;
-                scaleY = 0;
-                return true;
-            }
-
-        }
-    }
-    */
-
-   
 }

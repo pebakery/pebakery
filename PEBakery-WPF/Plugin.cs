@@ -649,7 +649,7 @@ namespace PEBakery.Core
         public StringDictionary GetIniDict()
         {
             if (dataType == SectionDataType.IniDict)
-                return iniDict;
+                return IniDict; // this.IniDict for Load()
             else
                 throw new InternalUnknownException("GetIniDict must be used with SectionDataType.IniDict");
         }
@@ -657,7 +657,24 @@ namespace PEBakery.Core
         public List<string> GetLines()
         {
             if (dataType == SectionDataType.Lines)
-                return lines;
+                return Lines; // this.Lines for Load()
+            else
+                throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
+        }
+
+        /// <summary>
+        /// Get Lines without permanently loaded, saving memory
+        /// </summary>
+        /// <returns></returns>
+        public List<string> GetLinesOnce()
+        {
+            if (dataType == SectionDataType.Lines)
+            {
+                if (loaded)
+                    return lines;
+                else
+                    return Ini.ParseSectionToStringList(PluginPath, sectionName);
+            }
             else
                 throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
         }
@@ -665,7 +682,7 @@ namespace PEBakery.Core
         public List<CodeCommand> GetCodes()
         {
             if (dataType == SectionDataType.Codes)
-                return codes;
+                return Codes; // this.Codes for Load()
             else
                 throw new InternalUnknownException("GetCodes must be used with SectionDataType.Codes");
         }
@@ -673,7 +690,7 @@ namespace PEBakery.Core
         public List<CodeCommand> GetCodes(bool convertIfLine)
         {
             if (dataType == SectionDataType.Codes)
-                return codes;
+                return Codes; // this.Codes for Load()
             else if (convertIfLine && dataType == SectionDataType.Lines)
             {
                 ConvertLineToCodeSection(this.Lines); // this.Lines for Load()
@@ -686,7 +703,7 @@ namespace PEBakery.Core
         public List<UICommand> GetUICodes()
         {
             if (dataType == SectionDataType.Interfaces)
-                return uiCodes;
+                return UICodes; // this.UICodes for Load()
             else
                 throw new InternalUnknownException("GetUIDirectives must be used with SectionDataType.Interfaces");
         }
@@ -694,7 +711,7 @@ namespace PEBakery.Core
         public List<UICommand> GetUICodes(bool convertIfLine)
         {
             if (dataType == SectionDataType.Interfaces)
-                return uiCodes;
+                return UICodes; // this.UICodes for Load()
             else if (convertIfLine && dataType == SectionDataType.Lines)
             {
                 ConvertLineToUICodeSection(this.Lines); // this.Lines for Load()

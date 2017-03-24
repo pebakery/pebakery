@@ -129,11 +129,11 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             if (includeKey)
             {
-                builder.Append(CodeCommand.DoublequoteString(Key));
+                builder.Append(Engine.EscapeString(CodeCommand.DoublequoteString(Key)));
                 builder.Append("=");
             }
 
-            builder.Append(CodeCommand.DoublequoteString(Text));
+            builder.Append(Engine.EscapeString(CodeCommand.DoublequoteString(Text)));
             builder.Append(",");
             if (Visibility)
                 builder.Append("1,");
@@ -176,7 +176,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + ToolTip;
+                return "," + Engine.EscapeString(ToolTip);
             else
                 return string.Empty;
         }
@@ -400,7 +400,7 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            return URL;
+            return Engine.EscapeString(URL);
         }
 
         public override string ToString()

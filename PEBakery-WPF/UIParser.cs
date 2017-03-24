@@ -2,6 +2,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -80,13 +81,12 @@ namespace PEBakery.Core
             }
 
             // Forge UICommand
-            string text = operands[0];
+            string text = Engine.UnescapeString(operands[0]);
             bool visibility = string.Equals(operands[1], "1", StringComparison.Ordinal);
-            int x = 0, y = 0, width = 0, height = 0; // In case of failure, value will be set to 0
-            int.TryParse(operands[2], out x);
-            int.TryParse(operands[3], out y);
-            int.TryParse(operands[4], out width);
-            int.TryParse(operands[5], out height);
+            int.TryParse(operands[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x);
+            int.TryParse(operands[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int y);
+            int.TryParse(operands[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int width);
+            int.TryParse(operands[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
             Rect rect = new Rect(x, y, width, height);
             UICommandInfo info = ParseUICommandInfo(type, operands);
             return new UICommand(rawLine, addr, key, text, visibility, type, rect, info);
@@ -129,7 +129,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_TextBox(true, GetInfoTooltip(op, optOpCount), op[0]);
+                        return new UIInfo_TextBox(true, GetInfoTooltip(op, optOpCount), Engine.UnescapeString(op[0]));
                     }
                 case UIControlType.TextLabel:
                     {
@@ -139,7 +139,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        int.TryParse(op[0], out int fontSize);
+                        int.TryParse(op[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int fontSize);
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
                         if (string.Equals(op[1], "Bold", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Bold;
@@ -186,7 +186,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_WebLabel(true, GetInfoTooltip(op, optOpCount), op[0]);
+                        return new UIInfo_WebLabel(true, GetInfoTooltip(op, optOpCount), Engine.UnescapeString(op[0]));
                     }
                 case UIControlType.RadioButton:
                     break;

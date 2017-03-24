@@ -281,7 +281,11 @@ namespace PEBakery.WPF
                     }
                 }
             }
-        }        
+        }
+
+        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
+        {
+        }
     }
     #endregion
 

@@ -152,7 +152,8 @@
                                 Name="pluginRunButton"
                                 Grid.Row="0"
                                 Grid.Column="0"
-                                Style="{StaticResource BackgroundButton}">
+                                Style="{StaticResource BackgroundButton}"
+                                Click="PluginRunButton_Click">
                             </Button>
                             <Button
                                 Name="pluginEditButton"

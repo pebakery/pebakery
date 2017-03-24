@@ -595,7 +595,6 @@ namespace PEBakery.Lib
 
         public static List<string> ParseSectionToStringList(string file, string section)
         {
-            const StringComparison stricmp = StringComparison.OrdinalIgnoreCase;
             StreamReader reader = new StreamReader(new FileStream(file, FileMode.Open, FileAccess.Read), FileHelper.DetectTextEncoding(file));
 
             // If file is blank
@@ -612,22 +611,23 @@ namespace PEBakery.Lib
             while ((line = reader.ReadLine()) != null)
             { // Read text line by line
                 line = line.Trim();
-                if (line.StartsWith("[", stricmp) && line.EndsWith("]", stricmp))
+                if (line.StartsWith("[", StringComparison.OrdinalIgnoreCase) && line.EndsWith("]", StringComparison.OrdinalIgnoreCase))
                 { // Start of section
                     if (appendState)
                         break;
                     else
                     {
                         string foundSection = line.Substring(1, line.Length - 2);
-                        if (string.Equals(section, foundSection, stricmp))
+                        if (string.Equals(section, foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
                 }
                 else if ((idx = line.IndexOf('=')) != -1)
                 { // valid ini key
                     if (idx == 0) // key is empty
-                        throw new InvalidIniFormatException("[" + line + "] has invalid format");
-                    lines.Add(line);
+                        throw new InvalidIniFormatException($"[{line}] has invalid format");
+                    if (appendState)
+                        lines.Add(line);
                 }
 
             }
@@ -784,6 +784,53 @@ namespace PEBakery.Lib
 
             reader.Close();
             return result;
+        }
+
+
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="rawLine"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool GetKeyValueFromLine(string rawLine, out string key, out string value)
+        {
+            int idx = rawLine.IndexOf('=');
+            if (idx != -1) // there is key
+            {
+                key = rawLine.Substring(0, idx);
+                value = rawLine.Substring(idx + 1);
+                return false;
+            }
+            else // No Ini Format!
+            {
+                key = string.Empty;
+                value = string.Empty;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Return true if failed
+        /// </summary>
+        /// <param name="rawLines"></param>
+        /// <param name="keys"></param>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static bool GetKeyValueFromLines(List<string> rawLines, out List<string> keys, out List<string> values)
+        {
+            keys = new List<string>();
+            values = new List<string>();
+            for (int i = 0; i < rawLines.Count; i++)
+            {
+                if (GetKeyValueFromLine(rawLines[i], out string key, out string value))
+                    return true;
+                keys.Add(key);
+                values.Add(value);
+            }
+
+            return false;
         }
     }
 }
