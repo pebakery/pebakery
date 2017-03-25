@@ -12,7 +12,15 @@ All implementation is only backed by documentation and blackbox testing, without
 # Current State
 ## Working
 - PEBakery.WPF (GUI)
-- PEBakery's engine is being rewritten.
+- Plugin UI Rendering
+
+## TODO
+- PEBakery's engine need full refactoring;
+
+
+# License
+Core of PEBakery is licensed under GPL.
+Portions of PEBakery is licensed under MIT License and Apache License 2.0.
 
 # State of PEBakery-Legacy
 ## Implemented
