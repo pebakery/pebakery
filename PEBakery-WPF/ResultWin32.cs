@@ -1,4 +1,12 @@
-﻿/******************************************************************************/
+﻿/*
+    These codes are fetched from here:
+    http://www.pinvoke.net/default.aspx/Constants.WINERROR
+
+    Cannot confirm original NAMU Project source code and its per-file license.
+ */
+
+
+/******************************************************************************/
 /*       _                                    */
 /*       \`*-.                                */
 /*    )  _`-.                                 */

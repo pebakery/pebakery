@@ -56,9 +56,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PEBakery-WPF\PEBakery-WPF.csproj">
+    <ProjectReference Include="..\PEBakery-WPF\PEBakery.WPF.csproj">
       <Project>{d6224dce-02d5-4005-88fb-00a8e00cace1}</Project>
-      <Name>PEBakery-WPF</Name>
+      <Name>PEBakery.WPF</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

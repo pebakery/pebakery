@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,45 +45,86 @@ namespace PEBakery.Core
         }
 
         #region EscapeString
-        private static readonly Dictionary<string, string> unescapeChars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, string> unescapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @"#$c", @"," },
             { @"#$p", @"%" },
-            { @"#$q", @""""},
+            { @"#$q", "\"" },
             { @"#$s", @" " },
             { @"#$t", "\t"},
             { @"#$x", "\r\n"},
-            { @"#$h", @"#" }, // Extended
-            //{ @"#$z", "\x00\x00"},
+            // { @"#$z", "\x00\x00"} -> This should go to EngineRegistry
         };
 
-        public static string UnescapeString(string operand)
+        public static string UnescapeStr(string operand)
         {
-            return unescapeChars.Keys.Aggregate(operand, (from, to) => from.Replace(to, unescapeChars[to]));
+            return unescapeSeqs.Keys.Aggregate(operand, (from, to) => from.Replace(to, unescapeSeqs[to]));
         }
 
-        public static List<string> UnescapeStrings(List<string> operands)
+        public static List<string> UnescapeStrs(List<string> operands)
         {
             for (int i = 0; i < operands.Count; i++)
-                operands[i] = UnescapeString(operands[i]);
+                operands[i] = UnescapeStr(operands[i]);
             return operands;
         }
 
-        public static string EscapeString(string operand)
+        private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            Dictionary<string, string> escapeChars = unescapeChars.ToDictionary(kp => kp.Value, kp => kp.Key, StringComparer.OrdinalIgnoreCase);
-            return escapeChars.Keys.Aggregate(operand, (from, to) => from.Replace(to, escapeChars[to]));
+            { @",", @"#$c" },
+            // { @"%", @"#$p" }, // Seems even WB082 ignore this escape seqeunce?
+            { "\"", @"#$q" },
+            { @" ", @"#$s" },
+            { "\t", @"#$t" },
+            { "\r\n", @"#$x" },
+        };
+
+        private static readonly Dictionary<string, string> escapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "\"", @"#$q" },
+            { "\t", @"#$t" },
+            { "\r\n", @"#$x" },
+        };
+
+        public static string EscapeStr(string operand, bool fullEscape = false)
+        {
+            Dictionary<string, string> dict;
+            if (fullEscape)
+                dict = fullEscapeSeqs;
+            else
+                dict = escapeSeqs;
+            return dict.Keys.Aggregate(operand, (from, to) => from.Replace(to, dict[to]));
         }
 
-        public static List<string> EscapeStrings(List<string> operands)
+        public static List<string> EscapeStrs(List<string> operands)
         {
             for (int i = 0; i < operands.Count; i++)
-                operands[i] = EscapeString(operands[i]);
+                operands[i] = EscapeStr(operands[i]);
             return operands;
+        }
+
+        public static string DoublequoteStr(string str)
+        {
+            if (str.Contains(' '))
+                return "\"" + str + "\"";
+            else
+                return str;
+        }
+
+        public static string QuoteEscapeStr(string str)
+        {
+            bool needQoute = false;
+
+            // Check if str need doublequote escaping
+            if (str.Contains(' ') || str.Contains('%') || str.Contains(','))
+                needQoute = true;
+
+            // Let's escape characters
+            str = EscapeStr(str, false); // WB082 escape sequence
+            if (needQoute)
+                str = DoublequoteStr(str); // Doublequote escape
+            return str;
         }
         #endregion
-
-       
     }
 
     public class EngineState

@@ -1,16 +1,32 @@
-﻿using System;
+﻿/*
+    Pinvoke of cabinet.dll
+
+    Obtained from https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
+    Created by singhal, Modified by Hajin Jang
+
+    Copyright (c) 2014 singhal
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
 using System.Runtime.InteropServices;
 
-// Pinvoke cabinet.dll
-// Obtained from https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
-// Modified by ied206 (aka Joveler)
-// Licensed under Apache License 2.0 - http://www.apache.org/licenses/
-
-namespace CabExtract
+namespace PEBakery.Helper
 {
     [StructLayout(LayoutKind.Sequential)]
     public class CabinetInfo //Cabinet API: "FDCABINETINFO"

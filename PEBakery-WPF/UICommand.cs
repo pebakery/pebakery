@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -129,11 +147,11 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             if (includeKey)
             {
-                builder.Append(Engine.EscapeString(CodeCommand.DoublequoteString(Key)));
+                builder.Append(Engine.QuoteEscapeStr(Key));
                 builder.Append("=");
             }
 
-            builder.Append(Engine.EscapeString(CodeCommand.DoublequoteString(Text)));
+            builder.Append(Engine.QuoteEscapeStr(Text));
             builder.Append(",");
             if (Visibility)
                 builder.Append("1,");
@@ -176,7 +194,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + Engine.EscapeString(ToolTip);
+                return "," + Engine.EscapeStr(ToolTip);
             else
                 return string.Empty;
         }
@@ -200,7 +218,14 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(Engine.QuoteEscapeStr(Value));
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -242,37 +267,43 @@ namespace PEBakery.Core
         public int Value;
         public int Min;
         public int Max;
-        public int IncrementUnit;
+        public int Interval;
 
-        public UIInfo_NumberBox(bool valid, string tooltip,  int value, int min, int max, int incrementUnit)
+        public UIInfo_NumberBox(bool valid, string tooltip,  int value, int min, int max, int interval)
             : base(valid, tooltip)
         {
             this.Value = value;
             this.Min = min;
             this.Max = max;
-            this.IncrementUnit = incrementUnit;
+            this.Interval = interval;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(Value);
+            builder.Append(",");
+            builder.Append(Min);
+            builder.Append(",");
+            builder.Append(Max);
+            builder.Append(",");
+            builder.Append(Interval);
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
     public class UIInfo_CheckBox : UICommandInfo
-    { // TODO: [ButtonOptional]
+    {
         public bool Value;
         public string SectionName; // Optional
 
-        public UIInfo_CheckBox(bool valid, string tooltip,  bool value)
-            : base(valid, tooltip)
-        {
-            this.Value = value;
-            this.SectionName = null;
-        }
-
-        public UIInfo_CheckBox(bool valid, string tooltip,  bool value, string sectionName)
+        public UIInfo_CheckBox(bool valid, string tooltip, bool value, string sectionName = null)
             : base(valid, tooltip)
         {
             this.Value = value;
@@ -304,32 +335,55 @@ namespace PEBakery.Core
     public class UIInfo_ComboBox : UICommandInfo
     {
         public List<string> Items;
+        public int Index;
 
-        public UIInfo_ComboBox(bool valid, string tooltip,  List<string> items)
+        public UIInfo_ComboBox(bool valid, string tooltip,  List<string> items, int index)
             : base(valid, tooltip)
         {
             Items = items;
+            Index = index;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < Items.Count - 1; i++)
+            {
+                builder.Append(Engine.QuoteEscapeStr(Items[i]));
+                builder.Append(",");
+            }
+            builder.Append(Items.Last());
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
     public class UIInfo_Image : UICommandInfo
     {
-        public UIInfo_Image(bool valid, string tooltip)
-            : base(valid, tooltip)
-        {
+        public string URL; // optional
 
+        public UIInfo_Image(bool valid, string toolTip, string url)
+            : base(valid, toolTip)
+        {
+            URL = url;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(URL);
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -343,34 +397,60 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            return builder.ToString();
+            return base.ForgeRawLine();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
     public class UIInfo_Button : UICommandInfo
-    { // TODO: [ButtonOptional]
+    {
+        // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
+        public bool ProgressShow;
 
-        public UIInfo_Button(bool valid, string tooltip,  string sectionName)
-            : base(valid, tooltip)
-        {
-            this.SectionName = sectionName;
-            this.Picture = null;
-        }
-
-        public UIInfo_Button(bool valid, string tooltip,  string sectionName, string picture)
+        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool progressShow)
             : base(valid, tooltip)
         {
             this.SectionName = sectionName;
             this.Picture = picture;
+            this.ProgressShow = progressShow;
         }
 
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(SectionName);
+            builder.Append(",");
+            if (Picture != null)
+                builder.Append(Picture);
+            else
+                builder.Append("0");
+            builder.Append(",");
+            if (ProgressShow)
+                builder.Append("True");
+            else
+                builder.Append("False");
+            builder.Append(",");
+            builder.Append("_");
+            builder.Append(SectionName);
+            builder.Append("_");
+            builder.Append(",");
+            if (ProgressShow)
+                builder.Append("True");
+            else
+                builder.Append("False");
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -384,8 +464,12 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            return builder.ToString();
+            return base.ForgeRawLine();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -400,7 +484,10 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            return Engine.EscapeString(URL);
+            StringBuilder builder = new StringBuilder();
+            builder.Append(Engine.EscapeStr(URL));
+            builder.Append(base.ForgeRawLine());
+            return builder.ToString();
         }
 
         public override string ToString()
@@ -432,6 +519,11 @@ namespace PEBakery.Core
             return builder.ToString();
         }
 
+        public override string ToString()
+        {
+            return ForgeRawLine();
+        }
+
     }
 
     public class UIInfo_Bevel : UICommandInfo
@@ -440,6 +532,16 @@ namespace PEBakery.Core
             : base(valid, tooltip)
         {
 
+        }
+
+        public override string ForgeRawLine()
+        {
+            return base.ForgeRawLine();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -457,6 +559,11 @@ namespace PEBakery.Core
         {
             StringBuilder builder = new StringBuilder();
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 
@@ -476,6 +583,11 @@ namespace PEBakery.Core
         {
             StringBuilder builder = new StringBuilder();
             return builder.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ForgeRawLine();
         }
     }
 

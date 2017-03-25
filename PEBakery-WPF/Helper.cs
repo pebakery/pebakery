@@ -1,4 +1,30 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under MIT License.
+ 
+    MIT License
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+*/
+
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -73,6 +99,28 @@ namespace PEBakery.Helper
             fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Read(bom, 0, bom.Length);
             fs.Close();
+
+            if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+                return Encoding.UTF8;
+            else if (bom[0] == 0xFF && bom[1] == 0xFE)
+                return Encoding.Unicode;
+            else if (bom[0] == 0xFE && bom[1] == 0xFF)
+                return Encoding.BigEndianUnicode;
+            return Encoding.Default;
+        }
+
+        /// <summary>
+        /// Detect text file's encoding with BOM
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public static Encoding DetectTextEncoding(Stream stream)
+        {
+            byte[] bom = new byte[4];
+
+            stream.Position = 0;
+            stream.Read(bom, 0, bom.Length);
+            stream.Position = 0;
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
@@ -958,7 +1006,7 @@ namespace PEBakery.Helper
         public static bool ExtractCab(string srcCabFile, string destDir)
         {
             List<string> nop;
-            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            CabExtract cab = new CabExtract(srcCabFile);
             return cab.ExtractAll(destDir, out nop);
         }
 
@@ -972,7 +1020,7 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
         {
-            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            CabExtract cab = new CabExtract(srcCabFile);
             return cab.ExtractAll(destDir, out extractedList);
         }
 
@@ -986,14 +1034,14 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, string target)
         {
-            CabExtract.CabExtract cab = new CabExtract.CabExtract(srcCabFile);
+            CabExtract cab = new CabExtract(srcCabFile);
             return cab.ExtractSingleFile(target, destDir);
         }
     }
 
     public enum ImageType
     {
-        Bmp, Jpg, Png, Svg
+        Bmp, Jpg, Png, Gif, Svg
     }
 
     public static class ImageHelper
@@ -1014,6 +1062,8 @@ namespace PEBakery.Helper
                 type = ImageType.Jpg;
             else if (string.Equals(logoType, ".png", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Png;
+            else if (string.Equals(logoType, ".gif", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Gif;
             else if (string.Equals(logoType, ".svg", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Svg;
             else
@@ -1040,6 +1090,22 @@ namespace PEBakery.Helper
             bitmap.StreamSource = stream;
             bitmap.EndInit();
             return bitmap;
+        }
+
+        public static ImageBrush ImageToImageBrush(byte[] image)
+        {
+            BitmapImage bitmap = ImageToBitmapImage(image);
+            ImageBrush brush = new ImageBrush();
+            brush.ImageSource = bitmap;
+            return brush;
+        }
+
+        public static ImageBrush ImageToImageBrush(Stream stream)
+        {
+            BitmapImage bitmap = ImageToBitmapImage(stream);
+            ImageBrush brush = new ImageBrush();
+            brush.ImageSource = bitmap;
+            return brush;
         }
 
         public static BitmapImage SvgToBitmapImage(byte[] image)

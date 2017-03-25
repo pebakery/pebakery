@@ -1,4 +1,22 @@
-﻿using PEBakery.Exceptions;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -81,7 +99,7 @@ namespace PEBakery.Core
             }
 
             // Forge UICommand
-            string text = Engine.UnescapeString(operands[0]);
+            string text = Engine.UnescapeStr(operands[0]);
             bool visibility = string.Equals(operands[1], "1", StringComparison.Ordinal);
             int.TryParse(operands[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x);
             int.TryParse(operands[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int y);
@@ -89,6 +107,8 @@ namespace PEBakery.Core
             int.TryParse(operands[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
             Rect rect = new Rect(x, y, width, height);
             UICommandInfo info = ParseUICommandInfo(type, operands);
+            if (info.Valid == false)
+                return new UICommand(rawLine, addr, key);
             return new UICommand(rawLine, addr, key, text, visibility, type, rect, info);
         }
 
@@ -129,7 +149,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_TextBox(true, GetInfoTooltip(op, optOpCount), Engine.UnescapeString(op[0]));
+                        return new UIInfo_TextBox(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), Engine.UnescapeStr(op[0]));
                     }
                 case UIControlType.TextLabel:
                     {
@@ -150,27 +170,73 @@ namespace PEBakery.Core
                         else if (string.Equals(op[1], "Strike", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Strike;
 
-                        return new UIInfo_TextLabel(true, GetInfoTooltip(op, optOpCount), fontSize, style);
+                        return new UIInfo_TextLabel(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), fontSize, style);
                     }
                 case UIControlType.NumberBox:
-                    break;
+                    {
+                        const int minOpCount = 4;
+                        const int maxOpCount = 4;
+                        const int optOpCount = 1; // [Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        int.TryParse(op[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value);
+                        int.TryParse(op[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int min);
+                        int.TryParse(op[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int max);
+                        int.TryParse(op[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int interval);
+
+                        return new UIInfo_NumberBox(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), value, min, max, interval);
+                    }
                 case UIControlType.CheckBox:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
-                        const int optOpCount = 2; // [SectionToRun],[Tooltip]
+                        const int optOpCount = 2; // [SectionToRun],[Tooltip] - 여태까지 CheckBox에 Section 달린 건 못 봤는데?
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
                         bool _checked = false;
                         if (string.Equals(op[0], "True", StringComparison.OrdinalIgnoreCase))
                             _checked = true;
+                        string sectionName = null;
+                        if (maxOpCount < op.Count)
+                            sectionName = op[maxOpCount];
 
-                        return new UIInfo_CheckBox(true, GetInfoTooltip(op, optOpCount), _checked);
+                        return new UIInfo_CheckBox(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), _checked, sectionName);
                     }
                 case UIControlType.ComboBox:
-                    break;
+                    { // Variable Length
+                        List<string> items = new List<string>();
+                        for (int i = 0; i < op.Count - 1; i++)
+                            items.Add(op[i]);
+                        string last = op.Last();
+                        string toolTip = null;
+                        if (last.StartsWith("__", StringComparison.Ordinal))
+                            toolTip = last;
+                        else
+                            items.Add(last);
+
+                        int idx = items.IndexOf(operands[0]);
+                        if (idx == -1)
+                            return error;
+
+                        return new UIInfo_ComboBox(true, toolTip, items, idx);
+                    }
                 case UIControlType.Image:
+                    {
+                        const int minOpCount = 0;
+                        const int maxOpCount = 0;
+                        const int optOpCount = 2;  // [URL],[Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        string url = null;
+                        if (maxOpCount < op.Count)
+                            url = op[maxOpCount];
+
+                        return new UIInfo_Image(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), url);
+                    }
+                case UIControlType.TextFile:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
@@ -178,13 +244,27 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_Image(true, GetInfoTooltip(op, optOpCount));
+                        return new UIInfo_TextFile(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1));
                     }
-                    break;
-                case UIControlType.TextFile:
-                    break;
                 case UIControlType.Button:
-                    break;
+                    {
+                        // Still had not figured why SectionName and ProgressShow duplicate
+                        // It has 4 to 6 fixed operands. - Need more research.
+                        const int minOpCount = 5;
+                        const int maxOpCount = 5;
+                        const int optOpCount = 2; // [Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount - 1))
+                            return error;
+
+                        string sectionName = op[0];
+                        string picture = op[1];
+                        if (string.Equals(op[1], "0", StringComparison.OrdinalIgnoreCase))
+                            picture = null;
+                        bool progressShow = false;
+                        if (string.Equals(op[2], "True", StringComparison.OrdinalIgnoreCase))
+                            progressShow = true;
+                        return new UIInfo_Button(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), sectionName, picture, progressShow);
+                    }
                 case UIControlType.CheckList:
                     break;
                 case UIControlType.WebLabel:
@@ -195,7 +275,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_WebLabel(true, GetInfoTooltip(op, optOpCount), Engine.UnescapeString(op[0]));
+                        return new UIInfo_WebLabel(true, GetInfoTooltip(op, maxOpCount + optOpCount), Engine.UnescapeStr(op[0]));
                     }
                 case UIControlType.RadioButton:
                     break;
@@ -207,7 +287,7 @@ namespace PEBakery.Core
                         if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
-                        return new UIInfo_Bevel(true, GetInfoTooltip(op, optOpCount));
+                        return new UIInfo_Bevel(true, GetInfoTooltip(op, maxOpCount + optOpCount));
                     }
                 case UIControlType.FileBox:
                     break;
@@ -235,10 +315,16 @@ namespace PEBakery.Core
                 return false;
         }
 
-        private static string GetInfoTooltip(List<string> op, int max)
+        /// <summary>
+        /// Extract tooltip from operand
+        /// </summary>
+        /// <param name="op"></param>
+        /// <param name="idx">Tooltip operator's operand index</param>
+        /// <returns></returns>
+        private static string GetInfoTooltip(List<string> op, int idx)
         {
-            if (max < op.Count && op[max].StartsWith("__")) // Has tooltip
-                return op[max];
+            if (idx < op.Count && op[idx].StartsWith("__", StringComparison.Ordinal)) // Has tooltip
+                return op[idx];
             else
                 return null;
         }

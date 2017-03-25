@@ -1,4 +1,26 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using PEBakery.Helper;
+using PEBakery.Lib;
+using PEBakery.Core;
+using MahApps.Metro.Controls;
+using System;
 using System.IO;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,15 +39,15 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
-using PEBakery.Helper;
-using PEBakery.Lib;
-using PEBakery.Core;
+
 
 // Used OpenSource
 // Svg.Net (Microsoft Public License)
 // Google's Material Icons (Apache License)
 // Microsoft's Per-Monitor-DPI Images Example (MIT)
 // Main Icon from pixelkit.com, CC BY-NC 3.0 (https://www.iconfinder.com/icons/208267/desert_donut_icon)
+// SpinnerControl from https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control v1.02 (COPL)
+// ProgressRing from https://github.com/MahApps/MahApps.Metro v.1.4.3 (MIT)
 
 namespace PEBakery.WPF
 {
@@ -92,6 +114,7 @@ namespace PEBakery.WPF
             this.DataContext = treeModel;
 
             LoadButtonsImage();
+            
 
             StartLoadWorkder();
         }
@@ -113,6 +136,7 @@ namespace PEBakery.WPF
 
         private void StartLoadWorkder()
         {
+            this.mainProgressRing.IsActive = true;
             loadWorker = new BackgroundWorker();
             loadWorker.WorkerReportsProgress = true;
             loadWorker.DoWork += new DoWorkEventHandler(LoadWorker_Work);
@@ -179,6 +203,8 @@ namespace PEBakery.WPF
                 RecursivePopulateMainTreeView(plugins, this.treeModel);
             };
             mainTreeView.DataContext = treeModel;
+
+            this.mainProgressRing.IsActive = false;
         }
 
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
@@ -264,12 +290,12 @@ namespace PEBakery.WPF
                         pluginLogo.Margin = margin10;
                         break;
                 }
-                pluginTitle.Text = Engine.UnescapeString(p.Title);
-                pluginDescription.Text = Engine.UnescapeString(p.Description);
+                pluginTitle.Text = Engine.UnescapeStr(p.Title);
+                pluginDescription.Text = Engine.UnescapeStr(p.Description);
                 pluginVersion.Text = $"v{p.Version}";
 
                 mainCanvas.Children.Clear();
-                UIRenderer render = new UIRenderer(mainCanvas, 1, p);
+                UIRenderer render = new UIRenderer(mainCanvas, 1, this, p);
                 render.Render();
             }
             else
@@ -312,6 +338,27 @@ namespace PEBakery.WPF
 
         private void PluginRunButton_Click(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (900 < e.NewSize.Width)
+            {
+                ScrollViewer.SetHorizontalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Visible);
+            }
+            else
+            {
+                ScrollViewer.SetHorizontalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Hidden);
+            }
+
+            if (720 < e.NewSize.Height)
+            {
+                ScrollViewer.SetVerticalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Visible);
+            }
+            else
+            {
+                ScrollViewer.SetVerticalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Hidden);
+            }
         }
     }
     #endregion

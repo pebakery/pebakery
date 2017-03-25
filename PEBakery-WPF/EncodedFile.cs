@@ -1,4 +1,22 @@
-﻿using PEBakery.Helper;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
@@ -95,8 +113,16 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static bool ExtractInterfaceEncoded(Plugin plugin, string fileName, out MemoryStream mem)
         {
-            List<string> encoded = plugin.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
-            return Decode(encoded, out mem);
+            try
+            {
+                List<string> encoded = plugin.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
+                return Decode(encoded, out mem);
+            }
+            catch (KeyNotFoundException)
+            {
+                mem = null;
+                return true;
+            }
         }
 
         /// <summary>
