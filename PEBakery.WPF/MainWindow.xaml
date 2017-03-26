@@ -180,19 +180,20 @@
                                     VerticalAlignment="Center"/>
                                 <TextBlock
                                     Name="pluginTitle"
-                                    Text="Plugin Title" 
+                                    Text="Welcome to PEBakery!" 
                                     FontWeight="Bold" FontSize="16"
                                     VerticalAlignment="Center"
                                     TextWrapping="Wrap"/>
                             </DockPanel>
                             <TextBlock
                                 Grid.Row="1" Grid.Column="0"
-                                Name="pluginDescription" Text="Plugin Description" 
+                                Name="pluginDescription" Text="PEBakery is now loading, please wait..." 
                                 VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </Grid>
 
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
                                 <RowDefinition Height="30" />
                                 <RowDefinition Height="30" />
                             </Grid.RowDefinitions>
@@ -210,6 +211,12 @@
                             <Button
                                 Name="pluginEditButton"
                                 Grid.Row="1"
+                                Grid.Column="0"
+                                Style="{StaticResource BackgroundButton}">
+                            </Button>
+                            <Button
+                                Name="pluginRefreshButton"
+                                Grid.Row="2"
                                 Grid.Column="0"
                                 Style="{StaticResource BackgroundButton}">
                             </Button>

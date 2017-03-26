@@ -19,7 +19,7 @@
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Core;
-using MahApps.Metro.Controls;
+using MahApps.Metro.IconPacks;
 using System;
 using System.IO;
 using System.Collections.Concurrent;
@@ -132,6 +132,17 @@ namespace PEBakery.WPF
             height = 120;
             pluginRunButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
             pluginEditButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgEdit, width, height);
+
+            /*
+            buildButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            refreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            settingButton.Content = GetMaterialIcon(PackIconMaterialKind.Settings, 5);
+            updateButton.Content = GetMaterialIcon(PackIconMaterialKind.Download, 5);
+
+            pluginRunButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            pluginEditButton.Content = GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
+            pluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            */
         }
 
         private void StartLoadWorkder()
@@ -253,42 +264,42 @@ namespace PEBakery.WPF
                 double size = 400; // pluginLogo.Width * maxDpiScale;
                 Thickness margin0 = new Thickness(0);
                 Thickness margin10 = new Thickness(10);
-                switch (p.Type)
+                if (p.Type == PluginType.Directory)
                 {
-                    case PluginType.Directory:
-                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
-                        pluginLogo.Stretch = Stretch.Uniform;
-                        pluginLogo.Margin = margin10;
-                        break;
-                    case PluginType.Plugin:
-                        if (EncodedFile.ExtractLogo(p, out MemoryStream mem, out ImageType type) == false)
+                    pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                    pluginLogo.Stretch = Stretch.Uniform;
+                    pluginLogo.Margin = margin10;
+                }
+                else
+                {
+                    MemoryStream mem;
+                    ImageType type;
+                    try
+                    {
+                        mem = EncodedFile.ExtractLogo(p, out type);
+                        if (type == ImageType.Svg)
                         {
-                            if (type == ImageType.Svg)
-                            {
-                                pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
-                                pluginLogo.Stretch = Stretch.Uniform;
-                                pluginLogo.Margin = margin10;
-                            }
-                            else
-                            {
-                                BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
-                                pluginLogo.Source = image;
-                                pluginLogo.Stretch = Stretch.None;
-                                pluginLogo.Margin = margin0;
-                            }
-                        }
-                        else
-                        {
-                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
                             pluginLogo.Stretch = Stretch.Uniform;
                             pluginLogo.Margin = margin10;
                         }
-                        break;
-                    case PluginType.Link:
-                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
+                        else
+                        {
+                            BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
+                            pluginLogo.Source = image;
+                            pluginLogo.Stretch = Stretch.None;
+                            pluginLogo.Margin = margin0;
+                        }
+                    }
+                    catch
+                    { // No logo file - use default
+                        if (p.Type == PluginType.Plugin)
+                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                        else if (p.Type == PluginType.Link)
+                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
                         pluginLogo.Stretch = Stretch.Uniform;
                         pluginLogo.Margin = margin10;
-                        break;
+                    }
                 }
                 pluginTitle.Text = Engine.UnescapeStr(p.Title);
                 pluginDescription.Text = Engine.UnescapeStr(p.Description);
@@ -359,6 +370,18 @@ namespace PEBakery.WPF
             {
                 ScrollViewer.SetVerticalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Hidden);
             }
+        }
+
+        private static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
+        {
+            PackIconMaterial icon = new PackIconMaterial()
+            {
+                Kind = kind,
+                Width = Double.NaN,
+                Height = Double.NaN,
+                Margin = new Thickness(margin, margin, margin, margin),
+            };
+            return icon;
         }
     }
     #endregion

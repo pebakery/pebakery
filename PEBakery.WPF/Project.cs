@@ -108,20 +108,29 @@ namespace PEBakery.Core
             // Collect all *.script, plugin, link
             string[] scripts = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
             string[] plugins = Directory.GetFiles(projectRoot, "*.plugin", SearchOption.AllDirectories);
-            // TODO : Link files
-            // string[] links = Directory.GetFiles(projectRoot, "*.link", SearchOption.AllDirectories);
-            // string[] files = scripts.Concat(plugins).Concat(links).ToArray();
-            string[] files = scripts.Concat(plugins).ToArray();
+            string[] links = Directory.GetFiles(projectRoot, "*.link", SearchOption.AllDirectories);
+            string[] files = scripts.Concat(plugins).Concat(links).ToArray();
             foreach (string file in files)
             {
                 // level must be bigger than mainLevel, and not level 0
-                int level;
-                if (int.TryParse(Ini.GetKey(file, "Main", "Level"), out level) == false)
-                    level = 0;
-                string directory = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
+                string ext = Path.GetExtension(file);
+                if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase) == false)
+                { // *.plugin, *.script
+                    int level = 0;
+                    try
+                    {
+                        level = int.Parse(Ini.GetKey(file, "Main", "Level"));
+                    }
+                    catch
+                    {
+                        continue;
+                    }
 
-                if (!(MainLevel < level))
-                    continue;
+                    if (!(MainLevel < level))
+                        continue;
+                }
+
+                
                 pPathList.Add(file);
                 allPluginCount++;
             }
@@ -147,23 +156,35 @@ namespace PEBakery.Core
                 return Task.Run(() =>
                 {
                     Plugin p;
-                    if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, MainLevel);
-                    else
-                        p = new Plugin(PluginType.Plugin, pPath, projectRoot, null);
-
-                    listLock.EnterWriteLock();
                     try
                     {
-                        pList.Add(p);
+                        if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                            p = new Plugin(PluginType.Plugin, pPath, projectRoot, baseDir, MainLevel);
+                        else
+                        {
+                            string ext = Path.GetExtension(pPath);
+                            if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
+                                p = new Plugin(PluginType.Link, pPath, projectRoot, baseDir, null);
+                            else
+                                p = new Plugin(PluginType.Plugin, pPath, projectRoot, baseDir, null);
+                        }
+
+                        listLock.EnterWriteLock();
+                        try
+                        {
+                            pList.Add(p);
+                        }
+                        finally
+                        {
+                            listLock.ExitWriteLock();
+                        }
+
+                        Console.WriteLine(pPath);
                     }
-                    finally
-                    {
-                        listLock.ExitWriteLock();
+                    catch
+                    { // Do nothing - intentionally left blank
                     }
-#if DEBUG
-                    Console.WriteLine(pPath);
-#endif
+
                     Interlocked.Increment(ref loadedPluginCount);
                     worker.ReportProgress((loadedPluginCount * 100) / allPluginCount);
                 });
@@ -250,7 +271,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), baseDir, p.Level);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), projectRoot, baseDir, p.Level);
                         nodeId = pTree.AddNode(nodeId, dirPlugin);
                         dirDict[key] = nodeId;
                     }

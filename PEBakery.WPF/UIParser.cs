@@ -68,7 +68,15 @@ namespace PEBakery.Core
             List<string> slices = rawLine.Split(',').ToList();
 
             // Parse Operands
-            List<string> operands = CodeParser.ParseOperands(slices, 0);
+            List<string> operands = new List<string>();
+            try
+            {
+                operands = CodeParser.ParseOperands(slices, 0);
+            }
+            catch
+            {
+                return new UICommand(rawLine, addr, key);
+            }
 
             // UICommand should have at least 7 operands
             //    Text, Visibility, Type, X, Y, width, height, [Optional]

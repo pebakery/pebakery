@@ -51,6 +51,7 @@
                         <TextBox Grid.Row="0"
                                  Grid.Column="0"
                                  Width="Auto"
+                                 Height="Auto"
                                  Margin="0,0,1,0"
                                  VerticalAlignment="Center"
                                  IsReadOnly="True"

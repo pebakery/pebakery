@@ -331,49 +331,54 @@ namespace PEBakery.WPF
                 return true;
 
             Image image = new Image();
-            if (EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text, out MemoryStream mem))
-                return true;
-            if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
-                return true;
-                 
-
-            if (info.URL == null)
+            try
             {
-                if (type == ImageType.Svg)
+                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+                if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                    return true;
+
+                if (info.URL == null)
                 {
-                    double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                    double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                    image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
+                    if (type == ImageType.Svg)
+                    {
+                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
+                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
+                        image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
+                    }
+                    else
+                    {
+                        image.Source = ImageHelper.ImageToBitmapImage(mem);
+                    }
+
+                    SetToolTip(image, info.ToolTip);
+                    DrawToCanvas(canvas, masterScale, image, uiCmd.Rect);
                 }
                 else
                 {
-                    image.Source = ImageHelper.ImageToBitmapImage(mem);
-                }
+                    Button button = new Button();
+                    button.Style = (Style)window.FindResource("ImageButton");
+                    if (type == ImageType.Svg)
+                    {
+                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
+                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
+                        button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                    }
+                    else
+                    {
+                        button.Background = ImageHelper.ImageToImageBrush(mem);
+                    }
+                    button.Click += (object sender, RoutedEventArgs e) =>
+                    {
+                        System.Diagnostics.Process.Start(info.URL.ToString());
+                    };
 
-                SetToolTip(image, info.ToolTip);
-                DrawToCanvas(canvas, masterScale, image, uiCmd.Rect);
+                    SetToolTip(button, info.ToolTip);
+                    DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
+                }
             }
-            else
+            catch
             {
-                Button button = new Button();
-                button.Style = (Style)window.FindResource("ImageButton");
-                if (type == ImageType.Svg)
-                {
-                    double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                    double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
-                }
-                else
-                {
-                    button.Background = ImageHelper.ImageToImageBrush(mem);
-                }
-                button.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    System.Diagnostics.Process.Start(info.URL.ToString());
-                };
-
-                SetToolTip(button, info.ToolTip);
-                DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
+                return true;
             }
             
             return false;
@@ -392,25 +397,31 @@ namespace PEBakery.WPF
             if (info == null)
                 return true;
 
-            if (EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text, out MemoryStream mem))
-                return true;
-
-            StreamReader reader = new StreamReader(mem, FileHelper.DetectTextEncoding(mem));
-            TextBox textBox = new TextBox()
+            try
             {
-                TextWrapping = TextWrapping.Wrap,
-                AcceptsReturn = true,
-                IsReadOnly = true,
-                Text = reader.ReadToEnd(),
-                FontSize = DefaultFontSize * FontScale * masterScale,
-            };
-            reader.Close();
-            ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-            ScrollViewer.SetCanContentScroll(textBox, true);
+                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
 
-            SetToolTip(textBox, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, textBox, uiCmd.Rect);
+                StreamReader reader = new StreamReader(mem, FileHelper.DetectTextEncoding(mem));
+                TextBox textBox = new TextBox()
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    AcceptsReturn = true,
+                    IsReadOnly = true,
+                    Text = reader.ReadToEnd(),
+                    FontSize = DefaultFontSize * FontScale * masterScale,
+                };
+                reader.Close();
+                ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+                ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+                ScrollViewer.SetCanContentScroll(textBox, true);
+
+                SetToolTip(textBox, info.ToolTip);
+                DrawToCanvas(canvas, masterScale, textBox, uiCmd.Rect);
+            }
+            catch
+            {
+                return true;
+            }
             return false;
         }
 
@@ -442,27 +453,33 @@ namespace PEBakery.WPF
 
             if (info.Picture != null)
             {
-                if (EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture, out MemoryStream mem) == false)
+                try
                 {
-                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type) == false)
+                    MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
+                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                        return true;
+                   
+                    if (type == ImageType.Svg)
                     {
-                        if (type == ImageType.Svg)
-                        {
-                            double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                            double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                            button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
-                        }
-                        else
-                        {
-                            button.Background = ImageHelper.ImageToImageBrush(mem);
-                        }
-                        button.Style = (Style)window.FindResource("BackgroundButton");
+                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
+                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
+                        button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
                     }
+                    else
+                    {
+                        button.Background = ImageHelper.ImageToImageBrush(mem);
+                    }
+                    button.Style = (Style)window.FindResource("BackgroundButton");
+
+                    SetToolTip(button, info.ToolTip);
+                    DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
+                }
+                catch
+                {
+                    return true;
                 }
             }
 
-            SetToolTip(button, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
             return false;
         }
 
