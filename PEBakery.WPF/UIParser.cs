@@ -297,7 +297,24 @@ namespace PEBakery.Core
                         return new UIInfo_WebLabel(true, GetInfoTooltip(op, maxOpCount + optOpCount), Engine.UnescapeStr(op[0]));
                     }
                 case UIControlType.RadioButton:
-                    break;
+                    {
+                        const int minOpCount = 1;
+                        const int maxOpCount = 1;
+                        const int optOpCount = 2; // [SectionToRun],[Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        bool selected = false;
+                        if (string.Equals(op[0], "True", StringComparison.OrdinalIgnoreCase))
+                            selected = true;
+                        else if (string.Equals(op[0], "False", StringComparison.OrdinalIgnoreCase) == false)
+                            return error;
+                        string sectionName = null;
+                        if (maxOpCount < op.Count)
+                            sectionName = op[maxOpCount];
+
+                        return new UIInfo_RadioButton(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), selected, sectionName);
+                    }
                 case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;

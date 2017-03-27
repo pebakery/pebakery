@@ -85,16 +85,6 @@ namespace PEBakery.Lib
         }
 
         /// <summary>
-        /// Retrieve node from tree. Alias of SearchDFS.
-        /// </summary>
-        /// <param name="id">Node Id</param>
-        /// <returns></returns>
-        public Node<T> GetNode(int id)
-        {
-            return SearchNode(id);
-        }
-
-        /// <summary>
         /// Delete node from tree. If success, return true.
         /// </summary>
         /// <param name="parentId"></param>
@@ -196,6 +186,39 @@ namespace PEBakery.Lib
                 if (0 < node.Child.Count)
                 {
                     Node<T> res = RecursiveSearchNode(id, node.Child, out sibling);
+                    if (res != null)
+                        return res;
+                }
+            }
+
+            // Not found, return null
+            sibling = null;
+            return null;
+        }
+
+        public Node<T> SearchNode(T data)
+        {
+            return RecursiveSearchNode(data, root, out List<Node<T>> dummy);
+        }
+
+        public Node<T> SearchNode(T data, out List<Node<T>> sibling)
+        {
+            return RecursiveSearchNode(data, root, out sibling);
+        }
+
+        private Node<T> RecursiveSearchNode(T data, List<Node<T>> list, out List<Node<T>> sibling)
+        {
+            foreach (Node<T> node in list)
+            {
+                if (data.Equals(node.Data))
+                {
+                    sibling = list;
+                    return node;
+                }
+
+                if (0 < node.Child.Count)
+                {
+                    Node<T> res = RecursiveSearchNode(data, node.Child, out sibling);
                     if (res != null)
                         return res;
                 }

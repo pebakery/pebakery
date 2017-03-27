@@ -32,6 +32,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MahApps.Metro.IconPacks;
 
 namespace PEBakery.WPF
 {
@@ -98,12 +99,13 @@ namespace PEBakery.WPF
                             UIRenderer.RenderWebLabel(renderInfo, uiCmd);
                             break;
                         case UIControlType.RadioButton:
-                            // It seems no one use this?
+                            UIRenderer.RenderRadioButton(renderInfo, uiCmd);
                             break;
                         case UIControlType.Bevel:
                             UIRenderer.RenderBevel(renderInfo, uiCmd);
                             break;
                         case UIControlType.FileBox:
+                            UIRenderer.RenderFileBox(renderInfo, uiCmd);
                             break;
                         case UIControlType.RadioGroup:
                             UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
@@ -444,7 +446,7 @@ namespace PEBakery.WPF
                 {
                     button.Background = ImageHelper.ImageToImageBrush(mem);
                 }
-                button.Style = (Style) r.Window.FindResource("BackgroundButton");
+                // button.Style = (Style) r.Window.FindResource("BitmapButton");
 
                 SetToolTip(button, info.ToolTip);
                 DrawToCanvas(r, button, uiCmd.Rect);
@@ -516,6 +518,117 @@ namespace PEBakery.WPF
         /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
+        public static void RenderRadioButton(RenderInfo r, UICommand uiCmd)
+        {
+            UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
+            if (info == null)
+                return;
+
+            double fontSize = DefaultFontSize * FontScale * r.MasterScale;
+
+            RadioButton radio = new RadioButton()
+            {
+                GroupName = r.Plugin.FullPath,
+                Content = uiCmd.Text,
+                FontSize = fontSize,
+                IsChecked = info.Selected,
+            };
+
+            radio.Checked += (object sender, RoutedEventArgs e) =>
+            {
+                RadioButton btn = sender as RadioButton;
+                info.Selected = true;
+                UIRenderer.UpdatePlugin(uiCmd);
+            };
+            radio.Unchecked += (object sender, RoutedEventArgs e) =>
+            {
+                RadioButton btn = sender as RadioButton;
+                info.Selected = false;
+                UIRenderer.UpdatePlugin(uiCmd);
+            };
+
+            SetToolTip(radio, info.ToolTip);
+            DrawToCanvas(r, radio, uiCmd.Rect);
+        }
+
+        /// <summary>
+        /// Render FileBox control.
+        /// Return true if failed.
+        /// </summary>
+        /// <param name="canvas">Parent canvas</param>
+        /// <param name="uiCmd">UICommand</param>
+        public static void RenderFileBox(RenderInfo r, UICommand uiCmd)
+        {
+            // It took time finding that WB082 textbox control's y coord is of textbox's, not textlabel's.
+            UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
+            if (info == null)
+                return;
+
+            TextBox box = new TextBox()
+            {
+                Text = uiCmd.Text,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+            };
+            box.LostFocus += (object sender, RoutedEventArgs e) =>
+            {
+                TextBox tBox = sender as TextBox;
+                uiCmd.Text = tBox.Text;
+                UIRenderer.UpdatePlugin(uiCmd);
+            };
+            SetToolTip(box, info.ToolTip);
+
+            Button button = new Button()
+            {
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                Content = MainWindow.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
+            };
+            SetToolTip(button, info.ToolTip);
+
+            button.Click += (object sender, RoutedEventArgs e) =>
+            {
+                Button bt = sender as Button;
+
+                if (info.IsFile)
+                {
+                    Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+                    {
+                        // TODO
+                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
+                        // InitialDirectory = Path.GetDirectoryName()
+                    };
+                    if (dialog.ShowDialog() == true)
+                        box.Text = dialog.FileName;
+                }
+                else
+                {
+                    System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                    {
+                        // TODO
+                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
+                        // RootFolder = Path.GetDirectoryName()
+                    };
+                    System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                    {
+                        box.Text = dialog.SelectedPath;
+                    }
+                }
+            };
+
+            double margin = 5;
+            Rect boxRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top, uiCmd.Rect.Width - (uiCmd.Rect.Height + margin), uiCmd.Rect.Height);
+            Rect btnRect = new Rect(boxRect.Right + margin, uiCmd.Rect.Top, uiCmd.Rect.Height, uiCmd.Rect.Height);
+            DrawToCanvas(r, box, boxRect);
+            DrawToCanvas(r, button, btnRect);
+        }
+
+        /// <summary>
+        /// Render RadioGroup control.
+        /// Return true if failed.
+        /// </summary>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
+        /// <param name="uiCmd">UICommand</param>
+        /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioGroup(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
@@ -538,14 +651,18 @@ namespace PEBakery.WPF
                 Text = uiCmd.Text,
                 FontSize = fontSize,
                 Background = Brushes.White,
+                Margin = new Thickness(1, 0, 1, 0),
             };
+
+            SetToolTip(bevel, info.ToolTip);
+            SetToolTip(block, info.ToolTip);
 
             List<RadioButton> list = new List<RadioButton>();
             for (int i = 0; i < info.Items.Count; i++)
             {
                 RadioButton radio = new RadioButton()
                 {
-                    GroupName = uiCmd.Key,
+                    GroupName = r.Plugin.FullPath + uiCmd.Key,
                     Content = info.Items[i],
                     Tag = i,
                     FontSize = fontSize,
@@ -562,6 +679,9 @@ namespace PEBakery.WPF
                     info.Selected = (int)btn.Tag;
                     UIRenderer.UpdatePlugin(uiCmd);
                 };
+
+                SetToolTip(radio, info.ToolTip);
+            
                 list.Add(radio);
             }
 
@@ -572,7 +692,7 @@ namespace PEBakery.WPF
             // Keep order!
             DrawToCanvas(r, bevel, bevelRect);
             DrawToCanvas(r, block, blockRect);
-            double margin = fontSize + (8 * r.MasterScale);
+            double margin = fontSize + (7 * r.MasterScale);
             for (int i = 0; i < list.Count; i++)
             {
                 Rect rect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top + margin * (i + 1), double.NaN, double.NaN); // NaN for auto width/height

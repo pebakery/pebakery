@@ -165,11 +165,11 @@
                                 Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
                             <ContentPresenter
                                 Content="{Binding Icon}"
-                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,3,2,2">
+                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
                             </ContentPresenter>
                             <TextBlock
                                 Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
-                                Margin="1,0" Text="{Binding Text}"></TextBlock>
+                                Text="{Binding Text}"></TextBlock>
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
@@ -233,20 +233,18 @@
                                 Name="pluginRunButton"
                                 Grid.Row="0"
                                 Grid.Column="0"
-                                Style="{StaticResource BackgroundButton}"
                                 Click="PluginRunButton_Click">
                             </Button>
                             <Button
                                 Name="pluginEditButton"
                                 Grid.Row="1"
-                                Grid.Column="0"
-                                Style="{StaticResource BackgroundButton}">
+                                Grid.Column="0">
                             </Button>
                             <Button
                                 Name="pluginRefreshButton"
                                 Grid.Row="2"
                                 Grid.Column="0"
-                                Style="{StaticResource BackgroundButton}">
+                                Click="PluginRefreshButton_Click">
                             </Button>
                         </Grid>
                     </Grid>

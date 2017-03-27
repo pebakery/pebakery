@@ -45,6 +45,7 @@ namespace PEBakery.Core
         private SectionDictionary sections;
 
         private PluginType type;
+        private Project project;
         private Plugin link;
         private string title;
         private string author;
@@ -89,6 +90,16 @@ namespace PEBakery.Core
         
         public PluginType Type { get => type; }
         public Plugin Link { get => link; set => link = value; }
+        public Project Project
+        {
+            get
+            {
+                if (type == PluginType.Link)
+                    return link.Project;
+                else
+                    return project;
+            }
+        }
         public string Title
         {
             get
@@ -176,11 +187,12 @@ namespace PEBakery.Core
             }
         }
 
-        public Plugin(PluginType type, string fullPath, string projectRoot, string baseDir, int? level)
+        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, string baseDir, int? level)
         {
             this.fullPath = fullPath;
             this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
             this.type = type;
+            this.project = project;
 
             switch (type)
             {
@@ -221,9 +233,9 @@ namespace PEBakery.Core
                             {
                                 string ext = Path.GetExtension(linkPath);
                                 if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                                    this.link = new Plugin(PluginType.Link, Path.Combine(baseDir, linkPath), projectRoot, baseDir, null);
+                                    this.link = new Plugin(PluginType.Link, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
                                 else
-                                    this.link = new Plugin(PluginType.Plugin, Path.Combine(baseDir, linkPath), projectRoot, baseDir, null);
+                                    this.link = new Plugin(PluginType.Plugin, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
                             }
                             catch (Exception)
                             {

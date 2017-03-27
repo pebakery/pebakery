@@ -159,14 +159,14 @@ namespace PEBakery.Core
                     try
                     {
                         if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                            p = new Plugin(PluginType.Plugin, pPath, projectRoot, baseDir, MainLevel);
+                            p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
                         else
                         {
                             string ext = Path.GetExtension(pPath);
                             if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                                p = new Plugin(PluginType.Link, pPath, projectRoot, baseDir, null);
+                                p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
                             else
-                                p = new Plugin(PluginType.Plugin, pPath, projectRoot, baseDir, null);
+                                p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
                         }
 
                         // Check Plugin Link's validity
@@ -296,7 +296,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), projectRoot, baseDir, p.Level);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), this, projectRoot, baseDir, p.Level);
                         nodeId = pTree.AddNode(nodeId, dirPlugin);
                         dirDict[key] = nodeId;
                     }
@@ -358,6 +358,68 @@ namespace PEBakery.Core
             }
 
             return final;
+        }
+
+        /// <summary>
+        /// Return true if error
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns></returns>
+        public Plugin RefreshPlugin(Plugin plugin)
+        {
+            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, plugin.FullPath, StringComparison.OrdinalIgnoreCase));
+            if (idx == -1)
+                return null;
+
+            Node<Plugin> node = allPlugins.SearchNode(plugin);
+            string pPath = plugin.FullPath;
+            Plugin p;
+            try
+            {
+                if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
+                else
+                {
+                    string ext = Path.GetExtension(pPath);
+                    if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
+                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
+                    else
+                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
+                }
+
+                // Check Plugin Link's validity
+                // Also, convert nested link to one-depth link
+                if (p.Type == PluginType.Link)
+                {
+                    Plugin link = p.Link;
+                    bool valid = false;
+                    do
+                    {
+                        if (link == null)
+                            return null;
+                        if (link.Type == PluginType.Plugin)
+                        {
+                            valid = true;
+                            break;
+                        }
+                        link = link.Link;
+                    }
+                    while (link.Type != PluginType.Plugin);
+
+                    if (valid)
+                        p.Link = link;
+                    else
+                        return null;
+                }
+            }
+            catch
+            { // Do nothing - intentionally left blank
+                return null;
+            }
+
+            allPluginList[idx] = p;
+            node.Data = p;
+            return p;
         }
     }
 }

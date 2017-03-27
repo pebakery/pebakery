@@ -64,7 +64,10 @@ namespace PEBakery.WPF
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
         private Stopwatch stopwatch;
-        private BackgroundWorker loadWorker = new BackgroundWorker();
+        private BackgroundWorker loadWorker;
+        private BackgroundWorker refreshWorker;
+
+        private TreeViewModel currentTree;
 
         const int maxDpiScale = 4;
 
@@ -247,58 +250,100 @@ namespace PEBakery.WPF
 
             if (tree.SelectedItem is TreeViewModel)
             {
-                TreeViewModel item = tree.SelectedItem as TreeViewModel;
-                Plugin p = item.Node.Data;
-                double size = 400; // pluginLogo.Width * maxDpiScale;
-                Thickness margin0 = new Thickness(0);
-                Thickness margin10 = new Thickness(10);
-                if (p.Type == PluginType.Directory)
-                {
-                    pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
-                    pluginLogo.Stretch = Stretch.Uniform;
-                    pluginLogo.Margin = margin10;
-                }
-                else
-                {
-                    try
-                    {
-                        MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
-                        if (type == ImageType.Svg)
-                        {
-                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
-                            pluginLogo.Stretch = Stretch.Uniform;
-                            pluginLogo.Margin = margin10;
-                        }
-                        else
-                        {
-                            BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
-                            pluginLogo.Source = image;
-                            pluginLogo.Stretch = Stretch.None;
-                            pluginLogo.Margin = margin0;
-                        }
-                    }
-                    catch
-                    { // No logo file - use default
-                        if (p.Type == PluginType.Plugin)
-                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
-                        else if (p.Type == PluginType.Link)
-                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
-                        pluginLogo.Stretch = Stretch.Uniform;
-                        pluginLogo.Margin = margin10;
-                    }
-                }
-                pluginTitle.Text = Engine.UnescapeStr(p.Title);
-                pluginDescription.Text = Engine.UnescapeStr(p.Description);
-                pluginVersion.Text = $"v{p.Version}";
-
-                mainCanvas.Children.Clear();
-                UIRenderer render = new UIRenderer(mainCanvas, this, p, 1);
-                render.Render();
+                TreeViewModel item = currentTree = tree.SelectedItem as TreeViewModel;
+                DrawPlugin(item);
             }
             else
             {
                 Debug.Assert(false);
             }
+        }
+
+        private void DrawPlugin(TreeViewModel item)
+        {
+            if (item == null)
+                return;
+
+            Plugin p = item.Node.Data;
+            double size = 400; // pluginLogo.Width * maxDpiScale;
+            Thickness margin0 = new Thickness(0);
+            Thickness margin10 = new Thickness(10);
+            if (p.Type == PluginType.Directory)
+            {
+                pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
+                pluginLogo.Stretch = Stretch.Uniform;
+                pluginLogo.Margin = margin10;
+            }
+            else
+            {
+                try
+                {
+                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
+                    if (type == ImageType.Svg)
+                    {
+                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
+                        pluginLogo.Stretch = Stretch.Uniform;
+                        pluginLogo.Margin = margin10;
+                    }
+                    else
+                    {
+                        BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
+                        pluginLogo.Source = image;
+                        pluginLogo.Stretch = Stretch.None;
+                        pluginLogo.Margin = margin0;
+                    }
+                }
+                catch
+                { // No logo file - use default
+                    if (p.Type == PluginType.Plugin)
+                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
+                    else if (p.Type == PluginType.Link)
+                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
+                    pluginLogo.Stretch = Stretch.Uniform;
+                    pluginLogo.Margin = margin10;
+                }
+            }
+            pluginTitle.Text = Engine.UnescapeStr(p.Title);
+            pluginDescription.Text = Engine.UnescapeStr(p.Description);
+            pluginVersion.Text = $"v{p.Version}";
+
+            mainCanvas.Children.Clear();
+            UIRenderer render = new UIRenderer(mainCanvas, this, p, 1);
+            render.Render();
+        }
+
+        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTree != null)
+                StartRefreshWorker();
+        }
+
+        private void StartRefreshWorker()
+        {
+            this.mainProgressRing.IsActive = true;
+            refreshWorker = new BackgroundWorker();
+            refreshWorker.DoWork += new DoWorkEventHandler(RefreshWorker_Work);
+            refreshWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(RefreshWorker_RunWorkerCompleted);
+            refreshWorker.RunWorkerAsync(baseDir);
+        }
+
+        void RefreshWorker_Work(object sender, DoWorkEventArgs e)
+        {
+            stopwatch.Restart();
+            Plugin p = currentTree.Node.Data.Project.RefreshPlugin(currentTree.Node.Data);
+            if (p != null)
+            {
+                currentTree.Node.Data = p;
+                DrawPlugin(currentTree);
+            }
+        }
+
+        private void RefreshWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            this.mainProgressRing.IsActive = false;
+            double sec = stopwatch.Elapsed.TotalSeconds;
+            statusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
+            stopwatch.Stop();
         }
 
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
@@ -358,7 +403,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
+        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
         {
             PackIconMaterial icon = new PackIconMaterial()
             {
@@ -369,6 +414,12 @@ namespace PEBakery.WPF
             };
             return icon;
         }
+
+        
+
+        
+
+       
     }
     #endregion
 
