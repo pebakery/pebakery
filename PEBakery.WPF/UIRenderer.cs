@@ -65,6 +65,8 @@ namespace PEBakery.WPF
                 if (uiCmd.Visibility == false || uiCmd.Info.Valid == false)
                     continue;
 
+                InitCanvas(renderInfo.Canvas);
+
                 try
                 {
                     switch (uiCmd.Type)
@@ -326,7 +328,10 @@ namespace PEBakery.WPF
             if (info == null)
                 return;
 
-            Image image = new Image();
+            Image image = new Image()
+            {
+                UseLayoutRounding = true,
+            };
             MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
             if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
                 return;
@@ -446,7 +451,6 @@ namespace PEBakery.WPF
                 {
                     button.Background = ImageHelper.ImageToImageBrush(mem);
                 }
-                // button.Style = (Style) r.Window.FindResource("BitmapButton");
 
                 SetToolTip(button, info.ToolTip);
                 DrawToCanvas(r, button, uiCmd.Rect);
@@ -646,16 +650,21 @@ namespace PEBakery.WPF
                 ToolTip = info.ToolTip,
             };
 
+            Border border = new Border()
+            {
+                Background = Brushes.White,
+                BorderThickness = new Thickness(2, 0, 2, 0),
+                BorderBrush = Brushes.White,
+            };
             TextBlock block = new TextBlock()
             {
                 Text = uiCmd.Text,
                 FontSize = fontSize,
-                Background = Brushes.White,
-                Margin = new Thickness(1, 0, 1, 0),
             };
+            border.Child = block;
 
             SetToolTip(bevel, info.ToolTip);
-            SetToolTip(block, info.ToolTip);
+            SetToolTip(border, info.ToolTip);
 
             List<RadioButton> list = new List<RadioButton>();
             for (int i = 0; i < info.Items.Count; i++)
@@ -687,11 +696,11 @@ namespace PEBakery.WPF
 
             double pushToBottom = fontSize * 0.6;
             Rect bevelRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top + pushToBottom, uiCmd.Rect.Width, uiCmd.Rect.Height - pushToBottom);
-            Rect blockRect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top, double.NaN, double.NaN); // NaN for auto width/height
+            Rect textRect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top, double.NaN, double.NaN); // NaN for auto width/height
 
             // Keep order!
             DrawToCanvas(r, bevel, bevelRect);
-            DrawToCanvas(r, block, blockRect);
+            DrawToCanvas(r, border, textRect);
             double margin = fontSize + (7 * r.MasterScale);
             for (int i = 0; i < list.Count; i++)
             {
@@ -708,22 +717,28 @@ namespace PEBakery.WPF
                 element.ToolTip = toolTip;
         }
 
-        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord, bool useFontScale = false)
+        private static void InitCanvas(Canvas canvas)
         {
-            Canvas.SetLeft(element, coord.Left * PixelScale * r.MasterScale);
-            Canvas.SetTop(element, coord.Top * PixelScale * r.MasterScale);
-            if (useFontScale)
-            {
-                element.Width = coord.Width * FontScale * r.MasterScale;
-                element.Height = coord.Height * FontScale * r.MasterScale;
-            }
-            else
-            {
-                element.Width = coord.Width * PixelScale * r.MasterScale;
-                element.Height = coord.Height * PixelScale * r.MasterScale;
-            }
+            canvas.Width = double.NaN;
+            canvas.Height = double.NaN;
+        }
+
+        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord)
+        {
+            double left = coord.Left * PixelScale * r.MasterScale;
+            double top = coord.Top * PixelScale * r.MasterScale;
+            double width = coord.Width * PixelScale * r.MasterScale;
+            double height = coord.Height * PixelScale * r.MasterScale;
+            Canvas.SetLeft(element, left);
+            Canvas.SetTop(element, top);
+            element.Width = width;
+            element.Height = height;
             
             r.Canvas.Children.Add(element);
+            if (double.IsNaN(r.Canvas.Width) || r.Canvas.Width < left + width)
+                r.Canvas.Width = left + width;
+            if (double.IsNaN(r.Canvas.Height) || r.Canvas.Height < top + height)
+                r.Canvas.Height = top + height;
         }
 
         private static void UpdatePlugin(UICommand uiCmd)

@@ -184,42 +184,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Folder.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Lock.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\File.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Project.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Build.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Refresh.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Setting.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Update.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Link.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Edit.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Dashboard.svg" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\DefaultPlugin.svg" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Donut.ico" />
   </ItemGroup>
   <ItemGroup>

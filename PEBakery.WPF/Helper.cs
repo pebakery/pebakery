@@ -1086,6 +1086,7 @@ namespace PEBakery.Helper
             stream.Position = 0;
             BitmapImage bitmap = new BitmapImage();
             bitmap.BeginInit();
+            bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = stream;
             bitmap.EndInit();

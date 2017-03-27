@@ -30,7 +30,7 @@
         WindowStartupLocation="CenterScreen"
         Title="PEBakery"
         Width="900" Height="720"
-        SizeChanged="Window_SizeChanged">
+        MinWidth="800" MinHeight="600">
     <Window.Resources>
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -108,21 +108,21 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="25"/>
-                    <ColumnDefinition Name="mainButtonColumn" Width="75"/>
+                    <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Name="buildButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
-                <Button Name="refreshButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click" />
-                <Button Name="settingButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" />
-                <Button Name="updateButton" Grid.Row="0" Grid.Column="5" Margin="5" Style="{StaticResource BackgroundButton}" />
-                <Button Name="aboutButton" Grid.Row="0" Grid.Column="6" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="BuildButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
+                <Button Name="RefreshButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click" />
+                <Button Name="SettingButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="UpdateButton" Grid.Row="0" Grid.Column="5" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="AboutButton" Grid.Row="0" Grid.Column="6" Margin="5" Style="{StaticResource BackgroundButton}" />
 
                 <mah:ProgressRing
-                    x:Name="mainProgressRing"
+                    x:Name="MainProgressRing"
                     Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
                 </mah:ProgressRing>
                 <TextBlock Text="Build" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
@@ -132,7 +132,7 @@
                 <TextBlock Text="About" Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
             </Grid>
         </Border>
-        <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock">
+        <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock" Panel.ZIndex="100">
         </Border>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -140,7 +140,7 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <TreeView
-                x:Name="mainTreeView"
+                x:Name="MainTreeView"
                 Grid.Column="0"
                 Background="PaleGreen"
                 SelectedItemChanged="MainTreeView_SelectedItemChanged"
@@ -188,7 +188,13 @@
                             <ColumnDefinition Width="30"/>
                         </Grid.ColumnDefinitions>
 
-                        <Image Name="pluginLogo" Grid.Row="0" Grid.Column="0" Margin="10"></Image>
+                        <ContentPresenter
+                            Name="PluginLogo"
+                            Grid.Row="0" Grid.Column="0"
+                            Margin="10"
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            UseLayoutRounding="True">
+                        </ContentPresenter>
                         <Grid Grid.Row="0" Grid.Column="1">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="30" />
@@ -202,12 +208,12 @@
                                 Grid.Row="0" Grid.Column="0">
                                 <TextBlock
                                     DockPanel.Dock="Right"
-                                    Name="pluginVersion"
+                                    Name="PluginVersion"
                                     Text="v0"
                                     FontWeight="Bold" FontSize="14" 
                                     VerticalAlignment="Center"/>
                                 <TextBlock
-                                    Name="pluginTitle"
+                                    Name="PluginTitle"
                                     Text="Welcome to PEBakery!" 
                                     FontWeight="Bold" FontSize="16"
                                     VerticalAlignment="Center"
@@ -215,7 +221,7 @@
                             </DockPanel>
                             <TextBlock
                                 Grid.Row="1" Grid.Column="0"
-                                Name="pluginDescription" Text="PEBakery is now loading, please wait..." 
+                                Name="PluginDescription" Text="PEBakery is now loading, please wait..." 
                                 VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </Grid>
 
@@ -230,18 +236,18 @@
                             </Grid.ColumnDefinitions>
 
                             <Button
-                                Name="pluginRunButton"
+                                Name="PluginRunButton"
                                 Grid.Row="0"
                                 Grid.Column="0"
                                 Click="PluginRunButton_Click">
                             </Button>
                             <Button
-                                Name="pluginEditButton"
+                                Name="PluginEditButton"
                                 Grid.Row="1"
                                 Grid.Column="0">
                             </Button>
                             <Button
-                                Name="pluginRefreshButton"
+                                Name="PluginRefreshButton"
                                 Grid.Row="2"
                                 Grid.Column="0"
                                 Click="PluginRefreshButton_Click">
@@ -249,23 +255,24 @@
                         </Grid>
                     </Grid>
                 </Border>
-                <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="10"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
 
-                    <Canvas 
-                        Name="mainCanvas"
-                        ScrollViewer.CanContentScroll="True"
-                        Grid.Row="1" Grid.Column="1"
-                        Height="520">
-                    </Canvas>
-                </Grid>
+                <ScrollViewer
+                    Name="MainCanvasScroll"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto">
+                    <Border
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top">
+                        <Canvas 
+                            Name="MainCanvas"
+                            Grid.Row="0" Grid.Column="0"
+                            Margin="10, 10, 0, 0"
+                            Panel.ZIndex="-1">
+                        </Canvas>
+                    </Border>
+                </ScrollViewer>
             </DockPanel>
         </Grid>
     </DockPanel>
