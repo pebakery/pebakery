@@ -85,16 +85,6 @@ namespace PEBakery.Lib
         }
 
         /// <summary>
-        /// Retrieve node from tree. Alias of SearchDFS.
-        /// </summary>
-        /// <param name="id">Node Id</param>
-        /// <returns></returns>
-        public Node<T> GetNode(int id)
-        {
-            return SearchNode(id);
-        }
-
-        /// <summary>
         /// Delete node from tree. If success, return true.
         /// </summary>
         /// <param name="parentId"></param>
@@ -196,6 +186,39 @@ namespace PEBakery.Lib
                 if (0 < node.Child.Count)
                 {
                     Node<T> res = RecursiveSearchNode(id, node.Child, out sibling);
+                    if (res != null)
+                        return res;
+                }
+            }
+
+            // Not found, return null
+            sibling = null;
+            return null;
+        }
+
+        public Node<T> SearchNode(T data)
+        {
+            return RecursiveSearchNode(data, root, out List<Node<T>> dummy);
+        }
+
+        public Node<T> SearchNode(T data, out List<Node<T>> sibling)
+        {
+            return RecursiveSearchNode(data, root, out sibling);
+        }
+
+        private Node<T> RecursiveSearchNode(T data, List<Node<T>> list, out List<Node<T>> sibling)
+        {
+            foreach (Node<T> node in list)
+            {
+                if (data.Equals(node.Data))
+                {
+                    sibling = list;
+                    return node;
+                }
+
+                if (0 < node.Child.Count)
+                {
+                    Node<T> res = RecursiveSearchNode(data, node.Child, out sibling);
                     if (res != null)
                         return res;
                 }
@@ -309,348 +332,6 @@ namespace PEBakery.Lib
         public override string ToString()
         {
             return $"Node ({Id}, {Data}, {Child.Count})";
-        }
-    }
-
-    public class ConcurrentTree<T> : IEnumerable
-    {
-        private List<ConcurrentNode<T>> root;
-        private int count;
-        private ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
-
-        public int Count { get => count; }
-
-        public ConcurrentTree()
-        {
-            cacheLock.EnterWriteLock();
-            try
-            {
-                root = new List<ConcurrentNode<T>>();
-                count = 0;
-            }
-            finally
-            {
-                cacheLock.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// Add ConcurrentNode to tree. If success, return true.
-        /// </summary>
-        /// <param name="parentId"></param>
-        /// <param name="id"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public bool AddNode(int parentId, int id, T data)
-        {
-            if (parentId == 0)
-            { // Root ConcurrentNodeList
-                ConcurrentNode<T> ConcurrentNode = new ConcurrentNode<T>(parentId, id, data, root);
-                cacheLock.EnterWriteLock();
-                try
-                {
-                    root.Add(ConcurrentNode);
-                    count++;
-                }
-                finally
-                {
-                    cacheLock.ExitWriteLock();
-                }
-                return true;
-            }
-            else
-            {
-                ConcurrentNode<T> parent = SearchNode(parentId);
-                ConcurrentNode<T> node;
-                cacheLock.EnterReadLock();
-                try
-                {
-                    node = new ConcurrentNode<T>(parentId, id, data, parent.Child);
-                    if (parent == null)
-                        return false;
-                }
-                finally
-                {
-                    cacheLock.ExitReadLock();
-                }
-                cacheLock.EnterWriteLock();
-                try
-                {
-                    parent.Child.Add(node);
-                    count++;
-                }
-                finally
-                {
-                    cacheLock.ExitWriteLock();
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Retrieve ConcurrentNode from tree. Alias of SearchDFS.
-        /// </summary>
-        /// <param name="id">ConcurrentNode Id</param>
-        /// <returns></returns>
-        public ConcurrentNode<T> GetConcurrentNode(int id)
-        {
-            return SearchNode(id);
-        }
-
-        /// <summary>
-        /// Delete ConcurrentNode from tree. If success, return true.
-        /// </summary>
-        /// <param name="parentId"></param>
-        /// <param name="id"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public bool DeleteNode(int id)
-        {
-            if (id == 0)
-            { // Root ConcurrentNodeList, cannot delete
-                return false;
-            }
-            else
-            {
-                List<ConcurrentNode<T>> sibling = new List<ConcurrentNode<T>>();
-                ConcurrentNode<T> node = SearchNode(id, out sibling);
-                cacheLock.EnterReadLock();
-                try
-                {
-                    if (node == null)
-                        return false;
-                }
-                finally
-                {
-                    cacheLock.ExitReadLock();
-                }
-                RecursiveDeleteConcurrentNodeChild(node);
-                cacheLock.EnterWriteLock();
-                try
-                {
-                    count -= CountLeaves(node);
-                    sibling.Remove(node);
-                    node = null;
-                    count--;
-                    return true;
-                }
-                finally
-                {
-                    cacheLock.ExitWriteLock();
-                }
-            }
-        }
-
-        private void RecursiveDeleteConcurrentNodeChild(ConcurrentNode<T> node)
-        {
-            foreach (ConcurrentNode<T> next in node.Child)
-            {
-                RecursiveDeleteConcurrentNodeChild(next);
-                cacheLock.EnterWriteLock();
-                try
-                {
-                    next.Child = null;
-                }
-                finally
-                {
-                    cacheLock.ExitWriteLock();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Do not include root node itself.
-        /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        public int CountLeaves(ConcurrentNode<T> node)
-        {
-            Queue<List<ConcurrentNode<T>>> q = new Queue<List<ConcurrentNode<T>>>();
-            int leavesCount = 0;
-
-            q.Enqueue(node.Child);
-            while (0 < q.Count)
-            {
-                List<ConcurrentNode<T>> next = q.Dequeue();
-                foreach (ConcurrentNode<T> leaf in next)
-                {
-                    leavesCount++;
-                    if (0 < leaf.Child.Count)
-                        q.Enqueue(leaf.Child);
-                }
-            }
-
-            return leavesCount;
-        }
-
-        public ConcurrentNode<T> SearchNode(int id)
-        {
-            if (id == 0)
-            {
-                return null;
-            }
-            else
-            { // Start from root
-                List<ConcurrentNode<T>> unused;
-                cacheLock.EnterReadLock();
-                try
-                {
-                    return RecursiveSearchNode(id, root, out unused);
-                }
-                finally
-                {
-                    cacheLock.ExitReadLock();
-                }
-            }
-        }
-
-        public ConcurrentNode<T> SearchNode(int id, out List<ConcurrentNode<T>> sibling)
-        {
-            if (id == 0)
-            {
-                sibling = null;
-                return null;
-            }
-            else
-            { // Start from root
-                cacheLock.EnterReadLock();
-                try
-                {
-                    return RecursiveSearchNode(id, root, out sibling);
-                }
-                finally
-                {
-                    cacheLock.ExitReadLock();
-                }
-            }
-        }
-
-        private ConcurrentNode<T> RecursiveSearchNode(int id, List<ConcurrentNode<T>> list, out List<ConcurrentNode<T>> sibling)
-        {
-            foreach (ConcurrentNode<T> node in list)
-            {
-                if (id == node.Id)
-                {
-                    sibling = list;
-                    return node;
-                }
-            }
-
-            // Not found, start DFS
-            foreach (ConcurrentNode<T> node in list)
-            {
-                return RecursiveSearchNode(node.Id, node.Child, out sibling);
-            }
-
-            // Not found, return null
-            sibling = null;
-            return null;
-        }
-
-        public bool Contains(int id)
-        {
-            if (SearchNode(id) == null)
-                return false;
-            else
-                return true;
-        }
-
-        public ConcurrentNode<T> GetNext(int id)
-        {
-            List<ConcurrentNode<T>> sibling;
-            ConcurrentNode<T> ConcurrentNode = SearchNode(id, out sibling);
-            cacheLock.EnterReadLock();
-            try
-            {
-                int idx = sibling.IndexOf(ConcurrentNode);
-                if (idx + 1 < sibling.Count)
-                    return sibling[idx + 1];
-                else
-                    return null;
-            }
-            finally
-            {
-                cacheLock.ExitReadLock();
-            }
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            return GetEnumeratorDFS();
-        }
-
-        public IEnumerator GetEnumeratorBFS()
-        {
-            Queue<List<ConcurrentNode<T>>> q = new Queue<List<ConcurrentNode<T>>>();
-            Queue<ConcurrentNode<T>> qFinal = new Queue<ConcurrentNode<T>>();
-
-            cacheLock.EnterReadLock();
-            try
-            {
-                q.Enqueue(root);
-                while (0 < q.Count)
-                {
-                    List<ConcurrentNode<T>> next = q.Dequeue();
-                    foreach (ConcurrentNode<T> node in next)
-                    {
-                        qFinal.Enqueue(node);
-                        if (0 < node.Child.Count)
-                            q.Enqueue(node.Child);
-                    }
-                }
-            }
-            finally
-            {
-                cacheLock.ExitReadLock();
-            }
-            
-            while (0 < qFinal.Count)
-                yield return qFinal.Dequeue();
-        }
-
-        public IEnumerator GetEnumeratorDFS()
-        { // Not tested
-            Queue<ConcurrentNode<T>> qFinal = new Queue<ConcurrentNode<T>>();
-            cacheLock.EnterReadLock();
-            try
-            {
-                RecursiveGetEnumeratorDFS(root, qFinal);
-            }
-            finally
-            {
-                cacheLock.ExitReadLock();
-            }
-
-            while (0 < qFinal.Count)
-                yield return qFinal.Dequeue();
-        }
-
-        private void RecursiveGetEnumeratorDFS(List<ConcurrentNode<T>> list, Queue<ConcurrentNode<T>> qFinal)
-        {
-            foreach (ConcurrentNode<T> node in list)
-            {
-                qFinal.Enqueue(node);
-                if (0 < node.Child.Count)
-                    RecursiveGetEnumeratorDFS(node.Child, qFinal);
-            }
-        }
-    }
-
-    public class ConcurrentNode<T>
-    {
-        public int Id;
-        public int ParentId; // 0 is root ConcurrentNodeList
-        public T Data;
-        public List<ConcurrentNode<T>> Parent;
-        public List<ConcurrentNode<T>> Child;
-
-        public ConcurrentNode(int parentId, int id, T data, List<ConcurrentNode<T>> parent)
-        {
-            this.ParentId = parentId;
-            this.Id = id;
-            this.Data = data;
-            this.Parent = parent;
-            this.Child = new List<ConcurrentNode<T>>();
         }
     }
 }

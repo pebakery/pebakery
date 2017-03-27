@@ -365,7 +365,15 @@ namespace PEBakery.Core
                 throw new InvalidCommandException("number of doublequotes must be times of 2");
 
             // Parse Operands
-            List<string> operands = ParseOperands(slices, 1);
+            List<string> operands = new List<string>();
+            try
+            {
+                operands = ParseOperands(slices, 1);
+            }
+            catch
+            {
+                return new CodeCommand(string.Empty, Opcode.Error, new List<string>(), addr);
+            }
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < operands.Count)

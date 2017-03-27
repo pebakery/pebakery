@@ -120,41 +120,4 @@
   <data name="BuildDate" xml:space="preserve">
     <value>2017-03-07</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="SvgBuild" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Build.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgEdit" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Edit.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgFile" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\File.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-    <comment>Apache License 2.0, From https://material.io/icons</comment>
-  </data>
-  <data name="SvgFolder" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Folder.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-    <comment>Apache License 2.0, From https://material.io/icons</comment>
-  </data>
-  <data name="SvgLink" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Link.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgLock" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Lock.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-    <comment>Apache License 2.0, From https://material.io/icons</comment>
-  </data>
-  <data name="SvgPlugin" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\DefaultPlugin.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgProject" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Project.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgRefresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Refresh.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgSetting" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Setting.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="SvgUpdate" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Update.svg;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
 </root>

@@ -68,7 +68,15 @@ namespace PEBakery.Core
             List<string> slices = rawLine.Split(',').ToList();
 
             // Parse Operands
-            List<string> operands = CodeParser.ParseOperands(slices, 0);
+            List<string> operands = new List<string>();
+            try
+            {
+                operands = CodeParser.ParseOperands(slices, 0);
+            }
+            catch
+            {
+                return new UICommand(rawLine, addr, key);
+            }
 
             // UICommand should have at least 7 operands
             //    Text, Visibility, Type, X, Y, width, height, [Optional]
@@ -198,6 +206,8 @@ namespace PEBakery.Core
                         bool _checked = false;
                         if (string.Equals(op[0], "True", StringComparison.OrdinalIgnoreCase))
                             _checked = true;
+                        else if (string.Equals(op[0], "False", StringComparison.OrdinalIgnoreCase) == false)
+                            return error;
                         string sectionName = null;
                         if (maxOpCount < op.Count)
                             sectionName = op[maxOpCount];
@@ -207,14 +217,21 @@ namespace PEBakery.Core
                 case UIControlType.ComboBox:
                     { // Variable Length
                         List<string> items = new List<string>();
-                        for (int i = 0; i < op.Count - 1; i++)
-                            items.Add(op[i]);
                         string last = op.Last();
                         string toolTip = null;
+                        int count = 0;
                         if (last.StartsWith("__", StringComparison.Ordinal))
+                        {
                             toolTip = last;
+                            count = op.Count - 1;
+                        }
                         else
-                            items.Add(last);
+                        {
+                            count = op.Count;
+                        }
+
+                        for (int i = 0; i < count; i++)
+                            items.Add(op[i]);
 
                         int idx = items.IndexOf(operands[0]);
                         if (idx == -1)
@@ -263,6 +280,8 @@ namespace PEBakery.Core
                         bool progressShow = false;
                         if (string.Equals(op[2], "True", StringComparison.OrdinalIgnoreCase))
                             progressShow = true;
+                        else if (string.Equals(op[2], "False", StringComparison.OrdinalIgnoreCase) == false)
+                            return error;
                         return new UIInfo_Button(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), sectionName, picture, progressShow);
                     }
                 case UIControlType.CheckList:
@@ -278,7 +297,24 @@ namespace PEBakery.Core
                         return new UIInfo_WebLabel(true, GetInfoTooltip(op, maxOpCount + optOpCount), Engine.UnescapeStr(op[0]));
                     }
                 case UIControlType.RadioButton:
-                    break;
+                    {
+                        const int minOpCount = 1;
+                        const int maxOpCount = 1;
+                        const int optOpCount = 2; // [SectionToRun],[Tooltip]
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        bool selected = false;
+                        if (string.Equals(op[0], "True", StringComparison.OrdinalIgnoreCase))
+                            selected = true;
+                        else if (string.Equals(op[0], "False", StringComparison.OrdinalIgnoreCase) == false)
+                            return error;
+                        string sectionName = null;
+                        if (maxOpCount < op.Count)
+                            sectionName = op[maxOpCount];
+
+                        return new UIInfo_RadioButton(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), selected, sectionName);
+                    }
                 case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;
@@ -290,9 +326,48 @@ namespace PEBakery.Core
                         return new UIInfo_Bevel(true, GetInfoTooltip(op, maxOpCount + optOpCount));
                     }
                 case UIControlType.FileBox:
-                    break;
+                    {
+                        const int minOpCount = 0;
+                        const int maxOpCount = 0;
+                        const int optOpCount = 2;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
+                            return error;
+
+                        bool isFile = false;
+                        if (maxOpCount < op.Count)
+                        {
+                            if (op[maxOpCount].StartsWith("__", StringComparison.Ordinal) == false)
+                            {
+                                if (string.Equals(op[maxOpCount], "FILE", StringComparison.OrdinalIgnoreCase))
+                                    isFile = true;
+                            }
+                        }
+
+                        return new UIInfo_FileBox(true, GetInfoTooltip(op, maxOpCount + optOpCount), isFile);
+                    }
                 case UIControlType.RadioGroup:
-                    break;
+                    { // Variable Length
+                        List<string> items = new List<string>();
+                        string last = op.Last();
+                        string toolTip = null;
+                        int count = 0;
+                        if (last.StartsWith("__", StringComparison.Ordinal))
+                        {
+                            toolTip = last;
+                            count = op.Count - 2;
+                        }
+                        else
+                        {
+                            count = op.Count - 1;
+                        }
+
+                        for (int i = 0; i < count; i++)
+                            items.Add(op[i]);
+                        if (int.TryParse(op[count], NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
+                            return error;
+
+                        return new UIInfo_RadioGroup(true, toolTip, items, idx);
+                    }
                 default:
                     break;
             }

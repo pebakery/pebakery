@@ -19,7 +19,7 @@
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Core;
-using MahApps.Metro.Controls;
+using MahApps.Metro.IconPacks;
 using System;
 using System.IO;
 using System.Collections.Concurrent;
@@ -64,9 +64,12 @@ namespace PEBakery.WPF
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
         private Stopwatch stopwatch;
-        private BackgroundWorker loadWorker = new BackgroundWorker();
+        private BackgroundWorker loadWorker;
+        private BackgroundWorker refreshWorker;
 
-        const int maxDpiScale = 4;
+        private TreeViewModel currentTree;
+
+        const int MaxDpiScale = 4;
 
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
@@ -121,27 +124,72 @@ namespace PEBakery.WPF
 
         void LoadButtonsImage()
         {
-            double width = 300;
-            double height = 300;
-            buildButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
-            refreshButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgRefresh, width, height);
-            settingButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgSetting, width, height);
-            updateButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgUpdate, width, height);
+            // Properties.Resources.
 
-            width = 120;
-            height = 120;
-            pluginRunButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
-            pluginEditButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgEdit, width, height);
+            BuildButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            RefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            SettingButton.Content = GetMaterialIcon(PackIconMaterialKind.Settings, 5);
+            UpdateButton.Content = GetMaterialIcon(PackIconMaterialKind.Download, 5);
+            AboutButton.Content = GetMaterialIcon(PackIconMaterialKind.Help, 5);
+
+            PluginRunButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            PluginEditButton.Content = GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
+            PluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
         }
 
         private void StartLoadWorkder()
         {
-            this.mainProgressRing.IsActive = true;
+            this.MainProgressRing.IsActive = true;
             loadWorker = new BackgroundWorker();
             loadWorker.WorkerReportsProgress = true;
-            loadWorker.DoWork += new DoWorkEventHandler(LoadWorker_Work);
-            loadWorker.ProgressChanged += new ProgressChangedEventHandler(LoadWorker_ProgressChanged);
-            loadWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(LoadWorker_RunWorkerCompleted);
+            loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                string baseDir = (string)e.Argument;
+                BackgroundWorker worker = sender as BackgroundWorker;
+
+                stopwatch = Stopwatch.StartNew();
+                this.projects = new List<Project>();
+                this.loadedProjectCount = 0;
+                this.allProjectCount = 0;
+
+                string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
+                List<string> projList = new List<string>();
+                foreach (string dir in projArray)
+                {
+                    if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
+                        projList.Add(dir);
+                }
+
+                allProjectCount = projList.Count;
+                foreach (string dir in projList)
+                {
+                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
+                    project.Load();
+                    projects.Add(project);
+                    loadedProjectCount++;
+                }
+            };
+            loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+            {
+                loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
+            };
+            loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                stopwatch.Stop();
+                TimeSpan t = stopwatch.Elapsed;
+                this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
+                this.bottomDock.Child = statusBar;
+
+                foreach (Project project in this.projects)
+                {
+                    List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
+                    RecursivePopulateMainTreeView(plugins, this.treeModel);
+                };
+                MainTreeView.DataContext = treeModel;
+                DrawPlugin(projects[0].MainPlugin);
+
+                MainProgressRing.IsActive = false;
+            };
             loadWorker.RunWorkerAsync(baseDir);
         }
 
@@ -149,7 +197,7 @@ namespace PEBakery.WPF
         {
             if (loadWorker.IsBusy == false)
             {
-                (mainTreeView.DataContext as TreeViewModel).Child.Clear();
+                (MainTreeView.DataContext as TreeViewModel).Child.Clear();
                 loadProgressBar.Value = 0;
                 this.bottomDock.Child = loadProgressBar;
 
@@ -157,59 +205,9 @@ namespace PEBakery.WPF
             }
         }
 
-        void LoadWorker_Work(object sender, DoWorkEventArgs e)
-        {
-            string baseDir = (string) e.Argument;
-            BackgroundWorker worker = sender as BackgroundWorker;
-
-            stopwatch = Stopwatch.StartNew();
-            this.projects = new List<Project>();
-            this.loadedProjectCount = 0;
-            this.allProjectCount = 0;
-
-            string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
-            List<string> projList = new List<string>();
-            foreach (string dir in projArray)
-            {
-                if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
-                    projList.Add(dir);
-            }
-
-            allProjectCount = projList.Count;
-            foreach (string dir in projList)
-            {
-                Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
-                project.Load();
-                projects.Add(project);
-                loadedProjectCount++;
-            }
-        }
-
-        private void LoadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            this.loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
-        }
-
-        private void LoadWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            stopwatch.Stop();
-            TimeSpan t = stopwatch.Elapsed;
-            this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
-            this.bottomDock.Child = statusBar;
-
-            foreach (Project project in this.projects)
-            {
-                List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                RecursivePopulateMainTreeView(plugins, this.treeModel);
-            };
-            mainTreeView.DataContext = treeModel;
-
-            this.mainProgressRing.IsActive = false;
-        }
-
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
         {
-            double size = mainTreeView.FontSize * maxDpiScale;
+            double size = MainTreeView.FontSize * MaxDpiScale;
 
             foreach (Node<Plugin> node in plugins)
             {
@@ -221,20 +219,20 @@ namespace PEBakery.WPF
 
                 if (p.Type == PluginType.Directory)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size);
+                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Folder, 0));
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.SetSvgImage(Properties.Resources.SvgProject, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Settings, 0));
                     else if (p.Mandatory)
-                        item.SetSvgImage(Properties.Resources.SvgLock, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
                     else
-                        item.SetSvgImage(Properties.Resources.SvgFile, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.File, 0));
                 }
                 else if (p.Type == PluginType.Link)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgLink, size, size);
+                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
                 }
 
                 if (0 < node.Child.Count)
@@ -248,60 +246,95 @@ namespace PEBakery.WPF
 
             if (tree.SelectedItem is TreeViewModel)
             {
-                TreeViewModel item = tree.SelectedItem as TreeViewModel;
-                Plugin p = item.Node.Data;
-                double size = 400; // pluginLogo.Width * maxDpiScale;
-                Thickness margin0 = new Thickness(0);
-                Thickness margin10 = new Thickness(10);
-                switch (p.Type)
-                {
-                    case PluginType.Directory:
-                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgFolder, size, size);
-                        pluginLogo.Stretch = Stretch.Uniform;
-                        pluginLogo.Margin = margin10;
-                        break;
-                    case PluginType.Plugin:
-                        if (EncodedFile.ExtractLogo(p, out MemoryStream mem, out ImageType type) == false)
-                        {
-                            if (type == ImageType.Svg)
-                            {
-                                pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
-                                pluginLogo.Stretch = Stretch.Uniform;
-                                pluginLogo.Margin = margin10;
-                            }
-                            else
-                            {
-                                BitmapImage image = ImageHelper.ImageToBitmapImage(mem);
-                                pluginLogo.Source = image;
-                                pluginLogo.Stretch = Stretch.None;
-                                pluginLogo.Margin = margin0;
-                            }
-                        }
-                        else
-                        {
-                            pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgPlugin, size, size);
-                            pluginLogo.Stretch = Stretch.Uniform;
-                            pluginLogo.Margin = margin10;
-                        }
-                        break;
-                    case PluginType.Link:
-                        pluginLogo.Source = ImageHelper.SvgToBitmapImage(Properties.Resources.SvgLink, size, size);
-                        pluginLogo.Stretch = Stretch.Uniform;
-                        pluginLogo.Margin = margin10;
-                        break;
-                }
-                pluginTitle.Text = Engine.UnescapeStr(p.Title);
-                pluginDescription.Text = Engine.UnescapeStr(p.Description);
-                pluginVersion.Text = $"v{p.Version}";
-
-                mainCanvas.Children.Clear();
-                UIRenderer render = new UIRenderer(mainCanvas, 1, this, p);
-                render.Render();
+                TreeViewModel item = currentTree = tree.SelectedItem as TreeViewModel;
+                DrawPlugin(item.Node.Data);
             }
             else
             {
                 Debug.Assert(false);
             }
+        }
+
+        private void DrawPlugin(Plugin p)
+        {
+            double size = PluginLogo.ActualWidth * MaxDpiScale;
+            if (p.Type == PluginType.Directory)
+                PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+            else
+            {
+                try
+                {
+                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
+                    if (type == ImageType.Svg)
+                    {
+                        Image image = new Image()
+                        {
+                            Source = ImageHelper.SvgToBitmapImage(mem, size, size),
+                            Stretch = Stretch.Uniform
+                        };
+                        PluginLogo.Content = image;
+                    }
+                    else
+                    {
+                        Image image = new Image();
+                        BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
+                        image.StretchDirection = StretchDirection.DownOnly;
+                        image.Stretch = Stretch.Uniform;
+                        image.UseLayoutRounding = true;
+                        image.Source = bitmap;
+
+                        Grid grid = new Grid();
+                        grid.Children.Add(image);
+
+                        PluginLogo.Content = grid;
+                    }
+                    
+                }
+                catch
+                { // No logo file - use default
+                    if (p.Type == PluginType.Plugin)
+                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                    else if (p.Type == PluginType.Link)
+                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                }
+            }
+            PluginTitle.Text = Engine.UnescapeStr(p.Title);
+            PluginDescription.Text = Engine.UnescapeStr(p.Description);
+            PluginVersion.Text = $"v{p.Version}";
+
+            MainCanvas.Children.Clear();
+            UIRenderer render = new UIRenderer(MainCanvas, this, p, 1);
+            render.Render();
+        }
+
+        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTree != null)
+                StartRefreshWorker();
+        }
+
+        private void StartRefreshWorker()
+        {
+            this.MainProgressRing.IsActive = true;
+            refreshWorker = new BackgroundWorker();
+            refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                stopwatch.Restart();
+                Plugin p = currentTree.Node.Data.Project.RefreshPlugin(currentTree.Node.Data);
+                if (p != null)
+                {
+                    currentTree.Node.Data = p;
+                    DrawPlugin(currentTree.Node.Data);
+                }
+            };
+            refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                this.MainProgressRing.IsActive = false;
+                double sec = stopwatch.Elapsed.TotalSeconds;
+                statusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
+                stopwatch.Stop();
+            };
+            refreshWorker.RunWorkerAsync();
         }
 
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
@@ -340,25 +373,16 @@ namespace PEBakery.WPF
         {
         }
 
-        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
         {
-            if (900 < e.NewSize.Width)
+            PackIconMaterial icon = new PackIconMaterial()
             {
-                ScrollViewer.SetHorizontalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Visible);
-            }
-            else
-            {
-                ScrollViewer.SetHorizontalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Hidden);
-            }
-
-            if (720 < e.NewSize.Height)
-            {
-                ScrollViewer.SetVerticalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Visible);
-            }
-            else
-            {
-                ScrollViewer.SetVerticalScrollBarVisibility(mainCanvas, ScrollBarVisibility.Hidden);
-            }
+                Kind = kind,
+                Width = Double.NaN,
+                Height = Double.NaN,
+                Margin = new Thickness(margin, margin, margin, margin),
+            };
+            return icon;
         }
     }
     #endregion
@@ -466,20 +490,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private double imageWidth;
-        public double ImageWidth { get => imageWidth; }
-        private double imageHeight;
-        public double ImageHeight { get => imageHeight; }
-        private byte[] imageSrc;
-        public byte[] ImageSrc { get => imageSrc; }
-        private BitmapImage imageSvg;
-        public BitmapImage ImageSvg
+        private Control icon;
+        public Control Icon
         {
-            get => imageSvg;
+            get => icon;
             set
             {
-                imageSvg = value;
-                OnPropertyUpdate("Image");
+                icon = value;
+                OnPropertyUpdate("Icon");
             }
         }
 
@@ -488,13 +506,10 @@ namespace PEBakery.WPF
 
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
         public ObservableCollection<TreeViewModel> Child { get => child; }
-        
-        public void SetSvgImage(byte[] src, double width, double height)
+
+        public void SetIcon(Control icon)
         {
-            imageWidth = width;
-            imageHeight = height;
-            imageSrc = src;
-            ImageSvg = ImageHelper.SvgToBitmapImage(src, width, height);
+            this.icon = icon;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

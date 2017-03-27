@@ -202,5 +202,21 @@ namespace PEBakery.Exceptions
         public InternalParseException(string message, Exception inner) : base(message, inner) { }
     }
 
-#endregion
+    #endregion
+
+    #region EncodedFile
+    public class ExtractFileFailException : Exception
+    {
+        public ExtractFileFailException() { }
+        public ExtractFileFailException(string message) : base(message) { }
+        public ExtractFileFailException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class ExtractFileNotFoundException : Exception
+    {
+        public ExtractFileNotFoundException() { }
+        public ExtractFileNotFoundException(string message) : base(message) { }
+        public ExtractFileNotFoundException(string message, Exception inner) : base(message, inner) { }
+    }
+    #endregion
 }

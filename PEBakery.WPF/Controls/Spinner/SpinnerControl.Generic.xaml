@@ -39,7 +39,7 @@
                     <Grid Background="{Binding Path=Background, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
-                            <ColumnDefinition />
+                            <ColumnDefinition Width="16"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition />
@@ -50,7 +50,7 @@
                         -->
                         <TextBox Grid.Row="0"
                                  Grid.Column="0"
-                                 Width="Auto"
+                                 FontSize="{Binding FontSize}"
                                  Margin="0,0,1,0"
                                  VerticalAlignment="Center"
                                  IsReadOnly="True"
@@ -67,7 +67,6 @@
                             </Grid.RowDefinitions>
                             <RepeatButton Grid.Row="0"
                                           Grid.Column="1"
-                                          Width="22"
                                           Height="11"
                                           Command="{x:Static btl:SpinnerControl.IncreaseCommand}">
                                 <RepeatButton.Content>
@@ -78,7 +77,6 @@
                             </RepeatButton>
                             <RepeatButton Grid.Row="1"
                                           Grid.Column="1"
-                                          Width="22"
                                           Height="11"
                                           Command="{x:Static btl:SpinnerControl.DecreaseCommand}">
                                 <RepeatButton.Content>

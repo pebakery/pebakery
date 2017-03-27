@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
@@ -73,13 +74,10 @@ namespace PEBakery.Core
         /// <param name="fileName"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        public static bool ExtractFile(Plugin plugin, string dirName, string fileName, out MemoryStream mem)
+        public static MemoryStream ExtractFile(Plugin plugin, string dirName, string fileName)
         {
-            // List<string> dirList = plugin.Sections["EncodedFolders"].GetLines();
-            // List<string> fileList = plugin.Sections[dirName].GetLines();
             List<string> encoded = plugin.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
-
-            return Decode(encoded, out mem);
+            return Decode(encoded);
         }
 
         /// <summary>
@@ -88,21 +86,19 @@ namespace PEBakery.Core
         /// <param name="plugin"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        public static bool ExtractLogo(Plugin plugin, out MemoryStream mem, out ImageType type)
+        public static MemoryStream ExtractLogo(Plugin plugin, out ImageType type)
         {
-            mem = null;
             type = ImageType.Bmp; // Dummy
             if (plugin.Sections.ContainsKey("AuthorEncoded") == false)
-                return true;
+                throw new ExtractFileNotFoundException($"There is no encoded file by author");
             Dictionary<string, string> fileDict = plugin.Sections["AuthorEncoded"].GetIniDict();
             if (fileDict.ContainsKey("Logo") == false)
-                return true;
+                throw new ExtractFileNotFoundException($"There is no logo in \'{plugin.Title}\'");
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
-                return true;
+                throw new ExtractFileNotFoundException("Unsupported image type");
             List<string> encoded = plugin.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
-
-            return Decode(encoded, out mem);
+            return Decode(encoded);
         }
 
         /// <summary>
@@ -111,18 +107,10 @@ namespace PEBakery.Core
         /// <param name="plugin"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        public static bool ExtractInterfaceEncoded(Plugin plugin, string fileName, out MemoryStream mem)
+        public static MemoryStream ExtractInterfaceEncoded(Plugin plugin, string fileName)
         {
-            try
-            {
-                List<string> encoded = plugin.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
-                return Decode(encoded, out mem);
-            }
-            catch (KeyNotFoundException)
-            {
-                mem = null;
-                return true;
-            }
+            List<string> encoded = plugin.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
+            return Decode(encoded);
         }
 
         /// <summary>
@@ -131,18 +119,17 @@ namespace PEBakery.Core
         /// <param name="encodedList"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        private static bool Decode(List<string> encodedList, out MemoryStream mem)
+        private static MemoryStream Decode(List<string> encodedList)
         {
-            mem = null;
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                return true; // Error
+                throw new ExtractFileFailException("Encoded lines are malformed");
 
             int.TryParse(value, out int blockCount);
             encodedList.RemoveAt(0);
 
             // Each line is 64KB block
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                return true; // Error
+                throw new ExtractFileFailException("Encoded lines are malformed");
             keys = null; // Please GC this
 
             StringBuilder builder = new StringBuilder();
@@ -161,7 +148,8 @@ namespace PEBakery.Core
                     builder.Append("=");
                     break;
             }
-                
+
+            MemoryStream mem = new MemoryStream();
             string encoded = builder.ToString();
             builder = null; // Please GC this
             byte[] decoded = Convert.FromBase64String(encoded);
@@ -175,7 +163,6 @@ namespace PEBakery.Core
                 zlibMem.ReadByte(); // 0x9c
 
                 // DeflateStream internally use zlib library, starting from .Net 4.5
-                mem = new MemoryStream();
                 DeflateStream zlibStream = new DeflateStream(zlibMem, CompressionMode.Decompress);
                 mem.Position = 0;
                 zlibStream.CopyTo(mem);
@@ -198,10 +185,10 @@ namespace PEBakery.Core
                     }
                 }
                 if (failure)
-                    return true;
+                    throw new ExtractFileFailException("Extract faild.");
             }
 
-            return false;
+            return mem;
         }
         #endregion
     }

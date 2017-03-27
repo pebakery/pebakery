@@ -635,9 +635,6 @@ Portions of PEBakery is licensed under Apache License 2.0.
 Derived from Visual Studio Sample "Programmatically generate the Infopath form"
 https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
 
-- PEBakery.WPF/Resources/GMI_*.svg
-Icons from Google Material Desgin
-https://material.io/icons/
 
                                  Apache License
                            Version 2.0, January 2004
@@ -830,6 +827,12 @@ https://github.com/Microsoft/WPF-Samples
 - PEBakery.WPF/TreeLib.cs
 Copyright (c) 2016-2017 Hajin Jang
 
+Portions of PEBakery uses libraries licensed under MIT License.
+
+- MahApps.Metro.IconPacks
+Copyright (c) 2016 MahApps
+Derived from https://github.com/MahApps/MahApps.Metro.IconPacks
+
 
 MIT License
 
@@ -853,7 +856,7 @@ SOFTWARE.
 
 
 -------------------------------------------------------------------------------
-PEBakery uses open source libraries licensed under MS-PL.
+Portions of PEBakery uses libraries licensed under MS-PL.
 
 - Svg.Net
 https://github.com/vvvv/SVG

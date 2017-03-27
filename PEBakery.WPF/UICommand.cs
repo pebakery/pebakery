@@ -352,7 +352,7 @@ namespace PEBakery.Core
                 builder.Append(Engine.QuoteEscapeStr(Items[i]));
                 builder.Append(",");
             }
-            builder.Append(Items.Last());
+            builder.Append(Engine.QuoteEscapeStr(Items.Last()));
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
@@ -516,6 +516,13 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(Selected);
+            if (SectionName != null)
+            {
+                builder.Append(",");
+                builder.Append(SectionName);
+            }
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
 
@@ -558,6 +565,8 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(IsFile);
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
 
@@ -582,6 +591,13 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < Items.Count; i++)
+            {
+                builder.Append(Engine.QuoteEscapeStr(Items[i]));
+                builder.Append(",");
+            }
+            builder.Append(Selected);
+            builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
 
