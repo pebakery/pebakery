@@ -121,28 +121,15 @@ namespace PEBakery.WPF
 
         void LoadButtonsImage()
         {
-            double width = 300;
-            double height = 300;
-            buildButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
-            refreshButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgRefresh, width, height);
-            settingButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgSetting, width, height);
-            updateButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgUpdate, width, height);
-
-            width = 120;
-            height = 120;
-            pluginRunButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgBuild, width, height);
-            pluginEditButton.Background = ImageHelper.SvgToImageBrush(Properties.Resources.SvgEdit, width, height);
-
-            /*
             buildButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
             refreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
             settingButton.Content = GetMaterialIcon(PackIconMaterialKind.Settings, 5);
             updateButton.Content = GetMaterialIcon(PackIconMaterialKind.Download, 5);
+            aboutButton.Content = GetMaterialIcon(PackIconMaterialKind.Help, 5);
 
             pluginRunButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
             pluginEditButton.Content = GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
             pluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-            */
         }
 
         private void StartLoadWorkder()
@@ -230,22 +217,23 @@ namespace PEBakery.WPF
                 treeParent.Child.Add(item);
                 item.Node = node;
 
+
                 if (p.Type == PluginType.Directory)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgFolder, size, size);
+                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Folder, 0));
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.SetSvgImage(Properties.Resources.SvgProject, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Settings, 0));
                     else if (p.Mandatory)
-                        item.SetSvgImage(Properties.Resources.SvgLock, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
                     else
-                        item.SetSvgImage(Properties.Resources.SvgFile, size, size);
+                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.File, 0));
                 }
                 else if (p.Type == PluginType.Link)
                 {
-                    item.SetSvgImage(Properties.Resources.SvgLink, size, size);
+                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
                 }
 
                 if (0 < node.Child.Count)
@@ -272,11 +260,9 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    MemoryStream mem;
-                    ImageType type;
                     try
                     {
-                        mem = EncodedFile.ExtractLogo(p, out type);
+                        MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
                         if (type == ImageType.Svg)
                         {
                             pluginLogo.Source = ImageHelper.SvgToBitmapImage(mem, size, size);
@@ -306,7 +292,7 @@ namespace PEBakery.WPF
                 pluginVersion.Text = $"v{p.Version}";
 
                 mainCanvas.Children.Clear();
-                UIRenderer render = new UIRenderer(mainCanvas, 1, this, p);
+                UIRenderer render = new UIRenderer(mainCanvas, this, p, 1);
                 render.Render();
             }
             else
@@ -489,20 +475,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private double imageWidth;
-        public double ImageWidth { get => imageWidth; }
-        private double imageHeight;
-        public double ImageHeight { get => imageHeight; }
-        private byte[] imageSrc;
-        public byte[] ImageSrc { get => imageSrc; }
-        private BitmapImage imageSvg;
-        public BitmapImage ImageSvg
+        private Control icon;
+        public Control Icon
         {
-            get => imageSvg;
+            get => icon;
             set
             {
-                imageSvg = value;
-                OnPropertyUpdate("Image");
+                icon = value;
+                OnPropertyUpdate("Icon");
             }
         }
 
@@ -511,13 +491,10 @@ namespace PEBakery.WPF
 
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
         public ObservableCollection<TreeViewModel> Child { get => child; }
-        
-        public void SetSvgImage(byte[] src, double width, double height)
+
+        public void SetIcon(Control icon)
         {
-            imageWidth = width;
-            imageHeight = height;
-            imageSrc = src;
-            ImageSvg = ImageHelper.SvgToBitmapImage(src, width, height);
+            this.icon = icon;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

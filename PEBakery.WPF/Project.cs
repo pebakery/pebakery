@@ -169,6 +169,31 @@ namespace PEBakery.Core
                                 p = new Plugin(PluginType.Plugin, pPath, projectRoot, baseDir, null);
                         }
 
+                        // Check Plugin Link's validity
+                        // Also, convert nested link to one-depth link
+                        if (p.Type == PluginType.Link)
+                        {
+                            Plugin link = p.Link;
+                            bool valid = false;
+                            do
+                            {
+                                if (link == null)
+                                    return;
+                                if (link.Type == PluginType.Plugin)
+                                {
+                                    valid = true;
+                                    break;
+                                }
+                                link = link.Link;
+                            }
+                            while (link.Type != PluginType.Plugin);
+
+                            if (valid)
+                                p.Link = link;
+                            else
+                                return;
+                        }
+
                         listLock.EnterWriteLock();
                         try
                         {

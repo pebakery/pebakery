@@ -184,7 +184,7 @@ namespace Btl.Controls
             new PropertyMetadata(DefaultMinimumValue));
         #endregion
 
-
+        
         #region MaximumValue property
         /// <summary>
         /// This is the Control property that we expose to the user.

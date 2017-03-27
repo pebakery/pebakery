@@ -41,18 +41,12 @@ namespace PEBakery.WPF
         public const double FontScale = 1.4; // WB082's font size seems too small in WPF's canvas.
         public const int DefaultFontSize = 8; // WB082 hard-coded default font size to 8.
 
-        public readonly double masterScale;
-        private Canvas canvas;
-        private Window window;
-        private Plugin plugin;
+        private RenderInfo renderInfo;
         private List<UICommand> uiCodes;
 
-        public UIRenderer(Canvas canvas, double scale, Window window, Plugin plugin)
+        public UIRenderer(Canvas canvas, Window window, Plugin plugin, double scale)
         {
-            this.window = window;
-            this.canvas = canvas;
-            this.plugin = plugin;
-            this.masterScale = scale;
+            renderInfo = new RenderInfo(canvas, window, plugin, scale);
             if (plugin.Sections.ContainsKey("Interface"))
                 this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
             else
@@ -70,53 +64,59 @@ namespace PEBakery.WPF
                 if (uiCmd.Visibility == false || uiCmd.Info.Valid == false)
                     continue;
 
-                bool failed = false;
-                switch (uiCmd.Type)
+                try
                 {
-                    case UIControlType.TextBox:
-                        failed = UIRenderer.RenderTextBox(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.TextLabel:
-                        failed = UIRenderer.RenderTextLabel(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.NumberBox:
-                        failed = UIRenderer.RenderNumberBox(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.CheckBox:
-                        failed = UIRenderer.RenderCheckBox(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.ComboBox:
-                        failed = UIRenderer.RenderComboBox(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.Image:
-                        failed = UIRenderer.RenderImage(canvas, masterScale, window, uiCmd);
-                        break;
-                    case UIControlType.TextFile:
-                        failed = UIRenderer.RenderTextFile(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.Button:
-                        failed = UIRenderer.RenderButton(canvas, masterScale, window, uiCmd);
-                        break;
-                    case UIControlType.CheckList:
-                        break;
-                    case UIControlType.WebLabel:
-                        failed = UIRenderer.RenderWebLabel(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.RadioButton:
-                        break;
-                    case UIControlType.Bevel:
-                        failed = UIRenderer.RenderBevel(canvas, masterScale, uiCmd);
-                        break;
-                    case UIControlType.FileBox:
-                        break;
-                    case UIControlType.RadioGroup:
-                        break;
-                    default:
-                        break;
+                    switch (uiCmd.Type)
+                    {
+                        case UIControlType.TextBox:
+                            UIRenderer.RenderTextBox(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.TextLabel:
+                            UIRenderer.RenderTextLabel(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.NumberBox:
+                            UIRenderer.RenderNumberBox(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.CheckBox:
+                            UIRenderer.RenderCheckBox(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.ComboBox:
+                            UIRenderer.RenderComboBox(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.Image:
+                            UIRenderer.RenderImage(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.TextFile:
+                            UIRenderer.RenderTextFile(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.Button:
+                            UIRenderer.RenderButton(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.CheckList:
+                            break;
+                        case UIControlType.WebLabel:
+                            UIRenderer.RenderWebLabel(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.RadioButton:
+                            // It seems no one use this?
+                            break;
+                        case UIControlType.Bevel:
+                            UIRenderer.RenderBevel(renderInfo, uiCmd);
+                            break;
+                        case UIControlType.FileBox:
+                            break;
+                        case UIControlType.RadioGroup:
+                            UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
+                            break;
+                        default:
+                            break;
+                    }
                 }
-
-                if (failed)
-                    continue;
+                // catch (Exception e)
+                catch
+                {
+                    // Log failure
+                }
             }
 
             return;
@@ -131,17 +131,17 @@ namespace PEBakery.WPF
         /// <param name="canvas">Parent canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderTextBox(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderTextBox(RenderInfo r, UICommand uiCmd)
         {
             // It took time finding that WB082 textbox control's y coord is of textbox's, not textlabel's.
             UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
             if (info == null)
-                return true;
+                return;
 
             TextBox box = new TextBox()
             {
                 Text = info.Value,
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
             };
             box.LostFocus += (object sender, RoutedEventArgs e) =>
             {
@@ -150,7 +150,7 @@ namespace PEBakery.WPF
                 UIRenderer.UpdatePlugin(uiCmd);
             };
             SetToolTip(box, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, box, uiCmd.Rect);
+            DrawToCanvas(r, box, uiCmd.Rect);
 
             if (string.Equals(uiCmd.Text, string.Empty, StringComparison.Ordinal) == false)
             {
@@ -158,37 +158,35 @@ namespace PEBakery.WPF
                 {
                     Text = uiCmd.Text,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                    LineHeight = DefaultFontSize * FontScale * masterScale,
-                    FontSize = DefaultFontSize * FontScale * masterScale,
+                    LineHeight = DefaultFontSize * FontScale * r.MasterScale,
+                    FontSize = DefaultFontSize * FontScale * r.MasterScale,
                 };
                 SetToolTip(block, info.ToolTip);
                 Rect blockRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top - (block.FontSize + 5), uiCmd.Rect.Width, uiCmd.Rect.Height);
-                DrawToCanvas(canvas, masterScale, block, blockRect);
+                DrawToCanvas(r, block, blockRect);
             }
-
-            return false;
         }
 
         /// <summary>
         /// Render TextLabel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderTextLabel(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderTextLabel(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_TextLabel info = uiCmd.Info as UIInfo_TextLabel;
             if (info == null)
-                return true;
+                return;
 
             TextBlock block = new TextBlock()
             {
                 Text = uiCmd.Text,
                 TextWrapping = TextWrapping.Wrap,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                LineHeight = info.FontSize * FontScale * masterScale,
-                FontSize = info.FontSize * FontScale * masterScale,
+                LineHeight = info.FontSize * FontScale * r.MasterScale,
+                FontSize = info.FontSize * FontScale * r.MasterScale,
             };
 
             switch (info.Style)
@@ -208,28 +206,27 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(block, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, block, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, block, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render NumberBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
-        /// <param name="masterScale">Master Scale Factor</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
+        /// <param name="r.MasterScale">Master Scale Factor</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderNumberBox(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderNumberBox(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
             if (info == null)
-                return true;
+                return;
 
             SpinnerControl spinner = new SpinnerControl()
             {
                 Value = info.Value,
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
@@ -242,28 +239,27 @@ namespace PEBakery.WPF
             };
 
             SetToolTip(spinner, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, spinner, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, spinner, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render CheckBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderCheckBox(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderCheckBox(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
             if (info == null)
-                return true;
+                return;
 
             CheckBox checkBox = new CheckBox()
             {
                 Content = uiCmd.Text,
                 IsChecked = info.Value,
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
             };
             checkBox.Checked += (object sender, RoutedEventArgs e) => {
                 CheckBox box = sender as CheckBox;
@@ -277,26 +273,25 @@ namespace PEBakery.WPF
             };
 
             SetToolTip(checkBox, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, checkBox, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, checkBox, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render ComboBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderComboBox(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderComboBox(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_ComboBox info = uiCmd.Info as UIInfo_ComboBox;
             if (info == null)
-                return true;
+                return;
 
             ComboBox comboBox = new ComboBox()
             {
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
                 ItemsSource = info.Items,
                 SelectedIndex = info.Index,
             };
@@ -313,135 +308,117 @@ namespace PEBakery.WPF
             };
 
             SetToolTip(comboBox, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, comboBox, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, comboBox, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render Image control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderImage(Canvas canvas, double masterScale, Window window, UICommand uiCmd)
+        public static void RenderImage(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_Image info = uiCmd.Info as UIInfo_Image;
             if (info == null)
-                return true;
+                return;
 
             Image image = new Image();
-            try
+            MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+            if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                return;
+
+            if (info.URL == null)
             {
-                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
-                if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
-                    return true;
-
-                if (info.URL == null)
+                if (type == ImageType.Svg)
                 {
-                    if (type == ImageType.Svg)
-                    {
-                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                        image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
-                    }
-                    else
-                    {
-                        image.Source = ImageHelper.ImageToBitmapImage(mem);
-                    }
-
-                    SetToolTip(image, info.ToolTip);
-                    DrawToCanvas(canvas, masterScale, image, uiCmd.Rect);
+                    double width = uiCmd.Rect.Width * PixelScale * r.MasterScale;
+                    double height = uiCmd.Rect.Height * PixelScale * r.MasterScale;
+                    image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
                 }
                 else
                 {
-                    Button button = new Button();
-                    button.Style = (Style)window.FindResource("ImageButton");
-                    if (type == ImageType.Svg)
-                    {
-                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                        button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
-                    }
-                    else
-                    {
-                        button.Background = ImageHelper.ImageToImageBrush(mem);
-                    }
-                    button.Click += (object sender, RoutedEventArgs e) =>
-                    {
-                        System.Diagnostics.Process.Start(info.URL.ToString());
-                    };
-
-                    SetToolTip(button, info.ToolTip);
-                    DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
+                    image.Source = ImageHelper.ImageToBitmapImage(mem);
                 }
+
+                SetToolTip(image, info.ToolTip);
+                DrawToCanvas(r, image, uiCmd.Rect);
             }
-            catch
+            else
             {
-                return true;
+                Button button = new Button();
+                button.Style = (Style) r.Window.FindResource("ImageButton");
+                if (type == ImageType.Svg)
+                {
+                    double width = uiCmd.Rect.Width * PixelScale * r.MasterScale;
+                    double height = uiCmd.Rect.Height * PixelScale * r.MasterScale;
+                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                }
+                else
+                {
+                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                }
+                button.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    System.Diagnostics.Process.Start(info.URL.ToString());
+                };
+
+                SetToolTip(button, info.ToolTip);
+                DrawToCanvas(r, button, uiCmd.Rect);
             }
-            
-            return false;
         }
 
         /// <summary>
         /// Render TextFile control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderTextFile(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderTextFile(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_TextFile info = uiCmd.Info as UIInfo_TextFile;
             if (info == null)
-                return true;
+                return;
 
-            try
+            MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+
+            StreamReader reader = new StreamReader(mem, FileHelper.DetectTextEncoding(mem));
+            TextBox textBox = new TextBox()
             {
-                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+                TextWrapping = TextWrapping.Wrap,
+                AcceptsReturn = true,
+                IsReadOnly = true,
+                Text = reader.ReadToEnd(),
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+            };
+            reader.Close();
+            ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
+            ScrollViewer.SetCanContentScroll(textBox, true);
 
-                StreamReader reader = new StreamReader(mem, FileHelper.DetectTextEncoding(mem));
-                TextBox textBox = new TextBox()
-                {
-                    TextWrapping = TextWrapping.Wrap,
-                    AcceptsReturn = true,
-                    IsReadOnly = true,
-                    Text = reader.ReadToEnd(),
-                    FontSize = DefaultFontSize * FontScale * masterScale,
-                };
-                reader.Close();
-                ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-                ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
-                ScrollViewer.SetCanContentScroll(textBox, true);
-
-                SetToolTip(textBox, info.ToolTip);
-                DrawToCanvas(canvas, masterScale, textBox, uiCmd.Rect);
-            }
-            catch
-            {
-                return true;
-            }
-            return false;
+            SetToolTip(textBox, info.ToolTip);
+            DrawToCanvas(r, textBox, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render Button control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderButton(Canvas canvas, double masterScale, Window window, UICommand uiCmd)
+        public static void RenderButton(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
             if (info == null)
-                return true;
+                return;
 
             Button button = new Button()
             {
                 Content = uiCmd.Text,
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
             };
 
             button.Click += (object sender, RoutedEventArgs e) =>
@@ -453,53 +430,44 @@ namespace PEBakery.WPF
 
             if (info.Picture != null)
             {
-                try
-                {
-                    MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
-                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
-                        return true;
+                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
+                if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                    return;
                    
-                    if (type == ImageType.Svg)
-                    {
-                        double width = uiCmd.Rect.Width * PixelScale * masterScale;
-                        double height = uiCmd.Rect.Height * PixelScale * masterScale;
-                        button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
-                    }
-                    else
-                    {
-                        button.Background = ImageHelper.ImageToImageBrush(mem);
-                    }
-                    button.Style = (Style)window.FindResource("BackgroundButton");
-
-                    SetToolTip(button, info.ToolTip);
-                    DrawToCanvas(canvas, masterScale, button, uiCmd.Rect);
-                }
-                catch
+                if (type == ImageType.Svg)
                 {
-                    return true;
+                    double width = uiCmd.Rect.Width * PixelScale * r.MasterScale;
+                    double height = uiCmd.Rect.Height * PixelScale * r.MasterScale;
+                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
                 }
-            }
+                else
+                {
+                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                }
+                button.Style = (Style) r.Window.FindResource("BackgroundButton");
 
-            return false;
+                SetToolTip(button, info.ToolTip);
+                DrawToCanvas(r, button, uiCmd.Rect);
+            }
         }
 
         /// <summary>
         /// Render WebLabel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderWebLabel(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderWebLabel(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_WebLabel info = uiCmd.Info as UIInfo_WebLabel;
             if (info == null)
-                return true;
+                return;
 
             TextBlock block = new TextBlock()
             {
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = DefaultFontSize * FontScale * masterScale,
+                FontSize = DefaultFontSize * FontScale * r.MasterScale,
             };
             Hyperlink hyperLink = new Hyperlink()
             {
@@ -513,22 +481,21 @@ namespace PEBakery.WPF
             block.Inlines.Add(hyperLink);
 
             SetToolTip(block, info.ToolTip);
-            DrawToCanvas(canvas, masterScale, block, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, block, uiCmd.Rect);
         }
 
         /// <summary>
         /// Render Bevel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static bool RenderBevel(Canvas canvas, double masterScale, UICommand uiCmd)
+        public static void RenderBevel(RenderInfo r, UICommand uiCmd)
         {
             UIInfo_Bevel info = uiCmd.Info as UIInfo_Bevel;
             if (info == null)
-                return true;
+                return;
 
             Border bevel = new Border()
             {
@@ -539,8 +506,78 @@ namespace PEBakery.WPF
                 ToolTip = info.ToolTip,
             };
 
-            DrawToCanvas(canvas, masterScale, bevel, uiCmd.Rect);
-            return false;
+            DrawToCanvas(r, bevel, uiCmd.Rect);
+        }
+
+        /// <summary>
+        /// Render RadioGroup control.
+        /// Return true if failed.
+        /// </summary>
+        /// <param name="r.Canvas">Parent r.Canvas</param>
+        /// <param name="uiCmd">UICommand</param>
+        /// <returns>Success = false, Failure = true</returns>
+        public static void RenderRadioGroup(RenderInfo r, UICommand uiCmd)
+        {
+            UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
+            if (info == null)
+                return;
+
+            double fontSize = DefaultFontSize * FontScale * r.MasterScale;
+
+            Border bevel = new Border()
+            {
+                IsHitTestVisible = false,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(1),
+                BorderBrush = Brushes.Gray,
+                ToolTip = info.ToolTip,
+            };
+
+            TextBlock block = new TextBlock()
+            {
+                Text = uiCmd.Text,
+                FontSize = fontSize,
+                Background = Brushes.White,
+            };
+
+            List<RadioButton> list = new List<RadioButton>();
+            for (int i = 0; i < info.Items.Count; i++)
+            {
+                RadioButton radio = new RadioButton()
+                {
+                    GroupName = uiCmd.Key,
+                    Content = info.Items[i],
+                    Tag = i,
+                    FontSize = fontSize,
+                };
+
+                if (i == info.Selected)
+                    radio.IsChecked = true;
+                else
+                    radio.IsChecked = false;
+
+                radio.Checked += (object sender, RoutedEventArgs e) =>
+                {
+                    RadioButton btn = sender as RadioButton;
+                    info.Selected = (int)btn.Tag;
+                    UIRenderer.UpdatePlugin(uiCmd);
+                };
+                list.Add(radio);
+            }
+
+            double pushToBottom = fontSize * 0.6;
+            Rect bevelRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top + pushToBottom, uiCmd.Rect.Width, uiCmd.Rect.Height - pushToBottom);
+            Rect blockRect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top, double.NaN, double.NaN); // NaN for auto width/height
+
+            // Keep order!
+            DrawToCanvas(r, bevel, bevelRect);
+            DrawToCanvas(r, block, blockRect);
+            double margin = fontSize + (8 * r.MasterScale);
+            for (int i = 0; i < list.Count; i++)
+            {
+                Rect rect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top + margin * (i + 1), double.NaN, double.NaN); // NaN for auto width/height
+                DrawToCanvas(r, list[i], rect);
+            }
         }
         #endregion
 
@@ -551,22 +588,22 @@ namespace PEBakery.WPF
                 element.ToolTip = toolTip;
         }
 
-        private static void DrawToCanvas(Canvas canvas, double masterScale, FrameworkElement element, Rect coord, bool useFontScale = false)
+        private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord, bool useFontScale = false)
         {
-            Canvas.SetLeft(element, coord.Left * PixelScale * masterScale);
-            Canvas.SetTop(element, coord.Top * PixelScale * masterScale);
+            Canvas.SetLeft(element, coord.Left * PixelScale * r.MasterScale);
+            Canvas.SetTop(element, coord.Top * PixelScale * r.MasterScale);
             if (useFontScale)
             {
-                element.Width = coord.Width * FontScale * masterScale;
-                element.Height = coord.Height * FontScale * masterScale;
+                element.Width = coord.Width * FontScale * r.MasterScale;
+                element.Height = coord.Height * FontScale * r.MasterScale;
             }
             else
             {
-                element.Width = coord.Width * PixelScale * masterScale;
-                element.Height = coord.Height * PixelScale * masterScale;
+                element.Width = coord.Width * PixelScale * r.MasterScale;
+                element.Height = coord.Height * PixelScale * r.MasterScale;
             }
             
-            canvas.Children.Add(element);
+            r.Canvas.Children.Add(element);
         }
 
         private static void UpdatePlugin(UICommand uiCmd)
@@ -574,5 +611,23 @@ namespace PEBakery.WPF
             Ini.SetKey(uiCmd.Addr.Plugin.FullPath, new IniKey("Interface", uiCmd.Key, uiCmd.ForgeRawLine(false)));
         }
         #endregion
-    }   
+    }
+
+    #region RenderInfo
+    public struct RenderInfo
+    {
+        public readonly double MasterScale;
+        public readonly Canvas Canvas;
+        public readonly Window Window;
+        public readonly Plugin Plugin;
+
+        public RenderInfo(Canvas canvas, Window window, Plugin plugin, double masterScale)
+        {
+            Canvas = canvas;
+            Window = window;
+            Plugin = plugin;
+            MasterScale = masterScale;
+        }
+    }
+    #endregion
 }

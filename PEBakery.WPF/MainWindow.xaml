@@ -32,7 +32,7 @@
         Width="900" Height="720"
         SizeChanged="Window_SizeChanged">
     <Window.Resources>
-        <Style x:Key="BackgroundButton" TargetType="Button">
+        <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -44,6 +44,30 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BackgroundButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Button
+                            BorderThickness="0"
+                            BorderBrush="Black">
+                            <Button.Background>
+                                <SolidColorBrush Opacity="1"></SolidColorBrush>
+                            </Button.Background>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Button>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter Property="Background" Value="White" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -88,12 +112,14 @@
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
                     <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
 
                 <Button Name="buildButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
                 <Button Name="refreshButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click" />
                 <Button Name="settingButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" />
                 <Button Name="updateButton" Grid.Row="0" Grid.Column="5" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="aboutButton" Grid.Row="0" Grid.Column="6" Margin="5" Style="{StaticResource BackgroundButton}" />
 
                 <mah:ProgressRing
                     x:Name="mainProgressRing"
@@ -103,6 +129,7 @@
                 <TextBlock Text="Refresh" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
                 <TextBlock Text="Setting" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
                 <TextBlock Text="Update" Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="About" Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
             </Grid>
         </Border>
         <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock">
@@ -136,12 +163,13 @@
                             <CheckBox
                                 Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
                                 Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
-                            <Image
-                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="1"
-                                Source="{Binding ImageSvg}" Focusable="False"></Image>
+                            <ContentPresenter
+                                Content="{Binding Icon}"
+                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,3,2,2">
+                            </ContentPresenter>
                             <TextBlock
                                 Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
-                                Margin="2,0" Text="{Binding Text}"></TextBlock>
+                                Margin="1,0" Text="{Binding Text}"></TextBlock>
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>

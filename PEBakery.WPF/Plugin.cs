@@ -88,7 +88,7 @@ namespace PEBakery.Core
         }
         
         public PluginType Type { get => type; }
-        public Plugin Link { get => Link; }
+        public Plugin Link { get => link; set => link = value; }
         public string Title
         {
             get
@@ -155,12 +155,24 @@ namespace PEBakery.Core
             set
             {
                 selected = value;
+
                 string str = value.ToString();
                 if (type == PluginType.Plugin)
                 {
                     sections["Main"].IniDict["Selected"] = str;
                     Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
                 }
+                else if (type == PluginType.Link)
+                {
+                    sections["Main"].IniDict["Selected"] = str;
+                    Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+                    link.sections["Main"].IniDict["Selected"] = str;
+                    Ini.SetKey(link.FullPath, new IniKey("Main", "Selected", str));
+                    link.selected = value;
+                }
+
+                // TODO : Plugin Disable= 
+                // Need Engine's Variable system to be implemented
             }
         }
 
