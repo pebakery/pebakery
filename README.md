@@ -23,7 +23,14 @@ All implementation is only backed by documentation and blackbox testing, without
 - Macro System
 - Refine of GUI
 
-# 
+# Screenshots
+## 20170326 Build
+![Win10PESE by PEBakery 20170326](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
+![Korean IME by PEBakery 20170326](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
+
+In WB082, same plugins are rendered like this:
+![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
+![Korean IME by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082-Korean_IME.png)
 
 
 # License
