@@ -316,6 +316,7 @@ namespace PEBakery.WPF
             PluginTitle.Text = Engine.UnescapeStr(p.Title);
             PluginDescription.Text = Engine.UnescapeStr(p.Description);
             PluginVersion.Text = $"v{p.Version}";
+            PluginAuthor.Text = p.Author;
 
             MainCanvas.Children.Clear();
             UIRenderer render = new UIRenderer(MainCanvas, this, p, 1);

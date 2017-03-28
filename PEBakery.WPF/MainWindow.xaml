@@ -209,11 +209,22 @@
                                 <TextBlock
                                     DockPanel.Dock="Right"
                                     Name="PluginVersion"
-                                    Text="v0"
+                                    Text="v1.0"
                                     FontWeight="Bold" FontSize="14" 
                                     VerticalAlignment="Center"/>
                                 <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Name="PluginAuthor"
+                                    Text="Hajin Jang"
+                                    Margin="0, 0, 10, 0"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right"
+                                    FontStretch="Condensed"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    DockPanel.Dock="Left"
                                     Name="PluginTitle"
+                                    FontStretch="SemiCondensed"
                                     Text="Welcome to PEBakery!" 
                                     FontWeight="Bold" FontSize="16"
                                     VerticalAlignment="Center"
@@ -221,8 +232,12 @@
                             </DockPanel>
                             <TextBlock
                                 Grid.Row="1" Grid.Column="0"
-                                Name="PluginDescription" Text="PEBakery is now loading, please wait..." 
-                                VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                FontWeight="Medium"
+                                Name="PluginDescription"
+                                Text="PEBakery is now loading, please wait..." 
+                                FontStretch="SemiCondensed"
+                                VerticalAlignment="Center"
+                                TextWrapping="Wrap"/>
                         </Grid>
 
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="3">
