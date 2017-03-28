@@ -39,6 +39,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Collections.ObjectModel;
+using System.Windows.Threading;
 
 
 // Used OpenSource
@@ -63,7 +64,6 @@ namespace PEBakery.WPF
         private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
-        private Stopwatch stopwatch;
         private BackgroundWorker loadWorker;
         private BackgroundWorker refreshWorker;
 
@@ -139,15 +139,16 @@ namespace PEBakery.WPF
 
         private void StartLoadWorkder()
         {
-            this.MainProgressRing.IsActive = true;
+            Stopwatch watch = new Stopwatch();
+
+            MainProgressRing.IsActive = true;
             loadWorker = new BackgroundWorker();
-            loadWorker.WorkerReportsProgress = true;
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
-                stopwatch = Stopwatch.StartNew();
+                watch = Stopwatch.StartNew();
                 this.projects = new List<Project>();
                 this.loadedProjectCount = 0;
                 this.allProjectCount = 0;
@@ -168,25 +169,29 @@ namespace PEBakery.WPF
                     projects.Add(project);
                     loadedProjectCount++;
                 }
+
+                Dispatcher.Invoke(() =>
+                {
+                    foreach (Project project in this.projects)
+                    {
+                        List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
+                        RecursivePopulateMainTreeView(plugins, this.treeModel);
+                    };
+                    MainTreeView.DataContext = treeModel;
+                    DrawPlugin(projects[0].MainPlugin);
+                });
             };
+            loadWorker.WorkerReportsProgress = true;
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                stopwatch.Stop();
-                TimeSpan t = stopwatch.Elapsed;
+                watch.Stop();
+                TimeSpan t = watch.Elapsed;
                 this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
                 this.bottomDock.Child = statusBar;
-
-                foreach (Project project in this.projects)
-                {
-                    List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                    RecursivePopulateMainTreeView(plugins, this.treeModel);
-                };
-                MainTreeView.DataContext = treeModel;
-                DrawPlugin(projects[0].MainPlugin);
 
                 MainProgressRing.IsActive = false;
             };
@@ -247,7 +252,16 @@ namespace PEBakery.WPF
             if (tree.SelectedItem is TreeViewModel)
             {
                 TreeViewModel item = currentTree = tree.SelectedItem as TreeViewModel;
-                DrawPlugin(item.Node.Data);
+
+                Dispatcher.Invoke(() =>
+                {
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    DrawPlugin(item.Node.Data);
+                    watch.Stop();
+                    double sec = watch.Elapsed.TotalSeconds;
+                    statusBar.Text = $"{currentTree.Node.Data.ShortPath} rendered. Took {sec:0.000}sec";
+                });
             }
             else
             {
@@ -257,6 +271,7 @@ namespace PEBakery.WPF
 
         private void DrawPlugin(Plugin p)
         {
+            Stopwatch watch = new Stopwatch();
             double size = PluginLogo.ActualWidth * MaxDpiScale;
             if (p.Type == PluginType.Directory)
                 PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.Folder, 0);
@@ -280,7 +295,7 @@ namespace PEBakery.WPF
                         BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
                         image.StretchDirection = StretchDirection.DownOnly;
                         image.Stretch = Stretch.Uniform;
-                        image.UseLayoutRounding = true;
+                        image.UseLayoutRounding = true; // Must to prevent blurry image rendering
                         image.Source = bitmap;
 
                         Grid grid = new Grid();
@@ -315,24 +330,30 @@ namespace PEBakery.WPF
 
         private void StartRefreshWorker()
         {
+            Stopwatch watch = new Stopwatch();
+
             this.MainProgressRing.IsActive = true;
             refreshWorker = new BackgroundWorker();
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
-                stopwatch.Restart();
+                watch.Start();
                 Plugin p = currentTree.Node.Data.Project.RefreshPlugin(currentTree.Node.Data);
                 if (p != null)
                 {
                     currentTree.Node.Data = p;
-                    DrawPlugin(currentTree.Node.Data);
+                    Dispatcher.Invoke(() => 
+                    {
+                        currentTree.Node.Data = p;
+                        DrawPlugin(currentTree.Node.Data);
+                    });
                 }
             };
             refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                this.MainProgressRing.IsActive = false;
-                double sec = stopwatch.Elapsed.TotalSeconds;
+                MainProgressRing.IsActive = false;
+                watch.Stop();
+                double sec = watch.Elapsed.TotalSeconds;
                 statusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
-                stopwatch.Stop();
             };
             refreshWorker.RunWorkerAsync();
         }

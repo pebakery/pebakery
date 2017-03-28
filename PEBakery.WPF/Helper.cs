@@ -1041,7 +1041,7 @@ namespace PEBakery.Helper
 
     public enum ImageType
     {
-        Bmp, Jpg, Png, Gif, Svg
+        Bmp, Jpg, Png, Gif, Ico, Svg
     }
 
     public static class ImageHelper
@@ -1064,6 +1064,8 @@ namespace PEBakery.Helper
                 type = ImageType.Png;
             else if (string.Equals(logoType, ".gif", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Gif;
+            else if (string.Equals(logoType, ".ico", StringComparison.OrdinalIgnoreCase))
+                type = ImageType.Ico;
             else if (string.Equals(logoType, ".svg", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Svg;
             else

@@ -58,14 +58,14 @@ namespace PEBakery.WPF
         public void Render()
         {
             if (uiCodes == null) // This plugin does not have 'Interface' section
-                return; 
+                return;
+
+            InitCanvas(renderInfo.Canvas);
 
             foreach (UICommand uiCmd in uiCodes)
             {
                 if (uiCmd.Visibility == false || uiCmd.Info.Valid == false)
                     continue;
-
-                InitCanvas(renderInfo.Canvas);
 
                 try
                 {
@@ -166,7 +166,7 @@ namespace PEBakery.WPF
                     FontSize = DefaultFontSize * FontScale * r.MasterScale,
                 };
                 SetToolTip(block, info.ToolTip);
-                Rect blockRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top - (block.FontSize + 5), uiCmd.Rect.Width, uiCmd.Rect.Height);
+                Rect blockRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top - (block.FontSize + 4), uiCmd.Rect.Width, uiCmd.Rect.Height);
                 DrawToCanvas(r, block, blockRect);
             }
         }
@@ -507,7 +507,7 @@ namespace PEBakery.WPF
             {
                 IsHitTestVisible = false,
                 Background = Brushes.Transparent,
-                BorderThickness = new Thickness(2),
+                BorderThickness = new Thickness(1),
                 BorderBrush = Brushes.Gray,
                 ToolTip = info.ToolTip,
             };
