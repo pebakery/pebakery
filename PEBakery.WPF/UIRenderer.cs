@@ -38,9 +38,9 @@ namespace PEBakery.WPF
 {
     public class UIRenderer
     {
-        public const double PixelScale = 1; // WB082's coord seems too small in WPF's canvas.
-        public const double FontScale = 1.4; // WB082's font size seems too small in WPF's canvas.
-        public const int DefaultFontSize = 8; // WB082 hard-coded default font size to 8.
+        public const double PixelScale = 1;
+        public const double FontScale = 96f / 72f; // Point to Device-Independent Pixel
+        public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
 
         private RenderInfo renderInfo;
         private List<UICommand> uiCodes;
@@ -145,7 +145,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox()
             {
                 Text = info.Value,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
             box.LostFocus += (object sender, RoutedEventArgs e) =>
             {
@@ -162,8 +162,8 @@ namespace PEBakery.WPF
                 {
                     Text = uiCmd.Text,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                    LineHeight = DefaultFontSize * FontScale * r.MasterScale,
-                    FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                    LineHeight = DefaultFontPoint * FontScale * r.MasterScale,
+                    FontSize = DefaultFontPoint * FontScale * r.MasterScale,
                 };
                 SetToolTip(block, info.ToolTip);
                 Rect blockRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top - (block.FontSize + 4), uiCmd.Rect.Width, uiCmd.Rect.Height);
@@ -230,7 +230,7 @@ namespace PEBakery.WPF
             SpinnerControl spinner = new SpinnerControl()
             {
                 Value = info.Value,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
@@ -263,7 +263,7 @@ namespace PEBakery.WPF
             {
                 Content = uiCmd.Text,
                 IsChecked = info.Value,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
             checkBox.Checked += (object sender, RoutedEventArgs e) => {
                 CheckBox box = sender as CheckBox;
@@ -295,7 +295,7 @@ namespace PEBakery.WPF
 
             ComboBox comboBox = new ComboBox()
             {
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
                 ItemsSource = info.Items,
                 SelectedIndex = info.Index,
             };
@@ -398,7 +398,7 @@ namespace PEBakery.WPF
                 AcceptsReturn = true,
                 IsReadOnly = true,
                 Text = reader.ReadToEnd(),
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
             reader.Close();
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
@@ -425,7 +425,7 @@ namespace PEBakery.WPF
             Button button = new Button()
             {
                 Content = uiCmd.Text,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
 
             button.Click += (object sender, RoutedEventArgs e) =>
@@ -473,7 +473,7 @@ namespace PEBakery.WPF
             TextBlock block = new TextBlock()
             {
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
             Hyperlink hyperLink = new Hyperlink()
             {
@@ -528,7 +528,7 @@ namespace PEBakery.WPF
             if (info == null)
                 return;
 
-            double fontSize = DefaultFontSize * FontScale * r.MasterScale;
+            double fontSize = DefaultFontPoint * FontScale * r.MasterScale;
 
             RadioButton radio = new RadioButton()
             {
@@ -571,7 +571,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox()
             {
                 Text = uiCmd.Text,
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
             };
             box.LostFocus += (object sender, RoutedEventArgs e) =>
             {
@@ -583,7 +583,7 @@ namespace PEBakery.WPF
 
             Button button = new Button()
             {
-                FontSize = DefaultFontSize * FontScale * r.MasterScale,
+                FontSize = DefaultFontPoint * FontScale * r.MasterScale,
                 Content = MainWindow.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
             };
             SetToolTip(button, info.ToolTip);
@@ -639,7 +639,7 @@ namespace PEBakery.WPF
             if (info == null)
                 return;
 
-            double fontSize = DefaultFontSize * FontScale * r.MasterScale;
+            double fontSize = DefaultFontPoint * FontScale * r.MasterScale;
 
             Border bevel = new Border()
             {
