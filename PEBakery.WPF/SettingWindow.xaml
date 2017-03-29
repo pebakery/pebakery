@@ -1,0 +1,133 @@
+﻿<!--
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<Window x:Class="PEBakery.WPF.SettingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:btl="clr-namespace:Btl.Controls"
+        FontSize="13"
+        FontFamily="Segoe UI"
+        mc:Ignorable="d"
+        Title="SettingWindow" Height="300" Width="400">
+    <StackPanel>
+        <TextBlock
+            Margin="20, 20, 20, 0"
+            Text="Scale Factor for Plugin Interface"></TextBlock>
+        <DockPanel
+            Margin="20, 20, 20, 0">
+            <TextBlock
+                DockPanel.Dock="Right"
+                TextAlignment="Right"
+                Text="%">
+            </TextBlock>
+            <TextBlock
+                DockPanel.Dock="Right"
+                Margin="20, 0, 0, 0"
+                Width="40" 
+                Name="ScaleFactorBox"
+                Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
+                TextAlignment="Right">
+            </TextBlock>
+            <Slider
+                Minimum="100" Maximum="200"
+                TickPlacement="BottomRight"
+                TickFrequency="10"
+                IsSnapToTickEnabled="True"
+                Name="ScaleFactorSlider"
+                Value="{Binding ScaleFactor}">
+            </Slider>
+        </DockPanel>
+        
+        
+
+
+        <!--
+        <CheckBox
+            Margin="20, 20, 20, 0"
+            IsChecked="{Binding UseCustomScaleFactor}"
+            Content="Use custom scalefactor for plugin interface">
+        </CheckBox>
+        <Grid
+            Margin="40, 10, 20, 0">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="2*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Row="0" Grid.Column="0"
+                Text="Scale">
+            </TextBlock>
+            <btl:SpinnerControl
+                Grid.Row="0" Grid.Column="1"
+                Minimum="1"
+                Maximum="4"
+                DecimalPlaces="1"
+                Change="0.1"
+                Value="{Binding ScaleFactor}"
+                HorizontalAlignment="Stretch">
+            </btl:SpinnerControl>
+        </Grid>
+        -->
+        <CheckBox
+            Margin="20, 20, 20, 0"
+            IsEnabled="False"
+            Content="Convert all plugins to UTF-8">
+        </CheckBox>
+
+
+        <Grid
+            Margin="40, 10, 20, 0">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"></ColumnDefinition>
+                <ColumnDefinition Width="3*"></ColumnDefinition>
+                <ColumnDefinition Width="3*"></ColumnDefinition>
+                <ColumnDefinition Width="1*"></ColumnDefinition>
+                <ColumnDefinition Width="3*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Button
+                Grid.Row="0" Grid.Column="0"
+                Name="DefaultButton"
+                Click="DefaultButton_Click"
+                Content="Default">
+            </Button>
+            <Button
+                Grid.Row="0" Grid.Column="2"
+                IsDefault="True"
+                Name="SaveButton"
+                Click="SaveButton_Click"
+                Content="Save">
+            </Button>
+            <Button
+                Grid.Row="0" Grid.Column="4"
+                IsCancel="True"
+                Content="Cancel">
+            </Button>
+        </Grid>
+    </StackPanel>
+</Window>

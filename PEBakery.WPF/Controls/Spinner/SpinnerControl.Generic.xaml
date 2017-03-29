@@ -39,26 +39,26 @@
                     <Grid Background="{Binding Path=Background, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
-                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ButtonWidth, Mode=OneWay}"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition />
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
                         <!--
                             we use the TemplatedParent binding to get a reference to the control
                             this template has been applied to, so we can access the property on it
                         -->
-                        <TextBox Grid.Row="0"
-                                 Grid.Column="0"
-                                 FontSize="{Binding FontSize}"
-                                 Margin="0,0,1,0"
-                                 VerticalAlignment="Center"
-                                 IsReadOnly="True"
-                                 Text="{Binding RelativeSource={RelativeSource TemplatedParent},
-                                                Path=FormattedValue,
-                                                Mode=OneWay}" />
+                        <TextBox
+                            Grid.Row="0" Grid.Column="0"
+                            FontSize="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FontSize, Mode=OneWay}"
+                            Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Height, Mode=OneWay}"
+                            Margin="0,0,1,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            IsReadOnly="True"
+                            Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FormattedValue, Mode=OneWay}" />
                         <Grid x:Name="grid1"
-                              Grid.Column="1"
+                              Grid.Row="0" Grid.Column="1"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center">
                             <Grid.RowDefinitions>
@@ -67,21 +67,21 @@
                             </Grid.RowDefinitions>
                             <RepeatButton Grid.Row="0"
                                           Grid.Column="1"
-                                          Height="11"
+                                          Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ButtonHeight, Mode=OneWay}"
                                           Command="{x:Static btl:SpinnerControl.IncreaseCommand}">
                                 <RepeatButton.Content>
-                                    <Rectangle Width="10"
-                                               Height="5"
+                                    <Rectangle Width="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ArrowBrushWidth, Mode=OneWay}"
+                                               Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ArrowBrushHeight, Mode=OneWay}"
                                                Fill="{StaticResource brush.scroll.up}" />
                                 </RepeatButton.Content>
                             </RepeatButton>
                             <RepeatButton Grid.Row="1"
                                           Grid.Column="1"
-                                          Height="11"
+                                          Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ButtonHeight, Mode=OneWay}"
                                           Command="{x:Static btl:SpinnerControl.DecreaseCommand}">
                                 <RepeatButton.Content>
-                                    <Rectangle Width="10"
-                                               Height="5"
+                                    <Rectangle Width="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ArrowBrushWidth, Mode=OneWay}"
+                                               Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ArrowBrushHeight, Mode=OneWay}"
                                                Fill="{StaticResource brush.scroll.down}" />
                                 </RepeatButton.Content>
                             </RepeatButton>

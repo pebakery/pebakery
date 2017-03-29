@@ -106,6 +106,9 @@
     <Compile Include="Controls\MahApps\ProgressRing.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Controls\Spinner\SpinnerControl.cs" />
+    <Compile Include="SettingWindow.xaml.cs">
+      <DependentUpon>SettingWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UICommand.cs" />
     <Compile Include="UIParser.cs" />
     <Compile Include="UIRenderer.cs" />
@@ -141,6 +144,10 @@
     <Page Include="Controls\Spinner\brush.scroll.up.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="SettingWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>

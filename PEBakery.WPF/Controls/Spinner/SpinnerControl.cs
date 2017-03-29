@@ -203,6 +203,37 @@ namespace Btl.Controls
         #endregion
 
 
+        #region Button, Brush's Width, Height property
+        /// <summary>
+        /// This is the Control property that we expose to the user.
+        /// </summary>
+        [Category("SpinnerControl")]
+        public double ButtonWidth
+        {
+            get => Height;
+        }
+
+        [Category("SpinnerControl")]
+        public double ButtonHeight
+        {
+            get => Height / 2;
+        }
+
+        [Category("SpinnerControl")]
+        public double ArrowBrushWidth
+        {
+            get => Height * 0.7;
+        }
+
+        [Category("SpinnerControl")]
+        public double ArrowBrushHeight
+        {
+            get => Height * 0.35;
+        }
+
+        #endregion
+
+
         #region DecimalPlaces property
         /// <summary>
         /// This is the Control property that we expose to the user.
