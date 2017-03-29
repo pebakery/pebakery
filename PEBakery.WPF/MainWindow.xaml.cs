@@ -66,6 +66,7 @@ namespace PEBakery.WPF
         private TextBlock statusBar;
         private BackgroundWorker loadWorker;
         private BackgroundWorker refreshWorker;
+        private double scaleFactor = 1;
 
         private TreeViewModel currentTree;
 
@@ -119,7 +120,7 @@ namespace PEBakery.WPF
             LoadButtonsImage();
             
 
-            StartLoadWorkder();
+            StartLoadWorker();
         }
 
         void LoadButtonsImage()
@@ -137,7 +138,7 @@ namespace PEBakery.WPF
             PluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
         }
 
-        private void StartLoadWorkder()
+        private void StartLoadWorker()
         {
             Stopwatch watch = new Stopwatch();
 
@@ -178,6 +179,7 @@ namespace PEBakery.WPF
                         RecursivePopulateMainTreeView(plugins, this.treeModel);
                     };
                     MainTreeView.DataContext = treeModel;
+                    currentTree = treeModel.Child[0];
                     DrawPlugin(projects[0].MainPlugin);
                 });
             };
@@ -206,7 +208,7 @@ namespace PEBakery.WPF
                 loadProgressBar.Value = 0;
                 this.bottomDock.Child = loadProgressBar;
 
-                StartLoadWorkder();
+                StartLoadWorker();
             }
         }
 
@@ -319,18 +321,20 @@ namespace PEBakery.WPF
             PluginAuthor.Text = p.Author;
 
             MainCanvas.Children.Clear();
-            UIRenderer render = new UIRenderer(MainCanvas, this, p, 1);
+            UIRenderer render = new UIRenderer(MainCanvas, this, p, scaleFactor);
             render.Render();
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTree != null)
-                StartRefreshWorker();
+            StartRefreshWorker();
         }
 
         private void StartRefreshWorker()
         {
+            if (currentTree == null)
+                return;
+
             Stopwatch watch = new Stopwatch();
 
             this.MainProgressRing.IsActive = true;
@@ -405,6 +409,23 @@ namespace PEBakery.WPF
                 Margin = new Thickness(margin, margin, margin, margin),
             };
             return icon;
+        }
+
+        private void BuildButton_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
+        private void SettingButton_Click(object sender, RoutedEventArgs e)
+        {
+            SettingViewModel settingViewModel = new SettingViewModel(scaleFactor * 100);
+            SettingWindow dialog = new SettingWindow(settingViewModel);
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                scaleFactor = settingViewModel.ScaleFactor / 100;
+                StartRefreshWorker();
+            }
         }
     }
     #endregion

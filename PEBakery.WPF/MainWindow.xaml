@@ -115,9 +115,9 @@
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Name="BuildButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" ></Button>
+                <Button Name="BuildButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click"></Button>
                 <Button Name="RefreshButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click" />
-                <Button Name="SettingButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" />
+                <Button Name="SettingButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" Click="SettingButton_Click"/>
                 <Button Name="UpdateButton" Grid.Row="0" Grid.Column="5" Margin="5" Style="{StaticResource BackgroundButton}" />
                 <Button Name="AboutButton" Grid.Row="0" Grid.Column="6" Margin="5" Style="{StaticResource BackgroundButton}" />
 
@@ -209,7 +209,7 @@
                                 <TextBlock
                                     DockPanel.Dock="Right"
                                     Name="PluginVersion"
-                                    Text="v1.0"
+                                    Text="v0.1"
                                     FontWeight="Bold" FontSize="14" 
                                     VerticalAlignment="Center"/>
                                 <TextBlock
