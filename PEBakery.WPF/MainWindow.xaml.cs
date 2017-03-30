@@ -320,7 +320,9 @@ namespace PEBakery.WPF
             PluginAuthor.Text = p.Author;
 
             MainCanvas.Children.Clear();
+            ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
             UIRenderer render = new UIRenderer(MainCanvas, this, p, scaleFactor);
+            MainCanvas.LayoutTransform = scale;
             render.Render();
         }
 
