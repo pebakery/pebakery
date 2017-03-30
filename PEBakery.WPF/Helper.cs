@@ -54,6 +54,7 @@ using Microsoft.Win32.Interop;
 
 // Library
 using Svg;
+using MahApps.Metro.IconPacks;
 
 namespace PEBakery.Helper
 {
@@ -1206,6 +1207,18 @@ namespace PEBakery.Helper
         public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
         {
             return new ImageBrush() { ImageSource = bitmap };
+        }
+
+        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
+        {
+            PackIconMaterial icon = new PackIconMaterial()
+            {
+                Kind = kind,
+                Width = Double.NaN,
+                Height = Double.NaN,
+                Margin = new Thickness(margin, margin, margin, margin),
+            };
+            return icon;
         }
     }
 }

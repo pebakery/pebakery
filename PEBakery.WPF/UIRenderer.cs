@@ -32,6 +32,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Diagnostics;
 using MahApps.Metro.IconPacks;
 
 namespace PEBakery.WPF
@@ -340,44 +341,67 @@ namespace PEBakery.WPF
             if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
                 return;
 
-            if (info.URL == null)
+            Button button = new Button()
             {
-                if (type == ImageType.Svg)
-                {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
-                }
-                else
-                {
-                    image.Source = ImageHelper.ImageToBitmapImage(mem);
-                }
-
-                SetToolTip(image, info.ToolTip);
-                DrawToCanvas(r, image, uiCmd.Rect);
+                Style = (Style)r.Window.FindResource("ImageButton")
+            };
+            if (type == ImageType.Svg)
+            {
+                double width = uiCmd.Rect.Width * r.MasterScale;
+                double height = uiCmd.Rect.Height * r.MasterScale;
+                button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
             }
             else
             {
-                Button button = new Button();
-                button.Style = (Style) r.Window.FindResource("ImageButton");
-                if (type == ImageType.Svg)
-                {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                button.Background = ImageHelper.ImageToImageBrush(mem);
+            }
+            mem.Close();
+            bool hasUrl = false;
+            if (info.URL != null)
+            {
+                if (Uri.TryCreate(info.URL, UriKind.RelativeOrAbsolute, out Uri unused))
+                { // Success
+                    hasUrl = true;
                 }
                 else
-                {
-                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                { // Failure
+                    // TODO Long Invalid grammar warning : invalid url
                 }
+            }
+            
+
+            if (hasUrl)
+            { // Open picture with external viewer
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    System.Diagnostics.Process.Start(info.URL.ToString());
+                    Process.Start(info.URL);
                 };
-
-                SetToolTip(button, info.ToolTip);
-                DrawToCanvas(r, button, uiCmd.Rect);
             }
+            else
+            { // Open URL
+                button.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType t))
+                        return;
+                    string path = System.IO.Path.ChangeExtension(System.IO.Path.GetRandomFileName(), "." + t.ToString().ToLower());
+                    FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write);
+                    m.Position = 0;
+                    m.CopyTo(file);
+                    file.Close();
+                    m.Close();
+                    ProcessStartInfo procInfo = new ProcessStartInfo()
+                    {
+                        Verb = "open",
+                        FileName = path,
+                        UseShellExecute = true
+                    };
+                    Process.Start(procInfo);
+                };
+            }
+
+            SetToolTip(button, info.ToolTip);
+            DrawToCanvas(r, button, uiCmd.Rect);
         }
 
         /// <summary>
@@ -590,7 +614,7 @@ namespace PEBakery.WPF
             Button button = new Button()
             {
                 FontSize = CalcFontPointScale(r),
-                Content = MainWindow.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
+                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
             };
             SetToolTip(button, info.ToolTip);
 

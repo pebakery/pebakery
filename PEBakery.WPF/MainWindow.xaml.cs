@@ -64,8 +64,8 @@ namespace PEBakery.WPF
         private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
-        private BackgroundWorker loadWorker;
-        private BackgroundWorker refreshWorker;
+        private BackgroundWorker loadWorker = new BackgroundWorker();
+        private BackgroundWorker refreshWorker = new BackgroundWorker();
         private double scaleFactor = 1;
 
         private TreeViewModel currentTree;
@@ -127,15 +127,15 @@ namespace PEBakery.WPF
         {
             // Properties.Resources.
 
-            BuildButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            RefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-            SettingButton.Content = GetMaterialIcon(PackIconMaterialKind.Settings, 5);
-            UpdateButton.Content = GetMaterialIcon(PackIconMaterialKind.Download, 5);
-            AboutButton.Content = GetMaterialIcon(PackIconMaterialKind.Help, 5);
+            BuildButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            RefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            SettingButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 5);
+            UpdateButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Download, 5);
+            AboutButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Help, 5);
 
-            PluginRunButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            PluginEditButton.Content = GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
-            PluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            PluginRunButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            PluginEditButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
+            PluginRefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
         }
 
         private void StartLoadWorker()
@@ -226,20 +226,20 @@ namespace PEBakery.WPF
 
                 if (p.Type == PluginType.Directory)
                 {
-                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Settings, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
                     else if (p.Mandatory)
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
                     else
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.File, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
                 }
                 else if (p.Type == PluginType.Link)
                 {
-                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
                 }
 
                 if (0 < node.Child.Count)
@@ -276,7 +276,7 @@ namespace PEBakery.WPF
             Stopwatch watch = new Stopwatch();
             double size = PluginLogo.ActualWidth * MaxDpiScale;
             if (p.Type == PluginType.Directory)
-                PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             else
             {
                 try
@@ -310,9 +310,9 @@ namespace PEBakery.WPF
                 catch
                 { // No logo file - use default
                     if (p.Type == PluginType.Plugin)
-                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
                     else if (p.Type == PluginType.Link)
-                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                 }
             }
             PluginTitle.Text = Engine.UnescapeStr(p.Title);
@@ -333,6 +333,9 @@ namespace PEBakery.WPF
         private void StartRefreshWorker()
         {
             if (currentTree == null)
+                return;
+
+            if (refreshWorker.IsBusy)
                 return;
 
             Stopwatch watch = new Stopwatch();
@@ -399,17 +402,7 @@ namespace PEBakery.WPF
         {
         }
 
-        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
-        {
-            PackIconMaterial icon = new PackIconMaterial()
-            {
-                Kind = kind,
-                Width = Double.NaN,
-                Height = Double.NaN,
-                Margin = new Thickness(margin, margin, margin, margin),
-            };
-            return icon;
-        }
+        
 
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
