@@ -34,6 +34,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Diagnostics;
 using MahApps.Metro.IconPacks;
+using System.Windows.Media.Imaging;
 
 namespace PEBakery.WPF
 {
@@ -41,6 +42,7 @@ namespace PEBakery.WPF
     {
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
+        public const int MaxDpiScale = 4;
 
         private RenderInfo renderInfo;
         private List<UICommand> uiCodes;
@@ -371,14 +373,14 @@ namespace PEBakery.WPF
             
 
             if (hasUrl)
-            { // Open picture with external viewer
+            { // Open URL
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
                     Process.Start(info.URL);
                 };
             }
             else
-            { // Open URL
+            { // Open picture with external viewer
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
                     MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
@@ -452,10 +454,9 @@ namespace PEBakery.WPF
 
             Button button = new Button()
             {
-                Content = uiCmd.Text,
-                FontSize = CalcFontPointScale(r),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
             };
-
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 Button bt = sender as Button;
@@ -463,26 +464,93 @@ namespace PEBakery.WPF
                 Console.WriteLine("Engine.RunSection not implemented");
             };
 
-            if (info.Picture != null)
-            {
+            if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
+            { // Has picture
                 MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
-                if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                if (ImageHelper.GetImageType(info.Picture, out ImageType type))
                     return;
-                   
+
+                Image image = new Image()
+                {
+                    UseLayoutRounding = true,
+                    Stretch = Stretch.Uniform,
+                };
+                int margin = 5;
                 if (type == ImageType.Svg)
                 {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                    // double width = uiCmd.Rect.Width * r.MasterScale * MaxDpiScale;
+                    // double height = uiCmd.Rect.Height * r.MasterScale * MaxDpiScale;
+                    // BitmapImage bitmap = ImageHelper.SvgToBitmapImage(mem, width, height);
+                    ImageHelper.GetSvgSize(mem, out double width, out double height);
+                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                    {
+                        width = (uiCmd.Rect.Width - margin) * r.MasterScale;
+                        height = (uiCmd.Rect.Width - margin) * height / width * r.MasterScale;
+                    }
+                    else
+                    {
+                        width = (uiCmd.Rect.Height - margin) * width / height * r.MasterScale;
+                        height = (uiCmd.Rect.Height - margin) * r.MasterScale;
+                    }
+                    BitmapImage bitmap = ImageHelper.SvgToBitmapImage(mem, width, height);
+                    image.Width = width;
+                    image.Height = height;
+                    image.Source = bitmap;
                 }
                 else
                 {
-                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                    BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
+                    double width, height;
+                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                    {
+                        width = (uiCmd.Rect.Width - margin) * r.MasterScale;
+                        height = (uiCmd.Rect.Width - margin) * bitmap.Height / bitmap.Width * r.MasterScale;
+                    }
+                    else
+                    {
+                        width = (uiCmd.Rect.Height - margin) * bitmap.Width / bitmap.Height * r.MasterScale;
+                        height = (uiCmd.Rect.Height - margin) * r.MasterScale;
+                    }
+                    image.Width = width;
+                    image.Height = height;
+                    image.Source = bitmap;
                 }
 
-                SetToolTip(button, info.ToolTip);
-                DrawToCanvas(r, button, uiCmd.Rect);
+                if (string.Equals(uiCmd.Text, string.Empty, StringComparison.Ordinal))
+                { // No text, just image
+                    button.Content = image;
+                }
+                else
+                { // Button has text
+                    StackPanel panel = new StackPanel()
+                    {
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Orientation = Orientation.Horizontal,
+                    };
+
+                    TextBlock text = new TextBlock()
+                    {
+                        Text = uiCmd.Text,
+                        FontSize = CalcFontPointScale(r),
+                        Height = double.NaN,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(CalcFontPointScale(r) / 2, 0, 0, 0),
+                    };
+
+                    panel.Children.Add(image);
+                    panel.Children.Add(text);
+                    button.Content = panel;
+                }
             }
+            else
+            { // No picture
+                button.Content = uiCmd.Text;
+                button.FontSize = CalcFontPointScale(r);
+            }
+
+            SetToolTip(button, info.ToolTip);
+            DrawToCanvas(r, button, uiCmd.Rect);
         }
 
         /// <summary>

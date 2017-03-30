@@ -266,23 +266,28 @@ namespace PEBakery.Core
                 case UIControlType.Button:
                     {
                         // Still had not figured why SectionName and ProgressShow duplicate
-                        // It has 4 to 6 fixed operands. - Need more research.
-                        const int minOpCount = 5;
-                        const int maxOpCount = 5;
-                        const int optOpCount = 2; // [Tooltip]
-                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount - 1))
+                        // It has 2 to 6 fixed operands. - Need more research.
+                        // <SectionName><Picture>[ShowProgress][Boolean?][SectionName(?)][ShowProgress{?}][Tooltip]
+                        const int minOpCount = 2;
+                        const int maxOpCount = 2;
+                        const int optOpCount = 5;
+                        if (CheckInfoOperandLength(op, minOpCount, maxOpCount, optOpCount))
                             return error;
 
                         string sectionName = op[0];
                         string picture = op[1];
                         if (string.Equals(op[1], "0", StringComparison.OrdinalIgnoreCase))
                             picture = null;
-                        bool progressShow = false;
-                        if (string.Equals(op[2], "True", StringComparison.OrdinalIgnoreCase))
-                            progressShow = true;
-                        else if (string.Equals(op[2], "False", StringComparison.OrdinalIgnoreCase) == false)
-                            return error;
-                        return new UIInfo_Button(true, GetInfoTooltip(op, maxOpCount + optOpCount - 1), sectionName, picture, progressShow);
+                        bool showProgress = false;
+                        if (3 <= op.Count)
+                        {
+                            if (string.Equals(op[2], "True", StringComparison.OrdinalIgnoreCase))
+                                showProgress = true;
+                            else if (string.Equals(op[2], "False", StringComparison.OrdinalIgnoreCase) == false)
+                                return error;
+                        }
+
+                        return new UIInfo_Button(true, GetInfoTooltip(op, op.Count - 1), sectionName, picture, showProgress);
                     }
                 case UIControlType.CheckList:
                     break;
@@ -399,7 +404,7 @@ namespace PEBakery.Core
         private static string GetInfoTooltip(List<string> op, int idx)
         {
             if (idx < op.Count && op[idx].StartsWith("__", StringComparison.Ordinal)) // Has tooltip
-                return op[idx];
+                return op[idx].Substring(2);
             else
                 return null;
         }

@@ -1096,27 +1096,12 @@ namespace PEBakery.Helper
             return bitmap;
         }
 
-        public static ImageBrush ImageToImageBrush(byte[] image)
-        {
-            BitmapImage bitmap = ImageToBitmapImage(image);
-            ImageBrush brush = new ImageBrush();
-            brush.ImageSource = bitmap;
-            return brush;
-        }
-
         public static ImageBrush ImageToImageBrush(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
             ImageBrush brush = new ImageBrush();
             brush.ImageSource = bitmap;
             return brush;
-        }
-
-        public static BitmapImage SvgToBitmapImage(byte[] image)
-        {
-            Stream stream = new MemoryStream(image);
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream)
@@ -1126,11 +1111,23 @@ namespace PEBakery.Helper
             return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
-        public static BitmapImage SvgToBitmapImage(byte[] image, double width, double height)
+        public static void GetSvgSize(Stream stream, out double width, out double height)
         {
-            Stream stream = new MemoryStream(image);
+            stream.Position = 0;
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
+            SizeF size = svgDoc.GetDimensions();
+            width = size.Width;
+            height = size.Height;
+        }
+
+        public static BitmapImage SvgToBitmapImage(Stream stream, out double width, out double height)
+        {
+            stream.Position = 0;
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            SizeF size = svgDoc.GetDimensions();
+            width = size.Width;
+            height = size.Height;
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
@@ -1138,13 +1135,6 @@ namespace PEBakery.Helper
             stream.Position = 0;
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
             return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
-        }
-
-        public static BitmapImage SvgToBitmapImage(byte[] image, int width, int height)
-        {
-            Stream stream = new MemoryStream(image);
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
@@ -1171,31 +1161,15 @@ namespace PEBakery.Helper
             }
         }
 
-        public static ImageBrush SvgToImageBrush(byte[] image)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image));
-        }
-
         public static ImageBrush SvgToImageBrush(Stream stream)
         {
             stream.Position = 0;
             return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream));
         }
-
-        public static ImageBrush SvgToImageBrush(byte[] image, double width, double height)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image, width, height));
-        }
-
         public static ImageBrush SvgToImageBrush(Stream stream, double width, double height)
         {
             stream.Position = 0;
             return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(stream, width, height));
-        }
-
-        public static ImageBrush SvgToImageBrush(byte[] image, int width, int height)
-        {
-            return ImageHelper.BitmapImageToImageBrush(ImageHelper.SvgToBitmapImage(image, width, height));
         }
 
         public static ImageBrush SvgToImageBrush(Stream stream, int width, int height)

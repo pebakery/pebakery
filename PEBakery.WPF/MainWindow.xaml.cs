@@ -305,7 +305,6 @@ namespace PEBakery.WPF
 
                         PluginLogo.Content = grid;
                     }
-                    
                 }
                 catch
                 { // No logo file - use default

@@ -411,14 +411,14 @@ namespace PEBakery.Core
         // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
-        public bool ProgressShow;
+        public bool ShowProgress;
 
-        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool progressShow)
+        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool showProgress)
             : base(valid, tooltip)
         {
             this.SectionName = sectionName;
             this.Picture = picture;
-            this.ProgressShow = progressShow;
+            this.ShowProgress = showProgress;
         }
 
         public override string ForgeRawLine()
@@ -431,7 +431,7 @@ namespace PEBakery.Core
             else
                 builder.Append("0");
             builder.Append(",");
-            if (ProgressShow)
+            if (ShowProgress)
                 builder.Append("True");
             else
                 builder.Append("False");
@@ -440,7 +440,7 @@ namespace PEBakery.Core
             builder.Append(SectionName);
             builder.Append("_");
             builder.Append(",");
-            if (ProgressShow)
+            if (ShowProgress)
                 builder.Append("True");
             else
                 builder.Append("False");
