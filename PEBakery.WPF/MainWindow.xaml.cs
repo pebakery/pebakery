@@ -314,8 +314,8 @@ namespace PEBakery.WPF
                         PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                 }
             }
-            PluginTitle.Text = Engine.UnescapeStr(p.Title);
-            PluginDescription.Text = Engine.UnescapeStr(p.Description);
+            PluginTitle.Text = StringEscaper.Unescape(p.Title);
+            PluginDescription.Text = StringEscaper.Unescape(p.Description);
             PluginVersion.Text = $"v{p.Version}";
             PluginAuthor.Text = p.Author;
 
@@ -420,6 +420,17 @@ namespace PEBakery.WPF
                 scaleFactor = settingViewModel.ScaleFactor / 100;
                 StartRefreshWorker();
             }
+        }
+
+        private void PluginEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            ProcessStartInfo procInfo = new ProcessStartInfo()
+            {
+                Verb = "open",
+                FileName = currentTree.Node.Data.FullPath,
+                UseShellExecute = true
+            };
+            Process.Start(procInfo);
         }
     }
     #endregion

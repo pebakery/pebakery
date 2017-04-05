@@ -174,8 +174,16 @@ namespace PEBakery.Core
     public class Logger
     {
         #region Logger Class
-        public Logger()
+        public Database DB;
+
+        public Logger(string path)
         {
+            DB = new Database(path);
+        }
+
+        ~Logger()
+        {
+            DB.Close();
         }
         #endregion
 

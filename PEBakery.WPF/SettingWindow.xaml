@@ -26,7 +26,7 @@
         FontSize="13"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
-        Title="SettingWindow" Height="300" Width="400">
+        Title="PEBakery Setting" Height="300" Width="400">
     <StackPanel>
         <TextBlock
             Margin="20, 20, 20, 0"
@@ -56,44 +56,16 @@
             </Slider>
         </DockPanel>
         
-        
-
-
-        <!--
-        <CheckBox
-            Margin="20, 20, 20, 0"
-            IsChecked="{Binding UseCustomScaleFactor}"
-            Content="Use custom scalefactor for plugin interface">
-        </CheckBox>
-        <Grid
-            Margin="40, 10, 20, 0">
-            <Grid.RowDefinitions>
-                <RowDefinition></RowDefinition>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*"></ColumnDefinition>
-                <ColumnDefinition Width="2*"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock
-                Grid.Row="0" Grid.Column="0"
-                Text="Scale">
-            </TextBlock>
-            <btl:SpinnerControl
-                Grid.Row="0" Grid.Column="1"
-                Minimum="1"
-                Maximum="4"
-                DecimalPlaces="1"
-                Change="0.1"
-                Value="{Binding ScaleFactor}"
-                HorizontalAlignment="Stretch">
-            </btl:SpinnerControl>
-        </Grid>
-        -->
         <CheckBox
             Margin="20, 20, 20, 0"
             IsEnabled="False"
             Content="Convert all plugins to UTF-8">
+        </CheckBox>
+
+        <CheckBox
+            Margin="20, 20, 20, 0"
+            IsEnabled="False"
+            Content="Enable Long File Path Support">
         </CheckBox>
 
 

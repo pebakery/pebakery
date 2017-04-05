@@ -22,6 +22,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PEBakery.Lib;
+using System.IO;
+using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
@@ -37,94 +39,47 @@ namespace PEBakery.Core
 
     public class Engine
     {
-        public EngineState state;
+        public static DebugLevel DebugLevel = DebugLevel.PrintExceptionStackTrace;
+        public EngineState s;
 
-        public Engine()
+        public Engine(EngineState state)
         {
-
+            s = state;
+            LoadDefaultFixedVariables();
+            LoadDefaultPluginVariables(s, s.CurrentPlugin);
         }
 
-        #region EscapeString
-        private static readonly Dictionary<string, string> unescapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        private void LoadDefaultFixedVariables()
         {
-            { @"#$c", @"," },
-            { @"#$p", @"%" },
-            { @"#$q", "\"" },
-            { @"#$s", @" " },
-            { @"#$t", "\t"},
-            { @"#$x", "\r\n"},
-            // { @"#$z", "\x00\x00"} -> This should go to EngineRegistry
-        };
+            // BaseDir
+            s.Variables.SetFixedValue("BaseDir", s.BaseDir);
+            // Tools
+            s.Variables.SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
 
-        public static string UnescapeStr(string operand)
-        {
-            return unescapeSeqs.Keys.Aggregate(operand, (from, to) => from.Replace(to, unescapeSeqs[to]));
+            // Version
+            Version version = FileHelper.GetProgramVersion();
+            s.Variables.SetFixedValue("Version", version.Build.ToString());
+            // ProjectDir
+            s.Variables.SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", s.Project.ProjectName));
+            // TargetDir
+            s.Variables.SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", s.Project.ProjectName));
         }
 
-        public static List<string> UnescapeStrs(List<string> operands)
+        public static void LoadDefaultPluginVariables(EngineState s, Plugin p)
         {
-            for (int i = 0; i < operands.Count; i++)
-                operands[i] = UnescapeStr(operands[i]);
-            return operands;
+            // ScriptFile, PluginFile
+            s.Variables.SetValue(VarsType.Local, "PluginFile", p.FullPath);
+            s.Variables.SetValue(VarsType.Local, "ScriptFile", p.FullPath);
+
+            // [Variables]
+            if (p.Sections.ContainsKey("Variables"))
+            {
+                VarsType type = VarsType.Local;
+                if (string.Equals(p.FullPath, s.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
+                    type = VarsType.Global;
+                List<SimpleLog> logs = s.Variables.AddVariables(type, p.Sections["Variables"]);
+            }
         }
-
-        private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { @",", @"#$c" },
-            // { @"%", @"#$p" }, // Seems even WB082 ignore this escape seqeunce?
-            { "\"", @"#$q" },
-            { @" ", @"#$s" },
-            { "\t", @"#$t" },
-            { "\r\n", @"#$x" },
-        };
-
-        private static readonly Dictionary<string, string> escapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "\"", @"#$q" },
-            { "\t", @"#$t" },
-            { "\r\n", @"#$x" },
-        };
-
-        public static string EscapeStr(string operand, bool fullEscape = false)
-        {
-            Dictionary<string, string> dict;
-            if (fullEscape)
-                dict = fullEscapeSeqs;
-            else
-                dict = escapeSeqs;
-            return dict.Keys.Aggregate(operand, (from, to) => from.Replace(to, dict[to]));
-        }
-
-        public static List<string> EscapeStrs(List<string> operands)
-        {
-            for (int i = 0; i < operands.Count; i++)
-                operands[i] = EscapeStr(operands[i]);
-            return operands;
-        }
-
-        public static string DoublequoteStr(string str)
-        {
-            if (str.Contains(' '))
-                return "\"" + str + "\"";
-            else
-                return str;
-        }
-
-        public static string QuoteEscapeStr(string str)
-        {
-            bool needQoute = false;
-
-            // Check if str need doublequote escaping
-            if (str.Contains(' ') || str.Contains('%') || str.Contains(','))
-                needQoute = true;
-
-            // Let's escape characters
-            str = EscapeStr(str, false); // WB082 escape sequence
-            if (needQoute)
-                str = DoublequoteStr(str); // Doublequote escape
-            return str;
-        }
-        #endregion
     }
 
     public class EngineState
@@ -132,28 +87,46 @@ namespace PEBakery.Core
         // Fields used globally
         public Project Project;
         public Tree<Plugin> Plugins;
-        // public Variables Variables;
-        // public Logger Logger;
+        public Variables Variables;
+        public Macro Macro;
+        public Logger Logger;
         public bool RunOnePlugin;
         public DebugLevel DebugLevel;
-        // public Macro macro;
+
+        // Properties
+        public string BaseDir { get => Project.BaseDir; }
+        public Plugin MainPlugin { get => Project.MainPlugin; }
 
         // Fields : Engine's state
         public Node<Plugin> CurrentNode;
         public Plugin CurrentPlugin { get => CurrentNode.Data; }
-        public List<string> curSectionParams;
-        public bool runElse;
+        public List<string> CurSectionParams;
+        public bool RunElse;
 
         // Fields : System Commands
-        //private CodeCommand onBuildExit;
-        //private CodeCommand onPluginExit;
+        public CodeCommand OnBuildExit;
+        public CodeCommand OnPluginExit;
 
-        public EngineState(Project project, DebugLevel debugLevel)
+        public EngineState(DebugLevel debugLevel, Project project, Logger logger, Node<Plugin> pluginToRun = null, bool runOnePlugin = false)
         {
+            this.DebugLevel = debugLevel;
             this.Project = project;
             this.Plugins = project.GetActivePlugin();
-            this.RunOnePlugin = false;
-            this.DebugLevel = debugLevel;
+            this.Logger = logger;
+            this.RunOnePlugin = runOnePlugin;
+
+            this.Variables = new Variables();
+            Macro = new Macro(Project, Variables, out List<SimpleLog> logs);
+            // TODO: logger.Write(logs);
+
+            if (runOnePlugin)
+                CurrentNode = Plugins.Root[0]; // Main Plugin
+            else
+                CurrentNode = pluginToRun;
+            this.CurSectionParams = new List<string>();
+            this.RunElse = false;
+            this.OnBuildExit = null;
+            this.OnPluginExit = null;
         }
     }
 }

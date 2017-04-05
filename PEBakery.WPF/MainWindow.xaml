@@ -259,7 +259,8 @@
                             <Button
                                 Name="PluginEditButton"
                                 Grid.Row="1"
-                                Grid.Column="0">
+                                Grid.Column="0"
+                                Click="PluginEditButton_Click">
                             </Button>
                             <Button
                                 Name="PluginRefreshButton"

@@ -715,6 +715,9 @@ namespace PEBakery.Core
 
         public void Load()
         {
+            // TODO: How to address logs?
+            List<SimpleLog> simpleLogs;
+            List<DetailLog> detailLogs;
             if (!loaded)
             {
                 switch (dataType)
@@ -726,10 +729,10 @@ namespace PEBakery.Core
                         lines = Ini.ParseSectionToStringList(PluginPath, sectionName);
                         break;
                     case SectionDataType.Codes:
-                        codes = CodeParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this));
+                        codes = CodeParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this), out detailLogs);
                         break;
                     case SectionDataType.Interfaces:
-                        uiCodes = UIParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this));
+                        uiCodes = UIParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this), out simpleLogs);
                         break;
                     default:
                         throw new InternalUnknownException($"Invalid SectionType {type}");
@@ -763,31 +766,35 @@ namespace PEBakery.Core
             }
         }
 
-        public void ConvertLineToCodeSection(List<string> lines)
+        public List<DetailLog> ConvertLineToCodeSection(List<string> lines)
         {
             if (type == SectionType.UninspectedCode && dataType == SectionDataType.Lines)
             {
                 Load();
-                codes = CodeParser.ParseRawLines(lines, new SectionAddress(plugin, this));
+                codes = CodeParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<DetailLog> detailLogs);
 
                 lines = null;
                 type = SectionType.CompiledCode;
                 dataType = SectionDataType.Codes;
+
+                return detailLogs;
             }
             else
                 throw new InternalUnknownException($"Section [{sectionName}] is not a Line section");
         }
 
-        public void ConvertLineToUICodeSection(List<string> lines)
+        public List<SimpleLog> ConvertLineToUICodeSection(List<string> lines)
         {
             if (type == SectionType.Interface && dataType == SectionDataType.Lines)
             {
                 Load();
-                uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this));
+                uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<SimpleLog> simpleLogs);
 
                 lines = null;
                 type = SectionType.CompiledInterface;
                 dataType = SectionDataType.Interfaces;
+
+                return simpleLogs;
             }
             else
                 throw new InternalUnknownException($"Section [{sectionName}] is not a Line section");

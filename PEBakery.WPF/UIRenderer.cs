@@ -51,9 +51,22 @@ namespace PEBakery.WPF
         {
             renderInfo = new RenderInfo(canvas, window, plugin, scale);
             if (plugin.Sections.ContainsKey("Interface"))
-                this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
+            {
+                try
+                {
+                    this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
+                }
+                catch
+                {
+                    // TODO : Log this
+                    this.uiCodes = null;
+                }
+            }
             else
+            {
+                // TODO : Log this
                 this.uiCodes = null;
+            }
         }
 
         #region Render All
