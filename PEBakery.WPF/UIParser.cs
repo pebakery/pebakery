@@ -31,10 +31,10 @@ namespace PEBakery.Core
 {
     public static class UIParser
     {
-        public static List<UICommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<SimpleLog> errorLogs)
+        public static List<UICommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
-            errorLogs = new List<SimpleLog>();
+            errorLogs = new List<LogInfo>();
             List<UICommand> uiCmdList = new List<UICommand>();
             for (int i = 0; i < lines.Count; i++)
             {
@@ -45,11 +45,11 @@ namespace PEBakery.Core
                 catch (EmptyLineException) { } // Do nothing
                 catch (InvalidUICommandException e)
                 {
-                    errorLogs.Add(new SimpleLog(LogState.Error, $"{e.Message} [{e.UICmd.RawLine}]"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{e.Message} [{e.UICmd.RawLine}]"));
                 }
                 catch (Exception e)
                 {
-                    errorLogs.Add(new SimpleLog(LogState.Error, e));
+                    errorLogs.Add(new LogInfo(LogState.Error, e));
                 }
             }
 

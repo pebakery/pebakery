@@ -96,6 +96,11 @@ namespace PEBakery.Core
             return PluginListToTree(activePluginList);
         }
 
+        public List<Plugin> GetActivePluginList()
+        {
+            return CollectActivePlugins(allPluginList);
+        }
+
         private List<Plugin> CollectAllPlugins()
         {
             List<string> pPathList = new List<string>();
@@ -418,6 +423,11 @@ namespace PEBakery.Core
             allPluginList[idx] = p;
             node.Data = p;
             return p;
+        }
+
+        public Plugin GetPluginByFullPath(string fullPath)
+        {
+            return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

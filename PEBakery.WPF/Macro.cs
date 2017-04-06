@@ -21,14 +21,14 @@ namespace PEBakery.Core
         public PluginSection MacroSection { get => macroSection; }
         public Dictionary<string, CodeCommand> MacroDict { get => macroDict; } // Macro Library - [ApiVar]
 
-        public Macro(Project project, Variables variables, out List<SimpleLog> results)
+        public Macro(Project project, Variables variables, out List<LogInfo> results)
         {
             macroEnabled = true;
-            results = new List<SimpleLog>();
+            results = new List<LogInfo>();
             if (project.MainPlugin.Sections.ContainsKey("Variables") == false)
             { 
                 macroEnabled = false;
-                results.Add(new SimpleLog(LogState.Info, "Macro not defined"));
+                results.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
@@ -36,7 +36,7 @@ namespace PEBakery.Core
             if (varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR") == false)
             {
                 macroEnabled = false;
-                results.Add(new SimpleLog(LogState.Info, "Macro not defined"));
+                results.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace PEBakery.Core
             if (macroPlugin == null)
             {
                 macroEnabled = false;
-                results.Add(new SimpleLog(LogState.Error, $"Macro defined but unable to find macro plugin [{rawPluginPath}"));
+                results.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro plugin [{rawPluginPath}"));
                 return;
             }
 
@@ -55,7 +55,7 @@ namespace PEBakery.Core
             if (macroPlugin.Sections.ContainsKey(varDict["APIVAR"]) == false)
             {
                 macroEnabled = false;
-                results.Add(new SimpleLog(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
+                results.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
                 return;
             }
             macroSection = macroPlugin.Sections[varDict["APIVAR"]];

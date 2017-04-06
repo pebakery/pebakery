@@ -112,9 +112,11 @@
     </ApplicationDefinition>
     <Compile Include="CodeParser.cs" />
     <Compile Include="CodeCommand.cs" />
+    <Compile Include="CommandControl.cs" />
     <Compile Include="EncodedFile.cs" />
-    <Compile Include="EngineBranch.cs" />
-    <Compile Include="EngineCore.cs" />
+    <Compile Include="CommandBranch.cs" />
+    <Compile Include="Engine.cs" />
+    <Compile Include="CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Controls\MahApps\ProgressRing.cs" />

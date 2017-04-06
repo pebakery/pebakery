@@ -1,7 +1,10 @@
-﻿using System;
+﻿using PEBakery.Exceptions;
+using PEBakery.Helper;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core
@@ -87,6 +90,85 @@ namespace PEBakery.Core
             if (needQoute)
                 str = Doublequote(str); // Doublequote escape
             return str;
+        }
+        #endregion
+
+        #region Variables
+        /// <summary>
+        /// Expand #n and %Var% variables.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string ExpandVariables(EngineState s, string str)
+        {
+            return s.Variables.Expand(ExpandSectionParams(s, str));
+        }
+
+        public static List<string> ExpandVariables(EngineState s, List<string> strs)
+        {
+            List<string> list = new List<string>();
+            for (int i = 0; i < strs.Count; i++)
+                list.Add(s.Variables.Expand(ExpandSectionParams(s, strs[i])));
+            return list;
+        }
+
+        /// <summary>
+        /// Expand #1, #2, #3, etc...
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string ExpandSectionParams(EngineState s, string str)
+        {
+            // Expand #1 into its value
+            MatchCollection matches = Regex.Matches(str, @"(#\d+)", RegexOptions.Compiled);
+            StringBuilder builder = new StringBuilder();
+            for (int x = 0; x < matches.Count; x++)
+            {
+                int paramNum;
+                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out paramNum) == false)
+                    throw new InternalUnknownException("ExpandVariables failure");
+                if (x == 0)
+                    builder.Append(str.Substring(0, matches[0].Index));
+                else
+                {
+                    int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                    int endOffset = matches[x].Index - startOffset;
+                    builder.Append(str.Substring(startOffset, endOffset));
+                }
+
+                string param;
+                try
+                {
+                    param = s.CurSectionParams[paramNum - 1]; // In C#, index starts from 0. In PEBakery, index starts from 1.
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    param = matches[x].Value;
+                }
+                builder.Append(param);
+
+                if (x + 1 == matches.Count) // Last iteration
+                    builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+            }
+            if (0 < matches.Count) // Only copy it if variable exists
+            {
+                str = builder.ToString();
+            }
+
+            return str;
+        }
+        #endregion
+
+        #region Preprocess
+        public static string Preprocess(EngineState s, string str)
+        {
+            return Unescape(ExpandVariables(s, str));
+        }
+
+        public static List<string> Preprocess(EngineState s, List<string> strs)
+        {
+            return UnescapeList(ExpandVariables(s, strs));
         }
         #endregion
     }

@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Windows;
+using System.Globalization;
 
 namespace PEBakery.Core
 {
@@ -40,10 +41,10 @@ namespace PEBakery.Core
             return ParseCommand(list, addr, ref idx);
         }
 
-        public static List<CodeCommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<DetailLog> errorLogs)
+        public static List<CodeCommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
-            errorLogs = new List<DetailLog>();
+            errorLogs = new List<LogInfo>();
             List<CodeCommand> codeList = new List<CodeCommand>();
             for (int i = 0; i < lines.Count; i++)
             {
@@ -55,12 +56,12 @@ namespace PEBakery.Core
                 catch (InvalidCodeCommandException e)
                 {
                     codeList.Add(e.Cmd);
-                    errorLogs.Add(new DetailLog(LogState.Error, e, e.Cmd));
+                    errorLogs.Add(new LogInfo(LogState.Error, e, e.Cmd));
                 }
                 catch (Exception e)
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeCommandInfo(0));
-                    errorLogs.Add(new DetailLog(LogState.Error, e.Message, error));
+                    errorLogs.Add(new LogInfo(LogState.Error, e.Message, error));
                 }
             }
 
@@ -441,30 +442,130 @@ namespace PEBakery.Core
                 #region 10 Branch
                 // 10 Branch
                 case CodeType.Run:
-                    break;
                 case CodeType.Exec:
-                    break;
+                    { // Run,%PluginFile%,<Section>[,PARAMS]
+                        const int minArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        string pluginFile = args[0];
+                        string sectionName = args[1];
+
+                        // Get parameters 
+                        List<string> parameters = new List<string>();
+                        if (minArgCount < args.Count)
+                            parameters.AddRange(args.Skip(minArgCount));
+
+                        return new CodeInfo_RunExec(depth, pluginFile, sectionName, parameters);
+                    }
                 case CodeType.Loop:
-                    break;
+                    {
+                        if (args.Count == 1)
+                        { // Loop,BREAK
+                            if (string.Equals(args[0], "BREAK", StringComparison.OrdinalIgnoreCase))
+                                return new CodeInfo_Loop(depth, true);
+                            else
+                                throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
+                        }
+                        else
+                        { // Loop,%PluginFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                            const int minArgCount = 4;
+                            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                                throw new InvalidCommandException($"Command [Loop] must have at least [{minArgCount}] arguments", rawCode);
+
+                            string pluginFile = args[0];
+                            string sectionName = args[1];
+                            if (int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int startIdx) == false)
+                                throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
+                            if (int.TryParse(args[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int endIdx) == false)
+                                throw new InvalidCommandException($"Argument [{args[3]}] is not valid number", rawCode);
+
+                            // Get parameters 
+                            List<string> parameters = new List<string>();
+                            if (minArgCount < args.Count)
+                                parameters.AddRange(args.Skip(minArgCount));
+
+                            return new CodeInfo_Loop(depth, pluginFile, sectionName, startIdx, endIdx, parameters);
+                        }
+                    }
                 case CodeType.If:
                     return ParseCodeInfoIf(rawCode, args, addr, depth);
                 case CodeType.Else:
                     return ParseCodeInfoElse(rawCode, args, addr, depth);
                 case CodeType.Begin:
-                    break;
                 case CodeType.End:
-                    break;
-                case CodeType.CodeBlock:
-                    break;
+                    return new CodeCommandInfo(depth);
                 #endregion
                 #region 11 Control
                 // 11 Control
                 case CodeType.Set:
-                    break;
+                    { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string varName = Variables.GetVariableName(args[0]);
+                        if (varName == null)
+                            throw new InvalidCommandException($"Variable name [{args[0]}] must start and end with %", rawCode);
+                        string varValue = args[1];
+                        bool global = false;
+                        bool permanent = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (string.Equals(arg, "GLOBAL", StringComparison.OrdinalIgnoreCase))
+                                global = true;
+                            else if (string.Equals(arg, "PREMENENT", StringComparison.OrdinalIgnoreCase))
+                                permanent = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_Set(depth, varName, varValue, global, permanent);
+                    }
                 case CodeType.GetParam:
-                    break;
+                    { // GetParam,<Index>,<VarName>
+                        const int minArgCount = 2;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) == false)
+                            throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
+                        index -= 1; // WB082's section param index start from 1
+                        string varName = Variables.GetVariableName(args[1]);
+                        if (varName == null)
+                            throw new InvalidCommandException($"Variable name [{args[1]}] must start and end with %", rawCode);
+
+                        return new CodeInfo_GetParam(depth, index, varName);
+                    }
                 case CodeType.PackParam:
-                    break;
+                    { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int startIdx) == false)
+                            throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
+                        startIdx -= 1; // WB082's section param index start from 1
+
+                        string varName = Variables.GetVariableName(args[1]);
+                        if (varName == null)
+                            throw new InvalidCommandException($"Variable name [{args[1]}] must start and end with %", rawCode);
+
+                        string varNum = null;
+                        if (2 < args.Count)
+                        {
+                            varNum = Variables.GetVariableName(args[2]);
+                            if (varNum == null)
+                                throw new InvalidCommandException($"Variable name [{args[2]}] must start and end with %", rawCode);
+                        }
+
+                        return new CodeInfo_PackParam(depth, startIdx, varName, varNum);
+                    }
                 case CodeType.AddVariables:
                     break;
                 case CodeType.Exit:
@@ -492,12 +593,30 @@ namespace PEBakery.Core
             return new CodeCommandInfo(0);
         }
 
+        /// <summary>
+        /// Check CodeCommand's argument count
+        /// </summary>
+        /// <param name="op"></param>
+        /// <param name="min"></param>
+        /// <param name="max">-1 if unlimited argument</param>
+        /// <returns>Return true if invalid</returns>
         public static bool CheckInfoArgumentCount(List<string> op, int min, int max)
         {
-            if (op.Count < min || max < op.Count)
-                return true;
+            if (max == -1)
+            { // Unlimited argument count
+                if (op.Count < min)
+                    return true;
+                else
+                    return false;
+            }
             else
-                return false;
+            {
+                if (op.Count < min || max < op.Count)
+                    return true;
+                else
+                    return false;
+            }
+            
         }
         #endregion
 
@@ -731,6 +850,7 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ParseNestedIf, ParsedNestedElse, MatchBeginWithEnd
         /// <summary>
         /// 
         /// </summary>
@@ -867,14 +987,14 @@ namespace PEBakery.Core
 
         // Process nested Begin ~ End block
         private static int MatchBeginWithEnd(List<CodeCommand> codeList, int codeListIdx)
-        { 
+        {
             int nestedBeginEnd = 0;
             bool beginExist = false;
             bool finalizedWithEnd = false;
 
             // start command must be If or Begin, and its last embCmd must be Begin
             // if (!(codeList[codeListIdx].Type == CodeType.If || codeList[codeListIdx].Type == CodeType.Else))
-                // return -1;
+            // return -1;
 
             for (; codeListIdx < codeList.Count; codeListIdx++)
             {
@@ -945,9 +1065,10 @@ namespace PEBakery.Core
 
             // Met Begin, End and returned, success
             if (beginExist && finalizedWithEnd && nestedBeginEnd == 0)
-                return codeListIdx;                
+                return codeListIdx;
             else
                 return -1;
-        }        
+        }
+        #endregion
     }
 }

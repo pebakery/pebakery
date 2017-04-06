@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
-    #region LogState, SimpleLog, DetailLog
+    #region LogState, LogInfo, DetailLog
     public enum LogState
     {
         None = 0,
@@ -41,26 +41,26 @@ namespace PEBakery.Core
         Ignore = 401,
         Muted = 402,
     }
-
-    public struct SimpleLog
+/*
+    public struct LogInfo
     {
         public LogState State;
         public string Message;
 
-        public SimpleLog(LogState state, string message)
+        public LogInfo(LogState state, string message)
         {
             State = state;
             Message = message;
         }
 
-        public SimpleLog(LogState state, Exception e)
+        public LogInfo(LogState state, Exception e)
         {
             State = state;
             Message = Logger.LogExceptionMessage(e);
         }
     }
-
-    public struct DetailLog
+    */
+    public struct LogInfo
     {
         public LogState State;
         public string Message;
@@ -68,7 +68,7 @@ namespace PEBakery.Core
         public int Depth;
 
         #region Constructor - LogState, Message
-        public DetailLog(LogState state, string message)
+        public LogInfo(LogState state, string message)
         {
             State = state;
             Message = message;
@@ -76,7 +76,7 @@ namespace PEBakery.Core
             Depth = -1;
         }
 
-        public DetailLog(LogState state, string message, CodeCommand command)
+        public LogInfo(LogState state, string message, CodeCommand command)
         {
             State = state;
             Message = message;
@@ -84,7 +84,7 @@ namespace PEBakery.Core
             Depth = -1;
         }
 
-        public DetailLog(LogState state, string message, int depth)
+        public LogInfo(LogState state, string message, int depth)
         {
             State = state;
             Message = message;
@@ -92,7 +92,7 @@ namespace PEBakery.Core
             Depth = depth;
         }
 
-        public DetailLog(LogState state, string message, CodeCommand command, int depth)
+        public LogInfo(LogState state, string message, CodeCommand command, int depth)
         {
             State = state;
             Message = message;
@@ -102,7 +102,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor - LogState, Exception
-        public DetailLog(LogState state, Exception e)
+        public LogInfo(LogState state, Exception e)
         {
             State = state;
             Message = Logger.LogExceptionMessage(e);
@@ -110,7 +110,7 @@ namespace PEBakery.Core
             Depth = -1;
         }
 
-        public DetailLog(LogState state, Exception e, CodeCommand command)
+        public LogInfo(LogState state, Exception e, CodeCommand command)
         {
             State = state;
             Message = Logger.LogExceptionMessage(e);
@@ -118,7 +118,7 @@ namespace PEBakery.Core
             Depth = -1;
         }
 
-        public DetailLog(LogState state, Exception e, int depth)
+        public LogInfo(LogState state, Exception e, int depth)
         {
             State = state;
             Message = Logger.LogExceptionMessage(e);
@@ -126,48 +126,64 @@ namespace PEBakery.Core
             Depth = depth;
         }
 
-        public DetailLog(LogState state, Exception e, CodeCommand command, int depth)
+        public LogInfo(LogState state, Exception e, CodeCommand command, int depth)
         {
             State = state;
             Message = Logger.LogExceptionMessage(e);
+            Command = command;
+            Depth = depth;
+        }
+
+        public static LogInfo AddCommand(LogInfo info, CodeCommand command)
+        {
+            info.Command = command;
+            info.Depth = command.Info.Depth;
+            return info;
+
+        }
+        public static LogInfo AddCommand(LogInfo info, CodeCommand command, int depth)
+        {
+            info.Command = command;
+            info.Depth = depth;
+            return info;
+        }
+        #endregion
+
+        /*
+        #region Constructor - LogInfo
+        public DetailLog(LogInfo log)
+        {
+            State = log.State;
+            Message = log.Message;
+            Command = null;
+            Depth = -1;
+        }
+
+        public DetailLog(LogInfo log, CodeCommand command)
+        {
+            State = log.State;
+            Message = log.Message;
+            Command = command;
+            Depth = -1;
+        }
+
+        public DetailLog(LogInfo log, int depth)
+        {
+            State = log.State;
+            Message = log.Message;
+            Command = null;
+            Depth = depth;
+        }
+
+        public DetailLog(LogInfo log, CodeCommand command, int depth)
+        {
+            State = log.State;
+            Message = log.Message;
             Command = command;
             Depth = depth;
         }
         #endregion
-
-        #region Constructor - SimpleLog
-        public DetailLog(SimpleLog log)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = null;
-            Depth = -1;
-        }
-
-        public DetailLog(SimpleLog log, CodeCommand command)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = command;
-            Depth = -1;
-        }
-
-        public DetailLog(SimpleLog log, int depth)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = null;
-            Depth = depth;
-        }
-
-        public DetailLog(SimpleLog log, CodeCommand command, int depth)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = command;
-            Depth = depth;
-        }
-        #endregion
+        */
     }
     #endregion
 
@@ -175,15 +191,34 @@ namespace PEBakery.Core
     {
         #region Logger Class
         public Database DB;
+        public int ErrorOffCount;
+        public bool SuspendLog;
 
         public Logger(string path)
         {
             DB = new Database(path);
+            ErrorOffCount = 0;
+            SuspendLog = false;
         }
 
         ~Logger()
         {
             DB.Close();
+        }
+
+        public void Write(string message)
+        { // TODO
+            
+        }
+
+        public void Write(LogInfo log)
+        { // TODO
+
+        }
+
+        public void Write(List<LogInfo> logs)
+        { // TODO
+
         }
         #endregion
 

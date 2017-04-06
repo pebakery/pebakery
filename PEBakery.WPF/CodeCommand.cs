@@ -26,6 +26,7 @@ using System.Threading.Tasks;
 using Microsoft.Win32;
 using System.IO;
 using PEBakery.Lib;
+using System.Net.NetworkInformation;
 
 namespace PEBakery.Core
 {
@@ -54,9 +55,9 @@ namespace PEBakery.Core
         // 09 System
         System = 900, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 10 Branch
-        Run = 1000, Exec, Loop, If, Else, Begin, End, CodeBlock,
+        Run = 1000, Exec, Loop, If, Else, Begin, End, 
         // 11 Control
-        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep,
+        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, // GetParam and PackParam will be depracted, PEBakery can have infinite number of section params.
         // 12 External Macro
         Macro = 1200,
     }
@@ -330,7 +331,13 @@ namespace PEBakery.Core
             }
         }
 
-        public bool Check(ArugmentPreprocess pp)
+        /// <summary>
+        /// Return true if matched
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="logMessage"></param>
+        /// <returns></returns>
+        public bool Check(EngineState s, out string logMessage)
         {
             bool match = false;
             switch (Type)
@@ -341,8 +348,8 @@ namespace PEBakery.Core
                 case BranchConditionType.SmallerEqual:
                 case BranchConditionType.BiggerEqual:
                     {
-                        string compArg1 = pp(Arg1);
-                        string compArg2 = pp(Arg2);
+                        string compArg1 = StringEscaper.Preprocess(s, Arg1);
+                        string compArg2 = StringEscaper.Preprocess(s, Arg2);
 
                         CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2);
 
@@ -354,7 +361,7 @@ namespace PEBakery.Core
                                         || Type == BranchConditionType.SmallerEqual
                                         || Type == BranchConditionType.BiggerEqual)
                                         match = true;
-                                    // logMessage = $"[{Value1}] is equal to [{Value2}]";
+                                    logMessage = $"[{compArg1}] is equal to [{compArg2}]";
                                 }
                                 break;
                             case CompareStringNumberResult.Smaller: // For Number
@@ -364,7 +371,7 @@ namespace PEBakery.Core
                                         || Type == BranchConditionType.Bigger && NotFlag
                                         || Type == BranchConditionType.BiggerEqual && NotFlag)
                                         match = true;
-                                    // logMessage = $"[{Value1}] is smaller than [{Value2}]";
+                                    logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
                                 }
                                 break;
                             case CompareStringNumberResult.Bigger: // For Number
@@ -374,24 +381,24 @@ namespace PEBakery.Core
                                         || Type == BranchConditionType.Smaller && NotFlag
                                         || Type == BranchConditionType.SmallerEqual && NotFlag)
                                         match = true;
-                                    // logMessage = $"[{Value1}] is bigger than [{Value2}]";
+                                    logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
                                 }
                                 break;
                             case CompareStringNumberResult.NotEqual: // For String
                                 {
                                     if (Type == BranchConditionType.Equal && NotFlag)
                                         match = true;
-                                    // logMessage = $"[{Value1}] is not equal to [{Value2}]";
+                                    logMessage = $"[{compArg1}] is not equal to [{compArg2}]";
                                 }
                                 break;
                             default:
-                                throw new InternalUnknownException($"Cannot compare [{Arg1}] and [{Arg2}]");
+                                throw new InternalUnknownException($"Cannot compare [{compArg1}] and [{compArg2}]");
                         }
                     }
                     break;
                 case BranchConditionType.ExistFile:
                     {
-                        string filePath = pp(Arg1);
+                        string filePath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
                         bool filePathContainsWildcard = true;
@@ -409,11 +416,16 @@ namespace PEBakery.Core
                         }
                         else
                             match = File.Exists(filePath);
+
+                        if (match)
+                            logMessage = $"File [{Arg1}] exists";
+                        else
+                            logMessage = $"File [{Arg1}] does not exist";
                     }
                     break;
                 case BranchConditionType.ExistDir:
                     {
-                        string dirPath = pp(Arg1);
+                        string dirPath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
                         bool dirPathContainsWildcard = true;
@@ -431,20 +443,29 @@ namespace PEBakery.Core
                         }
                         else
                             match = Directory.Exists(dirPath);
+
+                        if (match)
+                            logMessage = $"Directory [{Arg1}] exists";
+                        else
+                            logMessage = $"Directory [{Arg1}] does not exist";
                     }
                     break;
                 case BranchConditionType.ExistSection:
                     {
-                        string iniFile = pp(Arg1);
-                        string section = pp(Arg2);
+                        string iniFile = StringEscaper.Preprocess(s, Arg1);
+                        string section = StringEscaper.Preprocess(s, Arg2);
 
                         match = Ini.CheckSectionExist(iniFile, section);
+                        if (match)
+                            logMessage = $"Section [{section}] exists in INI file [{Arg1}]";
+                        else
+                            logMessage = $"Section [{section}] does not exist in INI file [{Arg1}]";
                     }
                     break;
                 case BranchConditionType.ExistRegSection:
                     {
-                        string rootKey = pp(Arg1);
-                        string subKey = pp(Arg2);
+                        string rootKey = StringEscaper.Preprocess(s, Arg1);
+                        string subKey = StringEscaper.Preprocess(s, Arg2);
 
                         using (RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey))
                         {
@@ -453,15 +474,19 @@ namespace PEBakery.Core
                             using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                             {
                                 match = (regSubKey != null);
+                                if (match)
+                                    logMessage = $"Registry Key [{rootKey}\\{subKey}] exists";
+                                else
+                                    logMessage = $"Registry Key [{rootKey}\\{subKey}] does not exist";
                             }
                         }
                     }
                     break;
                 case BranchConditionType.ExistRegKey:
                     {
-                        string rootKey = pp(Arg1);
-                        string subKey = pp(Arg2);
-                        string valueName = pp(Arg3);
+                        string rootKey = StringEscaper.Preprocess(s, Arg1);
+                        string subKey = StringEscaper.Preprocess(s, Arg2);
+                        string valueName = StringEscaper.Preprocess(s, Arg3);
 
                         match = true;
                         using (RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey))
@@ -478,8 +503,47 @@ namespace PEBakery.Core
                                     if (value == null)
                                         match = false;
                                 }
+                                if (match)
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
+                                else
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
                             }
                         }
+                    }
+                    break;
+                case BranchConditionType.Ping:
+                    {
+                        string host = StringEscaper.Preprocess(s, Arg1);
+
+                        Ping pinger = new Ping();
+                        try
+                        {
+                            PingReply reply = pinger.Send(host);
+                            if (reply.Status == IPStatus.Success)
+                                match = true;
+                            else
+                                match = false;
+
+                            if (match)
+                                logMessage = $"Ping to [{host}] successed";
+                            else
+                                logMessage = $"Ping to [{host}] failed";
+                        }
+                        catch (PingException e)
+                        {
+                            match = false;
+                            logMessage = $"Error while pinging to [{host}] : [{e.Message}]";
+                        }
+                    }
+                    break;
+                case BranchConditionType.Online:
+                    {
+                        match = NetworkInterface.GetIsNetworkAvailable();
+
+                        if (match)
+                            logMessage = "System is connected to internet";
+                        else
+                            logMessage = "System is not connected to internet";
                     }
                     break;
                 default:
@@ -580,13 +644,79 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 11 - Branch
-    // If = 1000, Else, Begin, End,
-    // 10 Branch - Compiled
-    // IfCompact = 1010, ElseCompact, Link,
-    // 10 Branch - etc
-    // Run = 1020, Exec, Loop,
-    // public List<CodeCommand> Link; // Codeblock which is under If - Else - Begin - End
+    #region CodeInfo 10 - Branch
+    public class CodeInfo_RunExec : CodeCommandInfo
+    {
+        public string PluginFile;
+        public string SectionName;
+        public List<string> Parameters;
+
+        public CodeInfo_RunExec(int depth,
+            string pluginFile, string sectionName, List<string> parameters)
+            : base(depth)
+        {
+            PluginFile = pluginFile;
+            SectionName = sectionName;
+            Parameters = parameters;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(PluginFile);
+            b.Append(",");
+            b.Append(SectionName);
+            foreach (string param in Parameters)
+            {
+                b.Append(",");
+                b.Append(param);
+            }
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_Loop : CodeCommandInfo
+    {
+        public bool Break;
+        public string PluginFile;
+        public string SectionName;
+        public int StartIdx;
+        public int EndIdx;
+        public List<string> Parameters;
+
+        public CodeInfo_Loop(int depth,
+            string pluginFile, string sectionName, int startIdx, int endIdx, List<string> parameters)
+            : base(depth)
+        {
+            Break = false;
+            PluginFile = pluginFile;
+            SectionName = sectionName;
+            Parameters = parameters;
+            StartIdx = startIdx;
+            EndIdx = endIdx;
+        }
+
+        public CodeInfo_Loop(int depth,
+            bool _break)
+            : base(depth)
+        {
+            Break = _break;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(PluginFile);
+            b.Append(",");
+            b.Append(SectionName);
+            foreach (string param in Parameters)
+            {
+                b.Append(",");
+                b.Append(param);
+            }
+            return b.ToString();
+        }
+    }
 
     public class CodeInfo_If : CodeCommandInfo
     {
@@ -638,6 +768,93 @@ namespace PEBakery.Core
         { // TODO
             StringBuilder b = new StringBuilder();
             b.Append(Embed);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 11 - Control
+    public class CodeInfo_Set : CodeCommandInfo
+    {
+        public string VarName;
+        public string VarValue;
+        public bool Global;
+        public bool Permanent;
+
+        public CodeInfo_Set(int depth,
+            string varName, string varValue, bool global, bool permanent)
+            : base(depth)
+        {
+            VarName = varName;
+            VarValue = varValue;
+            Global = global;
+            Permanent = permanent;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(VarName);
+            b.Append(",");
+            b.Append(VarValue);
+            if (Global)
+                b.Append(",GLOBAL");
+            if (Permanent)
+                b.Append(",PERMANENT");
+
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_GetParam : CodeCommandInfo
+    {
+        public int Index;
+        public string VarName;
+
+        public CodeInfo_GetParam(int depth,
+            int index, string varName)
+            : base(depth)
+        {
+            Index = index;
+            VarName = varName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Index);
+            b.Append(",");
+            b.Append(VarName);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_PackParam : CodeCommandInfo
+    { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
+        public int StartIndex;
+        public string VarName;
+        public string VarNum; // optional
+
+        public CodeInfo_PackParam(int depth,
+            int startIndex, string varName, string varNum)
+            : base(depth)
+        {
+            StartIndex = startIndex;
+            VarName = varName;
+            VarNum = varNum;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StartIndex);
+            b.Append(",");
+            b.Append(VarName);
+            if (VarNum != null)
+            {
+                b.Append(",");
+                b.Append(VarNum);
+            }
             return b.ToString();
         }
     }

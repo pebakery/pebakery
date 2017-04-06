@@ -90,12 +90,12 @@ namespace PEBakery.Core
             }
         }
 
-        public SimpleLog SetFixedValue(string key, string rawValue)
+        public LogInfo SetFixedValue(string key, string rawValue)
         {
             return InternalSetValue(VarsType.Fixed, key, rawValue, true);
         }
 
-        public SimpleLog SetValue(VarsType type, string key, string rawValue)
+        public LogInfo SetValue(VarsType type, string key, string rawValue)
         {
             return InternalSetValue(type, key, rawValue, false);
         }
@@ -108,7 +108,7 @@ namespace PEBakery.Core
         /// <param name="rawValue"></param>
         /// <param name="privFixed"></param>
         /// <returns></returns>
-        public SimpleLog InternalSetValue(VarsType type, string key, string rawValue, bool privFixed)
+        public LogInfo InternalSetValue(VarsType type, string key, string rawValue, bool privFixed)
         {
             if (!privFixed && type == VarsType.Fixed)
                 throw new InternalUnknownException("Fixed variables cannot be written without privilege!");
@@ -117,12 +117,12 @@ namespace PEBakery.Core
             // Check and remove circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                return new SimpleLog(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
+                return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
             }
             else
             { // Ex) %Joveler%=Variel\ied206.txt - Success
                 vars[key] = rawValue;
-                return new SimpleLog(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]");
+                return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]");
             }
         }
 
@@ -232,7 +232,7 @@ namespace PEBakery.Core
             return str;
         }
 
-        public List<SimpleLog> AddVariables(VarsType type, PluginSection section)
+        public List<LogInfo> AddVariables(VarsType type, PluginSection section)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = null;
@@ -246,18 +246,18 @@ namespace PEBakery.Core
             }
             else
             { // empty
-                return new List<SimpleLog>();
+                return new List<LogInfo>();
             }
         }
 
-        public List<SimpleLog> AddVariables(VarsType type, string[] lines)
+        public List<LogInfo> AddVariables(VarsType type, string[] lines)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = Ini.ParseLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict);
         }
 
-        public List<SimpleLog> AddVariables(VarsType type, Dictionary<string, string> dict)
+        public List<LogInfo> AddVariables(VarsType type, Dictionary<string, string> dict)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             return InternalAddDictionary(vars, dict);
@@ -271,19 +271,19 @@ namespace PEBakery.Core
         /// <param name="sectionDepth"></param>
         /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
-        private List<SimpleLog> InternalAddDictionary(Dictionary<string, string> vars, Dictionary<string, string> dict)
+        private List<LogInfo> InternalAddDictionary(Dictionary<string, string> vars, Dictionary<string, string> dict)
         {
-            List<SimpleLog> list = new List<SimpleLog>();
+            List<LogInfo> list = new List<LogInfo>();
             foreach (var kv in dict)
             {
                 if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
                     vars[kv.Key] = kv.Value;
-                    list.Add(new SimpleLog(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]"));
+                    list.Add(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]"));
                 }
                 else
                 {
-                    list.Add(new SimpleLog(LogState.Error, $"Variable [%{kv.Key}%] has circular reference in [{kv.Value}]"));
+                    list.Add(new LogInfo(LogState.Error, $"Variable [%{kv.Key}%] has circular reference in [{kv.Value}]"));
                 }
             }
             return list;
@@ -311,6 +311,27 @@ namespace PEBakery.Core
             if (varName.Contains('%'))
                 throw new VariableInvalidFormatException($"% cannot be placed in the middle of [{varName}]");
             return varName;
+        }
+
+        /// <summary>
+        /// Return % trimmed string, to use as variable key.
+        /// Return null if this string cannot be used as variable key.
+        /// </summary>
+        /// <param name="varName"></param>
+        /// <returns></returns>
+        public static string GetVariableName(string varName)
+        {
+            if (varName.StartsWith("%") && varName.EndsWith("%"))
+            {
+                if (FileHelper.CountStringOccurrences(varName, "%") == 2)
+                    return varName.Substring(1, varName.Length - 2);
+                else
+                    return null;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public static int GetSectionParamIndex(string secParam)
