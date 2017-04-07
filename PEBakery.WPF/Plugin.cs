@@ -792,9 +792,8 @@ namespace PEBakery.Core
 
         public void ConvertLineToCodeSection(List<string> lines)
         {
-            if (type == SectionType.UninspectedCode && dataType == SectionDataType.Lines)
+            if (type == SectionType.Code && dataType == SectionDataType.Lines)
             {
-
                 codes = CodeParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<LogInfo> logList);
                 foreach (LogInfo log in logList)
                     logInfos.Enqueue(log);

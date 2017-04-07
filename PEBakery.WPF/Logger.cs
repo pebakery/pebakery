@@ -41,25 +41,7 @@ namespace PEBakery.Core
         Ignore = 401,
         Muted = 402,
     }
-/*
-    public struct LogInfo
-    {
-        public LogState State;
-        public string Message;
 
-        public LogInfo(LogState state, string message)
-        {
-            State = state;
-            Message = message;
-        }
-
-        public LogInfo(LogState state, Exception e)
-        {
-            State = state;
-            Message = Logger.LogExceptionMessage(e);
-        }
-    }
-    */
     public struct LogInfo
     {
         public LogState State;
@@ -208,17 +190,27 @@ namespace PEBakery.Core
 
         public void Write(string message)
         { // TODO
-            
+            Console.WriteLine(message);
         }
 
         public void Write(LogInfo log)
         { // TODO
-
+            for (int i = 0; i < log.Depth; i++)
+            {
+                Console.Write("  ");
+            }
+            if (log.Command == null)
+                Console.WriteLine($"[{log.State}] {log.Message}");
+            else
+                Console.WriteLine($"[{log.State}] {log.Message} ({log.Command})");
         }
 
         public void Write(List<LogInfo> logs)
         { // TODO
-
+            foreach (LogInfo log in logs)
+            {
+                Write(log);
+            }
         }
         #endregion
 

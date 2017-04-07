@@ -113,6 +113,19 @@ namespace PEBakery.Core
             return list;
         }
 
+        public static string ExpandVariables(Variables vars, string str)
+        {
+            return vars.Expand(str);
+        }
+
+        public static List<string> ExpandVariables(Variables vars, List<string> strs)
+        {
+            List<string> list = new List<string>();
+            for (int i = 0; i < strs.Count; i++)
+                list.Add(vars.Expand(strs[i]));
+            return list;
+        }
+
         /// <summary>
         /// Expand #1, #2, #3, etc...
         /// </summary>
@@ -125,8 +138,7 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             for (int x = 0; x < matches.Count; x++)
             {
-                int paramNum;
-                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out paramNum) == false)
+                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int paramNum) == false)
                     throw new InternalUnknownException("ExpandVariables failure");
                 if (x == 0)
                     builder.Append(str.Substring(0, matches[0].Index));
@@ -169,6 +181,16 @@ namespace PEBakery.Core
         public static List<string> Preprocess(EngineState s, List<string> strs)
         {
             return UnescapeList(ExpandVariables(s, strs));
+        }
+
+        public static string Preprocess(Variables vars, string str)
+        {
+            return Unescape(ExpandVariables(vars, str));
+        }
+
+        public static List<string> Preprocess(Variables vars, List<string> strs)
+        {
+            return UnescapeList(ExpandVariables(vars, strs));
         }
         #endregion
     }

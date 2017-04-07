@@ -46,7 +46,7 @@ namespace PEBakery.Core
         public Engine(EngineState state)
         {
             s = state;
-            LoadDefaultFixedVariables();
+            // LoadDefaultFixedVariables();
             LoadDefaultPluginVariables(s, s.CurrentPlugin);
         }
 
@@ -98,7 +98,7 @@ namespace PEBakery.Core
                 s.CurrentPlugin = p;
             PluginSection section = p.Sections["Process"];
             s.Logger.Write($"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
-            s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
+            // s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
 
             s.Variables.ResetVariables(VarsType.Local);
             LoadDefaultPluginVariables(s, s.CurrentPlugin);
@@ -131,6 +131,8 @@ namespace PEBakery.Core
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Write(addr.Section.LogInfos);
+
+            s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [{addr.Section.SectionName}]"));
             RunCommands(s, codes, sectionParams, depth, callback, true);
         }
 
@@ -148,17 +150,18 @@ namespace PEBakery.Core
                         s.Logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
 
                     if (!callback && sectionStart && depth == 0) // End of plugin
+                    {
                         s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]\r\n"));
-
-                    // PluginExit event callback
-                    CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
+                        // PluginExit event callback
+                        CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
+                    }
                     break;
                 }
 
                 try
                 {
                     curCommand = codes[idx];
-                    curCommand.Info.Depth = depth;
+                    // curCommand.Info.Depth = depth;
                     s.CurSectionParams = sectionParams;
                     s.Logger.Write(ExecuteCommand(s, curCommand));
                 }
@@ -170,7 +173,7 @@ namespace PEBakery.Core
             }
         }
 
-        private static void CheckAndRunCallback(EngineState s,ref CodeCommand cbCmd, string eventName)
+        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventName)
         {
             if (cbCmd != null)
             {
@@ -194,194 +197,196 @@ namespace PEBakery.Core
         private static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = null;
-            switch (cmd.Type)
+            try
             {
-                #region 00 Misc
-                // 00 Misc
-                case CodeType.None:
-                    logs = new List<LogInfo>
+                switch (cmd.Type)
+                {
+                    #region 00 Misc
+                    // 00 Misc
+                    case CodeType.None:
+                        logs = new List<LogInfo>
                     {
-                        new LogInfo(LogState.None, "NOP", cmd)
+                        new LogInfo(LogState.Ignore, "NOP", cmd)
                     };
-                    break;
-                case CodeType.Comment:
-                    logs = new List<LogInfo>
+                        break;
+                    case CodeType.Comment:
+                        logs = new List<LogInfo>
                     {
                         new LogInfo(LogState.Ignore, "Comment", cmd)
                     };
-                    break;
-                case CodeType.Error:
-                    logs = new List<LogInfo>
+                        break;
+                    case CodeType.Error:
+                        logs = new List<LogInfo>
                     {
                         new LogInfo(LogState.Error, "Error", cmd)
                     };
-                    break;
-                case CodeType.Unknown:
-                    logs = new List<LogInfo>
+                        break;
+                    case CodeType.Unknown:
+                        logs = new List<LogInfo>
                     {
                         new LogInfo(LogState.Ignore, "Unknown", cmd)
                     };
+                        break;
+                    #endregion
+                    /*
+                #region 01 File
+                // 01 File
+                case CodeType.CopyOrExpand:
+                    break;
+                case CodeType.DirCopy:
+                    break;
+                case CodeType.DirDelete:
+                    break;
+                case CodeType.DirMove:
+                    break;
+                case CodeType.DirMake:
+                    break;
+                case CodeType.Expand:
+                    break;
+                    */
+                    //case CodeType.FileCopy:
+                    //    break;
+                    /*
+                case CodeType.FileDelete:
+                    break;
+                case CodeType.FileRename:
+                    break;
+                case CodeType.FileMove:
+                    break;
+                case CodeType.FileCreateBlank:
+                    break;
+                case CodeType.FileByteExtract:
                     break;
                 #endregion
-                /*
-            #region 01 File
-            // 01 File
-            case CodeType.CopyOrExpand:
-                break;
-            case CodeType.DirCopy:
-                break;
-            case CodeType.DirDelete:
-                break;
-            case CodeType.DirMove:
-                break;
-            case CodeType.DirMake:
-                break;
-            case CodeType.Expand:
-                break;
+                #region 02 Registry
+                // 02 Registry
+                case CodeType.RegHiveLoad:
+                    break;
+                case CodeType.RegHiveUnload:
+                    break;
+                case CodeType.RegImport:
+                    break;
+                case CodeType.RegWrite:
+                    break;
+                case CodeType.RegRead:
+                    break;
+                case CodeType.RegDelete:
+                    break;
+                case CodeType.RegWriteBin:
+                    break;
+                case CodeType.RegReadBin:
+                    break;
+                case CodeType.RegMulti:
+                    break;
+                #endregion
+                #region 03 Text
+                // 03 Text
+                case CodeType.TXTAddLine:
+                    break;
+                case CodeType.TXTReplace:
+                    break;
+                case CodeType.TXTDelLine:
+                    break;
+                case CodeType.TXTDelSpaces:
+                    break;
+                case CodeType.TXTDelEmptyLines:
+                    break;
+                #endregion
+                #region 04 INI
+                // 04 INI
+                case CodeType.INIWrite:
+                    break;
+                case CodeType.INIRead:
+                    break;
+                case CodeType.INIDelete:
+                    break;
+                case CodeType.INIAddSection:
+                    break;
+                case CodeType.INIDeleteSection:
+                    break;
+                case CodeType.INIWriteTextLine:
+                    break;
+                case CodeType.INIMerge:
+                    break;
+                #endregion
+                #region 05 Network
+                // 05 Network
+                case CodeType.WebGet:
+                    break;
+                case CodeType.WebGetIfNotExist:
+                    break;
+                #endregion
+                #region 06 Attach, Interface
+                // 06 Attach, Interface
+                case CodeType.ExtractFile:
+                    break;
+                case CodeType.ExtractAndRun:
+                    break;
+                case CodeType.ExtractAllFiles:
+                    break;
+                case CodeType.ExtractAllFilesIfNotExist:
+                    break;
+                case CodeType.Encode:
+                    break;
+                #endregion
+                #region 07 UI
+                // 07 UI
+                case CodeType.Message:
+                    break;
+                case CodeType.Echo:
+                    break;
+                case CodeType.Retrieve:
+                    break;
+                case CodeType.Visible:
+                    break;
+                #endregion
+                #region 08 StringFormat
+                // 08 StringFormat
+                case CodeType.StrFormat:
+                    break;
+                #endregion
+                #region 09 System
+                // 09 System
+                case CodeType.System:
+                    break;
+                case CodeType.ShellExecute:
+                    break;
+                case CodeType.ShellExecuteEx:
+                    break;
+                case CodeType.ShellExecuteDelete:
+                    break;
+                #endregion
                 */
-                //case CodeType.FileCopy:
-                //    break;
-                /*
-            case CodeType.FileDelete:
-                break;
-            case CodeType.FileRename:
-                break;
-            case CodeType.FileMove:
-                break;
-            case CodeType.FileCreateBlank:
-                break;
-            case CodeType.FileByteExtract:
-                break;
-            #endregion
-            #region 02 Registry
-            // 02 Registry
-            case CodeType.RegHiveLoad:
-                break;
-            case CodeType.RegHiveUnload:
-                break;
-            case CodeType.RegImport:
-                break;
-            case CodeType.RegWrite:
-                break;
-            case CodeType.RegRead:
-                break;
-            case CodeType.RegDelete:
-                break;
-            case CodeType.RegWriteBin:
-                break;
-            case CodeType.RegReadBin:
-                break;
-            case CodeType.RegMulti:
-                break;
-            #endregion
-            #region 03 Text
-            // 03 Text
-            case CodeType.TXTAddLine:
-                break;
-            case CodeType.TXTReplace:
-                break;
-            case CodeType.TXTDelLine:
-                break;
-            case CodeType.TXTDelSpaces:
-                break;
-            case CodeType.TXTDelEmptyLines:
-                break;
-            #endregion
-            #region 04 INI
-            // 04 INI
-            case CodeType.INIWrite:
-                break;
-            case CodeType.INIRead:
-                break;
-            case CodeType.INIDelete:
-                break;
-            case CodeType.INIAddSection:
-                break;
-            case CodeType.INIDeleteSection:
-                break;
-            case CodeType.INIWriteTextLine:
-                break;
-            case CodeType.INIMerge:
-                break;
-            #endregion
-            #region 05 Network
-            // 05 Network
-            case CodeType.WebGet:
-                break;
-            case CodeType.WebGetIfNotExist:
-                break;
-            #endregion
-            #region 06 Attach, Interface
-            // 06 Attach, Interface
-            case CodeType.ExtractFile:
-                break;
-            case CodeType.ExtractAndRun:
-                break;
-            case CodeType.ExtractAllFiles:
-                break;
-            case CodeType.ExtractAllFilesIfNotExist:
-                break;
-            case CodeType.Encode:
-                break;
-            #endregion
-            #region 07 UI
-            // 07 UI
-            case CodeType.Message:
-                break;
-            case CodeType.Echo:
-                break;
-            case CodeType.Retrieve:
-                break;
-            case CodeType.Visible:
-                break;
-            #endregion
-            #region 08 StringFormat
-            // 08 StringFormat
-            case CodeType.StrFormat:
-                break;
-            #endregion
-            #region 09 System
-            // 09 System
-            case CodeType.System:
-                break;
-            case CodeType.ShellExecute:
-                break;
-            case CodeType.ShellExecuteEx:
-                break;
-            case CodeType.ShellExecuteDelete:
-                break;
-            #endregion
-            */
-                #region 10 Branch
-                // 10 Branch
-                case CodeType.Run:
-                case CodeType.Exec:
-                    CommandBranch.RunExec(s, cmd);
-                    break;
-                case CodeType.Loop:
-                    break;
-                case CodeType.If:
-                    CommandBranch.If(s, cmd);
-                    break;
-                case CodeType.Else:
-                    CommandBranch.Else(s, cmd);
-                    break;
-                case CodeType.Begin:
-                    throw new InternalParserException("[Begin] must have already parsed");
-                case CodeType.End:
-                    throw new InternalParserException("[End] must have already parsed");
-                #endregion
-                #region 11 Control
-                // 11 Control
-                case CodeType.Set:
-                    logs = CommandControl.Set(s, cmd);
-                    break;
-                case CodeType.GetParam:
-                    logs = CommandControl.GetParam(s, cmd);
-                    break;
-                case CodeType.PackParam:
-                    logs = CommandControl.PackParam(s, cmd);
-                    break;
+                    #region 10 Branch
+                    // 10 Branch
+                    case CodeType.Run:
+                    case CodeType.Exec:
+                        CommandBranch.RunExec(s, cmd);
+                        break;
+                    case CodeType.Loop:
+                        break;
+                    case CodeType.If:
+                        CommandBranch.If(s, cmd);
+                        break;
+                    case CodeType.Else:
+                        CommandBranch.Else(s, cmd);
+                        break;
+                    case CodeType.Begin:
+                        throw new InternalParserException("[Begin] must have already parsed");
+                    case CodeType.End:
+                        throw new InternalParserException("[End] must have already parsed");
+                    #endregion
+                    #region 11 Control
+                    // 11 Control
+                    case CodeType.Set:
+                        logs = CommandControl.Set(s, cmd);
+                        break;
+                    case CodeType.GetParam:
+                        logs = CommandControl.GetParam(s, cmd);
+                        break;
+                    case CodeType.PackParam:
+                        logs = CommandControl.PackParam(s, cmd);
+                        break;
                     /*
                 case CodeType.AddVariables:
                     break;
@@ -394,21 +399,29 @@ namespace PEBakery.Core
                 case CodeType.Beep:
                     break;
                     */
-                #endregion
-                /*
-            #region 12 External Macro
-            // 12 External Macro
-            case CodeType.Macro:
-                break;
-            #endregion
-            */
-                #region Error
-                // Error
-                default:
-                    throw new InvalidCodeCommandException($"Cannot execute [{cmd.Type}] command", cmd);
                     #endregion
+                    /*
+                #region 12 External Macro
+                // 12 External Macro
+                case CodeType.Macro:
+                    break;
+                #endregion
+                */
+                    #region Error
+                    // Error
+                    default:
+                        throw new InvalidCodeCommandException($"Cannot execute [{cmd.Type}] command", cmd);
+                        #endregion
+                }
             }
-
+            catch (Exception e)
+            {
+                logs = new List<LogInfo>()
+                {
+                    new LogInfo(LogState.Error, e.Message, cmd),
+                };
+            }
+            
             return logs;
         }
     }
@@ -418,7 +431,7 @@ namespace PEBakery.Core
         // Fields used globally
         public Project Project;
         public List<Plugin> Plugins;
-        public Variables Variables;
+        public Variables Variables { get => Project.Variables; }
         public Macro Macro;
         public Logger Logger;
         public bool RunOnePlugin;
@@ -445,9 +458,8 @@ namespace PEBakery.Core
             this.Plugins = project.GetActivePluginList();
             this.Logger = logger;
 
-            this.Variables = new Variables();
-            Macro = new Macro(Project, Variables, out List<LogInfo> logs);
-            // TODO: logger.Write(logs);
+            Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
+            logger.Write(macroLogs);
 
             if (pluginToRun == null) // Run just plugin
             {

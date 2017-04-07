@@ -3,6 +3,7 @@ using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -26,6 +27,7 @@ namespace PEBakery.Core
          */
 
         // Fields
+        private Project project;
         private Dictionary<string, string> fixedVars; // Once constructed, it must be read-only.
         private Dictionary<string, string> globalVars;
         private Dictionary<string, string> localVars;
@@ -47,14 +49,79 @@ namespace PEBakery.Core
             set => SetValue(type, key, value);
         }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public Variables()
+        public Variables(Project project)
         {
+            this.project = project;
             this.localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            LoadDefaultFixedVariables();
+            LoadDefaultGlobalVariables();
+        }
+
+        public Variables(Project project, out List<LogInfo> logs)
+        {
+            this.project = project;
+            this.localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            this.globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            this.fixedVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            logs = LoadDefaultFixedVariables();
+            logs.AddRange(LoadDefaultGlobalVariables());
+        }
+
+        private List<LogInfo> LoadDefaultFixedVariables()
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // BaseDir
+            logs.Add(SetFixedValue("BaseDir", project.BaseDir));
+            // Tools
+            logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
+
+            // Version
+            Version version = FileHelper.GetProgramVersion();
+            logs.Add(SetFixedValue("Version", version.Build.ToString()));
+            // ProjectDir
+            logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
+            // TargetDir
+            logs.Add(SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName)));
+
+            return logs;
+        }
+
+        public List<LogInfo> LoadDefaultGlobalVariables()
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // [Variables]
+            if (project.MainPlugin.Sections.ContainsKey("Variables"))
+            {
+                logs.AddRange(AddVariables(VarsType.Global, project.MainPlugin.Sections["Variables"]));
+            }
+
+            return logs;
+        }
+
+        public List<LogInfo> LoadDefaultPluginVariables(Plugin p)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // ScriptFile, PluginFile
+            SetValue(VarsType.Local, "PluginFile", p.FullPath);
+            SetValue(VarsType.Local, "ScriptFile", p.FullPath);
+
+            // [Variables]
+            if (p.Sections.ContainsKey("Variables"))
+            {
+                VarsType type = VarsType.Local;
+                if (string.Equals(p.FullPath, project.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
+                    type = VarsType.Global;
+                logs.AddRange(AddVariables(type, p.Sections["Variables"]));
+            }
+
+            return logs;
         }
 
         private Dictionary<string, string> GetVarsMatchesType(VarsType type)

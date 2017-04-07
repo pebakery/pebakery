@@ -284,7 +284,7 @@
                         <Canvas 
                             Name="MainCanvas"
                             Grid.Row="0" Grid.Column="0"
-                            Margin="10, 10, 0, 0"
+                            Margin="10, 10, 10, 10"
                             Panel.ZIndex="-1">
                         </Canvas>
                     </Border>

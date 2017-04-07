@@ -18,6 +18,7 @@
 
 using PEBakery.Core;
 using PEBakery.Helper;
+using PEBakery.Exceptions;
 using PEBakery.Lib;
 using Btl.Controls;
 using System;
@@ -46,10 +47,14 @@ namespace PEBakery.WPF
 
         private RenderInfo renderInfo;
         private List<UICommand> uiCodes;
+        private Variables variables;
+        private Logger logger;
 
-        public UIRenderer(Canvas canvas, Window window, Plugin plugin, double scale)
+        public UIRenderer(Canvas canvas, Window window, Plugin plugin, Logger logger, double scale)
         {
-            renderInfo = new RenderInfo(canvas, window, plugin, scale);
+            this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
+            this.logger = logger;
+            this.variables = plugin.Project.Variables;
             if (plugin.Sections.ContainsKey("Interface"))
             {
                 try
@@ -58,14 +63,14 @@ namespace PEBakery.WPF
                 }
                 catch
                 {
-                    // TODO : Log this
                     this.uiCodes = null;
+                    logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
-                // TODO : Log this
                 this.uiCodes = null;
+                logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -108,7 +113,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderTextFile(renderInfo, uiCmd);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(renderInfo, uiCmd);
+                            UIRenderer.RenderButton(renderInfo, uiCmd, logger);
                             break;
                         case UIControlType.CheckList:
                             break;
@@ -122,7 +127,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderBevel(renderInfo, uiCmd);
                             break;
                         case UIControlType.FileBox:
-                            UIRenderer.RenderFileBox(renderInfo, uiCmd);
+                            UIRenderer.RenderFileBox(renderInfo, uiCmd, variables);
                             break;
                         case UIControlType.RadioGroup:
                             UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
@@ -131,10 +136,9 @@ namespace PEBakery.WPF
                             break;
                     }
                 }
-                // catch (Exception e)
-                catch
-                {
-                    // Log failure
+                catch (Exception e)
+                { // Log failure
+                    logger.Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -285,12 +289,14 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
             
-            checkBox.Checked += (object sender, RoutedEventArgs e) => {
+            checkBox.Checked += (object sender, RoutedEventArgs e) =>
+            {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
                 UIRenderer.UpdatePlugin(uiCmd);
             };
-            checkBox.Unchecked += (object sender, RoutedEventArgs e) => {
+            checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
+            {
                 CheckBox box = sender as CheckBox;
                 info.Value = false;
                 UIRenderer.UpdatePlugin(uiCmd);
@@ -382,10 +388,9 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Failure
-                    // TODO Long Invalid grammar warning : invalid url
+                    throw new InvalidUICommandException($"Invalid URL [{info.URL}]", uiCmd);
                 }
             }
-            
 
             if (hasUrl)
             { // Open URL
@@ -401,7 +406,7 @@ namespace PEBakery.WPF
                     MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
                     if (ImageHelper.GetImageType(uiCmd.Text, out ImageType t))
                         return;
-                    string path = System.IO.Path.ChangeExtension(System.IO.Path.GetRandomFileName(), "." + t.ToString().ToLower());
+                    string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
                     FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write);
                     m.Position = 0;
                     m.CopyTo(file);
@@ -461,7 +466,7 @@ namespace PEBakery.WPF
         /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static void RenderButton(RenderInfo r, UICommand uiCmd)
+        public static void RenderButton(RenderInfo r, UICommand uiCmd, Logger logger)
         {
             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
             if (info == null)
@@ -475,8 +480,8 @@ namespace PEBakery.WPF
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 Button bt = sender as Button;
-                // TODO: Engine.RunSection(); -- Not implemented
-                Console.WriteLine("Engine.RunSection not implemented");
+                EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
+                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 0, true);
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
@@ -591,7 +596,7 @@ namespace PEBakery.WPF
             hyperLink.Inlines.Add(uiCmd.Text);
             hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
             {
-                System.Diagnostics.Process.Start(e.Uri.ToString());
+                Process.Start(e.Uri.ToString());
             };
             block.Inlines.Add(hyperLink);
 
@@ -671,7 +676,7 @@ namespace PEBakery.WPF
         /// </summary>
         /// <param name="canvas">Parent canvas</param>
         /// <param name="uiCmd">UICommand</param>
-        public static void RenderFileBox(RenderInfo r, UICommand uiCmd)
+        public static void RenderFileBox(RenderInfo r, UICommand uiCmd, Variables variables)
         {
             // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
             UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
@@ -706,10 +711,8 @@ namespace PEBakery.WPF
                 if (info.IsFile)
                 {
                     Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
-                    {
-                        // TODO
-                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
-                        // InitialDirectory = Path.GetDirectoryName()
+                    { 
+                        InitialDirectory = System.IO.Path.GetDirectoryName(StringEscaper.Preprocess(variables, uiCmd.Text)),
                     };
                     if (dialog.ShowDialog() == true)
                         box.Text = dialog.FileName;
@@ -718,9 +721,8 @@ namespace PEBakery.WPF
                 {
                     System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
                     {
-                        // TODO
-                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
-                        // RootFolder = Path.GetDirectoryName()
+                        ShowNewFolderButton = true,
+                        SelectedPath = StringEscaper.Preprocess(variables, uiCmd.Text),   
                     };
                     System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                     if (result == System.Windows.Forms.DialogResult.OK)

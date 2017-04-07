@@ -42,14 +42,6 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 
 
-// Used OpenSource
-// Svg.Net (Microsoft Public License)
-// Google's Material Icons (Apache License)
-// Microsoft's Per-Monitor-DPI Images Example (MIT)
-// Main Icon from pixelkit.com, CC BY-NC 3.0 (https://www.iconfinder.com/icons/208267/desert_donut_icon)
-// SpinnerControl from https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control v1.02 (COPL)
-// ProgressRing from https://github.com/MahApps/MahApps.Metro v.1.4.3 (MIT)
-
 namespace PEBakery.WPF
 {
     #region MainWindow
@@ -58,7 +50,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private List<Project> projects;
+        private List<Project> projectList;
         private int loadedProjectCount;
         private int allProjectCount;
         private string baseDir;
@@ -69,6 +61,7 @@ namespace PEBakery.WPF
         private double scaleFactor = 1;
 
         private TreeViewModel currentTree;
+        private Logger logger;
 
         const int MaxDpiScale = 4;
 
@@ -109,7 +102,7 @@ namespace PEBakery.WPF
             };
             this.bottomDock.Child = loadProgressBar;
 
-            this.projects = new List<Project>();
+            this.projectList = new List<Project>();
             this.loadedProjectCount = 0;
             this.allProjectCount = 0;
 
@@ -118,15 +111,15 @@ namespace PEBakery.WPF
             this.DataContext = treeModel;
 
             LoadButtonsImage();
-            
 
+            logger = new Logger(System.IO.Path.Combine(baseDir, "log.txt"));
+            
             StartLoadWorker();
         }
 
         void LoadButtonsImage()
         {
             // Properties.Resources.
-
             BuildButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
             RefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
             SettingButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 5);
@@ -150,7 +143,7 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 watch = Stopwatch.StartNew();
-                this.projects = new List<Project>();
+                this.projectList = new List<Project>();
                 this.loadedProjectCount = 0;
                 this.allProjectCount = 0;
 
@@ -167,20 +160,20 @@ namespace PEBakery.WPF
                 {
                     Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
                     project.Load();
-                    projects.Add(project);
+                    projectList.Add(project);
                     loadedProjectCount++;
                 }
 
                 Dispatcher.Invoke(() =>
                 {
-                    foreach (Project project in this.projects)
+                    foreach (Project project in this.projectList)
                     {
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
                         RecursivePopulateMainTreeView(plugins, this.treeModel);
                     };
                     MainTreeView.DataContext = treeModel;
                     currentTree = treeModel.Child[0];
-                    DrawPlugin(projects[0].MainPlugin);
+                    DrawPlugin(projectList[0].MainPlugin);
                 });
             };
             loadWorker.WorkerReportsProgress = true;
@@ -321,7 +314,7 @@ namespace PEBakery.WPF
 
             MainCanvas.Children.Clear();
             ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
-            UIRenderer render = new UIRenderer(MainCanvas, this, p, scaleFactor);
+            UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
             MainCanvas.LayoutTransform = scale;
             render.Render();
         }
@@ -402,8 +395,6 @@ namespace PEBakery.WPF
         private void PluginRunButton_Click(object sender, RoutedEventArgs e)
         {
         }
-
-        
 
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {

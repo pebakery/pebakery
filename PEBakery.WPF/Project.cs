@@ -36,27 +36,30 @@ namespace PEBakery.Core
         // Fields
         private string projectName;
         private string projectRoot;
+        private string baseDir;
         private Plugin mainPlugin;
         private List<Plugin> allPluginList;
         private Tree<Plugin> allPlugins;
         private Tree<Plugin> visiblePlugins;
+        private Variables variables;
         public const int MainLevel = -256;  // Reserved level for script.project
 
         private int loadedPluginCount;
         private int allPluginCount;
-        private string baseDir;
         private BackgroundWorker worker;
+        
 
         // Properties
         public string ProjectName { get { return projectName; } }
         public string ProjectRoot { get { return projectRoot; } }
+        public string BaseDir { get => baseDir; }
         public Plugin MainPlugin { get { return mainPlugin; } }
         public List<Plugin> AllPluginList { get { return allPluginList; } }
         public Tree<Plugin> AllPlugins { get { return allPlugins; } }
         public Tree<Plugin> VisiblePlugins { get => visiblePlugins; }
+        public Variables Variables { get => variables; }
         public int LoadedPluginCount { get => loadedPluginCount; }
         public int AllPluginCount { get => allPluginCount; }
-        public string BaseDir { get => baseDir; }
 
 
         /// <summary>
@@ -76,17 +79,13 @@ namespace PEBakery.Core
         public void Load()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            Console.WriteLine("Parsing plugins start...");
+
             this.allPluginList = CollectAllPlugins();
             this.allPlugins = PluginListToTree(allPluginList);
-            Console.WriteLine("Parsing plugins done.");
-            Console.WriteLine($"All Plugins : {allPluginList.Count}");
-            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
             List<Plugin> visiblePluginList = CollectVisiblePlugins(allPluginList);
             this.visiblePlugins = PluginListToTree(visiblePluginList);
-            Console.WriteLine("Selected visible plugins.");
-            Console.WriteLine($"Visible Plugins : {visiblePluginList.Count}");
-            Console.WriteLine("Time elapsed : {0}\r\n", stopwatch.Elapsed);
+            this.variables = new Variables(this);
+
             stopwatch.Stop();
         }
 
