@@ -61,6 +61,7 @@ namespace PEBakery.Core
                 catch (Exception e)
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeCommandInfo(0));
+                    codeList.Add(error);
                     errorLogs.Add(new LogInfo(LogState.Error, e.Message, error));
                 }
             }
@@ -164,7 +165,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException(e.Message, rawCode);
             }
 
-            CodeCommandInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args, addr, depth);
+            CodeCommandInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr, depth);
             return new CodeCommand(rawCode, addr, type, info);
         }
 
@@ -415,9 +416,45 @@ namespace PEBakery.Core
                 #region 07 UI
                 // 07 UI
                 case CodeType.Message:
-                    break;
+                    { // Message,<Message>,<Icon>,[TIMEOUT]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string message = args[0];
+                        CodeMessageAction action;
+                        if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
+                            action = CodeMessageAction.Information;
+                        else if (args[1].Equals("Confirmation", StringComparison.OrdinalIgnoreCase))
+                            action = CodeMessageAction.Confirmation;
+                        else if (args[1].Equals("Error", StringComparison.OrdinalIgnoreCase))
+                            action = CodeMessageAction.Error;
+                        else if (args[1].Equals("Warning", StringComparison.OrdinalIgnoreCase))
+                            action = CodeMessageAction.Warning;
+                        else
+                            throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
+
+                        int timeout = -1;
+                        if (minArgCount < args.Count)
+                        {
+                            if (int.TryParse(args[minArgCount], out timeout) == false)
+                                throw new InvalidCommandException($"Timeout is not valid positive integer [{args[minArgCount]}]", rawCode);
+                            if (timeout <= 0)
+                                throw new InvalidCommandException($"Timeout must be positive integer [{args[minArgCount]}]", rawCode);
+                        }
+
+                        return new CodeInfo_Message(depth, message, action, timeout);
+                    }
                 case CodeType.Echo:
-                    break;
+                    { // Echo,<Message>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_Echo(depth, args[0]);
+                    }
                 case CodeType.Retrieve:
                     break;
                 case CodeType.Visible:
@@ -711,7 +748,7 @@ namespace PEBakery.Core
                     cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
-                else if (string.Equals(condStr, "NotExistSection", StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(condStr, "NotExistSection", StringComparison.OrdinalIgnoreCase)) // Deprecated
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
@@ -786,7 +823,7 @@ namespace PEBakery.Core
 
         public static CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, SectionAddress addr, int depth)
         {
-            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(1).ToList(), addr, depth); // Skip Else
+            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, addr, depth); // Skip Else
             return new CodeInfo_Else(depth, embCmd);
         }
 
@@ -815,7 +852,6 @@ namespace PEBakery.Core
                     if (info == null)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
-                    compiledList.Add(cmd);
                     i = ParseNestedIf(cmd, codeList, i, compiledList);
                     elseFlag = true;
 
@@ -840,12 +876,16 @@ namespace PEBakery.Core
                         throw new InvalidCodeCommandException("Else must be used after If", cmd);
                         
                 }
-                else if (cmd.Type == CodeType.Begin)
-                    throw new InvalidCodeCommandException("Begin must be used with If or Else", cmd);
-                else if (cmd.Type == CodeType.End)
-                    throw new InvalidCodeCommandException("End must be matched with Begin", cmd);
-                else // The other operands - just copy
+                //else if (cmd.Type == CodeType.End)
+                //{
+                //    // elseFlag = true;
+                //    // throw new InvalidCodeCommandException("End must be matched with Begin", cmd);
+                //}
+                else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
+                {
+                    elseFlag = false;
                     compiledList.Add(cmd);
+                }
             }
         }
         #endregion
@@ -887,10 +927,10 @@ namespace PEBakery.Core
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
                     // Find proper End
-                    int endIdx = MatchBeginWithEnd(codeList, codeListIdx);
+                    int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                     if (endIdx == -1)
                         throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
-                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 2));
                     return endIdx;
                 }
                 else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
@@ -946,10 +986,10 @@ namespace PEBakery.Core
                     else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {
                         // Find proper End
-                        int endIdx = MatchBeginWithEnd(codeList, codeListIdx);
+                        int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                         if (endIdx == -1)
                             throw new InvalidCodeCommandException("Begin must be matched with End", ifCmd);
-                        info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                        info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 2));
                         elseFlag = true;
                         return endIdx;
                     }
@@ -967,10 +1007,10 @@ namespace PEBakery.Core
             else if (elseEmbCmd.Type == CodeType.Begin)
             {
                 // Find proper End
-                int endIdx = MatchBeginWithEnd(codeList, codeListIdx);
+                int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                 if (endIdx == -1)
                     throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
-                info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 2)); // Remove Begin and End
                 elseFlag = true;
                 return endIdx;
             }
@@ -988,13 +1028,9 @@ namespace PEBakery.Core
         // Process nested Begin ~ End block
         private static int MatchBeginWithEnd(List<CodeCommand> codeList, int codeListIdx)
         {
-            int nestedBeginEnd = 0;
+            int nestedBeginEnd = 1;
             bool beginExist = false;
             bool finalizedWithEnd = false;
-
-            // start command must be If or Begin, and its last embCmd must be Begin
-            // if (!(codeList[codeListIdx].Type == CodeType.If || codeList[codeListIdx].Type == CodeType.Else))
-            // return -1;
 
             for (; codeListIdx < codeList.Count; codeListIdx++)
             {
@@ -1017,6 +1053,8 @@ namespace PEBakery.Core
                             nestedBeginEnd++;
                             break;
                         }
+                        else
+                            break;
                     }
                 }
                 else if (cmd.Type == CodeType.Else)
@@ -1044,6 +1082,8 @@ namespace PEBakery.Core
                                 nestedBeginEnd++;
                                 break;
                             }
+                            else
+                                break;
                         }
                     }
                     else if (ifCmd.Type == CodeType.Begin)
@@ -1064,7 +1104,8 @@ namespace PEBakery.Core
             }
 
             // Met Begin, End and returned, success
-            if (beginExist && finalizedWithEnd && nestedBeginEnd == 0)
+            // if (beginExist && finalizedWithEnd && nestedBeginEnd == 0)
+            if (finalizedWithEnd && nestedBeginEnd == 0)
                 return codeListIdx;
             else
                 return -1;

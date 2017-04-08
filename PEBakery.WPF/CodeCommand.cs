@@ -125,6 +125,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
+            /*
             if (Type == CodeType.Macro)
             {
                 return Info.ToString();
@@ -132,7 +133,8 @@ namespace PEBakery.Core
             else
             {
                 return $"{Type},{Info}";
-            }
+            }*/
+            return RawCode;
         }
     }
     #endregion
@@ -234,6 +236,56 @@ namespace PEBakery.Core
             if (Show)
                 b.Append(",SHOW");
 
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 07 - UI
+    public enum CodeMessageAction { Information, Confirmation, Error, Warning }
+    public class CodeInfo_Message : CodeCommandInfo
+    {
+        public string Message;
+        public CodeMessageAction Action;
+        public int Timeout; // Optional, set to -1 to disable
+
+        public CodeInfo_Message(int depth, string message, CodeMessageAction action, int timeout = -1)
+            : base(depth)
+        {
+            Message = message;
+            Action = action;
+            Timeout = timeout;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Message);
+            b.Append(",");
+            b.Append(Action);
+            if (Timeout == -1)
+            {
+                b.Append(",");
+                b.Append(Timeout);
+            }
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_Echo : CodeCommandInfo
+    {
+        public string Message;
+
+        public CodeInfo_Echo(int depth, string message)
+            : base(depth)
+        {
+            Message = message;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Message);
             return b.ToString();
         }
     }

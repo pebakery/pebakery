@@ -98,7 +98,6 @@ namespace PEBakery.Core
                 s.CurrentPlugin = p;
             PluginSection section = p.Sections["Process"];
             s.Logger.Write($"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
-            // s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [Process]"));
 
             s.Variables.ResetVariables(VarsType.Local);
             LoadDefaultPluginVariables(s, s.CurrentPlugin);
@@ -149,8 +148,8 @@ namespace PEBakery.Core
                     else // For IfCompact + Run/Exec case
                         s.Logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
 
-                    if (!callback && sectionStart && depth == 0) // End of plugin
-                    {
+                    if (!callback && sectionStart && depth == 0)
+                    { // End of plugin
                         s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]\r\n"));
                         // PluginExit event callback
                         CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
@@ -330,11 +329,14 @@ namespace PEBakery.Core
                     break;
                 #endregion
                 #region 07 UI
-                // 07 UI
-                case CodeType.Message:
-                    break;
-                case CodeType.Echo:
-                    break;
+                // 07 UI*/
+                    case CodeType.Message:
+                        logs = CommandUI.Message(s, cmd);
+                        break;
+                    case CodeType.Echo:
+                        logs = CommandUI.Echo(s, cmd);
+                        break;
+                        /*
                 case CodeType.Retrieve:
                     break;
                 case CodeType.Visible:
@@ -361,14 +363,17 @@ namespace PEBakery.Core
                     // 10 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
+                        logs = new List<LogInfo>();
                         CommandBranch.RunExec(s, cmd);
                         break;
                     case CodeType.Loop:
                         break;
                     case CodeType.If:
+                        logs = new List<LogInfo>();
                         CommandBranch.If(s, cmd);
                         break;
                     case CodeType.Else:
+                        logs = new List<LogInfo>();
                         CommandBranch.Else(s, cmd);
                         break;
                     case CodeType.Begin:

@@ -113,6 +113,7 @@
     <Compile Include="CodeParser.cs" />
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CommandControl.cs" />
+    <Compile Include="CommandUI.cs" />
     <Compile Include="EncodedFile.cs" />
     <Compile Include="CommandBranch.cs" />
     <Compile Include="Engine.cs" />
