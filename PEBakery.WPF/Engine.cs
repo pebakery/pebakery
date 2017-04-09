@@ -46,40 +46,7 @@ namespace PEBakery.Core
         public Engine(EngineState state)
         {
             s = state;
-            // LoadDefaultFixedVariables();
-            LoadDefaultPluginVariables(s, s.CurrentPlugin);
-        }
-
-        private void LoadDefaultFixedVariables()
-        {
-            // BaseDir
-            s.Variables.SetFixedValue("BaseDir", s.BaseDir);
-            // Tools
-            s.Variables.SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools"));
-
-            // Version
-            Version version = FileHelper.GetProgramVersion();
-            s.Variables.SetFixedValue("Version", version.Build.ToString());
-            // ProjectDir
-            s.Variables.SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", s.Project.ProjectName));
-            // TargetDir
-            s.Variables.SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", s.Project.ProjectName));
-        }
-
-        public static void LoadDefaultPluginVariables(EngineState s, Plugin p)
-        {
-            // ScriptFile, PluginFile
-            s.Variables.SetValue(VarsType.Local, "PluginFile", p.FullPath);
-            s.Variables.SetValue(VarsType.Local, "ScriptFile", p.FullPath);
-
-            // [Variables]
-            if (p.Sections.ContainsKey("Variables"))
-            {
-                VarsType type = VarsType.Local;
-                if (string.Equals(p.FullPath, s.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
-                    type = VarsType.Global;
-                List<LogInfo> logs = s.Variables.AddVariables(type, p.Sections["Variables"]);
-            }
+            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
         }
 
         /// <summary>
@@ -100,7 +67,7 @@ namespace PEBakery.Core
             s.Logger.Write($"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
             s.Variables.ResetVariables(VarsType.Local);
-            LoadDefaultPluginVariables(s, s.CurrentPlugin);
+            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
 
             s.CurSectionParams = new List<string>();
         }
@@ -228,57 +195,57 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     /*
-                #region 01 File
-                // 01 File
-                case CodeType.CopyOrExpand:
-                    break;
-                case CodeType.DirCopy:
-                    break;
-                case CodeType.DirDelete:
-                    break;
-                case CodeType.DirMove:
-                    break;
-                case CodeType.DirMake:
-                    break;
-                case CodeType.Expand:
-                    break;
+                    #region 01 File
+                    // 01 File
+                    case CodeType.CopyOrExpand:
+                        break;
+                    case CodeType.DirCopy:
+                        break;
+                    case CodeType.DirDelete:
+                        break;
+                    case CodeType.DirMove:
+                        break;
+                    case CodeType.DirMake:
+                        break;
+                    case CodeType.Expand:
+                        break;
                     */
                     //case CodeType.FileCopy:
                     //    break;
                     /*
-                case CodeType.FileDelete:
-                    break;
-                case CodeType.FileRename:
-                    break;
-                case CodeType.FileMove:
-                    break;
-                case CodeType.FileCreateBlank:
-                    break;
-                case CodeType.FileByteExtract:
-                    break;
-                #endregion
-                #region 02 Registry
-                // 02 Registry
-                case CodeType.RegHiveLoad:
-                    break;
-                case CodeType.RegHiveUnload:
-                    break;
-                case CodeType.RegImport:
-                    break;
-                case CodeType.RegWrite:
-                    break;
-                case CodeType.RegRead:
-                    break;
-                case CodeType.RegDelete:
-                    break;
-                case CodeType.RegWriteBin:
-                    break;
-                case CodeType.RegReadBin:
-                    break;
-                case CodeType.RegMulti:
-                    break;
-                #endregion
-                    */
+                    case CodeType.FileDelete:
+                        break;
+                    case CodeType.FileRename:
+                        break;
+                    case CodeType.FileMove:
+                        break;
+                    case CodeType.FileCreateBlank:
+                        break;
+                    case CodeType.FileByteExtract:
+                        break;
+                    #endregion
+                    #region 02 Registry
+                    // 02 Registry
+                    case CodeType.RegHiveLoad:
+                        break;
+                    case CodeType.RegHiveUnload:
+                        break;
+                    case CodeType.RegImport:
+                        break;
+                    case CodeType.RegWrite:
+                        break;
+                    case CodeType.RegRead:
+                        break;
+                    case CodeType.RegDelete:
+                        break;
+                    case CodeType.RegWriteBin:
+                        break;
+                    case CodeType.RegReadBin:
+                        break;
+                    case CodeType.RegMulti:
+                        break;
+                    #endregion
+                        */
                     #region 03 Text
                     // 03 Text
                     case CodeType.TXTAddLine:
@@ -297,46 +264,48 @@ namespace PEBakery.Core
                         logs = CommandText.TXTDelEmptyLines(s, cmd);
                         break;
                     #endregion
-                        /*
-                #region 04 INI
-                // 04 INI
-                case CodeType.INIWrite:
-                    break;
-                case CodeType.INIRead:
-                    break;
-                case CodeType.INIDelete:
-                    break;
-                case CodeType.INIAddSection:
-                    break;
-                case CodeType.INIDeleteSection:
-                    break;
-                case CodeType.INIWriteTextLine:
-                    break;
-                case CodeType.INIMerge:
-                    break;
-                #endregion
-                #region 05 Network
-                // 05 Network
-                case CodeType.WebGet:
-                    break;
-                case CodeType.WebGetIfNotExist:
-                    break;
-                #endregion
-                #region 06 Attach, Interface
-                // 06 Attach, Interface
-                case CodeType.ExtractFile:
-                    break;
-                case CodeType.ExtractAndRun:
-                    break;
-                case CodeType.ExtractAllFiles:
-                    break;
-                case CodeType.ExtractAllFilesIfNotExist:
-                    break;
-                case CodeType.Encode:
-                    break;
-                #endregion
-                #region 07 UI
-                // 07 UI*/
+                    #region 04 INI
+                    // 04 INI
+                    case CodeType.INIRead:
+                        logs = CommandINI.INIRead(s, cmd);
+                        break;
+                    case CodeType.INIWrite:
+                        logs = CommandINI.INIWrite(s, cmd);
+                        break;
+                    //case CodeType.INIDelete:
+                    //    break;
+                    //case CodeType.INIAddSection:
+                    //    break;
+                    //case CodeType.INIDeleteSection:
+                    //    break;
+                    //case CodeType.INIWriteTextLine:
+                    //    break;
+                    //case CodeType.INIMerge:
+                    //    break;
+                    #endregion
+                    /*
+            #region 05 Network
+            // 05 Network
+            case CodeType.WebGet:
+                break;
+            case CodeType.WebGetIfNotExist:
+                break;
+            #endregion
+            #region 06 Attach, Interface
+            // 06 Attach, Interface
+            case CodeType.ExtractFile:
+                break;
+            case CodeType.ExtractAndRun:
+                break;
+            case CodeType.ExtractAllFiles:
+                break;
+            case CodeType.ExtractAllFilesIfNotExist:
+                break;
+            case CodeType.Encode:
+                break;
+            #endregion
+            #region 07 UI
+            // 07 UI*/
                     case CodeType.Message:
                         logs = CommandUI.Message(s, cmd);
                         break;

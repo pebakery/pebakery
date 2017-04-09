@@ -445,19 +445,98 @@ namespace PEBakery.Core
                 #region 04 INI
                 // 04 INI
                 case CodeType.INIWrite:
-                    break;
+                    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+                        const int minArgCount = 4;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIWrite(depth, args[0], args[1], args[2], args[3]);
+                    }
                 case CodeType.INIRead:
-                    break;
+                    { // INIWrite,<FileName>,<SectionName>,<Key>,<VarName>
+                        const int minArgCount = 4;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string varName = Variables.GetVariableName(args[3]);
+                        if (varName == null)
+                            throw new InvalidCommandException($"Variable name [{args[3]}] must start and end with %", rawCode);
+
+                        return new CodeInfo_INIWrite(depth, args[0], args[1], args[2], varName);
+                    }
                 case CodeType.INIDelete:
-                    break;
+                    { // INIDelete,<FileName>,<SectionName>,<Key>
+                        const int minArgCount = 3;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIDelete(depth, args[0], args[1], args[2]);
+                    }
                 case CodeType.INIAddSection:
-                    break;
+                    { // INIAddSection,<FileName>,<SectionName>
+                        const int minArgCount = 2;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIAddSection(depth, args[0], args[1]);
+                    }
                 case CodeType.INIDeleteSection:
-                    break;
+                    { // INIDeleteSection,<FileName>,<SectionName>
+                        const int minArgCount = 2;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIDeleteSection(depth, args[0], args[1]);
+                    }
                 case CodeType.INIWriteTextLine:
-                    break;
+                    { // INIDelete,<FileName>,<SectionName>,<Line>[,APPEND]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool append = false;
+                        if (maxArgCount == args.Count)
+                        {
+                            if (args[3].Equals("APPEND", StringComparison.OrdinalIgnoreCase))
+                                append = true;
+                            else
+                                throw new InvalidCommandException($"Wrong argument [{args[3]}]", rawCode);
+                        }
+
+                        return new CodeInfo_INIWriteTextLine(depth, args[0], args[1], args[2], append);
+                    }
                 case CodeType.INIMerge:
-                    break;
+                    {
+                        // INIMerge,<SrcFileName>,<DestFileName>
+                        // INIMerge,<SrcFileName>,<SectionName>,<DestFileName>
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string srcFileName = args[0];
+                        string destFileName;
+                        string sectionName = null;
+                        if (args.Count == minArgCount)
+                        {
+                            destFileName = args[1];
+                        }
+                        else if (args.Count == maxArgCount)
+                        {
+                            destFileName = args[2];
+                            sectionName = args[1];
+                        }
+                        else
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIMerge(depth, srcFileName, destFileName, sectionName);
+                    }
                 #endregion
                 #region 05 Network
                 // 05 Network

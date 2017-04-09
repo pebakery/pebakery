@@ -210,7 +210,8 @@ namespace PEBakery.Core
         public bool NoRec;
         public bool Show;
 
-        public CodeInfo_FileCopy(int depth, string srcFile, string destPath, bool preserve, bool noWarn, bool noRec, bool show)
+        public CodeInfo_FileCopy(int depth,
+            string srcFile, string destPath, bool preserve, bool noWarn, bool noRec, bool show)
             : base(depth)
         {
             SrcFile = srcFile;
@@ -361,6 +362,207 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 04 - INI
+    public class CodeInfo_INIWrite : CodeCommandInfo
+    {
+        public string FileName;
+        public string SectionName;
+        public string Key;
+        public string Value;
+
+        public CodeInfo_INIWrite(int depth,
+            string fileName, string sectionName, string key, string value)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+            Key = key;
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(Value);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIRead : CodeCommandInfo
+    {
+        public string FileName;
+        public string SectionName;
+        public string Key;
+        public string VarName;
+
+        public CodeInfo_INIRead(int depth,
+            string fileName, string sectionName, string key, string varName)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+            Key = key;
+            VarName = varName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",%");
+            b.Append(VarName);
+            b.Append("%");
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIDelete : CodeCommandInfo
+    {
+        public string FileName;
+        public string SectionName;
+        public string Key;
+
+        public CodeInfo_INIDelete(int depth,
+            string fileName, string sectionName, string key)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+            Key = key;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
+            b.Append(Key);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIAddSection : CodeCommandInfo
+    { 
+        public string FileName;
+        public string SectionName;
+
+        public CodeInfo_INIAddSection(int depth,
+            string fileName, string sectionName)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIDeleteSection : CodeCommandInfo
+    {
+        public string FileName;
+        public string SectionName;
+
+        public CodeInfo_INIDeleteSection(int depth,
+            string fileName, string sectionName)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIWriteTextLine : CodeCommandInfo
+    {
+        public string FileName;
+        public string SectionName;
+        public string Line;
+        public bool Append;
+
+        public CodeInfo_INIWriteTextLine(int depth,
+            string fileName, string sectionName, string line, bool append)
+            : base(depth)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+            Line = line;
+            Append = append;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
+            b.Append(Line);
+            if (Append)
+                b.Append(",APPEND");
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_INIMerge : CodeCommandInfo
+    {
+        // INIMerge,<SrcFileName>,<DestFileName>
+        // INIMerge,<SrcFileName>,<SectionName>,<DestFileName>
+        public string SrcFileName;
+        public string DestFileName;
+        public string SectionName; // optional
+
+        public CodeInfo_INIMerge(int depth,
+            string srcFileName, string destFileName, string sectionName = null)
+            : base(depth)
+        {
+            SrcFileName = srcFileName;
+            DestFileName = destFileName;
+            SectionName = sectionName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFileName);
+            b.Append(",");
+            b.Append(DestFileName);
+            if (SectionName != null)
+            {
+                b.Append(",");
+                b.Append(SectionName);
+            }
             return b.ToString();
         }
     }
@@ -971,8 +1173,9 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
+            b.Append("%");
             b.Append(VarName);
-            b.Append(",");
+            b.Append("%,");
             b.Append(VarValue);
             if (Global)
                 b.Append(",GLOBAL");
