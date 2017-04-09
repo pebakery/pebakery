@@ -278,19 +278,26 @@ namespace PEBakery.Core
                 case CodeType.RegMulti:
                     break;
                 #endregion
-                #region 03 Text
-                // 03 Text
-                case CodeType.TXTAddLine:
-                    break;
-                case CodeType.TXTReplace:
-                    break;
-                case CodeType.TXTDelLine:
-                    break;
-                case CodeType.TXTDelSpaces:
-                    break;
-                case CodeType.TXTDelEmptyLines:
-                    break;
-                #endregion
+                    */
+                    #region 03 Text
+                    // 03 Text
+                    case CodeType.TXTAddLine:
+                        logs = CommandText.TXTAddLine(s, cmd);
+                        break;
+                    case CodeType.TXTReplace:
+                        logs = CommandText.TXTReplace(s, cmd);
+                        break;
+                    case CodeType.TXTDelLine:
+                        logs = CommandText.TXTDelLine(s, cmd);
+                        break;
+                    case CodeType.TXTDelSpaces:
+                        logs = CommandText.TXTDelSpaces(s, cmd);
+                        break;
+                    case CodeType.TXTDelEmptyLines:
+                        logs = CommandText.TXTDelEmptyLines(s, cmd);
+                        break;
+                    #endregion
+                        /*
                 #region 04 INI
                 // 04 INI
                 case CodeType.INIWrite:
@@ -367,6 +374,8 @@ namespace PEBakery.Core
                         CommandBranch.RunExec(s, cmd);
                         break;
                     case CodeType.Loop:
+                        logs = new List<LogInfo>();
+                        CommandBranch.Loop(s, cmd);
                         break;
                     case CodeType.If:
                         logs = new List<LogInfo>();

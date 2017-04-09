@@ -110,6 +110,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CodeCommandINI.cs" />
+    <Compile Include="CodeCommandText.cs" />
     <Compile Include="CodeParser.cs" />
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CommandControl.cs" />

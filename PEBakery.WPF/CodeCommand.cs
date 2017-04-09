@@ -30,7 +30,7 @@ using System.Net.NetworkInformation;
 
 namespace PEBakery.Core
 {
-   #region CodeType
+    #region CodeType
 
     public enum CodeType
     {
@@ -55,7 +55,7 @@ namespace PEBakery.Core
         // 09 System
         System = 900, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 10 Branch
-        Run = 1000, Exec, Loop, If, Else, Begin, End, 
+        Run = 1000, Exec, Loop, If, Else, Begin, End,
         // 11 Control
         Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, // GetParam and PackParam will be depracted, PEBakery can have infinite number of section params.
         // 12 External Macro
@@ -236,6 +236,131 @@ namespace PEBakery.Core
             if (Show)
                 b.Append(",SHOW");
 
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 03 - Text
+    public enum TXTAddLineMode { Append, Prepend, Place };
+    public class CodeInfo_TXTAddLine : CodeCommandInfo
+    {
+        public string FileName;
+        public string Line;
+        public TXTAddLineMode Mode;
+        public int LineNum; // Optional, -1 if not used
+
+        public CodeInfo_TXTAddLine(int depth,
+            string fileName, string line, TXTAddLineMode mode, int lineNum = -1)
+            : base(depth)
+        {
+            FileName = fileName;
+            Line = line;
+            Mode = mode;
+            LineNum = lineNum;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(Line);
+            b.Append(",");
+            b.Append(Mode);
+            if (LineNum != -1)
+            {
+                b.Append(",");
+                b.Append(LineNum);
+            }
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_TXTReplace : CodeCommandInfo
+    {
+        public string FileName;
+        public string ToBeReplaced;
+        public string ReplaceWith;
+
+        public CodeInfo_TXTReplace(int depth,
+            string fileName, string toBeReplaced, string replaceWith)
+            : base(depth)
+        {
+            FileName = fileName;
+            ToBeReplaced = toBeReplaced;
+            ReplaceWith = replaceWith;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(ToBeReplaced);
+            b.Append(",");
+            b.Append(ReplaceWith);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_TXTDelLine : CodeCommandInfo
+    { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
+        public string FileName;
+        public string DeleteIfBeginWith;
+
+        public CodeInfo_TXTDelLine(int depth,
+            string fileName, string deleteIfBeginWith)
+            : base(depth)
+        {
+            FileName = fileName;
+            DeleteIfBeginWith = deleteIfBeginWith;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(DeleteIfBeginWith);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_TXTDelSpaces : CodeCommandInfo
+    { // TXTDelSpaces,<FileName>
+        public string FileName;
+
+        public CodeInfo_TXTDelSpaces(int depth,
+            string fileName)
+            : base(depth)
+        {
+            FileName = fileName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_TXTDelEmptyLines : CodeCommandInfo
+    { // TXTDelEmptyLines,<FileName>
+        public string FileName;
+
+        public CodeInfo_TXTDelEmptyLines(int depth,
+            string fileName)
+            : base(depth)
+        {
+            FileName = fileName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
             return b.ToString();
         }
     }

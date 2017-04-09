@@ -366,15 +366,81 @@ namespace PEBakery.Core
                 #region 03 Text
                 // 03 Text
                 case CodeType.TXTAddLine:
-                    break;
+                    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string fileName = args[0];
+                        string line = args[1];
+                        TXTAddLineMode mode;
+                        if (args[2].Equals("Append", StringComparison.OrdinalIgnoreCase))
+                            mode = TXTAddLineMode.Append;
+                        else if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase))
+                            mode = TXTAddLineMode.Prepend;
+                        else if (args[2].Equals("Place", StringComparison.OrdinalIgnoreCase))
+                            mode = TXTAddLineMode.Place;
+                        else
+                            throw new InvalidCommandException($"Invalid argument [{args[2]}]", rawCode);
+
+                        int lineNum = -1;
+                        if (mode == TXTAddLineMode.Place)
+                        {
+                            if (args.Count != maxArgCount)
+                                throw new InvalidCommandException($"In [Place] mode, line number argument is necessary", rawCode);
+                            if (int.TryParse(args[maxArgCount], out lineNum) == false)
+                                lineNum = -1;
+                            if (lineNum <= 0)
+                                throw new InvalidCommandException($"Line number must be positive integer", rawCode);
+                        }
+
+                        return new CodeInfo_TXTAddLine(depth, fileName, line, mode, lineNum);
+                    }
                 case CodeType.TXTReplace:
-                    break;
+                    { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
+                        const int minArgCount = 3;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (args[1].Contains("#$x"))
+                            throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
+                        if (args[2].Contains("#$x"))
+                            throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
+
+                        return new CodeInfo_TXTReplace(depth, args[0], args[1], args[2]);
+                    }
                 case CodeType.TXTDelLine:
-                    break;
+                    { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
+                        const int minArgCount = 2;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (args[1].Contains("#$x"))
+                            throw new InvalidCommandException($"Keyword cannot include line feed", rawCode);
+
+                        return new CodeInfo_TXTDelLine(depth, args[0], args[1]);
+                    }
                 case CodeType.TXTDelSpaces:
-                    break;
+                    { // TXTDelSpaces,<FileName>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_TXTDelSpaces(depth, args[0]);
+                    }
                 case CodeType.TXTDelEmptyLines:
-                    break;
+                    { // TXTDelEmptyLines,<FileName>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_TXTDelEmptyLines(depth, args[0]);
+                    }
                 #endregion
                 #region 04 INI
                 // 04 INI
@@ -1029,7 +1095,7 @@ namespace PEBakery.Core
         private static int MatchBeginWithEnd(List<CodeCommand> codeList, int codeListIdx)
         {
             int nestedBeginEnd = 1;
-            bool beginExist = false;
+            // bool beginExist = false;
             bool finalizedWithEnd = false;
 
             for (; codeListIdx < codeList.Count; codeListIdx++)
@@ -1049,7 +1115,7 @@ namespace PEBakery.Core
                         }
                         else if (info.Embed.Type == CodeType.Begin)
                         {
-                            beginExist = true;
+                            // beginExist = true;
                             nestedBeginEnd++;
                             break;
                         }
@@ -1078,7 +1144,7 @@ namespace PEBakery.Core
                             }
                             else if (embedInfo.Embed.Type == CodeType.Begin)
                             {
-                                beginExist = true;
+                                // beginExist = true;
                                 nestedBeginEnd++;
                                 break;
                             }
@@ -1088,7 +1154,7 @@ namespace PEBakery.Core
                     }
                     else if (ifCmd.Type == CodeType.Begin)
                     {
-                        beginExist = true;
+                        // beginExist = true;
                         nestedBeginEnd++;
                     }
                 }
