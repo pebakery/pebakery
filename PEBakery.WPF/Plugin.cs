@@ -542,6 +542,18 @@ namespace PEBakery.Core
         public SectionDataType DataType { get { return dataType; } set { dataType = value; } }
         public bool Loaded { get { return loaded; } }
 
+        // Logs
+        private Queue<LogInfo> logInfos;
+        public List<LogInfo> LogInfos
+        {
+            get
+            {
+                List<LogInfo> list = logInfos.ToList();
+                logInfos.Clear();
+                return list;
+            }
+        }
+
         // Ini-Type Section
         private StringDictionary iniDict;
         public StringDictionary IniDict
@@ -623,6 +635,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SelectDataType(type);
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = false;
         }
 
@@ -632,6 +645,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SelectDataType(type);
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = false;
             if (load)
                 Load();
@@ -643,6 +657,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = dataType;
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = false;
             if (load)
                 Load();
@@ -654,6 +669,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.IniDict;
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = true;
             this.iniDict = iniDict;
         }
@@ -664,6 +680,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.Lines;
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = true;
             this.lines = lines;
         }
@@ -674,6 +691,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.Codes;
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = true;
             this.codes = codes;
         }
@@ -684,6 +702,7 @@ namespace PEBakery.Core
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.Interfaces;
+            this.logInfos = new Queue<LogInfo>();
             this.loaded = true;
             this.uiCodes = uiCodes;
         }
@@ -726,10 +745,18 @@ namespace PEBakery.Core
                         lines = Ini.ParseSectionToStringList(PluginPath, sectionName);
                         break;
                     case SectionDataType.Codes:
-                        codes = CodeParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this));
+                        {
+                            codes = CodeParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this), out List<LogInfo> logList);
+                            foreach (LogInfo log in logList)
+                                logInfos.Enqueue(log);
+                        }
                         break;
                     case SectionDataType.Interfaces:
-                        uiCodes = UIParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this));
+                        {
+                            uiCodes = UIParser.ParseRawLines(Ini.ParseSectionToStringList(PluginPath, sectionName), new SectionAddress(plugin, this), out List<LogInfo> logList);
+                            foreach (LogInfo log in logList)
+                                logInfos.Enqueue(log);
+                        }
                         break;
                     default:
                         throw new InternalUnknownException($"Invalid SectionType {type}");
@@ -765,10 +792,11 @@ namespace PEBakery.Core
 
         public void ConvertLineToCodeSection(List<string> lines)
         {
-            if (type == SectionType.UninspectedCode && dataType == SectionDataType.Lines)
+            if (type == SectionType.Code && dataType == SectionDataType.Lines)
             {
-                Load();
-                codes = CodeParser.ParseRawLines(lines, new SectionAddress(plugin, this));
+                codes = CodeParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<LogInfo> logList);
+                foreach (LogInfo log in logList)
+                    logInfos.Enqueue(log);
 
                 lines = null;
                 type = SectionType.CompiledCode;
@@ -782,8 +810,9 @@ namespace PEBakery.Core
         {
             if (type == SectionType.Interface && dataType == SectionDataType.Lines)
             {
-                Load();
-                uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this));
+                uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<LogInfo> logList);
+                foreach (LogInfo log in logList)
+                    logInfos.Enqueue(log);
 
                 lines = null;
                 type = SectionType.CompiledInterface;

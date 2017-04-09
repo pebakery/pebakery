@@ -42,14 +42,6 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 
 
-// Used OpenSource
-// Svg.Net (Microsoft Public License)
-// Google's Material Icons (Apache License)
-// Microsoft's Per-Monitor-DPI Images Example (MIT)
-// Main Icon from pixelkit.com, CC BY-NC 3.0 (https://www.iconfinder.com/icons/208267/desert_donut_icon)
-// SpinnerControl from https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control v1.02 (COPL)
-// ProgressRing from https://github.com/MahApps/MahApps.Metro v.1.4.3 (MIT)
-
 namespace PEBakery.WPF
 {
     #region MainWindow
@@ -58,17 +50,18 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private List<Project> projects;
+        private List<Project> projectList;
         private int loadedProjectCount;
         private int allProjectCount;
         private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
-        private BackgroundWorker loadWorker;
-        private BackgroundWorker refreshWorker;
+        private BackgroundWorker loadWorker = new BackgroundWorker();
+        private BackgroundWorker refreshWorker = new BackgroundWorker();
         private double scaleFactor = 1;
 
         private TreeViewModel currentTree;
+        private Logger logger;
 
         const int MaxDpiScale = 4;
 
@@ -109,7 +102,7 @@ namespace PEBakery.WPF
             };
             this.bottomDock.Child = loadProgressBar;
 
-            this.projects = new List<Project>();
+            this.projectList = new List<Project>();
             this.loadedProjectCount = 0;
             this.allProjectCount = 0;
 
@@ -118,24 +111,24 @@ namespace PEBakery.WPF
             this.DataContext = treeModel;
 
             LoadButtonsImage();
-            
 
+            logger = new Logger(System.IO.Path.Combine(baseDir, "log.txt"));
+            
             StartLoadWorker();
         }
 
         void LoadButtonsImage()
         {
             // Properties.Resources.
+            BuildButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            RefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            SettingButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 5);
+            UpdateButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Download, 5);
+            AboutButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Help, 5);
 
-            BuildButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            RefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-            SettingButton.Content = GetMaterialIcon(PackIconMaterialKind.Settings, 5);
-            UpdateButton.Content = GetMaterialIcon(PackIconMaterialKind.Download, 5);
-            AboutButton.Content = GetMaterialIcon(PackIconMaterialKind.Help, 5);
-
-            PluginRunButton.Content = GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            PluginEditButton.Content = GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
-            PluginRefreshButton.Content = GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
+            PluginRunButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
+            PluginEditButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
+            PluginRefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
         }
 
         private void StartLoadWorker()
@@ -150,7 +143,7 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 watch = Stopwatch.StartNew();
-                this.projects = new List<Project>();
+                this.projectList = new List<Project>();
                 this.loadedProjectCount = 0;
                 this.allProjectCount = 0;
 
@@ -167,20 +160,20 @@ namespace PEBakery.WPF
                 {
                     Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
                     project.Load();
-                    projects.Add(project);
+                    projectList.Add(project);
                     loadedProjectCount++;
                 }
 
                 Dispatcher.Invoke(() =>
                 {
-                    foreach (Project project in this.projects)
+                    foreach (Project project in this.projectList)
                     {
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
                         RecursivePopulateMainTreeView(plugins, this.treeModel);
                     };
                     MainTreeView.DataContext = treeModel;
                     currentTree = treeModel.Child[0];
-                    DrawPlugin(projects[0].MainPlugin);
+                    DrawPlugin(projectList[0].MainPlugin);
                 });
             };
             loadWorker.WorkerReportsProgress = true;
@@ -226,20 +219,20 @@ namespace PEBakery.WPF
 
                 if (p.Type == PluginType.Directory)
                 {
-                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
                 }
                 else if (p.Type == PluginType.Plugin)
                 {
                     if (p.Level == Project.MainLevel)
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.Settings, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
                     else if (p.Mandatory)
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
                     else
-                        item.SetIcon(GetMaterialIcon(PackIconMaterialKind.File, 0));
+                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
                 }
                 else if (p.Type == PluginType.Link)
                 {
-                    item.SetIcon(GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
                 }
 
                 if (0 < node.Child.Count)
@@ -276,7 +269,7 @@ namespace PEBakery.WPF
             Stopwatch watch = new Stopwatch();
             double size = PluginLogo.ActualWidth * MaxDpiScale;
             if (p.Type == PluginType.Directory)
-                PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             else
             {
                 try
@@ -305,23 +298,24 @@ namespace PEBakery.WPF
 
                         PluginLogo.Content = grid;
                     }
-                    
                 }
                 catch
                 { // No logo file - use default
                     if (p.Type == PluginType.Plugin)
-                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
                     else if (p.Type == PluginType.Link)
-                        PluginLogo.Content = GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                 }
             }
-            PluginTitle.Text = Engine.UnescapeStr(p.Title);
-            PluginDescription.Text = Engine.UnescapeStr(p.Description);
+            PluginTitle.Text = StringEscaper.Unescape(p.Title);
+            PluginDescription.Text = StringEscaper.Unescape(p.Description);
             PluginVersion.Text = $"v{p.Version}";
             PluginAuthor.Text = p.Author;
 
             MainCanvas.Children.Clear();
-            UIRenderer render = new UIRenderer(MainCanvas, this, p, scaleFactor);
+            ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
+            UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
+            MainCanvas.LayoutTransform = scale;
             render.Render();
         }
 
@@ -333,6 +327,9 @@ namespace PEBakery.WPF
         private void StartRefreshWorker()
         {
             if (currentTree == null)
+                return;
+
+            if (refreshWorker.IsBusy)
                 return;
 
             Stopwatch watch = new Stopwatch();
@@ -399,18 +396,6 @@ namespace PEBakery.WPF
         {
         }
 
-        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
-        {
-            PackIconMaterial icon = new PackIconMaterial()
-            {
-                Kind = kind,
-                Width = Double.NaN,
-                Height = Double.NaN,
-                Margin = new Thickness(margin, margin, margin, margin),
-            };
-            return icon;
-        }
-
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
             
@@ -426,6 +411,17 @@ namespace PEBakery.WPF
                 scaleFactor = settingViewModel.ScaleFactor / 100;
                 StartRefreshWorker();
             }
+        }
+
+        private void PluginEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            ProcessStartInfo procInfo = new ProcessStartInfo()
+            {
+                Verb = "open",
+                FileName = currentTree.Node.Data.FullPath,
+                UseShellExecute = true
+            };
+            Process.Start(procInfo);
         }
     }
     #endregion

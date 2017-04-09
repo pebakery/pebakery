@@ -25,6 +25,78 @@ using PEBakery.Core;
 
 namespace PEBakery.Exceptions
 {
+    #region CodeCommandException, UICommandException
+    public class CodeCommandException : Exception
+    {
+        private CodeCommand cmd;
+        public CodeCommand Cmd { get => cmd; }
+        public CodeCommandException() { }
+        public CodeCommandException(string message) : base(message) { }
+        public CodeCommandException(CodeCommand cmd) { this.cmd = cmd; }
+        public CodeCommandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
+        public CodeCommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class UICommandException : Exception
+    {
+        private UICommand uiCmd;
+        public UICommand UICmd { get => uiCmd; }
+        public UICommandException() { }
+        public UICommandException(string message) : base(message) { }
+        public UICommandException(UICommand uiCmd) { this.uiCmd = uiCmd; }
+        public UICommandException(string message, UICommand uiCmd) : base(message) { this.uiCmd = uiCmd; }
+        public UICommandException(string message, Exception inner) : base(message, inner) { }
+    }
+    #endregion
+
+    #region CodeParser, UIParser
+    public class EmptyLineException : Exception
+    {
+        public EmptyLineException() { }
+        public EmptyLineException(string message) : base(message) { }
+        public EmptyLineException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class InvalidCommandException : Exception
+    {
+        private string rawLine;
+        public string RawLine { get => rawLine; }
+        public InvalidCommandException() { }
+        public InvalidCommandException(string message) : base(message) { }
+        public InvalidCommandException(string message, string rawLine) : base(message) { this.rawLine = rawLine; }
+        public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class InvalidUICommandException : UICommandException
+    {
+        public InvalidUICommandException() { }
+        public InvalidUICommandException(string message) : base(message) { }
+        public InvalidUICommandException(UICommand uiCmd) : base(uiCmd) { }
+        public InvalidUICommandException(string message, UICommand uiCmd) : base(message, uiCmd) { }
+        public InvalidUICommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class InvalidCodeCommandException : CodeCommandException
+    {
+        public InvalidCodeCommandException() { }
+        public InvalidCodeCommandException(string message) : base(message) { }
+        public InvalidCodeCommandException(CodeCommand cmd) : base(cmd) { }
+        public InvalidCodeCommandException(string message, CodeCommand cmd) : base(message, cmd) { }
+        public InvalidCodeCommandException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    /// <summary>
+    /// Internal error which unable to continue parsing
+    /// </summary>
+    public class InternalParserException : Exception
+    {
+        public InternalParserException() { }
+        public InternalParserException(string message) : base(message) { }
+        public InternalParserException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    #endregion
+
     #region Plugin
     /// <summary>
     /// Cannot found plugin
@@ -66,85 +138,13 @@ namespace PEBakery.Exceptions
     /// <summary>
     /// So Critical error that build must be halt
     /// </summary>
-    public class CriticalErrorException : Exception
+    public class CriticalErrorException : CodeCommandException
     {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
         public CriticalErrorException() { }
         public CriticalErrorException(string message) : base(message) { }
-        public CriticalErrorException(CodeCommand cmd) { this.cmd = cmd; }
-        public CriticalErrorException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
+        public CriticalErrorException(CodeCommand cmd) : base(cmd) { }
+        public CriticalErrorException(string message, CodeCommand cmd) : base(message, cmd) { }
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Command contains invalid Opcode
-    /// </summary>
-    public class InvalidOpcodeException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidOpcodeException() { }
-        public InvalidOpcodeException(string message) : base(message) { }
-        public InvalidOpcodeException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidOpcodeException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidOpcodeException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// /// BakerySubCommandes contains invalid subOpcode
-    /// </summary>
-    public class InvalidSubOpcodeException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidSubOpcodeException() { }
-        public InvalidSubOpcodeException(string message) : base(message) { }
-        public InvalidSubOpcodeException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidSubOpcodeException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidSubOpcodeException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Command contains invalid Operand
-    /// </summary>
-    public class InvalidOperandException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidOperandException() { }
-        public InvalidOperandException(string message) : base(message) { }
-        public InvalidOperandException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidOperandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidOperandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// LogInfo contains invalid log format
-    /// </summary>
-    public class InvalidLogFormatException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidLogFormatException() { }
-        public InvalidLogFormatException(string message) : base(message) { }
-        public InvalidLogFormatException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidLogFormatException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidLogFormatException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Command contains invalid SubCommand
-    /// </summary>
-    public class InvalidSubCommandException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidSubCommandException() { }
-        public InvalidSubCommandException(string message) : base(message) { }
-        public InvalidSubCommandException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidSubCommandException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidSubCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
     /// <summary>
@@ -156,52 +156,6 @@ namespace PEBakery.Exceptions
         public InternalUnknownException(string message) : base(message) { }
         public InternalUnknownException(string message, Exception inner) : base(message, inner) { }
     }
-
-
-    /// <summary>
-    /// BakeryCodeParser cannot continue parsing due to malformed command
-    /// </summary>
-    /// <remarks>
-    /// Throw this if Command is not forged
-    /// </remarks>
-    public class InvalidCommandException : Exception
-    {
-        public InvalidCommandException() { }
-        public InvalidCommandException(string message) : base(message) { }
-        public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    #endregion
-
-    #region CodeParser
-
-    /// <summary>
-    /// BakeryCodeParser cannot continue parsing due to malformed grammar of command, especially If and Else
-    /// </summary>
-    /// <remarks>
-    /// Throw this if Command is already forged
-    /// </remarks>
-    public class InvalidGrammarException : Exception
-    {
-        private CodeCommand cmd;
-        public CodeCommand Cmd { get { return cmd; } }
-        public InvalidGrammarException() { }
-        public InvalidGrammarException(string message) : base(message) { }
-        public InvalidGrammarException(CodeCommand cmd) { this.cmd = cmd; }
-        public InvalidGrammarException(string message, CodeCommand cmd) : base(message) { this.cmd = cmd; }
-        public InvalidGrammarException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Internal error which unable to continue parsing
-    /// </summary>
-    public class InternalParseException : Exception
-    {
-        public InternalParseException() { }
-        public InternalParseException(string message) : base(message) { }
-        public InternalParseException(string message, Exception inner) : base(message, inner) { }
-    }
-
     #endregion
 
     #region EncodedFile
@@ -217,6 +171,31 @@ namespace PEBakery.Exceptions
         public ExtractFileNotFoundException() { }
         public ExtractFileNotFoundException(string message) : base(message) { }
         public ExtractFileNotFoundException(string message, Exception inner) : base(message, inner) { }
+    }
+    #endregion
+
+    #region Variables
+    public class VariableCircularReferenceException : Exception
+    {
+        public VariableCircularReferenceException() { }
+        public VariableCircularReferenceException(string message) : base(message) { }
+        public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class VariableInvalidFormatException : Exception
+    {
+        public VariableInvalidFormatException() { }
+        public VariableInvalidFormatException(string message) : base(message) { }
+        public VariableInvalidFormatException(string message, Exception inner) : base(message, inner) { }
+    }
+    #endregion
+
+    #region Regsitry
+    public class InvalidRegKeyException : Exception
+    {
+        public InvalidRegKeyException() { }
+        public InvalidRegKeyException(string message) : base(message) { }
+        public InvalidRegKeyException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 }

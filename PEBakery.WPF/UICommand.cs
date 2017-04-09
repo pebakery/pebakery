@@ -147,11 +147,11 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             if (includeKey)
             {
-                builder.Append(Engine.QuoteEscapeStr(Key));
+                builder.Append(StringEscaper.QuoteEscape(Key));
                 builder.Append("=");
             }
 
-            builder.Append(Engine.QuoteEscapeStr(Text));
+            builder.Append(StringEscaper.QuoteEscape(Text));
             builder.Append(",");
             if (Visibility)
                 builder.Append("1,");
@@ -194,7 +194,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + Engine.EscapeStr(ToolTip);
+                return "," + StringEscaper.Escape(ToolTip);
             else
                 return string.Empty;
         }
@@ -218,7 +218,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(Engine.QuoteEscapeStr(Value));
+            builder.Append(StringEscaper.QuoteEscape(Value));
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
@@ -349,10 +349,10 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < Items.Count - 1; i++)
             {
-                builder.Append(Engine.QuoteEscapeStr(Items[i]));
+                builder.Append(StringEscaper.QuoteEscape(Items[i]));
                 builder.Append(",");
             }
-            builder.Append(Engine.QuoteEscapeStr(Items.Last()));
+            builder.Append(StringEscaper.QuoteEscape(Items.Last()));
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
@@ -411,14 +411,14 @@ namespace PEBakery.Core
         // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
-        public bool ProgressShow;
+        public bool ShowProgress;
 
-        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool progressShow)
+        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool showProgress)
             : base(valid, tooltip)
         {
             this.SectionName = sectionName;
             this.Picture = picture;
-            this.ProgressShow = progressShow;
+            this.ShowProgress = showProgress;
         }
 
         public override string ForgeRawLine()
@@ -431,7 +431,7 @@ namespace PEBakery.Core
             else
                 builder.Append("0");
             builder.Append(",");
-            if (ProgressShow)
+            if (ShowProgress)
                 builder.Append("True");
             else
                 builder.Append("False");
@@ -440,7 +440,7 @@ namespace PEBakery.Core
             builder.Append(SectionName);
             builder.Append("_");
             builder.Append(",");
-            if (ProgressShow)
+            if (ShowProgress)
                 builder.Append("True");
             else
                 builder.Append("False");
@@ -485,7 +485,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(Engine.EscapeStr(URL));
+            builder.Append(StringEscaper.Escape(URL));
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
         }
@@ -593,7 +593,7 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             for (int i = 0; i < Items.Count; i++)
             {
-                builder.Append(Engine.QuoteEscapeStr(Items[i]));
+                builder.Append(StringEscaper.QuoteEscape(Items[i]));
                 builder.Append(",");
             }
             builder.Append(Selected);

@@ -18,6 +18,7 @@
 
 using PEBakery.Core;
 using PEBakery.Helper;
+using PEBakery.Exceptions;
 using PEBakery.Lib;
 using Btl.Controls;
 using System;
@@ -32,7 +33,9 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Diagnostics;
 using MahApps.Metro.IconPacks;
+using System.Windows.Media.Imaging;
 
 namespace PEBakery.WPF
 {
@@ -40,17 +43,35 @@ namespace PEBakery.WPF
     {
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
+        public const int MaxDpiScale = 4;
 
         private RenderInfo renderInfo;
         private List<UICommand> uiCodes;
+        private Variables variables;
+        private Logger logger;
 
-        public UIRenderer(Canvas canvas, Window window, Plugin plugin, double scale)
+        public UIRenderer(Canvas canvas, Window window, Plugin plugin, Logger logger, double scale)
         {
-            renderInfo = new RenderInfo(canvas, window, plugin, scale);
+            this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
+            this.logger = logger;
+            this.variables = plugin.Project.Variables;
             if (plugin.Sections.ContainsKey("Interface"))
-                this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
+            {
+                try
+                {
+                    this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
+                }
+                catch
+                {
+                    this.uiCodes = null;
+                    logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                }
+            }
             else
+            {
                 this.uiCodes = null;
+                logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+            }
         }
 
         #region Render All
@@ -92,7 +113,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderTextFile(renderInfo, uiCmd);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(renderInfo, uiCmd);
+                            UIRenderer.RenderButton(renderInfo, uiCmd, logger);
                             break;
                         case UIControlType.CheckList:
                             break;
@@ -106,7 +127,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderBevel(renderInfo, uiCmd);
                             break;
                         case UIControlType.FileBox:
-                            UIRenderer.RenderFileBox(renderInfo, uiCmd);
+                            UIRenderer.RenderFileBox(renderInfo, uiCmd, variables);
                             break;
                         case UIControlType.RadioGroup:
                             UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
@@ -115,10 +136,9 @@ namespace PEBakery.WPF
                             break;
                     }
                 }
-                // catch (Exception e)
-                catch
-                {
-                    // Log failure
+                catch (Exception e)
+                { // Log failure
+                    logger.Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -144,7 +164,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox()
             {
                 Text = info.Value,
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
             box.LostFocus += (object sender, RoutedEventArgs e) =>
@@ -162,8 +182,8 @@ namespace PEBakery.WPF
                 {
                     Text = uiCmd.Text,
                     LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                    LineHeight = CalcFontPointScale(r),
-                    FontSize = CalcFontPointScale(r),
+                    LineHeight = CalcFontPointScale(),
+                    FontSize = CalcFontPointScale(),
                 };
                 SetToolTip(block, info.ToolTip);
                 double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.2;
@@ -190,8 +210,8 @@ namespace PEBakery.WPF
                 Text = uiCmd.Text,
                 TextWrapping = TextWrapping.Wrap,
                 LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-                LineHeight = CalcFontPointScale(r, info.FontSize),
-                FontSize = CalcFontPointScale(r, info.FontSize),
+                LineHeight = CalcFontPointScale(info.FontSize),
+                FontSize = CalcFontPointScale(info.FontSize),
             };
 
             switch (info.Style)
@@ -231,7 +251,7 @@ namespace PEBakery.WPF
             SpinnerControl spinner = new SpinnerControl()
             {
                 Value = info.Value,
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
@@ -265,15 +285,18 @@ namespace PEBakery.WPF
             {
                 Content = uiCmd.Text,
                 IsChecked = info.Value,
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            checkBox.Checked += (object sender, RoutedEventArgs e) => {
+            
+            checkBox.Checked += (object sender, RoutedEventArgs e) =>
+            {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
                 UIRenderer.UpdatePlugin(uiCmd);
             };
-            checkBox.Unchecked += (object sender, RoutedEventArgs e) => {
+            checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
+            {
                 CheckBox box = sender as CheckBox;
                 info.Value = false;
                 UIRenderer.UpdatePlugin(uiCmd);
@@ -298,7 +321,7 @@ namespace PEBakery.WPF
 
             ComboBox comboBox = new ComboBox()
             {
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
                 ItemsSource = info.Items,
                 SelectedIndex = info.Index,
                 VerticalContentAlignment = VerticalAlignment.Center,
@@ -336,48 +359,71 @@ namespace PEBakery.WPF
             {
                 UseLayoutRounding = true,
             };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
             if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
                 return;
 
-            if (info.URL == null)
+            Button button = new Button()
             {
-                if (type == ImageType.Svg)
-                {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    image.Source = ImageHelper.SvgToBitmapImage(mem, width, height);
-                }
-                else
-                {
-                    image.Source = ImageHelper.ImageToBitmapImage(mem);
-                }
-
-                SetToolTip(image, info.ToolTip);
-                DrawToCanvas(r, image, uiCmd.Rect);
+                Style = (Style)r.Window.FindResource("ImageButton")
+            };
+            if (type == ImageType.Svg)
+            {
+                double width = uiCmd.Rect.Width * r.MasterScale;
+                double height = uiCmd.Rect.Height * r.MasterScale;
+                button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
             }
             else
             {
-                Button button = new Button();
-                button.Style = (Style) r.Window.FindResource("ImageButton");
-                if (type == ImageType.Svg)
-                {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                button.Background = ImageHelper.ImageToImageBrush(mem);
+            }
+            mem.Close();
+            bool hasUrl = false;
+            if (info.URL != null && string.Equals(info.URL, string.Empty, StringComparison.Ordinal) == false)
+            {
+                if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri unused))
+                { // Success
+                    hasUrl = true;
                 }
                 else
-                {
-                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                { // Failure
+                    throw new InvalidUICommandException($"Invalid URL [{info.URL}]", uiCmd);
                 }
+            }
+
+            if (hasUrl)
+            { // Open URL
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    System.Diagnostics.Process.Start(info.URL.ToString());
+                    Process.Start(info.URL);
                 };
-
-                SetToolTip(button, info.ToolTip);
-                DrawToCanvas(r, button, uiCmd.Rect);
             }
+            else
+            { // Open picture with external viewer
+                button.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
+                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType t))
+                        return;
+                    string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
+                    FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write);
+                    m.Position = 0;
+                    m.CopyTo(file);
+                    file.Close();
+                    m.Close();
+                    ProcessStartInfo procInfo = new ProcessStartInfo()
+                    {
+                        Verb = "open",
+                        FileName = path,
+                        UseShellExecute = true
+                    };
+                    Process.Start(procInfo);
+                };
+            }
+
+            SetToolTip(button, info.ToolTip);
+            DrawToCanvas(r, button, uiCmd.Rect);
         }
 
         /// <summary>
@@ -402,7 +448,7 @@ namespace PEBakery.WPF
                 AcceptsReturn = true,
                 IsReadOnly = true,
                 Text = reader.ReadToEnd(),
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
             };
             reader.Close();
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
@@ -420,7 +466,7 @@ namespace PEBakery.WPF
         /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static void RenderButton(RenderInfo r, UICommand uiCmd)
+        public static void RenderButton(RenderInfo r, UICommand uiCmd, Logger logger)
         {
             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
             if (info == null)
@@ -428,37 +474,101 @@ namespace PEBakery.WPF
 
             Button button = new Button()
             {
-                Content = uiCmd.Text,
-                FontSize = CalcFontPointScale(r),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
             };
-
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 Button bt = sender as Button;
-                // Engine.RunSection(); -- Not implemented
-                Console.WriteLine("Engine.RunSection not implemented");
+                EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
+                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 0, true);
             };
 
-            if (info.Picture != null)
-            {
+            if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
+            { // Has Picture
                 MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
-                if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+                if (ImageHelper.GetImageType(info.Picture, out ImageType type))
                     return;
-                   
+
+                Image image = new Image()
+                {
+                    UseLayoutRounding = true,
+                    Stretch = Stretch.Uniform,
+                };
+                RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+                int margin = 5;
                 if (type == ImageType.Svg)
                 {
-                    double width = uiCmd.Rect.Width * r.MasterScale;
-                    double height = uiCmd.Rect.Height * r.MasterScale;
-                    button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                    ImageHelper.GetSvgSize(mem, out double width, out double height);
+                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                    {
+                        width = (uiCmd.Rect.Width - margin);
+                        height = (uiCmd.Rect.Width - margin) * height / width;
+                    }
+                    else
+                    {
+                        width = (uiCmd.Rect.Height - margin) * width / height;
+                        height = (uiCmd.Rect.Height - margin);
+                    }
+                    BitmapImage bitmap = ImageHelper.SvgToBitmapImage(mem, width, height);
+                    image.Width = width;
+                    image.Height = height;
+                    image.Source = bitmap;
                 }
                 else
                 {
-                    button.Background = ImageHelper.ImageToImageBrush(mem);
+                    BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
+                    double width, height;
+                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                    {
+                        width = (uiCmd.Rect.Width - margin);
+                        height = (uiCmd.Rect.Width - margin) * bitmap.Height / bitmap.Width;
+                    }
+                    else
+                    {
+                        width = (uiCmd.Rect.Height - margin) * bitmap.Width / bitmap.Height;
+                        height = (uiCmd.Rect.Height - margin);
+                    }
+                    image.Width = width;
+                    image.Height = height;
+                    image.Source = bitmap;
                 }
 
-                SetToolTip(button, info.ToolTip);
-                DrawToCanvas(r, button, uiCmd.Rect);
+                if (string.Equals(uiCmd.Text, string.Empty, StringComparison.Ordinal))
+                { // No text, just image
+                    button.Content = image;
+                }
+                else
+                { // Button has text
+                    StackPanel panel = new StackPanel()
+                    {
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Orientation = Orientation.Horizontal,
+                    };
+
+                    TextBlock text = new TextBlock()
+                    {
+                        Text = uiCmd.Text,
+                        FontSize = CalcFontPointScale(),
+                        Height = double.NaN,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(CalcFontPointScale() / 2, 0, 0, 0),
+                    };
+
+                    panel.Children.Add(image);
+                    panel.Children.Add(text);
+                    button.Content = panel;
+                }
             }
+            else
+            { // No picture
+                button.Content = uiCmd.Text;
+                button.FontSize = CalcFontPointScale();
+            }
+
+            SetToolTip(button, info.ToolTip);
+            DrawToCanvas(r, button, uiCmd.Rect);
         }
 
         /// <summary>
@@ -477,7 +587,7 @@ namespace PEBakery.WPF
             TextBlock block = new TextBlock()
             {
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
             };
             Hyperlink hyperLink = new Hyperlink()
             {
@@ -486,7 +596,7 @@ namespace PEBakery.WPF
             hyperLink.Inlines.Add(uiCmd.Text);
             hyperLink.RequestNavigate += (object sender, RequestNavigateEventArgs e) =>
             {
-                System.Diagnostics.Process.Start(e.Uri.ToString());
+                Process.Start(e.Uri.ToString());
             };
             block.Inlines.Add(hyperLink);
 
@@ -532,7 +642,7 @@ namespace PEBakery.WPF
             if (info == null)
                 return;
 
-            double fontSize = CalcFontPointScale(r);
+            double fontSize = CalcFontPointScale();
 
             RadioButton radio = new RadioButton()
             {
@@ -566,7 +676,7 @@ namespace PEBakery.WPF
         /// </summary>
         /// <param name="canvas">Parent canvas</param>
         /// <param name="uiCmd">UICommand</param>
-        public static void RenderFileBox(RenderInfo r, UICommand uiCmd)
+        public static void RenderFileBox(RenderInfo r, UICommand uiCmd, Variables variables)
         {
             // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
             UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
@@ -576,7 +686,7 @@ namespace PEBakery.WPF
             TextBox box = new TextBox()
             {
                 Text = uiCmd.Text,
-                FontSize = CalcFontPointScale(r),
+                FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
             box.LostFocus += (object sender, RoutedEventArgs e) =>
@@ -589,8 +699,8 @@ namespace PEBakery.WPF
 
             Button button = new Button()
             {
-                FontSize = CalcFontPointScale(r),
-                Content = MainWindow.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
+                FontSize = CalcFontPointScale(),
+                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
             };
             SetToolTip(button, info.ToolTip);
 
@@ -601,10 +711,8 @@ namespace PEBakery.WPF
                 if (info.IsFile)
                 {
                     Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
-                    {
-                        // TODO
-                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
-                        // InitialDirectory = Path.GetDirectoryName()
+                    { 
+                        InitialDirectory = System.IO.Path.GetDirectoryName(StringEscaper.Preprocess(variables, uiCmd.Text)),
                     };
                     if (dialog.ShowDialog() == true)
                         box.Text = dialog.FileName;
@@ -613,9 +721,8 @@ namespace PEBakery.WPF
                 {
                     System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
                     {
-                        // TODO
-                        // Variable expand of uiCmd.Text, then use as GetDirectoryName
-                        // RootFolder = Path.GetDirectoryName()
+                        ShowNewFolderButton = true,
+                        SelectedPath = StringEscaper.Preprocess(variables, uiCmd.Text),   
                     };
                     System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                     if (result == System.Windows.Forms.DialogResult.OK)
@@ -645,7 +752,7 @@ namespace PEBakery.WPF
             if (info == null)
                 return;
 
-            double fontSize = CalcFontPointScale(r);
+            double fontSize = CalcFontPointScale();
 
             Border bevel = new Border()
             {
@@ -701,7 +808,7 @@ namespace PEBakery.WPF
                 list.Add(radio);
             }
 
-            double pushToBottom = PointToDeviceIndependentPixel * DefaultFontPoint * 0.7;
+            double pushToBottom = CalcFontPointScale() * 0.7;
             Rect bevelRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top + pushToBottom, uiCmd.Rect.Width, uiCmd.Rect.Height - pushToBottom);
             Rect textRect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top, double.NaN, double.NaN); // NaN for auto width/height
 
@@ -710,7 +817,7 @@ namespace PEBakery.WPF
             DrawToCanvas(r, border, textRect);
             for (int i = 0; i < list.Count; i++)
             {
-                double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.7;
+                double margin = CalcFontPointScale() * 1.7;
                 Rect rect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top + margin * (i + 1), double.NaN, double.NaN); // NaN for auto width/height
                 DrawToCanvas(r, list[i], rect);
             }
@@ -726,20 +833,16 @@ namespace PEBakery.WPF
 
         private static void DrawToCanvas(RenderInfo r, FrameworkElement element, Rect coord)
         {
-            double left = coord.Left * r.MasterScale;
-            double top = coord.Top * r.MasterScale;
-            double width = coord.Width * r.MasterScale;
-            double height = coord.Height * r.MasterScale;
-            Canvas.SetLeft(element, left);
-            Canvas.SetTop(element, top);
-            element.Width = width;
-            element.Height = height;
+            Canvas.SetLeft(element, coord.Left);
+            Canvas.SetTop(element, coord.Top);
+            element.Width = coord.Width;
+            element.Height = coord.Height;
             
             r.Canvas.Children.Add(element);
-            if (double.IsNaN(r.Canvas.Width) || r.Canvas.Width < left + width)
-                r.Canvas.Width = left + width;
-            if (double.IsNaN(r.Canvas.Height) || r.Canvas.Height < top + height)
-                r.Canvas.Height = top + height;
+            if (double.IsNaN(r.Canvas.Width) || r.Canvas.Width < coord.Left + coord.Width)
+                r.Canvas.Width = coord.Left + coord.Width;
+            if (double.IsNaN(r.Canvas.Height) || r.Canvas.Height < coord.Top + coord.Height)
+                r.Canvas.Height = coord.Top + coord.Height;
         }
 
         private static void SetToolTip(FrameworkElement element, string toolTip)
@@ -748,9 +851,9 @@ namespace PEBakery.WPF
                 element.ToolTip = toolTip;
         }
 
-        private static double CalcFontPointScale(RenderInfo r, double fontPoint = DefaultFontPoint) 
+        private static double CalcFontPointScale(double fontPoint = DefaultFontPoint) 
         {
-            return fontPoint * PointToDeviceIndependentPixel * r.MasterScale;
+            return fontPoint * PointToDeviceIndependentPixel;
         }
 
         private static void UpdatePlugin(UICommand uiCmd)
