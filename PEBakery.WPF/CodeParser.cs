@@ -175,7 +175,7 @@ namespace PEBakery.Core
 
             // There must be no number in yypeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
-                throw new InvalidCommandException("Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool isMacro = false;
             if (Enum.TryParse(typeStr, false, out CodeType type) == false)
@@ -762,7 +762,7 @@ namespace PEBakery.Core
                 #region 12 External Macro
                 // 12 External Macro
                 case CodeType.Macro:
-                    break;
+                    return new CodeInfo_Macro(depth, macroType, args);
                 #endregion
                 #region Error
                 // Error

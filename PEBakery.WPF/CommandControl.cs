@@ -53,16 +53,19 @@ namespace PEBakery.Core
             }
             else if (Regex.Match(varValue, @"(#\d+)", RegexOptions.Compiled).Success) // #1
             {
+                // List<string> curSecParams = s.SectionParams.Peek();
+                List<string> curSecParams = s.CurSectionParams;
+
                 int paramIdx = Variables.GetSectionParamIndex(varValue) - 1; // -1 for (#1 == curSectionParams[0])
                 if (paramIdx < 0)
                     throw new InvalidCodeCommandException($"[{varValue}]'s index [{paramIdx + 1}] cannot be negative number", cmd);
-                else if (paramIdx < s.CurSectionParams.Count)
-                    s.CurSectionParams[paramIdx] = varValue;
+                else if (paramIdx < curSecParams.Count)
+                    curSecParams[paramIdx] = varValue;
                 else
                 {
-                    for (int i = s.CurSectionParams.Count; i < paramIdx; i++)
-                        s.CurSectionParams.Add("");
-                    s.CurSectionParams.Add(varValue);
+                    for (int i = curSecParams.Count; i < paramIdx; i++)
+                        curSecParams.Add("");
+                    curSecParams.Add(varValue);
                 }
             }
             else
@@ -79,6 +82,8 @@ namespace PEBakery.Core
             if (info == null)
                 throw new InvalidCodeCommandException("Command [GetParam] should have [CodeInfo_GetParam]", cmd);
 
+            // List<string> curSecParams = s.SectionParams.Peek();
+            // logs.Add(LogInfo.AddCommand(s.Variables.SetValue(VarsType.Local, info.VarName, curSecParams[info.Index]), cmd));
             logs.Add(LogInfo.AddCommand(s.Variables.SetValue(VarsType.Local, info.VarName, s.CurSectionParams[info.Index]), cmd));
 
             return logs;
@@ -95,7 +100,18 @@ namespace PEBakery.Core
             logs.Add(new LogInfo(LogState.Ignore, "DEVELOPER NOTE : Not sure how it works.\nIf you know its exact internal mechanism, please report at [https://github.com/ied206/PEBakery/issues]", cmd));
 
             StringBuilder b = new StringBuilder();
-            for (int i = info.StartIndex; i<s.CurSectionParams.Count; i++)
+            /*
+            List<string> curSecParams = s.SectionParams.Peek();
+            for (int i = info.StartIndex; i < curSecParams.Count; i++)
+            {
+                b.Append("\"");
+                b.Append(curSecParams[i]);
+                b.Append("\"");
+                if (i + 1 < curSecParams.Count)
+                    b.Append(",");
+            }
+            */
+            for (int i = info.StartIndex; i < s.CurSectionParams.Count; i++)
             {
                 b.Append("\"");
                 b.Append(s.CurSectionParams[i]);

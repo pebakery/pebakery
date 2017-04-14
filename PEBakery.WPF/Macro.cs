@@ -59,6 +59,9 @@ namespace PEBakery.Core
                 return;
             }
             macroSection = macroPlugin.Sections[varDict["APIVAR"]];
+            variables.SetValue(VarsType.Global, "API", macroPluginPath);
+            if (macroPlugin.Sections.ContainsKey("Varaibles"))
+                variables.AddVariables(VarsType.Global, macroPlugin.Sections["Varaibles"]);
 
             macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, string> macroRawDict = Ini.ParseLinesIniStyle(macroSection.GetLines());
@@ -67,19 +70,30 @@ namespace PEBakery.Core
                 try
                 {
                     SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
-                    CodeCommand cmd = CodeParser.ParseOneRawLine(kv.Value, addr);
-                    if (cmd.Type == CodeType.Macro)
-                    { // Cannot use Macro in Macro!
-                    }
-                    macroDict[kv.Key] = cmd;
+                    macroDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
                 }
-                catch
+                catch (Exception e)
                 {
-                    // Do nothing
-                    // TODO: leave error to log
+                    results.Add(new LogInfo(LogState.Error, e));
                 }
             }
             
+        }
+    }
+
+    public static class CommandMacro
+    {
+        public static void Macro(EngineState s, CodeCommand cmd)
+        {
+            CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+            if (info == null)
+                throw new InvalidCodeCommandException("Command [Macro] should have [CodeInfo_Macro]", cmd);
+
+            CodeCommand macroCmd = s.Macro.MacroDict[info.MacroType];
+            s.CurSectionParams = info.Args;
+            CommandBranch.RunExec(s, macroCmd, true);
+            // List<CodeCommand> codeList = new List<CodeCommand>() {  };
+            // Engine.RunCommands(s, codeList, info.Args, info.Depth + 1, false, false);
         }
     }
 }

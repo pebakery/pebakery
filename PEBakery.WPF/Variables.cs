@@ -236,12 +236,15 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            StringBuilder str = new StringBuilder("[Local Variables]\r\n");
+            StringBuilder str = new StringBuilder();
+            str.AppendLine("[Local Variables]");
             foreach (var local in localVars)
-                str.Append($"[{local.Key}, {local.Value}, {Expand(local.Value)}]\r\n");
-            str.Append("[Global Variables]\r\n");
+            {
+                str.AppendLine($"[{local.Key}, {local.Value}, {Expand(local.Value)}]");
+            }
+            str.AppendLine("[Global Variables]");
             foreach (var global in globalVars)
-                str.Append($"[{global.Key}, {global.Value}, {Expand(global.Value)}]\r\n");
+                str.AppendLine($"[{global.Key}, {global.Value}, {Expand(global.Value)}]");
             return str.ToString();
         }
 

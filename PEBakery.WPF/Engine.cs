@@ -69,6 +69,7 @@ namespace PEBakery.Core
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
 
+            // s.SectionParams = new Stack<List<string>>();
             s.CurSectionParams = new List<string>();
         }
 
@@ -102,6 +103,12 @@ namespace PEBakery.Core
             RunCommands(s, codes, sectionParams, depth, callback, true);
         }
 
+        public static void RunCommand(EngineState s, CodeCommand code, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
+        {
+            List<CodeCommand> codes = new List<CodeCommand>() { code };
+            RunCommands(s, codes, sectionParams, depth, callback, sectionStart);
+        }
+
         public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
         {
             int idx = 0;
@@ -117,7 +124,7 @@ namespace PEBakery.Core
 
                     if (!callback && sectionStart && depth == 0)
                     { // End of plugin
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]\r\n"));
+                        s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]{Environment.NewLine}"));
                         // PluginExit event callback
                         CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
                     }
@@ -148,14 +155,14 @@ namespace PEBakery.Core
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
                     cbCmd.Info.Depth = -1;
-                    CommandBranch.RunExec(s, cbCmd, 0, true);
+                    CommandBranch.RunExec(s, cbCmd, false, 0, true);
                 }
                 else
                 {
                     cbCmd.Info.Depth = 0;
                     s.Logger.Write(ExecuteCommand(s, cbCmd));
                 }
-                s.Logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n"));
+                s.Logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}"));
                 cbCmd = null;
             }
         }
@@ -272,8 +279,9 @@ namespace PEBakery.Core
                     case CodeType.INIWrite:
                         logs = CommandINI.INIWrite(s, cmd);
                         break;
-                    //case CodeType.INIDelete:
-                    //    break;
+                    case CodeType.INIDelete:
+                        logs = CommandINI.INIDelete(s, cmd);
+                        break;
                     //case CodeType.INIAddSection:
                     //    break;
                     //case CodeType.INIDeleteSection:
@@ -284,28 +292,28 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     /*
-            #region 05 Network
-            // 05 Network
-            case CodeType.WebGet:
-                break;
-            case CodeType.WebGetIfNotExist:
-                break;
-            #endregion
-            #region 06 Attach, Interface
-            // 06 Attach, Interface
-            case CodeType.ExtractFile:
-                break;
-            case CodeType.ExtractAndRun:
-                break;
-            case CodeType.ExtractAllFiles:
-                break;
-            case CodeType.ExtractAllFilesIfNotExist:
-                break;
-            case CodeType.Encode:
-                break;
-            #endregion
-            #region 07 UI
-            // 07 UI*/
+                    #region 05 Network
+                    // 05 Network
+                    case CodeType.WebGet:
+                        break;
+                    case CodeType.WebGetIfNotExist:
+                        break;
+                    #endregion
+                    #region 06 Attach, Interface
+                    // 06 Attach, Interface
+                    case CodeType.ExtractFile:
+                        break;
+                    case CodeType.ExtractAndRun:
+                        break;
+                    case CodeType.ExtractAllFiles:
+                        break;
+                    case CodeType.ExtractAllFilesIfNotExist:
+                        break;
+                    case CodeType.Encode:
+                        break;
+                    #endregion
+                    #region 07 UI
+                    // 07 UI*/
                     case CodeType.Message:
                         logs = CommandUI.Message(s, cmd);
                         break;
@@ -313,28 +321,28 @@ namespace PEBakery.Core
                         logs = CommandUI.Echo(s, cmd);
                         break;
                         /*
-                case CodeType.Retrieve:
-                    break;
-                case CodeType.Visible:
-                    break;
-                #endregion
-                #region 08 StringFormat
-                // 08 StringFormat
-                case CodeType.StrFormat:
-                    break;
-                #endregion
-                #region 09 System
-                // 09 System
-                case CodeType.System:
-                    break;
-                case CodeType.ShellExecute:
-                    break;
-                case CodeType.ShellExecuteEx:
-                    break;
-                case CodeType.ShellExecuteDelete:
-                    break;
-                #endregion
-                */
+                    case CodeType.Retrieve:
+                        break;
+                    case CodeType.Visible:
+                        break;
+                    #endregion
+                    #region 08 StringFormat
+                    // 08 StringFormat
+                    case CodeType.StrFormat:
+                        break;
+                    #endregion
+                    #region 09 System
+                    // 09 System
+                    case CodeType.System:
+                        break;
+                    case CodeType.ShellExecute:
+                        break;
+                    case CodeType.ShellExecuteEx:
+                        break;
+                    case CodeType.ShellExecuteDelete:
+                        break;
+                    #endregion
+                    */
                     #region 10 Branch
                     // 10 Branch
                     case CodeType.Run:
@@ -371,25 +379,25 @@ namespace PEBakery.Core
                         logs = CommandControl.PackParam(s, cmd);
                         break;
                     /*
-                case CodeType.AddVariables:
-                    break;
-                case CodeType.Exit:
-                    break;
-                case CodeType.Halt:
-                    break;
-                case CodeType.Wait:
-                    break;
-                case CodeType.Beep:
-                    break;
+                    case CodeType.AddVariables:
+                        break;
+                    case CodeType.Exit:
+                        break;
+                    case CodeType.Halt:
+                        break;
+                    case CodeType.Wait:
+                        break;
+                    case CodeType.Beep:
+                        break;
                     */
                     #endregion
-                    /*
-                #region 12 External Macro
-                // 12 External Macro
-                case CodeType.Macro:
-                    break;
-                #endregion
-                */
+                    #region 12 External Macro
+                    // 12 External Macro
+                    case CodeType.Macro:
+                        logs = new List<LogInfo>();
+                        CommandMacro.Macro(s, cmd);
+                        break;
+                    #endregion
                     #region Error
                     // Error
                     default:
@@ -427,6 +435,7 @@ namespace PEBakery.Core
         // Fields : Engine's state
         public Plugin CurrentPlugin;
         public int NextPluginIdx;
+        // public Stack<List<string>> SectionParams;
         public List<string> CurSectionParams;
         public bool RunElse;
 
@@ -458,6 +467,7 @@ namespace PEBakery.Core
             }
                 
             this.CurSectionParams = new List<string>();
+            // this.SectionParams = new Stack<List<string>>();
             this.RunElse = false;
             this.OnBuildExit = null;
             this.OnPluginExit = null;

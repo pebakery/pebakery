@@ -65,5 +65,30 @@ namespace PEBakery.Core
                 logs.Add(new LogInfo(LogState.Error, $"Could not wrote key [{key}] and its value [{value}] to [{info.FileName}]", cmd));
             return logs;
         }
+
+        public static List<LogInfo> INIDelete(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            CodeInfo_INIDelete info = cmd.Info as CodeInfo_INIDelete;
+            if (info == null)
+                throw new InvalidCodeCommandException("Command [INIDelete] should have [CodeInfo_INIDelete]", cmd);
+
+            string fileName = StringEscaper.Preprocess(s, info.FileName);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+
+            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
+                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+            if (key.Equals(string.Empty, StringComparison.Ordinal))
+                throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
+
+            bool result = Ini.DeleteKey(fileName, sectionName, key);
+            if (result)
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{info.FileName}]", cmd));
+            else
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete key [{key}] from [{info.FileName}]", cmd));
+            return logs;
+        }
     }
 }

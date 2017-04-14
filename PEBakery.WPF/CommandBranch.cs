@@ -29,12 +29,12 @@ namespace PEBakery.Core
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false)
         {
-            RunExec(s, cmd, cmd.Info.Depth + 1, false);
+            RunExec(s, cmd, preserveCurParams, cmd.Info.Depth + 1, false);
         }
 
-        public static void RunExec(EngineState s, CodeCommand cmd, int depth, bool callback)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, int depth, bool callback)
         {
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
             if (info == null)
@@ -42,7 +42,7 @@ namespace PEBakery.Core
 
             // Get necesssary operand
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
-            string sectionName = StringEscaper.Preprocess(s, info.PluginFile);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
@@ -64,17 +64,17 @@ namespace PEBakery.Core
             
             // Does section exists?
             if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new InvalidCodeCommandException($"[{info.PluginFile}] does not have section [{sectionName}]", cmd);
+                throw new InvalidCodeCommandException($"[{pluginFile}] does not have section [{sectionName}]", cmd);
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
             if (inCurrentPlugin)
                 s.Logger.Write(new LogInfo(LogState.Success, $"Processing Section [{sectionName}]", cmd));
             else
-                s.Logger.Write(new LogInfo(LogState.Success, $"Processing [{info.PluginFile}]'s Section [{sectionName}]", cmd));
+                s.Logger.Write(new LogInfo(LogState.Success, $"Processing [{pluginFile}]'s Section [{sectionName}]", cmd));
 
             // Exec utilizes [Variables] section of the plugin
-            if (cmd.Type == CodeType.Exec)
+            if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
             {
                 List<LogInfo> logInfos = s.Variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"]);
                 for (int i = 0; i < logInfos.Count; i++)
@@ -85,7 +85,10 @@ namespace PEBakery.Core
             }
 
             // Run Section
-            Engine.RunSection(s, nextAddr, parameters, depth, callback);
+            List<string> newSecParam = parameters;
+            if (preserveCurParams)
+                newSecParam = s.CurSectionParams;
+            Engine.RunSection(s, nextAddr, newSecParam, depth, callback);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
@@ -98,6 +101,8 @@ namespace PEBakery.Core
             { // Condition matched, run it
                 s.RunElse = false;
                 s.Logger.Write(new LogInfo(LogState.Success, msg, cmd));
+                // List<string> curSecParams = s.SectionParams.Peek();
+                // Engine.RunCommands(s, info.Link, curSecParams, info.Depth + 1, false, false);
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
             }
             else
@@ -117,6 +122,8 @@ namespace PEBakery.Core
             { // Condition matched, run it
                 s.RunElse = false;
                 s.Logger.Write(new LogInfo(LogState.Success, msg, cmd));
+                // List<string> curSecParams = s.SectionParams.Peek();
+                // Engine.RunCommands(s, info.Link, curSecParams, info.Depth + 1, false, false);
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
             }
             else
@@ -136,6 +143,8 @@ namespace PEBakery.Core
             {
                 s.RunElse = false;
                 s.Logger.Write(new LogInfo(LogState.Success, "Else condition is met", cmd));
+                // List<string> curSecParams = s.SectionParams.Peek();
+                // Engine.RunCommands(s, info.Link, curSecParams, info.Depth + 1, false, false);
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
             }
             else
