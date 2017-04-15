@@ -35,7 +35,7 @@ namespace PEBakery.Core
                 LogInfo log = s.Variables.SetValue(VarsType.Local, varName, value);
                 log.Depth = info.Depth;
             }
-            logs.Add(new LogInfo(LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{info.FileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{fileName}]", cmd));
 
             return logs;
         }
@@ -60,9 +60,9 @@ namespace PEBakery.Core
 
             bool result = Ini.SetKey(fileName, sectionName, key, value);
             if (result)
-                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] wrote to [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] wrote to [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not wrote key [{key}] and its value [{value}] to [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Error, $"Could not wrote key [{key}] and its value [{value}] to [{fileName}]", cmd));
             return logs;
         }
 
@@ -85,9 +85,53 @@ namespace PEBakery.Core
 
             bool result = Ini.DeleteKey(fileName, sectionName, key);
             if (result)
-                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete key [{key}] from [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete key [{key}] from [{fileName}]", cmd));
+            return logs;
+        }
+
+        public static List<LogInfo> INIAddSection(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            CodeInfo_INIAddSection info = cmd.Info as CodeInfo_INIAddSection;
+            if (info == null)
+                throw new InvalidCodeCommandException("Command [INIAddSection] should have [CodeInfo_INIAddSection]", cmd);
+
+            string fileName = StringEscaper.Preprocess(s, info.FileName);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+
+            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
+                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+
+            bool result = Ini.AddSection(fileName, sectionName);
+            if (result)
+                logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] added to [{fileName}]", cmd));
+            else
+                logs.Add(new LogInfo(LogState.Error, $"Could not add section [{sectionName}] to [{fileName}]", cmd));
+            return logs;
+        }
+
+        public static List<LogInfo> INIDeleteSection(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            CodeInfo_INIDeleteSection info = cmd.Info as CodeInfo_INIDeleteSection;
+            if (info == null)
+                throw new InvalidCodeCommandException("Command [INIDeleteSection] should have [CodeInfo_INIDeleteSection]", cmd);
+
+            string fileName = StringEscaper.Preprocess(s, info.FileName);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+
+            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
+                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+
+            bool result = Ini.DeleteSection(fileName, sectionName);
+            if (result)
+                logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] deleted from [{fileName}]", cmd));
+            else
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sectionName}] from [{fileName}]", cmd));
             return logs;
         }
     }

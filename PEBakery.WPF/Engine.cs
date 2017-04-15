@@ -103,12 +103,6 @@ namespace PEBakery.Core
             RunCommands(s, codes, sectionParams, depth, callback, true);
         }
 
-        public static void RunCommand(EngineState s, CodeCommand code, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
-        {
-            List<CodeCommand> codes = new List<CodeCommand>() { code };
-            RunCommands(s, codes, sectionParams, depth, callback, sectionStart);
-        }
-
         public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
         {
             int idx = 0;
@@ -282,10 +276,12 @@ namespace PEBakery.Core
                     case CodeType.INIDelete:
                         logs = CommandINI.INIDelete(s, cmd);
                         break;
-                    //case CodeType.INIAddSection:
-                    //    break;
-                    //case CodeType.INIDeleteSection:
-                    //    break;
+                    case CodeType.INIAddSection:
+                        logs = CommandINI.INIAddSection(s, cmd);
+                        break;
+                    case CodeType.INIDeleteSection:
+                        logs = CommandINI.INIDeleteSection(s, cmd);
+                        break;
                     //case CodeType.INIWriteTextLine:
                     //    break;
                     //case CodeType.INIMerge:

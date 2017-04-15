@@ -92,8 +92,6 @@ namespace PEBakery.Core
             CodeCommand macroCmd = s.Macro.MacroDict[info.MacroType];
             s.CurSectionParams = info.Args;
             CommandBranch.RunExec(s, macroCmd, true);
-            // List<CodeCommand> codeList = new List<CodeCommand>() {  };
-            // Engine.RunCommands(s, codeList, info.Args, info.Depth + 1, false, false);
         }
     }
 }
