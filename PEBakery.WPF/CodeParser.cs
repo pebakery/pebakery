@@ -21,10 +21,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using System.Windows;
 using System.Globalization;
 
 namespace PEBakery.Core
@@ -60,7 +58,7 @@ namespace PEBakery.Core
                 }
                 catch (Exception e)
                 {
-                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeCommandInfo(0));
+                    CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo());
                     codeList.Add(error);
                     errorLogs.Add(new LogInfo(LogState.Error, e.Message, error));
                 }
@@ -86,7 +84,7 @@ namespace PEBakery.Core
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";"))
-                return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeCommandInfo(0));
+                return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo());
 
             // Splice with spaces
             List<string> rawArgs = rawCode.Split(',').ToList();
@@ -99,14 +97,14 @@ namespace PEBakery.Core
             }
             catch (InvalidCommandException e)
             {
-                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeCommandInfo(0));
+                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException(e.Message, error);
             }
 
             // Check doublequote's occurence - must be 2n
             if (FileHelper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
             {
-                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeCommandInfo(0));
+                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException("Doublequote's number should be even number", error);
             }
                 
@@ -118,7 +116,7 @@ namespace PEBakery.Core
             }
             catch (InvalidCommandException e)
             {
-                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeCommandInfo(0));
+                CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException(e.Message, error);
             }
 
@@ -129,7 +127,7 @@ namespace PEBakery.Core
                 { // Split next line and append to List<string> operands
                     if (rawCodes.Count <= idx) // Section ended with \, invalid grammar!
                     {
-                        CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeCommandInfo(0));
+                        CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                         throw new InvalidCodeCommandException(@"Last command of a section cannot end with '\'", error);
                     }
                     idx++;
@@ -138,7 +136,7 @@ namespace PEBakery.Core
             }
 
             // TODO : new CodeCommandInfo
-            CodeCommandInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args, addr, 0);
+            CodeInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args, addr);
             return new CodeCommand(rawCode, addr, type, info);
         }
 
@@ -150,7 +148,7 @@ namespace PEBakery.Core
         /// <param name="idx"></param>
         /// <param name="preprocessed"></param>
         /// <returns></returns>
-        private static CodeCommand ParseCommandFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr, int depth)
+        private static CodeCommand ParseCommandFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr)
         {
             CodeType type = CodeType.None;
 
@@ -165,7 +163,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException(e.Message, rawCode);
             }
 
-            CodeCommandInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr, depth);
+            CodeInfo info = ParseCodeCommandInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr);
             return new CodeCommand(rawCode, addr, type, info);
         }
 
@@ -175,10 +173,10 @@ namespace PEBakery.Core
 
             // There must be no number in yypeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
-                throw new InvalidCommandException("Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool isMacro = false;
-            if (Enum.TryParse(typeStr, false, out CodeType type) == false)
+            if (Enum.TryParse(typeStr, true, out CodeType type) == false)
                 isMacro = true;
             if (Enum.IsDefined(typeof(CodeType), type) == false || type == CodeType.None || type == CodeType.Macro)
                 isMacro = true;
@@ -271,7 +269,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeCommandInfo, CheckInfoArgumentCount
-        public static CodeCommandInfo ParseCodeCommandInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr, int depth)
+        public static CodeInfo ParseCodeCommandInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr)
         {
             switch (type)
             {
@@ -329,7 +327,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_FileCopy(depth, srcFile, destPath, preserve, noWarn, noRec, show);
+                        return new CodeInfo_FileCopy(srcFile, destPath, preserve, noWarn, noRec, show);
                     }
                 case CodeType.FileDelete:
                     break;
@@ -395,7 +393,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Line number must be positive integer", rawCode);
                         }
 
-                        return new CodeInfo_TXTAddLine(depth, fileName, line, mode, lineNum);
+                        return new CodeInfo_TXTAddLine(fileName, line, mode, lineNum);
                     }
                 case CodeType.TXTReplace:
                     { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
@@ -409,7 +407,7 @@ namespace PEBakery.Core
                         if (args[2].Contains("#$x"))
                             throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
 
-                        return new CodeInfo_TXTReplace(depth, args[0], args[1], args[2]);
+                        return new CodeInfo_TXTReplace(args[0], args[1], args[2]);
                     }
                 case CodeType.TXTDelLine:
                     { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
@@ -421,7 +419,7 @@ namespace PEBakery.Core
                         if (args[1].Contains("#$x"))
                             throw new InvalidCommandException($"Keyword cannot include line feed", rawCode);
 
-                        return new CodeInfo_TXTDelLine(depth, args[0], args[1]);
+                        return new CodeInfo_TXTDelLine(args[0], args[1]);
                     }
                 case CodeType.TXTDelSpaces:
                     { // TXTDelSpaces,<FileName>
@@ -430,7 +428,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_TXTDelSpaces(depth, args[0]);
+                        return new CodeInfo_TXTDelSpaces(args[0]);
                     }
                 case CodeType.TXTDelEmptyLines:
                     { // TXTDelEmptyLines,<FileName>
@@ -439,7 +437,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_TXTDelEmptyLines(depth, args[0]);
+                        return new CodeInfo_TXTDelEmptyLines(args[0]);
                     }
                 #endregion
                 #region 04 INI
@@ -451,7 +449,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_INIWrite(depth, args[0], args[1], args[2], args[3]);
+                        return new CodeInfo_INIWrite(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.INIRead:
                     { // INIWrite,<FileName>,<SectionName>,<Key>,<VarName>
@@ -464,7 +462,7 @@ namespace PEBakery.Core
                         if (varName == null)
                             throw new InvalidCommandException($"Variable name [{args[3]}] must start and end with %", rawCode);
 
-                        return new CodeInfo_INIWrite(depth, args[0], args[1], args[2], varName);
+                        return new CodeInfo_INIWrite(args[0], args[1], args[2], varName);
                     }
                 case CodeType.INIDelete:
                     { // INIDelete,<FileName>,<SectionName>,<Key>
@@ -473,7 +471,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_INIDelete(depth, args[0], args[1], args[2]);
+                        return new CodeInfo_INIDelete(args[0], args[1], args[2]);
                     }
                 case CodeType.INIAddSection:
                     { // INIAddSection,<FileName>,<SectionName>
@@ -482,7 +480,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_INIAddSection(depth, args[0], args[1]);
+                        return new CodeInfo_INIAddSection(args[0], args[1]);
                     }
                 case CodeType.INIDeleteSection:
                     { // INIDeleteSection,<FileName>,<SectionName>
@@ -491,7 +489,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_INIDeleteSection(depth, args[0], args[1]);
+                        return new CodeInfo_INIDeleteSection(args[0], args[1]);
                     }
                 case CodeType.INIWriteTextLine:
                     { // INIDelete,<FileName>,<SectionName>,<Line>[,APPEND]
@@ -509,7 +507,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Wrong argument [{args[3]}]", rawCode);
                         }
 
-                        return new CodeInfo_INIWriteTextLine(depth, args[0], args[1], args[2], append);
+                        return new CodeInfo_INIWriteTextLine(args[0], args[1], args[2], append);
                     }
                 case CodeType.INIMerge:
                     {
@@ -535,7 +533,7 @@ namespace PEBakery.Core
                         else
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_INIMerge(depth, srcFileName, destFileName, sectionName);
+                        return new CodeInfo_INIMerge(srcFileName, destFileName, sectionName);
                     }
                 #endregion
                 #region 05 Network
@@ -589,7 +587,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Timeout must be positive integer [{args[minArgCount]}]", rawCode);
                         }
 
-                        return new CodeInfo_Message(depth, message, action, timeout);
+                        return new CodeInfo_Message(message, action, timeout);
                     }
                 case CodeType.Echo:
                     { // Echo,<Message>
@@ -598,7 +596,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_Echo(depth, args[0]);
+                        return new CodeInfo_Echo(args[0]);
                     }
                 case CodeType.Retrieve:
                     break;
@@ -638,14 +636,14 @@ namespace PEBakery.Core
                         if (minArgCount < args.Count)
                             parameters.AddRange(args.Skip(minArgCount));
 
-                        return new CodeInfo_RunExec(depth, pluginFile, sectionName, parameters);
+                        return new CodeInfo_RunExec(pluginFile, sectionName, parameters);
                     }
                 case CodeType.Loop:
                     {
                         if (args.Count == 1)
                         { // Loop,BREAK
                             if (string.Equals(args[0], "BREAK", StringComparison.OrdinalIgnoreCase))
-                                return new CodeInfo_Loop(depth, true);
+                                return new CodeInfo_Loop(true);
                             else
                                 throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
                         }
@@ -667,16 +665,16 @@ namespace PEBakery.Core
                             if (minArgCount < args.Count)
                                 parameters.AddRange(args.Skip(minArgCount));
 
-                            return new CodeInfo_Loop(depth, pluginFile, sectionName, startIdx, endIdx, parameters);
+                            return new CodeInfo_Loop(pluginFile, sectionName, startIdx, endIdx, parameters);
                         }
                     }
                 case CodeType.If:
-                    return ParseCodeInfoIf(rawCode, args, addr, depth);
+                    return ParseCodeInfoIf(rawCode, args, addr);
                 case CodeType.Else:
-                    return ParseCodeInfoElse(rawCode, args, addr, depth);
+                    return ParseCodeInfoElse(rawCode, args, addr);
                 case CodeType.Begin:
                 case CodeType.End:
-                    return new CodeCommandInfo(depth);
+                    return new CodeInfo();
                 #endregion
                 #region 11 Control
                 // 11 Control
@@ -705,7 +703,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_Set(depth, varName, varValue, global, permanent);
+                        return new CodeInfo_Set(varName, varValue, global, permanent);
                     }
                 case CodeType.GetParam:
                     { // GetParam,<Index>,<VarName>
@@ -721,7 +719,7 @@ namespace PEBakery.Core
                         if (varName == null)
                             throw new InvalidCommandException($"Variable name [{args[1]}] must start and end with %", rawCode);
 
-                        return new CodeInfo_GetParam(depth, index, varName);
+                        return new CodeInfo_GetParam(index, varName);
                     }
                 case CodeType.PackParam:
                     { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
@@ -746,7 +744,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Variable name [{args[2]}] must start and end with %", rawCode);
                         }
 
-                        return new CodeInfo_PackParam(depth, startIdx, varName, varNum);
+                        return new CodeInfo_PackParam(startIdx, varName, varNum);
                     }
                 case CodeType.AddVariables:
                     break;
@@ -762,7 +760,7 @@ namespace PEBakery.Core
                 #region 12 External Macro
                 // 12 External Macro
                 case CodeType.Macro:
-                    break;
+                    return new CodeInfo_Macro(macroType, args);
                 #endregion
                 #region Error
                 // Error
@@ -772,7 +770,7 @@ namespace PEBakery.Core
             }
 
             // Temp Measure
-            return new CodeCommandInfo(0);
+            return new CodeInfo();
         }
 
         /// <summary>
@@ -803,7 +801,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
-        public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, SectionAddress addr, int depth)
+        public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, SectionAddress addr)
         {
             if (args.Count < 2)
                 throw new InvalidCommandException("[If] must have form of [If],<Condition>,<Command>", rawCode);
@@ -857,7 +855,7 @@ namespace PEBakery.Core
                 string compArg1 = args[cIdx];
                 string compArg2 = args[cIdx + 2];
                 cond = new BranchCondition(condType, notFlag, compArg1, compArg2);
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), addr, depth);
+                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(cIdx + 3).ToList(), addr);
 
             }
             else // IfSubOpcode - Non-Compare series
@@ -960,24 +958,21 @@ namespace PEBakery.Core
                 }
                 else
                     throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
-                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), addr, depth);
+                embCmd = ForgeIfEmbedCommand(rawCode, args.Skip(embIdx).ToList(), addr);
             }
 
-            return new CodeInfo_If(depth, cond, embCmd);
+            return new CodeInfo_If(cond, embCmd);
         }
 
-        public static CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, SectionAddress addr, int depth)
+        public static CodeInfo_Else ParseCodeInfoElse(string rawCode, List<string> args, SectionAddress addr)
         {
-            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, addr, depth); // Skip Else
-            return new CodeInfo_Else(depth, embCmd);
+            CodeCommand embCmd = ForgeIfEmbedCommand(rawCode, args, addr); // Skip Else
+            return new CodeInfo_Else(embCmd);
         }
 
-        public static CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, SectionAddress addr, int depth)
+        public static CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, SectionAddress addr)
         {
-            CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr, depth + 1);
-            if (embed.Type == CodeType.Run)
-                embed.Info.Depth -= 1;
-
+            CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
             return embed;
         }
         #endregion

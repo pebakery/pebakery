@@ -29,12 +29,12 @@ namespace PEBakery.Core
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false)
         {
-            RunExec(s, cmd, cmd.Info.Depth + 1, false);
+            RunExec(s, cmd, preserveCurParams, false);
         }
 
-        public static void RunExec(EngineState s, CodeCommand cmd, int depth, bool callback)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool callback)
         {
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
             if (info == null)
@@ -42,7 +42,7 @@ namespace PEBakery.Core
 
             // Get necesssary operand
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
-            string sectionName = StringEscaper.Preprocess(s, info.PluginFile);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
@@ -64,47 +64,37 @@ namespace PEBakery.Core
             
             // Does section exists?
             if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new InvalidCodeCommandException($"[{info.PluginFile}] does not have section [{sectionName}]", cmd);
+                throw new InvalidCodeCommandException($"[{pluginFile}] does not have section [{sectionName}]", cmd);
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
-            if (inCurrentPlugin)
-                s.Logger.Write(new LogInfo(LogState.Success, $"Processing Section [{sectionName}]", cmd));
-            else
-                s.Logger.Write(new LogInfo(LogState.Success, $"Processing [{info.PluginFile}]'s Section [{sectionName}]", cmd));
+            s.Logger.LogStartOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
 
             // Exec utilizes [Variables] section of the plugin
-            if (cmd.Type == CodeType.Exec)
+            if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
             {
-                List<LogInfo> logInfos = s.Variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"]);
-                for (int i = 0; i < logInfos.Count; i++)
-                {
-                    LogInfo log = logInfos[i];
-                    log.Depth = depth;
-                }
+                s.Variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"]);
             }
 
             // Run Section
-            Engine.RunSection(s, nextAddr, parameters, depth, callback);
+            int depthBackup = s.CurDepth;
+            List<string> newSecParam = parameters;
+            if (preserveCurParams)
+                newSecParam = s.CurSectionParams;
+
+            Engine.RunSection(s, nextAddr, newSecParam, s.CurDepth + 1, callback);
+
+            s.CurDepth = depthBackup;
+            s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            CodeInfo_If info = cmd.Info as CodeInfo_If;
+            CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [If] should have [CodeInfo_If]", cmd);
-
-            if (info.Condition.Check(s, out string msg))
-            { // Condition matched, run it
-                s.RunElse = false;
-                s.Logger.Write(new LogInfo(LogState.Success, msg, cmd));
-                Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
-            }
-            else
-            { // Do not run
-                s.RunElse = true;
-                s.Logger.Write(new LogInfo(LogState.Ignore, msg, cmd));
-            }
+                throw new InvalidCodeCommandException("Command [Loop] should have [CodeInfo_Loop]", cmd);
+            
+            // TODO
         }
 
         public static void If(EngineState s, CodeCommand cmd)
@@ -116,13 +106,17 @@ namespace PEBakery.Core
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
                 s.RunElse = false;
-                s.Logger.Write(new LogInfo(LogState.Success, msg, cmd));
-                Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
+
+                int depthBackup = s.CurDepth;
+                Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
+                s.CurDepth = depthBackup;
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
             }
             else
             { // Do not run
                 s.RunElse = true;
-                s.Logger.Write(new LogInfo(LogState.Ignore, msg, cmd));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd));
             }
         }
 
@@ -135,12 +129,16 @@ namespace PEBakery.Core
             if (s.RunElse)
             {
                 s.RunElse = false;
-                s.Logger.Write(new LogInfo(LogState.Success, "Else condition is met", cmd));
-                Engine.RunCommands(s, info.Link, s.CurSectionParams, info.Depth + 1, false, false);
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition is met", cmd, s.CurDepth));
+
+                int depthBackup = s.CurDepth;
+                Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
+                s.CurDepth = depthBackup;
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
             }
             else
             {
-                s.Logger.Write(new LogInfo(LogState.Ignore, "Else condition is not met", cmd));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition is not met", cmd, s.CurDepth));
             }
         }
     }

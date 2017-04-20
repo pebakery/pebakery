@@ -24,15 +24,11 @@ using Btl.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
 using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
@@ -50,7 +46,7 @@ namespace PEBakery.WPF
         private Variables variables;
         private Logger logger;
 
-        public UIRenderer(Canvas canvas, Window window, Plugin plugin, Logger logger, double scale)
+        public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
         {
             this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
             this.logger = logger;
@@ -64,13 +60,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCodes = null;
-                    logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -138,7 +134,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.Normal_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -479,9 +475,15 @@ namespace PEBakery.WPF
             };
             button.Click += (object sender, RoutedEventArgs e) =>
             {
-                Button bt = sender as Button;
+                r.Window.MainProgressRing.IsActive = true;
                 EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
-                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 0, true);
+                SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                long buildId = Engine.RunBuildOneSection(s, addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
+                r.Window.MainProgressRing.IsActive = false;
+
+#if DEBUG  // TODO: Remove this, this line is for Debug
+                logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
+#endif
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
@@ -868,10 +870,10 @@ namespace PEBakery.WPF
     {
         public readonly double MasterScale;
         public readonly Canvas Canvas;
-        public readonly Window Window;
+        public readonly MainWindow Window;
         public readonly Plugin Plugin;
 
-        public RenderInfo(Canvas canvas, Window window, Plugin plugin, double masterScale)
+        public RenderInfo(Canvas canvas, MainWindow window, Plugin plugin, double masterScale)
         {
             Canvas = canvas;
             Window = window;

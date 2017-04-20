@@ -64,11 +64,12 @@ namespace PEBakery.Core
             else
                 s.CurrentPlugin = p;
             PluginSection section = p.Sections["Process"];
-            s.Logger.Write($"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
+            s.Logger.Build_Write(s.BuildId, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
 
+            // s.SectionParams = new Stack<List<string>>();
             s.CurSectionParams = new List<string>();
         }
 
@@ -78,6 +79,8 @@ namespace PEBakery.Core
             {
                 ReadyToRunPlugin(s.CurrentPlugin);
                 Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, s.CurrentPlugin.Sections["Process"]), new List<string>(), 0, false);
+                // End of Plugin
+                s.Logger.Build_Write(s.BuildId, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
                 try
                 {
                     int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
@@ -96,46 +99,40 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Write(addr.Section.LogInfos);
+            s.Logger.Build_Write(s.BuildId, addr.Section.LogInfos);
 
-            s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [{addr.Section.SectionName}]"));
-            RunCommands(s, codes, sectionParams, depth, callback, true);
+            RunCommands(s, codes, sectionParams, depth, callback);
         }
 
-        public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
+        public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
         {
-            int idx = 0;
+            long buildId = s.Logger.Build_Init(DateTime.Now, buildName, s);
+            long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
+            s.Logger.LogStartOfSection(buildId, addr.Section.SectionName, 0, null);
+            Engine.RunSection(s, addr, new List<string>(), 1, true);
+            s.Logger.LogEndOfSection(buildId, addr.Section.SectionName, 0, null);
+            s.Logger.Build_Plugin_Finish(pluginId);
+            s.Logger.Build_Finish(buildId);
+
+            return buildId;
+        }
+
+        public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false)
+        {
             CodeCommand curCommand = codes[0];
-            while (true)
+            for (int idx = 0; idx < codes.Count; idx++)
             {
-                if (codes.Count <= idx) // End of section
-                {
-                    if (sectionStart)
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of section [{curCommand.Addr.Section.SectionName}]", depth - 1));
-                    else // For IfCompact + Run/Exec case
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
-
-                    if (!callback && sectionStart && depth == 0)
-                    { // End of plugin
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]\r\n"));
-                        // PluginExit event callback
-                        CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
-                    }
-                    break;
-                }
-
                 try
                 {
                     curCommand = codes[idx];
-                    // curCommand.Info.Depth = depth;
+                    s.CurDepth = depth;
                     s.CurSectionParams = sectionParams;
-                    s.Logger.Write(ExecuteCommand(s, curCommand));
+                    ExecuteCommand(s, curCommand);
                 }
                 catch (CriticalErrorException)
                 { // Critical Error, stop build
                     break;
                 }
-                idx++;
             }
         }
 
@@ -143,24 +140,24 @@ namespace PEBakery.Core
         {
             if (cbCmd != null)
             {
-                s.Logger.Write($"Processing callback of event [{eventName}]");
+                s.Logger.Build_Write(s.BuildId, $"Processing callback of event [{eventName}]");
 
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
-                    cbCmd.Info.Depth = -1;
-                    CommandBranch.RunExec(s, cbCmd, 0, true);
+                    s.CurDepth = -1;
+                    CommandBranch.RunExec(s, cbCmd, false, true);
                 }
                 else
                 {
-                    cbCmd.Info.Depth = 0;
-                    s.Logger.Write(ExecuteCommand(s, cbCmd));
+                    s.CurDepth = 0;
+                    ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n"));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
                 cbCmd = null;
             }
         }
 
-        private static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
+        private static void ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = null;
             try
@@ -170,28 +167,16 @@ namespace PEBakery.Core
                     #region 00 Misc
                     // 00 Misc
                     case CodeType.None:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "NOP", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "NOP", cmd) };
                         break;
                     case CodeType.Comment:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "Comment", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Comment", cmd) };
                         break;
                     case CodeType.Error:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Error, "Error", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Error, "Error", cmd) };
                         break;
                     case CodeType.Unknown:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "Unknown", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown", cmd) };
                         break;
                     #endregion
                     /*
@@ -272,40 +257,43 @@ namespace PEBakery.Core
                     case CodeType.INIWrite:
                         logs = CommandINI.INIWrite(s, cmd);
                         break;
-                    //case CodeType.INIDelete:
-                    //    break;
-                    //case CodeType.INIAddSection:
-                    //    break;
-                    //case CodeType.INIDeleteSection:
-                    //    break;
+                    case CodeType.INIDelete:
+                        logs = CommandINI.INIDelete(s, cmd);
+                        break;
+                    case CodeType.INIAddSection:
+                        logs = CommandINI.INIAddSection(s, cmd);
+                        break;
+                    case CodeType.INIDeleteSection:
+                        logs = CommandINI.INIDeleteSection(s, cmd);
+                        break;
                     //case CodeType.INIWriteTextLine:
                     //    break;
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
                     /*
-            #region 05 Network
-            // 05 Network
-            case CodeType.WebGet:
-                break;
-            case CodeType.WebGetIfNotExist:
-                break;
-            #endregion
-            #region 06 Attach, Interface
-            // 06 Attach, Interface
-            case CodeType.ExtractFile:
-                break;
-            case CodeType.ExtractAndRun:
-                break;
-            case CodeType.ExtractAllFiles:
-                break;
-            case CodeType.ExtractAllFilesIfNotExist:
-                break;
-            case CodeType.Encode:
-                break;
-            #endregion
-            #region 07 UI
-            // 07 UI*/
+                    #region 05 Network
+                    // 05 Network
+                    case CodeType.WebGet:
+                        break;
+                    case CodeType.WebGetIfNotExist:
+                        break;
+                    #endregion
+                    #region 06 Attach, Interface
+                    // 06 Attach, Interface
+                    case CodeType.ExtractFile:
+                        break;
+                    case CodeType.ExtractAndRun:
+                        break;
+                    case CodeType.ExtractAllFiles:
+                        break;
+                    case CodeType.ExtractAllFilesIfNotExist:
+                        break;
+                    case CodeType.Encode:
+                        break;
+                    #endregion
+                    #region 07 UI
+                    // 07 UI*/
                     case CodeType.Message:
                         logs = CommandUI.Message(s, cmd);
                         break;
@@ -313,28 +301,28 @@ namespace PEBakery.Core
                         logs = CommandUI.Echo(s, cmd);
                         break;
                         /*
-                case CodeType.Retrieve:
-                    break;
-                case CodeType.Visible:
-                    break;
-                #endregion
-                #region 08 StringFormat
-                // 08 StringFormat
-                case CodeType.StrFormat:
-                    break;
-                #endregion
-                #region 09 System
-                // 09 System
-                case CodeType.System:
-                    break;
-                case CodeType.ShellExecute:
-                    break;
-                case CodeType.ShellExecuteEx:
-                    break;
-                case CodeType.ShellExecuteDelete:
-                    break;
-                #endregion
-                */
+                    case CodeType.Retrieve:
+                        break;
+                    case CodeType.Visible:
+                        break;
+                    #endregion
+                    #region 08 StringFormat
+                    // 08 StringFormat
+                    case CodeType.StrFormat:
+                        break;
+                    #endregion
+                    #region 09 System
+                    // 09 System
+                    case CodeType.System:
+                        break;
+                    case CodeType.ShellExecute:
+                        break;
+                    case CodeType.ShellExecuteEx:
+                        break;
+                    case CodeType.ShellExecuteDelete:
+                        break;
+                    #endregion
+                    */
                     #region 10 Branch
                     // 10 Branch
                     case CodeType.Run:
@@ -371,25 +359,25 @@ namespace PEBakery.Core
                         logs = CommandControl.PackParam(s, cmd);
                         break;
                     /*
-                case CodeType.AddVariables:
-                    break;
-                case CodeType.Exit:
-                    break;
-                case CodeType.Halt:
-                    break;
-                case CodeType.Wait:
-                    break;
-                case CodeType.Beep:
-                    break;
+                    case CodeType.AddVariables:
+                        break;
+                    case CodeType.Exit:
+                        break;
+                    case CodeType.Halt:
+                        break;
+                    case CodeType.Wait:
+                        break;
+                    case CodeType.Beep:
+                        break;
                     */
                     #endregion
-                    /*
-                #region 12 External Macro
-                // 12 External Macro
-                case CodeType.Macro:
-                    break;
-                #endregion
-                */
+                    #region 12 External Macro
+                    // 12 External Macro
+                    case CodeType.Macro:
+                        logs = new List<LogInfo>();
+                        CommandMacro.Macro(s, cmd);
+                        break;
+                    #endregion
                     #region Error
                     // Error
                     default:
@@ -397,15 +385,21 @@ namespace PEBakery.Core
                         #endregion
                 }
             }
+            catch (CriticalErrorException)
+            { // Stop Building
+                throw new CriticalErrorException();
+            }
             catch (Exception e)
             {
-                logs = new List<LogInfo>()
-                {
-                    new LogInfo(LogState.Error, e.Message, cmd),
-                };
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e.Message, cmd, s.CurDepth) };
             }
-            
-            return logs;
+
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                log.Depth = s.CurDepth;
+                s.Logger.Build_Write(s.BuildId, log);
+            }
         }
     }
 
@@ -419,6 +413,7 @@ namespace PEBakery.Core
         public Logger Logger;
         public bool RunOnePlugin;
         public DebugLevel DebugLevel;
+        public long BuildId; // Used in logging
 
         // Properties
         public string BaseDir { get => Project.BaseDir; }
@@ -428,6 +423,7 @@ namespace PEBakery.Core
         public Plugin CurrentPlugin;
         public int NextPluginIdx;
         public List<string> CurSectionParams;
+        public int CurDepth;
         public bool RunElse;
 
         // Fields : System Commands
@@ -442,7 +438,7 @@ namespace PEBakery.Core
             this.Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            logger.Write(macroLogs);
+            logger.Build_Write(BuildId, macroLogs);
 
             if (pluginToRun == null) // Run just plugin
             {
@@ -458,6 +454,8 @@ namespace PEBakery.Core
             }
                 
             this.CurSectionParams = new List<string>();
+            // this.SectionParams = new Stack<List<string>>();
+            this.CurDepth = 0;
             this.RunElse = false;
             this.OnBuildExit = null;
             this.OnPluginExit = null;

@@ -14,6 +14,7 @@ namespace PEBakery.WPF
     public partial class App : Application
     {
         public static string[] Args;
+        public static int Version = 0;
 
         void App_Startup(object sender, StartupEventArgs e)
         {
@@ -21,9 +22,10 @@ namespace PEBakery.WPF
             if (e.Args.Length == 0)
                 Args = new string[0];
             else if (e.Args.Length > 0)
-            {
                 Args = e.Args;
-            }
+
+            // Why Properties.Resources is not available in App_Startup?
+            // Version = Properties.Resources.IntegerVersion;
 
             /*
             // Yeay, long path support at last!
