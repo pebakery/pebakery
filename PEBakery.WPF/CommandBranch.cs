@@ -68,7 +68,7 @@ namespace PEBakery.Core
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
-            Engine.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
+            s.Logger.LogStartOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
 
             // Exec utilizes [Variables] section of the plugin
             if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
@@ -85,7 +85,7 @@ namespace PEBakery.Core
             Engine.RunSection(s, nextAddr, newSecParam, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
-            Engine.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
+            s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)
@@ -106,17 +106,17 @@ namespace PEBakery.Core
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
                 s.RunElse = false;
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
             }
             else
             { // Do not run
                 s.RunElse = true;
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd));
             }
         }
 
@@ -129,16 +129,16 @@ namespace PEBakery.Core
             if (s.RunElse)
             {
                 s.RunElse = false;
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition is met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition is met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
             }
             else
             {
-                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition is not met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition is not met", cmd, s.CurDepth));
             }
         }
     }

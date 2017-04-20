@@ -25,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -132,48 +133,17 @@ namespace PEBakery.Core
             return info;
         }
         #endregion
-
-        /*
-        #region Constructor - LogInfo
-        public DetailLog(LogInfo log)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = null;
-            Depth = -1;
-        }
-
-        public DetailLog(LogInfo log, CodeCommand command)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = command;
-            Depth = -1;
-        }
-
-        public DetailLog(LogInfo log, int depth)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = null;
-            Depth = depth;
-        }
-
-        public DetailLog(LogInfo log, CodeCommand command, int depth)
-        {
-            State = log.State;
-            Message = log.Message;
-            Command = command;
-            Depth = depth;
-        }
-        #endregion
-        */
     }
     #endregion
 
-    public class Logger
+    #region Logger Class
+    public enum LogExportType
     {
-        #region Logger Class
+        Text, HTML
+    }
+
+    public class Logger
+    {    
         public Database DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
@@ -192,7 +162,7 @@ namespace PEBakery.Core
         }
 
         #region DB Manipulation
-        public long BuildLog_Init(DateTime startTime, string name, EngineState s)
+        public long Build_Init(DateTime startTime, string name, EngineState s)
         {
             // Build Id
             DB_Build dbBuild = new DB_Build()
@@ -224,7 +194,7 @@ namespace PEBakery.Core
             return dbBuild.Id;
         }
 
-        public void BuildLog_Finish(long id)
+        public void Build_Finish(long id)
         {
             DB_Build dbBuild = buildDict[id];
             dbBuild.EndTime = DateTime.Now;
@@ -233,7 +203,7 @@ namespace PEBakery.Core
             buildDict.Remove(id);
         }
 
-        public long BuildLog_Plugin_Init(long buildId, Plugin p, int order)
+        public long Build_Plugin_Init(long buildId, Plugin p, int order)
         {
             // Plugins 
             DB_Plugin dbPlugin = new DB_Plugin()
@@ -251,7 +221,7 @@ namespace PEBakery.Core
             return dbPlugin.Id;
         }
 
-        public void BuildLog_Plugin_Finish(long id)
+        public void Build_Plugin_Finish(long id)
         {
             // Plugins 
             DB_Plugin dbPlugin = pluginDict[id].Item1;
@@ -269,9 +239,11 @@ namespace PEBakery.Core
         /// <param name="buildId"></param>
         /// <param name="time"></param>
         /// <param name="message"></param>
-        public void BuildLog_Write(long buildId, string message)
+        public void Build_Write(long buildId, string message)
         {
+#if DEBUG
             Debug_Write(message);
+#endif
 
             DB_CodeLog dbCode = new DB_CodeLog()
             {
@@ -282,9 +254,11 @@ namespace PEBakery.Core
             DB.Insert(dbCode);
         }
 
-        public void BuildLog_Write(long buildId, LogInfo log)
+        public void Build_Write(long buildId, LogInfo log)
         {
+#if DEBUG
             Debug_Write(log);
+#endif
 
             DB_CodeLog dbCode = new DB_CodeLog()
             {
@@ -301,14 +275,36 @@ namespace PEBakery.Core
             DB.Insert(dbCode);
         }
 
-        public void BuildLog_Write(long buildId, List<LogInfo> logs)
+        public void Build_Write(long buildId, IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
-                BuildLog_Write(buildId, log);
+                Build_Write(buildId, log);
+        }
+
+        public void Normal_Write(LogInfo log)
+        {
+#if DEBUG
+            Debug_Write(log);
+#endif
+
+            DB_NormalLog dbLog = new DB_NormalLog()
+            {
+                Time = DateTime.Now,
+                State = log.State,
+                Message = log.Message,
+            };
+
+            DB.Insert(dbLog);
+        }
+
+        public void Normal_Write(IEnumerable<LogInfo> logs)
+        {
+            foreach (LogInfo log in logs)
+                Normal_Write(log);
         }
         #endregion
 
-        #region Write
+        #region Debug_Write
         public void Debug_Write(string message)
         {
             Console.WriteLine(message);
@@ -326,14 +322,154 @@ namespace PEBakery.Core
                 Console.WriteLine($"[{log.State}] {log.Message} ({log.Command})");
         }
 
-        public void Debug_Write(List<LogInfo> logs)
+        public void Debug_Write(IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
-            {
                 Debug_Write(log);
-            }
         }
         #endregion
+
+        #region LogStartOfSection, LogEndOfSection
+        public void LogStartOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
+        {
+            if (logPluginName)
+                LogStartOfSection(buildId, addr.Section.SectionName, depth, cmd);
+            else
+                LogStartOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+        }
+
+        public void LogStartOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"Processing Section [{sectionName}]";
+            if (cmd == null)
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public void LogStartOfSection(long buildId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"Processing [{pluginName}]'s Section [{sectionName}]";
+            if (cmd == null)
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public void LogEndOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
+        {
+            if (logPluginName)
+                LogEndOfSection(buildId, addr.Section.SectionName, depth, cmd);
+            else
+                LogEndOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+        }
+
+        public void LogEndOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"End of Section [{sectionName}]";
+            if (cmd == null)
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public void LogEndOfSection(long buildId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"End of [{pluginName}]'s Section [{sectionName}]";
+            if (cmd == null)
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+        #endregion
+
+        #region Export
+        public void Export(LogExportType type, long buildId, string exportFile)
+        {
+            switch (type)
+            {
+                case LogExportType.Text:
+                    {
+                        using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
+                        {
+                            DB_Build dbBuild = DB.Table<DB_Build>().Where(x => x.Id == buildId).First();
+                            writer.WriteLine($"- Build <{dbBuild.Name}> -");
+                            writer.WriteLine($"Started at  {dbBuild.StartTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            writer.WriteLine($"Finished at {dbBuild.EndTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
+                            writer.WriteLine($"Took {t:h\\:mm\\:ss}");
+                            writer.WriteLine();
+                            writer.WriteLine();
+
+                            writer.WriteLine("<Plugins>");
+                            {
+                                var plugins = DB.Table<DB_Plugin>()
+                                    .Where(x => x.BuildId == buildId)
+                                    .OrderBy(x => x.Order);
+
+                                int count = plugins.Count();
+                                int idx = 1;
+                                foreach (DB_Plugin p in plugins)
+                                {
+                                    writer.WriteLine($"[{idx}/{count}] {p.Name} v{p.Version} ({p.ElapsedMilliSec / 1000.0:0.000}sec)");
+                                    idx++;
+                                }
+
+                                writer.WriteLine();
+                                writer.WriteLine();
+                            }
+
+                            writer.WriteLine("<Variables>");
+                            foreach (VarsType varsType in Enum.GetValues(typeof(VarsType)))
+                            {
+                                writer.WriteLine($"- {varsType} Variables");
+                                var vars = DB.Table<DB_Variable>()
+                                    .Where(x => x.BuildId == buildId && x.Type == varsType)
+                                    .OrderBy(x => x.Key);
+                                foreach (DB_Variable log in vars)
+                                    writer.WriteLine($"%{log.Key}% = {log.Value}");
+                                writer.WriteLine();
+                            }
+                            writer.WriteLine();
+
+                            writer.WriteLine("<Code Logs>");
+                            {
+                                var codeLogs = DB.Table<DB_CodeLog>()
+                                .Where(x => x.BuildId == buildId)
+                                .OrderBy(x => x.Id);
+                                foreach (DB_CodeLog log in codeLogs)
+                                {
+                                    for (int i = 0; i < log.Depth; i++)
+                                        writer.Write("  ");
+
+                                    if (log.State == LogState.None)
+                                    { // No State
+                                        if (log.RawCode == null)
+                                            writer.WriteLine(log.Message);
+                                        else
+                                            writer.WriteLine($"{log.Message} ({log.RawCode})");
+                                    }
+                                    else
+                                    { // Has State
+                                        if (log.RawCode == null)
+                                            writer.WriteLine($"[{log.State}] {log.Message}");
+                                        else
+                                            writer.WriteLine($"[{log.State}] {log.Message} ({log.RawCode})");
+                                    }
+                                }
+                                writer.WriteLine();
+                            }
+                            writer.Close();
+                        }
+                    }
+                    break;
+                case LogExportType.HTML:
+                    {
+
+                    }
+                    break;
+            }
+        }
         #endregion
 
         #region static LogExceptionMessage
@@ -402,6 +538,8 @@ namespace PEBakery.Core
         }
         #endregion
     }
+    #endregion
+
 
     #region SQLite Connection 
     #region Model

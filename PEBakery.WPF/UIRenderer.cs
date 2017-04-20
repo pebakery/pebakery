@@ -61,13 +61,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCodes = null;
-                    logger.Debug_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.Debug_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -135,7 +135,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.Debug_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.Normal_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -476,18 +476,12 @@ namespace PEBakery.WPF
             };
             button.Click += (object sender, RoutedEventArgs e) =>
             {
-                Button bt = sender as Button;
                 EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
+                SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                long buildId = Engine.RunBuildOneSection(s, addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
 
-                long buildId = logger.BuildLog_Init(DateTime.Now, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", s);
-                long pluginId = logger.BuildLog_Plugin_Init(buildId, r.Plugin, 1);
-                Stopwatch watch = Stopwatch.StartNew();
-                Engine.LogStartOfSection(s, info.SectionName, 0, null);
-                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 1, true);
-                Engine.LogEndOfSection(s, info.SectionName, 0, null);
-                watch.Stop();
-                logger.BuildLog_Plugin_Finish(pluginId);
-                logger.BuildLog_Finish(buildId);
+                // TODO: Remove this, this line is for Debug
+                logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
