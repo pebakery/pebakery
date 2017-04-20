@@ -176,7 +176,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool isMacro = false;
-            if (Enum.TryParse(typeStr, false, out CodeType type) == false)
+            if (Enum.TryParse(typeStr, true, out CodeType type) == false)
                 isMacro = true;
             if (Enum.IsDefined(typeof(CodeType), type) == false || type == CodeType.None || type == CodeType.Macro)
                 isMacro = true;

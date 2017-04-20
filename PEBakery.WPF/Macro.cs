@@ -102,7 +102,7 @@ namespace PEBakery.Core
             }
             catch (KeyNotFoundException)
             {
-                throw new CodeCommandException($"Invalid command [{info.MacroType}]", cmd);
+                throw new CodeCommandException($"Invalid Command [{info.MacroType}]", cmd);
             }
             s.CurSectionParams = info.Args;
             CommandBranch.RunExec(s, macroCmd, true);
