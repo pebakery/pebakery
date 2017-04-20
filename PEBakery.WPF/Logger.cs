@@ -1,4 +1,4 @@
-﻿/*
+﻿ /*
     Copyright (C) 2016-2017 Hajin Jang
     Licensed under GPL 3.0
  
@@ -23,13 +23,16 @@ using SQLite.Net.Platform.Win32;
 using SQLiteNetExtensions.Attributes;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core
 {
-    #region LogState, LogInfo, DetailLog
+    #region LogState, LogInfo
     public enum LogState
     {
         None = 0,
@@ -119,7 +122,6 @@ namespace PEBakery.Core
         public static LogInfo AddCommand(LogInfo info, CodeCommand command)
         {
             info.Command = command;
-            info.Depth = command.Info.Depth;
             return info;
 
         }
@@ -173,14 +175,15 @@ namespace PEBakery.Core
     {
         #region Logger Class
         public Database DB;
-        public int ErrorOffCount;
-        public bool SuspendLog;
+        public int ErrorOffCount = 0;
+        public bool SuspendLog = false;
+
+        private readonly Dictionary<long, DB_Build> buildDict = new Dictionary<long, DB_Build>();
+        private readonly Dictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new Dictionary<long, Tuple<DB_Plugin, Stopwatch>>();
 
         public Logger(string path)
         {
             DB = new Database(path);
-            ErrorOffCount = 0;
-            SuspendLog = false;
         }
 
         ~Logger()
@@ -188,13 +191,131 @@ namespace PEBakery.Core
             DB.Close();
         }
 
-        public void Write(string message)
-        { // TODO
+        #region DB Manipulation
+        public long BuildLog_Init(DateTime startTime, string name, EngineState s)
+        {
+            // Build Id
+            DB_Build dbBuild = new DB_Build()
+            {
+                StartTime = startTime,
+                Name = name,
+            };
+            DB.Insert(dbBuild);
+            buildDict[dbBuild.Id] = dbBuild;
+            s.BuildId = dbBuild.Id;
+
+            // Variables - Fixed, Global, Local
+            foreach (VarsType type in Enum.GetValues(typeof(VarsType)))
+            {
+                ReadOnlyDictionary<string, string> dict = s.Variables.GetVars(type);
+                foreach (var kv in dict)
+                {
+                    DB_Variable dbVar = new DB_Variable()
+                    {
+                        BuildId = dbBuild.Id,
+                        Type = type,
+                        Key = kv.Key,
+                        Value = kv.Value,
+                    };
+                    DB.Insert(dbVar);
+                }
+            }
+
+            return dbBuild.Id;
+        }
+
+        public void BuildLog_Finish(long id)
+        {
+            DB_Build dbBuild = buildDict[id];
+            dbBuild.EndTime = DateTime.Now;
+            DB.Update(dbBuild);
+
+            buildDict.Remove(id);
+        }
+
+        public long BuildLog_Plugin_Init(long buildId, Plugin p, int order)
+        {
+            // Plugins 
+            DB_Plugin dbPlugin = new DB_Plugin()
+            {
+                BuildId = buildId,
+                Level = p.Level,
+                Order = order,
+                Name = p.Title,
+                Path = p.ShortPath,
+                Version = p.Version,
+            };
+            DB.Insert(dbPlugin);
+            pluginDict[dbPlugin.Id] = new Tuple<DB_Plugin, Stopwatch>(dbPlugin, Stopwatch.StartNew());
+
+            return dbPlugin.Id;
+        }
+
+        public void BuildLog_Plugin_Finish(long id)
+        {
+            // Plugins 
+            DB_Plugin dbPlugin = pluginDict[id].Item1;
+            Stopwatch watch = pluginDict[id].Item2;
+            dbPlugin.ElapsedMilliSec = watch.ElapsedMilliseconds;
+            DB.Update(dbPlugin);
+
+            watch.Stop();
+            pluginDict.Remove(dbPlugin.Id);
+        }
+
+        /// <summary>
+        /// Write LogInfo into DB_CodeLog
+        /// </summary>
+        /// <param name="buildId"></param>
+        /// <param name="time"></param>
+        /// <param name="message"></param>
+        public void BuildLog_Write(long buildId, string message)
+        {
+            Debug_Write(message);
+
+            DB_CodeLog dbCode = new DB_CodeLog()
+            {
+                Time = DateTime.Now,
+                BuildId = buildId,
+                Message = message,
+            };
+            DB.Insert(dbCode);
+        }
+
+        public void BuildLog_Write(long buildId, LogInfo log)
+        {
+            Debug_Write(log);
+
+            DB_CodeLog dbCode = new DB_CodeLog()
+            {
+                Time = DateTime.Now,
+                BuildId = buildId,
+                Depth = log.Depth,
+                State = log.State,
+                Message = log.Message,
+            };
+
+            if (log.Command != null)
+                dbCode.RawCode = log.Command.RawCode;
+
+            DB.Insert(dbCode);
+        }
+
+        public void BuildLog_Write(long buildId, List<LogInfo> logs)
+        {
+            foreach (LogInfo log in logs)
+                BuildLog_Write(buildId, log);
+        }
+        #endregion
+
+        #region Write
+        public void Debug_Write(string message)
+        {
             Console.WriteLine(message);
         }
 
-        public void Write(LogInfo log)
-        { // TODO
+        public void Debug_Write(LogInfo log)
+        {
             for (int i = 0; i < log.Depth; i++)
             {
                 Console.Write("  ");
@@ -205,13 +326,14 @@ namespace PEBakery.Core
                 Console.WriteLine($"[{log.State}] {log.Message} ({log.Command})");
         }
 
-        public void Write(List<LogInfo> logs)
-        { // TODO
+        public void Debug_Write(List<LogInfo> logs)
+        {
             foreach (LogInfo log in logs)
             {
-                Write(log);
+                Debug_Write(log);
             }
         }
+        #endregion
         #endregion
 
         #region static LogExceptionMessage
@@ -286,7 +408,7 @@ namespace PEBakery.Core
     public class DB_NormalLog
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public long Id { get; set; }
         public DateTime Time { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]
@@ -301,11 +423,11 @@ namespace PEBakery.Core
     public class DB_Build
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public long Id { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         [MaxLength(256)]
-        public string ProjectName { get; set; }
+        public string Name { get; set; }
 
         [OneToMany(CascadeOperations = CascadeOperation.All)] 
         public List<DB_Plugin> Plugins { get; set; }
@@ -316,23 +438,24 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Id} = {ProjectName}";
+            return $"{Id} = {Name}";
         }
     }
 
     public class DB_Plugin
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public long Id { get; set; }
         [ForeignKey(typeof(DB_Build))]
-        public int BuildId { get; set; }
+        public long BuildId { get; set; }
+        public int Order { get; set; } // Starts from 1
         public int Level { get; set; }
         [MaxLength(256)]
         public string Name { get; set; }
         [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
         public string Path { get; set; }
         public int Version { get; set; }
-        public int ElapsedMilliSec { get; set; }
+        public long ElapsedMilliSec { get; set; }
 
         [ManyToOne]
         public DB_Build Build { get; set; }
@@ -346,9 +469,9 @@ namespace PEBakery.Core
     public class DB_Variable
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public long Id { get; set; }
         [ForeignKey(typeof(DB_Build))]
-        public int BuildId { get; set; }
+        public long BuildId { get; set; }
         public VarsType Type { get; set; }
         [MaxLength(256)]
         public string Key { get; set; }
@@ -367,10 +490,10 @@ namespace PEBakery.Core
     public class DB_CodeLog
     {
         [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public long Id { get; set; }
         public DateTime Time { get; set; }
         [ForeignKey(typeof(DB_Build))]
-        public int BuildId { get; set; }
+        public long BuildId { get; set; }
         public int Depth { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]

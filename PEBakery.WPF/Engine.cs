@@ -64,7 +64,7 @@ namespace PEBakery.Core
             else
                 s.CurrentPlugin = p;
             PluginSection section = p.Sections["Process"];
-            s.Logger.Write($"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
+            s.Logger.BuildLog_Write(s.BuildId, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
@@ -79,6 +79,8 @@ namespace PEBakery.Core
             {
                 ReadyToRunPlugin(s.CurrentPlugin);
                 Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, s.CurrentPlugin.Sections["Process"]), new List<string>(), 0, false);
+                // End of Plugin
+                s.Logger.BuildLog_Write(s.BuildId, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
                 try
                 {
                     int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
@@ -94,49 +96,84 @@ namespace PEBakery.Core
             }
         }
 
+        #region LogStartOfSection, LogEndOfSection
+        public static void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
+        {
+            if (logPluginName)
+                LogStartOfSection(s, addr.Section.SectionName, depth, cmd);
+            else
+                LogStartOfSection(s, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+        }
+
+        public static void LogStartOfSection(EngineState s, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"Processing Section [{sectionName}]";
+            if (cmd == null)
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public static void LogStartOfSection(EngineState s, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"Processing [{pluginName}]'s Section [{sectionName}]";
+            if (cmd == null)
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public static void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
+        {
+            if (logPluginName)
+                LogEndOfSection(s, addr.Section.SectionName, depth, cmd);
+            else
+                LogEndOfSection(s, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+        }
+
+        public static void LogEndOfSection(EngineState s, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"End of Section [{sectionName}]";
+            if (cmd == null)
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+
+        public static void LogEndOfSection(EngineState s, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        {
+            string msg = $"End of [{pluginName}]'s Section [{sectionName}]";
+            if (cmd == null)
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, depth));
+            else
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+        #endregion
+
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Write(addr.Section.LogInfos);
+            s.Logger.BuildLog_Write(s.BuildId, addr.Section.LogInfos);
 
-            s.Logger.Write(new LogInfo(LogState.Info, $"Processing section [{addr.Section.SectionName}]"));
-            RunCommands(s, codes, sectionParams, depth, callback, true);
+            RunCommands(s, codes, sectionParams, depth, callback);
         }
 
-        public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false, bool sectionStart = false)
+        public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false)
         {
-            int idx = 0;
             CodeCommand curCommand = codes[0];
-            while (true)
+            for (int idx = 0; idx < codes.Count; idx++)
             {
-                if (codes.Count <= idx) // End of section
-                {
-                    if (sectionStart)
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of section [{curCommand.Addr.Section.SectionName}]", depth - 1));
-                    else // For IfCompact + Run/Exec case
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of codeblock", depth - 1));
-
-                    if (!callback && sectionStart && depth == 0)
-                    { // End of plugin
-                        s.Logger.Write(new LogInfo(LogState.Info, $"End of plugin [{s.CurrentPlugin.ShortPath}]{Environment.NewLine}"));
-                        // PluginExit event callback
-                        CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
-                    }
-                    break;
-                }
-
                 try
                 {
                     curCommand = codes[idx];
-                    // curCommand.Info.Depth = depth;
+                    s.CurDepth = depth;
                     s.CurSectionParams = sectionParams;
-                    s.Logger.Write(ExecuteCommand(s, curCommand));
+                    ExecuteCommand(s, curCommand);
                 }
                 catch (CriticalErrorException)
                 { // Critical Error, stop build
                     break;
                 }
-                idx++;
             }
         }
 
@@ -144,24 +181,24 @@ namespace PEBakery.Core
         {
             if (cbCmd != null)
             {
-                s.Logger.Write($"Processing callback of event [{eventName}]");
+                s.Logger.BuildLog_Write(s.BuildId, $"Processing callback of event [{eventName}]");
 
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
-                    cbCmd.Info.Depth = -1;
-                    CommandBranch.RunExec(s, cbCmd, false, 0, true);
+                    s.CurDepth = -1;
+                    CommandBranch.RunExec(s, cbCmd, false, true);
                 }
                 else
                 {
-                    cbCmd.Info.Depth = 0;
-                    s.Logger.Write(ExecuteCommand(s, cbCmd));
+                    s.CurDepth = 0;
+                    ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Write(new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}"));
+                s.Logger.BuildLog_Write(s.BuildId, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
                 cbCmd = null;
             }
         }
 
-        private static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
+        private static void ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = null;
             try
@@ -171,28 +208,16 @@ namespace PEBakery.Core
                     #region 00 Misc
                     // 00 Misc
                     case CodeType.None:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "NOP", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "NOP", cmd) };
                         break;
                     case CodeType.Comment:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "Comment", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Comment", cmd) };
                         break;
                     case CodeType.Error:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Error, "Error", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Error, "Error", cmd) };
                         break;
                     case CodeType.Unknown:
-                        logs = new List<LogInfo>
-                    {
-                        new LogInfo(LogState.Ignore, "Unknown", cmd)
-                    };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown", cmd) };
                         break;
                     #endregion
                     /*
@@ -405,11 +430,16 @@ namespace PEBakery.Core
             {
                 logs = new List<LogInfo>()
                 {
-                    new LogInfo(LogState.Error, e.Message, cmd),
+                    new LogInfo(LogState.Error, e.Message, cmd, s.CurDepth),
                 };
             }
-            
-            return logs;
+
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                log.Depth = s.CurDepth;
+                s.Logger.BuildLog_Write(s.BuildId, log);
+            }
         }
     }
 
@@ -423,6 +453,7 @@ namespace PEBakery.Core
         public Logger Logger;
         public bool RunOnePlugin;
         public DebugLevel DebugLevel;
+        public long BuildId; // Used in logging
 
         // Properties
         public string BaseDir { get => Project.BaseDir; }
@@ -431,8 +462,8 @@ namespace PEBakery.Core
         // Fields : Engine's state
         public Plugin CurrentPlugin;
         public int NextPluginIdx;
-        // public Stack<List<string>> SectionParams;
         public List<string> CurSectionParams;
+        public int CurDepth;
         public bool RunElse;
 
         // Fields : System Commands
@@ -447,7 +478,7 @@ namespace PEBakery.Core
             this.Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
-            logger.Write(macroLogs);
+            logger.BuildLog_Write(BuildId, macroLogs);
 
             if (pluginToRun == null) // Run just plugin
             {
@@ -464,6 +495,7 @@ namespace PEBakery.Core
                 
             this.CurSectionParams = new List<string>();
             // this.SectionParams = new Stack<List<string>>();
+            this.CurDepth = 0;
             this.RunElse = false;
             this.OnBuildExit = null;
             this.OnPluginExit = null;

@@ -113,9 +113,9 @@ namespace PEBakery.Core
         public SectionAddress Addr;
 
         public CodeType Type;
-        public CodeCommandInfo Info; // TODO: 언제 이걸 저 밑의 생성자 리스트들에 전부 더하냐...
+        public CodeInfo Info;
 
-        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeCommandInfo info)
+        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
         {
             RawCode = rawCode;
             Addr = addr;
@@ -125,30 +125,14 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            /*
-            if (Type == CodeType.Macro)
-            {
-                return Info.ToString();
-            }
-            else
-            {
-                return $"{Type},{Info}";
-            }*/
             return RawCode;
         }
     }
     #endregion
 
     #region CodeCommandInfo
-    public class CodeCommandInfo
+    public class CodeInfo
     {
-        public int Depth;
-
-        public CodeCommandInfo(int depth)
-        {
-            Depth = depth;
-        }
-
         /// <summary>
         /// This function should only be called from child Class
         /// Note : this function includes first ','
@@ -162,7 +146,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 01 - File
-    public class CodeInfo_Expand : CodeCommandInfo
+    public class CodeInfo_Expand : CodeInfo
     {
         public string SrcCab;
         public string DestDir;
@@ -171,8 +155,7 @@ namespace PEBakery.Core
         public bool Preserve;
         public bool NoWarn;
 
-        public CodeInfo_Expand(int depth, string srcCab, string destDir, bool isSingleFile, string singleFile, bool preserve, bool noWarn)
-            : base(depth)
+        public CodeInfo_Expand(string srcCab, string destDir, bool isSingleFile, string singleFile, bool preserve, bool noWarn)
         {
             SrcCab = srcCab;
             DestDir = destDir;
@@ -201,7 +184,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_FileCopy : CodeCommandInfo
+    public class CodeInfo_FileCopy : CodeInfo
     {
         public string SrcFile;
         public string DestPath;
@@ -210,9 +193,7 @@ namespace PEBakery.Core
         public bool NoRec;
         public bool Show;
 
-        public CodeInfo_FileCopy(int depth,
-            string srcFile, string destPath, bool preserve, bool noWarn, bool noRec, bool show)
-            : base(depth)
+        public CodeInfo_FileCopy(string srcFile, string destPath, bool preserve, bool noWarn, bool noRec, bool show)
         {
             SrcFile = srcFile;
             DestPath = destPath;
@@ -244,16 +225,14 @@ namespace PEBakery.Core
 
     #region CodeInfo 03 - Text
     public enum TXTAddLineMode { Append, Prepend, Place };
-    public class CodeInfo_TXTAddLine : CodeCommandInfo
+    public class CodeInfo_TXTAddLine : CodeInfo
     {
         public string FileName;
         public string Line;
         public TXTAddLineMode Mode;
         public int LineNum; // Optional, -1 if not used
 
-        public CodeInfo_TXTAddLine(int depth,
-            string fileName, string line, TXTAddLineMode mode, int lineNum = -1)
-            : base(depth)
+        public CodeInfo_TXTAddLine(string fileName, string line, TXTAddLineMode mode, int lineNum = -1)
         {
             FileName = fileName;
             Line = line;
@@ -278,15 +257,13 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTReplace : CodeCommandInfo
+    public class CodeInfo_TXTReplace : CodeInfo
     {
         public string FileName;
         public string ToBeReplaced;
         public string ReplaceWith;
 
-        public CodeInfo_TXTReplace(int depth,
-            string fileName, string toBeReplaced, string replaceWith)
-            : base(depth)
+        public CodeInfo_TXTReplace(string fileName, string toBeReplaced, string replaceWith)
         {
             FileName = fileName;
             ToBeReplaced = toBeReplaced;
@@ -305,14 +282,12 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTDelLine : CodeCommandInfo
+    public class CodeInfo_TXTDelLine : CodeInfo
     { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
         public string FileName;
         public string DeleteIfBeginWith;
 
-        public CodeInfo_TXTDelLine(int depth,
-            string fileName, string deleteIfBeginWith)
-            : base(depth)
+        public CodeInfo_TXTDelLine(string fileName, string deleteIfBeginWith)
         {
             FileName = fileName;
             DeleteIfBeginWith = deleteIfBeginWith;
@@ -328,13 +303,11 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTDelSpaces : CodeCommandInfo
+    public class CodeInfo_TXTDelSpaces : CodeInfo
     { // TXTDelSpaces,<FileName>
         public string FileName;
 
-        public CodeInfo_TXTDelSpaces(int depth,
-            string fileName)
-            : base(depth)
+        public CodeInfo_TXTDelSpaces(string fileName)
         {
             FileName = fileName;
         }
@@ -347,13 +320,11 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_TXTDelEmptyLines : CodeCommandInfo
+    public class CodeInfo_TXTDelEmptyLines : CodeInfo
     { // TXTDelEmptyLines,<FileName>
         public string FileName;
 
-        public CodeInfo_TXTDelEmptyLines(int depth,
-            string fileName)
-            : base(depth)
+        public CodeInfo_TXTDelEmptyLines(string fileName)
         {
             FileName = fileName;
         }
@@ -368,16 +339,14 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 04 - INI
-    public class CodeInfo_INIWrite : CodeCommandInfo
+    public class CodeInfo_INIWrite : CodeInfo
     {
         public string FileName;
         public string SectionName;
         public string Key;
         public string Value;
 
-        public CodeInfo_INIWrite(int depth,
-            string fileName, string sectionName, string key, string value)
-            : base(depth)
+        public CodeInfo_INIWrite(string fileName, string sectionName, string key, string value)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -399,16 +368,14 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIRead : CodeCommandInfo
+    public class CodeInfo_INIRead : CodeInfo
     {
         public string FileName;
         public string SectionName;
         public string Key;
         public string VarName;
 
-        public CodeInfo_INIRead(int depth,
-            string fileName, string sectionName, string key, string varName)
-            : base(depth)
+        public CodeInfo_INIRead(string fileName, string sectionName, string key, string varName)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -431,15 +398,13 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIDelete : CodeCommandInfo
+    public class CodeInfo_INIDelete : CodeInfo
     {
         public string FileName;
         public string SectionName;
         public string Key;
 
-        public CodeInfo_INIDelete(int depth,
-            string fileName, string sectionName, string key)
-            : base(depth)
+        public CodeInfo_INIDelete(string fileName, string sectionName, string key)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -458,14 +423,12 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIAddSection : CodeCommandInfo
+    public class CodeInfo_INIAddSection : CodeInfo
     { 
         public string FileName;
         public string SectionName;
 
-        public CodeInfo_INIAddSection(int depth,
-            string fileName, string sectionName)
-            : base(depth)
+        public CodeInfo_INIAddSection(string fileName, string sectionName)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -481,14 +444,12 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIDeleteSection : CodeCommandInfo
+    public class CodeInfo_INIDeleteSection : CodeInfo
     {
         public string FileName;
         public string SectionName;
 
-        public CodeInfo_INIDeleteSection(int depth,
-            string fileName, string sectionName)
-            : base(depth)
+        public CodeInfo_INIDeleteSection(string fileName, string sectionName)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -504,16 +465,14 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIWriteTextLine : CodeCommandInfo
+    public class CodeInfo_INIWriteTextLine : CodeInfo
     {
         public string FileName;
         public string SectionName;
         public string Line;
         public bool Append;
 
-        public CodeInfo_INIWriteTextLine(int depth,
-            string fileName, string sectionName, string line, bool append)
-            : base(depth)
+        public CodeInfo_INIWriteTextLine(string fileName, string sectionName, string line, bool append)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -535,7 +494,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_INIMerge : CodeCommandInfo
+    public class CodeInfo_INIMerge : CodeInfo
     {
         // INIMerge,<SrcFileName>,<DestFileName>
         // INIMerge,<SrcFileName>,<SectionName>,<DestFileName>
@@ -543,9 +502,7 @@ namespace PEBakery.Core
         public string DestFileName;
         public string SectionName; // optional
 
-        public CodeInfo_INIMerge(int depth,
-            string srcFileName, string destFileName, string sectionName = null)
-            : base(depth)
+        public CodeInfo_INIMerge(string srcFileName, string destFileName, string sectionName = null)
         {
             SrcFileName = srcFileName;
             DestFileName = destFileName;
@@ -570,14 +527,13 @@ namespace PEBakery.Core
 
     #region CodeInfo 07 - UI
     public enum CodeMessageAction { Information, Confirmation, Error, Warning }
-    public class CodeInfo_Message : CodeCommandInfo
+    public class CodeInfo_Message : CodeInfo
     {
         public string Message;
         public CodeMessageAction Action;
         public int Timeout; // Optional, set to -1 to disable
 
-        public CodeInfo_Message(int depth, string message, CodeMessageAction action, int timeout = -1)
-            : base(depth)
+        public CodeInfo_Message(string message, CodeMessageAction action, int timeout = -1)
         {
             Message = message;
             Action = action;
@@ -599,12 +555,11 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_Echo : CodeCommandInfo
+    public class CodeInfo_Echo : CodeInfo
     {
         public string Message;
 
-        public CodeInfo_Echo(int depth, string message)
-            : base(depth)
+        public CodeInfo_Echo(string message)
         {
             Message = message;
         }
@@ -1024,15 +979,13 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 10 - Branch
-    public class CodeInfo_RunExec : CodeCommandInfo
+    public class CodeInfo_RunExec : CodeInfo
     {
         public string PluginFile;
         public string SectionName;
         public List<string> Parameters;
 
-        public CodeInfo_RunExec(int depth,
-            string pluginFile, string sectionName, List<string> parameters)
-            : base(depth)
+        public CodeInfo_RunExec(string pluginFile, string sectionName, List<string> parameters)
         {
             PluginFile = pluginFile;
             SectionName = sectionName;
@@ -1054,7 +1007,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_Loop : CodeCommandInfo
+    public class CodeInfo_Loop : CodeInfo
     {
         public bool Break;
         public string PluginFile;
@@ -1063,9 +1016,7 @@ namespace PEBakery.Core
         public int EndIdx;
         public List<string> Parameters;
 
-        public CodeInfo_Loop(int depth,
-            string pluginFile, string sectionName, int startIdx, int endIdx, List<string> parameters)
-            : base(depth)
+        public CodeInfo_Loop(string pluginFile, string sectionName, int startIdx, int endIdx, List<string> parameters)
         {
             Break = false;
             PluginFile = pluginFile;
@@ -1075,9 +1026,7 @@ namespace PEBakery.Core
             EndIdx = endIdx;
         }
 
-        public CodeInfo_Loop(int depth,
-            bool _break)
-            : base(depth)
+        public CodeInfo_Loop(bool _break)
         {
             Break = _break;
         }
@@ -1097,7 +1046,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_If : CodeCommandInfo
+    public class CodeInfo_If : CodeInfo
     {
         public BranchCondition Condition;
         public CodeCommand Embed;
@@ -1105,9 +1054,7 @@ namespace PEBakery.Core
         public bool LinkParsed;
         public List<CodeCommand> Link;
 
-        public CodeInfo_If(int depth,
-            BranchCondition cond, CodeCommand embed)
-            : base(depth)
+        public CodeInfo_If(BranchCondition cond, CodeCommand embed)
         {
             Condition = cond;
             Embed = embed;
@@ -1126,16 +1073,14 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_Else : CodeCommandInfo
+    public class CodeInfo_Else : CodeInfo
     {
         public CodeCommand Embed;
 
         public bool LinkParsed;
         public List<CodeCommand> Link;
 
-        public CodeInfo_Else(int depth,
-            CodeCommand embed)
-            : base(depth)
+        public CodeInfo_Else(CodeCommand embed)
         {
             Embed = embed;
 
@@ -1153,16 +1098,14 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 11 - Control
-    public class CodeInfo_Set : CodeCommandInfo
+    public class CodeInfo_Set : CodeInfo
     {
         public string VarName;
         public string VarValue;
         public bool Global;
         public bool Permanent;
 
-        public CodeInfo_Set(int depth,
-            string varName, string varValue, bool global, bool permanent)
-            : base(depth)
+        public CodeInfo_Set(string varName, string varValue, bool global, bool permanent)
         {
             VarName = varName;
             VarValue = varValue;
@@ -1186,14 +1129,12 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_GetParam : CodeCommandInfo
+    public class CodeInfo_GetParam : CodeInfo
     {
         public int Index;
         public string VarName;
 
-        public CodeInfo_GetParam(int depth,
-            int index, string varName)
-            : base(depth)
+        public CodeInfo_GetParam(int index, string varName)
         {
             Index = index;
             VarName = varName;
@@ -1209,15 +1150,13 @@ namespace PEBakery.Core
         }
     }
 
-    public class CodeInfo_PackParam : CodeCommandInfo
+    public class CodeInfo_PackParam : CodeInfo
     { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
         public int StartIndex;
         public string VarName;
         public string VarNum; // optional
 
-        public CodeInfo_PackParam(int depth,
-            int startIndex, string varName, string varNum)
-            : base(depth)
+        public CodeInfo_PackParam(int startIndex, string varName, string varNum)
         {
             StartIndex = startIndex;
             VarName = varName;
@@ -1241,13 +1180,12 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 12 - Macro
-    public class CodeInfo_Macro : CodeCommandInfo
+    public class CodeInfo_Macro : CodeInfo
     {
         public string MacroType;
         public List<string> Args;
 
-        public CodeInfo_Macro(int depth, string macroType, List<string> args)
-            : base(depth)
+        public CodeInfo_Macro(string macroType, List<string> args)
         {
             MacroType = macroType;
             Args = args;

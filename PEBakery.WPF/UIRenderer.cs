@@ -25,14 +25,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
 using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
@@ -64,13 +61,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCodes = null;
-                    logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.Debug_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.Debug_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -138,7 +135,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.Debug_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -481,7 +478,16 @@ namespace PEBakery.WPF
             {
                 Button bt = sender as Button;
                 EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
-                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 0, true);
+
+                long buildId = logger.BuildLog_Init(DateTime.Now, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", s);
+                long pluginId = logger.BuildLog_Plugin_Init(buildId, r.Plugin, 1);
+                Stopwatch watch = Stopwatch.StartNew();
+                Engine.LogStartOfSection(s, info.SectionName, 0, null);
+                Engine.RunSection(s, new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]), new List<string>(), 1, true);
+                Engine.LogEndOfSection(s, info.SectionName, 0, null);
+                watch.Stop();
+                logger.BuildLog_Plugin_Finish(pluginId);
+                logger.BuildLog_Finish(buildId);
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))

@@ -112,7 +112,13 @@ namespace PEBakery.WPF
 
             LoadButtonsImage();
 
-            logger = new Logger(System.IO.Path.Combine(baseDir, "log.txt"));
+            string logDBFile = System.IO.Path.Combine(baseDir, "log.db");
+            try
+            {
+                File.Delete(logDBFile); // Temp measure - needed to test DB Log
+            }
+            catch (IOException) { }
+            logger = new Logger(logDBFile);
             
             StartLoadWorker();
         }

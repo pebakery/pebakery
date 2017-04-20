@@ -3,6 +3,7 @@ using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -138,6 +139,15 @@ namespace PEBakery.Core
                     return null;
             }
         }
+
+        public ReadOnlyDictionary<string, string> GetVars(VarsType type)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            ReadOnlyDictionary<string, string> readOnlyDictionary = 
+                new ReadOnlyDictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
+            return readOnlyDictionary;
+        }
+
 
         /// <summary>
         /// Check variables' circular reference.
@@ -321,6 +331,13 @@ namespace PEBakery.Core
         }
 
         public List<LogInfo> AddVariables(VarsType type, string[] lines)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            Dictionary<string, string> dict = Ini.ParseLinesVarStyle(lines);
+            return InternalAddDictionary(vars, dict);
+        }
+
+        public List<LogInfo> AddVariables(VarsType type, List<string> lines)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = Ini.ParseLinesVarStyle(lines);

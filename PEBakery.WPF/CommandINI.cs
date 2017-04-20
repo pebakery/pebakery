@@ -33,7 +33,6 @@ namespace PEBakery.Core
             if (value != null)
             {
                 LogInfo log = s.Variables.SetValue(VarsType.Local, varName, value);
-                log.Depth = info.Depth;
             }
             logs.Add(new LogInfo(LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{fileName}]", cmd));
 

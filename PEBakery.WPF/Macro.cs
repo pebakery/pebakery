@@ -63,6 +63,10 @@ namespace PEBakery.Core
             if (macroPlugin.Sections.ContainsKey("Varaibles"))
                 variables.AddVariables(VarsType.Global, macroPlugin.Sections["Varaibles"]);
 
+            // Import Section [APIVAR]'s variables, such as '%Shc_Mode%=0'
+            variables.AddVariables(VarsType.Global, macroSection);
+
+            // Parse Section [APIVAR] into dictionary of CodeCommand
             macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, string> macroRawDict = Ini.ParseLinesIniStyle(macroSection.GetLines());
             foreach (var kv in macroRawDict)
@@ -70,7 +74,9 @@ namespace PEBakery.Core
                 try
                 {
                     SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
-                    macroDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
+                    if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
+                        && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
+                        macroDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
                 }
                 catch (Exception e)
                 {
@@ -89,7 +95,15 @@ namespace PEBakery.Core
             if (info == null)
                 throw new InvalidCodeCommandException("Command [Macro] should have [CodeInfo_Macro]", cmd);
 
-            CodeCommand macroCmd = s.Macro.MacroDict[info.MacroType];
+            CodeCommand macroCmd;
+            try
+            {
+                macroCmd = s.Macro.MacroDict[info.MacroType];
+            }
+            catch (KeyNotFoundException)
+            {
+                throw new CodeCommandException($"Invalid command [{info.MacroType}]", cmd);
+            }
             s.CurSectionParams = info.Args;
             CommandBranch.RunExec(s, macroCmd, true);
         }
