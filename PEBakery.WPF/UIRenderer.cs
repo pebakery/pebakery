@@ -24,7 +24,6 @@ using Btl.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -47,7 +46,7 @@ namespace PEBakery.WPF
         private Variables variables;
         private Logger logger;
 
-        public UIRenderer(Canvas canvas, Window window, Plugin plugin, Logger logger, double scale)
+        public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
         {
             this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
             this.logger = logger;
@@ -476,9 +475,11 @@ namespace PEBakery.WPF
             };
             button.Click += (object sender, RoutedEventArgs e) =>
             {
+                r.Window.MainProgressRing.IsActive = true;
                 EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
                 SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
                 long buildId = Engine.RunBuildOneSection(s, addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
+                r.Window.MainProgressRing.IsActive = false;
 
                 // TODO: Remove this, this line is for Debug
                 logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
@@ -868,10 +869,10 @@ namespace PEBakery.WPF
     {
         public readonly double MasterScale;
         public readonly Canvas Canvas;
-        public readonly Window Window;
+        public readonly MainWindow Window;
         public readonly Plugin Plugin;
 
-        public RenderInfo(Canvas canvas, Window window, Plugin plugin, double masterScale)
+        public RenderInfo(Canvas canvas, MainWindow window, Plugin plugin, double masterScale)
         {
             Canvas = canvas;
             Window = window;

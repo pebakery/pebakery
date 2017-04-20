@@ -22,22 +22,14 @@ using PEBakery.Core;
 using MahApps.Metro.IconPacks;
 using System;
 using System.IO;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 
@@ -140,6 +132,20 @@ namespace PEBakery.WPF
         private void StartLoadWorker()
         {
             Stopwatch watch = new Stopwatch();
+
+            // Properties.Resources.DonutPng
+            Image image = new Image()
+            {
+                UseLayoutRounding = true,
+                Stretch = Stretch.Uniform,
+                StretchDirection = StretchDirection.DownOnly,
+                Source = ImageHelper.ToBitmapImage(Properties.Resources.DonutPng),
+            };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
+            PluginLogo.Content = image;
+            PluginTitle.Text = "Welcome to PEBakery!";
+            PluginDescription.Text = "PEBakery is now loading, please wait...";
 
             MainProgressRing.IsActive = true;
             loadWorker = new BackgroundWorker();
@@ -319,10 +325,13 @@ namespace PEBakery.WPF
             PluginAuthor.Text = p.Author;
 
             MainCanvas.Children.Clear();
-            ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
-            UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
-            MainCanvas.LayoutTransform = scale;
-            render.Render();
+            if (p.Type != PluginType.Directory)
+            {
+                ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
+                UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
+                MainCanvas.LayoutTransform = scale;
+                render.Render();
+            }
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
