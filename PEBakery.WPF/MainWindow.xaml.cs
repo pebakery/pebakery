@@ -32,7 +32,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
-
+using System.Globalization;
 
 namespace PEBakery.WPF
 {
@@ -65,6 +65,11 @@ namespace PEBakery.WPF
             InitializeComponent();
 
             string[] args = App.Args;
+            if (int.TryParse(Properties.Resources.IntegerVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
+            {
+                Console.WriteLine("Cannot determine version");
+                Application.Current.Shutdown();
+            }
 
             string argBaseDir = FileHelper.GetProgramAbsolutePath();
             for (int i = 0; i < args.Length; i++)
@@ -133,7 +138,6 @@ namespace PEBakery.WPF
         {
             Stopwatch watch = new Stopwatch();
 
-            // Properties.Resources.DonutPng
             Image image = new Image()
             {
                 UseLayoutRounding = true,
@@ -332,6 +336,7 @@ namespace PEBakery.WPF
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
             }
+
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)

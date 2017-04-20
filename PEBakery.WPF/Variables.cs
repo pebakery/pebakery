@@ -82,8 +82,10 @@ namespace PEBakery.Core
             logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
 
             // Version
-            Version version = FileHelper.GetProgramVersion();
-            logs.Add(SetFixedValue("Version", version.Build.ToString()));
+            // Version version = FileHelper.GetProgramVersion();
+            // logs.Add(SetFixedValue("Version", version.Build.ToString()));
+            
+            logs.Add(SetFixedValue("Version", WPF.App.Version.ToString()));
             // ProjectDir
             logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
             // TargetDir

@@ -61,7 +61,7 @@ namespace PEBakery.WPF.Properties {
         }
         
         /// <summary>
-        ///   2017-03-07과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   2017-04-21과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -76,6 +76,15 @@ namespace PEBakery.WPF.Properties {
             get {
                 object obj = ResourceManager.GetObject("DonutPng", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   100과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string IntegerVersion {
+            get {
+                return ResourceManager.GetString("IntegerVersion", resourceCulture);
             }
         }
     }

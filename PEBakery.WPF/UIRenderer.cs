@@ -481,8 +481,9 @@ namespace PEBakery.WPF
                 long buildId = Engine.RunBuildOneSection(s, addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
                 r.Window.MainProgressRing.IsActive = false;
 
-                // TODO: Remove this, this line is for Debug
+#if DEBUG  // TODO: Remove this, this line is for Debug
                 logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
+#endif
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))

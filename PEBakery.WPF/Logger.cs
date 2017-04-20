@@ -415,12 +415,14 @@ namespace PEBakery.Core
                                     idx++;
                                 }
 
+                                writer.WriteLine($"Total {count} Plugins");
                                 writer.WriteLine();
                                 writer.WriteLine();
                             }
 
                             writer.WriteLine("<Variables>");
-                            foreach (VarsType varsType in Enum.GetValues(typeof(VarsType)))
+                            VarsType[] typeList = new VarsType[] { VarsType.Fixed, VarsType.Global };
+                            foreach (VarsType varsType in typeList)
                             {
                                 writer.WriteLine($"- {varsType} Variables");
                                 var vars = DB.Table<DB_Variable>()
@@ -465,7 +467,8 @@ namespace PEBakery.Core
                     break;
                 case LogExportType.HTML:
                     {
-
+                        // TODO
+                        Console.WriteLine("TODO: Not Implemented");
                     }
                     break;
             }
