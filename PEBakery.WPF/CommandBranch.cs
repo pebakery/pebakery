@@ -46,9 +46,9 @@ namespace PEBakery.Core
             List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
-            if (string.Equals(info.PluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
-            else if (string.Equals(info.PluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
 
             Plugin targetPlugin;
@@ -78,11 +78,10 @@ namespace PEBakery.Core
 
             // Run Section
             int depthBackup = s.CurDepth;
-            List<string> newSecParam = parameters;
             if (preserveCurParams)
-                newSecParam = s.CurSectionParams;
-
-            Engine.RunSection(s, nextAddr, newSecParam, s.CurDepth + 1, callback);
+                Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
+            else
+                Engine.RunSection(s, nextAddr, parameters, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
@@ -129,7 +128,7 @@ namespace PEBakery.Core
             if (s.RunElse)
             {
                 s.RunElse = false;
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition is met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
@@ -138,7 +137,7 @@ namespace PEBakery.Core
             }
             else
             {
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition is not met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
             }
         }
     }

@@ -70,7 +70,7 @@ namespace PEBakery.Core
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
 
             // s.SectionParams = new Stack<List<string>>();
-            s.CurSectionParams = new List<string>();
+            s.CurSectionParams = new Dictionary<int, string>();
         }
 
         public void Build()
@@ -101,7 +101,18 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s.BuildId, addr.Section.LogInfos);
 
-            RunCommands(s, codes, sectionParams, depth, callback);
+            Dictionary<int, string> paramDict = new Dictionary<int, string>();
+            for (int i = 0; i < sectionParams.Count; i++)
+                paramDict[i + 1] = sectionParams[i];
+            RunCommands(s, codes, paramDict, depth, callback);
+        }
+
+        public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
+        {
+            List<CodeCommand> codes = addr.Section.GetCodes(true);
+            s.Logger.Build_Write(s.BuildId, addr.Section.LogInfos);
+
+            RunCommands(s, codes, paramDict, depth, callback);
         }
 
         public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
@@ -117,7 +128,7 @@ namespace PEBakery.Core
             return buildId;
         }
 
-        public static void RunCommands(EngineState s, List<CodeCommand> codes, List<string> sectionParams, int depth, bool callback = false)
+        public static void RunCommands(EngineState s, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
             CodeCommand curCommand = codes[0];
             for (int idx = 0; idx < codes.Count; idx++)
@@ -179,36 +190,34 @@ namespace PEBakery.Core
                         logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown", cmd) };
                         break;
                     #endregion
-                    /*
                     #region 01 File
                     // 01 File
-                    case CodeType.CopyOrExpand:
-                        break;
-                    case CodeType.DirCopy:
-                        break;
-                    case CodeType.DirDelete:
-                        break;
-                    case CodeType.DirMove:
-                        break;
-                    case CodeType.DirMake:
-                        break;
-                    case CodeType.Expand:
-                        break;
-                    */
+                    //case CodeType.CopyOrExpand:
+                    //    break;
+                    //case CodeType.DirCopy:
+                    //   break;
+                    //case CodeType.DirDelete:
+                    //    break;
+                    //case CodeType.DirMove:
+                    //    break;
+                    //case CodeType.DirMake:
+                    //    break;
+                    //case CodeType.Expand:
+                    //    break;
                     //case CodeType.FileCopy:
                     //    break;
-                    /*
-                    case CodeType.FileDelete:
-                        break;
-                    case CodeType.FileRename:
-                        break;
-                    case CodeType.FileMove:
-                        break;
+                    //case CodeType.FileDelete:
+                    //    break;
+                    //case CodeType.FileRename:
+                    //case CodeType.FileMove:
+                    //    break;
                     case CodeType.FileCreateBlank:
+                        logs = CommandFile.FileCreateBlank(s, cmd);
                         break;
-                    case CodeType.FileByteExtract:
-                        break;
+                    //case CodeType.FileByteExtract:
+                    //    break;
                     #endregion
+                    /*
                     #region 02 Registry
                     // 02 Registry
                     case CodeType.RegHiveLoad:
@@ -292,37 +301,36 @@ namespace PEBakery.Core
                     case CodeType.Encode:
                         break;
                     #endregion
+                    */
                     #region 07 UI
-                    // 07 UI*/
+                    // 07 UI
                     case CodeType.Message:
                         logs = CommandUI.Message(s, cmd);
                         break;
                     case CodeType.Echo:
                         logs = CommandUI.Echo(s, cmd);
                         break;
-                        /*
-                    case CodeType.Retrieve:
-                        break;
-                    case CodeType.Visible:
-                        break;
+                    //case CodeType.Retrieve:
+                    //   break;
+                    //case CodeType.Visible:
+                    //    break;
                     #endregion
                     #region 08 StringFormat
                     // 08 StringFormat
                     case CodeType.StrFormat:
+                        logs = CommandString.StrFormat(s, cmd);
                         break;
                     #endregion
                     #region 09 System
                     // 09 System
-                    case CodeType.System:
-                        break;
+                    // case CodeType.System:
+                    //    break;
                     case CodeType.ShellExecute:
-                        break;
                     case CodeType.ShellExecuteEx:
-                        break;
                     case CodeType.ShellExecuteDelete:
+                        logs = CommandSystem.ShellExecute(s, cmd);
                         break;
                     #endregion
-                    */
                     #region 10 Branch
                     // 10 Branch
                     case CodeType.Run:
@@ -391,7 +399,7 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e.Message, cmd, s.CurDepth) };
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, Logger.LogExceptionMessage(e), cmd, s.CurDepth) };
             }
 
             for (int i = 0; i < logs.Count; i++)
@@ -422,7 +430,7 @@ namespace PEBakery.Core
         // Fields : Engine's state
         public Plugin CurrentPlugin;
         public int NextPluginIdx;
-        public List<string> CurSectionParams;
+        public Dictionary<int, string> CurSectionParams;
         public int CurDepth;
         public bool RunElse;
 
@@ -453,8 +461,7 @@ namespace PEBakery.Core
                 RunOnePlugin = false;
             }
                 
-            this.CurSectionParams = new List<string>();
-            // this.SectionParams = new Stack<List<string>>();
+            this.CurSectionParams = new Dictionary<int, string>();
             this.CurDepth = 0;
             this.RunElse = false;
             this.OnBuildExit = null;

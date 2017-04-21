@@ -104,7 +104,12 @@ namespace PEBakery.Core
             {
                 throw new CodeCommandException($"Invalid Command [{info.MacroType}]", cmd);
             }
-            s.CurSectionParams = info.Args;
+
+            Dictionary<int, string> paramDict = new Dictionary<int, string>();
+            for (int i = 0; i < info.Args.Count; i++)
+                paramDict[i + 1] = info.Args[i];
+
+            s.CurSectionParams = paramDict;
             CommandBranch.RunExec(s, macroCmd, true);
         }
     }

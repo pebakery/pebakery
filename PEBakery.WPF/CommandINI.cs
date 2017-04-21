@@ -22,7 +22,6 @@ namespace PEBakery.Core
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
             string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
-            string varName = Variables.GetVariableName(info.VarName);
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
@@ -32,9 +31,14 @@ namespace PEBakery.Core
             string value = Ini.GetKey(fileName, sectionName, key);
             if (value != null)
             {
-                LogInfo log = s.Variables.SetValue(VarsType.Local, varName, value);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value);
+                foreach (LogInfo log in varLogs)
+                {
+                    LogInfo.AddCommand(log, cmd);
+                    logs.Add(log);
+                }
             }
-            logs.Add(new LogInfo(LogState.Success, $"Var [%{varName}%] set to [{value}], read from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Var [%{info.VarName}%] set to [{value}], read from [{fileName}]", cmd));
 
             return logs;
         }

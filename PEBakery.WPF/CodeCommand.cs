@@ -18,11 +18,8 @@
 
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Win32;
 using System.IO;
 using PEBakery.Lib;
@@ -218,6 +215,44 @@ namespace PEBakery.Core
             if (Show)
                 b.Append(",SHOW");
 
+            return b.ToString();
+        }
+    }
+
+    public class CodeInfo_FileCreateBlank : CodeInfo
+    { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16 | UTF16BE | ANSI]
+        public string FilePath;
+        public bool Preserve;
+        public bool NoWarn;
+        public Encoding Encoding; // Optional
+        
+        public CodeInfo_FileCreateBlank(string filePath, bool preserve, bool noWarn, Encoding encoding)
+        {
+            FilePath = filePath;
+            Preserve = preserve;
+            NoWarn = noWarn;
+            Encoding = encoding;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(FilePath));
+            if (Preserve)
+                b.Append(",PRESERVE");
+            if (NoWarn)
+                b.Append(",NOWARN");
+            if (Encoding != null)
+            {
+                if (Encoding == Encoding.UTF8)
+                    b.Append(",UTF8");
+                else if (Encoding == Encoding.Unicode)
+                    b.Append(",UTF16");
+                else if (Encoding == Encoding.BigEndianUnicode)
+                    b.Append(",UTF16BE");
+                else if (Encoding == Encoding.ASCII)
+                    b.Append(",ANSI");
+            }
             return b.ToString();
         }
     }
@@ -573,6 +608,452 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region SubStrFormatType, SubStrFormatInfo
+    public enum StrFormatType
+    { // 아니 왜 사칙연산이 StrFormat에 있지...
+        Bytes,
+        Ceil, Floor, Round, // Round added in PEBakery 
+        Date,
+        FileName, DirPath, Path, Ext, // DirPath == Path
+        Inc, Dec, Mult, Div,
+        Left, Right,
+        SubStr, // Added in PEBakery
+        Len,
+        LTrim, RTrim, CTrim, NTrim,
+        Pos,
+        Replace, ReplaceX,
+        ShortPath, LongPath,
+        Split,
+    }
+
+    public class StrFormatInfo { }
+
+    public class StrFormatInfo_Bytes : StrFormatInfo
+    { // StrFormat,Bytes,<Integer>,<DestVarName>
+        public string ByteSize;
+        public string DestVarName;
+
+        public StrFormatInfo_Bytes(string byteSize, string destVarName)
+        {
+            ByteSize = byteSize;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            return $"{ByteSize},{DestVarName}";
+        }
+    }
+
+    public class StrFormatInfo_CeilFloorRound : StrFormatInfo
+    {
+        // StrFormat,Ceil,<SizeVar>,<ToDigit>
+        // StrFormat,Floor,<SizeVar>,<ToDigit>
+        // StrFormat,Round,<SizeVar>,<ToDigit>
+
+        // These value's type must be integer, but set to string because of variables system
+        public string SizeVar;
+        public string ToDigit;
+
+        public StrFormatInfo_CeilFloorRound(string sizeVar, string toDigit)
+        {
+            SizeVar = sizeVar;
+            ToDigit = toDigit;
+        }
+
+        public override string ToString()
+        {
+            return $"{SizeVar},{ToDigit}";
+        }
+    }
+
+    public class StrFormatInfo_Date : StrFormatInfo
+    { // StrFormat,Date,<DestVarName>,<FormatString>
+        public string DestVarName;
+        public string FormatString;
+
+        public StrFormatInfo_Date(string destVarName, string formatString)
+        {
+            DestVarName = destVarName;
+            FormatString = formatString;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVarName);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(FormatString));
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Path : StrFormatInfo
+    {
+        // StrFormat,FileName,<FilePath>,<DestVarName>
+        // StrFormat,DirPath,<FilePath>,<DestVarName> -- Same with StrFormat,Path
+        // StrFormat,Ext,<FilePath>,<DestVarName>
+        public string FilePath;
+        public string DestVarName;
+
+        public StrFormatInfo_Path(string filePath, string destVarName)
+        {
+            FilePath = filePath;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.Doublequote(FilePath));
+            b.Append(",");
+            b.Append(DestVarName);            
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Arithmetic : StrFormatInfo
+    { // Note : Integer can be negative integer, not like WB082's limitation
+        // StrFormat,Inc,<DestVarName>,<Integer>
+        // StrFormat,Dec,<DestVarName>,<Integer>
+        // StrFormat,Mult,<DestVarName>,<Integer>
+        // StrFormat,Div,<DestVarName>,<Integer>
+
+        public string DestVarName;
+        public string Integer; // These value's type must be integer, but set to string because of variables system
+
+        public StrFormatInfo_Arithmetic(string destVarName, string integer)
+        {
+            DestVarName = destVarName;
+            Integer = integer;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVarName);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Integer));
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_LeftRight : StrFormatInfo
+    { // Note : Integer can be negative integer, not like WB082's limitation
+        // StrFormat,Left,<SrcString>,<Integer>,<DestVarName>
+        // StrFormat,Right,<SrcString>,<Integer>,<DestVarName>
+        public string SrcString;
+        public string Integer; // These value's type must be integer, but set to string because of variables system
+        public string DestVarName;
+
+        public StrFormatInfo_LeftRight(string srcString, string integer, string destVarName)
+        {
+            SrcString = srcString;
+            Integer = integer;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcString);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Integer));
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_SubStr : StrFormatInfo
+    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVarName>
+        public string SrcString;
+        public string StartPos; // These value's type must be integer, but set to string because of variables system
+        public string Length; // These value's type must be integer, but set to string because of variables system
+        public string DestVarName;
+
+        public StrFormatInfo_SubStr(string srcString, string startPos, string length, string destVarName)
+        {
+            SrcString = srcString;
+            StartPos = startPos;
+            Length = length;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcString);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(StartPos));
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(Length));
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Len : StrFormatInfo
+    { // StrFormat,Len,<SrcString>,<DestVarName>
+        public string SrcString;
+        public string DestVarName;
+
+        public StrFormatInfo_Len(string srcString, string destVarName)
+        {
+            SrcString = srcString;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcString);
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Trim : StrFormatInfo
+    {
+        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVarName>
+        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVarName>
+        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVarName>
+
+        public string SrcString;
+        public string ToTrim;
+        public string DestVarName;
+
+        public StrFormatInfo_Trim(string srcString, string trimValue, string destVarName)
+        {
+            SrcString = srcString;
+            ToTrim = trimValue;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcString);
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(ToTrim));
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_NTrim : StrFormatInfo
+    { // StrFormat,NTrim,<SrcString>,<DestVarName>
+        public string SrcString;
+        public string DestVarName;
+
+        public StrFormatInfo_NTrim(string srcString,  string destVarName)
+        {
+            SrcString = srcString;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcString);
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Pos : StrFormatInfo
+    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVarName>
+        public string SrcString;
+        public string SubString;
+        public string DestVarName;
+
+        public StrFormatInfo_Pos(string srcString, string subString, string destVarName)
+        {
+            SrcString = srcString;
+            SubString = subString;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(SubString));
+            b.Append(",");
+            b.Append(DestVarName);
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Replace : StrFormatInfo
+    {
+        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>
+        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>
+
+        public string SrcString;
+        public string ToBeReplaced;
+        public string ReplaceWith;
+
+        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith)
+        {
+            SrcString = srcString;
+            ToBeReplaced = toBeReplaced;
+            ReplaceWith = replaceWith;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(ToBeReplaced));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(ReplaceWith));
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_ShortLongPath : StrFormatInfo
+    {
+        // StrFormat,ShortPath,<SrcString>,<DestVarName>
+        // StrFormat,LongPath,<SrcString>,<DestVarName>
+
+        public string SrcString;
+        public string DestVarName;
+
+        public StrFormatInfo_ShortLongPath(string srcString, string destVarName)
+        {
+            SrcString = srcString;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(DestVarName));
+            return b.ToString();
+        }
+    }
+
+    public class StrFormatInfo_Split : StrFormatInfo
+    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVarName>
+        public string SrcString;
+        public string Delimeter;
+        public string Index; // These value's type must be integer, but set to string because of variables system
+        public string DestVarName;
+
+        public StrFormatInfo_Split(string srcString, string delimeter, string index, string destVarName)
+        {
+            SrcString = srcString;
+            Delimeter = delimeter;
+            Index = index;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Delimeter));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Index));
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(DestVarName));
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 08 - String
+    public class CodeInfo_StrFormat : CodeInfo
+    {
+        public StrFormatType Type;
+        public StrFormatInfo SubInfo;
+
+        public CodeInfo_StrFormat(StrFormatType type, StrFormatInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 09 - System
+    /// <summary>
+    /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
+    /// </summary>
+    public class CodeInfo_ShellExecute : CodeInfo
+    {
+        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
+        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+
+        public string Action;
+        public string FilePath;
+        public string Params; // Optional
+        public string WorkDir;      // Optional
+        public string ExitOutVar;   // Optional
+
+        /// <summary>
+        /// ShellExecute
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="filePath"></param>
+        /// <param name="parameters">Optinal</param>
+        /// <param name="workDir">Optinal</param>
+        /// <param name="exitOutVar">Optinal - Variable</param>
+        public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
+        {
+            Action = action;
+            FilePath = filePath;
+            Params = parameters;
+            WorkDir = workDir;
+            ExitOutVar = exitOutVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Action);
+            b.Append(",");
+            b.Append(FilePath);
+            if (Params != null)
+            {
+                b.Append(",");
+                b.Append(Params);
+            }
+            if (WorkDir != null)
+            {
+                b.Append(",");
+                b.Append(WorkDir);
+            }
+            if (ExitOutVar != null)
+            {
+                b.Append(",");
+                b.Append(ExitOutVar);
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
+
     #region BranchCondition
     public enum BranchConditionType
     {
@@ -752,9 +1233,9 @@ namespace PEBakery.Core
                             match = File.Exists(filePath);
 
                         if (match)
-                            logMessage = $"File [{Arg1}] exists";
+                            logMessage = $"File [{filePath}] exists";
                         else
-                            logMessage = $"File [{Arg1}] does not exist";
+                            logMessage = $"File [{filePath}] does not exist";
                     }
                     break;
                 case BranchConditionType.ExistDir:
@@ -779,9 +1260,9 @@ namespace PEBakery.Core
                             match = Directory.Exists(dirPath);
 
                         if (match)
-                            logMessage = $"Directory [{Arg1}] exists";
+                            logMessage = $"Directory [{dirPath}] exists";
                         else
-                            logMessage = $"Directory [{Arg1}] does not exist";
+                            logMessage = $"Directory [{dirPath}] does not exist";
                     }
                     break;
                 case BranchConditionType.ExistSection:
@@ -791,9 +1272,9 @@ namespace PEBakery.Core
 
                         match = Ini.CheckSectionExist(iniFile, section);
                         if (match)
-                            logMessage = $"Section [{section}] exists in INI file [{Arg1}]";
+                            logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
                         else
-                            logMessage = $"Section [{section}] does not exist in INI file [{Arg1}]";
+                            logMessage = $"Section [{section}] does not exist in INI file [{iniFile}]";
                     }
                     break;
                 case BranchConditionType.ExistRegSection:
@@ -1100,14 +1581,14 @@ namespace PEBakery.Core
     #region CodeInfo 11 - Control
     public class CodeInfo_Set : CodeInfo
     {
-        public string VarName;
+        public string VarKey;
         public string VarValue;
         public bool Global;
         public bool Permanent;
 
         public CodeInfo_Set(string varName, string varValue, bool global, bool permanent)
         {
-            VarName = varName;
+            VarKey = varName;
             VarValue = varValue;
             Global = global;
             Permanent = permanent;
@@ -1117,7 +1598,7 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             b.Append("%");
-            b.Append(VarName);
+            b.Append(VarKey);
             b.Append("%,");
             b.Append(VarValue);
             if (Global)
