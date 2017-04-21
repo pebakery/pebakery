@@ -115,7 +115,7 @@ namespace PEBakery.Core
             else
             { // Do not run
                 s.RunElse = true;
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
             }
         }
 

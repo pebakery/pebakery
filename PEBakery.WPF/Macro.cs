@@ -99,6 +99,7 @@ namespace PEBakery.Core
             try
             {
                 macroCmd = s.Macro.MacroDict[info.MacroType];
+                macroCmd.RawCode = cmd.RawCode;
             }
             catch (KeyNotFoundException)
             {

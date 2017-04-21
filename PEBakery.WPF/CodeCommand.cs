@@ -24,6 +24,9 @@ using Microsoft.Win32;
 using System.IO;
 using PEBakery.Lib;
 using System.Net.NetworkInformation;
+using System.Globalization;
+using System;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -647,23 +650,24 @@ namespace PEBakery.Core
 
     public class StrFormatInfo_CeilFloorRound : StrFormatInfo
     {
-        // StrFormat,Ceil,<SizeVar>,<ToDigit>
-        // StrFormat,Floor,<SizeVar>,<ToDigit>
-        // StrFormat,Round,<SizeVar>,<ToDigit>
+        // StrFormat,Ceil,<SizeVar>,<CeilTo>
+        // StrFormat,Floor,<SizeVar>,<FloorTo>
+        // StrFormat,Round,<SizeVar>,<RoundTo>
+        // <RoundTo> can be [PositiveInteger], [K], [M], [G], [T], [P]
 
         // These value's type must be integer, but set to string because of variables system
         public string SizeVar;
-        public string ToDigit;
+        public string RoundTo;
 
-        public StrFormatInfo_CeilFloorRound(string sizeVar, string toDigit)
+        public StrFormatInfo_CeilFloorRound(string sizeVar, string roundTo)
         {
             SizeVar = sizeVar;
-            ToDigit = toDigit;
+            RoundTo = roundTo;
         }
 
         public override string ToString()
         {
-            return $"{SizeVar},{ToDigit}";
+            return $"{SizeVar},{RoundTo}";
         }
     }
 
@@ -1102,6 +1106,7 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistVar:
                 case BranchConditionType.ExistMacro:
                 case BranchConditionType.Ping:
+                case BranchConditionType.Question: // Can has 1 or 3 argument
                     Arg1 = arg1;
                     break;
                 default:
@@ -1137,6 +1142,7 @@ namespace PEBakery.Core
             switch (type)
             {
                 case BranchConditionType.ExistRegKey:
+                case BranchConditionType.Question: // Can has 1 or 3 argument
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
@@ -1359,6 +1365,45 @@ namespace PEBakery.Core
                             logMessage = "System is connected to internet";
                         else
                             logMessage = "System is not connected to internet";
+                    }
+                    break;
+                case BranchConditionType.Question: // Can has 1 - 3 argument
+                    {
+                        string question = StringEscaper.Preprocess(s, Arg1);
+
+                        bool autoTimeOut = false;
+
+                        if (Arg2 != null && Arg3 != null)
+                            autoTimeOut = true;
+
+                        if (autoTimeOut)
+                        {
+                            string timeOutStr = StringEscaper.Preprocess(s, Arg2);
+                            if (int.TryParse(timeOutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeOut) == false)
+                                autoTimeOut = false;
+
+                            bool defaultChoice;
+                            string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
+                            if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                defaultChoice = true;
+                            else if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                defaultChoice = false;
+                            else
+                                autoTimeOut = false;
+                        }
+
+                        // TODO : Timeout support
+                        MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            match = true;
+                            logMessage = "[Yes] was chosen";
+                        }
+                        else
+                        {
+                            match = false;
+                            logMessage = "[No] was chosen";
+                        }
                     }
                     break;
                 default:

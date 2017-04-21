@@ -931,9 +931,9 @@ namespace PEBakery.Core
                 case StrFormatType.Floor:
                 case StrFormatType.Round:
                     {
-                        // StrFormat,Ceil,<SizeVar>,<ToDigit>
-                        // StrFormat,Floor,<SizeVar>,<ToDigit>
-                        // StrFormat,Round,<SizeVar>,<ToDigit>
+                        // StrFormat,Ceil,<SizeVar>,<CeilTo>
+                        // StrFormat,Floor,<SizeVar>,<FloorTo>
+                        // StrFormat,Round,<SizeVar>,<RoundTo>
 
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -1305,6 +1305,20 @@ namespace PEBakery.Core
                 {
                     cond = new BranchCondition(BranchConditionType.Online, true);
                     embIdx = cIdx + 1;
+                }
+                else if (string.Equals(condStr, "Question", StringComparison.OrdinalIgnoreCase))
+                {
+                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled);
+                    if (m.Success)
+                    {
+                        cond = new BranchCondition(BranchConditionType.Question, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                        embIdx = cIdx + 4;
+                    }
+                    else
+                    {
+                        cond = new BranchCondition(BranchConditionType.Question, true, args[cIdx + 1]);
+                        embIdx = cIdx + 2;
+                    }
                 }
                 else
                     throw new InvalidCommandException($"Wrong branch condition [{condStr}]", rawCode);
