@@ -569,9 +569,9 @@ namespace PEBakery.Core
     {
         public string Message;
         public CodeMessageAction Action;
-        public int Timeout; // Optional, set to -1 to disable
+        public string Timeout; // Optional, Its type should be int, but set to string because of variable system
 
-        public CodeInfo_Message(string message, CodeMessageAction action, int timeout = -1)
+        public CodeInfo_Message(string message, CodeMessageAction action, string timeout)
         {
             Message = message;
             Action = action;
@@ -584,7 +584,7 @@ namespace PEBakery.Core
             b.Append(Message);
             b.Append(",");
             b.Append(Action);
-            if (Timeout == -1)
+            if (Timeout != null)
             {
                 b.Append(",");
                 b.Append(Timeout);
@@ -596,16 +596,20 @@ namespace PEBakery.Core
     public class CodeInfo_Echo : CodeInfo
     {
         public string Message;
+        public bool Warn;
 
-        public CodeInfo_Echo(string message)
+        public CodeInfo_Echo(string message, bool warn)
         {
             Message = message;
+            Warn = warn;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
             b.Append(Message);
+            if (Warn)
+                b.Append(",WARN");
             return b.ToString();
         }
     }
@@ -896,18 +900,20 @@ namespace PEBakery.Core
 
     public class StrFormatInfo_Replace : StrFormatInfo
     {
-        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>
-        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>
+        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
+        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
 
         public string SrcString;
         public string ToBeReplaced;
         public string ReplaceWith;
+        public string DestVarName;
 
-        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith)
+        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith, string destVarName)
         {
             SrcString = srcString;
             ToBeReplaced = toBeReplaced;
             ReplaceWith = replaceWith;
+            DestVarName = destVarName;
         }
 
         public override string ToString()
@@ -918,6 +924,8 @@ namespace PEBakery.Core
             b.Append(StringEscaper.QuoteEscape(ToBeReplaced));
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(ReplaceWith));
+            b.Append(",");
+            b.Append(DestVarName);
             return b.ToString();
         }
     }
@@ -941,7 +949,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcString));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(DestVarName));
+            b.Append(DestVarName);
             return b.ToString();
         }
     }
@@ -1538,11 +1546,11 @@ namespace PEBakery.Core
         public bool Break;
         public string PluginFile;
         public string SectionName;
-        public int StartIdx;
-        public int EndIdx;
+        public string StartIdx;  //  Its type should be int, but set to string because of variable system
+        public string EndIdx;   //  Its type should be int, but set to string because of variable system
         public List<string> Parameters;
 
-        public CodeInfo_Loop(string pluginFile, string sectionName, int startIdx, int endIdx, List<string> parameters)
+        public CodeInfo_Loop(string pluginFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
         {
             Break = false;
             PluginFile = pluginFile;

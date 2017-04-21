@@ -57,8 +57,7 @@ namespace PEBakery.Core
                             destStr = $"{((decimal)byteSize / KB):0.###}KB";
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
-                        foreach (LogInfo log in varLogs)
-                            logs.Add(LogInfo.AddCommand(log, cmd));
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                     }
                     break;
                 case StrFormatType.Ceil:
@@ -115,8 +114,7 @@ namespace PEBakery.Core
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.SizeVar, destInt.ToString());
-                        foreach (LogInfo log in varLogs)
-                            logs.Add(LogInfo.AddCommand(log, cmd));
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                     }
                     break;
                 case StrFormatType.Date:
@@ -147,8 +145,7 @@ namespace PEBakery.Core
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
-                        foreach (LogInfo log in varLogs)
-                            logs.Add(LogInfo.AddCommand(log, cmd));
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                     }
                     break;
                 case StrFormatType.Inc:
@@ -209,8 +206,7 @@ namespace PEBakery.Core
                             }
 
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
-                            foreach (LogInfo log in varLogs)
-                                logs.Add(LogInfo.AddCommand(log, cmd));
+                            logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                         }
                         catch (ArgumentOutOfRangeException)
                         {
@@ -230,8 +226,7 @@ namespace PEBakery.Core
                         string destStr = srcStr.Substring(0, match.Index);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
-                        foreach (LogInfo log in varLogs)
-                            logs.Add(LogInfo.AddCommand(log, cmd));
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                     }
                     break;
                 case StrFormatType.Pos:

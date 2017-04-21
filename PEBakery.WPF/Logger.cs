@@ -120,17 +120,59 @@ namespace PEBakery.Core
             Depth = depth;
         }
 
-        public static LogInfo AddCommand(LogInfo info, CodeCommand command)
+        public static LogInfo AddCommand(LogInfo log, CodeCommand command)
         {
-            info.Command = command;
-            return info;
-
+            log.Command = command;
+            return log;
         }
-        public static LogInfo AddCommand(LogInfo info, CodeCommand command, int depth)
+
+        public static List<LogInfo> AddCommand(List<LogInfo> logs, CodeCommand command)
         {
-            info.Command = command;
-            info.Depth = depth;
-            return info;
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                log.Command = command;
+                logs[i] = log;
+            }
+                
+            return logs;
+        }
+
+        public static LogInfo AddDepth(LogInfo log, int depth)
+        {
+            log.Depth = depth;
+            return log;
+        }
+
+        public static List<LogInfo> AddDepth(List<LogInfo> logs, int depth)
+        {
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                log.Depth = depth;
+                logs[i] = log;
+            }
+
+            return logs;
+        }
+
+        public static LogInfo AddCommandDepth(LogInfo log, CodeCommand command, int depth)
+        {
+            log.Command = command;
+            log.Depth = depth;
+            return log;
+        }
+
+        public static List<LogInfo> AddCommandDepth(List<LogInfo> logs, CodeCommand command, int depth)
+        {
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                log.Command = command;
+                log.Depth = depth;
+            }
+
+            return logs;
         }
         #endregion
     }

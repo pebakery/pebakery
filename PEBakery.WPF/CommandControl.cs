@@ -18,8 +18,7 @@ namespace PEBakery.Core
                 throw new InvalidCodeCommandException("Command [Set] should have [CodeInfo_Set]", cmd);
 
             List<LogInfo> logs = Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
-            foreach (LogInfo log in logs)
-                LogInfo.AddCommand(log, cmd);
+            logs.AddRange(LogInfo.AddCommand(logs, cmd));
 
             return logs;
         }

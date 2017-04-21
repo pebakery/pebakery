@@ -65,7 +65,14 @@ namespace PEBakery.Core
             }
 
             List<CodeCommand> compiledList = codeList;
-            CompileBranchCodeBlock(compiledList, out compiledList);
+            try
+            {
+                CompileBranchCodeBlock(compiledList, out compiledList);
+            }
+            catch (InvalidCodeCommandException e)
+            {
+                errorLogs.Add(new LogInfo(LogState.Error, e.Message, e.Cmd));
+            }
             return compiledList;
         }
         #endregion
@@ -532,7 +539,7 @@ namespace PEBakery.Core
                         if (varName == null)
                             throw new InvalidCommandException($"Variable name [{args[3]}] must start and end with %", rawCode);
 
-                        return new CodeInfo_INIWrite(args[0], args[1], args[2], varName);
+                        return new CodeInfo_INIRead(args[0], args[1], args[2], varName);
                     }
                 case CodeType.INIDelete:
                     { // INIDelete,<FileName>,<SectionName>,<Key>
@@ -648,25 +655,27 @@ namespace PEBakery.Core
                         else
                             throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
 
-                        int timeout = -1;
+                        string timeout = null;
                         if (minArgCount < args.Count)
-                        {
-                            if (int.TryParse(args[minArgCount], out timeout) == false)
-                                throw new InvalidCommandException($"Timeout is not valid positive integer [{args[minArgCount]}]", rawCode);
-                            if (timeout <= 0)
-                                throw new InvalidCommandException($"Timeout must be positive integer [{args[minArgCount]}]", rawCode);
-                        }
+                            timeout = args[minArgCount];
 
                         return new CodeInfo_Message(message, action, timeout);
                     }
                 case CodeType.Echo:
-                    { // Echo,<Message>
+                    { // Echo,<Message>[,WARN]
                         const int minArgCount = 1;
-                        const int maxArgCount = 1;
+                        const int maxArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_Echo(args[0]);
+                        bool warn = false;
+                        if (args.Count == maxArgCount)
+                        {
+                            if (args[1].Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                                warn = true;
+                        }
+
+                        return new CodeInfo_Echo(args[0], warn);
                     }
                 case CodeType.Retrieve:
                     break;
@@ -754,19 +763,12 @@ namespace PEBakery.Core
                             if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                                 throw new InvalidCommandException($"Command [Loop] must have at least [{minArgCount}] arguments", rawCode);
 
-                            string pluginFile = args[0];
-                            string sectionName = args[1];
-                            if (int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int startIdx) == false)
-                                throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
-                            if (int.TryParse(args[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int endIdx) == false)
-                                throw new InvalidCommandException($"Argument [{args[3]}] is not valid number", rawCode);
-
                             // Get parameters 
                             List<string> parameters = new List<string>();
                             if (minArgCount < args.Count)
                                 parameters.AddRange(args.Skip(minArgCount));
 
-                            return new CodeInfo_Loop(pluginFile, sectionName, startIdx, endIdx, parameters);
+                            return new CodeInfo_Loop(args[0], args[1], args[2], args[3], parameters);
                         }
                     }
                 case CodeType.If:
@@ -1082,17 +1084,17 @@ namespace PEBakery.Core
                 case StrFormatType.Replace:
                 case StrFormatType.ReplaceX:
                     {
-                        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>
-                        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>
+                        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
+                        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
 
-                        const int argCount = 3;
+                        const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        if (Variables.DetermineType(args[3]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[3]}] is not valid variable name", rawCode);
                         else
-                            info = new StrFormatInfo_Replace(args[0], args[1], args[2]);
+                            info = new StrFormatInfo_Replace(args[0], args[1], args[2], args[3]);
                     }
                     break;
                 case StrFormatType.ShortPath:

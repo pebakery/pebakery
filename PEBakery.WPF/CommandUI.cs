@@ -1,6 +1,7 @@
 ﻿using PEBakery.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,11 @@ namespace PEBakery.Core
                 throw new InvalidCodeCommandException("Command [Message] should have [CodeInfo_Message]", cmd);
 
             string message = StringEscaper.Preprocess(s, info.Message);
+            string timeOutStr = StringEscaper.Preprocess(s, info.Timeout);
+            if (int.TryParse(timeOutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeOut) == false)
+                throw new InvalidCodeCommandException($"[{timeOutStr}] is not valid positive integer", cmd);
+            if (timeOut <= 0)
+                throw new InvalidCodeCommandException($"Timeout must be positive integer [{timeOutStr}]", cmd);
 
             MessageBoxImage image;
             switch (info.Action)
@@ -40,7 +46,7 @@ namespace PEBakery.Core
             }
 
             // TODO : Timeout support
-            if (info.Timeout != -1)
+            if (info.Timeout != null)
             {
                 logs.Add(new LogInfo(LogState.Warning, $"Timeout of Message is not implemented yet", cmd));
             }

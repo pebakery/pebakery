@@ -184,6 +184,15 @@ namespace PEBakery.Core
                 str = builder.ToString();
             }
 
+            if (s.LoopRunning)
+            { // Escape #c
+                if (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    str = str.Replace("#c", s.LoopCounter.ToString());
+                    str = str.Replace("#C", s.LoopCounter.ToString());
+                }
+            }
+
             return str;
         }
         #endregion

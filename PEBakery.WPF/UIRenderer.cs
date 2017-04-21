@@ -870,6 +870,7 @@ namespace PEBakery.WPF
                     EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
                     long buildId = Engine.RunBuildOneSection(s, addr, logMsg);
 
+
 #if DEBUG  // TODO: Remove this, this line is for Debug
                     logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
 #endif

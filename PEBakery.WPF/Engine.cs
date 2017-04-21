@@ -99,7 +99,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Build_Write(s.BuildId, addr.Section.LogInfos);
+            s.Logger.Build_Write(s.BuildId, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
@@ -110,7 +110,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Build_Write(s.BuildId, addr.Section.LogInfos);
+            s.Logger.Build_Write(s.BuildId, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             RunCommands(s, codes, paramDict, depth, callback);
         }
@@ -120,6 +120,8 @@ namespace PEBakery.Core
             long buildId = s.Logger.Build_Init(DateTime.Now, buildName, s);
             long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
             s.Logger.LogStartOfSection(buildId, addr.Section.SectionName, 0, null);
+            s.Variables.ResetVariables(VarsType.Local);
+            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
             Engine.RunSection(s, addr, new List<string>(), 1, true);
             s.Logger.LogEndOfSection(buildId, addr.Section.SectionName, 0, null);
             s.Logger.Build_Plugin_Finish(pluginId);
@@ -171,6 +173,8 @@ namespace PEBakery.Core
         private static void ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = null;
+            int curDepth = s.CurDepth;
+
             try
             {
                 switch (cmd.Type)
@@ -399,13 +403,13 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, Logger.LogExceptionMessage(e), cmd, s.CurDepth) };
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, Logger.LogExceptionMessage(e), cmd, curDepth) };
             }
 
             for (int i = 0; i < logs.Count; i++)
             {
                 LogInfo log = logs[i];
-                log.Depth = s.CurDepth;
+                log.Depth = curDepth;
                 s.Logger.Build_Write(s.BuildId, log);
             }
         }
@@ -433,6 +437,8 @@ namespace PEBakery.Core
         public Dictionary<int, string> CurSectionParams;
         public int CurDepth;
         public bool RunElse;
+        public bool LoopRunning;
+        public long LoopCounter;
 
         // Fields : System Commands
         public CodeCommand OnBuildExit;
@@ -464,6 +470,8 @@ namespace PEBakery.Core
             this.CurSectionParams = new Dictionary<int, string>();
             this.CurDepth = 0;
             this.RunElse = false;
+            this.LoopRunning = false;
+
             this.OnBuildExit = null;
             this.OnPluginExit = null;
         }
