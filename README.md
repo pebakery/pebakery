@@ -4,7 +4,7 @@ WinBuilder drop-in replacement. Stil in development.
 ## What is PEBakery?
 PEBakery is new, improved implementation of WinBuilder 082.
 
-PEBakery aims to resolve WinBuilder 082's abandoned bugs, provide improved support for Unicode, more plugin developer friendly builder.
+PEBakery aims to resolve WinBuilder 082's abandoned bugs, more plugin developer friendly builder.
 
 ## Disclaimer
 All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
@@ -12,9 +12,9 @@ All implementation is only backed by documentation and blackbox testing, without
 # Current State
 ## Implemented
 - Plugin Interface Parser/Renderer
-- Logger
-- Variables
-- Macro
+- Variables System
+- Logger System
+- Macro System
 
 ## Working
 - GUI
@@ -23,21 +23,23 @@ All implementation is only backed by documentation and blackbox testing, without
 
 ## TODO
 - New Plugin Format
-- New Language Grammar
+- New Language and Grammar
 
 ## Command Status
-|   Class  | Implemented | All |
-|----------|-------------|-----|
-| File     | 0  | 13  |
-| Registry | 0  | 10  |
-| Text     | 10 | 12  |
-| Plugin   | 0  | 6   |
-| UI       | 2  | 11  |
-| String   | 0  | 24  |
-| System   | 0  | 16  |
-| Branch   | 30 | 31  |
-| Control  | 3  | 8   |
-| All      | 45 | 131 |
+|   Class  | All | Implemented |
+|----------|-----|-------------|
+| File     | 12  | 1   |
+| Registry | 10  | 0   |
+| Text     | 5   | 5   |
+| INI      | 7   | 5   |
+| Network  | 1   | 0   |
+| Plugin   | 6   | 0   |
+| UI       | 11  | 0   |
+| String   | 26  | 25  |
+| System   | 16  | 3   |
+| Branch   | 31  | 28  |
+| Control  | 8   | 3   |
+| All      | 133 | 71  |
 
 # Screenshots
 ## 20170421 Build

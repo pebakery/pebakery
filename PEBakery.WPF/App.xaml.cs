@@ -27,14 +27,12 @@ namespace PEBakery.WPF
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.IntegerVersion;
 
-            /*
             // Yeay, long path support at last!
             // https://blogs.msdn.microsoft.com/dotnet/2016/08/02/announcing-net-framework-4-6-2/
             // Enable long path (~32768) support, applyed from .Net Framework 4.6.2 or up
             AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false);
             // Disable long path (~32768) support
-            AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", true);
-            */
+            //AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", true);
         }
     }
 }

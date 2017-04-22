@@ -17,8 +17,10 @@
 */
 
 using PEBakery.Exceptions;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,6 +30,39 @@ namespace PEBakery.Core
 {
     public static class CommandFile
     {
-        
+        public static List<LogInfo> FileCreateBlank(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
+            if (info == null)
+                throw new InvalidCodeCommandException("Command [FileCreateBlank] should have [CodeInfo_FileCreateBlank]", cmd);
+
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            // Default Encoding - UTF8
+            Encoding encoding = Encoding.UTF8;
+            if (info.Encoding != null)
+                encoding = info.Encoding;
+
+            if (File.Exists(filePath))
+            {
+                if (info.Preserve)
+                {
+                    logs.Add(new LogInfo(LogState.Success, $"Cannot overwrite [{filePath}]", cmd));
+                    return logs;
+                }
+                else
+                {
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{filePath}] will be overwritten", cmd));
+                }
+            }
+
+            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+            FileHelper.WriteTextBOM(fs, encoding).Close();
+            logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
+
+            return logs;
+        }
     }
 }

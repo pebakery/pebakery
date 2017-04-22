@@ -393,8 +393,6 @@ namespace PEBakery.Core
             return error;
         }
 
-        
-
         /// <summary>
         /// Extract tooltip from operand
         /// </summary>

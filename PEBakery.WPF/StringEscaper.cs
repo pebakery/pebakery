@@ -105,11 +105,11 @@ namespace PEBakery.Core
             return s.Variables.Expand(ExpandSectionParams(s, str));
         }
 
-        public static List<string> ExpandVariables(EngineState s, List<string> strs)
+        public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
         {
             List<string> list = new List<string>();
-            for (int i = 0; i < strs.Count; i++)
-                list.Add(s.Variables.Expand(ExpandSectionParams(s, strs[i])));
+            foreach (string str in strs)
+                list.Add(s.Variables.Expand(ExpandSectionParams(s, str)));
             return list;
         }
 
@@ -118,11 +118,11 @@ namespace PEBakery.Core
             return vars.Expand(str);
         }
 
-        public static List<string> ExpandVariables(Variables vars, List<string> strs)
+        public static List<string> ExpandVariables(Variables vars, IEnumerable<string> strs)
         {
             List<string> list = new List<string>();
-            for (int i = 0; i < strs.Count; i++)
-                list.Add(vars.Expand(strs[i]));
+            foreach (string str in strs)
+                list.Add(vars.Expand(str));
             return list;
         }
 
@@ -138,7 +138,7 @@ namespace PEBakery.Core
             StringBuilder builder = new StringBuilder();
             for (int x = 0; x < matches.Count; x++)
             {
-                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int paramNum) == false)
+                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int pIdx) == false)
                     throw new InternalUnknownException("ExpandVariables failure");
                 if (x == 0)
                     builder.Append(str.Substring(0, matches[0].Index));
@@ -152,11 +152,27 @@ namespace PEBakery.Core
                 string param;
                 try
                 {
-                    param = s.CurSectionParams[paramNum - 1]; // In C#, index starts from 0. In PEBakery, index starts from 1.
+                    param = s.CurSectionParams[pIdx];
                 }
-                catch (ArgumentOutOfRangeException)
+                catch (KeyNotFoundException)
                 {
-                    param = matches[x].Value;
+                    /*
+                    TODO: What is the internal logic of WB082?
+                    
+                    Test Result
+                       In [Process]
+                           Message,#3
+                       Printed "#3"
+                       
+                       In [Process2] 
+                           Run,%ScriptFile%,Process2,Test)
+                           [Process2]
+                           Message,#3
+                        Printed ""
+                    */
+
+                    // param = matches[x].Value;
+                    param = string.Empty;
                 }
                 builder.Append(param);
 
@@ -166,6 +182,15 @@ namespace PEBakery.Core
             if (0 < matches.Count) // Only copy it if variable exists
             {
                 str = builder.ToString();
+            }
+
+            if (s.LoopRunning)
+            { // Escape #c
+                if (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    str = str.Replace("#c", s.LoopCounter.ToString());
+                    str = str.Replace("#C", s.LoopCounter.ToString());
+                }
             }
 
             return str;

@@ -81,7 +81,7 @@ namespace PEBakery.Core
             // Tools
             logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
 
-            // Version
+            //  Version
             // Version version = FileHelper.GetProgramVersion();
             // logs.Add(SetFixedValue("Version", version.Build.ToString()));
             
@@ -185,7 +185,7 @@ namespace PEBakery.Core
         /// <param name="type"></param>
         /// <param name="key"></param>
         /// <param name="rawValue"></param>
-        /// <param name="privFixed"></param>
+        /// <param name="privFixed">Privilege for write info fixed variables</param>
         /// <returns></returns>
         public LogInfo InternalSetValue(VarsType type, string key, string rawValue, bool privFixed)
         {
@@ -431,10 +431,87 @@ namespace PEBakery.Core
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
                     return paramIdx;
                 else
-                    return -1; // Error
+                    return 0; // Error
             }
             else
-                return -1; // Error
+                return 0; // Error
+        }
+
+        public enum VarKeyType { None, Variable, SectionParams }
+        public static VarKeyType DetermineType(string key)
+        {
+            if (key.StartsWith("%") && key.EndsWith("%")) // Ex) %A%
+                return VarKeyType.Variable;
+            else if (Regex.Match(key, @"(#\d+)", RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
+                return VarKeyType.SectionParams;
+            else
+                return VarKeyType.None;
+        }
+
+        public static LogInfo SetSectionParam(EngineState s, string key, string value)
+        {
+            int pIdx = Variables.GetSectionParamIndex(key);
+            return SetSectionParam(s, pIdx, value);
+        }
+
+        public static LogInfo SetSectionParam(EngineState s, int pIdx, string value)
+        {
+            if (pIdx <= 0)
+                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be positive integer");
+            s.CurSectionParams[pIdx] = value;
+            return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
+        }
+
+        public static List<LogInfo> SetVariable(EngineState s, string varKey, string varValue, bool global = false, bool permanent = false)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            // Determine varKey's type - %A% vs #1
+            Variables.VarKeyType type = Variables.DetermineType(varKey);
+
+            if (type == Variables.VarKeyType.Variable) // %A%
+            {
+                varKey = Variables.GetVariableName(varKey);
+                if (varKey == null)
+                    logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
+
+                // Logs are written in variables.SetValue method
+                if (global)
+                {
+                    logs.Add(s.Variables.SetValue(VarsType.Global, varKey, varValue));
+                }
+                else if (permanent)
+                {
+                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, varValue);
+                    logs.Add(log);
+
+                    if (log.State == LogState.Success)
+                    { // SetValue success, write to IniFile
+                        if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", varKey, varValue))
+                            logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{varValue}] into script.project"));
+                    }
+                    else
+                    { // SetValue failed
+                        logs.Add(new LogInfo(LogState.Error, $"Variable [%{varKey}%] contains itself in [{varValue}]"));
+                    }
+                }
+                else // Local
+                {
+                    logs.Add(s.Variables.SetValue(VarsType.Local, varKey, varValue));
+                }
+            }
+            else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
+            {
+                logs.Add(Variables.SetSectionParam(s, varKey, varValue));
+            }
+            else
+            {
+                throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+            }
+
+            return logs;
         }
         #endregion
     }

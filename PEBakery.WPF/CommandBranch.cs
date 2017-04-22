@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Win32;
 using PEBakery.Exceptions;
+using System.Globalization;
 
 namespace PEBakery.Core
 {
@@ -40,15 +41,14 @@ namespace PEBakery.Core
             if (info == null)
                 throw new InvalidCodeCommandException($"Command [{cmd.Type}] should have [CodeInfo_RunExec]", cmd);
 
-            // Get necesssary operand
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
-            if (string.Equals(info.PluginFile, "%PluginFile%", StringComparison.OrdinalIgnoreCase))
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
-            else if (string.Equals(info.PluginFile, "%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
 
             Plugin targetPlugin;
@@ -78,11 +78,10 @@ namespace PEBakery.Core
 
             // Run Section
             int depthBackup = s.CurDepth;
-            List<string> newSecParam = parameters;
             if (preserveCurParams)
-                newSecParam = s.CurSectionParams;
-
-            Engine.RunSection(s, nextAddr, newSecParam, s.CurDepth + 1, callback);
+                Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
+            else
+                Engine.RunSection(s, nextAddr, parameters, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
@@ -93,8 +92,75 @@ namespace PEBakery.Core
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
             if (info == null)
                 throw new InvalidCodeCommandException("Command [Loop] should have [CodeInfo_Loop]", cmd);
-            
+
             // TODO
+            if (info.Break)
+            {
+                if (s.LoopRunning)
+                {
+                    s.LoopRunning = false;
+                }
+                else
+                {
+                    s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Error, "Loop is not running", cmd));
+                }
+            }
+            else
+            {
+                string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
+                if (long.TryParse(startIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long startIdx) == false)
+                    throw new InvalidCodeCommandException($"Argument [{startIdxStr}] is not valid integer", cmd);
+                string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
+                if (long.TryParse(endIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long endIdx) == false)
+                    throw new InvalidCodeCommandException($"Argument [{endIdxStr}] is not valid integer", cmd);
+                long loopCount = endIdx - startIdx + 1;
+
+                // Prepare Loop
+                string pluginFile = StringEscaper.Unescape(info.PluginFile);
+                string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+                List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
+
+                bool inCurrentPlugin = false;
+                if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                    inCurrentPlugin = true;
+                else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                    inCurrentPlugin = true;
+
+                Plugin targetPlugin;
+                if (inCurrentPlugin)
+                    targetPlugin = s.CurrentPlugin;
+                else
+                {
+                    string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                    targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                    if (targetPlugin == null)
+                        throw new InvalidCodeCommandException($"No plugin in [{fullPath}]", cmd);
+                }
+
+                // Does section exists?
+                if (!targetPlugin.Sections.ContainsKey(sectionName))
+                    throw new InvalidCodeCommandException($"[{pluginFile}] does not have section [{sectionName}]", cmd);
+
+                string logMessage;
+                if (inCurrentPlugin)
+                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
+                else
+                    logMessage = $"Loop [{targetPlugin.Title}]'s Section [{sectionName}] [{loopCount}] times";
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
+
+                // Loop it
+                SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
+                for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
+                { // Counter Variable is [#c]
+                    s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
+                    int depthBackup = s.CurDepth;
+                    s.LoopRunning = true;
+                    Engine.RunSection(s, nextAddr, info.Parameters, s.CurDepth + 1, true);
+                    s.LoopRunning = false;
+                    s.CurDepth = depthBackup;
+                    s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
+                }
+            }
         }
 
         public static void If(EngineState s, CodeCommand cmd)
@@ -105,18 +171,20 @@ namespace PEBakery.Core
 
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
-                s.RunElse = false;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+
+                s.ElseFlag = false;
             }
             else
             { // Do not run
-                s.RunElse = true;
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
+
+                s.ElseFlag = true;
             }
         }
 
@@ -126,19 +194,20 @@ namespace PEBakery.Core
             if (info == null)
                 throw new InvalidCodeCommandException("Command [Else] should have [CodeInfo_Else]", cmd);
 
-            if (s.RunElse)
+            if (s.ElseFlag)
             {
-                s.RunElse = false;
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition is met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+
+                s.ElseFlag = false;
             }
             else
             {
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition is not met", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
             }
         }
     }
