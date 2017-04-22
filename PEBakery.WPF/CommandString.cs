@@ -1,5 +1,6 @@
 ﻿using PEBakery.Core;
 using PEBakery.Exceptions;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -39,10 +40,10 @@ namespace PEBakery.Core
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
                         if (long.TryParse(byteSizeStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long byteSize) == false)
-                            throw new InvalidCodeCommandException($"[{byteSizeStr}] is not valid integer", cmd);
+                            logs.Add(new LogInfo(LogState.Error, $"[{byteSizeStr}] is not valid integer", cmd));
 
                         if (byteSize < 0)
-                            throw new InvalidCodeCommandException($"[{byteSize}] must be positive integer", cmd);
+                            logs.Add(new LogInfo(LogState.Error, $"[{byteSize}] must be positive integer", cmd));
 
                         string destStr = string.Empty;
                         if (PB <= byteSize)
@@ -84,15 +85,15 @@ namespace PEBakery.Core
                             else if (roundToStr.Equals("P", StringComparison.OrdinalIgnoreCase))
                                 roundTo = PB;
                             else
-                                throw new InvalidCodeCommandException($"[{roundToStr}] is not valid integer", cmd);
+                                logs.Add(new LogInfo(LogState.Error, $"[{roundToStr}] is not valid integer", cmd));
                         }
-                            
+
                         if (roundTo < 0)
-                            throw new InvalidCodeCommandException($"[{roundTo}] must be positive integer", cmd);
+                            logs.Add(new LogInfo(LogState.Error, $"[{roundTo}] must be positive integer", cmd));
 
                         string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
                         if (long.TryParse(srcIntStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long srcInt) == false)
-                            throw new InvalidCodeCommandException($"[{srcIntStr}] is not valid integer", cmd);
+                            logs.Add(new LogInfo(LogState.Error, $"[{srcIntStr}] is not valid integer", cmd));
                         long destInt;
                         if (type == StrFormatType.Ceil)
                         {
@@ -152,13 +153,109 @@ namespace PEBakery.Core
                 case StrFormatType.Dec:
                 case StrFormatType.Mult:
                 case StrFormatType.Div:
+                    { // Why, why arithmetic is in StrFormat...
+                        StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_Arithmetic]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVarName);
+                        if (decimal.TryParse(srcStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal src) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not valid number", cmd));
+                        string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        if (decimal.TryParse(operandStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal operand) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{operandStr}] is not valid number", cmd));
+
+                        decimal dest = src;
+                        if (type == StrFormatType.Inc) // +
+                            dest += operand;
+                        else if (type == StrFormatType.Dec) // -
+                            dest -= operand;
+                        else if (type == StrFormatType.Mult) // *
+                            dest *= operand;
+                        else if (type == StrFormatType.Div) // /
+                            dest /= operand;
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, dest.ToString());
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.Left:
                 case StrFormatType.Right:
+                    {
+                        StrFormatInfo_LeftRight subInfo = info.SubInfo as StrFormatInfo_LeftRight;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_LeftRight]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        if (int.TryParse(cutLenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{cutLenStr}] is not valid integer", cmd));
+                        if (cutLen < 0)
+                            logs.Add(new LogInfo(LogState.Error, $"[{cutLen}] must be positive integer", cmd));
+
+
+                        string destStr = string.Empty;
+                        try
+                        {
+                            if (type == StrFormatType.Left)
+                            {
+                                destStr = srcStr.Substring(0, cutLen);
+                            }
+                            else if (type == StrFormatType.Right)
+                            {
+                                destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
+                            }
+                            
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                            logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                        }
+                        catch (ArgumentOutOfRangeException)
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{cutLen}] is not valid index", cmd));
+                        }
+                    }
                     break;
                 case StrFormatType.SubStr:
+                    {
+                        StrFormatInfo_SubStr subInfo = info.SubInfo as StrFormatInfo_SubStr;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_LeftRight]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
+                        if (int.TryParse(startPosStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int startPos) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{startPosStr}] is not valid integer", cmd));
+                        if (startPos < 0)
+                            logs.Add(new LogInfo(LogState.Error, $"[{startPos}] must be positive integer", cmd));
+                        string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
+                        if (int.TryParse(lenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int len) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{lenStr}] is not valid integer", cmd));
+                        if (len < 0)
+                            logs.Add(new LogInfo(LogState.Error, $"[{len}] must be positive integer", cmd));
+
+                        // Error handling
+                        if (srcStr.Length <= startPos)
+                            logs.Add(new LogInfo(LogState.Error, $"Start position [{startPos}] cannot be bigger than source string's length [{srcStr.Length}]", cmd));
+                        if (srcStr.Length - startPos < len)
+                            logs.Add(new LogInfo(LogState.Error, $"Length [{len}] cannot be bigger than [{srcStr.Length - startPos}]", cmd));
+
+                        string destStr = srcStr.Substring(startPos, len);
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.Len:
+                    {
+                        StrFormatInfo_Len subInfo = info.SubInfo as StrFormatInfo_Len;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_Len]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, srcStr.Length.ToString());
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.LTrim:
                 case StrFormatType.RTrim:
@@ -177,14 +274,14 @@ namespace PEBakery.Core
                             if (type == StrFormatType.LTrim) // string.Substring
                             {
                                 if (int.TryParse(toTrim, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
-                                    throw new InvalidCodeCommandException($"[{toTrim}] is not valid integer", cmd);
+                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer", cmd));
 
                                 destStr = srcStr.Substring(cutLen);
                             }
                             else if (type == StrFormatType.RTrim) // string.Substring
                             {
                                 if (int.TryParse(toTrim, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
-                                    throw new InvalidCodeCommandException($"[{toTrim}] is not valid integer", cmd);
+                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer", cmd));
 
                                 destStr = srcStr.Substring(0, srcStr.Length - cutLen);
                             }
@@ -196,7 +293,7 @@ namespace PEBakery.Core
                             else if (type == StrFormatType.NTrim) // string.Substring
                             {
                                 if (int.TryParse(toTrim, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
-                                    throw new InvalidCodeCommandException($"[{toTrim}] is not valid integer", cmd);
+                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer", cmd));
 
                                 Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
                                 if (match.Success)
@@ -210,7 +307,7 @@ namespace PEBakery.Core
                         }
                         catch (ArgumentOutOfRangeException)
                         {
-                            throw new InvalidCodeCommandException($"[{toTrim}] is not valid index", cmd);
+                            logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid index", cmd));
                         }
                     }
                     break;
@@ -230,14 +327,97 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Pos:
+                    {
+                        StrFormatInfo_Pos subInfo = info.SubInfo as StrFormatInfo_Pos;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_Pos]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string subStr = StringEscaper.Preprocess(s, subInfo.SubString);
+
+                        int idx = srcStr.IndexOf(subStr, StringComparison.OrdinalIgnoreCase) + 1;
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, idx.ToString());
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.Replace:
                 case StrFormatType.ReplaceX:
+                    {
+                        StrFormatInfo_Replace subInfo = info.SubInfo as StrFormatInfo_Replace;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_Replace]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string subStr = StringEscaper.Preprocess(s, subInfo.ToBeReplaced);
+                        string newStr = StringEscaper.Preprocess(s, subInfo.ReplaceWith);
+
+                        string destStr;
+                        if (type == StrFormatType.Replace)
+                        {
+                            Regex regex = new Regex(subStr, RegexOptions.IgnoreCase);
+                            destStr = regex.Replace(srcStr, newStr);
+                        }
+                        else
+                        {
+                            destStr = srcStr.Replace(subStr, newStr);
+                        }
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.ShortPath:
                 case StrFormatType.LongPath:
+                    {
+                        StrFormatInfo_ShortLongPath subInfo = info.SubInfo as StrFormatInfo_ShortLongPath;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_ShortLongPath]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+
+                        string destStr;
+                        if (type == StrFormatType.ShortPath)
+                        {
+                            destStr = FileHelper.GetShortPath(srcStr);
+                        }
+                        else
+                        {
+                            destStr = FileHelper.GetLongPath(srcStr);
+                        }
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 case StrFormatType.Split:
+                    {
+                        StrFormatInfo_Split subInfo = info.SubInfo as StrFormatInfo_Split;
+                        if (subInfo == null)
+                            throw new InvalidCodeCommandException($"Command [StrFormat,{info.Type}] should have [StrFormatInfo_Split]", cmd);
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string delimStr = StringEscaper.Preprocess(s, subInfo.Delimeter);
+                        string idxStr = StringEscaper.Preprocess(s, subInfo.Index);
+                        if (int.TryParse(idxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
+                            logs.Add(new LogInfo(LogState.Error, $"[{idxStr}] is not valid integer", cmd));
+
+                        char[] delim = delimStr.ToCharArray();
+
+                        string destStr;
+                        if (idx == 0)
+                        {
+                            destStr = srcStr.Split(delim).Length.ToString();
+                        }
+                        else
+                        {
+                            string[] slices = srcStr.Split(delim);
+                            destStr = slices[idx - 1];
+                        }
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                    }
                     break;
                 // Error
                 default:

@@ -154,7 +154,9 @@ namespace PEBakery.Core
                 { // Counter Variable is [#c]
                     s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
                     int depthBackup = s.CurDepth;
+                    s.LoopRunning = true;
                     Engine.RunSection(s, nextAddr, info.Parameters, s.CurDepth + 1, true);
+                    s.LoopRunning = false;
                     s.CurDepth = depthBackup;
                     s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
                 }
@@ -169,18 +171,20 @@ namespace PEBakery.Core
 
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
-                s.RunElse = false;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+
+                s.ElseFlag = false;
             }
             else
             { // Do not run
-                s.RunElse = true;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
+
+                s.ElseFlag = true;
             }
         }
 
@@ -190,15 +194,16 @@ namespace PEBakery.Core
             if (info == null)
                 throw new InvalidCodeCommandException("Command [Else] should have [CodeInfo_Else]", cmd);
 
-            if (s.RunElse)
+            if (s.ElseFlag)
             {
-                s.RunElse = false;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+
+                s.ElseFlag = false;
             }
             else
             {

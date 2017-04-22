@@ -384,6 +384,85 @@ namespace PEBakery.Helper
                 Directory.Delete(path, true);
             }
         }
+
+        private const int MAX_LONG_PATH = 32767;
+        private static readonly string LONG_PATH_PREFIX = @"\\?\";
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern int GetShortPathName(
+            [MarshalAs(UnmanagedType.LPTStr)] string longPath,
+            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder shortPath,
+            int cchBuffer
+        );
+
+        // Success of this depends on HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation
+        public static string GetShortPath(string longPath)
+        {
+            // Is long path (~32768) support enabled in .Net?
+            bool isLongPathDisabled;
+            try
+            {
+                AppContext.TryGetSwitch("Switch.System.IO.UseLegacyPathHandling", out isLongPathDisabled);
+            }
+            catch
+            {
+                isLongPathDisabled = true;
+            }
+
+            if (isLongPathDisabled == false)
+            {
+                if (longPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal) == false)
+                    longPath = LONG_PATH_PREFIX + longPath;
+            }
+
+            StringBuilder shortPath = new StringBuilder(MAX_LONG_PATH);
+            GetShortPathName(longPath, shortPath, MAX_LONG_PATH);
+
+            string str = shortPath.ToString();
+            if (isLongPathDisabled == false)
+            {
+                if (str.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
+                    return str.Substring(LONG_PATH_PREFIX.Length);
+            }
+            return str;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern int GetLongPathName(
+            [MarshalAs(UnmanagedType.LPTStr)] string shortPath,
+            [MarshalAs(UnmanagedType.LPTStr)] StringBuilder longPath,
+            int cchBuffer
+        );
+
+        public static string GetLongPath(string shortPath)
+        {
+            // Is long path (~32768) support enabled in .Net?
+            bool isLongPathDisabled;
+            try
+            {
+                AppContext.TryGetSwitch("Switch.System.IO.UseLegacyPathHandling", out isLongPathDisabled);
+            }
+            catch
+            {
+                isLongPathDisabled = true;
+            }
+            if (isLongPathDisabled == false)
+            {
+                if (shortPath.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal) == false)
+                    shortPath = LONG_PATH_PREFIX + shortPath;
+            }
+
+            StringBuilder longPath = new StringBuilder(MAX_LONG_PATH);
+            GetLongPathName(shortPath, longPath, MAX_LONG_PATH);
+
+            string str = longPath.ToString();
+            if (isLongPathDisabled == false)
+            {
+                if (str.StartsWith(LONG_PATH_PREFIX, StringComparison.Ordinal))
+                    return str.Substring(LONG_PATH_PREFIX.Length);
+            }
+            return str;
+        }
     }
 
     public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 };

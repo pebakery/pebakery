@@ -60,7 +60,7 @@ namespace PEBakery.Core
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo());
                     codeList.Add(error);
-                    errorLogs.Add(new LogInfo(LogState.Error, e.Message, error));
+                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
                 }
             }
 
@@ -71,7 +71,7 @@ namespace PEBakery.Core
             }
             catch (InvalidCodeCommandException e)
             {
-                errorLogs.Add(new LogInfo(LogState.Error, e.Message, e.Cmd));
+                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.SectionName}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
             return compiledList;
         }
@@ -636,28 +636,31 @@ namespace PEBakery.Core
                 #region 07 UI
                 // 07 UI
                 case CodeType.Message:
-                    { // Message,<Message>,<Icon>,[TIMEOUT]
-                        const int minArgCount = 2;
+                    { // Message,<Message>[,ICON][,TIMEOUT]
+                        const int minArgCount = 1;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string message = args[0];
-                        CodeMessageAction action;
-                        if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
-                            action = CodeMessageAction.Information;
-                        else if (args[1].Equals("Confirmation", StringComparison.OrdinalIgnoreCase))
-                            action = CodeMessageAction.Confirmation;
-                        else if (args[1].Equals("Error", StringComparison.OrdinalIgnoreCase))
-                            action = CodeMessageAction.Error;
-                        else if (args[1].Equals("Warning", StringComparison.OrdinalIgnoreCase))
-                            action = CodeMessageAction.Warning;
-                        else
-                            throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
-
+                        CodeMessageAction action = CodeMessageAction.None;
                         string timeout = null;
-                        if (minArgCount < args.Count)
-                            timeout = args[minArgCount];
+
+                        if (args.Count == 3)
+                        {
+                            if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Information;
+                            else if (args[1].Equals("Confirmation", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Confirmation;
+                            else if (args[1].Equals("Error", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Error;
+                            else if (args[1].Equals("Warning", StringComparison.OrdinalIgnoreCase))
+                                action = CodeMessageAction.Warning;
+                            else
+                                throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
+
+                            timeout = args[2];
+                        }
 
                         return new CodeInfo_Message(message, action, timeout);
                     }
@@ -1372,7 +1375,7 @@ namespace PEBakery.Core
 
                     if (elseFlag)
                     {
-                        compiledList.Add(cmd);
+                        // compiledList.Add(cmd);
                         i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
 
                         CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);

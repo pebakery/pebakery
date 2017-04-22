@@ -69,7 +69,6 @@ namespace PEBakery.Core
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
 
-            // s.SectionParams = new Stack<List<string>>();
             s.CurSectionParams = new Dictionary<int, string>();
         }
 
@@ -403,7 +402,7 @@ namespace PEBakery.Core
             }
             catch (Exception e)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, Logger.LogExceptionMessage(e), cmd, curDepth) };
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e, cmd, curDepth) };
             }
 
             for (int i = 0; i < logs.Count; i++)
@@ -436,7 +435,7 @@ namespace PEBakery.Core
         public int NextPluginIdx;
         public Dictionary<int, string> CurSectionParams;
         public int CurDepth;
-        public bool RunElse;
+        public bool ElseFlag;
         public bool LoopRunning;
         public long LoopCounter;
 
@@ -456,20 +455,20 @@ namespace PEBakery.Core
 
             if (pluginToRun == null) // Run just plugin
             {
-                CurrentPlugin = pluginToRun;
-                NextPluginIdx = Plugins.IndexOf(pluginToRun);
-                RunOnePlugin = true;
-            }
-            else
-            {
                 CurrentPlugin = Plugins[0]; // Main Plugin
                 NextPluginIdx = 0;
                 RunOnePlugin = false;
             }
+            else
+            {
+                CurrentPlugin = pluginToRun;
+                NextPluginIdx = Plugins.IndexOf(pluginToRun);
+                RunOnePlugin = true;
+            }
                 
             this.CurSectionParams = new Dictionary<int, string>();
             this.CurDepth = 0;
-            this.RunElse = false;
+            this.ElseFlag = false;
             this.LoopRunning = false;
 
             this.OnBuildExit = null;

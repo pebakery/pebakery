@@ -564,11 +564,11 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 07 - UI
-    public enum CodeMessageAction { Information, Confirmation, Error, Warning }
+    public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
     public class CodeInfo_Message : CodeInfo
-    {
+    { // Message,<Message>[,ICON][,TIMEOUT]
         public string Message;
-        public CodeMessageAction Action;
+        public CodeMessageAction Action; // Optional;
         public string Timeout; // Optional, Its type should be int, but set to string because of variable system
 
         public CodeInfo_Message(string message, CodeMessageAction action, string timeout)
