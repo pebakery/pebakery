@@ -872,7 +872,7 @@ namespace PEBakery.WPF
 
 
 #if DEBUG  // TODO: Remove this, this line is for Debug
-                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "log.txt"));
+                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
 #endif
                 };
                 worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>

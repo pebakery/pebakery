@@ -1099,7 +1099,7 @@ namespace PEBakery.Core
                 case BranchConditionType.Online:
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition, [{type}] does not take 1 argument");
+                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 1 argument");
             }
         }
 
@@ -1118,7 +1118,7 @@ namespace PEBakery.Core
                     Arg1 = arg1;
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition, [{type}] does not take 1 argument");
+                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 1 argument");
             }
         }
 
@@ -1139,7 +1139,7 @@ namespace PEBakery.Core
                     Arg2 = arg2;
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition, [{type}] does not take 2 arguments");
+                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 2 arguments");
             }
         }
 
@@ -1156,7 +1156,7 @@ namespace PEBakery.Core
                     Arg3 = arg3;
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
+                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
             }
         }
 
@@ -1188,7 +1188,9 @@ namespace PEBakery.Core
                                 {
                                     if (Type == BranchConditionType.Equal
                                         || Type == BranchConditionType.SmallerEqual
-                                        || Type == BranchConditionType.BiggerEqual)
+                                        || Type == BranchConditionType.BiggerEqual
+                                        || Type == BranchConditionType.Smaller && NotFlag
+                                        || Type == BranchConditionType.Bigger && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is equal to [{compArg2}]";
                                 }
@@ -1221,7 +1223,7 @@ namespace PEBakery.Core
                                 }
                                 break;
                             default:
-                                throw new InternalUnknownException($"Cannot compare [{compArg1}] and [{compArg2}]");
+                                throw new InternalErrorException($"Cannot compare [{compArg1}] and [{compArg2}]");
                         }
                     }
                     break;
@@ -1250,6 +1252,9 @@ namespace PEBakery.Core
                             logMessage = $"File [{filePath}] exists";
                         else
                             logMessage = $"File [{filePath}] does not exist";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistDir:
@@ -1277,6 +1282,9 @@ namespace PEBakery.Core
                             logMessage = $"Directory [{dirPath}] exists";
                         else
                             logMessage = $"Directory [{dirPath}] does not exist";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistSection:
@@ -1289,6 +1297,9 @@ namespace PEBakery.Core
                             logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
                         else
                             logMessage = $"Section [{section}] does not exist in INI file [{iniFile}]";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistRegSection:
@@ -1309,6 +1320,9 @@ namespace PEBakery.Core
                                     logMessage = $"Registry Key [{rootKey}\\{subKey}] does not exist";
                             }
                         }
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistRegKey:
@@ -1338,6 +1352,9 @@ namespace PEBakery.Core
                                     logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
                             }
                         }
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.Ping:
@@ -1363,6 +1380,9 @@ namespace PEBakery.Core
                             match = false;
                             logMessage = $"Error while pinging to [{host}] : [{e.Message}]";
                         }
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.Online:
@@ -1373,6 +1393,9 @@ namespace PEBakery.Core
                             logMessage = "System is connected to internet";
                         else
                             logMessage = "System is not connected to internet";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.Question: // Can has 1 - 3 argument
@@ -1412,10 +1435,13 @@ namespace PEBakery.Core
                             match = false;
                             logMessage = "[No] was chosen";
                         }
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition check, [{Type}] need additional infomation");
+                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] need additional infomation");
             }
             return match;
         }
@@ -1435,7 +1461,7 @@ namespace PEBakery.Core
                     // TODO
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition check, [{Type}] is not ExistVar");
+                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistVar");
             }
             return match;
         }
@@ -1449,7 +1475,7 @@ namespace PEBakery.Core
                     // TODO
                     break;
                 default:
-                    throw new InternalUnknownException($"Wrong BranchCondition check, [{Type}] is not ExistMacro");
+                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistMacro");
             }
             return match;
         }

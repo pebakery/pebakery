@@ -71,7 +71,8 @@ namespace PEBakery.WPF
                 Application.Current.Shutdown();
             }
 
-            string argBaseDir = FileHelper.GetProgramAbsolutePath();
+            // string argBaseDir = FileHelper.GetProgramAbsolutePath();
+            string argBaseDir = Environment.CurrentDirectory;
             for (int i = 0; i < args.Length; i++)
             {
                 if (string.Equals(args[i], "/basedir", StringComparison.OrdinalIgnoreCase))
@@ -109,7 +110,7 @@ namespace PEBakery.WPF
 
             LoadButtonsImage();
 
-            string logDBFile = System.IO.Path.Combine(baseDir, "log.db");
+            string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
                 File.Delete(logDBFile); // Temp measure - needed to test DB Log

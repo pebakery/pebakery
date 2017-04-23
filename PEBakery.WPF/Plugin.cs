@@ -618,7 +618,7 @@ namespace PEBakery.Core
                     case SectionDataType.Interfaces:
                         return uiCodes.Count;
                     default:
-                        throw new InternalUnknownException($"Invalid SectionType {type}");
+                        throw new InternalErrorException($"Invalid SectionType {type}");
                 }
             }
         }
@@ -728,7 +728,7 @@ namespace PEBakery.Core
                 case SectionType.CompiledInterface:
                     return SectionDataType.Interfaces;
                 default:
-                    throw new InternalUnknownException($"Invalid SectionType {type}");
+                    throw new InternalErrorException($"Invalid SectionType {type}");
             }
         }
 
@@ -759,7 +759,7 @@ namespace PEBakery.Core
                         }
                         break;
                     default:
-                        throw new InternalUnknownException($"Invalid SectionType {type}");
+                        throw new InternalErrorException($"Invalid SectionType {type}");
                 }
                 loaded = true;
             }
@@ -784,7 +784,7 @@ namespace PEBakery.Core
                         uiCodes = null;
                         break;
                     default:
-                        throw new InternalUnknownException($"Invalid SectionType {type}");
+                        throw new InternalErrorException($"Invalid SectionType {type}");
                 }
                 loaded = false;
             }
@@ -803,7 +803,7 @@ namespace PEBakery.Core
                 dataType = SectionDataType.Codes;
             }
             else
-                throw new InternalUnknownException($"Section [{sectionName}] is not a Line section");
+                throw new InternalErrorException($"Section [{sectionName}] is not a Line section");
         }
 
         public void ConvertLineToUICodeSection(List<string> lines)
@@ -819,7 +819,7 @@ namespace PEBakery.Core
                 dataType = SectionDataType.Interfaces;
             }
             else
-                throw new InternalUnknownException($"Section [{sectionName}] is not a Line section");
+                throw new InternalErrorException($"Section [{sectionName}] is not a Line section");
         }
 
         public dynamic Get()
@@ -835,7 +835,7 @@ namespace PEBakery.Core
                 case SectionDataType.Interfaces:
                     return uiCodes;
                 default:
-                    throw new InternalUnknownException($"Invalid SectionType {type}");
+                    throw new InternalErrorException($"Invalid SectionType {type}");
             }
         }
 
@@ -844,7 +844,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.IniDict)
                 return IniDict; // this.IniDict for Load()
             else
-                throw new InternalUnknownException("GetIniDict must be used with SectionDataType.IniDict");
+                throw new InternalErrorException("GetIniDict must be used with SectionDataType.IniDict");
         }
 
         public List<string> GetLines()
@@ -852,7 +852,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.Lines)
                 return Lines; // this.Lines for Load()
             else
-                throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
+                throw new InternalErrorException("GetLines must be used with SectionDataType.Lines");
         }
 
         /// <summary>
@@ -869,7 +869,7 @@ namespace PEBakery.Core
                     return Ini.ParseSectionToStringList(PluginPath, sectionName);
             }
             else
-                throw new InternalUnknownException("GetLines must be used with SectionDataType.Lines");
+                throw new InternalErrorException("GetLines must be used with SectionDataType.Lines");
         }
 
         public List<CodeCommand> GetCodes()
@@ -877,7 +877,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.Codes)
                 return Codes; // this.Codes for Load()
             else
-                throw new InternalUnknownException("GetCodes must be used with SectionDataType.Codes");
+                throw new InternalErrorException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<CodeCommand> GetCodes(bool convertIfLine)
@@ -890,7 +890,7 @@ namespace PEBakery.Core
                 return codes;
             }
             else
-                throw new InternalUnknownException("GetCodes must be used with SectionDataType.Codes");
+                throw new InternalErrorException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<UICommand> GetUICodes()
@@ -898,7 +898,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.Interfaces)
                 return UICodes; // this.UICodes for Load()
             else
-                throw new InternalUnknownException("GetUIDirectives must be used with SectionDataType.Interfaces");
+                throw new InternalErrorException("GetUIDirectives must be used with SectionDataType.Interfaces");
         }
 
         public List<UICommand> GetUICodes(bool convertIfLine)
@@ -911,7 +911,7 @@ namespace PEBakery.Core
                 return uiCodes;
             }
             else
-                throw new InternalUnknownException("GetUIDirectives must be used with SectionDataType.Interfaces");
+                throw new InternalErrorException("GetUIDirectives must be used with SectionDataType.Interfaces");
         }
     }
     #endregion

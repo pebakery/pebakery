@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using BakeryEngine;
+using BakeryEngine_Legacy;
 using System.Collections.Generic;
 
 namespace CommandTest
@@ -23,7 +23,7 @@ namespace CommandTest
 
             Project project = new Project(baseDir, "TestSuite");
             Logger logger = new Logger(Path.Combine(baseDir, "log.txt"), LogFormat.Text);
-            BakeryEngine.BakeryEngine engine = new BakeryEngine.BakeryEngine(baseDir, project, logger, DebugLevel.PrintExceptionStackTrace);
+            BakeryEngine_Legacy.BakeryEngine engine = new BakeryEngine_Legacy.BakeryEngine(baseDir, project, logger, DebugLevel.PrintExceptionStackTrace);
             Stopwatch stopwatch = Stopwatch.StartNew();
             Console.WriteLine("BakeryEngine start...");
             engine.Build();
