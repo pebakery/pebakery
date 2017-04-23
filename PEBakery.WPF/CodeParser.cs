@@ -1178,26 +1178,26 @@ namespace PEBakery.Core
                 string condStr = args[cIdx + 1];
                 BranchConditionType condType;
 
-                if (string.Equals(condStr, "Equal", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, "==", StringComparison.OrdinalIgnoreCase))
+                if (condStr.Equals("Equal", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("==", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Equal;
-                else if (string.Equals(condStr, "EqualX", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, "===", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("EqualX", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("===", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.EqualX;
-                else if (string.Equals(condStr, "Smaller", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, "<", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Smaller", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Smaller;
-                else if (string.Equals(condStr, "Bigger", StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(condStr, ">", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Bigger", StringComparison.OrdinalIgnoreCase)
+                   || condStr.Equals(">", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.Bigger;
-                else if (string.Equals(condStr, "SmallerEqual", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, "<=", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("SmallerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals("<=", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.SmallerEqual;
-                else if (string.Equals(condStr, "BiggerEqual", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, ">=", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("BiggerEqual", StringComparison.OrdinalIgnoreCase)
+                    || condStr.Equals(">=", StringComparison.OrdinalIgnoreCase))
                     condType = BranchConditionType.BiggerEqual;
-                else if (string.Equals(condStr, "NotEqual", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(condStr, "!=", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("NotEqual", StringComparison.OrdinalIgnoreCase) // Deprecated
+                    || condStr.Equals("!=", StringComparison.OrdinalIgnoreCase))
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
@@ -1217,111 +1217,111 @@ namespace PEBakery.Core
             {
                 int embIdx;
                 string condStr = args[cIdx];
-                if (string.Equals(condStr, "ExistFile", StringComparison.OrdinalIgnoreCase))
+                if (condStr.Equals("ExistFile", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistFile, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "NotExistFile", StringComparison.OrdinalIgnoreCase)) // Deprecated
+                else if (condStr.Equals("NotExistFile", StringComparison.OrdinalIgnoreCase)) // Deprecated
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistFile, true, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "ExistDir", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistDir", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistDir, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "NotExistDir", StringComparison.OrdinalIgnoreCase)) // Deprecated
+                else if (condStr.Equals("NotExistDir", StringComparison.OrdinalIgnoreCase)) // Deprecated
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistDir, true, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "ExistSection", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
-                else if (string.Equals(condStr, "NotExistSection", StringComparison.OrdinalIgnoreCase)) // Deprecated
+                else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase)) // Deprecated
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
-                else if (string.Equals(condStr, "ExistRegSection", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistRegSection", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistRegSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
-                else if (string.Equals(condStr, "NotExistRegSection", StringComparison.OrdinalIgnoreCase)) // deprecated
+                else if (condStr.Equals("NotExistRegSection", StringComparison.OrdinalIgnoreCase)) // deprecated
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistRegSection, true, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
-                else if (string.Equals(condStr, "ExistRegKey", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistRegKey", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistRegKey, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
                 }
-                else if (string.Equals(condStr, "NotExistRegKey", StringComparison.OrdinalIgnoreCase)) // deprecated 
+                else if (condStr.Equals("NotExistRegKey", StringComparison.OrdinalIgnoreCase)) // deprecated 
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistRegKey, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
                 }
-                else if (string.Equals(condStr, "ExistVar", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistVar", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "NotExistVar", StringComparison.OrdinalIgnoreCase))  // deprecated 
+                else if (condStr.Equals("NotExistVar", StringComparison.OrdinalIgnoreCase))  // deprecated 
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistVar, true, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "ExistMacro", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("ExistMacro", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "NotExistMacro", StringComparison.OrdinalIgnoreCase))  // deprecated 
+                else if (condStr.Equals("NotExistMacro", StringComparison.OrdinalIgnoreCase))  // deprecated 
                 {
                     if (notFlag)
                         throw new InvalidCommandException("Branch condition [Not] cannot be duplicated", rawCode);
                     cond = new BranchCondition(BranchConditionType.ExistMacro, true, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "Ping", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Ping", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.Ping, true, args[cIdx + 1]);
+                    cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
-                else if (string.Equals(condStr, "Online", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Online", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.Online, true);
+                    cond = new BranchCondition(BranchConditionType.Online, notFlag);
                     embIdx = cIdx + 1;
                 }
-                else if (string.Equals(condStr, "Question", StringComparison.OrdinalIgnoreCase))
+                else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
                 {
                     Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled);
                     if (m.Success)
                     {
-                        cond = new BranchCondition(BranchConditionType.Question, true, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                         embIdx = cIdx + 4;
                     }
                     else
                     {
-                        cond = new BranchCondition(BranchConditionType.Question, true, args[cIdx + 1]);
+                        cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1]);
                         embIdx = cIdx + 2;
                     }
                 }

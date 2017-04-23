@@ -39,7 +39,7 @@ namespace PEBakery.Core
         {
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
             if (info == null)
-                throw new InvalidCodeCommandException($"Command [{cmd.Type}] should have [CodeInfo_RunExec]", cmd);
+                throw new InternalCodeInfoException();
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -59,12 +59,12 @@ namespace PEBakery.Core
                 string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
                 targetPlugin = s.Project.GetPluginByFullPath(fullPath);
                 if (targetPlugin == null)
-                    throw new InvalidCodeCommandException($"No plugin in [{fullPath}]", cmd);
+                    throw new ExecuteErrorException($"No plugin in [{fullPath}]");
             }
             
             // Does section exists?
             if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new InvalidCodeCommandException($"[{pluginFile}] does not have section [{sectionName}]", cmd);
+                throw new ExecuteErrorException($"[{pluginFile}] does not have section [{sectionName}]");
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
@@ -91,7 +91,7 @@ namespace PEBakery.Core
         {
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [Loop] should have [CodeInfo_Loop]", cmd);
+                throw new InternalCodeInfoException();
 
             // TODO
             if (info.Break)
@@ -109,10 +109,10 @@ namespace PEBakery.Core
             {
                 string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
                 if (long.TryParse(startIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long startIdx) == false)
-                    throw new InvalidCodeCommandException($"Argument [{startIdxStr}] is not valid integer", cmd);
+                    throw new ExecuteErrorException($"Argument [{startIdxStr}] is not valid integer");
                 string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
                 if (long.TryParse(endIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long endIdx) == false)
-                    throw new InvalidCodeCommandException($"Argument [{endIdxStr}] is not valid integer", cmd);
+                    throw new ExecuteErrorException($"Argument [{endIdxStr}] is not valid integer");
                 long loopCount = endIdx - startIdx + 1;
 
                 // Prepare Loop
@@ -134,12 +134,12 @@ namespace PEBakery.Core
                     string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
                     targetPlugin = s.Project.GetPluginByFullPath(fullPath);
                     if (targetPlugin == null)
-                        throw new InvalidCodeCommandException($"No plugin in [{fullPath}]", cmd);
+                        throw new ExecuteErrorException($"No plugin in [{fullPath}]");
                 }
 
                 // Does section exists?
                 if (!targetPlugin.Sections.ContainsKey(sectionName))
-                    throw new InvalidCodeCommandException($"[{pluginFile}] does not have section [{sectionName}]", cmd);
+                    throw new ExecuteErrorException($"[{pluginFile}] does not have section [{sectionName}]");
 
                 string logMessage;
                 if (inCurrentPlugin)
@@ -167,7 +167,7 @@ namespace PEBakery.Core
         {
             CodeInfo_If info = cmd.Info as CodeInfo_If;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [If] should have [CodeInfo_If]", cmd);
+                throw new InternalCodeInfoException();
 
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
@@ -192,7 +192,7 @@ namespace PEBakery.Core
         {
             CodeInfo_Else info = cmd.Info as CodeInfo_Else;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [Else] should have [CodeInfo_Else]", cmd);
+                throw new InternalCodeInfoException();
 
             if (s.ElseFlag)
             {

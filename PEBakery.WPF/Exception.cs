@@ -49,7 +49,7 @@ namespace PEBakery.Exceptions
     }
     #endregion
 
-    #region CodeParser, UIParser
+    #region CodeParser, UIParser, Commands
     public class EmptyLineException : Exception
     {
         public EmptyLineException() { }
@@ -94,7 +94,30 @@ namespace PEBakery.Exceptions
         public InternalParserException(string message) : base(message) { }
         public InternalParserException(string message, Exception inner) : base(message, inner) { }
     }
+    #endregion
 
+    #region Command Execution
+    public class ExecuteErrorException : Exception
+    {
+        public ExecuteErrorException() { }
+        public ExecuteErrorException(string message) : base(message) { }
+        public ExecuteErrorException(string message, Exception inner) : base(message, inner) { }
+    }
+
+    public class InternalCodeInfoException : Exception
+    {
+        public InternalCodeInfoException() { }
+    }
+
+    public class InternalStrFormatInfoException : Exception
+    {
+        public InternalStrFormatInfoException() { }
+    }
+
+    public class InternalSystemInfoException : Exception
+    {
+        public InternalSystemInfoException() { }
+    }
     #endregion
 
     #region Plugin
@@ -106,16 +129,6 @@ namespace PEBakery.Exceptions
         public PluginNotFoundException() { }
         public PluginNotFoundException(string message) : base(message) { }
         public PluginNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// Reached end of plugin levels
-    /// </summary>
-    public class EndOfPluginLevelException : Exception
-    {
-        public EndOfPluginLevelException() { }
-        public EndOfPluginLevelException(string message) : base(message) { }
-        public EndOfPluginLevelException(string message, Exception inner) : base(message, inner) { }
     }
 
     public class PluginSectionNotFoundException : Exception
@@ -131,10 +144,9 @@ namespace PEBakery.Exceptions
         public PluginParseException(string message) : base(message) { }
         public PluginParseException(string message, Exception inner) : base(message, inner) { }
     }
-#endregion
+    #endregion
 
     #region Engine / EngineState
-
     /// <summary>
     /// So Critical error that build must be halt
     /// </summary>
@@ -147,14 +159,11 @@ namespace PEBakery.Exceptions
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
-    /// <summary>
-    /// Exception used in BakerOperations
-    /// </summary>
-    public class InternalUnknownException : Exception
+    public class InternalErrorException : Exception
     {
-        public InternalUnknownException() { }
-        public InternalUnknownException(string message) : base(message) { }
-        public InternalUnknownException(string message, Exception inner) : base(message, inner) { }
+        public InternalErrorException() { }
+        public InternalErrorException(string message) : base(message) { }
+        public InternalErrorException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 

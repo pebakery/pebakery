@@ -17,7 +17,7 @@ namespace PEBakery.Core
 
             CodeInfo_INIRead info = cmd.Info as CodeInfo_INIRead;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [INIRead] should have [CodeInfo_INIRead]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -49,7 +49,7 @@ namespace PEBakery.Core
 
             CodeInfo_INIWrite info = cmd.Info as CodeInfo_INIWrite;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [INIRead] should have [CodeInfo_INIRead]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -75,7 +75,7 @@ namespace PEBakery.Core
 
             CodeInfo_INIDelete info = cmd.Info as CodeInfo_INIDelete;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [INIDelete] should have [CodeInfo_INIDelete]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -100,7 +100,7 @@ namespace PEBakery.Core
 
             CodeInfo_INIAddSection info = cmd.Info as CodeInfo_INIAddSection;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [INIAddSection] should have [CodeInfo_INIAddSection]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -122,7 +122,7 @@ namespace PEBakery.Core
 
             CodeInfo_INIDeleteSection info = cmd.Info as CodeInfo_INIDeleteSection;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [INIDeleteSection] should have [CodeInfo_INIDeleteSection]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.

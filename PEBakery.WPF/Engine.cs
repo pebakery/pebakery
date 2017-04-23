@@ -80,15 +80,15 @@ namespace PEBakery.Core
                 Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, s.CurrentPlugin.Sections["Process"]), new List<string>(), 0, false);
                 // End of Plugin
                 s.Logger.Build_Write(s.BuildId, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
-                try
+                int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
+                if (curPluginIdx + 1 < s.Plugins.Count)
                 {
-                    int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
-                    if (curPluginIdx + 1 < s.Plugins.Count)
-                        s.NextPluginIdx = curPluginIdx + 1;
+                    s.NextPluginIdx = curPluginIdx + 1;
                 }
-                catch (EndOfPluginLevelException)
-                { // End of plugins, build done. Exit.
-                  // OnBuildExit event callback
+                else
+                { 
+                    // End of plugins, build done. Exit.
+                    // OnBuildExit event callback
                     Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
                     break;
                 }
@@ -181,16 +181,16 @@ namespace PEBakery.Core
                     #region 00 Misc
                     // 00 Misc
                     case CodeType.None:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "NOP", cmd) };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "NOP") };
                         break;
                     case CodeType.Comment:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Comment", cmd) };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Comment") };
                         break;
                     case CodeType.Error:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Error, "Error", cmd) };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Error, "Error") };
                         break;
                     case CodeType.Unknown:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown", cmd) };
+                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown") };
                         break;
                     #endregion
                     #region 01 File
@@ -400,17 +400,20 @@ namespace PEBakery.Core
             { // Stop Building
                 throw new CriticalErrorException();
             }
+            catch (InternalCodeInfoException)
+            {
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, $"Command [{cmd.Type}] should have [CodeInfo_{cmd.Type}]", cmd, curDepth) };
+            }
+            catch (InvalidCodeCommandException e)
+            {
+                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e, e.Cmd, curDepth) };
+            }
             catch (Exception e)
             {
                 logs = new List<LogInfo>() { new LogInfo(LogState.Error, e, cmd, curDepth) };
             }
 
-            for (int i = 0; i < logs.Count; i++)
-            {
-                LogInfo log = logs[i];
-                log.Depth = curDepth;
-                s.Logger.Build_Write(s.BuildId, log);
-            }
+            s.Logger.Build_Write(s.BuildId, LogInfo.AddCommandDepth(logs, cmd, curDepth));
         }
     }
 

@@ -122,7 +122,8 @@ namespace PEBakery.Core
 
         public static LogInfo AddCommand(LogInfo log, CodeCommand command)
         {
-            log.Command = command;
+            if (log.Command == null)
+                log.Command = command;
             return log;
         }
 
@@ -131,7 +132,8 @@ namespace PEBakery.Core
             for (int i = 0; i < logs.Count; i++)
             {
                 LogInfo log = logs[i];
-                log.Command = command;
+                if (log.Command == null)
+                    log.Command = command;
                 logs[i] = log;
             }
                 
@@ -158,7 +160,8 @@ namespace PEBakery.Core
 
         public static LogInfo AddCommandDepth(LogInfo log, CodeCommand command, int depth)
         {
-            log.Command = command;
+            if (log.Command == null)
+                log.Command = command;
             log.Depth = depth;
             return log;
         }
@@ -168,8 +171,10 @@ namespace PEBakery.Core
             for (int i = 0; i < logs.Count; i++)
             {
                 LogInfo log = logs[i];
-                log.Command = command;
+                if (log.Command == null)
+                    log.Command = command;
                 log.Depth = depth;
+                logs[i] = log;
             }
 
             return logs;

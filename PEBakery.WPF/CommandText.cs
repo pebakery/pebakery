@@ -17,7 +17,7 @@ namespace PEBakery.Core
 
             CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [TXTAddLine] should have [CodeInfo_TXTAddLine]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string line = StringEscaper.Preprocess(s, info.Line);
@@ -84,14 +84,14 @@ namespace PEBakery.Core
 
             CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [TXTReplace] should have [CodeInfo_TXTReplace]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string toBeReplaced = StringEscaper.Preprocess(s, info.ToBeReplaced);
             string replaceWith = StringEscaper.Preprocess(s, info.ReplaceWith);
 
             if (File.Exists(fileName) == false)
-                throw new InvalidCodeCommandException("Command [TXTReplace] should have [CodeInfo_TXTReplace]", cmd);
+                throw new ExecuteErrorException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             string temp = FileHelper.CreateTempFile();
@@ -122,12 +122,12 @@ namespace PEBakery.Core
 
             CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [TXTDelLine] should have [CodeInfo_TXTDelLine]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteIfBeginWith);
             if (File.Exists(fileName) == false)
-                throw new InvalidCodeCommandException("Command [TXTDelLine] should have [CodeInfo_TXTDelLine]", cmd);
+                throw new ExecuteErrorException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -161,12 +161,12 @@ namespace PEBakery.Core
 
             CodeInfo_TXTDelSpaces info = cmd.Info as CodeInfo_TXTDelSpaces;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [TXTDelSpaces] should have [CodeInfo_TXTDelSpaces]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
             if (File.Exists(fileName) == false)
-                throw new InvalidCodeCommandException("Command [TXTDelSpaces] should have [CodeInfo_TXTDelSpaces]", cmd);
+                throw new ExecuteErrorException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -201,12 +201,12 @@ namespace PEBakery.Core
 
             CodeInfo_TXTDelEmptyLines info = cmd.Info as CodeInfo_TXTDelEmptyLines;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [TXTDelEmptyLines] should have [CodeInfo_TXTDelEmptyLines]", cmd);
+                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
             if (File.Exists(fileName) == false)
-                throw new InvalidCodeCommandException("Command [TXTDelEmptyLines] should have [CodeInfo_TXTDelEmptyLines]", cmd);
+                throw new ExecuteErrorException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;

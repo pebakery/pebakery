@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using BakeryEngine;
+using BakeryEngine_Legacy;
 using System.Collections.Generic;
 
 namespace CommandTest

@@ -36,7 +36,7 @@ namespace PEBakery.Core
 
             CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [FileCreateBlank] should have [CodeInfo_FileCreateBlank]", cmd);
+                throw new InternalCodeInfoException();
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 

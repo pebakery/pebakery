@@ -15,10 +15,9 @@ namespace PEBakery.Core
         {
             CodeInfo_Set info = cmd.Info as CodeInfo_Set;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [Set] should have [CodeInfo_Set]", cmd);
+                throw new InternalCodeInfoException();
 
             List<LogInfo> logs = Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
-            logs = LogInfo.AddCommand(logs, cmd);
 
             return logs;
         }
@@ -29,9 +28,9 @@ namespace PEBakery.Core
 
             CodeInfo_GetParam info = cmd.Info as CodeInfo_GetParam;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [GetParam] should have [CodeInfo_GetParam]", cmd);
+                throw new InternalCodeInfoException();
 
-            logs.Add(LogInfo.AddCommand(s.Variables.SetValue(VarsType.Local, info.VarName, s.CurSectionParams[info.Index]), cmd));
+            logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, s.CurSectionParams[info.Index]));
 
             return logs;
         }
@@ -42,7 +41,7 @@ namespace PEBakery.Core
 
             CodeInfo_PackParam info = cmd.Info as CodeInfo_PackParam;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [PackParam] should have [CodeInfo_PackParam]", cmd);
+                throw new InternalCodeInfoException();
 
             logs.Add(new LogInfo(LogState.Ignore,
                 "DEVELOPER NOTE : Not sure how it works.\nIf you know its exact internal mechanism, please report at [https://github.com/ied206/PEBakery/issues]", cmd));
@@ -65,7 +64,7 @@ namespace PEBakery.Core
                     b.Append(",");
             }
 
-            logs.Add(LogInfo.AddCommand(s.Variables.SetValue(VarsType.Local, info.VarName, b.ToString()), cmd));
+            logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, b.ToString()));
 
             return logs;
         }

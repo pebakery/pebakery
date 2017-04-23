@@ -23,7 +23,7 @@ namespace PEBakery.Core
 
             CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
             if (info == null)
-                throw new InvalidCodeCommandException("Command [ShellExecute] should have [CodeInfo_ShellExecute]", cmd);
+                throw new InternalCodeInfoException();
 
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
@@ -68,18 +68,18 @@ namespace PEBakery.Core
             {
                 case CodeType.ShellExecute:
                     proc.WaitForExit();
-                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
                     break;
                 case CodeType.ShellExecuteEx:
-                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
                     break;
                 case CodeType.ShellExecuteDelete:
                     proc.WaitForExit();
                     File.Delete(filePath);
-                    logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
                     break;
                 default:
-                    throw new InternalUnknownException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
+                    throw new InternalErrorException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
             }
 
             if (cmd.Type != CodeType.ShellExecuteEx && info.ExitOutVar != null)
@@ -92,7 +92,7 @@ namespace PEBakery.Core
                 else if (log.State == LogState.Error)
                     logs.Add(log);
                 else
-                    throw new InternalUnknownException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                    throw new InternalErrorException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
             }
 
             return logs;
