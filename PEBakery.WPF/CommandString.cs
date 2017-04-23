@@ -120,6 +120,56 @@ namespace PEBakery.Core
                         }
                         break;
                     case StrFormatType.Date:
+                        {
+                            /*
+                             * <yyyy-mmm-dd hh:nn am/pm> 
+                             */
+                            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+                            if (subInfo == null)
+                                throw new InternalStrFormatInfoException();
+
+                            string wbFormatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
+
+                            Dictionary<string, string> wbDateTime = new Dictionary<string, string>(StringComparer.Ordinal)
+                            {
+                                // Year
+                                [@"(?<!y)(yyyy)(?!y)"] = @"yyyy",
+                                [@"(?<!y)(yy)(?!y)"] = @"yy",
+                                // Month
+                                [@"(?<!m)(mmm)(?!m)"] = @"MMM",
+                                [@"(?<!m)(mm)(?!m)"] = @"MM",
+                                [@"(?<!m)(m)(?!m)"] = @"M",
+                                // Date
+                                [@"(?<!d)(dd)(?!d)"] = @"dd",
+                                [@"(?<!d)(d)(?!d)"] = @"d",
+                                // Hour
+                                [@"(?<!h)(hh)(?!h)"] = @"HH",
+                                [@"(?<!h)(h)(?!h)"] = @"H",
+                                // Minute
+                                [@"(?<!n)(nn)(?!n)"] = @"mm",
+                                [@"(?<!n)(n)(?!n)"] = @"m",
+                                // Second
+                                [@"(?<!s)(ss)(?!s)"] = @"ss",
+                                [@"(?<!s)(s)(?!s)"] = @"s",
+                            };
+
+                            if (Regex.IsMatch(wbFormatStr, @"(am\/pm)", RegexOptions.Compiled))
+                            {
+                                wbDateTime[@"(am\/pm)"] = @"tt";
+                                wbDateTime[@"(?<!h)(hh)(?!h)"] = @"hh";
+                                wbDateTime[@"(?<!h)(h)(?!h)"] = @"h";
+                            }
+
+                            string dotNetFormatStr = wbFormatStr;
+                            foreach (var kv in wbDateTime)
+                                dotNetFormatStr = Regex.Replace(dotNetFormatStr, kv.Key, kv.Value);
+
+                            string destStr = DateTime.Now.ToString(dotNetFormatStr, CultureInfo.InvariantCulture);
+
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                            logs.AddRange(varLogs);
+
+                        }
                         break;
                     case StrFormatType.FileName:
                     case StrFormatType.DirPath:

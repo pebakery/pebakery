@@ -9,6 +9,10 @@ PEBakery aims to resolve WinBuilder 082's abandoned bugs, more plugin developer 
 ## Disclaimer
 All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
 
+## License
+PEBakery is mainly licensed under GPL Version 3.
+Part of PEBakery is licensed under MIT License and others.
+
 # Current State
 ## Implemented
 - Plugin Interface Parser/Renderer
@@ -37,7 +41,7 @@ All implementation is only backed by documentation and blackbox testing, without
 | UI       | 11  | 0   |
 | String   | 26  | 25  |
 | System   | 16  | 3   |
-| Branch   | 31  | 28  |
+| Branch   | 31  | 29  |
 | Control  | 8   | 3   |
 | All      | 133 | 71  |
 
