@@ -298,12 +298,8 @@ namespace PEBakery.Core
 
         public string Expand(string str)
         {
-            while (0 < FileHelper.CountStringOccurrences(str, @"%"))
-            {
-                // Ex) Invalid : %Base%Dir%
-                //if (FileHelper.CountStringOccurrences(str, @"%") % 2 == 1)
-                //    throw new InvalidCommandException(@"Variable names must be enclosed by %");
-
+            while (2 <= FileHelper.CountStringOccurrences(str, @"%"))
+            { 
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
