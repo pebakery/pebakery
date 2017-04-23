@@ -23,16 +23,22 @@ namespace PEBakery.Core
             // { @"#$z", "\x00\x00"} -> This should go to EngineRegistry
         };
 
-        public static string Unescape(string operand)
+        public static string Unescape(string str)
         {
-            return unescapeSeqs.Keys.Aggregate(operand, (from, to) => from.Replace(to, unescapeSeqs[to]));
+            return unescapeSeqs.Keys.Aggregate(str, (from, to) => from.Replace(to, unescapeSeqs[to]));
         }
 
-        public static List<string> UnescapeList(List<string> operands)
+        public static string UnescapePercent(string str)
         {
-            for (int i = 0; i < operands.Count; i++)
-                operands[i] = Unescape(operands[i]);
-            return operands;
+            return str.Replace(@"#$p", @"%");
+        }
+
+        public static List<string> Unescape(IEnumerable<string> strs)
+        {
+            List<string> unescaped = new List<string>();
+            foreach (string str in strs)
+                unescaped.Add(Unescape(str));
+            return unescaped;
         }
 
         private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -205,7 +211,7 @@ namespace PEBakery.Core
 
         public static List<string> Preprocess(EngineState s, List<string> strs)
         {
-            return UnescapeList(ExpandVariables(s, strs));
+            return Unescape(ExpandVariables(s, strs));
         }
 
         public static string Preprocess(Variables vars, string str)
@@ -215,7 +221,7 @@ namespace PEBakery.Core
 
         public static List<string> Preprocess(Variables vars, List<string> strs)
         {
-            return UnescapeList(ExpandVariables(vars, strs));
+            return Unescape(ExpandVariables(vars, strs));
         }
         #endregion
     }

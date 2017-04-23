@@ -154,7 +154,7 @@ namespace PEBakery.Core
                             };
 
                             if (Regex.IsMatch(wbFormatStr, @"(am\/pm)", RegexOptions.Compiled))
-                            {
+                            { // AM/PM Found, change 24 hours into 12 hours
                                 wbDateTime[@"(am\/pm)"] = @"tt";
                                 wbDateTime[@"(?<!h)(hh)(?!h)"] = @"hh";
                                 wbDateTime[@"(?<!h)(h)(?!h)"] = @"h";
