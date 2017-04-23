@@ -628,8 +628,6 @@ namespace PEBakery.Core
                     break;
                 case CodeType.ExtractAllFiles:
                     break;
-                case CodeType.ExtractAllFilesIfNotExist:
-                    break;
                 case CodeType.Encode:
                     break;
                 #endregion

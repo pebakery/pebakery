@@ -122,6 +122,11 @@
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CommandControl.cs" />
     <Compile Include="CommandUI.cs" />
+    <Compile Include="Controls\CustomMessageBox\CustomMessageBox.cs" />
+    <Compile Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
+      <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\CustomMessageBox\CustomMessageBoxUtil.cs" />
     <Compile Include="EncodedFile.cs" />
     <Compile Include="CommandBranch.cs" />
     <Compile Include="Engine.cs" />
@@ -142,6 +147,10 @@
     <Compile Include="ResultWin32.cs" />
     <Compile Include="TreeLib.cs" />
     <Compile Include="Variables.cs" />
+    <Page Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Controls\MahApps\ProgressRing.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -171,8 +171,13 @@ namespace PEBakery.Core
 
         private static void ExecuteCommand(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = null;
+            List<LogInfo> logs = new List<LogInfo>();
             int curDepth = s.CurDepth;
+
+            if (Enum.IsDefined(typeof(DeprecatedCodeType), cmd.Type.ToString()))
+            {
+                logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
+            }
 
             try
             {
@@ -181,16 +186,16 @@ namespace PEBakery.Core
                     #region 00 Misc
                     // 00 Misc
                     case CodeType.None:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "NOP") };
+                        logs.Add(new LogInfo(LogState.Ignore, "NOP"));
                         break;
                     case CodeType.Comment:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Comment") };
+                        logs.Add(new LogInfo(LogState.Ignore, "Comment"));
                         break;
                     case CodeType.Error:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Error, "Error") };
+                        logs.Add(new LogInfo(LogState.Error, "Error"));
                         break;
                     case CodeType.Unknown:
-                        logs = new List<LogInfo> { new LogInfo(LogState.Ignore, "Unknown") };
+                        logs.Add(new LogInfo(LogState.Ignore, "Unknown"));
                         break;
                     #endregion
                     #region 01 File
@@ -215,103 +220,97 @@ namespace PEBakery.Core
                     //case CodeType.FileMove:
                     //    break;
                     case CodeType.FileCreateBlank:
-                        logs = CommandFile.FileCreateBlank(s, cmd);
+                        logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
                     //case CodeType.FileByteExtract:
                     //    break;
                     #endregion
-                    /*
                     #region 02 Registry
                     // 02 Registry
-                    case CodeType.RegHiveLoad:
-                        break;
-                    case CodeType.RegHiveUnload:
-                        break;
-                    case CodeType.RegImport:
-                        break;
-                    case CodeType.RegWrite:
-                        break;
-                    case CodeType.RegRead:
-                        break;
-                    case CodeType.RegDelete:
-                        break;
-                    case CodeType.RegWriteBin:
-                        break;
-                    case CodeType.RegReadBin:
-                        break;
-                    case CodeType.RegMulti:
-                        break;
+                    //case CodeType.RegHiveLoad:
+                    //    break;
+                    //case CodeType.RegHiveUnload:
+                    //    break;
+                    //case CodeType.RegImport:
+                    //    break;
+                    //case CodeType.RegWrite:
+                    //    break;
+                    //case CodeType.RegRead:
+                    //    break;
+                    //case CodeType.RegDelete:
+                    //    break;
+                    //case CodeType.RegWriteBin:
+                    //    break;
+                    //case CodeType.RegReadBin:
+                    //    break;
+                    //case CodeType.RegMulti:
+                    //   break;
                     #endregion
-                        */
                     #region 03 Text
                     // 03 Text
                     case CodeType.TXTAddLine:
-                        logs = CommandText.TXTAddLine(s, cmd);
+                        logs.AddRange(CommandText.TXTAddLine(s, cmd));
                         break;
                     case CodeType.TXTReplace:
-                        logs = CommandText.TXTReplace(s, cmd);
+                        logs.AddRange(CommandText.TXTReplace(s, cmd));
                         break;
                     case CodeType.TXTDelLine:
-                        logs = CommandText.TXTDelLine(s, cmd);
+                        logs.AddRange(CommandText.TXTDelLine(s, cmd));
                         break;
                     case CodeType.TXTDelSpaces:
-                        logs = CommandText.TXTDelSpaces(s, cmd);
+                        logs.AddRange(CommandText.TXTDelSpaces(s, cmd));
                         break;
                     case CodeType.TXTDelEmptyLines:
-                        logs = CommandText.TXTDelEmptyLines(s, cmd);
+                        logs.AddRange(CommandText.TXTDelEmptyLines(s, cmd));
                         break;
                     #endregion
                     #region 04 INI
                     // 04 INI
                     case CodeType.INIRead:
-                        logs = CommandINI.INIRead(s, cmd);
+                        logs.AddRange(CommandINI.INIRead(s, cmd));
                         break;
                     case CodeType.INIWrite:
-                        logs = CommandINI.INIWrite(s, cmd);
+                        logs.AddRange(CommandINI.INIWrite(s, cmd));
                         break;
                     case CodeType.INIDelete:
-                        logs = CommandINI.INIDelete(s, cmd);
+                        logs.AddRange(CommandINI.INIDelete(s, cmd));
                         break;
                     case CodeType.INIAddSection:
-                        logs = CommandINI.INIAddSection(s, cmd);
+                        logs.AddRange(CommandINI.INIAddSection(s, cmd));
                         break;
                     case CodeType.INIDeleteSection:
-                        logs = CommandINI.INIDeleteSection(s, cmd);
+                        logs.AddRange(CommandINI.INIDeleteSection(s, cmd));
                         break;
                     //case CodeType.INIWriteTextLine:
                     //    break;
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
-                    /*
                     #region 05 Network
                     // 05 Network
-                    case CodeType.WebGet:
-                        break;
-                    case CodeType.WebGetIfNotExist:
-                        break;
+                    //case CodeType.WebGet:
+                    //    break;
+                    //case CodeType.WebGetIfNotExist: // Deprecated
+                    //    break;
                     #endregion
                     #region 06 Attach, Interface
                     // 06 Attach, Interface
-                    case CodeType.ExtractFile:
-                        break;
-                    case CodeType.ExtractAndRun:
-                        break;
-                    case CodeType.ExtractAllFiles:
-                        break;
-                    case CodeType.ExtractAllFilesIfNotExist:
-                        break;
-                    case CodeType.Encode:
-                        break;
+                    //case CodeType.ExtractFile:
+                    //    break;
+                    //case CodeType.ExtractAndRun:
+                    //    break;
+                    //case CodeType.ExtractAllFiles:
+                    //    break;
+                    //case CodeType.Encode:
+                    //    break;
                     #endregion
-                    */
                     #region 07 UI
                     // 07 UI
                     case CodeType.Message:
-                        logs = CommandUI.Message(s, cmd);
+                        logs.AddRange(CommandUI.Message(s, cmd));
                         break;
                     case CodeType.Echo:
-                        logs = CommandUI.Echo(s, cmd);
+                        logs.AddRange(CommandUI.Echo(s, cmd));
                         break;
                     //case CodeType.Retrieve:
                     //   break;
@@ -321,7 +320,7 @@ namespace PEBakery.Core
                     #region 08 StringFormat
                     // 08 StringFormat
                     case CodeType.StrFormat:
-                        logs = CommandString.StrFormat(s, cmd);
+                        logs.AddRange(CommandString.StrFormat(s, cmd));
                         break;
                     #endregion
                     #region 09 System
@@ -331,32 +330,28 @@ namespace PEBakery.Core
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:
-                        logs = CommandSystem.ShellExecute(s, cmd);
+                        logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
                     #region 10 Branch
                     // 10 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
-                        logs = new List<LogInfo>();
                         CommandBranch.RunExec(s, cmd);
                         break;
                     case CodeType.Loop:
-                        logs = new List<LogInfo>();
                         CommandBranch.Loop(s, cmd);
                         break;
                     case CodeType.If:
-                        logs = new List<LogInfo>();
                         CommandBranch.If(s, cmd);
                         break;
                     case CodeType.Else:
-                        logs = new List<LogInfo>();
                         CommandBranch.Else(s, cmd);
                         break;
                     case CodeType.Begin:
-                        throw new InternalParserException("[Begin] must have already parsed");
+                        throw new InternalParserException("CodeParser Error");
                     case CodeType.End:
-                        throw new InternalParserException("[End] must have already parsed");
+                        throw new InternalParserException("CodeParser Error");
                     #endregion
                     #region 11 Control
                     // 11 Control
@@ -369,30 +364,27 @@ namespace PEBakery.Core
                     case CodeType.PackParam:
                         logs = CommandControl.PackParam(s, cmd);
                         break;
-                    /*
-                    case CodeType.AddVariables:
-                        break;
-                    case CodeType.Exit:
-                        break;
-                    case CodeType.Halt:
-                        break;
-                    case CodeType.Wait:
-                        break;
-                    case CodeType.Beep:
-                        break;
-                    */
+                    //case CodeType.AddVariables:
+                    //    break;
+                    //case CodeType.Exit:
+                    //    break;
+                    //case CodeType.Halt:
+                    //    break;
+                    //case CodeType.Wait:
+                    //    break;
+                    //case CodeType.Beep:
+                    //    break;
                     #endregion
                     #region 12 External Macro
                     // 12 External Macro
                     case CodeType.Macro:
-                        logs = new List<LogInfo>();
                         CommandMacro.Macro(s, cmd);
                         break;
                     #endregion
                     #region Error
                     // Error
                     default:
-                        throw new InvalidCodeCommandException($"Cannot execute [{cmd.Type}] command", cmd);
+                        throw new ExecuteErrorException($"Cannot execute [{cmd.Type}] command");
                         #endregion
                 }
             }
@@ -402,15 +394,15 @@ namespace PEBakery.Core
             }
             catch (InternalCodeInfoException)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, $"Command [{cmd.Type}] should have [CodeInfo_{cmd.Type}]", cmd, curDepth) };
+                logs.Add(new LogInfo(LogState.Error, $"Command [{cmd.Type}] should have [CodeInfo_{cmd.Type}]", cmd, curDepth));
             }
             catch (InvalidCodeCommandException e)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e, e.Cmd, curDepth) };
+                logs.Add(new LogInfo(LogState.Error, e, e.Cmd, curDepth));
             }
             catch (Exception e)
             {
-                logs = new List<LogInfo>() { new LogInfo(LogState.Error, e, cmd, curDepth) };
+                logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
             }
 
             s.Logger.Build_Write(s.BuildId, LogInfo.AddCommandDepth(logs, cmd, curDepth));

@@ -313,11 +313,17 @@ namespace PEBakery.Core
                 BuildId = buildId,
                 Depth = log.Depth,
                 State = log.State,
-                Message = log.Message,
             };
 
-            if (log.Command != null)
+            if (log.Command == null)
+            {
+                dbCode.Message = log.Message;
+            }
+            else
+            {
+                dbCode.Message = $"{log.Command.Type} - {log.Message}";
                 dbCode.RawCode = log.Command.RawCode;
+            }
 
             DB.Insert(dbCode);
         }
@@ -360,13 +366,12 @@ namespace PEBakery.Core
         public void Debug_Write(LogInfo log)
         {
             for (int i = 0; i < log.Depth; i++)
-            {
                 Console.Write("  ");
-            }
+
             if (log.Command == null)
                 Console.WriteLine($"[{log.State}] {log.Message}");
             else
-                Console.WriteLine($"[{log.State}] {log.Message} ({log.Command})");
+                Console.WriteLine($"[{log.State}] {log.Command.Type} - {log.Message} ({log.Command})");
         }
 
         public void Debug_Write(IEnumerable<LogInfo> logs)

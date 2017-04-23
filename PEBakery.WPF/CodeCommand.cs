@@ -27,6 +27,7 @@ using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
 using System.Windows;
+using WPFCustomMessageBox;
 
 namespace PEBakery.Core
 {
@@ -47,7 +48,7 @@ namespace PEBakery.Core
         // 05 Network
         WebGet = 500, WebGetIfNotExist,
         // 06 Attach, Interface
-        ExtractFile = 600, ExtractAndRun, ExtractAllFiles, ExtractAllFilesIfNotExist, Encode,
+        ExtractFile = 600, ExtractAndRun, ExtractAllFiles, Encode,
         // 07 UI
         Message = 700, Echo, Retrieve, Visible,
         // 08 StringFormat
@@ -57,11 +58,17 @@ namespace PEBakery.Core
         // 10 Branch
         Run = 1000, Exec, Loop, If, Else, Begin, End,
         // 11 Control
-        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, // GetParam and PackParam will be depracted, PEBakery can have infinite number of section params.
+        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
         // 12 External Macro
         Macro = 1200,
     }
 
+    public enum DeprecatedCodeType
+    {
+        WebGetIfNotExist, // Better to have as Macro
+        GetParam, // PEBakery can have infinite number of section params.
+        PackParam, // PEBakery can have infinite number of section params.
+    };
     #endregion
 
     #region SectionAddress
@@ -1398,87 +1405,110 @@ namespace PEBakery.Core
                             match = !match;
                     }
                     break;
-                case BranchConditionType.Question: // Can has 1 - 3 argument
+                case BranchConditionType.Question: // Can has 1 or 3 argument
                     {
                         string question = StringEscaper.Preprocess(s, Arg1);
 
-                        bool autoTimeOut = false;
+                        bool autoTimeout = false;
 
                         if (Arg2 != null && Arg3 != null)
-                            autoTimeOut = true;
+                            autoTimeout = true;
 
-                        if (autoTimeOut)
+                        int timeout = 0;
+                        bool defaultChoice = false;
+                        if (autoTimeout)
                         {
-                            string timeOutStr = StringEscaper.Preprocess(s, Arg2);
-                            if (int.TryParse(timeOutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeOut) == false)
-                                autoTimeOut = false;
+                            string timeoutStr = StringEscaper.Preprocess(s, Arg2);
+                            if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout) == false)
+                                autoTimeout = false;
 
-                            bool defaultChoice;
                             string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
                             if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 defaultChoice = true;
-                            else if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            else if (defaultChoiceStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                                 defaultChoice = false;
-                            else
-                                autoTimeOut = false;
                         }
 
-                        // TODO : Timeout support
-                        MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                        if (result == MessageBoxResult.Yes)
+                        if (autoTimeout)
                         {
-                            match = true;
-                            logMessage = "[Yes] was chosen";
+                            MessageBoxResult result = MessageBoxResult.None; 
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
+                            });
+
+                            if (result == MessageBoxResult.None)
+                            {
+                                match = defaultChoice;
+                                if (defaultChoice)
+                                    logMessage = "[Yes] was automatically chosen";
+                                else
+                                    logMessage = "[No] was automatically chosen";
+                            }
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                match = true;
+                                logMessage = "[Yes] was chosen";
+                            }
+                            else
+                            {
+                                match = false;
+                                logMessage = "[No] was chosen";
+                            }
                         }
                         else
                         {
-                            match = false;
-                            logMessage = "[No] was chosen";
+                            MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                match = true;
+                                logMessage = "[Yes] was chosen";
+                            }
+                            else
+                            {
+                                match = false;
+                                logMessage = "[No] was chosen";
+                            }
                         }
 
                         if (NotFlag)
                             match = !match;
                     }
                     break;
-                default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] need additional infomation");
-            }
-            return match;
-        }
-
-        public bool Check(ArugmentPreprocess pp, Variables variables)
-        {
-            bool match = false;
-            switch (Type)
-            {
-                case BranchConditionType.ExistVar:
+                case BranchConditionType.ExistMacro:
                     {
-                        string variableName = Variables.TrimPercentMark(Arg1);
-                        match = variables.ContainsKey(variableName);
+                        string macroName = StringEscaper.Preprocess(s, Arg1);
+                        match = s.Macro.MacroDict.ContainsKey(macroName);
+
+                        if (match)
+                            logMessage = $"Macro [{macroName}] exists";
+                        else
+                            logMessage = $"Macro [{macroName}] does not exists";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
-                case BranchConditionType.ExistMacro:
-                    // TODO
+                case BranchConditionType.ExistVar:
+                    {
+                        string varName = Variables.TrimPercentMark(Arg1);
+                        match = s.Variables.ContainsKey(varName);
+
+                        if (match)
+                            logMessage = $"Variable [{varName}] exists";
+                        else
+                            logMessage = $"Variable [{varName}] does not exists";
+
+                        if (NotFlag)
+                            match = !match;
+                    }
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistVar");
+                    throw new InternalErrorException($"Internal BranchCondition check error");
             }
             return match;
         }
 
-        public bool Check(ArugmentPreprocess pp, Macro macro)
-        {
-            bool match = false;
-            switch (Type)
-            {
-                case BranchConditionType.ExistMacro:
-                    // TODO
-                    break;
-                default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistMacro");
-            }
-            return match;
-        }
 
         public override string ToString()
         {
