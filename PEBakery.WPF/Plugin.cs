@@ -68,6 +68,7 @@ namespace PEBakery.Core
                     return fullPath;
             }
         }
+        public string DirectFullPath { get => fullPath; }
         public string ShortPath { get => shortPath; }
         public SectionDictionary Sections
         {

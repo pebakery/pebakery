@@ -37,6 +37,7 @@ using System.Globalization;
 using System.Threading;
 using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading.Tasks;
 
 namespace PEBakery.WPF
 {
@@ -54,7 +55,7 @@ namespace PEBakery.WPF
 
         private TreeViewModel currentTree;
         private Logger logger;
-        private PluginCache pluginCaches;
+        private PluginCache pluginCache;
 
         const int MaxDpiScale = 4;
         private int allPluginCount = 0;
@@ -114,7 +115,7 @@ namespace PEBakery.WPF
             this.logger = new Logger(logDBFile);
 
             string cacheFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
-            this.pluginCaches = new PluginCache(cacheFile);
+            this.pluginCache = new PluginCache(cacheFile);
 
             StartLoadWorker();
         }
@@ -152,6 +153,7 @@ namespace PEBakery.WPF
 
             allPluginCount = 0;
             int loadedPluginCount = 0;
+            int cachedPluginCount = 0;
 
             MainProgressRing.IsActive = true;
             LoadProgressBar.Visibility = Visibility.Visible;
@@ -183,7 +185,7 @@ namespace PEBakery.WPF
 
                 foreach (string dir in projList)
                 {
-                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), pluginCaches, worker);
+                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), pluginCache, worker);
                     project.Load();
                     projectList.Add(project);
                 }
@@ -205,22 +207,40 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref loadedPluginCount);
                 LoadProgressBar.Value = loadedPluginCount;
-                if (e.UserState == null)
-                    PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Error";
+                if (e.ProgressPercentage == 1)
+                { // Cached
+                    Interlocked.Increment(ref cachedPluginCount);
+                    if (e.UserState == null)
+                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Cached - Error";
+                    else
+                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Cached - {e.UserState}";
+                }
                 else
-                    PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) {e.UserState}";
+                {
+                    if (e.UserState == null)
+                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Error";
+                    else
+                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) {e.UserState}";
+                }
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
-                this.StatusBar.Text = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                this.StatusBar.Text = $"{allPluginCount} plugins loaded ({cachedPluginCount} cached), took {t:hh\\:mm\\:ss}";
                 LoadProgressBar.Visibility = Visibility.Collapsed;
                 StatusBar.Visibility = Visibility.Visible;
 
                 MainProgressRing.IsActive = false;
 
-                StartCacheWorker();
+                DispatcherTimer Timer = new DispatcherTimer();
+                Timer.Interval = TimeSpan.FromSeconds(5);
+                Timer.Tick += (object tickSender, EventArgs tickArgs) =>
+                {
+                    StartCacheWorker();
+                    (tickSender as DispatcherTimer).Stop();
+                };
+                Timer.Start();
             };
             loadWorker.RunWorkerAsync(baseDir);
         }
@@ -239,52 +259,55 @@ namespace PEBakery.WPF
                 watch = Stopwatch.StartNew();
                 foreach (Project project in projectList)
                 {
-                    foreach (Plugin p in project.AllPluginList)
+                    var tasks = project.AllPluginList.Select(p =>
                     {
-                        // Check SHA256 to catch change of file
-                        byte[] hash;
-                        // string cacheShortPath = pPath.Remove(0, BaseDir.Length);
-                        using (FileStream stream = new FileStream(p.FullPath, FileMode.Open, FileAccess.Read))
-                        using (var bufStream = new BufferedStream(stream, 4096 * 4))
+                        return Task.Run(() =>
                         {
-                            hash = SHA256.Create().ComputeHash(bufStream);
-                        }
-
-                        // Is cache exist?
-                        DB_PluginCache pCache = pluginCaches.Table<DB_PluginCache>().Where(x => x.SHA256 == hash).FirstOrDefault();
-                        if (pCache == null) // Cache not exists
-                        {
-                            pCache = new DB_PluginCache()
+                            if (p.Type == PluginType.Link)
                             {
-                                Path = System.IO.Path.Combine(p.Project.ProjectName, p.ShortPath),
-                                SHA256 = hash,
-                            };
-
-                            BinaryFormatter formatter = new BinaryFormatter();
-                            using (MemoryStream mem = new MemoryStream())
-                            {
-                                formatter.Serialize(mem, p);
-                                pCache.Serialized = mem.ToArray();
+                                worker.ReportProgress(0);
+                                return;
                             }
 
-                            pluginCaches.Insert(pCache);
-                        }
-
-                        if (hash.SequenceEqual(pCache.SHA256) == false) // Cache is outdated
-                        {
-                            pCache.SHA256 = hash;
-                            BinaryFormatter formatter = new BinaryFormatter();
-                            using (MemoryStream mem = new MemoryStream())
+                            // Is cache exist?
+                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(p.DirectFullPath);
+                            string sPath = p.FullPath.Remove(0, baseDir.Length + 1);
+                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
+                                .FirstOrDefault(x => sPath.Equals(x.Path, StringComparison.OrdinalIgnoreCase));
+                            if (pCache == null) // Cache not exists
                             {
-                                formatter.Serialize(mem, p);
-                                pCache.Serialized = mem.ToArray();
+                                pCache = new DB_PluginCache()
+                                {
+                                    Path = sPath,
+                                    LastWriteTime = lastWriteTime,
+                                };
+
+                                BinaryFormatter formatter = new BinaryFormatter();
+                                using (MemoryStream mem = new MemoryStream())
+                                {
+                                    formatter.Serialize(mem, p);
+                                    pCache.Serialized = mem.ToArray();
+                                }
+
+                                pluginCache.Insert(pCache);
+                            }
+                            else if (DateTime.Equals(pCache.LastWriteTime, lastWriteTime) == false) // Cache is outdated
+                            {
+                                pCache.LastWriteTime = lastWriteTime;
+                                BinaryFormatter formatter = new BinaryFormatter();
+                                using (MemoryStream mem = new MemoryStream())
+                                {
+                                    formatter.Serialize(mem, p);
+                                    pCache.Serialized = mem.ToArray();
+                                }
+
+                                pluginCache.Update(pCache);
                             }
 
-                            pluginCaches.Update(pCache);
-                        }
-
-                        worker.ReportProgress(0);
-                    }
+                            worker.ReportProgress(0);
+                        });
+                    }).ToArray();
+                    Task.WaitAll(tasks);
                 }
             };
 
@@ -292,7 +315,7 @@ namespace PEBakery.WPF
             cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 Interlocked.Increment(ref cachedPluginCount);
-                StatusBar.Text = $"Generating cache... ({cachedPluginCount}/{allPluginCount})";
+                StatusBar.Text = $"Updating cache... ({cachedPluginCount}/{allPluginCount})";
             };
             cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {

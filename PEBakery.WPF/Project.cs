@@ -49,7 +49,7 @@ namespace PEBakery.Core
         private int loadedPluginCount;
         private int allPluginCount;
         private BackgroundWorker worker;
-        private PluginCache pluginCaches;
+        private PluginCache pluginCache;
 
         // Properties
         public string ProjectName { get { return projectName; } }
@@ -71,7 +71,7 @@ namespace PEBakery.Core
         {
             this.loadedPluginCount = 0;
             this.allPluginCount = 0;
-            this.pluginCaches = cache;
+            this.pluginCache = cache;
             this.worker = worker;
             this.projectName = projectName;
             this.projectRoot = Path.Combine(baseDir, "Projects", projectName);
@@ -170,21 +170,19 @@ namespace PEBakery.Core
                 int t = i++;
                 return Task.Run(() =>
                 {
+                    int cached = 0;
+                    string ext = Path.GetExtension(pPath);
                     Plugin p = null;
                     try
                     {
-                        if (pluginCaches != null)
+                        if (pluginCache != null && ext.Equals(".link", StringComparison.OrdinalIgnoreCase) == false)
                         { // PluginCache enabled
-                            // Check SHA256 to catch change of file
-                            byte[] hash;
-                            // string cacheShortPath = pPath.Remove(0, BaseDir.Length);
-                            using (FileStream stream = new FileStream(pPath, FileMode.Open, FileAccess.Read))
-                            using (var bufStream = new BufferedStream(stream, 4096 * 4))
-                            {
-                                hash = SHA256.Create().ComputeHash(bufStream);
-                            }
-
-                            DB_PluginCache pCache = pluginCaches.Table<DB_PluginCache>().Where(x => x.SHA256 == hash).FirstOrDefault();
+                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(pPath);
+                            string sPath = pPath.Remove(0, baseDir.Length + 1);
+                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
+                                .FirstOrDefault(
+                                    x => sPath.Equals(x.Path, StringComparison.OrdinalIgnoreCase)
+                                    && DateTime.Equals(x.LastWriteTime, lastWriteTime));
                             if (pCache != null)
                             {
                                 using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
@@ -193,6 +191,7 @@ namespace PEBakery.Core
                                     p = (Plugin)formatter.Deserialize(memStream);
                                 }
                                 p.Project = this;
+                                cached = 1;
                             }
                         }
 
@@ -202,37 +201,36 @@ namespace PEBakery.Core
                                 p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
                             else
                             { // TODO : Lazy loading of link, takes too much time at start
-                                string ext = Path.GetExtension(pPath);
-                                if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
+                                if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                     p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
                                 else
                                     p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
                             }
-                        }
 
-                        // Check Plugin Link's validity
-                        // Also, convert nested link to one-depth link
-                        if (p.Type == PluginType.Link)
-                        {
-                            Plugin link = p.Link;
-                            bool valid = false;
-                            do
+                            // Check Plugin Link's validity
+                            // Also, convert nested link to one-depth link
+                            if (p.Type == PluginType.Link)
                             {
-                                if (link == null)
-                                    return;
-                                if (link.Type == PluginType.Plugin)
+                                Plugin link = p.Link;
+                                bool valid = false;
+                                do
                                 {
-                                    valid = true;
-                                    break;
+                                    if (link == null)
+                                        return;
+                                    if (link.Type == PluginType.Plugin)
+                                    {
+                                        valid = true;
+                                        break;
+                                    }
+                                    link = link.Link;
                                 }
-                                link = link.Link;
-                            }
-                            while (link.Type != PluginType.Plugin);
+                                while (link.Type != PluginType.Plugin);
 
-                            if (valid)
-                                p.Link = link;
-                            else
-                                return;
+                                if (valid)
+                                    p.Link = link;
+                                else
+                                    return;
+                            }
                         }
 
                         listLock.EnterWriteLock();
@@ -250,12 +248,12 @@ namespace PEBakery.Core
 #endif
 
                         Interlocked.Increment(ref loadedPluginCount);
-                        worker.ReportProgress((loadedPluginCount * 100) / allPluginCount, Path.GetDirectoryName(p.ShortPath));
+                        worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
                     }
                     catch
                     { 
                         Interlocked.Increment(ref loadedPluginCount);
-                        worker.ReportProgress((loadedPluginCount * 100) / allPluginCount);
+                        worker.ReportProgress(cached);
                     }
                 });
             }).ToArray();

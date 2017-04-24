@@ -42,7 +42,7 @@ namespace PEBakery.Core
         public long Id { get; set; }     
         [MaxLength(32768)]
         public string Path { get; set; } // Without BaseDir
-        public byte[] SHA256 { get; set; }
+        public DateTime LastWriteTime { get; set; }
         public byte[] Serialized { get; set; }
 
         public override string ToString()
