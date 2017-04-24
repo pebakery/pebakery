@@ -33,6 +33,7 @@ using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using System.Globalization;
+using System.Threading;
 
 namespace PEBakery.WPF
 {
@@ -43,8 +44,6 @@ namespace PEBakery.WPF
     public partial class MainWindow : Window
     {
         private List<Project> projectList;
-        private int loadedProjectCount;
-        private int allProjectCount;
         private string baseDir;
         private ProgressBar loadProgressBar;
         private TextBlock statusBar;
@@ -101,8 +100,6 @@ namespace PEBakery.WPF
             this.bottomDock.Child = loadProgressBar;
 
             this.projectList = new List<Project>();
-            this.loadedProjectCount = 0;
-            this.allProjectCount = 0;
 
             this.baseDir = argBaseDir;
             this.treeModel = new TreeViewModel(null);
@@ -152,6 +149,9 @@ namespace PEBakery.WPF
             PluginTitle.Text = "Welcome to PEBakery!";
             PluginDescription.Text = "PEBakery is now loading, please wait...";
 
+            int allPluginCount = 0;
+            int loadedPluginCount = 0;
+
             MainProgressRing.IsActive = true;
             loadWorker = new BackgroundWorker();
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
@@ -161,24 +161,28 @@ namespace PEBakery.WPF
 
                 watch = Stopwatch.StartNew();
                 this.projectList = new List<Project>();
-                this.loadedProjectCount = 0;
-                this.allProjectCount = 0;
 
                 string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
                 List<string> projList = new List<string>();
                 foreach (string dir in projArray)
                 {
                     if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
+                    {
                         projList.Add(dir);
+                        allPluginCount += Project.GetPluginCount(System.IO.Path.Combine(baseDir, "Projects", dir));
+                    }
                 }
 
-                allProjectCount = projList.Count;
+                Dispatcher.Invoke(() =>
+                {
+                    loadProgressBar.Maximum = allPluginCount;
+                });
+
                 foreach (string dir in projList)
                 {
                     Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
                     project.Load();
                     projectList.Add(project);
-                    loadedProjectCount++;
                 }
 
                 Dispatcher.Invoke(() =>
@@ -196,13 +200,18 @@ namespace PEBakery.WPF
             loadWorker.WorkerReportsProgress = true;
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
-                loadProgressBar.Value = (e.ProgressPercentage / allProjectCount) + (loadedProjectCount * 100 / allProjectCount);
+                Interlocked.Increment(ref loadedPluginCount);
+                loadProgressBar.Value = loadedPluginCount;
+                if (e.UserState == null)
+                    PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Error";
+                else
+                    PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) {e.UserState}";
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
-                this.statusBar.Text = $"{allProjectCount} projects loaded, took {t:hh\\:mm\\:ss}";
+                this.statusBar.Text = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
                 this.bottomDock.Child = statusBar;
 
                 MainProgressRing.IsActive = false;
@@ -224,8 +233,6 @@ namespace PEBakery.WPF
 
         private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
         {
-            double size = MainTreeView.FontSize * MaxDpiScale;
-
             foreach (Node<Plugin> node in plugins)
             {
                 Plugin p = node.Data;
