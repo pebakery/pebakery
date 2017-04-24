@@ -28,6 +28,8 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using PEBakery.Lib;
 using PEBakery.Exceptions;
+using System.Security.Cryptography;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace PEBakery.Core
 {
@@ -47,6 +49,7 @@ namespace PEBakery.Core
         private int loadedPluginCount;
         private int allPluginCount;
         private BackgroundWorker worker;
+        private PluginCache pluginCaches;
 
         // Properties
         public string ProjectName { get { return projectName; } }
@@ -60,15 +63,15 @@ namespace PEBakery.Core
         public int LoadedPluginCount { get => loadedPluginCount; }
         public int AllPluginCount { get => allPluginCount; }
 
-
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="projectName"></param>
-        public Project(string baseDir, string projectName, BackgroundWorker worker)
+        public Project(string baseDir, string projectName, PluginCache cache, BackgroundWorker worker)
         {
             this.loadedPluginCount = 0;
             this.allPluginCount = 0;
+            this.pluginCaches = cache;
             this.worker = worker;
             this.projectName = projectName;
             this.projectRoot = Path.Combine(baseDir, "Projects", projectName);
@@ -167,18 +170,44 @@ namespace PEBakery.Core
                 int t = i++;
                 return Task.Run(() =>
                 {
-                    Plugin p;
+                    Plugin p = null;
                     try
                     {
-                        if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                            p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
-                        else
-                        { // TODO : Lazy loading of link, takes too much time at start
-                            string ext = Path.GetExtension(pPath);
-                            if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                                p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
+                        if (pluginCaches != null)
+                        { // PluginCache enabled
+                            // Check SHA256 to catch change of file
+                            byte[] hash;
+                            // string cacheShortPath = pPath.Remove(0, BaseDir.Length);
+                            using (FileStream stream = new FileStream(pPath, FileMode.Open, FileAccess.Read))
+                            using (var bufStream = new BufferedStream(stream, 4096 * 4))
+                            {
+                                hash = SHA256.Create().ComputeHash(bufStream);
+                            }
+
+                            DB_PluginCache pCache = pluginCaches.Table<DB_PluginCache>().Where(x => x.SHA256 == hash).FirstOrDefault();
+                            if (pCache != null)
+                            {
+                                using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                {
+                                    BinaryFormatter formatter = new BinaryFormatter();
+                                    p = (Plugin)formatter.Deserialize(memStream);
+                                }
+                                p.Project = this;
+                            }
+                        }
+
+                        if (p == null)
+                        {
+                            if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                                p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
                             else
-                                p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
+                            { // TODO : Lazy loading of link, takes too much time at start
+                                string ext = Path.GetExtension(pPath);
+                                if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
+                                    p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
+                                else
+                                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
+                            }
                         }
 
                         // Check Plugin Link's validity
@@ -216,13 +245,15 @@ namespace PEBakery.Core
                             listLock.ExitWriteLock();
                         }
 
+#if DEBUG
                         Console.WriteLine(pPath);
+#endif
 
                         Interlocked.Increment(ref loadedPluginCount);
                         worker.ReportProgress((loadedPluginCount * 100) / allPluginCount, Path.GetDirectoryName(p.ShortPath));
                     }
                     catch
-                    { // Do nothing - intentionally left blank
+                    { 
                         Interlocked.Increment(ref loadedPluginCount);
                         worker.ReportProgress((loadedPluginCount * 100) / allPluginCount);
                     }

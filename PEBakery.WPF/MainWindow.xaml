@@ -132,8 +132,21 @@
                 <TextBlock Text="About" Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
             </Grid>
         </Border>
-        <Border DockPanel.Dock="Bottom" Height="20" Background="Yellow" x:Name="bottomDock" Panel.ZIndex="100">
-        </Border>
+        <Grid DockPanel.Dock="Bottom" Height="20" x:Name="bottomDock" Panel.ZIndex="100">
+            <ProgressBar
+                Name="LoadProgressBar"
+                Visibility="Collapsed"
+                IsIndeterminate="False"
+                Minimum="0"
+                Maximum="100"
+                Value="0">
+            </ProgressBar>
+            <TextBlock
+                Name="StatusBar"
+                Background="Yellow" 
+                Visibility="Visible">
+            </TextBlock>
+        </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"/>

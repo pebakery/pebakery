@@ -35,6 +35,7 @@ namespace PEBakery.Core
     using StringDictionary = Dictionary<string, string>;
     using SectionDictionary = Dictionary<string, PluginSection>;
 
+    [Serializable]
     public class Plugin
     {
         // Fields
@@ -45,6 +46,7 @@ namespace PEBakery.Core
         private SectionDictionary sections;
 
         private PluginType type;
+        [NonSerialized]
         private Project project;
         private Plugin link;
         private string title;
@@ -98,6 +100,10 @@ namespace PEBakery.Core
                     return link.Project;
                 else
                     return project;
+            }
+            set
+            {
+                project = value;
             }
         }
         public string Title
@@ -201,8 +207,10 @@ namespace PEBakery.Core
                         if (level == null)
                             level = 0;
                         List<string> dirInfo = new List<string>();
-                        sections = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
-                        sections["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>());
+                        sections = new SectionDictionary(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>())
+                        };
 
                         // Mandatory Entries
                         sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(fullPath);
@@ -526,6 +534,7 @@ namespace PEBakery.Core
     #endregion
 
     #region PluginSection
+    [Serializable]
     public class PluginSection
     {
         // Common Fields

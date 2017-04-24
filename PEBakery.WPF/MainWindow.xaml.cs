@@ -22,6 +22,7 @@ using PEBakery.Core;
 using MahApps.Metro.IconPacks;
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -34,6 +35,8 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;
+using System.Security.Cryptography;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace PEBakery.WPF
 {
@@ -45,16 +48,16 @@ namespace PEBakery.WPF
     {
         private List<Project> projectList;
         private string baseDir;
-        private ProgressBar loadProgressBar;
-        private TextBlock statusBar;
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
         private double scaleFactor = 1;
 
         private TreeViewModel currentTree;
         private Logger logger;
+        private PluginCache pluginCaches;
 
         const int MaxDpiScale = 4;
+        private int allPluginCount = 0;
 
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
@@ -68,7 +71,7 @@ namespace PEBakery.WPF
             {
                 Console.WriteLine("Cannot determine version");
                 Application.Current.Shutdown();
-            }
+            }  
 
             // string argBaseDir = FileHelper.GetProgramAbsolutePath();
             string argBaseDir = Environment.CurrentDirectory;
@@ -77,9 +80,14 @@ namespace PEBakery.WPF
                 if (string.Equals(args[i], "/basedir", StringComparison.OrdinalIgnoreCase))
                 {
                     if (i + 1 < args.Length)
+                    {
                         argBaseDir = System.IO.Path.GetFullPath(args[i + 1]);
+                        Environment.CurrentDirectory = argBaseDir;
+                    }
                     else
+                    {
                         Console.WriteLine("\'/basedir\' must be used with path\r\n");
+                    }
                 }
                 else if (string.Equals(args[i], "/?", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(args[i], "/help", StringComparison.OrdinalIgnoreCase)
@@ -88,16 +96,6 @@ namespace PEBakery.WPF
                     Console.WriteLine("Sorry, help message not implemented\r\n");
                 }
             }
-
-            this.statusBar = new TextBlock();
-            loadProgressBar = new ProgressBar()
-            {
-                IsIndeterminate = false,
-                Minimum = 0,
-                Maximum = 100,
-                Value = 0
-            };
-            this.bottomDock.Child = loadProgressBar;
 
             this.projectList = new List<Project>();
 
@@ -113,8 +111,11 @@ namespace PEBakery.WPF
                 File.Delete(logDBFile); // Temp measure - needed to test DB Log
             }
             catch (IOException) { }
-            logger = new Logger(logDBFile);
-            
+            this.logger = new Logger(logDBFile);
+
+            string cacheFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
+            this.pluginCaches = new PluginCache(cacheFile);
+
             StartLoadWorker();
         }
 
@@ -147,12 +148,14 @@ namespace PEBakery.WPF
 
             PluginLogo.Content = image;
             PluginTitle.Text = "Welcome to PEBakery!";
-            PluginDescription.Text = "PEBakery is now loading, please wait...";
+            PluginDescription.Text = "PEBakery loading...";
 
-            int allPluginCount = 0;
+            allPluginCount = 0;
             int loadedPluginCount = 0;
 
             MainProgressRing.IsActive = true;
+            LoadProgressBar.Visibility = Visibility.Visible;
+            StatusBar.Visibility = Visibility.Collapsed;
             loadWorker = new BackgroundWorker();
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
@@ -175,12 +178,12 @@ namespace PEBakery.WPF
 
                 Dispatcher.Invoke(() =>
                 {
-                    loadProgressBar.Maximum = allPluginCount;
+                    LoadProgressBar.Maximum = allPluginCount;
                 });
 
                 foreach (string dir in projList)
                 {
-                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), worker);
+                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), pluginCaches, worker);
                     project.Load();
                     projectList.Add(project);
                 }
@@ -201,7 +204,7 @@ namespace PEBakery.WPF
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 Interlocked.Increment(ref loadedPluginCount);
-                loadProgressBar.Value = loadedPluginCount;
+                LoadProgressBar.Value = loadedPluginCount;
                 if (e.UserState == null)
                     PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Error";
                 else
@@ -211,12 +214,95 @@ namespace PEBakery.WPF
             {
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
-                this.statusBar.Text = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
-                this.bottomDock.Child = statusBar;
+                this.StatusBar.Text = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                LoadProgressBar.Visibility = Visibility.Collapsed;
+                StatusBar.Visibility = Visibility.Visible;
+
+                MainProgressRing.IsActive = false;
+
+                StartCacheWorker();
+            };
+            loadWorker.RunWorkerAsync(baseDir);
+        }
+
+        private void StartCacheWorker()
+        {
+            Stopwatch watch = new Stopwatch();
+            BackgroundWorker cacheWorker = new BackgroundWorker();
+
+            MainProgressRing.IsActive = true;
+            int cachedPluginCount = 0;
+            cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                BackgroundWorker worker = sender as BackgroundWorker;
+
+                watch = Stopwatch.StartNew();
+                foreach (Project project in projectList)
+                {
+                    foreach (Plugin p in project.AllPluginList)
+                    {
+                        // Check SHA256 to catch change of file
+                        byte[] hash;
+                        // string cacheShortPath = pPath.Remove(0, BaseDir.Length);
+                        using (FileStream stream = new FileStream(p.FullPath, FileMode.Open, FileAccess.Read))
+                        using (var bufStream = new BufferedStream(stream, 4096 * 4))
+                        {
+                            hash = SHA256.Create().ComputeHash(bufStream);
+                        }
+
+                        // Is cache exist?
+                        DB_PluginCache pCache = pluginCaches.Table<DB_PluginCache>().Where(x => x.SHA256 == hash).FirstOrDefault();
+                        if (pCache == null) // Cache not exists
+                        {
+                            pCache = new DB_PluginCache()
+                            {
+                                Path = System.IO.Path.Combine(p.Project.ProjectName, p.ShortPath),
+                                SHA256 = hash,
+                            };
+
+                            BinaryFormatter formatter = new BinaryFormatter();
+                            using (MemoryStream mem = new MemoryStream())
+                            {
+                                formatter.Serialize(mem, p);
+                                pCache.Serialized = mem.ToArray();
+                            }
+
+                            pluginCaches.Insert(pCache);
+                        }
+
+                        if (hash.SequenceEqual(pCache.SHA256) == false) // Cache is outdated
+                        {
+                            pCache.SHA256 = hash;
+                            BinaryFormatter formatter = new BinaryFormatter();
+                            using (MemoryStream mem = new MemoryStream())
+                            {
+                                formatter.Serialize(mem, p);
+                                pCache.Serialized = mem.ToArray();
+                            }
+
+                            pluginCaches.Update(pCache);
+                        }
+
+                        worker.ReportProgress(0);
+                    }
+                }
+            };
+
+            cacheWorker.WorkerReportsProgress = true;
+            cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+            {
+                Interlocked.Increment(ref cachedPluginCount);
+                StatusBar.Text = $"Generating cache... ({cachedPluginCount}/{allPluginCount})";
+            };
+            cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                watch.Stop();
+                TimeSpan t = watch.Elapsed;
+                StatusBar.Text = $"{allPluginCount} plugins cached, took {t:hh\\:mm\\:ss}";
 
                 MainProgressRing.IsActive = false;
             };
-            loadWorker.RunWorkerAsync(baseDir);
+            cacheWorker.RunWorkerAsync();
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -224,8 +310,9 @@ namespace PEBakery.WPF
             if (loadWorker.IsBusy == false)
             {
                 (MainTreeView.DataContext as TreeViewModel).Child.Clear();
-                loadProgressBar.Value = 0;
-                this.bottomDock.Child = loadProgressBar;
+                LoadProgressBar.Value = 0;
+                LoadProgressBar.Visibility = Visibility.Visible;
+                StatusBar.Visibility = Visibility.Collapsed;
 
                 StartLoadWorker();
             }
@@ -279,7 +366,7 @@ namespace PEBakery.WPF
                     DrawPlugin(item.Node.Data);
                     watch.Stop();
                     double sec = watch.Elapsed.TotalSeconds;
-                    statusBar.Text = $"{currentTree.Node.Data.ShortPath} rendered. Took {sec:0.000}sec";
+                    StatusBar.Text = $"{currentTree.Node.Data.ShortPath} rendered. Took {sec:0.000}sec";
                 });
             }
             else
@@ -383,7 +470,7 @@ namespace PEBakery.WPF
                 MainProgressRing.IsActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                statusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
+                StatusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
             };
             refreshWorker.RunWorkerAsync();
         }

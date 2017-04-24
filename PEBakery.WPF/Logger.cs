@@ -46,6 +46,7 @@ namespace PEBakery.Core
         Muted = 402,
     }
 
+    [Serializable]
     public struct LogInfo
     {
         public LogState State;

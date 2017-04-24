@@ -137,6 +137,7 @@
     <Compile Include="Macro.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Controls\Spinner\SpinnerControl.cs" />
+    <Compile Include="PluginCache.cs" />
     <Compile Include="SettingWindow.xaml.cs">
       <DependentUpon>SettingWindow.xaml</DependentUpon>
     </Compile>

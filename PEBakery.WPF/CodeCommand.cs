@@ -32,7 +32,6 @@ using WPFCustomMessageBox;
 namespace PEBakery.Core
 {
     #region CodeType
-
     public enum CodeType
     {
         // 00 Misc
@@ -72,6 +71,7 @@ namespace PEBakery.Core
     #endregion
 
     #region SectionAddress
+    [Serializable]
     public struct SectionAddress
     {
         public Plugin Plugin;
@@ -114,6 +114,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeCommand
+    [Serializable]
     public class CodeCommand
     {
         public string RawCode;
@@ -137,7 +138,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeCommandInfo
+    #region CodeInfo
+    [Serializable]
     public class CodeInfo
     {
         /// <summary>
@@ -153,6 +155,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 01 - File
+    [Serializable]
     public class CodeInfo_Expand : CodeInfo
     {
         public string SrcCab;
@@ -191,6 +194,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_FileCopy : CodeInfo
     {
         public string SrcFile;
@@ -229,6 +233,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
     { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16 | UTF16BE | ANSI]
         public string FilePath;
@@ -270,6 +275,7 @@ namespace PEBakery.Core
 
     #region CodeInfo 03 - Text
     public enum TXTAddLineMode { Append, Prepend, Place };
+    [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
     {
         public string FileName;
@@ -302,6 +308,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
     {
         public string FileName;
@@ -327,6 +334,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelLine : CodeInfo
     { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
         public string FileName;
@@ -348,6 +356,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelSpaces : CodeInfo
     { // TXTDelSpaces,<FileName>
         public string FileName;
@@ -365,6 +374,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelEmptyLines : CodeInfo
     { // TXTDelEmptyLines,<FileName>
         public string FileName;
@@ -384,6 +394,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 04 - INI
+    [Serializable]
     public class CodeInfo_INIWrite : CodeInfo
     {
         public string FileName;
@@ -413,6 +424,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIRead : CodeInfo
     {
         public string FileName;
@@ -443,6 +455,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIDelete : CodeInfo
     {
         public string FileName;
@@ -468,6 +481,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIAddSection : CodeInfo
     { 
         public string FileName;
@@ -489,6 +503,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
     {
         public string FileName;
@@ -510,6 +525,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIWriteTextLine : CodeInfo
     {
         public string FileName;
@@ -539,6 +555,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIMerge : CodeInfo
     {
         // INIMerge,<SrcFileName>,<DestFileName>
@@ -572,6 +589,7 @@ namespace PEBakery.Core
 
     #region CodeInfo 07 - UI
     public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
+    [Serializable]
     public class CodeInfo_Message : CodeInfo
     { // Message,<Message>[,ICON][,TIMEOUT]
         public string Message;
@@ -600,6 +618,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Echo : CodeInfo
     {
         public string Message;
@@ -640,8 +659,10 @@ namespace PEBakery.Core
         Split,
     }
 
+    [Serializable]
     public class StrFormatInfo { }
 
+    [Serializable]
     public class StrFormatInfo_Bytes : StrFormatInfo
     { // StrFormat,Bytes,<Integer>,<DestVarName>
         public string ByteSize;
@@ -659,6 +680,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_CeilFloorRound : StrFormatInfo
     {
         // StrFormat,Ceil,<SizeVar>,<CeilTo>
@@ -682,6 +704,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Date : StrFormatInfo
     { // StrFormat,Date,<DestVarName>,<FormatString>
         public string DestVarName;
@@ -703,6 +726,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Path : StrFormatInfo
     {
         // StrFormat,FileName,<FilePath>,<DestVarName>
@@ -727,6 +751,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Arithmetic : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Inc,<DestVarName>,<Integer>
@@ -753,6 +778,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_LeftRight : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Left,<SrcString>,<Integer>,<DestVarName>
@@ -780,6 +806,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
     { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVarName>
         public string SrcString;
@@ -809,6 +836,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Len : StrFormatInfo
     { // StrFormat,Len,<SrcString>,<DestVarName>
         public string SrcString;
@@ -830,6 +858,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Trim : StrFormatInfo
     {
         // StrFormat,LTrim,<SrcString>,<Integer>,<DestVarName>
@@ -859,6 +888,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_NTrim : StrFormatInfo
     { // StrFormat,NTrim,<SrcString>,<DestVarName>
         public string SrcString;
@@ -880,6 +910,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Pos : StrFormatInfo
     { // StrFormat,Pos,<SrcString>,<SubString>,<DestVarName>
         public string SrcString;
@@ -905,6 +936,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Replace : StrFormatInfo
     {
         // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
@@ -937,6 +969,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_ShortLongPath : StrFormatInfo
     {
         // StrFormat,ShortPath,<SrcString>,<DestVarName>
@@ -961,6 +994,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Split : StrFormatInfo
     { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVarName>
         public string SrcString;
@@ -992,6 +1026,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 08 - String
+    [Serializable]
     public class CodeInfo_StrFormat : CodeInfo
     {
         public StrFormatType Type;
@@ -1018,6 +1053,7 @@ namespace PEBakery.Core
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>
+    [Serializable]
     public class CodeInfo_ShellExecute : CodeInfo
     {
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
@@ -1088,7 +1124,7 @@ namespace PEBakery.Core
         License
     }
 
-    public delegate string ArugmentPreprocess(string str);
+    [Serializable]
     public class BranchCondition
     {
         public BranchConditionType Type;
@@ -1509,7 +1545,6 @@ namespace PEBakery.Core
             return match;
         }
 
-
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -1569,6 +1604,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 10 - Branch
+    [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
         public string PluginFile;
@@ -1597,6 +1633,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
         public bool Break;
@@ -1636,6 +1673,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_If : CodeInfo
     {
         public BranchCondition Condition;
@@ -1663,6 +1701,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Else : CodeInfo
     {
         public CodeCommand Embed;
@@ -1688,6 +1727,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 11 - Control
+    [Serializable]
     public class CodeInfo_Set : CodeInfo
     {
         public string VarKey;
@@ -1719,6 +1759,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_GetParam : CodeInfo
     {
         public int Index;
@@ -1740,6 +1781,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_PackParam : CodeInfo
     { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
         public int StartIndex;
@@ -1770,6 +1812,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 12 - Macro
+    [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {
         public string MacroType;
