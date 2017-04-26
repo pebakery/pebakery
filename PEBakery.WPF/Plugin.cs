@@ -237,28 +237,7 @@ namespace PEBakery.Core
                         sections = ParsePlugin();
                         CheckMainSection(PluginType.Link);
 
-                        if (sections["Main"].IniDict.ContainsKey("Link"))
-                        {
-                            /*
-                            string linkPath = Path.Combine(baseDir, sections["Main"].IniDict["Link"]);
-                            if (File.Exists(linkPath) == false) // Invalid link
-                                throw new PluginParseException($"Invalid link path in plugin {fullPath}");
-
-                            try
-                            {
-                                string ext = Path.GetExtension(linkPath);
-                                if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                                    this.link = new Plugin(PluginType.Link, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
-                                else
-                                    this.link = new Plugin(PluginType.Plugin, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
-                            }
-                            catch (Exception)
-                            {
-                                throw new PluginParseException($"Linked plugin {linkPath} is invalid");
-                            }
-                            */
-                        }
-                        else
+                        if (sections["Main"].IniDict.ContainsKey("Link") == false)
                         {
                             throw new PluginParseException($"Invalid link path in plugin {fullPath}");
                         }
@@ -511,7 +490,10 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return this.title;
+            if (type == PluginType.Link)
+                return sections["Main"].IniDict["Link"];
+            else
+                return this.title;
         }
     }
 

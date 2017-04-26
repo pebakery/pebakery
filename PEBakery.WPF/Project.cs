@@ -160,6 +160,9 @@ namespace PEBakery.Core
         {
             List<int> removeIdxs = new List<int>();
 
+            // Doing this will consume memory, but also greatly increase performance.
+            DB_PluginCache[] cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
+                    
             var links = allPluginList.Where(x => x.Type == PluginType.Link);
             Task[] tasks = links.Select(p =>
             {
@@ -179,10 +182,10 @@ namespace PEBakery.Core
                         if (pluginCache != null)
                         { // Case of PluginCache enabled
                             DateTime lastWriteTime = File.GetLastWriteTimeUtc(linkFullPath);
-                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
-                                .FirstOrDefault(
-                                    x => x.Path.Equals(linkPath, StringComparison.Ordinal));
-                            if (pCache != null && DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
+                            DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
+                            if (pCache != null && 
+                                pCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
+                                DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
                             {
                                 try
                                 {
@@ -198,7 +201,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        if (p.Link == null)
+                        if (link == null)
                         {
                             // TODO : Lazy loading of link, takes too much time at start
                             string ext = Path.GetExtension(linkFullPath);
@@ -290,9 +293,12 @@ namespace PEBakery.Core
             string mainPluginPath = Path.Combine(projectDir, "script.project");
             allPluginList = new List<Plugin>();
 
+            // Doing this will consume memory, but also greatly increase performance.
+            DB_PluginCache[] cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
+
             // Load plugins from disk or cache
             Task[] tasks = allPluginPathList.Select(pPath =>
-            {
+            {              
                 return Task.Run(() =>
                 {
                     int cached = 0;
@@ -303,10 +309,10 @@ namespace PEBakery.Core
                         { // PluginCache enabled
                             DateTime lastWriteTime = File.GetLastWriteTimeUtc(pPath);
                             string sPath = pPath.Remove(0, baseDir.Length + 1); // 1 for \
-                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
-                                .FirstOrDefault(
-                                    x => sPath.Equals(x.Path, StringComparison.Ordinal));
-                            if (pCache != null && DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
+                            DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+                            if (pCache != null &&
+                                pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
+                                DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
                             {
                                 using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
                                 {

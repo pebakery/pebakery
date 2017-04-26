@@ -259,19 +259,7 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 watch = Stopwatch.StartNew();
-                foreach (Project project in projects.Projects)
-                {
-                    var tasks = project.AllPluginList.Select(p =>
-                    {
-                        return Task.Run(() =>
-                        {
-                            pluginCache.CachePlugin(p);
-
-                            worker.ReportProgress(0);
-                        });
-                    }).ToArray();
-                    Task.WaitAll(tasks);
-                }
+                pluginCache.CachePlugins(projects, worker);
             };
 
             cacheWorker.WorkerReportsProgress = true;
@@ -556,18 +544,22 @@ namespace PEBakery.WPF
                     else
                         node.Data.Selected = SelectedState.False;
 
-                    if (0 < this.Child.Count)
-                    { // Set child plugins, too -> Top-down propagation
-                        foreach (TreeViewModel childModel in this.Child)
-                        {
-                            if (value)
-                                childModel.Checked = true;
-                            else
-                                childModel.Checked = false;
+                    if (node.Data.Level != Project.MainLevel)
+                    {
+                        if (0 < this.Child.Count)
+                        { // Set child plugins, too -> Top-down propagation
+                            foreach (TreeViewModel childModel in this.Child)
+                            {
+                                if (value)
+                                    childModel.Checked = true;
+                                else
+                                    childModel.Checked = false;
+                            }
                         }
-                    }
 
-                    ParentCheckedPropagation();
+                        ParentCheckedPropagation();
+                    }
+                    
                     OnPropertyUpdate("Checked");
                 }
             }
@@ -611,7 +603,7 @@ namespace PEBakery.WPF
             get
             {
                 if (node.Data.Selected == SelectedState.None)
-                    return Visibility.Hidden;
+                    return Visibility.Collapsed;
                 else
                     return Visibility.Visible;
             }

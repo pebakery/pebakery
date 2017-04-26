@@ -27,50 +27,79 @@
         FontFamily="Segoe UI"
         mc:Ignorable="d"
         Title="PEBakery Setting" Height="300" Width="400">
-    <StackPanel>
-        <TextBlock
-            Margin="20, 20, 20, 0"
-            Text="Scale Factor for Plugin Interface"></TextBlock>
-        <DockPanel
-            Margin="20, 20, 20, 0">
-            <TextBlock
-                DockPanel.Dock="Right"
-                TextAlignment="Right"
-                Text="%">
-            </TextBlock>
-            <TextBlock
-                DockPanel.Dock="Right"
-                Margin="20, 0, 0, 0"
-                Width="40" 
-                Name="ScaleFactorBox"
-                Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
-                TextAlignment="Right">
-            </TextBlock>
-            <Slider
-                Minimum="100" Maximum="200"
-                TickPlacement="BottomRight"
-                TickFrequency="10"
-                IsSnapToTickEnabled="True"
-                Name="ScaleFactorSlider"
-                Value="{Binding ScaleFactor}">
-            </Slider>
-        </DockPanel>
-        
-        <CheckBox
-            Margin="20, 20, 20, 0"
-            IsEnabled="False"
-            Content="Convert all plugins to UTF-8">
-        </CheckBox>
-
-        <CheckBox
-            Margin="20, 20, 20, 0"
-            IsEnabled="False"
-            Content="Enable Long File Path Support">
-        </CheckBox>
-
-
-        <Grid
-            Margin="40, 10, 20, 0">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="60"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TabControl Grid.Row="0">
+            <TabItem Header="Paths">
+                <StackPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="General">
+                <StackPanel>
+                    <CheckBox
+                        Name="CheckBox_EnableLongFilePath"
+                        Margin="15, 15, 15, 0"
+                        Content="Enable Long File Path Support"
+                        ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
+                        Checked="CheckBox_EnableLongFilePath_Checked">
+                    </CheckBox>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Interface">
+                <StackPanel>
+                    <TextBlock
+                        Margin="15, 15, 15, 0"
+                        Text="Scale Factor for Plugin Interface">
+                    </TextBlock>
+                    <DockPanel
+                        Margin="15, 10, 15, 0">
+                        <TextBlock
+                            DockPanel.Dock="Right"
+                            TextAlignment="Right"
+                            Text="%">
+                        </TextBlock>
+                        <TextBlock
+                            DockPanel.Dock="Right"
+                            Margin="20, 0, 0, 0"
+                            Width="40" 
+                            Name="ScaleFactorBox"
+                            Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
+                            TextAlignment="Right">
+                        </TextBlock>
+                        <Slider
+                            Minimum="100" Maximum="200"
+                            TickPlacement="BottomRight"
+                            TickFrequency="10"
+                            IsSnapToTickEnabled="True"
+                            Name="ScaleFactorSlider"
+                            Value="{Binding ScaleFactor}">
+                        </Slider>
+                    </DockPanel>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Plugin">
+                <StackPanel>
+                    <CheckBox
+                        Name="CheckBox_CachePlugin"
+                        Margin="15, 15, 15, 0"
+                        Content="Enable plugin caching"
+                        ToolTip="Turn off this feature if your system is low in memory."
+                        Checked="CheckBox_CachePlugin_Checked">
+                    </CheckBox>
+                    <CheckBox
+                        Name="CheckBox_ConvertToUTF8"
+                        Margin="15, 15, 15, 0"
+                        Content="Convert Plugins to UTF-8 automatically"
+                        ToolTip="Turning on will break compability with WinBuilder 082."
+                        Checked="CheckBox_ConvertToUTF8_Checked">
+                    </CheckBox>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        <Grid Grid.Row="1" Margin="20, 15, 20, 15">
             <Grid.RowDefinitions>
                 <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
@@ -101,5 +130,6 @@
                 Content="Cancel">
             </Button>
         </Grid>
-    </StackPanel>
+    </Grid>
+    
 </Window>

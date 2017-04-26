@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace PEBakery.WPF
 {
-    /// <summary>
-    /// SettingWindow.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class SettingWindow : Window
     {
         public SettingViewModel Model;
@@ -37,6 +34,21 @@ namespace PEBakery.WPF
         private void DefaultButton_Click(object sender, RoutedEventArgs e)
         {
             Model.ScaleFactor = 100;
+        }
+
+        private void CheckBox_EnableLongFilePath_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void CheckBox_CachePlugin_Checked(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void CheckBox_ConvertToUTF8_Checked(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 
@@ -59,7 +71,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("ScaleFactor");
             }
         }
-
 
         private double scaleFactor;
         public double ScaleFactor
