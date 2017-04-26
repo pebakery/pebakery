@@ -48,7 +48,10 @@ namespace PEBakery.Core
         private PluginType type;
         [NonSerialized]
         private Project project;
+        [NonSerialized]
         private Plugin link;
+        [NonSerialized]
+        private bool linkLoaded;
         private string title;
         private string author;
         private string description;
@@ -62,7 +65,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.FullPath;
                 else
                     return fullPath;
@@ -74,7 +77,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Sections;
                 else
                     return sections;
@@ -84,7 +87,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.MainInfo;
                 else
                     return sections["Main"].Get() as StringDictionary;
@@ -93,11 +96,12 @@ namespace PEBakery.Core
         
         public PluginType Type { get => type; }
         public Plugin Link { get => link; set => link = value; }
+        public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
         public Project Project
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Project;
                 else
                     return project;
@@ -111,7 +115,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Title;
                 else
                     return title;
@@ -121,7 +125,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Author;
                 else
                     return author;
@@ -131,7 +135,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Description;
                 else
                     return description;
@@ -141,7 +145,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Version;
                 else
                     return version;
@@ -151,7 +155,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Level;
                 else
                     return level;
@@ -161,7 +165,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Mandatory;
                 else
                     return mandatory;
@@ -180,7 +184,7 @@ namespace PEBakery.Core
                     sections["Main"].IniDict["Selected"] = str;
                     Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
                 }
-                else if (type == PluginType.Link)
+                else if (type == PluginType.Link && linkLoaded)
                 {
                     sections["Main"].IniDict["Selected"] = str;
                     Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
@@ -189,17 +193,18 @@ namespace PEBakery.Core
                     link.selected = value;
                 }
 
-                // TODO : Plugin Disable= 
+                // TODO : Plugin Disable
                 // Need Engine's Variable system to be implemented
             }
         }
 
-        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, string baseDir, int? level)
+        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level)
         {
             this.fullPath = fullPath;
             this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
             this.type = type;
             this.project = project;
+            this.linkLoaded = false;
 
             switch (type)
             {
@@ -234,6 +239,7 @@ namespace PEBakery.Core
 
                         if (sections["Main"].IniDict.ContainsKey("Link"))
                         {
+                            /*
                             string linkPath = Path.Combine(baseDir, sections["Main"].IniDict["Link"]);
                             if (File.Exists(linkPath) == false) // Invalid link
                                 throw new PluginParseException($"Invalid link path in plugin {fullPath}");
@@ -250,6 +256,7 @@ namespace PEBakery.Core
                             {
                                 throw new PluginParseException($"Linked plugin {linkPath} is invalid");
                             }
+                            */
                         }
                         else
                         {

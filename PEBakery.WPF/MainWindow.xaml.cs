@@ -35,8 +35,6 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;
-using System.Security.Cryptography;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 
 namespace PEBakery.WPF
@@ -47,7 +45,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        private List<Project> projectList;
+        private ProjectCollection projects;
         private string baseDir;
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
@@ -97,8 +95,6 @@ namespace PEBakery.WPF
                     Console.WriteLine("Sorry, help message not implemented\r\n");
                 }
             }
-
-            this.projectList = new List<Project>();
 
             this.baseDir = argBaseDir;
             this.treeModel = new TreeViewModel(null);
@@ -154,52 +150,37 @@ namespace PEBakery.WPF
             allPluginCount = 0;
             int loadedPluginCount = 0;
             int cachedPluginCount = 0;
+            int stage2LoadedCount = 0;
 
             MainProgressRing.IsActive = true;
             LoadProgressBar.Visibility = Visibility.Visible;
             StatusBar.Visibility = Visibility.Collapsed;
             loadWorker = new BackgroundWorker();
+
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 watch = Stopwatch.StartNew();
-                this.projectList = new List<Project>();
 
-                string[] projArray = Directory.GetDirectories(System.IO.Path.Combine(baseDir, "Projects"));
-                List<string> projList = new List<string>();
-                foreach (string dir in projArray)
-                {
-                    if (File.Exists(System.IO.Path.Combine(baseDir, "Projects", dir, "script.project")))
-                    {
-                        projList.Add(dir);
-                        allPluginCount += Project.GetPluginCount(System.IO.Path.Combine(baseDir, "Projects", dir));
-                    }
-                }
+                projects = new ProjectCollection(baseDir, pluginCache);
+
+                allPluginCount = projects.PrepareLoad(out int allProcessCount);
+                Dispatcher.Invoke(() => { LoadProgressBar.Maximum = allProcessCount; });
+                projects.Load(worker);
 
                 Dispatcher.Invoke(() =>
                 {
-                    LoadProgressBar.Maximum = allPluginCount;
-                });
-
-                foreach (string dir in projList)
-                {
-                    Project project = new Project(baseDir, System.IO.Path.GetFileName(dir), pluginCache, worker);
-                    project.Load();
-                    projectList.Add(project);
-                }
-
-                Dispatcher.Invoke(() =>
-                {
-                    foreach (Project project in this.projectList)
+                    foreach (Project project in projects.Projects)
                     {
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
                         RecursivePopulateMainTreeView(plugins, this.treeModel);
                     };
                     MainTreeView.DataContext = treeModel;
                     currentTree = treeModel.Child[0];
-                    DrawPlugin(projectList[0].MainPlugin);
+                    if (projects[0] != null)
+                        DrawPlugin(projects[0].MainPlugin);
                 });
             };
             loadWorker.WorkerReportsProgress = true;
@@ -207,21 +188,42 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref loadedPluginCount);
                 LoadProgressBar.Value = loadedPluginCount;
-                if (e.ProgressPercentage == 1)
-                { // Cached
-                    Interlocked.Increment(ref cachedPluginCount);
-                    if (e.UserState == null)
-                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Cached - Error";
-                    else
-                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Cached - {e.UserState}";
-                }
-                else
+                string msg = string.Empty;
+                switch (e.ProgressPercentage)
                 {
-                    if (e.UserState == null)
-                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) Error";
-                    else
-                        PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}({loadedPluginCount} / {allPluginCount}) {e.UserState}";
+                    case 0:  // Stage 1
+                        if (e.UserState == null)
+                            msg = $"Error";
+                        else
+                            msg = $"{e.UserState}";
+                        break;
+                    case 1:  // Stage 1, Cached
+                        Interlocked.Increment(ref cachedPluginCount);
+                        if (e.UserState == null)
+                            msg = $"Cached - Error";
+                        else
+                            msg = $"Cached - {e.UserState}";
+                        break;
+                    case 2:  // Stage 2
+                        Interlocked.Increment(ref stage2LoadedCount); 
+                        if (e.UserState == null)
+                            msg = $"Error";
+                        else
+                            msg = $"{e.UserState}";
+                        break;
+                    case 3:  // Stage 2, Cached
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        if (e.UserState == null)
+                            msg = $"Cached - Error";
+                        else
+                            msg = $"Cached - {e.UserState}";
+                        break;
                 }
+                int stage = e.ProgressPercentage / 2 + 1;
+                int loadedCount = loadedPluginCount;
+                if (stage == 2)
+                    loadedCount = stage2LoadedCount;
+                PluginDescription.Text = $"PEBakery loading...{Environment.NewLine}Stage {stage} ({loadedCount} / {allPluginCount}) {Environment.NewLine}{msg}";
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -257,52 +259,13 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 watch = Stopwatch.StartNew();
-                foreach (Project project in projectList)
+                foreach (Project project in projects.Projects)
                 {
                     var tasks = project.AllPluginList.Select(p =>
                     {
                         return Task.Run(() =>
                         {
-                            if (p.Type == PluginType.Link)
-                            {
-                                worker.ReportProgress(0);
-                                return;
-                            }
-
-                            // Is cache exist?
-                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(p.DirectFullPath);
-                            string sPath = p.FullPath.Remove(0, baseDir.Length + 1);
-                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
-                                .FirstOrDefault(x => sPath.Equals(x.Path, StringComparison.OrdinalIgnoreCase));
-                            if (pCache == null) // Cache not exists
-                            {
-                                pCache = new DB_PluginCache()
-                                {
-                                    Path = sPath,
-                                    LastWriteTime = lastWriteTime,
-                                };
-
-                                BinaryFormatter formatter = new BinaryFormatter();
-                                using (MemoryStream mem = new MemoryStream())
-                                {
-                                    formatter.Serialize(mem, p);
-                                    pCache.Serialized = mem.ToArray();
-                                }
-
-                                pluginCache.Insert(pCache);
-                            }
-                            else if (DateTime.Equals(pCache.LastWriteTime, lastWriteTime) == false) // Cache is outdated
-                            {
-                                pCache.LastWriteTime = lastWriteTime;
-                                BinaryFormatter formatter = new BinaryFormatter();
-                                using (MemoryStream mem = new MemoryStream())
-                                {
-                                    formatter.Serialize(mem, p);
-                                    pCache.Serialized = mem.ToArray();
-                                }
-
-                                pluginCache.Update(pCache);
-                            }
+                            pluginCache.CachePlugin(p);
 
                             worker.ReportProgress(0);
                         });
