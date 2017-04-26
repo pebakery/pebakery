@@ -52,11 +52,17 @@ namespace PEBakery.WPF
             this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
             this.logger = logger;
             this.variables = plugin.Project.Variables;
-            if (plugin.Sections.ContainsKey("Interface"))
+
+            // Check if plugin has custom interface section
+            string interfaceSectionName = "Interface";
+            if (plugin.MainInfo.ContainsKey("Interface")) 
+                interfaceSectionName = plugin.MainInfo["Interface"];
+
+            if (plugin.Sections.ContainsKey(interfaceSectionName))
             {
                 try
                 {
-                    this.uiCodes = plugin.Sections["Interface"].GetUICodes(true);
+                    this.uiCodes = plugin.Sections[interfaceSectionName].GetUICodes(true);
                 }
                 catch
                 {

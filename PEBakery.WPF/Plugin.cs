@@ -813,7 +813,7 @@ namespace PEBakery.Core
 
         public void ConvertLineToUICodeSection(List<string> lines)
         {
-            if (type == SectionType.Interface && dataType == SectionDataType.Lines)
+            if ((type == SectionType.Interface || type == SectionType.Code) && dataType == SectionDataType.Lines)
             {
                 uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<LogInfo> logList);
                 foreach (LogInfo log in logList)
@@ -911,7 +911,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.Interfaces)
                 return UICodes; // this.UICodes for Load()
             else if (convertIfLine && dataType == SectionDataType.Lines)
-            {
+            { // SectionDataType.Codes for custom interface section
                 ConvertLineToUICodeSection(this.Lines); // this.Lines for Load()
                 return uiCodes;
             }
