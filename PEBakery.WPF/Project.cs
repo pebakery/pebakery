@@ -30,6 +30,8 @@ using PEBakery.Lib;
 using PEBakery.Exceptions;
 using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
+using SQLite.Net;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -103,10 +105,10 @@ namespace PEBakery.Core
         /// Get pluginPathDict and allPluginPathList
         /// </summary>
         /// <param name="projNameList"></param>
-        public int GetPluginPaths(List<string> projNameList, out int processCount)
+        public int GetPluginPaths(List<string> projNameList, out int linkCount)
         {
-            int count = 0;
-            processCount = 0;
+            int allCount = 0;
+            linkCount = 0;
             foreach (string projName in projNameList)
             {
                 List<string> pluginPathList = new List<string>();
@@ -123,37 +125,47 @@ namespace PEBakery.Core
                 pluginPathList.AddRange(plugins);
                 pluginPathList.AddRange(links);
 
-                count += pluginPathList.Count;
-                processCount += pluginPathList.Count;
-                processCount += links.Length; // links should be added twice since they are processed twice
+                allCount += pluginPathList.Count;
+                linkCount += links.Length; // links should be added twice since they are processed twice
 
                 pluginPathDict[projName] = pluginPathList;
                 allPluginPathList.AddRange(pluginPathList);
             }
-            return count;
+            return allCount;
         }
 
         public void Load(BackgroundWorker worker)
         {
-            foreach (var kv in pluginPathDict)
+            try
             {
-                Project project = new Project(baseDir, kv.Key);
+                foreach (var kv in pluginPathDict)
+                {
+                    Project project = new Project(baseDir, kv.Key);
 
-                // Load plugins
-                project.Load(kv.Value, pluginCache, worker);
+                    // Load plugins
+                    project.Load(kv.Value, pluginCache, worker);
 
-                // Add them to list
-                allPluginList.AddRange(project.AllPluginList);
+                    // Add them to list
+                    allPluginList.AddRange(project.AllPluginList);
 
-                projectDict[kv.Key] = project;
+                    projectDict[kv.Key] = project;
+                }
+
+                // Populate *.link plugins
+                LoadLinks(worker);
+
+                // PostLoad plugins
+                foreach (var kv in projectDict)
+                    kv.Value.PostLoad();
+            }
+            catch (SQLiteException except)
+            { // Update failure
+                string msg = $"SQLite Error : {except.Message}\n\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
+                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Shutdown(1);
             }
 
-            // Populate *.link plugins
-            LoadLinks(worker);
-
-            // PostLoad plugins
-            foreach (var kv in projectDict)
-                kv.Value.PostLoad();
+            
         }
 
         private void LoadLinks(BackgroundWorker worker)
@@ -161,7 +173,9 @@ namespace PEBakery.Core
             List<int> removeIdxs = new List<int>();
 
             // Doing this will consume memory, but also greatly increase performance.
-            DB_PluginCache[] cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
+            DB_PluginCache[] cacheDB = null;
+            if (pluginCache != null)
+                cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
                     
             var links = allPluginList.Where(x => x.Type == PluginType.Link);
             Task[] tasks = links.Select(p =>
@@ -294,7 +308,9 @@ namespace PEBakery.Core
             allPluginList = new List<Plugin>();
 
             // Doing this will consume memory, but also greatly increase performance.
-            DB_PluginCache[] cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
+            DB_PluginCache[] cacheDB = null;
+            if (pluginCache != null)
+                cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
 
             // Load plugins from disk or cache
             Task[] tasks = allPluginPathList.Select(pPath =>

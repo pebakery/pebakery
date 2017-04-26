@@ -173,7 +173,13 @@ namespace PEBakery.Core
         }
         public SelectedState Selected
         {
-            get => selected;
+            get
+            {
+                if (type == PluginType.Link && linkLoaded)
+                    return link.Selected;
+                else
+                    return selected;
+            }
             set
             {
                 selected = value;

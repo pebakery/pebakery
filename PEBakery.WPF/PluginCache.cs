@@ -11,6 +11,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -27,27 +28,35 @@ namespace PEBakery.Core
 
         public void CachePlugins(ProjectCollection projects, BackgroundWorker worker)
         {
-            foreach (Project project in projects.Projects)
+            try
             {
-                // Remove duplicate
-                var pUniqueList = project.AllPluginList
-                    .GroupBy(x => x.DirectFullPath)
-                    .Select(x => x.First());
-
-                listLock = new ReaderWriterLockSlim();
-                List<DB_PluginCache> inMemDB = Table<DB_PluginCache>().ToList();
-                var tasks = pUniqueList.Select(p =>
+                foreach (Project project in projects.Projects)
                 {
-                    return Task.Run(() =>
+                    // Remove duplicate
+                    var pUniqueList = project.AllPluginList
+                        .GroupBy(x => x.DirectFullPath)
+                        .Select(x => x.First());
+
+                    listLock = new ReaderWriterLockSlim();
+                    List<DB_PluginCache> inMemDB = Table<DB_PluginCache>().ToList();
+                    var tasks = pUniqueList.Select(p =>
                     {
-                        CachePlugin(p, inMemDB);
+                        return Task.Run(() =>
+                        {
+                            bool updated = CachePlugin(p, inMemDB);
+                            worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
+                        });
+                    }).ToArray();
+                    Task.WaitAll(tasks);
 
-                        worker.ReportProgress(0);
-                    });
-                }).ToArray();
-                Task.WaitAll(tasks);
-
-                InsertOrReplaceAll(inMemDB);
+                    InsertOrReplaceAll(inMemDB);
+                }
+            }
+            catch (SQLiteException e)
+            { // Update failure
+                string msg = $"SQLite Error : {e.Message}\n\nCache database is corrupted. Please delete PEBakeryCache.db and restart.";
+                MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Shutdown(1);
             }
         }
 
@@ -56,12 +65,14 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="p"></param>
         /// <param name="inMemDB">Use NULL to put direct into .db file</param>
-        public void CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
+        /// <returns>Return true if cache is updated</returns>
+        public bool CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
         {
             // Is cache exist?
             DateTime lastWriteTime = File.GetLastWriteTimeUtc(p.DirectFullPath);
             string sPath = p.DirectFullPath.Remove(0, p.Project.BaseDir.Length + 1);
 
+            bool updated = false;
             DB_PluginCache pCache = null;
             int inMemIdx = 0;
             if (inMemDB == null)
@@ -106,10 +117,10 @@ namespace PEBakery.Core
                     pCache.Serialized = mem.ToArray();
                 }
 
-
                 if (inMemDB == null)
                 {
                     Insert(pCache);
+                    updated = true;
                 }
                 else
                 {
@@ -117,6 +128,7 @@ namespace PEBakery.Core
                     try
                     {
                         inMemDB.Add(pCache);
+                        updated = true;
                     }
                     finally
                     {
@@ -138,6 +150,7 @@ namespace PEBakery.Core
                 if (inMemDB == null)
                 {
                     Update(pCache);
+                    updated = true;
                 }
                 else
                 {
@@ -145,6 +158,7 @@ namespace PEBakery.Core
                     try
                     {
                         inMemDB[inMemIdx] = pCache;
+                        updated = true;
                     }
                     finally
                     {
@@ -154,7 +168,12 @@ namespace PEBakery.Core
             }
 
             if (p.Type == PluginType.Link && p.LinkLoaded)
-                CachePlugin(p.Link, inMemDB);
+            {
+                bool linkUpdated = CachePlugin(p.Link, inMemDB);
+                updated = updated || linkUpdated;
+            }
+
+            return updated;
         }
 
     }

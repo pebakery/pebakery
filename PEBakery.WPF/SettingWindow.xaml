@@ -44,7 +44,7 @@
                         Margin="15, 15, 15, 0"
                         Content="Enable Long File Path Support"
                         ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
-                        Checked="CheckBox_EnableLongFilePath_Checked">
+                        IsChecked="{Binding General_EnableLongFilePath}">
                     </CheckBox>
                 </StackPanel>
             </TabItem>
@@ -75,7 +75,7 @@
                             TickFrequency="10"
                             IsSnapToTickEnabled="True"
                             Name="ScaleFactorSlider"
-                            Value="{Binding ScaleFactor}">
+                            Value="{Binding Interface_ScaleFactor}">
                         </Slider>
                     </DockPanel>
                 </StackPanel>
@@ -85,16 +85,16 @@
                     <CheckBox
                         Name="CheckBox_CachePlugin"
                         Margin="15, 15, 15, 0"
-                        Content="Enable plugin caching"
+                        Content="Enable Plugin Caching"
                         ToolTip="Turn off this feature if your system is low in memory."
-                        Checked="CheckBox_CachePlugin_Checked">
+                        IsChecked="{Binding Plugin_EnableCache}">
                     </CheckBox>
                     <CheckBox
                         Name="CheckBox_ConvertToUTF8"
                         Margin="15, 15, 15, 0"
                         Content="Convert Plugins to UTF-8 automatically"
                         ToolTip="Turning on will break compability with WinBuilder 082."
-                        Checked="CheckBox_ConvertToUTF8_Checked">
+                        IsChecked="{Binding Plugin_ConvertToUTF8}">
                     </CheckBox>
                 </StackPanel>
             </TabItem>
