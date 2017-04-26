@@ -131,7 +131,7 @@ namespace PEBakery.Core
             int.TryParse(args[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int width);
             int.TryParse(args[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
             Rect rect = new Rect(x, y, width, height);
-            UICommandInfo info = ParseUICommandInfo(type, args);
+            UIInfo info = ParseUICommandInfo(type, args);
             if (info.Valid == false)
                 return new UICommand(rawLine, addr, key);
             return new UICommand(rawLine, addr, key, text, visibility, type, rect, info);
@@ -155,11 +155,11 @@ namespace PEBakery.Core
             return type;
         }
 
-        private static UICommandInfo ParseUICommandInfo(UIControlType type, List<string> arguments)
+        private static UIInfo ParseUICommandInfo(UIControlType type, List<string> arguments)
         {
             // Only use fields starting from 8th operand
             List<string> args = arguments.Skip(6).ToList(); // Remove Text, Visibility, X, Y, width, height
-            UICommandInfo error = new UICommandInfo(false, null);
+            UIInfo error = new UIInfo(false, null);
 
             switch (type)
             {
@@ -282,16 +282,19 @@ namespace PEBakery.Core
                         // Still had not figured why SectionName and ProgressShow duplicate
                         // It has 2 to 6 fixed operands. - Need more research.
                         // <SectionName><Picture>[ShowProgress][Boolean?][SectionName(?)][ShowProgress{?}][Tooltip]
-                        const int minOpCount = 2;
+                        const int minOpCount = 1;
                         const int maxOpCount = 2;
                         const int optOpCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
                             return error;
 
                         string sectionName = args[0];
-                        string picture = args[1];
-                        if (string.Equals(args[1], "0", StringComparison.OrdinalIgnoreCase))
-                            picture = null;
+                        string picture = null;
+                        if (2 <= args.Count)
+                        {
+                            if (args[1].Equals("0", StringComparison.OrdinalIgnoreCase) == false)
+                                picture = args[1];
+                        }
                         bool showProgress = false;
                         if (3 <= args.Count)
                         {

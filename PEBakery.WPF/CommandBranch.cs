@@ -171,7 +171,7 @@ namespace PEBakery.Core
 
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, $"If - {msg}", cmd, s.CurDepth));
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);

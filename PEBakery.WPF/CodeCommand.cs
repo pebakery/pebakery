@@ -27,11 +27,11 @@ using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
 using System.Windows;
+using WPFCustomMessageBox;
 
 namespace PEBakery.Core
 {
     #region CodeType
-
     public enum CodeType
     {
         // 00 Misc
@@ -47,7 +47,7 @@ namespace PEBakery.Core
         // 05 Network
         WebGet = 500, WebGetIfNotExist,
         // 06 Attach, Interface
-        ExtractFile = 600, ExtractAndRun, ExtractAllFiles, ExtractAllFilesIfNotExist, Encode,
+        ExtractFile = 600, ExtractAndRun, ExtractAllFiles, Encode,
         // 07 UI
         Message = 700, Echo, Retrieve, Visible,
         // 08 StringFormat
@@ -57,14 +57,21 @@ namespace PEBakery.Core
         // 10 Branch
         Run = 1000, Exec, Loop, If, Else, Begin, End,
         // 11 Control
-        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, // GetParam and PackParam will be depracted, PEBakery can have infinite number of section params.
+        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
         // 12 External Macro
         Macro = 1200,
     }
 
+    public enum DeprecatedCodeType
+    {
+        WebGetIfNotExist, // Better to have as Macro
+        GetParam, // PEBakery can have infinite number of section params.
+        PackParam, // PEBakery can have infinite number of section params.
+    };
     #endregion
 
     #region SectionAddress
+    [Serializable]
     public struct SectionAddress
     {
         public Plugin Plugin;
@@ -107,6 +114,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeCommand
+    [Serializable]
     public class CodeCommand
     {
         public string RawCode;
@@ -130,7 +138,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeCommandInfo
+    #region CodeInfo
+    [Serializable]
     public class CodeInfo
     {
         /// <summary>
@@ -146,6 +155,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 01 - File
+    [Serializable]
     public class CodeInfo_Expand : CodeInfo
     {
         public string SrcCab;
@@ -184,6 +194,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_FileCopy : CodeInfo
     {
         public string SrcFile;
@@ -222,6 +233,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
     { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16 | UTF16BE | ANSI]
         public string FilePath;
@@ -263,6 +275,7 @@ namespace PEBakery.Core
 
     #region CodeInfo 03 - Text
     public enum TXTAddLineMode { Append, Prepend, Place };
+    [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
     {
         public string FileName;
@@ -295,6 +308,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
     {
         public string FileName;
@@ -320,6 +334,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelLine : CodeInfo
     { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
         public string FileName;
@@ -341,6 +356,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelSpaces : CodeInfo
     { // TXTDelSpaces,<FileName>
         public string FileName;
@@ -358,6 +374,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_TXTDelEmptyLines : CodeInfo
     { // TXTDelEmptyLines,<FileName>
         public string FileName;
@@ -377,6 +394,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 04 - INI
+    [Serializable]
     public class CodeInfo_INIWrite : CodeInfo
     {
         public string FileName;
@@ -406,6 +424,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIRead : CodeInfo
     {
         public string FileName;
@@ -436,6 +455,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIDelete : CodeInfo
     {
         public string FileName;
@@ -461,6 +481,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIAddSection : CodeInfo
     { 
         public string FileName;
@@ -482,6 +503,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
     {
         public string FileName;
@@ -503,6 +525,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIWriteTextLine : CodeInfo
     {
         public string FileName;
@@ -532,6 +555,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_INIMerge : CodeInfo
     {
         // INIMerge,<SrcFileName>,<DestFileName>
@@ -565,6 +589,7 @@ namespace PEBakery.Core
 
     #region CodeInfo 07 - UI
     public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
+    [Serializable]
     public class CodeInfo_Message : CodeInfo
     { // Message,<Message>[,ICON][,TIMEOUT]
         public string Message;
@@ -593,6 +618,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Echo : CodeInfo
     {
         public string Message;
@@ -633,8 +659,10 @@ namespace PEBakery.Core
         Split,
     }
 
+    [Serializable]
     public class StrFormatInfo { }
 
+    [Serializable]
     public class StrFormatInfo_Bytes : StrFormatInfo
     { // StrFormat,Bytes,<Integer>,<DestVarName>
         public string ByteSize;
@@ -652,6 +680,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_CeilFloorRound : StrFormatInfo
     {
         // StrFormat,Ceil,<SizeVar>,<CeilTo>
@@ -675,6 +704,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Date : StrFormatInfo
     { // StrFormat,Date,<DestVarName>,<FormatString>
         public string DestVarName;
@@ -696,6 +726,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Path : StrFormatInfo
     {
         // StrFormat,FileName,<FilePath>,<DestVarName>
@@ -720,6 +751,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Arithmetic : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Inc,<DestVarName>,<Integer>
@@ -746,6 +778,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_LeftRight : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Left,<SrcString>,<Integer>,<DestVarName>
@@ -773,6 +806,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
     { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVarName>
         public string SrcString;
@@ -802,6 +836,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Len : StrFormatInfo
     { // StrFormat,Len,<SrcString>,<DestVarName>
         public string SrcString;
@@ -823,6 +858,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Trim : StrFormatInfo
     {
         // StrFormat,LTrim,<SrcString>,<Integer>,<DestVarName>
@@ -852,6 +888,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_NTrim : StrFormatInfo
     { // StrFormat,NTrim,<SrcString>,<DestVarName>
         public string SrcString;
@@ -873,6 +910,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Pos : StrFormatInfo
     { // StrFormat,Pos,<SrcString>,<SubString>,<DestVarName>
         public string SrcString;
@@ -898,6 +936,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Replace : StrFormatInfo
     {
         // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
@@ -930,6 +969,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_ShortLongPath : StrFormatInfo
     {
         // StrFormat,ShortPath,<SrcString>,<DestVarName>
@@ -954,6 +994,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class StrFormatInfo_Split : StrFormatInfo
     { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVarName>
         public string SrcString;
@@ -985,6 +1026,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 08 - String
+    [Serializable]
     public class CodeInfo_StrFormat : CodeInfo
     {
         public StrFormatType Type;
@@ -1011,6 +1053,7 @@ namespace PEBakery.Core
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>
+    [Serializable]
     public class CodeInfo_ShellExecute : CodeInfo
     {
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
@@ -1081,7 +1124,7 @@ namespace PEBakery.Core
         License
     }
 
-    public delegate string ArugmentPreprocess(string str);
+    [Serializable]
     public class BranchCondition
     {
         public BranchConditionType Type;
@@ -1398,84 +1441,106 @@ namespace PEBakery.Core
                             match = !match;
                     }
                     break;
-                case BranchConditionType.Question: // Can has 1 - 3 argument
+                case BranchConditionType.Question: // Can has 1 or 3 argument
                     {
                         string question = StringEscaper.Preprocess(s, Arg1);
 
-                        bool autoTimeOut = false;
+                        bool autoTimeout = false;
 
                         if (Arg2 != null && Arg3 != null)
-                            autoTimeOut = true;
+                            autoTimeout = true;
 
-                        if (autoTimeOut)
+                        int timeout = 0;
+                        bool defaultChoice = false;
+                        if (autoTimeout)
                         {
-                            string timeOutStr = StringEscaper.Preprocess(s, Arg2);
-                            if (int.TryParse(timeOutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeOut) == false)
-                                autoTimeOut = false;
+                            string timeoutStr = StringEscaper.Preprocess(s, Arg2);
+                            if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout) == false)
+                                autoTimeout = false;
 
-                            bool defaultChoice;
                             string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
                             if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                                 defaultChoice = true;
-                            else if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            else if (defaultChoiceStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                                 defaultChoice = false;
-                            else
-                                autoTimeOut = false;
                         }
 
-                        // TODO : Timeout support
-                        MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                        if (result == MessageBoxResult.Yes)
+                        if (autoTimeout)
                         {
-                            match = true;
-                            logMessage = "[Yes] was chosen";
+                            MessageBoxResult result = MessageBoxResult.None; 
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
+                            });
+
+                            if (result == MessageBoxResult.None)
+                            {
+                                match = defaultChoice;
+                                if (defaultChoice)
+                                    logMessage = "[Yes] was automatically chosen";
+                                else
+                                    logMessage = "[No] was automatically chosen";
+                            }
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                match = true;
+                                logMessage = "[Yes] was chosen";
+                            }
+                            else
+                            {
+                                match = false;
+                                logMessage = "[No] was chosen";
+                            }
                         }
                         else
                         {
-                            match = false;
-                            logMessage = "[No] was chosen";
+                            MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                            if (result == MessageBoxResult.Yes)
+                            {
+                                match = true;
+                                logMessage = "[Yes] was chosen";
+                            }
+                            else
+                            {
+                                match = false;
+                                logMessage = "[No] was chosen";
+                            }
                         }
 
                         if (NotFlag)
                             match = !match;
                     }
                     break;
-                default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] need additional infomation");
-            }
-            return match;
-        }
-
-        public bool Check(ArugmentPreprocess pp, Variables variables)
-        {
-            bool match = false;
-            switch (Type)
-            {
-                case BranchConditionType.ExistVar:
+                case BranchConditionType.ExistMacro:
                     {
-                        string variableName = Variables.TrimPercentMark(Arg1);
-                        match = variables.ContainsKey(variableName);
+                        string macroName = StringEscaper.Preprocess(s, Arg1);
+                        match = s.Macro.MacroDict.ContainsKey(macroName);
+
+                        if (match)
+                            logMessage = $"Macro [{macroName}] exists";
+                        else
+                            logMessage = $"Macro [{macroName}] does not exists";
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
-                case BranchConditionType.ExistMacro:
-                    // TODO
-                    break;
-                default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistVar");
-            }
-            return match;
-        }
+                case BranchConditionType.ExistVar:
+                    {
+                        string varName = Variables.TrimPercentMark(Arg1);
+                        match = s.Variables.ContainsKey(varName);
 
-        public bool Check(ArugmentPreprocess pp, Macro macro)
-        {
-            bool match = false;
-            switch (Type)
-            {
-                case BranchConditionType.ExistMacro:
-                    // TODO
+                        if (match)
+                            logMessage = $"Variable [{varName}] exists";
+                        else
+                            logMessage = $"Variable [{varName}] does not exists";
+
+                        if (NotFlag)
+                            match = !match;
+                    }
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition check, [{Type}] is not ExistMacro");
+                    throw new InternalErrorException($"Internal BranchCondition check error");
             }
             return match;
         }
@@ -1539,6 +1604,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 10 - Branch
+    [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
         public string PluginFile;
@@ -1567,6 +1633,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
         public bool Break;
@@ -1606,6 +1673,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_If : CodeInfo
     {
         public BranchCondition Condition;
@@ -1633,6 +1701,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_Else : CodeInfo
     {
         public CodeCommand Embed;
@@ -1658,6 +1727,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 11 - Control
+    [Serializable]
     public class CodeInfo_Set : CodeInfo
     {
         public string VarKey;
@@ -1689,6 +1759,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_GetParam : CodeInfo
     {
         public int Index;
@@ -1710,6 +1781,7 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_PackParam : CodeInfo
     { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
         public int StartIndex;
@@ -1740,6 +1812,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 12 - Macro
+    [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {
         public string MacroType;

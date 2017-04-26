@@ -818,9 +818,9 @@ Portions of PEBakery is licensed under MIT License.
 Copyright (c) 2016 MahApps
 Derived from https://github.com/MahApps/MahApps.Metro
 
-- PEBakery.WPF/DpiAwareImage.cs
-Copyright (c) 2015-2017 Microsoft
-https://github.com/Microsoft/WPF-Samples
+- PEBakery.WPF/Controls/CustomMessageBox
+Copyright (c) 2013 Evan Wondrasek / Apricity Software LLC
+Derived from https://github.com/evanwon/WPFCustomMessageBox
 
 - PEBakery.WPF/Helper.cs
 - PEBakery.WPF/IniLib.cs

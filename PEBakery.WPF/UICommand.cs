@@ -99,6 +99,7 @@ namespace PEBakery.Core
     #endregion
 
     #region UICommand
+    [Serializable]
     public class UICommand
     {
         public string RawLine;
@@ -109,7 +110,7 @@ namespace PEBakery.Core
         public bool Visibility;
         public UIControlType Type;
         public Rect Rect;
-        public UICommandInfo Info;
+        public UIInfo Info;
 
         public UICommand(string rawLine, SectionAddress addr, string key)
         {
@@ -124,7 +125,7 @@ namespace PEBakery.Core
 
         }
 
-        public UICommand(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UICommandInfo info)
+        public UICommand(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
         {
             this.RawLine = rawLine;
             this.Addr = addr;
@@ -174,13 +175,13 @@ namespace PEBakery.Core
     #endregion
 
     #region UICommandInfo
-
-    public class UICommandInfo
+    [Serializable]
+    public class UIInfo
     {
         public bool Valid;
         public string ToolTip; // optional
 
-        public UICommandInfo(bool valid, string tooltip)
+        public UIInfo(bool valid, string tooltip)
         {
             this.Valid = valid;
             this.ToolTip = tooltip;
@@ -205,7 +206,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_TextBox : UICommandInfo
+    [Serializable]
+    public class UIInfo_TextBox : UIInfo
     {
         public string Value;
 
@@ -234,7 +236,8 @@ namespace PEBakery.Core
         Normal, Bold, Italic, Underline, Strike
     }
 
-    public class UIInfo_TextLabel : UICommandInfo
+    [Serializable]
+    public class UIInfo_TextLabel : UIInfo
     {
         public int FontSize;
         public UIInfo_TextLabel_Style Style;
@@ -262,7 +265,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_NumberBox : UICommandInfo
+    [Serializable]
+    public class UIInfo_NumberBox : UIInfo
     {
         public int Value;
         public int Min;
@@ -298,7 +302,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_CheckBox : UICommandInfo
+    [Serializable]
+    public class UIInfo_CheckBox : UIInfo
     {
         public bool Value;
         public string SectionName; // Optional
@@ -332,7 +337,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_ComboBox : UICommandInfo
+    [Serializable]
+    public class UIInfo_ComboBox : UIInfo
     {
         public List<string> Items;
         public int Index;
@@ -363,7 +369,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_Image : UICommandInfo
+    [Serializable]
+    public class UIInfo_Image : UIInfo
     {
         public string URL; // optional
 
@@ -387,7 +394,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_TextFile : UICommandInfo
+    [Serializable]
+    public class UIInfo_TextFile : UIInfo
     {
         public UIInfo_TextFile(bool valid, string tooltip)
             : base(valid, tooltip)
@@ -406,12 +414,13 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_Button : UICommandInfo
+    [Serializable]
+    public class UIInfo_Button : UIInfo
     {
         // Still had not figured why SectionName and ProgressShow duplicate
         public string SectionName;
         public string Picture; // Optional
-        public bool ShowProgress;
+        public bool ShowProgress; // Optional
 
         public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool showProgress)
             : base(valid, tooltip)
@@ -454,7 +463,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_CheckList : UICommandInfo
+    [Serializable]
+    public class UIInfo_CheckList : UIInfo
     {
         public UIInfo_CheckList(bool valid, string tooltip)
             : base(valid, tooltip)
@@ -473,7 +483,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_WebLabel : UICommandInfo
+    [Serializable]
+    public class UIInfo_WebLabel : UIInfo
     {
         public string URL;
 
@@ -496,7 +507,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_RadioButton : UICommandInfo
+    [Serializable]
+    public class UIInfo_RadioButton : UIInfo
     { // TODO: [ButtonOptional]
         public bool Selected;
         public string SectionName; // optional
@@ -533,7 +545,8 @@ namespace PEBakery.Core
 
     }
 
-    public class UIInfo_Bevel : UICommandInfo
+    [Serializable]
+    public class UIInfo_Bevel : UIInfo
     {
         public UIInfo_Bevel(bool valid, string tooltip)
             : base(valid, tooltip)
@@ -552,7 +565,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_FileBox : UICommandInfo
+    [Serializable]
+    public class UIInfo_FileBox : UIInfo
     {
         public bool IsFile;
 
@@ -576,7 +590,8 @@ namespace PEBakery.Core
         }
     }
 
-    public class UIInfo_RadioGroup : UICommandInfo
+    [Serializable]
+    public class UIInfo_RadioGroup : UIInfo
     {
         public List<string> Items;
         public int Selected;

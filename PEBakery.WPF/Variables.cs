@@ -155,18 +155,45 @@ namespace PEBakery.Core
         /// Check variables' circular reference.
         /// </summary>
         /// <param name="key"></param>
-        /// <param name="rawValue"></param>
+        /// <param name="value"></param>
         /// <returns>Return true if circular reference exists.</returns>
-        public static bool CheckCircularReference(string key, string rawValue)
+        public bool CheckCircularReference(string key, string value)
         {
+            /*
             if (rawValue.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) == -1)
             { // Ex) %Joveler%=Variel\ied206.txt
                 return false;
             }
             else
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt
+                // Try Expand 
+                // Set,%A%,%B% / Set,%B%,%C% / Set,%C%,%A% can also cause circular reference
                 return true;
             }
+            */
+
+            /*
+             * Set,%Joveler%,Variel\ied206.txt -> OK
+             * Set,%Joveler%,Variel\%Joveler%\ied206.txt -> Wrong
+             * 
+             * Set,%A%,%B%
+             * Set,%B%,%C%
+             * Set,%C%,%A% -> Wrong
+             */
+
+            string str = StringEscaper.UnescapePercent(Expand(value));
+            while (true)
+            {
+                if (str.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) != -1) // Found circular reference
+                    return true;
+
+                string next = StringEscaper.UnescapePercent(Expand(value));
+                if (str.Equals(next, StringComparison.Ordinal))
+                    break;
+                str = next;
+            }
+
+            return false;
         }
 
         public LogInfo SetFixedValue(string key, string rawValue)
@@ -271,12 +298,8 @@ namespace PEBakery.Core
 
         public string Expand(string str)
         {
-            while (0 < FileHelper.CountStringOccurrences(str, @"%"))
-            {
-                // Ex) Invalid : %Base%Dir%
-                if (FileHelper.CountStringOccurrences(str, @"%") % 2 == 1)
-                    throw new InvalidCommandException(@"Variable names must be enclosed by %");
-
+            while (2 <= FileHelper.CountStringOccurrences(str, @"%"))
+            { 
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);

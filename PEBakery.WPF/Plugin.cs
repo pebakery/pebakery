@@ -35,6 +35,7 @@ namespace PEBakery.Core
     using StringDictionary = Dictionary<string, string>;
     using SectionDictionary = Dictionary<string, PluginSection>;
 
+    [Serializable]
     public class Plugin
     {
         // Fields
@@ -45,8 +46,12 @@ namespace PEBakery.Core
         private SectionDictionary sections;
 
         private PluginType type;
+        [NonSerialized]
         private Project project;
+        [NonSerialized]
         private Plugin link;
+        [NonSerialized]
+        private bool linkLoaded;
         private string title;
         private string author;
         private string description;
@@ -60,18 +65,19 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.FullPath;
                 else
                     return fullPath;
             }
         }
+        public string DirectFullPath { get => fullPath; }
         public string ShortPath { get => shortPath; }
         public SectionDictionary Sections
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Sections;
                 else
                     return sections;
@@ -81,7 +87,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.MainInfo;
                 else
                     return sections["Main"].Get() as StringDictionary;
@@ -90,21 +96,26 @@ namespace PEBakery.Core
         
         public PluginType Type { get => type; }
         public Plugin Link { get => link; set => link = value; }
+        public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
         public Project Project
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Project;
                 else
                     return project;
+            }
+            set
+            {
+                project = value;
             }
         }
         public string Title
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Title;
                 else
                     return title;
@@ -114,7 +125,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Author;
                 else
                     return author;
@@ -124,7 +135,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Description;
                 else
                     return description;
@@ -134,7 +145,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Version;
                 else
                     return version;
@@ -144,7 +155,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Level;
                 else
                     return level;
@@ -154,7 +165,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link)
+                if (type == PluginType.Link && linkLoaded)
                     return link.Mandatory;
                 else
                     return mandatory;
@@ -162,7 +173,13 @@ namespace PEBakery.Core
         }
         public SelectedState Selected
         {
-            get => selected;
+            get
+            {
+                if (type == PluginType.Link && linkLoaded)
+                    return link.Selected;
+                else
+                    return selected;
+            }
             set
             {
                 selected = value;
@@ -173,7 +190,7 @@ namespace PEBakery.Core
                     sections["Main"].IniDict["Selected"] = str;
                     Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
                 }
-                else if (type == PluginType.Link)
+                else if (type == PluginType.Link && linkLoaded)
                 {
                     sections["Main"].IniDict["Selected"] = str;
                     Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
@@ -182,17 +199,18 @@ namespace PEBakery.Core
                     link.selected = value;
                 }
 
-                // TODO : Plugin Disable= 
+                // TODO : Plugin Disable
                 // Need Engine's Variable system to be implemented
             }
         }
 
-        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, string baseDir, int? level)
+        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level)
         {
             this.fullPath = fullPath;
             this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
             this.type = type;
             this.project = project;
+            this.linkLoaded = false;
 
             switch (type)
             {
@@ -201,8 +219,10 @@ namespace PEBakery.Core
                         if (level == null)
                             level = 0;
                         List<string> dirInfo = new List<string>();
-                        sections = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
-                        sections["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>());
+                        sections = new SectionDictionary(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>())
+                        };
 
                         // Mandatory Entries
                         sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(fullPath);
@@ -223,26 +243,7 @@ namespace PEBakery.Core
                         sections = ParsePlugin();
                         CheckMainSection(PluginType.Link);
 
-                        if (sections["Main"].IniDict.ContainsKey("Link"))
-                        {
-                            string linkPath = Path.Combine(baseDir, sections["Main"].IniDict["Link"]);
-                            if (File.Exists(linkPath) == false) // Invalid link
-                                throw new PluginParseException($"Invalid link path in plugin {fullPath}");
-
-                            try
-                            {
-                                string ext = Path.GetExtension(linkPath);
-                                if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                                    this.link = new Plugin(PluginType.Link, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
-                                else
-                                    this.link = new Plugin(PluginType.Plugin, Path.Combine(baseDir, linkPath), project, projectRoot, baseDir, null);
-                            }
-                            catch (Exception)
-                            {
-                                throw new PluginParseException($"Linked plugin {linkPath} is invalid");
-                            }
-                        }
-                        else
+                        if (sections["Main"].IniDict.ContainsKey("Link") == false)
                         {
                             throw new PluginParseException($"Invalid link path in plugin {fullPath}");
                         }
@@ -495,7 +496,10 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return this.title;
+            if (type == PluginType.Link)
+                return sections["Main"].IniDict["Link"];
+            else
+                return this.title;
         }
     }
 
@@ -526,6 +530,7 @@ namespace PEBakery.Core
     #endregion
 
     #region PluginSection
+    [Serializable]
     public class PluginSection
     {
         // Common Fields
@@ -808,7 +813,7 @@ namespace PEBakery.Core
 
         public void ConvertLineToUICodeSection(List<string> lines)
         {
-            if (type == SectionType.Interface && dataType == SectionDataType.Lines)
+            if ((type == SectionType.Interface || type == SectionType.Code) && dataType == SectionDataType.Lines)
             {
                 uiCodes = UIParser.ParseRawLines(lines, new SectionAddress(plugin, this), out List<LogInfo> logList);
                 foreach (LogInfo log in logList)
@@ -906,7 +911,7 @@ namespace PEBakery.Core
             if (dataType == SectionDataType.Interfaces)
                 return UICodes; // this.UICodes for Load()
             else if (convertIfLine && dataType == SectionDataType.Lines)
-            {
+            { // SectionDataType.Codes for custom interface section
                 ConvertLineToUICodeSection(this.Lines); // this.Lines for Load()
                 return uiCodes;
             }
