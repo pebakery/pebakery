@@ -67,13 +67,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCodes = null;
-                    logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -141,7 +141,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.Normal_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 

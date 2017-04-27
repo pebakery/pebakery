@@ -295,8 +295,9 @@ namespace PEBakery.Core
                     #endregion
                     #region 06 Attach, Interface
                     // 06 Attach, Interface
-                    //case CodeType.ExtractFile:
-                    //    break;
+                    case CodeType.ExtractFile:
+                        logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
+                        break;
                     //case CodeType.ExtractAndRun:
                     //    break;
                     //case CodeType.ExtractAllFiles:
@@ -384,7 +385,7 @@ namespace PEBakery.Core
                     #region Error
                     // Error
                     default:
-                        throw new ExecuteErrorException($"Cannot execute [{cmd.Type}] command");
+                        throw new ExecuteException($"Cannot execute [{cmd.Type}] command");
                         #endregion
                 }
             }

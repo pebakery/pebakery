@@ -587,6 +587,41 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region CodeInfo 05 - Network
+    #endregion
+
+    #region CodeInfo 06 - Plugin
+    [Serializable]
+    public class CodeInfo_ExtractFile : CodeInfo
+    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
+        public string PluginFile;
+        public string DirName;
+        public string FileName;
+        public string ExtractTo;
+
+        public CodeInfo_ExtractFile(string pluginFile, string dirName, string fileName, string extractTo)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FileName = fileName;
+            ExtractTo = extractTo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(PluginFile);
+            b.Append(",");
+            b.Append(DirName);
+            b.Append(",");
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(ExtractTo);
+            return b.ToString();
+        }
+    }
+    #endregion
+
     #region CodeInfo 07 - UI
     public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
     [Serializable]

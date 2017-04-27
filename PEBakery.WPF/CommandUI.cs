@@ -48,9 +48,9 @@ namespace PEBakery.Core
             {
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
                 if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeout) == false)
-                    throw new ExecuteErrorException($"[{timeoutStr}] is not valid positive integer");
+                    throw new ExecuteException($"[{timeoutStr}] is not valid positive integer");
                 if (timeout <= 0)
-                    throw new ExecuteErrorException($"Timeout must be positive integer [{timeoutStr}]");
+                    throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {

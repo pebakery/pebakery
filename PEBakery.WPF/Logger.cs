@@ -192,7 +192,7 @@ namespace PEBakery.Core
 
     public class Logger
     {    
-        public Database DB;
+        public LogDatabase DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
@@ -201,7 +201,7 @@ namespace PEBakery.Core
 
         public Logger(string path)
         {
-            DB = new Database(path);
+            DB = new LogDatabase(path);
         }
 
         ~Logger()
@@ -335,13 +335,13 @@ namespace PEBakery.Core
                 Build_Write(buildId, log);
         }
 
-        public void Normal_Write(LogInfo log)
+        public void System_Write(LogInfo log)
         {
 #if DEBUG
             Debug_Write(log);
 #endif
 
-            DB_NormalLog dbLog = new DB_NormalLog()
+            DB_SystemLog dbLog = new DB_SystemLog()
             {
                 Time = DateTime.Now,
                 State = log.State,
@@ -354,7 +354,7 @@ namespace PEBakery.Core
         public void Normal_Write(IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
-                Normal_Write(log);
+                System_Write(log);
         }
         #endregion
 
@@ -599,7 +599,7 @@ namespace PEBakery.Core
 
     #region SQLite Connection 
     #region Model
-    public class DB_NormalLog
+    public class DB_SystemLog
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
@@ -706,11 +706,11 @@ namespace PEBakery.Core
     #endregion
 
     #region Database
-    public class Database : SQLiteConnection
+    public class LogDatabase : SQLiteConnection
     {
-        public Database(string path) : base(new SQLitePlatformWin32(), path)
+        public LogDatabase(string path) : base(new SQLitePlatformWin32(), path)
         {
-            CreateTable<DB_NormalLog>();
+            CreateTable<DB_SystemLog>();
             CreateTable<DB_Build>();
             CreateTable<DB_Plugin>();
             CreateTable<DB_Variable>();

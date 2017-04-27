@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-
 namespace PEBakery.Core
 {
     public enum VarsType
@@ -74,23 +73,19 @@ namespace PEBakery.Core
 
         private List<LogInfo> LoadDefaultFixedVariables()
         {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            // BaseDir
-            logs.Add(SetFixedValue("BaseDir", project.BaseDir));
-            // Tools
-            logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
-
-            //  Version
-            // Version version = FileHelper.GetProgramVersion();
-            // logs.Add(SetFixedValue("Version", version.Build.ToString()));
-            
-            logs.Add(SetFixedValue("Version", WPF.App.Version.ToString()));
-            // ProjectDir
-            logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
-            // TargetDir
-            logs.Add(SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName)));
-
+            List<LogInfo> logs = new List<LogInfo>
+            {
+                // BaseDir
+                SetFixedValue("BaseDir", project.BaseDir),
+                // Tools
+                SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")),
+                // Version
+                SetFixedValue("Version", WPF.App.Version.ToString()),
+                // ProjectDir
+                SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)),
+                // TargetDir
+                SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName))
+            };
             return logs;
         }
 
@@ -299,11 +294,12 @@ namespace PEBakery.Core
         public string Expand(string str)
         {
             while (2 <= FileHelper.CountStringOccurrences(str, @"%"))
-            { 
+            {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
                 StringBuilder builder = new StringBuilder();
+
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].ToString();
@@ -431,12 +427,16 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="varName"></param>
         /// <returns></returns>
-        public static string GetVariableName(string varName)
+        public static string GetVariableName(EngineState s, string varName)
         {
             if (varName.StartsWith("%") && varName.EndsWith("%"))
             {
                 if (FileHelper.CountStringOccurrences(varName, "%") == 2)
-                    return varName.Substring(1, varName.Length - 2);
+                {
+                    string varKey = varName.Substring(1, varName.Length - 2);
+                    varKey = StringEscaper.ExpandSectionParams(s, varKey);
+                    return varKey;
+                }
                 else
                     return null;
             }
@@ -494,7 +494,7 @@ namespace PEBakery.Core
 
             if (type == Variables.VarKeyType.Variable) // %A%
             {
-                varKey = Variables.GetVariableName(varKey);
+                varKey = Variables.GetVariableName(s, varKey);
                 if (varKey == null)
                     logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
 
