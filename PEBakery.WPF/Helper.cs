@@ -872,6 +872,29 @@ namespace PEBakery.Helper
                 array[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
             return true;
         }
+
+        const long PB = 1024L * 1024L * 1024L * 1024L * 1024L;
+        const long TB = 1024L * 1024L * 1024L * 1024L;
+        const long GB = 1024L * 1024L * 1024L;
+        const long MB = 1024L * 1024L;
+        const long KB = 1024L;
+
+        public static string ByteSizeToString(long byteSize)
+        {
+            string str;
+            if (PB <= byteSize)
+                str = $"{((decimal)byteSize / PB):0.###}PB";
+            else if (TB <= byteSize)
+                str = $"{((decimal)byteSize / TB):0.###}TB";
+            else if (GB <= byteSize)
+                str = $"{((decimal)byteSize / GB):0.###}GB";
+            else if (MB <= byteSize)
+                str = $"{((decimal)byteSize / MB):0.###}MB";
+            else
+                str = $"{((decimal)byteSize / KB):0.###}KB";
+
+            return str;
+        }
     }
 
     /// <summary>

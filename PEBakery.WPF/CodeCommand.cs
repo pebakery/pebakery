@@ -16,18 +16,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using PEBakery.Exceptions;
-using PEBakery.Helper;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Win32;
 using System.IO;
-using PEBakery.Lib;
 using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
 using System.Windows;
-using WPFCustomMessageBox;
+using PEBakery.Exceptions;
+using PEBakery.Helper;
+using PEBakery.WPF.Controls;
+using PEBakery.Lib;
 
 namespace PEBakery.Core
 {
@@ -582,6 +582,41 @@ namespace PEBakery.Core
                 b.Append(",");
                 b.Append(SectionName);
             }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 05 - Network
+    #endregion
+
+    #region CodeInfo 06 - Plugin
+    [Serializable]
+    public class CodeInfo_ExtractFile : CodeInfo
+    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
+        public string PluginFile;
+        public string DirName;
+        public string FileName;
+        public string ExtractTo;
+
+        public CodeInfo_ExtractFile(string pluginFile, string dirName, string fileName, string extractTo)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FileName = fileName;
+            ExtractTo = extractTo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(PluginFile);
+            b.Append(",");
+            b.Append(DirName);
+            b.Append(",");
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(ExtractTo);
             return b.ToString();
         }
     }

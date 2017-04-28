@@ -41,22 +41,12 @@ namespace PEBakery.Core
 
                             string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
                             if (long.TryParse(byteSizeStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long byteSize) == false)
-                                throw new ExecuteErrorException($"[{byteSizeStr}] is not valid integer");
+                                throw new ExecuteException($"[{byteSizeStr}] is not valid integer");
 
                             if (byteSize < 0)
-                                throw new ExecuteErrorException($"[{byteSize}] must be positive integer");
+                                throw new ExecuteException($"[{byteSize}] must be positive integer");
 
-                            string destStr = string.Empty;
-                            if (PB <= byteSize)
-                                destStr = $"{((decimal)byteSize / PB):0.###}PB";
-                            else if (TB <= byteSize)
-                                destStr = $"{((decimal)byteSize / TB):0.###}TB";
-                            else if (GB <= byteSize)
-                                destStr = $"{((decimal)byteSize / GB):0.###}GB";
-                            else if (MB <= byteSize)
-                                destStr = $"{((decimal)byteSize / MB):0.###}MB";
-                            else
-                                destStr = $"{((decimal)byteSize / KB):0.###}KB";
+                            string destStr = NumberHelper.ByteSizeToString(byteSize);
 
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
                             logs.AddRange(varLogs);
@@ -86,15 +76,15 @@ namespace PEBakery.Core
                                 else if (roundToStr.Equals("P", StringComparison.OrdinalIgnoreCase))
                                     roundTo = PB;
                                 else
-                                    throw new ExecuteErrorException($"[{roundToStr}] is not valid integer");
+                                    throw new ExecuteException($"[{roundToStr}] is not valid integer");
                             }
 
                             if (roundTo < 0)
-                                throw new ExecuteErrorException($"[{roundTo}] must be positive integer");
+                                throw new ExecuteException($"[{roundTo}] must be positive integer");
 
                             string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
                             if (long.TryParse(srcIntStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long srcInt) == false)
-                                throw new ExecuteErrorException($"[{srcIntStr}] is not valid integer");
+                                throw new ExecuteException($"[{srcIntStr}] is not valid integer");
                             long destInt;
                             if (type == StrFormatType.Ceil)
                             {
@@ -211,10 +201,10 @@ namespace PEBakery.Core
 
                             string srcStr = StringEscaper.Preprocess(s, subInfo.DestVarName);
                             if (decimal.TryParse(srcStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal src) == false)
-                                throw new ExecuteErrorException($"[{srcStr}] is not valid number");
+                                throw new ExecuteException($"[{srcStr}] is not valid number");
                             string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                             if (decimal.TryParse(operandStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal operand) == false)
-                                throw new ExecuteErrorException($"[{operandStr}] is not valid number");
+                                throw new ExecuteException($"[{operandStr}] is not valid number");
 
                             decimal dest = src;
                             if (type == StrFormatType.Inc) // +
@@ -240,9 +230,9 @@ namespace PEBakery.Core
                             string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
                             string cutLenStr = StringEscaper.Preprocess(s, subInfo.Integer);
                             if (int.TryParse(cutLenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
-                                throw new ExecuteErrorException($"[{cutLenStr}] is not valid integer");
+                                throw new ExecuteException($"[{cutLenStr}] is not valid integer");
                             if (cutLen < 0)
-                                throw new ExecuteErrorException($"[{cutLen}] must be positive integer");
+                                throw new ExecuteException($"[{cutLen}] must be positive integer");
 
                             string destStr = string.Empty;
                             try
@@ -274,14 +264,14 @@ namespace PEBakery.Core
                             string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
                             string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
                             if (int.TryParse(startPosStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int startPos) == false)
-                                throw new ExecuteErrorException($"[{startPosStr}] is not valid integer");
+                                throw new ExecuteException($"[{startPosStr}] is not valid integer");
                             if (startPos < 0)
-                                throw new ExecuteErrorException($"[{startPos}] must be positive integer");
+                                throw new ExecuteException($"[{startPos}] must be positive integer");
                             string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
                             if (int.TryParse(lenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int len) == false)
-                                throw new ExecuteErrorException($"[{lenStr}] is not valid integer");
+                                throw new ExecuteException($"[{lenStr}] is not valid integer");
                             if (len < 0)
-                                throw new ExecuteErrorException($"[{len}] must be positive integer");
+                                throw new ExecuteException($"[{len}] must be positive integer");
 
                             // Error handling
                             if (srcStr.Length <= startPos)
@@ -448,7 +438,7 @@ namespace PEBakery.Core
                             string delimStr = StringEscaper.Preprocess(s, subInfo.Delimeter);
                             string idxStr = StringEscaper.Preprocess(s, subInfo.Index);
                             if (int.TryParse(idxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
-                                throw new ExecuteErrorException($"[{idxStr}] is not valid integer");
+                                throw new ExecuteException($"[{idxStr}] is not valid integer");
 
                             char[] delim = delimStr.ToCharArray();
 

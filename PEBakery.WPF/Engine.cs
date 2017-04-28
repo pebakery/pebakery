@@ -116,7 +116,7 @@ namespace PEBakery.Core
 
         public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
         {
-            long buildId = s.Logger.Build_Init(DateTime.Now, buildName, s);
+            long buildId = s.Logger.Build_Init(buildName, s);
             long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
             s.Logger.LogStartOfSection(buildId, addr.Section.SectionName, 0, null);
             s.Variables.ResetVariables(VarsType.Local);
@@ -295,8 +295,9 @@ namespace PEBakery.Core
                     #endregion
                     #region 06 Attach, Interface
                     // 06 Attach, Interface
-                    //case CodeType.ExtractFile:
-                    //    break;
+                    case CodeType.ExtractFile:
+                        logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
+                        break;
                     //case CodeType.ExtractAndRun:
                     //    break;
                     //case CodeType.ExtractAllFiles:
@@ -384,7 +385,7 @@ namespace PEBakery.Core
                     #region Error
                     // Error
                     default:
-                        throw new ExecuteErrorException($"Cannot execute [{cmd.Type}] command");
+                        throw new ExecuteException($"Cannot execute [{cmd.Type}] command");
                         #endregion
                 }
             }

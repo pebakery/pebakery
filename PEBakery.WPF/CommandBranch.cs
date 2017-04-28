@@ -59,12 +59,12 @@ namespace PEBakery.Core
                 string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
                 targetPlugin = s.Project.GetPluginByFullPath(fullPath);
                 if (targetPlugin == null)
-                    throw new ExecuteErrorException($"No plugin in [{fullPath}]");
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
             }
             
             // Does section exists?
             if (!targetPlugin.Sections.ContainsKey(sectionName))
-                throw new ExecuteErrorException($"[{pluginFile}] does not have section [{sectionName}]");
+                throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
@@ -109,10 +109,10 @@ namespace PEBakery.Core
             {
                 string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
                 if (long.TryParse(startIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long startIdx) == false)
-                    throw new ExecuteErrorException($"Argument [{startIdxStr}] is not valid integer");
+                    throw new ExecuteException($"Argument [{startIdxStr}] is not valid integer");
                 string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
                 if (long.TryParse(endIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long endIdx) == false)
-                    throw new ExecuteErrorException($"Argument [{endIdxStr}] is not valid integer");
+                    throw new ExecuteException($"Argument [{endIdxStr}] is not valid integer");
                 long loopCount = endIdx - startIdx + 1;
 
                 // Prepare Loop
@@ -134,12 +134,12 @@ namespace PEBakery.Core
                     string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
                     targetPlugin = s.Project.GetPluginByFullPath(fullPath);
                     if (targetPlugin == null)
-                        throw new ExecuteErrorException($"No plugin in [{fullPath}]");
+                        throw new ExecuteException($"No plugin in [{fullPath}]");
                 }
 
                 // Does section exists?
                 if (!targetPlugin.Sections.ContainsKey(sectionName))
-                    throw new ExecuteErrorException($"[{pluginFile}] does not have section [{sectionName}]");
+                    throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
                 string logMessage;
                 if (inCurrentPlugin)

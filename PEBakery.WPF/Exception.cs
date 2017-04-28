@@ -97,11 +97,11 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region Command Execution
-    public class ExecuteErrorException : Exception
+    public class ExecuteException : Exception
     {
-        public ExecuteErrorException() { }
-        public ExecuteErrorException(string message) : base(message) { }
-        public ExecuteErrorException(string message, Exception inner) : base(message, inner) { }
+        public ExecuteException() { }
+        public ExecuteException(string message) : base(message) { }
+        public ExecuteException(string message, Exception inner) : base(message, inner) { }
     }
 
     public class InternalCodeInfoException : Exception

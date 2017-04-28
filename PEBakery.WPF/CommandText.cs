@@ -91,7 +91,7 @@ namespace PEBakery.Core
             string replaceWith = StringEscaper.Preprocess(s, info.ReplaceWith);
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteErrorException($"File [{fileName}] not exists");
+                throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             string temp = FileHelper.CreateTempFile();
@@ -127,7 +127,7 @@ namespace PEBakery.Core
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteIfBeginWith);
             if (File.Exists(fileName) == false)
-                throw new ExecuteErrorException($"File [{fileName}] not exists");
+                throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -166,7 +166,7 @@ namespace PEBakery.Core
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteErrorException($"File [{fileName}] not exists");
+                throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -206,7 +206,7 @@ namespace PEBakery.Core
             string fileName = StringEscaper.Preprocess(s, info.FileName);
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteErrorException($"File [{fileName}] not exists");
+                throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;

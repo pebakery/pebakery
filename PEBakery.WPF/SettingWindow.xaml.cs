@@ -1,4 +1,5 @@
 ﻿using PEBakery.Lib;
+using PEBakery.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +16,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using PEBakery.Helper;
+using System.Threading;
 
 namespace PEBakery.WPF
 {
@@ -39,12 +42,45 @@ namespace PEBakery.WPF
         {
             Model.SetToDefault();
         }
+
+        private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
+        {
+            if (PluginCache.dbLock == 0)
+            {
+                Interlocked.Increment(ref PluginCache.dbLock);
+                try
+                {
+                    Model.ClearCacheDB();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref PluginCache.dbLock);
+                }
+            }
+        }
+
+        private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
+        {
+            Model.ClearLogDB();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Model.UpdateCacheDBState();
+            Model.UpdateLogDBState();
+        }
     }
 
     #region SettingViewModel
     public class SettingViewModel : INotifyPropertyChanged
     {
         private readonly string settingFile;
+
+        private LogDB logDB;
+        public LogDB LogDB { set => logDB = value; }
+
+        private PluginCache cacheDB;
+        public PluginCache CacheDB { set => cacheDB = value; }
 
         public SettingViewModel(string settingFile)
         {
@@ -79,13 +115,24 @@ namespace PEBakery.WPF
         #endregion
 
         #region Plugin
-        private bool enable_EnableCache;
-        public bool Plugin_EnableCache
+        private string plugin_CacheState;
+        public string Plugin_CacheState
         {
-            get => enable_EnableCache;
+            get => plugin_CacheState;
             set
             {
-                enable_EnableCache = value;
+                plugin_CacheState = value;
+                OnPropertyUpdate("Plugin_CacheState");
+            }
+        }
+
+        private bool plugin_EnableCache;
+        public bool Plugin_EnableCache
+        {
+            get => plugin_EnableCache;
+            set
+            {
+                plugin_EnableCache = value;
                 OnPropertyUpdate("Plugin_EnableCache");
             }
         }
@@ -102,6 +149,41 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Log
+        private string log_DBState;
+        public string Log_DBState
+        {
+            get => log_DBState;
+            set
+            {
+                log_DBState = value;
+                OnPropertyUpdate("Log_DBState");
+            }
+        }
+
+        private bool log_Macro;
+        public bool Log_Macro
+        {
+            get => log_Macro;
+            set
+            {
+                log_Macro = value;
+                OnPropertyUpdate("Log_Macro");
+            }
+        }
+
+        private bool log_Comment;
+        public bool Log_Comment
+        {
+            get => log_Comment;
+            set
+            {
+                log_Comment = value;
+                OnPropertyUpdate("Log_Comment");
+            }
+        }
+        #endregion
+
         #region Utility
         public void SetToDefault()
         {
@@ -112,6 +194,9 @@ namespace PEBakery.WPF
             // Plugin
             Plugin_EnableCache = true;
             Plugin_AutoConvertToUTF8 = false;
+            // Log
+            Log_Macro = true;
+            Log_Comment = true;
         }
 
         public void ReadFromFile()
@@ -167,6 +252,46 @@ namespace PEBakery.WPF
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
+        }
+
+        public void ClearLogDB()
+        {
+            logDB.DeleteAll<DB_SystemLog>();
+            logDB.DeleteAll<DB_BuildInfo>();
+            logDB.DeleteAll<DB_Plugin>();
+            logDB.DeleteAll<DB_Variable>();
+            logDB.DeleteAll<DB_BuildLog>();
+
+            UpdateLogDBState();
+        }
+
+        public void ClearCacheDB()
+        {
+            if (cacheDB != null)
+            {
+                cacheDB.DeleteAll<DB_PluginCache>();
+                UpdateCacheDBState();
+            }
+        }
+
+        public void UpdateLogDBState()
+        {
+            int systemLogCount = logDB.Table<DB_SystemLog>().Count();
+            int codeLogCount = logDB.Table<DB_BuildLog>().Count();
+            Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
+        }
+
+        public void UpdateCacheDBState()
+        {
+            if (cacheDB == null)
+            {
+                Plugin_CacheState = "Cache not enabled";
+            }
+            else
+            {
+                int cacheCount = cacheDB.Table<DB_PluginCache>().Count();
+                Plugin_CacheState = $"{cacheCount} plugins cached";
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

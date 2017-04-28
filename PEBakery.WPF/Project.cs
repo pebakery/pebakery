@@ -117,7 +117,7 @@ namespace PEBakery.Core
 
                 string rootPlugin = Path.Combine(projectDir, "script.project");
                 string[] scripts = Directory.GetFiles(projectDir, "*.script", SearchOption.AllDirectories);
-                string[] plugins = Directory.GetFiles(projectDir, "*.plugin", SearchOption.AllDirectories);
+                string[] plugins = Directory.GetFiles(projectDir, "*.pebakery", SearchOption.AllDirectories);
                 string[] links = Directory.GetFiles(projectDir, "*.link", SearchOption.AllDirectories);
 
                 pluginPathList.Add(rootPlugin);
@@ -164,8 +164,6 @@ namespace PEBakery.Core
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
-
-            
         }
 
         private void LoadLinks(BackgroundWorker worker)
@@ -607,6 +605,30 @@ namespace PEBakery.Core
         public Plugin GetPluginByFullPath(string fullPath)
         {
             return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public Plugin DeterminePlugin(EngineState s, string pluginFile)
+        {
+            bool inCurrentPlugin = false;
+            if (pluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+            else if (pluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+
+            Plugin targetPlugin;
+            if (inCurrentPlugin)
+            {
+                targetPlugin = s.CurrentPlugin;
+            }
+            else
+            {
+                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                if (targetPlugin == null)
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+            }
+
+            return targetPlugin;
         }
     }
     /*

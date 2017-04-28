@@ -137,7 +137,7 @@ namespace PEBakery.Core
                     log.Command = command;
                 logs[i] = log;
             }
-                
+
             return logs;
         }
 
@@ -184,6 +184,55 @@ namespace PEBakery.Core
     }
     #endregion
 
+    #region EventHandlers
+    public class SystemLogUpdateEventArgs : EventArgs
+    {
+        public DB_SystemLog Log { get; set; }
+        public SystemLogUpdateEventArgs(DB_SystemLog log) : base()
+        {
+            Log = log;
+        }
+    }
+    public class BuildInfoUpdateEventArgs : EventArgs
+    {
+        public DB_BuildInfo Log { get; set; }
+        public BuildInfoUpdateEventArgs(DB_BuildInfo log) : base()
+        {
+            Log = log;
+        }
+    }
+    public class BuildLogUpdateEventArgs : EventArgs
+    {
+        public DB_BuildLog Log { get; set; }
+        public BuildLogUpdateEventArgs(DB_BuildLog log) : base()
+        {
+            Log = log;
+        }
+    }
+    public class PluginUpdateEventArgs : EventArgs
+    {
+        public DB_Plugin Log { get; set; }
+        public PluginUpdateEventArgs(DB_Plugin log) : base()
+        {
+            Log = log;
+        }
+    }
+    public class VariableUpdateEventArgs : EventArgs
+    {
+        public DB_Variable Log { get; set; }
+        public VariableUpdateEventArgs(DB_Variable log) : base()
+        {
+            Log = log;
+        }
+    }
+
+    public delegate void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e);
+    public delegate void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e);
+    public delegate void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e);
+    public delegate void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e);
+    public delegate void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e);
+    #endregion
+
     #region Logger Class
     public enum LogExportType
     {
@@ -192,16 +241,22 @@ namespace PEBakery.Core
 
     public class Logger
     {    
-        public Database DB;
+        public LogDB DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
-        private readonly Dictionary<long, DB_Build> buildDict = new Dictionary<long, DB_Build>();
+        private readonly Dictionary<long, DB_BuildInfo> buildDict = new Dictionary<long, DB_BuildInfo>();
         private readonly Dictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new Dictionary<long, Tuple<DB_Plugin, Stopwatch>>();
+
+        public event SystemLogUpdateEventHandler SystemLogUpdated;
+        public event BuildLogUpdateEventHandler BuildLogUpdated;
+        public event BuildInfoUpdateEventHandler BuildInfoUpdated;
+        public event PluginUpdateEventHandler PluginUpdated;
+        public event VariableUpdateEventHandler VariableUpdated;
 
         public Logger(string path)
         {
-            DB = new Database(path);
+            DB = new LogDB(path);
         }
 
         ~Logger()
@@ -209,18 +264,21 @@ namespace PEBakery.Core
             DB.Close();
         }
 
-        #region DB Manipulation
-        public long Build_Init(DateTime startTime, string name, EngineState s)
+        #region DB Write
+        public long Build_Init(string name, EngineState s)
         {
             // Build Id
-            DB_Build dbBuild = new DB_Build()
+            DB_BuildInfo dbBuild = new DB_BuildInfo()
             {
-                StartTime = startTime,
+                StartTime = DateTime.Now,
                 Name = name,
             };
             DB.Insert(dbBuild);
             buildDict[dbBuild.Id] = dbBuild;
             s.BuildId = dbBuild.Id;
+
+            // Fire Event
+            BuildInfoUpdated?.Invoke(this, new BuildInfoUpdateEventArgs(dbBuild));
 
             // Variables - Fixed, Global, Local
             foreach (VarsType type in Enum.GetValues(typeof(VarsType)))
@@ -236,15 +294,18 @@ namespace PEBakery.Core
                         Value = kv.Value,
                     };
                     DB.Insert(dbVar);
+
+                    // Fire Event
+                    VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
             }
-
+            
             return dbBuild.Id;
         }
 
         public void Build_Finish(long id)
         {
-            DB_Build dbBuild = buildDict[id];
+            DB_BuildInfo dbBuild = buildDict[id];
             dbBuild.EndTime = DateTime.Now;
             DB.Update(dbBuild);
 
@@ -265,6 +326,9 @@ namespace PEBakery.Core
             };
             DB.Insert(dbPlugin);
             pluginDict[dbPlugin.Id] = new Tuple<DB_Plugin, Stopwatch>(dbPlugin, Stopwatch.StartNew());
+
+            // Fire Event
+            PluginUpdated?.Invoke(this, new PluginUpdateEventArgs(dbPlugin));
 
             return dbPlugin.Id;
         }
@@ -293,7 +357,7 @@ namespace PEBakery.Core
             Debug_Write(message);
 #endif
 
-            DB_CodeLog dbCode = new DB_CodeLog()
+            DB_BuildLog dbCode = new DB_BuildLog()
             {
                 Time = DateTime.Now,
                 BuildId = buildId,
@@ -308,7 +372,7 @@ namespace PEBakery.Core
             Debug_Write(log);
 #endif
 
-            DB_CodeLog dbCode = new DB_CodeLog()
+            DB_BuildLog dbCode = new DB_BuildLog()
             {
                 Time = DateTime.Now,
                 BuildId = buildId,
@@ -327,6 +391,9 @@ namespace PEBakery.Core
             }
 
             DB.Insert(dbCode);
+
+            // Fire Event
+            BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
         }
 
         public void Build_Write(long buildId, IEnumerable<LogInfo> logs)
@@ -335,13 +402,30 @@ namespace PEBakery.Core
                 Build_Write(buildId, log);
         }
 
-        public void Normal_Write(LogInfo log)
+        public void System_Write(string message)
+        {
+#if DEBUG
+            Debug_Write(message);
+#endif
+            DB_SystemLog dbLog = new DB_SystemLog()
+            {
+                Time = DateTime.Now,
+                State = LogState.None,
+                Message = message,
+            };
+
+            DB.Insert(dbLog);
+
+            // Fire Event
+            SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
+        }
+
+        public void System_Write(LogInfo log)
         {
 #if DEBUG
             Debug_Write(log);
 #endif
-
-            DB_NormalLog dbLog = new DB_NormalLog()
+            DB_SystemLog dbLog = new DB_SystemLog()
             {
                 Time = DateTime.Now,
                 State = log.State,
@@ -349,12 +433,15 @@ namespace PEBakery.Core
             };
 
             DB.Insert(dbLog);
+
+            // Fire Event
+            SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
         }
 
-        public void Normal_Write(IEnumerable<LogInfo> logs)
+        public void System_Write(IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
-                Normal_Write(log);
+                System_Write(log);
         }
         #endregion
 
@@ -445,7 +532,7 @@ namespace PEBakery.Core
                     {
                         using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
                         {
-                            DB_Build dbBuild = DB.Table<DB_Build>().Where(x => x.Id == buildId).First();
+                            DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
                             writer.WriteLine($"- Build <{dbBuild.Name}> -");
                             writer.WriteLine($"Started at  {dbBuild.StartTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                             writer.WriteLine($"Finished at {dbBuild.EndTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
@@ -489,29 +576,11 @@ namespace PEBakery.Core
 
                             writer.WriteLine("<Code Logs>");
                             {
-                                var codeLogs = DB.Table<DB_CodeLog>()
-                                .Where(x => x.BuildId == buildId)
-                                .OrderBy(x => x.Id);
-                                foreach (DB_CodeLog log in codeLogs)
-                                {
-                                    for (int i = 0; i < log.Depth; i++)
-                                        writer.Write("  ");
-
-                                    if (log.State == LogState.None)
-                                    { // No State
-                                        if (log.RawCode == null)
-                                            writer.WriteLine(log.Message);
-                                        else
-                                            writer.WriteLine($"{log.Message} ({log.RawCode})");
-                                    }
-                                    else
-                                    { // Has State
-                                        if (log.RawCode == null)
-                                            writer.WriteLine($"[{log.State}] {log.Message}");
-                                        else
-                                            writer.WriteLine($"[{log.State}] {log.Message} ({log.RawCode})");
-                                    }
-                                }
+                                var codeLogs = DB.Table<DB_BuildLog>()
+                                    .Where(x => x.BuildId == buildId)
+                                    .OrderBy(x => x.Id);
+                                foreach (DB_BuildLog log in codeLogs)
+                                    writer.Write(log.Export(type));
                                 writer.WriteLine();
                             }
                             writer.Close();
@@ -596,10 +665,8 @@ namespace PEBakery.Core
     }
     #endregion
 
-
-    #region SQLite Connection 
-    #region Model
-    public class DB_NormalLog
+    #region SQLite Model
+    public class DB_SystemLog
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
@@ -608,13 +675,28 @@ namespace PEBakery.Core
         [MaxLength(65535)]
         public string Message { get; set; }
 
+        // Used in LogWindow
+        [Ignore]
+        public string StateStr
+        {
+            get
+            {
+                if (State == LogState.None)
+                    return string.Empty;
+                else
+                    return State.ToString();
+            }
+        }
+        [Ignore]
+        public string TimeStr { get => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture); }
+
         public override string ToString()
         {
             return $"{Id} = [{State}] {Message}";
         }
     }
 
-    public class DB_Build
+    public class DB_BuildInfo
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
@@ -628,7 +710,7 @@ namespace PEBakery.Core
         [OneToMany(CascadeOperations = CascadeOperation.All)] 
         public List<DB_Variable> Variables { get; set; }
         [OneToMany(CascadeOperations = CascadeOperation.All)]
-        public List<DB_CodeLog> Logs { get; set; }
+        public List<DB_BuildLog> Logs { get; set; }
 
         public override string ToString()
         {
@@ -640,7 +722,7 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        [ForeignKey(typeof(DB_Build))]
+        [ForeignKey(typeof(DB_BuildInfo))]
         public long BuildId { get; set; }
         public int Order { get; set; } // Starts from 1
         public int Level { get; set; }
@@ -652,7 +734,7 @@ namespace PEBakery.Core
         public long ElapsedMilliSec { get; set; }
 
         [ManyToOne]
-        public DB_Build Build { get; set; }
+        public DB_BuildInfo Build { get; set; }
 
         public override string ToString()
         {
@@ -664,7 +746,7 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        [ForeignKey(typeof(DB_Build))]
+        [ForeignKey(typeof(DB_BuildInfo))]
         public long BuildId { get; set; }
         public VarsType Type { get; set; }
         [MaxLength(256)]
@@ -673,7 +755,7 @@ namespace PEBakery.Core
         public string Value { get; set; }
 
         [ManyToOne]
-        public DB_Build Build { get; set; }
+        public DB_BuildInfo Build { get; set; }
 
         public override string ToString()
         {
@@ -681,12 +763,12 @@ namespace PEBakery.Core
         }
     }
 
-    public class DB_CodeLog
+    public class DB_BuildLog
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
         public DateTime Time { get; set; }
-        [ForeignKey(typeof(DB_Build))]
+        [ForeignKey(typeof(DB_BuildInfo))]
         public long BuildId { get; set; }
         public int Depth { get; set; }
         public LogState State { get; set; }
@@ -696,7 +778,59 @@ namespace PEBakery.Core
         public string RawCode { get; set; }
 
         [ManyToOne] 
-        public DB_Build Build { get; set; }
+        public DB_BuildInfo BuildInfo { get; set; }
+
+        // Used in LogWindow
+        [Ignore]
+        public string StateStr
+        {
+            get
+            {
+                if (State == LogState.None)
+                    return string.Empty;
+                else
+                    return State.ToString();
+            }
+        }
+        [Ignore]
+        public string TimeStr { get => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture); }
+
+        public string Export(LogExportType type)
+        {
+            StringBuilder b = new StringBuilder();
+
+            switch (type)
+            {
+                case LogExportType.Text:
+                    {
+                        for (int i = 0; i < Depth; i++)
+                            b.Append("  ");
+
+                        if (State == LogState.None)
+                        { // No State
+                            if (RawCode == null)
+                                b.AppendLine(Message);
+                            else
+                                b.AppendLine($"{Message} ({RawCode})");
+                        }
+                        else
+                        { // Has State
+                            if (RawCode == null)
+                                b.AppendLine($"[{State}] {Message}");
+                            else
+                                b.AppendLine($"[{State}] {Message} ({RawCode})");
+                        }
+                    }
+                    break;
+                case LogExportType.HTML:
+                    {
+
+                    }
+                    break;
+            }
+
+            return b.ToString();
+        }
 
         public override string ToString()
         {
@@ -705,18 +839,17 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region Database
-    public class Database : SQLiteConnection
+    #region LogDB
+    public class LogDB : SQLiteConnection
     {
-        public Database(string path) : base(new SQLitePlatformWin32(), path)
+        public LogDB(string path) : base(new SQLitePlatformWin32(), path)
         {
-            CreateTable<DB_NormalLog>();
-            CreateTable<DB_Build>();
+            CreateTable<DB_SystemLog>();
+            CreateTable<DB_BuildInfo>();
             CreateTable<DB_Plugin>();
             CreateTable<DB_Variable>();
-            CreateTable<DB_CodeLog>();
+            CreateTable<DB_BuildLog>();
         }
     }
-    #endregion
     #endregion
 }

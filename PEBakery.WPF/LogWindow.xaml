@@ -1,0 +1,132 @@
+﻿<Window x:Class="PEBakery.WPF.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        mc:Ignorable="d"
+        FontFamily="Segoe UI"
+        Loaded="Window_Loaded"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        Title="PEBakery Log Viewer"
+        Width="800" Height="600"
+        MinWidth="640" MinHeight="480">
+    <Window.Resources>
+        <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="60"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TabControl Grid.Row="0" Name="MainTab">
+            <TabItem Header="System Log">
+                <Grid>
+                    <ListView
+                        HorizontalContentAlignment="Stretch"
+                        ItemsSource="{Binding SystemLogListModel}">
+                        <ListView.View>
+                            <custom:AutoSizedGridView>
+                                <GridViewColumn Header="Time" Width="Auto" DisplayMemberBinding="{Binding TimeStr}" />
+                                <GridViewColumn Header="State" Width="Auto" DisplayMemberBinding="{Binding StateStr}" />
+                                <GridViewColumn Header="Message" Width="Auto" DisplayMemberBinding="{Binding Message}" />
+                            </custom:AutoSizedGridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Build Log">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="65*"/>
+                        <ColumnDefinition Width="721*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel 
+                        Margin="15, 15, 15, 0"
+                        Grid.Row="0" Grid.ColumnSpan="2">
+                        <TextBlock
+                            DockPanel.Dock="Left"
+                            Margin="0, 0, 15, 0"
+                            VerticalAlignment="Center"
+                            Text="Select Build">
+                        </TextBlock>
+                        <ComboBox
+                            Name="SelectBuildComboBox"
+                            SelectedIndex="{Binding SelectBuildIndex}"
+                            ItemsSource="{Binding SelectBuildEntries}">
+                        </ComboBox>
+                    </DockPanel>
+
+                    <TabControl
+                        Margin="15, 15, 15, 0"
+                        Grid.Row="1" Grid.ColumnSpan="2">
+                        <TabItem Header="Log">
+                            <ListView
+                                HorizontalContentAlignment="Stretch"
+                                ItemsSource="{Binding BuildLogListModel}">
+                                <ListView.View>
+                                    <custom:PartAutoSizedGridView>
+                                        <custom:PartAutoSizedGridViewColumn Header="Time" Width="Auto" DisplayMemberBinding="{Binding TimeStr}" />
+                                        <custom:PartAutoSizedGridViewColumn Header="Depth" Width="Auto" DisplayMemberBinding="{Binding Depth}" />
+                                        <custom:PartAutoSizedGridViewColumn Header="State" Width="Auto" DisplayMemberBinding="{Binding StateStr}" />
+                                        <custom:PartAutoSizedGridViewColumn Header="Message" Width="300" ActivateAutoSize="False" DisplayMemberBinding="{Binding Message}" />
+                                        <custom:PartAutoSizedGridViewColumn Header="RawCode" Width="200" ActivateAutoSize="False" DisplayMemberBinding="{Binding RawCode}" />
+                                    </custom:PartAutoSizedGridView>
+                                </ListView.View>
+                            </ListView>
+                        </TabItem>
+                        <TabItem Header="Plugin">
+                        </TabItem>
+                        <TabItem Header="Variable">
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <Grid Grid.Row="1" Margin="15, 15, 15, 15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"></ColumnDefinition>
+                <ColumnDefinition Width="120"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Button
+                Grid.Column="0"
+                Margin="0, 0, 20, 0"
+                Name="RefreshButton"
+                Click="RefreshButton_Click"
+                Content="Refresh">
+            </Button>
+            <Button
+                Grid.Column="1"
+                Margin="0, 0, 20, 0"
+                Name="ClearButton"
+                Click="ClearButton_Click"
+                Content="Clear">
+            </Button>
+            <Button
+                Grid.Column="2"
+                Name="ExportButton"
+                Content="Export">
+            </Button>
+            
+            <Button
+                Grid.Column="4"
+                IsDefault="True"
+                Name="CloseButton"
+                Click="CloseButton_Click"
+                Content="Close">
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

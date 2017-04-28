@@ -84,7 +84,7 @@ namespace PEBakery.Core
 
             if (cmd.Type != CodeType.ShellExecuteEx && info.ExitOutVar != null)
             {
-                string exitOutVar = Variables.GetVariableName(info.ExitOutVar);
+                string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
                 LogInfo log = Variables.SetVariable(s, info.ExitOutVar, proc.ExitCode.ToString()).First();
                 
                 if (log.State == LogState.Success)

@@ -623,7 +623,14 @@ namespace PEBakery.Core
                 #region 06 Attach, Interface
                 // 06 Attach, Interface
                 case CodeType.ExtractFile:
-                    break;
+                    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
+                        const int minArgCount = 4;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
+                    }
                 case CodeType.ExtractAndRun:
                     break;
                 case CodeType.ExtractAllFiles:

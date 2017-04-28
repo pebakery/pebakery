@@ -37,6 +37,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using SQLite.Net;
+using System.Text;
 
 namespace PEBakery.WPF
 {
@@ -62,6 +63,8 @@ namespace PEBakery.WPF
 
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
+
+        private readonly string LogSeperator = "--------------------------------------------------------------------------------";
 
         public MainWindow()
         {
@@ -101,59 +104,50 @@ namespace PEBakery.WPF
             this.baseDir = argBaseDir;
             this.treeModel = new TreeViewModel(null);
             this.DataContext = treeModel;
+
+            // LoadButtonsImage();
+
             this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
             this.settingViewModel = new SettingViewModel(settingFile);
-
-            LoadButtonsImage();
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
-                File.Delete(logDBFile); // Temp measure - needed to test DB Log
-            }
-            catch (IOException) { }
-            try
-            {
                 this.logger = new Logger(logDBFile);
+                logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
             catch (SQLiteException e)
             { // Update failure
-                string msg = $"SQLite Error : {e.Message}\n\nLog database is corrupted. Please delete PEBakeryLog.db and restart.";
+                string msg = $"SQLite Error : {e.Message}{Environment.NewLine}{Environment.NewLine}Log database is corrupted. Please delete PEBakeryLog.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
+            this.settingViewModel.LogDB = logger.DB;
 
             // If plugin cache is enabled, generate cache after 5 seconds
             if (settingViewModel.Plugin_EnableCache)
             {
-                string cacheFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
+                string cacheDBFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
                 try
                 {
-                    this.pluginCache = new PluginCache(cacheFile);
+                    this.pluginCache = new PluginCache(cacheDBFile);
+                    logger.System_Write(new LogInfo(LogState.Info, $"PluginCache enabled, {pluginCache.Table<DB_PluginCache>().Count()} cached plugin found"));
                 }
                 catch (SQLiteException e)
                 { // Update failure
-                    string msg = $"SQLite Error : {e.Message}\n\nCache database is corrupted. Please delete PEBakeryCache.db and restart.";
+                    string msg = $"SQLite Error : {e.Message}{Environment.NewLine}{Environment.NewLine}Cache database is corrupted. Please delete PEBakeryCache.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     Application.Current.Shutdown(1);
                 }
+
+                this.settingViewModel.CacheDB = pluginCache;
+            }
+            else
+            {
+                logger.System_Write(new LogInfo(LogState.Info, $"PluginCache disabled"));
             }
 
             StartLoadWorker();
-        }
-
-        void LoadButtonsImage()
-        {
-            // Properties.Resources.
-            BuildButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            RefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-            SettingButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 5);
-            UpdateButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Download, 5);
-            AboutButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Help, 5);
-
-            PluginRunButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            PluginEditButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
-            PluginRefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
         }
 
         private void StartLoadWorker()
@@ -172,6 +166,8 @@ namespace PEBakery.WPF
             PluginLogo.Content = image;
             PluginTitle.Text = "Welcome to PEBakery!";
             PluginDescription.Text = "PEBakery loading...";
+            logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{baseDir}]"));
+            MainCanvas.Children.Clear();
 
             int stage2LinksCount = 0;
             int loadedPluginCount = 0;
@@ -192,9 +188,9 @@ namespace PEBakery.WPF
                 watch = Stopwatch.StartNew();
 
                 // Init ProjectCollection
-                if (settingViewModel.Plugin_EnableCache) // Use PluginCache - Fast speed, more Memory
+                if (settingViewModel.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
                     projects = new ProjectCollection(baseDir, pluginCache);
-                else  // Do not use PluginCache - Slow speed, less Memory
+                else  // Do not use PluginCache - Slow speed, less memory
                     projects = new ProjectCollection(baseDir, null);
 
                 allPluginCount = projects.PrepareLoad(out stage2LinksCount);
@@ -265,18 +261,36 @@ namespace PEBakery.WPF
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 watch.Stop();
-                TimeSpan t = watch.Elapsed;
+
+                StringBuilder b = new StringBuilder();
+                b.Append("Projects [");
+                List<Project> projList = projects.Projects;
+                for (int i = 0; i < projList.Count; i++)
+                {
+                    b.Append(projList[i].ProjectName);
+                    if (i + 1 < projList.Count)
+                        b.Append(", ");
+                }
+                b.Append("] loaded");
+                logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
+
+                double t = watch.Elapsed.Milliseconds / 1000.0;
+                string msg;
                 if (settingViewModel.Plugin_EnableCache)
                 {
                     double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    this.StatusBar.Text = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:hh\\:mm\\:ss}";
+                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
+                    StatusBar.Text = msg;
                 }
                 else
                 {
-                    this.StatusBar.Text = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    StatusBar.Text = msg;
                 }
                 LoadProgressBar.Visibility = Visibility.Collapsed;
                 StatusBar.Visibility = Visibility.Visible;
+                logger.System_Write(new LogInfo(LogState.Info, msg));
+                logger.System_Write(LogSeperator);
 
                 MainProgressRing.IsActive = false;
 
@@ -289,7 +303,7 @@ namespace PEBakery.WPF
                         StartCacheWorker();
                         (tickSender as DispatcherTimer).Stop();
                     };
-                    Timer.Interval = TimeSpan.FromSeconds(5);
+                    Timer.Interval = TimeSpan.FromSeconds(3);
                     Timer.Start();
                 }
             };
@@ -298,40 +312,54 @@ namespace PEBakery.WPF
 
         private void StartCacheWorker()
         {
-            Stopwatch watch = new Stopwatch();
-            BackgroundWorker cacheWorker = new BackgroundWorker();
-
-            MainProgressRing.IsActive = true;
-            int updatedCount = 0;
-            int cachedCount = 0;
-            cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            if (PluginCache.dbLock == 0)
             {
-                BackgroundWorker worker = sender as BackgroundWorker;
+                Interlocked.Increment(ref PluginCache.dbLock);
+                try
+                {
+                    Stopwatch watch = new Stopwatch();
+                    BackgroundWorker cacheWorker = new BackgroundWorker();
 
-                watch = Stopwatch.StartNew();
-                pluginCache.CachePlugins(projects, worker);
-            };
+                    MainProgressRing.IsActive = true;
+                    int updatedCount = 0;
+                    int cachedCount = 0;
+                    cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                    {
+                        BackgroundWorker worker = sender as BackgroundWorker;
 
-            cacheWorker.WorkerReportsProgress = true;
-            cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
-            {
-                Interlocked.Increment(ref cachedCount);
-                if (e.ProgressPercentage == 1)
-                    Interlocked.Increment(ref updatedCount);
-                StatusBar.Text = $"Updating cache... ({cachedCount}/{allPluginCount})";
-            };
-            cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-            {
-                watch.Stop();
+                        watch = Stopwatch.StartNew();
+                        pluginCache.CachePlugins(projects, worker);
+                    };
 
-                double cachePercent = (double) updatedCount * 100 / allPluginCount;
+                    cacheWorker.WorkerReportsProgress = true;
+                    cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+                    {
+                        Interlocked.Increment(ref cachedCount);
+                        if (e.ProgressPercentage == 1)
+                            Interlocked.Increment(ref updatedCount);
+                        StatusBar.Text = $"Updating cache... ({cachedCount}/{allPluginCount})";
+                    };
+                    cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                    {
+                        watch.Stop();
 
-                TimeSpan t = watch.Elapsed;
-                StatusBar.Text = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:hh\\:mm\\:ss}";
+                        double cachePercent = (double)updatedCount * 100 / allPluginCount;
 
-                MainProgressRing.IsActive = false;
-            };
-            cacheWorker.RunWorkerAsync();
+                        double t = watch.Elapsed.Milliseconds / 1000.0;
+                        string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
+                        StatusBar.Text = msg;
+                        logger.System_Write(new LogInfo(LogState.Info, msg));
+                        logger.System_Write(LogSeperator);
+
+                        MainProgressRing.IsActive = false;
+                    };
+                    cacheWorker.RunWorkerAsync();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref PluginCache.dbLock);
+                }
+            }
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -395,12 +423,8 @@ namespace PEBakery.WPF
                     DrawPlugin(item.Node.Data);
                     watch.Stop();
                     double sec = watch.Elapsed.TotalSeconds;
-                    StatusBar.Text = $"{currentTree.Node.Data.ShortPath} rendered. Took {sec:0.000}sec";
+                    StatusBar.Text = $"{Path.GetFileName(currentTree.Node.Data.ShortPath)} rendered. Took {sec:0.000}sec";
                 });
-            }
-            else
-            {
-                Debug.Assert(false);
             }
         }
 
@@ -461,13 +485,9 @@ namespace PEBakery.WPF
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
             }
-
         }
 
-        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            StartRefreshWorker();
-        }
+        
 
         private void StartRefreshWorker()
         {
@@ -500,7 +520,8 @@ namespace PEBakery.WPF
                 MainProgressRing.IsActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                StatusBar.Text = $"{currentTree.Node.Data.ShortPath} reloaded. Took {sec:0.000}sec";
+                string msg = $"{Path.GetFileName(currentTree.Node.Data.ShortPath)} reloaded. Took {sec:0.000}sec";
+                StatusBar.Text = msg;
             };
             refreshWorker.RunWorkerAsync();
         }
@@ -537,10 +558,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
             
@@ -548,16 +565,24 @@ namespace PEBakery.WPF
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            double oldScaleFactor = settingViewModel.Interface_ScaleFactor;
+            double old_Interface_ScaleFactor = settingViewModel.Interface_ScaleFactor;
+            bool old_Plugin_EnableCache = settingViewModel.Plugin_EnableCache;
 
             SettingWindow dialog = new SettingWindow(settingViewModel);
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
                 double newScaleFactor = settingViewModel.Interface_ScaleFactor;
-                if (double.Epsilon < Math.Abs(newScaleFactor - oldScaleFactor)) // Not Equal
+                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
                     StartRefreshWorker();
+                if (old_Plugin_EnableCache == false && settingViewModel.Plugin_EnableCache)
+                    StartCacheWorker();
             }
+        }
+
+        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
+        {
+
         }
 
         private void PluginEditButton_Click(object sender, RoutedEventArgs e)
@@ -571,11 +596,22 @@ namespace PEBakery.WPF
             Process.Start(procInfo);
         }
 
+        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartRefreshWorker();
+        }
+
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             logger.DB.Close();
             if (pluginCache != null)
                 pluginCache.Close();
+        }
+
+        private void LogButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogWindow dialog = new LogWindow(logger);
+            dialog.Show();
         }
     }
     #endregion

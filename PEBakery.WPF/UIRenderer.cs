@@ -20,7 +20,7 @@ using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Lib;
-using Btl.Controls;
+using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,6 +33,7 @@ using System.Diagnostics;
 using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
+using System.Windows.Threading;
 
 namespace PEBakery.WPF
 {
@@ -67,13 +68,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCodes = null;
-                    logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.Normal_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
 
@@ -141,7 +142,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.Normal_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
                 }
             }
 
