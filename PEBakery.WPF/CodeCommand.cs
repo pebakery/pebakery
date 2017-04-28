@@ -16,18 +16,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using PEBakery.Exceptions;
-using PEBakery.Helper;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Win32;
 using System.IO;
-using PEBakery.Lib;
 using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
 using System.Windows;
-using WPFCustomMessageBox;
+using PEBakery.Exceptions;
+using PEBakery.Helper;
+using PEBakery.WPF.Controls;
+using PEBakery.Lib;
 
 namespace PEBakery.Core
 {

@@ -64,8 +64,8 @@ namespace PEBakery.WPF
     {
         private readonly string settingFile;
 
-        private LogDatabase logDB;
-        public LogDatabase LogDB { set => logDB = value; }
+        private LogDB logDB;
+        public LogDB LogDB { set => logDB = value; }
 
         private PluginCache cacheDB;
         public PluginCache CacheDB { set => cacheDB = value; }

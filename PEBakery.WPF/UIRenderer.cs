@@ -20,7 +20,7 @@ using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Lib;
-using Btl.Controls;
+using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -192,7 +192,7 @@ namespace PEBakery.Core
 
     public class Logger
     {    
-        public LogDatabase DB;
+        public LogDB DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
@@ -201,7 +201,7 @@ namespace PEBakery.Core
 
         public Logger(string path)
         {
-            DB = new LogDatabase(path);
+            DB = new LogDB(path);
         }
 
         ~Logger()
@@ -608,6 +608,9 @@ namespace PEBakery.Core
         [MaxLength(65535)]
         public string Message { get; set; }
 
+        [Ignore]
+        public string TimeStr { get => Time.ToString("yyyy-MM-dd HH:mm:ss zzz"); }
+
         public override string ToString()
         {
             return $"{Id} = [{State}] {Message}";
@@ -706,9 +709,9 @@ namespace PEBakery.Core
     #endregion
 
     #region Database
-    public class LogDatabase : SQLiteConnection
+    public class LogDB : SQLiteConnection
     {
-        public LogDatabase(string path) : base(new SQLitePlatformWin32(), path)
+        public LogDB(string path) : base(new SQLitePlatformWin32(), path)
         {
             CreateTable<DB_SystemLog>();
             CreateTable<DB_Build>();

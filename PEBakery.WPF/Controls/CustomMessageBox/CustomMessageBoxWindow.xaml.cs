@@ -29,7 +29,7 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace WPFCustomMessageBox
+namespace PEBakery.WPF.Controls
 {
     /// <summary>
     /// Interaction logic for ModalDialog.xaml

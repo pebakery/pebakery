@@ -1,5 +1,5 @@
 ﻿using PEBakery.Exceptions;
-using WPFCustomMessageBox;
+using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

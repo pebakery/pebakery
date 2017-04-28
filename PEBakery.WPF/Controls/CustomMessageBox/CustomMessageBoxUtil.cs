@@ -24,7 +24,7 @@
 	SOFTWARE.
 */
 
-namespace WPFCustomMessageBox
+namespace PEBakery.WPF.Controls
 {
     using System;
     using System.Drawing;

@@ -126,6 +126,7 @@
     <Compile Include="CodeCommand.cs" />
     <Compile Include="CommandControl.cs" />
     <Compile Include="CommandUI.cs" />
+    <Compile Include="Controls\AutoSizedGridView\AutoSizedGridView.cs" />
     <Compile Include="Controls\CustomMessageBox\CustomMessageBox.cs" />
     <Compile Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
@@ -138,6 +139,9 @@
     <Compile Include="Exception.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Controls\MahApps\ProgressRing.cs" />
+    <Compile Include="LogWindow.xaml.cs">
+      <DependentUpon>LogWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Macro.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Controls\Spinner\SpinnerControl.cs" />
@@ -159,6 +163,10 @@
     <Page Include="Controls\MahApps\ProgressRing.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="LogWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

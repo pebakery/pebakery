@@ -27,7 +27,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace Btl.Controls
+namespace PEBakery.WPF.Controls
 {
     /// <summary>
     /// Interaction logic for SpinnerControl.xaml

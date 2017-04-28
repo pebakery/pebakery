@@ -64,6 +64,8 @@ namespace PEBakery.WPF
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
 
+        private readonly string LogSeperator = "--------------------------------------------------------------------------------";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -103,7 +105,7 @@ namespace PEBakery.WPF
             this.treeModel = new TreeViewModel(null);
             this.DataContext = treeModel;
 
-            LoadButtonsImage();
+            // LoadButtonsImage();
 
             this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
             this.settingViewModel = new SettingViewModel(settingFile);
@@ -117,8 +119,7 @@ namespace PEBakery.WPF
             try
             {
                 this.logger = new Logger(logDBFile);
-                logger.System_Write(new LogInfo(LogState.Info, $"PEBakery init at {DateTime.Now:yyyy-MM-dd HH:mm:ss UTCzz}"));
-                logger.System_Write(new LogInfo(LogState.Info, $"%BaseDir% = [{baseDir}]"));
+                logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
             catch (SQLiteException e)
             { // Update failure
@@ -154,20 +155,6 @@ namespace PEBakery.WPF
             StartLoadWorker();
         }
 
-        void LoadButtonsImage()
-        {
-            // Properties.Resources.
-            BuildButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            RefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-            SettingButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 5);
-            UpdateButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Download, 5);
-            AboutButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Help, 5);
-
-            PluginRunButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Wrench, 5);
-            PluginEditButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderColor, 5);
-            PluginRefreshButton.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Refresh, 5);
-        }
-
         private void StartLoadWorker()
         {
             Stopwatch watch = new Stopwatch();
@@ -184,7 +171,7 @@ namespace PEBakery.WPF
             PluginLogo.Content = image;
             PluginTitle.Text = "Welcome to PEBakery!";
             PluginDescription.Text = "PEBakery loading...";
-            logger.System_Write(new LogInfo(LogState.Info, $@"Loading plugins from [{baseDir}\Projects]"));
+            logger.System_Write(new LogInfo(LogState.Info, $@"Loading plugins from [{baseDir}]"));
             MainCanvas.Children.Clear();
 
             int stage2LinksCount = 0;
@@ -280,32 +267,33 @@ namespace PEBakery.WPF
             {
                 watch.Stop();
                 double t = watch.Elapsed.Milliseconds / 1000.0;
+                string msg;
                 if (settingViewModel.Plugin_EnableCache)
                 {
                     double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    string msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
+                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
                     StatusBar.Text = msg;
-                    logger.System_Write(new LogInfo(LogState.Info, msg));
                 }
                 else
                 {
-                    string msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
                     StatusBar.Text = msg;
-                    logger.System_Write(new LogInfo(LogState.Info, msg));
                 }
+                logger.System_Write(new LogInfo(LogState.Info, msg));
+                logger.System_Write(new LogInfo(LogState.Ignore, LogSeperator));
                 LoadProgressBar.Visibility = Visibility.Collapsed;
                 StatusBar.Visibility = Visibility.Visible;
 
                 StringBuilder b = new StringBuilder();
-                b.Append("Loaded projects = [");
+                b.Append("Projects [");
                 List<Project> projList = projects.Projects;
                 for (int i = 0; i < projList.Count; i++)
                 {
                     b.Append(projList[i].ProjectName);
-                    if (i + 1 == projList.Count)
+                    if (i + 1 < projList.Count)
                         b.Append(", ");
                 }
-                b.Append("]");
+                b.Append("] loaded");
                 logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
 
                 MainProgressRing.IsActive = false;
@@ -360,6 +348,7 @@ namespace PEBakery.WPF
                 string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
                 StatusBar.Text = msg;
                 logger.System_Write(new LogInfo(LogState.Info, msg));
+                logger.System_Write(new LogInfo(LogState.Ignore, LogSeperator));
 
                 MainProgressRing.IsActive = false;
             };
@@ -491,10 +480,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            StartRefreshWorker();
-        }
+        
 
         private void StartRefreshWorker()
         {
@@ -565,10 +551,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
             
@@ -591,6 +573,11 @@ namespace PEBakery.WPF
             }
         }
 
+        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private void PluginEditButton_Click(object sender, RoutedEventArgs e)
         {
             ProcessStartInfo procInfo = new ProcessStartInfo()
@@ -602,11 +589,22 @@ namespace PEBakery.WPF
             Process.Start(procInfo);
         }
 
+        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartRefreshWorker();
+        }
+
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             logger.DB.Close();
             if (pluginCache != null)
                 pluginCache.Close();
+        }
+
+        private void LogButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogWindow dialog = new LogWindow(logger.DB);
+            dialog.Show();
         }
     }
     #endregion

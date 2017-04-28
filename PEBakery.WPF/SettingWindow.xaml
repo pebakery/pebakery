@@ -22,10 +22,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
-        xmlns:btl="clr-namespace:Btl.Controls"
         FontSize="13"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
+        ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Setting" Width="600" Height="480">
     <Grid>
@@ -149,16 +149,16 @@
                 </StackPanel>
             </TabItem>
         </TabControl>
-        <Grid Grid.Row="1" Margin="20, 15, 20, 15">
+        <Grid Grid.Row="1" Margin="15, 15, 15, 15">
             <Grid.RowDefinitions>
                 <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
-                <ColumnDefinition Width="1*"></ColumnDefinition>
-                <ColumnDefinition Width="3*"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="20"></ColumnDefinition>
+                <ColumnDefinition Width="100"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
             <Button
@@ -181,5 +181,4 @@
             </Button>
         </Grid>
     </Grid>
-    
 </Window>
