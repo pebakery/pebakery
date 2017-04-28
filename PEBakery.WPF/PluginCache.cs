@@ -18,10 +18,12 @@ namespace PEBakery.Core
     #region PluginCache
     public class PluginCache : SQLiteConnection
     {
+        public static int dbLock = 0;
         private ReaderWriterLockSlim listLock;
 
         public PluginCache(string path) : base(new SQLitePlatformWin32(), path)
         {
+            dbLock = 0;
             CreateTable<DB_ExecutableInfo>();
             CreateTable<DB_PluginCache>();
         }
@@ -29,7 +31,7 @@ namespace PEBakery.Core
         public void CachePlugins(ProjectCollection projects, BackgroundWorker worker)
         {
             try
-            {
+            { 
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate

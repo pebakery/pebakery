@@ -33,6 +33,7 @@ using System.Diagnostics;
 using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
+using System.Windows.Threading;
 
 namespace PEBakery.WPF
 {

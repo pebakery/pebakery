@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using PEBakery.Helper;
+using System.Threading;
 
 namespace PEBakery.WPF
 {
@@ -44,7 +45,18 @@ namespace PEBakery.WPF
 
         private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
         {
-            Model.ClearCacheDB();
+            if (PluginCache.dbLock == 0)
+            {
+                Interlocked.Increment(ref PluginCache.dbLock);
+                try
+                {
+                    Model.ClearCacheDB();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref PluginCache.dbLock);
+                }
+            }
         }
 
         private void Button_ClearLog_Click(object sender, RoutedEventArgs e)
@@ -245,10 +257,10 @@ namespace PEBakery.WPF
         public void ClearLogDB()
         {
             logDB.DeleteAll<DB_SystemLog>();
-            logDB.DeleteAll<DB_Build>();
+            logDB.DeleteAll<DB_BuildInfo>();
             logDB.DeleteAll<DB_Plugin>();
             logDB.DeleteAll<DB_Variable>();
-            logDB.DeleteAll<DB_CodeLog>();
+            logDB.DeleteAll<DB_BuildLog>();
 
             UpdateLogDBState();
         }
@@ -265,7 +277,7 @@ namespace PEBakery.WPF
         public void UpdateLogDBState()
         {
             int systemLogCount = logDB.Table<DB_SystemLog>().Count();
-            int codeLogCount = logDB.Table<DB_CodeLog>().Count();
+            int codeLogCount = logDB.Table<DB_BuildLog>().Count();
             Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,18 +25,12 @@ namespace PEBakery.WPF
     {
         private LogViewModel model;
 
-        public LogWindow(LogDB logDB)
+        public LogWindow(Logger logger)
         {
-            this.model = new LogViewModel(logDB);
+            this.model = new LogViewModel(logger);
             this.DataContext = model;
+
             InitializeComponent();
-            
-
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -48,36 +43,155 @@ namespace PEBakery.WPF
             if (e.Key == Key.Escape)
                 Close();
         }
+
+        private void SelectBuildComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox box = sender as ComboBox;
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            int idx = MainTab.SelectedIndex;
+            switch (idx)
+            {
+                case 0: // System Log 
+                    model.RefreshSystemLog();
+                    break;
+                case 1: // Build Log
+                    model.RefreshBuildLog();
+                    break;
+            }
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            int idx = MainTab.SelectedIndex;
+            switch (idx)
+            {
+                case 0: // System Log 
+                    model.LogDB.DeleteAll<DB_SystemLog>();
+                    model.RefreshSystemLog();
+                    break;
+                case 1: // Build Log
+                    model.LogDB.DeleteAll<DB_BuildInfo>();
+                    model.LogDB.DeleteAll<DB_BuildLog>();
+                    model.LogDB.DeleteAll<DB_Plugin>();
+                    model.LogDB.DeleteAll<DB_Variable>();
+                    model.RefreshBuildLog();
+                    break;
+            }
+        }
     }
 
     #region LogListModel
     public class SystemLogListModel : ObservableCollection<DB_SystemLog> { }
+    public class PluginListModel : ObservableCollection<DB_Plugin> { }
+    public class VariableListModel : ObservableCollection<DB_Variable> { }
+    public class BuildLogListModel : ObservableCollection<DB_BuildLog> { }
     #endregion
 
     #region LogViewModel
     public class LogViewModel : INotifyPropertyChanged
     {
-        private LogDB logDB;
-        public LogDB LogDB { get => logDB;  set => logDB = value; }
+        public Logger Logger { get; set; }
+        public LogDB LogDB { get => Logger.DB; }
 
-        public LogViewModel(LogDB logDB)
+        public LogViewModel(Logger logger)
         {
-            this.logDB = logDB;
+            Logger = logger;
 
-            // Populate SelectBuildEntries
-            List<string> buildList = new List<string>();
-            foreach (DB_Build b in logDB.Table<DB_Build>())
-                buildList.Add($"[{b.Id}] {b.Name} ({b.StartTime:yyyy-MM-dd HH-mm-ss zzz})");
-            SelectBuildEntries = buildList;
+            Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
+            Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
+            Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
+            Logger.PluginUpdated += PluginUpdateEventHandler;
+            Logger.VariableUpdated += VariableUpdateEventHandler;
 
-            this.systemLogListModel = new SystemLogListModel();
-            var systemLogList = logDB.Table<DB_SystemLog>();
-            foreach (DB_SystemLog log in systemLogList)
-                systemLogListModel.Add(log);
+            RefreshSystemLog();
+            RefreshBuildLog();
         }
 
+        ~LogViewModel()
+        {
+            Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+            Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
+            Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
+            Logger.PluginUpdated -= PluginUpdateEventHandler;
+            Logger.VariableUpdated -= VariableUpdateEventHandler;
+        }
+
+        #region EventHandler
+        public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
+        {
+            App.Current.Dispatcher.Invoke(() => { SystemLogListModel.Add(e.Log); });
+            OnPropertyUpdate("SystemLogListModel");
+        }
+
+        public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)
+        {
+            RefreshBuildLog();
+        }
+
+        public void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e)
+        {
+            if (SelectBuildIdEntries != null)
+            {
+                int idx = SelectBuildIdEntries.IndexOf(e.Log.BuildId);
+                if (idx != -1)
+                {
+                    App.Current.Dispatcher.Invoke(() => { BuildLogListModel.Add(e.Log); });
+                    OnPropertyUpdate("BuildLogListModel");
+                }
+            }
+        }
+
+        public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
+        {
+            // PluginListModel.Add(e.Log);
+            // OnPropertyUpdate("SystemLogListModel");
+        }
+
+        public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
+        {
+            // VariableListModel.Add(e.Log);
+            // OnPropertyUpdate("SystemLogListModel");
+        }
+        #endregion
+
+        #region Refresh 
+        public void RefreshSystemLog()
+        {
+            SystemLogListModel list = new SystemLogListModel();
+            foreach (DB_SystemLog log in LogDB.Table<DB_SystemLog>())
+                list.Add(log);
+            SystemLogListModel = list;
+        }
+
+        public void RefreshBuildLog()
+        {
+            // Populate SelectBuildEntries
+            List<long> idList = new List<long>();
+            List<string> nameList = new List<string>();
+            foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
+            {
+                string timeStr = b.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+                nameList.Add($"[{timeStr}] {b.Name} ({b.Id})");
+                idList.Add(b.Id);
+            }
+            // Keep order!
+            SelectBuildIdEntries = idList;
+            SelectBuildEntries = nameList;
+
+            SelectBuildIndex = 0;
+        }
+        #endregion
+
         #region SystemLog
-        private SystemLogListModel systemLogListModel;
+        private SystemLogListModel systemLogListModel = new SystemLogListModel();
         public SystemLogListModel SystemLogListModel
         {
             get => systemLogListModel;
@@ -89,7 +203,33 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Build
+        #region BuildLog
+        private int selectBuildIndex;
+        public int SelectBuildIndex
+        {
+            get => selectBuildIndex;
+            set
+            {
+                selectBuildIndex = value;
+
+                if (0 < selectBuildIdEntries.Count)
+                {
+                    long idx = selectBuildIdEntries[value];
+
+                    BuildLogListModel buildLogListModel = new BuildLogListModel();
+                    foreach (DB_BuildLog b in LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == idx))
+                        buildLogListModel.Add(b);
+                    BuildLogListModel = buildLogListModel;
+                }
+                else
+                {
+                    BuildLogListModel = new BuildLogListModel();
+                }
+
+                OnPropertyUpdate("SelectBuildIndex");
+            }
+        }
+
         private List<string> selectBuildEntries;
         public List<string> SelectBuildEntries
         {
@@ -100,8 +240,25 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("SelectBuildEntries");
             }
         }
-        #endregion
 
+        private List<long> selectBuildIdEntries;
+        public List<long> SelectBuildIdEntries
+        {
+            get => selectBuildIdEntries;
+            set => selectBuildIdEntries = value;
+        }
+
+        private BuildLogListModel buildLogListModel;
+        public BuildLogListModel BuildLogListModel
+        {
+            get => buildLogListModel;
+            set
+            {
+                buildLogListModel = value;
+                OnPropertyUpdate("BuildLogListModel");
+            }
+        }
+        #endregion
 
         #region Utility
         private void ResizeGridViewColumn(GridViewColumn column)

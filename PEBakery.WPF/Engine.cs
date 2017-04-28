@@ -116,7 +116,7 @@ namespace PEBakery.Core
 
         public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
         {
-            long buildId = s.Logger.Build_Init(DateTime.Now, buildName, s);
+            long buildId = s.Logger.Build_Init(buildName, s);
             long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
             s.Logger.LogStartOfSection(buildId, addr.Section.SectionName, 0, null);
             s.Variables.ResetVariables(VarsType.Local);

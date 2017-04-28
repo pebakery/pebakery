@@ -113,11 +113,6 @@ namespace PEBakery.WPF
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
-                File.Delete(logDBFile); // Temp measure - needed to test DB Log
-            }
-            catch (IOException) { }
-            try
-            {
                 this.logger = new Logger(logDBFile);
                 logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
@@ -171,7 +166,7 @@ namespace PEBakery.WPF
             PluginLogo.Content = image;
             PluginTitle.Text = "Welcome to PEBakery!";
             PluginDescription.Text = "PEBakery loading...";
-            logger.System_Write(new LogInfo(LogState.Info, $@"Loading plugins from [{baseDir}]"));
+            logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{baseDir}]"));
             MainCanvas.Children.Clear();
 
             int stage2LinksCount = 0;
@@ -266,23 +261,6 @@ namespace PEBakery.WPF
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
                 watch.Stop();
-                double t = watch.Elapsed.Milliseconds / 1000.0;
-                string msg;
-                if (settingViewModel.Plugin_EnableCache)
-                {
-                    double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
-                    StatusBar.Text = msg;
-                }
-                else
-                {
-                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
-                    StatusBar.Text = msg;
-                }
-                logger.System_Write(new LogInfo(LogState.Info, msg));
-                logger.System_Write(new LogInfo(LogState.Ignore, LogSeperator));
-                LoadProgressBar.Visibility = Visibility.Collapsed;
-                StatusBar.Visibility = Visibility.Visible;
 
                 StringBuilder b = new StringBuilder();
                 b.Append("Projects [");
@@ -296,6 +274,24 @@ namespace PEBakery.WPF
                 b.Append("] loaded");
                 logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
 
+                double t = watch.Elapsed.Milliseconds / 1000.0;
+                string msg;
+                if (settingViewModel.Plugin_EnableCache)
+                {
+                    double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
+                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
+                    StatusBar.Text = msg;
+                }
+                else
+                {
+                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    StatusBar.Text = msg;
+                }
+                LoadProgressBar.Visibility = Visibility.Collapsed;
+                StatusBar.Visibility = Visibility.Visible;
+                logger.System_Write(new LogInfo(LogState.Info, msg));
+                logger.System_Write(LogSeperator);
+
                 MainProgressRing.IsActive = false;
 
                 // If plugin cache is enabled, generate cache after 5 seconds
@@ -307,7 +303,7 @@ namespace PEBakery.WPF
                         StartCacheWorker();
                         (tickSender as DispatcherTimer).Stop();
                     };
-                    Timer.Interval = TimeSpan.FromSeconds(5);
+                    Timer.Interval = TimeSpan.FromSeconds(3);
                     Timer.Start();
                 }
             };
@@ -316,43 +312,54 @@ namespace PEBakery.WPF
 
         private void StartCacheWorker()
         {
-            Stopwatch watch = new Stopwatch();
-            BackgroundWorker cacheWorker = new BackgroundWorker();
-
-            MainProgressRing.IsActive = true;
-            int updatedCount = 0;
-            int cachedCount = 0;
-            cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            if (PluginCache.dbLock == 0)
             {
-                BackgroundWorker worker = sender as BackgroundWorker;
+                Interlocked.Increment(ref PluginCache.dbLock);
+                try
+                {
+                    Stopwatch watch = new Stopwatch();
+                    BackgroundWorker cacheWorker = new BackgroundWorker();
 
-                watch = Stopwatch.StartNew();
-                pluginCache.CachePlugins(projects, worker);
-            };
+                    MainProgressRing.IsActive = true;
+                    int updatedCount = 0;
+                    int cachedCount = 0;
+                    cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+                    {
+                        BackgroundWorker worker = sender as BackgroundWorker;
 
-            cacheWorker.WorkerReportsProgress = true;
-            cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
-            {
-                Interlocked.Increment(ref cachedCount);
-                if (e.ProgressPercentage == 1)
-                    Interlocked.Increment(ref updatedCount);
-                StatusBar.Text = $"Updating cache... ({cachedCount}/{allPluginCount})";
-            };
-            cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-            {
-                watch.Stop();
+                        watch = Stopwatch.StartNew();
+                        pluginCache.CachePlugins(projects, worker);
+                    };
 
-                double cachePercent = (double) updatedCount * 100 / allPluginCount;
+                    cacheWorker.WorkerReportsProgress = true;
+                    cacheWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+                    {
+                        Interlocked.Increment(ref cachedCount);
+                        if (e.ProgressPercentage == 1)
+                            Interlocked.Increment(ref updatedCount);
+                        StatusBar.Text = $"Updating cache... ({cachedCount}/{allPluginCount})";
+                    };
+                    cacheWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                    {
+                        watch.Stop();
 
-                double t = watch.Elapsed.Milliseconds / 1000.0;
-                string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
-                StatusBar.Text = msg;
-                logger.System_Write(new LogInfo(LogState.Info, msg));
-                logger.System_Write(new LogInfo(LogState.Ignore, LogSeperator));
+                        double cachePercent = (double)updatedCount * 100 / allPluginCount;
 
-                MainProgressRing.IsActive = false;
-            };
-            cacheWorker.RunWorkerAsync();
+                        double t = watch.Elapsed.Milliseconds / 1000.0;
+                        string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
+                        StatusBar.Text = msg;
+                        logger.System_Write(new LogInfo(LogState.Info, msg));
+                        logger.System_Write(LogSeperator);
+
+                        MainProgressRing.IsActive = false;
+                    };
+                    cacheWorker.RunWorkerAsync();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref PluginCache.dbLock);
+                }
+            }
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -603,7 +610,7 @@ namespace PEBakery.WPF
 
         private void LogButton_Click(object sender, RoutedEventArgs e)
         {
-            LogWindow dialog = new LogWindow(logger.DB);
+            LogWindow dialog = new LogWindow(logger);
             dialog.Show();
         }
     }
