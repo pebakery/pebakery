@@ -80,7 +80,7 @@ namespace PEBakery.Core
                 // Tools
                 SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")),
                 // Version
-                SetFixedValue("Version", WPF.App.Version.ToString()),
+                SetFixedValue("Version", App.Version.ToString()),
                 // ProjectDir
                 SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)),
                 // TargetDir

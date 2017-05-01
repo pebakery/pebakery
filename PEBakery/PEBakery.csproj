@@ -9,7 +9,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PEBakery.WPF</RootNamespace>
-    <AssemblyName>PEBakery.WPF</AssemblyName>
+    <AssemblyName>PEBakery</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -57,7 +57,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <StartupObject>PEBakery.App</StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>App.manifest</ApplicationManifest>
@@ -117,59 +117,59 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Commands\CommandINI.cs" />
-    <Compile Include="Commands\CommandInterface.cs" />
-    <Compile Include="Commands\CommandPlugin.cs" />
-    <Compile Include="Commands\CommandString.cs" />
-    <Compile Include="Commands\CommandSystem.cs" />
-    <Compile Include="Commands\CommandText.cs" />
-    <Compile Include="CodeParser.cs" />
-    <Compile Include="CodeCommand.cs" />
-    <Compile Include="Commands\CommandControl.cs" />
-    <Compile Include="Commands\CommandUI.cs" />
-    <Compile Include="Controls\AutoSizedGridView\AutoSizedGridView.cs" />
-    <Compile Include="Controls\CustomMessageBox\CustomMessageBox.cs" />
-    <Compile Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
+    <Compile Include="Core\Commands\CommandINI.cs" />
+    <Compile Include="Core\Commands\CommandInterface.cs" />
+    <Compile Include="Core\Commands\CommandPlugin.cs" />
+    <Compile Include="Core\Commands\CommandString.cs" />
+    <Compile Include="Core\Commands\CommandSystem.cs" />
+    <Compile Include="Core\Commands\CommandText.cs" />
+    <Compile Include="Core\CodeParser.cs" />
+    <Compile Include="Core\CodeCommand.cs" />
+    <Compile Include="Core\Commands\CommandControl.cs" />
+    <Compile Include="Core\Commands\CommandUI.cs" />
+    <Compile Include="WPF\Controls\AutoSizedGridView\AutoSizedGridView.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBox.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Controls\CustomMessageBox\CustomMessageBoxUtil.cs" />
-    <Compile Include="EncodedFile.cs" />
-    <Compile Include="Commands\CommandBranch.cs" />
-    <Compile Include="Engine.cs" />
-    <Compile Include="Commands\CommandFile.cs" />
+    <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxUtil.cs" />
+    <Compile Include="Core\EncodedFile.cs" />
+    <Compile Include="Core\Commands\CommandBranch.cs" />
+    <Compile Include="Core\Engine.cs" />
+    <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="Controls\MahApps\ProgressRing.cs" />
-    <Compile Include="LogWindow.xaml.cs">
+    <Compile Include="Core\Logger.cs" />
+    <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
+    <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Macro.cs" />
-    <Compile Include="Plugin.cs" />
-    <Compile Include="Controls\Spinner\SpinnerControl.cs" />
-    <Compile Include="PluginCache.cs" />
-    <Compile Include="SettingWindow.xaml.cs">
+    <Compile Include="Core\Macro.cs" />
+    <Compile Include="Core\Plugin.cs" />
+    <Compile Include="WPF\Controls\Spinner\SpinnerControl.cs" />
+    <Compile Include="Core\PluginCache.cs" />
+    <Compile Include="WPF\SettingWindow.xaml.cs">
       <DependentUpon>SettingWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="StringEscaper.cs" />
-    <Compile Include="UICommand.cs" />
-    <Compile Include="UIParser.cs" />
-    <Compile Include="UIRenderer.cs" />
+    <Compile Include="Core\StringEscaper.cs" />
+    <Compile Include="Core\UICommand.cs" />
+    <Compile Include="Core\UIParser.cs" />
+    <Compile Include="WPF\UIRenderer.cs" />
     <Compile Include="ResultWin32.cs" />
     <Compile Include="Libs\TreeLib.cs" />
-    <Compile Include="Variables.cs" />
-    <Page Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
+    <Compile Include="Core\Variables.cs" />
+    <Page Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Controls\MahApps\ProgressRing.xaml">
+    <Page Include="WPF\Controls\MahApps\ProgressRing.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="LogWindow.xaml">
+    <Page Include="WPF\LogWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainWindow.xaml">
+    <Page Include="WPF\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -180,23 +180,23 @@
     <Compile Include="Libs\CabLib.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="Libs\IniLib.cs" />
-    <Compile Include="MainWindow.xaml.cs">
+    <Compile Include="WPF\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Controls\Spinner\AllBrushes.xaml">
+    <Page Include="WPF\Controls\Spinner\AllBrushes.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Controls\Spinner\brush.scroll.down.xaml">
+    <Page Include="WPF\Controls\Spinner\brush.scroll.down.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Controls\Spinner\brush.scroll.up.xaml">
+    <Page Include="WPF\Controls\Spinner\brush.scroll.up.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="SettingWindow.xaml">
+    <Page Include="WPF\SettingWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -204,7 +204,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Controls\Spinner\SpinnerControl.Generic.xaml">
+    <Page Include="WPF\Controls\Spinner\SpinnerControl.Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

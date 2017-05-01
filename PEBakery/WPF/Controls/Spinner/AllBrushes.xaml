@@ -21,7 +21,7 @@
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/PEBakery.WPF;component/Controls/Spinner/brush.scroll.down.xaml" />
-        <ResourceDictionary Source="/PEBakery.WPF;component/Controls/Spinner/brush.scroll.up.xaml" />
+        <ResourceDictionary Source="/PEBakery.WPF;component/WPF/Controls/Spinner/brush.scroll.down.xaml" />
+        <ResourceDictionary Source="/PEBakery.WPF;component/WPF/Controls/Spinner/brush.scroll.up.xaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>
