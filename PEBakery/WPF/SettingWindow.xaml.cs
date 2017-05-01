@@ -89,6 +89,17 @@ namespace PEBakery.WPF
         }
 
         #region General
+        private bool general_OptimizeCode;
+        public bool General_OptimizeCode
+        {
+            get => general_OptimizeCode;
+            set
+            {
+                general_OptimizeCode = value;
+                OnPropertyUpdate("General_OptimizeCode");
+            }
+        }
+
         private bool general_EnableLongFilePath;
         public bool General_EnableLongFilePath
         {
@@ -189,6 +200,7 @@ namespace PEBakery.WPF
         {
             // General
             General_EnableLongFilePath = false;
+            General_OptimizeCode = true;
             // Interface
             Interface_ScaleFactor = 100;
             // Plugin
@@ -210,6 +222,7 @@ namespace PEBakery.WPF
             IniKey[] keys = new IniKey[]
             {
                 new IniKey("General", "EnableLongFilePath"), // Boolean
+                new IniKey("General", "OptimizeCode"), // Boolean
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
@@ -218,6 +231,7 @@ namespace PEBakery.WPF
 
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
             string str_General_EnableLongFilePath = dict["EnableLongFilePath"];
+            string str_General_OptimizeCode = dict["OptimizeCode"];
             string str_Interface_ScaleFactor = dict["ScaleFactor"];
             string str_Plugin_EnableCache = dict["EnableCache"];
             string str_Plugin_AutoConvertToUTF8 = dict["AutoConvertToUTF8"];
@@ -225,6 +239,10 @@ namespace PEBakery.WPF
             // General - EnableLongFilePath (Default = False)
             if (str_General_EnableLongFilePath.Equals("True", StringComparison.OrdinalIgnoreCase))
                 General_EnableLongFilePath = true;
+
+            // General - EnableLongFilePath (Default = True)
+            if (str_General_OptimizeCode.Equals("False", StringComparison.OrdinalIgnoreCase))
+                General_OptimizeCode = false;
 
             // Interface - ScaleFactor (Default = 100)
             if (int.TryParse(str_Interface_ScaleFactor, NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
@@ -247,6 +265,7 @@ namespace PEBakery.WPF
             IniKey[] keys = new IniKey[]
             {
                 new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
+                new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),

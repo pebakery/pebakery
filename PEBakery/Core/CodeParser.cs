@@ -25,6 +25,8 @@ using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Globalization;
 using PEBakery.Core.Commands;
+using System.Windows;
+using PEBakery.WPF;
 
 namespace PEBakery.Core
 {
@@ -74,7 +76,24 @@ namespace PEBakery.Core
             {
                 errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.SectionName}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
-            return compiledList;
+
+            bool doOptimize = false;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                doOptimize = w.Setting.General_OptimizeCode;
+            });
+
+            if (doOptimize)
+            {
+                List<CodeCommand> optimizedList = new List<CodeCommand>();
+                return CodeOptimizer.Optimize(compiledList);
+            }
+            else
+            {
+                return compiledList;
+            }
+            
         }
         #endregion
 

@@ -43,7 +43,7 @@ namespace PEBakery.Core.Commands
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
-            List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
+            List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
             if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
@@ -81,7 +81,7 @@ namespace PEBakery.Core.Commands
             if (preserveCurParams)
                 Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
             else
-                Engine.RunSection(s, nextAddr, parameters, s.CurDepth + 1, callback);
+                Engine.RunSection(s, nextAddr, paramList, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
-                Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
+                Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
 
@@ -199,7 +199,7 @@ namespace PEBakery.Core.Commands
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
-                Engine.RunCommands(s, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
+                Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
                 s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
 

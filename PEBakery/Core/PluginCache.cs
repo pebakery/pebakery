@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace PEBakery.Core
 {
@@ -26,6 +27,27 @@ namespace PEBakery.Core
             dbLock = 0;
             CreateTable<DB_ExecutableInfo>();
             CreateTable<DB_PluginCache>();
+        }
+
+        public void WaitClose()
+        {
+            if (dbLock == 0)
+            {
+                base.Close();
+                return;
+            }
+
+            DispatcherTimer Timer = new DispatcherTimer();
+            Timer.Tick += (object tickSender, EventArgs tickArgs) =>
+            {
+                if (dbLock == 0)
+                {
+                    base.Close();
+                    (tickSender as DispatcherTimer).Stop();
+                }
+            };
+            Timer.Interval = TimeSpan.FromSeconds(0.2);
+            Timer.Start();
         }
 
         public void CachePlugins(ProjectCollection projects, BackgroundWorker worker)

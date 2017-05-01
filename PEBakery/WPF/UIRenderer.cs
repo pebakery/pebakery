@@ -867,6 +867,15 @@ namespace PEBakery.WPF
             Ini.SetKey(uiCmd.Addr.Plugin.FullPath, new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
         }
 
+        public static void UpdatePlugin(string interfaceSectionName, List<UICommand> uiCmdList)
+        {
+            List<IniKey> keys = new List<IniKey>();
+            foreach (UICommand uiCmd in uiCmdList)
+                keys.Add(new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
+
+            Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
+        }
+
         private static bool SectionRunning = false;
         private static void RunSectionInUI(RenderInfo r, Logger logger, SectionAddress addr, string logMsg)
         {

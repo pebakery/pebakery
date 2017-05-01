@@ -104,7 +104,7 @@ namespace PEBakery.Core
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
                 paramDict[i + 1] = sectionParams[i];
-            RunCommands(s, codes, paramDict, depth, callback);
+            RunCommands(s, addr, codes, paramDict, depth, callback);
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
@@ -112,7 +112,7 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s.BuildId, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
-            RunCommands(s, codes, paramDict, depth, callback);
+            RunCommands(s, addr, codes, paramDict, depth, callback);
         }
 
         public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
@@ -130,8 +130,14 @@ namespace PEBakery.Core
             return buildId;
         }
 
-        public static void RunCommands(EngineState s, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
+        public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
+            if (codes.Count == 0)
+            {
+                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes"));
+            }
+
+
             CodeCommand curCommand = codes[0];
             for (int idx = 0; idx < codes.Count; idx++)
             {
@@ -315,9 +321,11 @@ namespace PEBakery.Core
                     case CodeType.Visible:
                         logs.AddRange(CommandInterface.Visible(s, cmd));
                         break;
+                    case CodeType.VisibleOp:
+                        logs.AddRange(CommandInterface.VisibleOp(s, cmd));
+                        break;
                     #endregion
-                    #region 07 UI
-                    // 07 UI
+                    #region 09 UI
                     case CodeType.Message:
                         logs.AddRange(CommandUI.Message(s, cmd));
                         break;
@@ -329,14 +337,12 @@ namespace PEBakery.Core
                     //case CodeType.Visible:
                     //    break;
                     #endregion
-                    #region 08 StringFormat
-                    // 08 StringFormat
+                    #region 10 StringFormat
                     case CodeType.StrFormat:
                         logs.AddRange(CommandString.StrFormat(s, cmd));
                         break;
                     #endregion
-                    #region 09 System
-                    // 09 System
+                    #region 11 System
                     // case CodeType.System:
                     //    break;
                     case CodeType.ShellExecute:
@@ -345,8 +351,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
-                    #region 10 Branch
-                    // 10 Branch
+                    #region 12 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
                         CommandBranch.RunExec(s, cmd);
@@ -365,8 +370,7 @@ namespace PEBakery.Core
                     case CodeType.End:
                         throw new InternalParserException("CodeParser Error");
                     #endregion
-                    #region 11 Control
-                    // 11 Control
+                    #region 13 Control
                     case CodeType.Set:
                         logs = CommandControl.Set(s, cmd);
                         break;
@@ -387,8 +391,7 @@ namespace PEBakery.Core
                     //case CodeType.Beep:
                     //    break;
                     #endregion
-                    #region 12 External Macro
-                    // 12 External Macro
+                    #region 14 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;

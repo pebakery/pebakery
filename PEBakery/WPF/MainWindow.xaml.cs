@@ -63,7 +63,8 @@ namespace PEBakery.WPF
         const int MaxDpiScale = 4;
         private int allPluginCount = 0;
         private readonly string settingFile;
-        private SettingViewModel settingViewModel;
+        private SettingViewModel setting;
+        public SettingViewModel Setting { get => setting; }
 
         private TreeViewModel treeModel;
         public TreeViewModel TreeModel { get => treeModel; }
@@ -109,10 +110,8 @@ namespace PEBakery.WPF
             this.treeModel = new TreeViewModel(null, null);
             this.DataContext = treeModel;
 
-            // LoadButtonsImage();
-
             this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
-            this.settingViewModel = new SettingViewModel(settingFile);
+            this.setting = new SettingViewModel(settingFile);
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
@@ -126,10 +125,10 @@ namespace PEBakery.WPF
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
-            this.settingViewModel.LogDB = logger.DB;
+            this.setting.LogDB = logger.DB;
 
             // If plugin cache is enabled, generate cache after 5 seconds
-            if (settingViewModel.Plugin_EnableCache)
+            if (setting.Plugin_EnableCache)
             {
                 string cacheDBFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
                 try
@@ -144,7 +143,7 @@ namespace PEBakery.WPF
                     Application.Current.Shutdown(1);
                 }
 
-                this.settingViewModel.CacheDB = pluginCache;
+                this.setting.CacheDB = pluginCache;
             }
             else
             {
@@ -192,7 +191,7 @@ namespace PEBakery.WPF
                 watch = Stopwatch.StartNew();
 
                 // Init ProjectCollection
-                if (settingViewModel.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
+                if (setting.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
                     projects = new ProjectCollection(baseDir, pluginCache);
                 else  // Do not use PluginCache - Slow speed, less memory
                     projects = new ProjectCollection(baseDir, null);
@@ -264,8 +263,6 @@ namespace PEBakery.WPF
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                watch.Stop();
-
                 StringBuilder b = new StringBuilder();
                 b.Append("Projects [");
                 List<Project> projList = projects.Projects;
@@ -278,9 +275,10 @@ namespace PEBakery.WPF
                 b.Append("] loaded");
                 logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
 
+                watch.Stop();
                 double t = watch.Elapsed.Milliseconds / 1000.0;
                 string msg;
-                if (settingViewModel.Plugin_EnableCache)
+                if (setting.Plugin_EnableCache)
                 {
                     double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
                     msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
@@ -299,7 +297,7 @@ namespace PEBakery.WPF
                 MainProgressRing.IsActive = false;
 
                 // If plugin cache is enabled, generate cache after 5 seconds
-                if (settingViewModel.Plugin_EnableCache)
+                if (setting.Plugin_EnableCache)
                 {
                     DispatcherTimer Timer = new DispatcherTimer();
                     Timer.Tick += (object tickSender, EventArgs tickArgs) =>
@@ -483,7 +481,7 @@ namespace PEBakery.WPF
             MainCanvas.Children.Clear();
             if (p.Type != PluginType.Directory)
             {
-                double scaleFactor = settingViewModel.Interface_ScaleFactor / 100;
+                double scaleFactor = setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
                 UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
                 MainCanvas.LayoutTransform = scale;
@@ -569,17 +567,17 @@ namespace PEBakery.WPF
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            double old_Interface_ScaleFactor = settingViewModel.Interface_ScaleFactor;
-            bool old_Plugin_EnableCache = settingViewModel.Plugin_EnableCache;
+            double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
+            bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
 
-            SettingWindow dialog = new SettingWindow(settingViewModel);
+            SettingWindow dialog = new SettingWindow(setting);
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
-                double newScaleFactor = settingViewModel.Interface_ScaleFactor;
+                double newScaleFactor = setting.Interface_ScaleFactor;
                 if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
                     StartRefreshWorker();
-                if (old_Plugin_EnableCache == false && settingViewModel.Plugin_EnableCache)
+                if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
                     StartCacheWorker();
             }
         }
@@ -609,7 +607,7 @@ namespace PEBakery.WPF
         {
             logger.DB.Close();
             if (pluginCache != null)
-                pluginCache.Close();
+                pluginCache.WaitClose();
         }
 
         private void LogButton_Click(object sender, RoutedEventArgs e)

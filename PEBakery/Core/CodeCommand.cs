@@ -42,8 +42,10 @@ namespace PEBakery.Core
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
         // 03 Text
         TXTAddLine = 300, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
+        TXTAddLineOp, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
+        INIWriteOp, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
         Compress = 500, Decompress,
         // 06 Network
@@ -52,6 +54,7 @@ namespace PEBakery.Core
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
         Visible = 800,
+        VisibleOp,
         // 09 UI
         Message = 900, Echo, Retrieve,
         // 10 StringFormat
@@ -63,8 +66,7 @@ namespace PEBakery.Core
         // 13 Control
         Set = 1300, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
         // 14 External Macro
-        Macro = 1400,
-    }
+        Macro = 1400,    }
 
     public enum DeprecatedCodeType
     {
@@ -639,6 +641,16 @@ namespace PEBakery.Core
         {
             InterfaceKey = interfaceKey;
             Visibility = visibility;
+        }
+    }
+
+    public class CodeInfo_VisibleOp : CodeInfo
+    { // Visible,<%InterfaceKey%>,<Visiblity>
+        public List<CodeInfo_Visible> InfoList; // 0 - InterfaceKey, 1 - Visibility
+
+        public CodeInfo_VisibleOp(List<CodeInfo_Visible> infoList)
+        {
+            InfoList = infoList;
         }
     }
     #endregion

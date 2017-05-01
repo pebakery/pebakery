@@ -8,7 +8,7 @@
     <ProjectGuid>{D6224DCE-02D5-4005-88FB-00A8E00CACE1}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PEBakery.WPF</RootNamespace>
+    <RootNamespace>PEBakery</RootNamespace>
     <AssemblyName>PEBakery</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -117,6 +117,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Core\CodeOptimizer.cs" />
     <Compile Include="Core\Commands\CommandINI.cs" />
     <Compile Include="Core\Commands\CommandInterface.cs" />
     <Compile Include="Core\Commands\CommandPlugin.cs" />

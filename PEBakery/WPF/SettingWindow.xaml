@@ -41,6 +41,13 @@
             <TabItem Header="General">
                 <StackPanel>
                     <CheckBox
+                        Name="CheckBox_OptimizeCode"
+                        Margin="15, 15, 15, 0"
+                        Content="Optimize Code"
+                        ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
+                        IsChecked="{Binding General_OptimizeCode}">
+                    </CheckBox>
+                    <CheckBox
                         Name="CheckBox_EnableLongFilePath"
                         Margin="15, 15, 15, 0"
                         Content="Enable Long File Path Support"
