@@ -118,6 +118,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Commands\CommandINI.cs" />
+    <Compile Include="Commands\CommandInterface.cs" />
     <Compile Include="Commands\CommandPlugin.cs" />
     <Compile Include="Commands\CommandString.cs" />
     <Compile Include="Commands\CommandSystem.cs" />

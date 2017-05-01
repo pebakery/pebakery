@@ -25,7 +25,7 @@ using PEBakery.Lib;
 using System.IO;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
@@ -287,15 +287,20 @@ namespace PEBakery.Core
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
-                    #region 05 Network
-                    // 05 Network
+                    #region 05 Compress
+                    // case CodeType.Compress:
+                    //     break;
+                    // case CodeType.Decompress:
+                    //     break;
+                    #endregion
+                    #region 06 Network
                     //case CodeType.WebGet:
                     //    break;
                     //case CodeType.WebGetIfNotExist: // Deprecated
                     //    break;
                     #endregion
-                    #region 06 Attach, Interface
-                    // 06 Attach, Interface
+                    #region 07 Attach
+                    // 07 Attach
                     case CodeType.ExtractFile:
                         logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
                         break;
@@ -305,6 +310,11 @@ namespace PEBakery.Core
                     //    break;
                     //case CodeType.Encode:
                     //    break;
+                    #endregion
+                    #region 08 Interface
+                    case CodeType.Visible:
+                        logs.AddRange(CommandInterface.Visible(s, cmd));
+                        break;
                     #endregion
                     #region 07 UI
                     // 07 UI

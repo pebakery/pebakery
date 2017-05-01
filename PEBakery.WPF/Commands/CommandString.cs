@@ -10,7 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace PEBakery.Core.Command
+namespace PEBakery.Core.Commands
 {
     public static class CommandString
     {

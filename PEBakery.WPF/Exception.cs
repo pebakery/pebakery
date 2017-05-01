@@ -22,7 +22,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PEBakery.Core;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Exceptions
 {

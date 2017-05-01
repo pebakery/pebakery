@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using PEBakery.Lib;
 using PEBakery.Exceptions;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {

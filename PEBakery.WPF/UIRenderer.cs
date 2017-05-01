@@ -43,14 +43,14 @@ namespace PEBakery.WPF
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
 
-        private RenderInfo renderInfo;
-        private List<UICommand> uiCodes;
-        private Variables variables;
-        private Logger logger;
+        private readonly RenderInfo renderInfo;
+        private readonly List<UICommand> uiCodes;
+        private readonly Variables variables;
+        private readonly Logger logger;
 
         public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
         {
-            this.renderInfo = new RenderInfo(canvas, window, plugin, scale);
+            
             this.logger = logger;
             this.variables = plugin.Project.Variables;
 
@@ -58,6 +58,8 @@ namespace PEBakery.WPF
             string interfaceSectionName = "Interface";
             if (plugin.MainInfo.ContainsKey("Interface")) 
                 interfaceSectionName = plugin.MainInfo["Interface"];
+
+            this.renderInfo = new RenderInfo(canvas, window, plugin, interfaceSectionName, scale);
 
             if (plugin.Sections.ContainsKey(interfaceSectionName))
             {
@@ -176,7 +178,7 @@ namespace PEBakery.WPF
             {
                 TextBox tBox = sender as TextBox;
                 info.Value = tBox.Text;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
             SetToolTip(box, info.ToolTip);
             DrawToCanvas(r, box, uiCmd.Rect);
@@ -266,7 +268,7 @@ namespace PEBakery.WPF
             spinner.LostFocus += (object sender, RoutedEventArgs e) => {
                 SpinnerControl spin = sender as SpinnerControl;
                 info.Value = (int) spin.Value;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
 
             SetToolTip(spinner, info.ToolTip);
@@ -298,13 +300,13 @@ namespace PEBakery.WPF
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
             checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = false;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
 
             SetToolTip(checkBox, info.ToolTip);
@@ -339,7 +341,7 @@ namespace PEBakery.WPF
                 {
                     info.Index = box.SelectedIndex;
                     uiCmd.Text = info.Items[box.SelectedIndex];
-                    UIRenderer.UpdatePlugin(uiCmd);
+                    UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
                 }
             };
 
@@ -661,13 +663,13 @@ namespace PEBakery.WPF
             {
                 RadioButton btn = sender as RadioButton;
                 info.Selected = true;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
             radio.Unchecked += (object sender, RoutedEventArgs e) =>
             {
                 RadioButton btn = sender as RadioButton;
                 info.Selected = false;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
 
             SetToolTip(radio, info.ToolTip);
@@ -697,7 +699,7 @@ namespace PEBakery.WPF
             {
                 TextBox tBox = sender as TextBox;
                 uiCmd.Text = tBox.Text;
-                UIRenderer.UpdatePlugin(uiCmd);
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
             SetToolTip(box, info.ToolTip);
 
@@ -804,7 +806,7 @@ namespace PEBakery.WPF
                 {
                     RadioButton btn = sender as RadioButton;
                     info.Selected = (int)btn.Tag;
-                    UIRenderer.UpdatePlugin(uiCmd);
+                    UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
                 };
 
                 SetToolTip(radio, info.ToolTip);
@@ -860,9 +862,9 @@ namespace PEBakery.WPF
             return fontPoint * PointToDeviceIndependentPixel;
         }
 
-        private static void UpdatePlugin(UICommand uiCmd)
+        public static void UpdatePlugin(string interfaceSectionName, UICommand uiCmd)
         {
-            Ini.SetKey(uiCmd.Addr.Plugin.FullPath, new IniKey("Interface", uiCmd.Key, uiCmd.ForgeRawLine(false)));
+            Ini.SetKey(uiCmd.Addr.Plugin.FullPath, new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
         }
 
         private static bool SectionRunning = false;
@@ -901,12 +903,14 @@ namespace PEBakery.WPF
         public readonly Canvas Canvas;
         public readonly MainWindow Window;
         public readonly Plugin Plugin;
+        public readonly string InterfaceSectionName;
 
-        public RenderInfo(Canvas canvas, MainWindow window, Plugin plugin, double masterScale)
+        public RenderInfo(Canvas canvas, MainWindow window, Plugin plugin, string interfaceSectionName, double masterScale)
         {
             Canvas = canvas;
             Window = window;
             Plugin = plugin;
+            InterfaceSectionName = interfaceSectionName;
             MasterScale = masterScale;
         }
     }

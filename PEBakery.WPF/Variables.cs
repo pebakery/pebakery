@@ -110,11 +110,15 @@ namespace PEBakery.Core
             SetValue(VarsType.Local, "PluginFile", p.FullPath);
             SetValue(VarsType.Local, "ScriptFile", p.FullPath);
 
+            // ScriptDir, PluginDir
+            SetValue(VarsType.Local, "PluginDir", Path.GetDirectoryName(p.FullPath));
+            SetValue(VarsType.Local, "ScriptDir", Path.GetDirectoryName(p.FullPath));
+
             // [Variables]
             if (p.Sections.ContainsKey("Variables"))
             {
                 VarsType type = VarsType.Local;
-                if (string.Equals(p.FullPath, project.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (p.FullPath.Equals(project.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
                     type = VarsType.Global;
                 logs.AddRange(AddVariables(type, p.Sections["Variables"]));
             }
@@ -402,10 +406,10 @@ namespace PEBakery.Core
             switch (type)
             {
                 case VarsType.Local:
-                    localVars = new Dictionary<string, string>();
+                    localVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     break;
                 case VarsType.Global:
-                    globalVars = new Dictionary<string, string>();
+                    globalVars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     break;
             }
         }
@@ -413,7 +417,7 @@ namespace PEBakery.Core
         #region Utility Static Methods
         public static string TrimPercentMark(string varName)
         {
-            if (!(varName.StartsWith("%", StringComparison.OrdinalIgnoreCase) && varName.EndsWith("%", StringComparison.OrdinalIgnoreCase)))
+            if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
                 throw new VariableInvalidFormatException($"[{varName}] is not enclosed with %");
             varName = varName.Substring(1, varName.Length - 2);
             if (varName.Contains('%'))

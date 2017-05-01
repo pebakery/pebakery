@@ -29,7 +29,7 @@ using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Lib;
 using System.Diagnostics;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
@@ -199,9 +199,6 @@ namespace PEBakery.Core
                     Ini.SetKey(link.FullPath, new IniKey("Main", "Selected", str));
                     link.selected = value;
                 }
-
-                // TODO : Plugin Disable
-                // Need Engine's Variable system to be implemented
             }
         }
 
@@ -493,6 +490,46 @@ namespace PEBakery.Core
 
             if (fail)
                 throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
+        }
+
+        public static List<string> GetDisablePluginPaths(Plugin p)
+        {
+            if (p.Type == PluginType.Directory || p.Level == Project.MainLevel)
+                return null;
+
+            if (p.MainInfo.ContainsKey("Disable") == false)
+                return null;
+            
+            p.Project.Variables.ResetVariables(VarsType.Local);
+            p.Project.Variables.LoadDefaultPluginVariables(p);
+
+            string rawLine = p.MainInfo["Disable"];
+
+            // Check if rawCode is Empty
+            if (rawLine.Equals(string.Empty))
+                return null;
+
+            // Splice with spaces
+            List<string> rawPaths = rawLine.Split(',').ToList();
+
+            // Check doublequote's occurence - must be 2n
+            if (FileHelper.CountStringOccurrences(rawLine, "\"") % 2 == 1)
+                throw new ExecuteException("Doublequote's number should be even number");
+
+            // Parse Arguments
+            List<string> paths = new List<string>();
+            try
+            {
+                paths = CodeParser.ParseArguments(rawPaths, 0);
+            }
+            catch (InvalidCommandException e)
+            {
+                throw new ExecuteException(e.Message, e);
+            }
+
+            for (int i = 0; i < paths.Count; i++)
+                paths[i] = p.Project.Variables.Expand(paths[i]);
+            return paths;
         }
 
         public override string ToString()

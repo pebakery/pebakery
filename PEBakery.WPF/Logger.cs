@@ -30,7 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {

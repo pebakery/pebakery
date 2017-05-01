@@ -44,22 +44,26 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        // 05 Network
-        WebGet = 500, WebGetIfNotExist,
-        // 06 Attach, Interface
-        ExtractFile = 600, ExtractAndRun, ExtractAllFiles, Encode,
-        // 07 UI
-        Message = 700, Echo, Retrieve, Visible,
-        // 08 StringFormat
-        StrFormat = 800,
-        // 09 System
-        System = 900, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
-        // 10 Branch
-        Run = 1000, Exec, Loop, If, Else, Begin, End,
-        // 11 Control
-        Set = 1100, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
-        // 12 External Macro
-        Macro = 1200,
+        // 05 Compress
+        Compress = 500, Decompress,
+        // 06 Network
+        WebGet = 600, WebGetIfNotExist,
+        // 07 Attach
+        ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
+        // 08 Interface
+        Visible = 800,
+        // 09 UI
+        Message = 900, Echo, Retrieve,
+        // 10 StringFormat
+        StrFormat = 1000,
+        // 11 System
+        System = 1100, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        // 12 Branch
+        Run = 1200, Exec, Loop, If, Else, Begin, End,
+        // 13 Control
+        Set = 1300, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
+        // 14 External Macro
+        Macro = 1400,
     }
 
     public enum DeprecatedCodeType
@@ -587,10 +591,13 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 05 - Network
+    #region CodeInfo 05 - Compress
     #endregion
 
-    #region CodeInfo 06 - Plugin
+    #region CodeInfo 06 - Network
+    #endregion
+
+    #region CodeInfo 07 - Attach
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
     { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
@@ -622,7 +629,21 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 07 - UI
+    #region CodeInfo 08 - Interface
+    public class CodeInfo_Visible : CodeInfo
+    { // Visible,<%InterfaceKey%>,<Visiblity>
+        public string InterfaceKey; // Must start and end with %
+        public string Visibility; // True / False
+
+        public CodeInfo_Visible(string interfaceKey, string visibility)
+        {
+            InterfaceKey = interfaceKey;
+            Visibility = visibility;
+        }
+    }
+    #endregion
+
+    #region CodeInfo 09 - UI
     public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
     [Serializable]
     public class CodeInfo_Message : CodeInfo
@@ -1060,7 +1081,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 08 - String
+    #region CodeInfo 10 - String
     [Serializable]
     public class CodeInfo_StrFormat : CodeInfo
     {
@@ -1084,7 +1105,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 09 - System
+    #region CodeInfo 11 - System
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>
@@ -1638,7 +1659,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 10 - Branch
+    #region CodeInfo 12 - Branch
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
@@ -1761,7 +1782,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 11 - Control
+    #region CodeInfo 13 - Control
     [Serializable]
     public class CodeInfo_Set : CodeInfo
     {
@@ -1846,7 +1867,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 12 - Macro
+    #region CodeInfo 14 - Macro
     [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {

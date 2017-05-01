@@ -78,7 +78,7 @@ namespace PEBakery.Helper
             // Loop through all instances of the string 'text'.
             int count = 0;
             int i = 0;
-            while ((i = text.IndexOf(pattern, i)) != -1)
+            while ((i = text.IndexOf(pattern, i, StringComparison.Ordinal)) != -1)
             {
                 i += pattern.Length;
                 count++;

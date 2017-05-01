@@ -24,7 +24,7 @@ using System.Text.RegularExpressions;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Globalization;
-using PEBakery.Core.Command;
+using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
@@ -146,7 +146,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeCommandInfo(rawCode, type, macroType, args, addr);
+                info = ParseCodeInfo(rawCode, type, macroType, args, addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -182,7 +182,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeCommandInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr);
+                info = ParseCodeInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -293,8 +293,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ParseCodeCommandInfo, CheckInfoArgumentCount
-        public static CodeInfo ParseCodeCommandInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr)
+        #region ParseCodeInfo, CheckInfoArgumentCount
+        public static CodeInfo ParseCodeInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr)
         {
             switch (type)
             {
@@ -614,14 +614,21 @@ namespace PEBakery.Core
                         return new CodeInfo_INIMerge(srcFileName, destFileName, sectionName);
                     }
                 #endregion
-                #region 05 Network
-                // 05 Network
+                #region 05 Compress
+                // 05 Compress
+                case CodeType.Compress:
+                    break;
+                case CodeType.Decompress:
+                    break;
+                #endregion
+                #region 06 Network
+                // 06 Network
                 case CodeType.WebGet:
                     break;
                 case CodeType.WebGetIfNotExist:
                     break;
                 #endregion
-                #region 06 Attach, Interface
+                #region 07 Attach
                 // 06 Attach, Interface
                 case CodeType.ExtractFile:
                     { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
@@ -639,8 +646,45 @@ namespace PEBakery.Core
                 case CodeType.Encode:
                     break;
                 #endregion
-                #region 07 UI
-                // 07 UI
+                #region 08 Interface
+                case CodeType.Visible:
+                    { // Visible,<%InterfaceKey%>,<Visiblity>
+                        // [,PERMANENT] - for compability of WB082
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string interfaceKey;
+                        try
+                        {
+                            interfaceKey = Variables.TrimPercentMark(args[0]);
+                        }
+                        catch (VariableInvalidFormatException)
+                        {
+                            throw new InvalidCommandException("InterfaceKey must be enclosed by %", rawCode);
+                        }
+
+                        string visibility;
+                        if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                            args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
+                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            visibility = args[1];
+                        else
+                            throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
+
+                        if (2 < args.Count)
+                        {
+                            if (args[2].Equals("PERMANENT", StringComparison.OrdinalIgnoreCase) == false)
+                                throw new InvalidCommandException($"Invalid argument [{args[2]}]", rawCode);
+                        }
+
+                        return new CodeInfo_Visible(interfaceKey, visibility);
+                    }
+                #endregion
+                #region 09 UI
+                // 09 UI
                 case CodeType.Message:
                     { // Message,<Message>[,ICON][,TIMEOUT]
                         const int minArgCount = 1;
@@ -688,16 +732,14 @@ namespace PEBakery.Core
                     }
                 case CodeType.Retrieve:
                     break;
-                case CodeType.Visible:
-                    break;
                 #endregion
-                #region 08 StringFormat
-                // 08 StringFormat
+                #region 10 String
+                // 10 StringFormat
                 case CodeType.StrFormat:
                     return ParseCodeInfoStrFormat(rawCode, args);
                 #endregion
-                #region 09 System
-                // 09 System
+                #region 11 System
+                // 11 System
                 case CodeType.System:
                     break;
                 case CodeType.ShellExecute:
@@ -738,8 +780,8 @@ namespace PEBakery.Core
                         return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
-                #region 10 Branch
-                // 10 Branch
+                #region 12 Branch
+                // 12 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
                     { // Run,%PluginFile%,<Section>[,PARAMS]
@@ -788,8 +830,8 @@ namespace PEBakery.Core
                 case CodeType.End:
                     return new CodeInfo();
                 #endregion
-                #region 11 Control
-                // 11 Control
+                #region 13 Control
+                // 13 Control
                 case CodeType.Set:
                     { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT]
                         const int minArgCount = 2;
@@ -868,8 +910,8 @@ namespace PEBakery.Core
                 case CodeType.Beep:
                     break;
                 #endregion
-                #region 12 External Macro
-                // 12 External Macro
+                #region 14 External Macro
+                // 14 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
                 #endregion

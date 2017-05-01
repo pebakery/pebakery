@@ -38,6 +38,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SQLite.Net;
 using System.Text;
+using PEBakery.Exceptions;
 
 namespace PEBakery.WPF
 {
@@ -53,7 +54,10 @@ namespace PEBakery.WPF
         private BackgroundWorker refreshWorker = new BackgroundWorker();
 
         private TreeViewModel currentTree;
+        public TreeViewModel CurrentTree { get => currentTree; }
+
         private Logger logger;
+        public Logger Logger { get => logger; }
         private PluginCache pluginCache;
 
         const int MaxDpiScale = 4;
@@ -102,7 +106,7 @@ namespace PEBakery.WPF
             }
 
             this.baseDir = argBaseDir;
-            this.treeModel = new TreeViewModel(null);
+            this.treeModel = new TreeViewModel(null, null);
             this.DataContext = treeModel;
 
             // LoadButtonsImage();
@@ -113,7 +117,7 @@ namespace PEBakery.WPF
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
-                this.logger = new Logger(logDBFile);
+                logger = new Logger(logDBFile);
                 logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
             catch (SQLiteException e)
@@ -205,7 +209,7 @@ namespace PEBakery.WPF
                     foreach (Project project in projects.Projects)
                     {
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                        RecursivePopulateMainTreeView(plugins, this.treeModel);
+                        RecursivePopulateMainTreeView(plugins, this.treeModel, this.treeModel);
                     };
                     MainTreeView.DataContext = treeModel;
                     currentTree = treeModel.Child[0];
@@ -375,13 +379,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeParent)
+        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeRoot, TreeViewModel treeParent)
         {
             foreach (Node<Plugin> node in plugins)
             {
                 Plugin p = node.Data;
 
-                TreeViewModel item = new TreeViewModel(treeParent);
+                TreeViewModel item = new TreeViewModel(treeRoot, treeParent);
                 treeParent.Child.Add(item);
                 item.Node = node;
 
@@ -404,7 +408,7 @@ namespace PEBakery.WPF
                 }
 
                 if (0 < node.Child.Count)
-                    RecursivePopulateMainTreeView(node.Child, item);
+                    RecursivePopulateMainTreeView(node.Child, treeRoot, item);
             }
         }
 
@@ -428,7 +432,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void DrawPlugin(Plugin p)
+        public void DrawPlugin(Plugin p)
         {
             Stopwatch watch = new Stopwatch();
             double size = PluginLogo.ActualWidth * MaxDpiScale;
@@ -619,8 +623,15 @@ namespace PEBakery.WPF
     #region TreeViewModel
     public class TreeViewModel : INotifyPropertyChanged
     {
-        public TreeViewModel(TreeViewModel parent)
+        private TreeViewModel root;
+        public TreeViewModel Root { get => root; }
+
+        private TreeViewModel parent;
+        public TreeViewModel Parent { get => parent; }
+
+        public TreeViewModel(TreeViewModel root, TreeViewModel parent)
         {
+            this.root = root;
             this.parent = parent;
         }
 
@@ -638,31 +649,52 @@ namespace PEBakery.WPF
             }
             set
             {
-                if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                w.Dispatcher.Invoke(() =>
                 {
-                    if (value)
-                        node.Data.Selected = SelectedState.True;
-                    else
-                        node.Data.Selected = SelectedState.False;
-
-                    if (node.Data.Level != Project.MainLevel)
+                    w.MainProgressRing.IsActive = true;
+                    if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
                     {
-                        if (0 < this.Child.Count)
-                        { // Set child plugins, too -> Top-down propagation
-                            foreach (TreeViewModel childModel in this.Child)
+                        if (value)
+                        {
+                            node.Data.Selected = SelectedState.True;
+
+                            try
                             {
-                                if (value)
-                                    childModel.Checked = true;
-                                else
-                                    childModel.Checked = false;
+                                // Run 'Disable' directive
+                                DisablePlugins(root, node);
+                            }
+                            catch (Exception e)
+                            {
+                                w.Logger.System_Write(new LogInfo(LogState.Error, e));
                             }
                         }
+                        else
+                        {
+                            node.Data.Selected = SelectedState.False;
+                        }
 
-                        ParentCheckedPropagation();
+
+                        if (node.Data.Level != Project.MainLevel)
+                        {
+                            if (0 < this.Child.Count)
+                            { // Set child plugins, too -> Top-down propagation
+                                foreach (TreeViewModel childModel in this.Child)
+                                {
+                                    if (value)
+                                        childModel.Checked = true;
+                                    else
+                                        childModel.Checked = false;
+                                }
+                            }
+
+                            ParentCheckedPropagation();
+                        }
+
+                        OnPropertyUpdate("Checked");
                     }
-                    
-                    OnPropertyUpdate("Checked");
-                }
+                    w.MainProgressRing.IsActive = false;
+                });
             }
         }
 
@@ -734,9 +766,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private TreeViewModel parent;
-        public TreeViewModel Parent { get => parent; }
-
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
         public ObservableCollection<TreeViewModel> Child { get => child; }
 
@@ -749,6 +778,61 @@ namespace PEBakery.WPF
         public void OnPropertyUpdate(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private TreeViewModel FindPluginByFullPath(string fullPath)
+        {
+            return RecursiveFindPluginByFullPath(root, fullPath); 
+        }
+
+        private static TreeViewModel RecursiveFindPluginByFullPath(TreeViewModel cur, string fullPath)
+        {
+            if (cur.Node != null && cur.Node.Data != null)
+            {
+                if (fullPath.Equals(cur.Node.Data.FullPath, StringComparison.OrdinalIgnoreCase))
+                    return cur;
+            }
+
+            if (0 < cur.Child.Count)
+            {
+                foreach (TreeViewModel next in cur.Child)
+                {
+                    TreeViewModel found = RecursiveFindPluginByFullPath(next, fullPath);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            // Not found in this path
+            return null;
+        }
+
+        private void DisablePlugins(TreeViewModel root, Node<Plugin> node)
+        {
+            if (root == null || node == null || node.Data == null)
+                return;
+
+            Plugin p = node.Data;
+            List<string> paths = Plugin.GetDisablePluginPaths(p);
+
+            foreach (string path in paths)
+            {
+                string fullPath = p.Project.Variables.Expand(path);
+                    
+                Plugin pToDisable = p.Project.AllPluginList.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                if (pToDisable != null)
+                {
+                    Ini.SetKey(fullPath, "Main", "Selected", "False");
+                    TreeViewModel found = FindPluginByFullPath(fullPath);
+                    if (found != null)
+                    {
+                        if (node.Data.Type != PluginType.Directory && node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                        {
+                            found.Checked = false;
+                        }
+                    }
+                }
+            }
         }
     }
     #endregion

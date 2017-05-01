@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
-namespace PEBakery.Core.Command
+namespace PEBakery.Core.Commands
 {
     public static class CommandUI
     {
