@@ -29,6 +29,7 @@ using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Lib;
 using System.Diagnostics;
+using PEBakery.Core.Command;
 
 namespace PEBakery.Core
 {

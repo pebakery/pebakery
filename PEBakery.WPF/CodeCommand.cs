@@ -80,7 +80,7 @@ namespace PEBakery.Core
         public SectionAddress(Plugin plugin, PluginSection section)
         {
             this.Plugin = plugin;
-            this.Section = section; ;
+            this.Section = section;
         }
 
         public override bool Equals(object obj)

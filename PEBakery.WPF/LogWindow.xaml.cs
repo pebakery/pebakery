@@ -30,8 +30,70 @@ namespace PEBakery.WPF
             this.model = new LogViewModel(logger);
             this.DataContext = model;
 
+            model.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
+            model.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
+            model.Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
+            model.Logger.PluginUpdated += PluginUpdateEventHandler;
+            model.Logger.VariableUpdated += VariableUpdateEventHandler;
+
             InitializeComponent();
         }
+
+       ~LogWindow()
+        {
+            model.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+            model.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
+            model.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
+            model.Logger.PluginUpdated -= PluginUpdateEventHandler;
+            model.Logger.VariableUpdated -= VariableUpdateEventHandler;
+        }
+
+        #region EventHandler
+        public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                model.SystemLogListModel.Add(e.Log);
+                if (model.SystemLogListSelectedIndex + 2 == model.SystemLogListModel.Count)
+                {
+                    model.SystemLogListSelectedIndex += 1;
+                    SystemLogListView.UpdateLayout();
+                    SystemLogListView.ScrollIntoView(SystemLogListView.Items[model.SystemLogListSelectedIndex]);
+                }
+            });
+            model.OnPropertyUpdate("SystemLogListModel");
+        }
+
+        public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)
+        {
+            model.RefreshBuildLog();
+        }
+
+        public void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e)
+        {
+            if (model.SelectBuildIdEntries != null)
+            {
+                int idx = model.SelectBuildIdEntries.IndexOf(e.Log.BuildId);
+                if (idx != -1)
+                {
+                    App.Current.Dispatcher.Invoke(() => { model.BuildLogListModel.Add(e.Log); });
+                    model.OnPropertyUpdate("BuildLogListModel");
+                }
+            }
+        }
+
+        public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
+        {
+            // PluginListModel.Add(e.Log);
+            // OnPropertyUpdate("SystemLogListModel");
+        }
+
+        public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
+        {
+            // VariableListModel.Add(e.Log);
+            // OnPropertyUpdate("SystemLogListModel");
+        }
+        #endregion
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -105,11 +167,7 @@ namespace PEBakery.WPF
         {
             Logger = logger;
 
-            Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
-            Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
-            Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
-            Logger.PluginUpdated += PluginUpdateEventHandler;
-            Logger.VariableUpdated += VariableUpdateEventHandler;
+            
 
             RefreshSystemLog();
             RefreshBuildLog();
@@ -117,50 +175,10 @@ namespace PEBakery.WPF
 
         ~LogViewModel()
         {
-            Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
-            Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
-            Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
-            Logger.PluginUpdated -= PluginUpdateEventHandler;
-            Logger.VariableUpdated -= VariableUpdateEventHandler;
+            
         }
 
-        #region EventHandler
-        public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
-        {
-            App.Current.Dispatcher.Invoke(() => { SystemLogListModel.Add(e.Log); });
-            OnPropertyUpdate("SystemLogListModel");
-        }
-
-        public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)
-        {
-            RefreshBuildLog();
-        }
-
-        public void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e)
-        {
-            if (SelectBuildIdEntries != null)
-            {
-                int idx = SelectBuildIdEntries.IndexOf(e.Log.BuildId);
-                if (idx != -1)
-                {
-                    App.Current.Dispatcher.Invoke(() => { BuildLogListModel.Add(e.Log); });
-                    OnPropertyUpdate("BuildLogListModel");
-                }
-            }
-        }
-
-        public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
-        {
-            // PluginListModel.Add(e.Log);
-            // OnPropertyUpdate("SystemLogListModel");
-        }
-
-        public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
-        {
-            // VariableListModel.Add(e.Log);
-            // OnPropertyUpdate("SystemLogListModel");
-        }
-        #endregion
+        
 
         #region Refresh 
         public void RefreshSystemLog()
@@ -169,6 +187,8 @@ namespace PEBakery.WPF
             foreach (DB_SystemLog log in LogDB.Table<DB_SystemLog>())
                 list.Add(log);
             SystemLogListModel = list;
+
+            SystemLogListSelectedIndex = SystemLogListModel.Count - 1;
         }
 
         public void RefreshBuildLog()
@@ -191,6 +211,17 @@ namespace PEBakery.WPF
         #endregion
 
         #region SystemLog
+        private int systemLogListSelectedIndex;
+        public int SystemLogListSelectedIndex
+        {
+            get => systemLogListSelectedIndex;
+            set
+            {
+                systemLogListSelectedIndex = value;
+                OnPropertyUpdate("SystemLogListSelectedIndex");
+            }
+        }
+
         private SystemLogListModel systemLogListModel = new SystemLogListModel();
         public SystemLogListModel SystemLogListModel
         {

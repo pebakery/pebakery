@@ -1,8 +1,9 @@
 ﻿/*
-    These codes are fetched from here:
+    These codes were fetched from here:
     http://www.pinvoke.net/default.aspx/Constants.WINERROR
 
     Cannot confirm original NAMU Project source code and its per-file license.
+    Please let me know if anyone knows about.
  */
 
 

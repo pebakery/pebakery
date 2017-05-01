@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PEBakery.Core
+namespace PEBakery.Core.Command
 {
     public static class CommandPlugin
     {

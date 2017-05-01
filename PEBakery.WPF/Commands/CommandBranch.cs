@@ -26,7 +26,7 @@ using Microsoft.Win32;
 using PEBakery.Exceptions;
 using System.Globalization;
 
-namespace PEBakery.Core
+namespace PEBakery.Core.Command
 {
     public static class CommandBranch
     {

@@ -26,7 +26,9 @@
             <TabItem Header="System Log">
                 <Grid>
                     <ListView
+                        Name="SystemLogListView"
                         HorizontalContentAlignment="Stretch"
+                        SelectedIndex="{Binding SystemLogListSelectedIndex}"
                         ItemsSource="{Binding SystemLogListModel}">
                         <ListView.View>
                             <custom:AutoSizedGridView>

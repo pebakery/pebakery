@@ -24,6 +24,7 @@ using System.Text.RegularExpressions;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Globalization;
+using PEBakery.Core.Command;
 
 namespace PEBakery.Core
 {

@@ -25,6 +25,7 @@ using PEBakery.Lib;
 using System.IO;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
+using PEBakery.Core.Command;
 
 namespace PEBakery.Core
 {
@@ -186,16 +187,16 @@ namespace PEBakery.Core
                     #region 00 Misc
                     // 00 Misc
                     case CodeType.None:
-                        logs.Add(new LogInfo(LogState.Ignore, "NOP"));
+                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Comment:
-                        logs.Add(new LogInfo(LogState.Ignore, "Comment"));
+                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Error:
-                        logs.Add(new LogInfo(LogState.Error, "Error"));
+                        logs.Add(new LogInfo(LogState.Error, string.Empty));
                         break;
                     case CodeType.Unknown:
-                        logs.Add(new LogInfo(LogState.Ignore, "Unknown"));
+                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     #endregion
                     #region 01 File

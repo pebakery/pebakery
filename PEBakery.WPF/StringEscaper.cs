@@ -2,6 +2,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -222,6 +223,36 @@ namespace PEBakery.Core
         public static List<string> Preprocess(Variables vars, List<string> strs)
         {
             return Unescape(ExpandVariables(vars, strs));
+        }
+        #endregion
+
+        #region PathSecurity
+        private static List<string> forbiddenPaths;
+
+        public static void PathSecurityInit()
+        {
+            forbiddenPaths = new List<string>
+            {
+                Environment.GetEnvironmentVariable("WinDir"),
+                Environment.GetEnvironmentVariable("ProgramFiles"),
+                Environment.GetEnvironmentVariable("ProgramFiles(x86)")
+            };
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns>Return true if path is forbidden</returns>
+        public static bool PathSecurityCheck(string path)
+        {
+            string fullPath = Path.GetFullPath(path);
+            foreach (string f in forbiddenPaths)
+            {
+                if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
         #endregion
     }

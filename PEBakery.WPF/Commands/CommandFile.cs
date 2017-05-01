@@ -26,7 +26,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace PEBakery.Core
+namespace PEBakery.Core.Command
 {
     public static class CommandFile
     {

@@ -117,15 +117,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="CommandINI.cs" />
-    <Compile Include="CommandPlugin.cs" />
-    <Compile Include="CommandString.cs" />
-    <Compile Include="CommandSystem.cs" />
-    <Compile Include="CommandText.cs" />
+    <Compile Include="Commands\CommandINI.cs" />
+    <Compile Include="Commands\CommandPlugin.cs" />
+    <Compile Include="Commands\CommandString.cs" />
+    <Compile Include="Commands\CommandSystem.cs" />
+    <Compile Include="Commands\CommandText.cs" />
     <Compile Include="CodeParser.cs" />
     <Compile Include="CodeCommand.cs" />
-    <Compile Include="CommandControl.cs" />
-    <Compile Include="CommandUI.cs" />
+    <Compile Include="Commands\CommandControl.cs" />
+    <Compile Include="Commands\CommandUI.cs" />
     <Compile Include="Controls\AutoSizedGridView\AutoSizedGridView.cs" />
     <Compile Include="Controls\CustomMessageBox\CustomMessageBox.cs" />
     <Compile Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
@@ -133,9 +133,9 @@
     </Compile>
     <Compile Include="Controls\CustomMessageBox\CustomMessageBoxUtil.cs" />
     <Compile Include="EncodedFile.cs" />
-    <Compile Include="CommandBranch.cs" />
+    <Compile Include="Commands\CommandBranch.cs" />
     <Compile Include="Engine.cs" />
-    <Compile Include="CommandFile.cs" />
+    <Compile Include="Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Controls\MahApps\ProgressRing.cs" />
@@ -154,7 +154,7 @@
     <Compile Include="UIParser.cs" />
     <Compile Include="UIRenderer.cs" />
     <Compile Include="ResultWin32.cs" />
-    <Compile Include="TreeLib.cs" />
+    <Compile Include="Libs\TreeLib.cs" />
     <Compile Include="Variables.cs" />
     <Page Include="Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -176,9 +176,9 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CabLib.cs" />
+    <Compile Include="Libs\CabLib.cs" />
     <Compile Include="Helper.cs" />
-    <Compile Include="IniLib.cs" />
+    <Compile Include="Libs\IniLib.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -258,6 +258,7 @@
   <ItemGroup>
     <None Include="Resources\DonutPng.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

@@ -30,6 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PEBakery.Core.Command;
 
 namespace PEBakery.Core
 {
@@ -386,7 +387,10 @@ namespace PEBakery.Core
             }
             else
             {
-                dbCode.Message = $"{log.Command.Type} - {log.Message}";
+                if (log.Message == string.Empty)
+                    dbCode.Message = log.Command.Type.ToString();
+                else
+                    dbCode.Message = $"{log.Command.Type} - {log.Message}";
                 dbCode.RawCode = log.Command.RawCode;
             }
 

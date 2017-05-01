@@ -137,6 +137,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
                             break;
                         default:
+                            logger.System_Write(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
                             break;
                     }
                 }
