@@ -258,6 +258,9 @@ namespace PEBakery.Core
                     case CodeType.TXTAddLine:
                         logs.AddRange(CommandText.TXTAddLine(s, cmd));
                         break;
+                    case CodeType.TXTAddLineOp:
+                        logs.AddRange(CommandText.TXTAddLineOp(s, cmd));
+                        break;
                     case CodeType.TXTReplace:
                         logs.AddRange(CommandText.TXTReplace(s, cmd));
                         break;

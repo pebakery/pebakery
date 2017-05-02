@@ -25,14 +25,16 @@ namespace PEBakery.Core
 
     public static class CodeOptimizer
     {
+        private static readonly List<CodeType> toOptimize = new List<CodeType>()
+        {
+            CodeType.TXTAddLine,
+            CodeType.Visible,
+        };
+
         public static List<CodeCommand> Optimize(List<CodeCommand> cmdList)
         {
             List<CodeCommand> optimized = new List<CodeCommand>();
-
-            List<CodeType> toOptimize = new List<CodeType>()
-            {
-                CodeType.Visible,
-            };
+            
             Dictionary<CodeType, List<CodeCommand>> opDict = new Dictionary<CodeType, List<CodeCommand>>();
             foreach (CodeType type in toOptimize)
                 opDict[type] = new List<CodeCommand>();
@@ -47,6 +49,10 @@ namespace PEBakery.Core
                     case CodeType.None:
                         switch (cmd.Type)
                         {
+                            case CodeType.TXTAddLine:
+                                state = CodeType.TXTAddLine;
+                                opDict[CodeType.TXTAddLine].Add(cmd);
+                                break;
                             case CodeType.Visible:
                                 state = CodeType.Visible;
                                 opDict[CodeType.Visible].Add(cmd);
@@ -56,20 +62,59 @@ namespace PEBakery.Core
                                 break;
                         }
                         break;
+                    case CodeType.TXTAddLine:
+                        switch (cmd.Type)
+                        {
+                            case CodeType.TXTAddLine:
+                                {
+                                    CodeInfo_TXTAddLine firstInfo = (opDict[CodeType.TXTAddLine][0].Info as CodeInfo_TXTAddLine);
+                                    if (cmd.Info is CodeInfo_TXTAddLine info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
+                                        info.Mode.Equals(firstInfo.Mode, StringComparison.OrdinalIgnoreCase))
+                                        opDict[CodeType.TXTAddLine].Add(cmd);
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                state = CodeType.None;
+                                if (opDict[CodeType.Visible].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[CodeType.TXTAddLine][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeTXTAddLine(opDict[CodeType.TXTAddLine]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[CodeType.TXTAddLine].Clear();
+                                optimized.Add(cmd);
+                                break;
+                        }
+                        break;
                     case CodeType.Visible:
                         switch (cmd.Type)
                         {
                             case CodeType.Visible:
-                                state = CodeType.Visible;
                                 opDict[CodeType.Visible].Add(cmd);
                                 break;
                             case CodeType.Comment: // Remove comments
                                 break;
-                            default:
+                            default: // Optimize them
                                 state = CodeType.None;
-                                CodeCommand visibleOp = OptimizeVisible(opDict[CodeType.Visible]);
-                                optimized.Add(visibleOp);
+                                if (opDict[CodeType.Visible].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[CodeType.Visible][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeVisible(opDict[CodeType.Visible]);
+                                    optimized.Add(opCmd);
+                                }
                                 opDict[CodeType.Visible].Clear();
+                                optimized.Add(cmd);
                                 break;
                         }
                         break;
@@ -82,20 +127,42 @@ namespace PEBakery.Core
             // Finalize
             foreach (var kv in opDict)
             {
-                if (0 < kv.Value.Count)
+                if (1 < kv.Value.Count)
                 {
                     switch (kv.Key)
                     {
                         case CodeType.Visible:
-                            CodeCommand visibleOp = OptimizeVisible(kv.Value);
-                            optimized.Add(visibleOp);
+                            {
+                                CodeCommand opCmd = OptimizeVisible(kv.Value);
+                                optimized.Add(opCmd);
+                            }
                             break;
                     }
-                    
+                }
+                else if (1 == kv.Value.Count)
+                {
+                    CodeCommand oneCmd = kv.Value[0];
+                    optimized.Add(oneCmd);
                 }
             }
             
             return optimized;
+        }
+
+        private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
+        {
+            List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
+            foreach (CodeCommand cmd in cmdList)
+            {
+                CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
+                if (info == null)
+                    throw new InternalCodeInfoException();
+
+                infoList.Add(info);
+            }
+
+            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
         }
 
         private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)
@@ -110,7 +177,9 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            return new CodeCommand($"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]", cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList));
+            string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]";
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList));
         }
+
     }
 }

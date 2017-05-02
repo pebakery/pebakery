@@ -469,28 +469,16 @@ namespace PEBakery.Core
 
                         string fileName = args[0];
                         string line = args[1];
-                        TXTAddLineMode mode;
-                        if (args[2].Equals("Append", StringComparison.OrdinalIgnoreCase))
-                            mode = TXTAddLineMode.Append;
-                        else if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase))
-                            mode = TXTAddLineMode.Prepend;
-                        else if (args[2].Equals("Place", StringComparison.OrdinalIgnoreCase))
-                            mode = TXTAddLineMode.Place;
+                        string mode;
+                        if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase) ||
+                            args[2].Equals("Append", StringComparison.OrdinalIgnoreCase) ||
+                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            mode = args[2];
                         else
-                            throw new InvalidCommandException($"Invalid argument [{args[2]}]", rawCode);
+                            throw new InvalidCommandException("Mode must be one of Prepend, Append, or variable.", rawCode);
 
-                        int lineNum = -1;
-                        if (mode == TXTAddLineMode.Place)
-                        {
-                            if (args.Count != maxArgCount)
-                                throw new InvalidCommandException($"In [Place] mode, line number argument is necessary", rawCode);
-                            if (int.TryParse(args[maxArgCount], out lineNum) == false)
-                                lineNum = -1;
-                            if (lineNum <= 0)
-                                throw new InvalidCommandException($"Line number must be positive integer", rawCode);
-                        }
-
-                        return new CodeInfo_TXTAddLine(fileName, line, mode, lineNum);
+                        return new CodeInfo_TXTAddLine(fileName, line, mode);
                     }
                 case CodeType.TXTReplace:
                     { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>

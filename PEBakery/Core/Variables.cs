@@ -341,18 +341,16 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = null;
+
             if (section.DataType == SectionDataType.IniDict)
                 dict = section.GetIniDict();
             else if (section.DataType == SectionDataType.Lines)
                 dict = Ini.ParseLinesVarStyle(section.GetLines());
-            if (section.Count != 0)
-            {
+
+            if (dict.Keys.Count != 0)
                 return InternalAddDictionary(vars, dict);
-            }
-            else
-            { // empty
+            else // empty
                 return new List<LogInfo>();
-            }
         }
 
         public List<LogInfo> AddVariables(VarsType type, string[] lines)

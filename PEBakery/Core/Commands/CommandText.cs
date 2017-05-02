@@ -21,6 +21,14 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string line = StringEscaper.Preprocess(s, info.Line);
+            string modeStr = StringEscaper.Preprocess(s, info.Mode);
+            TXTAddLineMode mode;
+            if (modeStr.Equals("Append", StringComparison.OrdinalIgnoreCase))
+                mode = TXTAddLineMode.Append;
+            else if (info.Mode.Equals("Prepend", StringComparison.OrdinalIgnoreCase))
+                mode = TXTAddLineMode.Prepend;
+            else
+                throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
             // Detect encoding of text
             // If text does not exists, create blank file
@@ -30,11 +38,11 @@ namespace PEBakery.Core.Commands
             else
                 FileHelper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8).Close();
 
-            if (info.Mode == TXTAddLineMode.Prepend)
+            if (mode == TXTAddLineMode.Prepend)
             {
-                string temp = FileHelper.CreateTempFile();
+                string tempFile = FileHelper.CreateTempFile();
                 using (StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding))
-                using (StreamWriter writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding))
+                using (StreamWriter writer = new StreamWriter(new FileStream(tempFile, FileMode.Create, FileAccess.Write), encoding))
                 {
                     writer.WriteLine(line);
                     string lineFromSrc;
@@ -43,36 +51,80 @@ namespace PEBakery.Core.Commands
                     reader.Close();
                     writer.Close();
                 }
-                FileHelper.FileReplaceEx(temp, fileName);
+                FileHelper.FileReplaceEx(tempFile, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Prepened [{line}] to [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Prepened [{line}] to [{fileName}]", cmd));
             }
-            else if (info.Mode == TXTAddLineMode.Append)
+            else if (mode == TXTAddLineMode.Append)
             {
                 File.AppendAllText(fileName, line + "\r\n", encoding);
-                logs.Add(new LogInfo(LogState.Success, $"Appended [{line}] to [{info.FileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Appended [{line}] to [{fileName}]", cmd));
             }
-            else if (info.Mode == TXTAddLineMode.Place)
-            { // In Place mode, placeLineNum starts from 1;
-                int count = 1;
-                string temp = FileHelper.CreateTempFile();
+
+            return logs;
+        }
+
+        public static List<LogInfo> TXTAddLineOp(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            CodeInfo_TXTAddLineOp infoOp = cmd.Info as CodeInfo_TXTAddLineOp;
+            if (infoOp == null)
+                throw new InternalCodeInfoException();
+
+            string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
+            string modeStr = StringEscaper.Preprocess(s, infoOp.InfoList[0].Mode);
+            TXTAddLineMode mode;
+            if (modeStr.Equals("Append", StringComparison.OrdinalIgnoreCase))
+                mode = TXTAddLineMode.Append;
+            else if (modeStr.Equals("Prepend", StringComparison.OrdinalIgnoreCase))
+                mode = TXTAddLineMode.Prepend;
+            else
+                throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
+
+            List<string> prepLines = new List<string>();
+            foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
+            {
+                string line = StringEscaper.Preprocess(s, info.Line);
+                prepLines.Add(line);
+            }
+
+            StringBuilder b = new StringBuilder();
+            foreach (var line in prepLines)
+                b.AppendLine(line);
+            string linesToWrite = b.ToString();
+
+            // Detect encoding of text
+            // If text does not exists, create blank file
+            Encoding encoding = Encoding.UTF8;
+            if (File.Exists(fileName))
+                encoding = FileHelper.DetectTextEncoding(fileName);
+            else
+                FileHelper.WriteTextBOM(new FileStream(fileName, FileMode.Create, FileAccess.Write), Encoding.UTF8).Close();
+
+            if (mode == TXTAddLineMode.Prepend)
+            {
+                string tempFile = FileHelper.CreateTempFile();
                 using (StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open, FileAccess.Read), encoding))
-                using (StreamWriter writer = new StreamWriter(new FileStream(temp, FileMode.Create, FileAccess.Write), encoding))
+                using (StreamWriter writer = new StreamWriter(new FileStream(tempFile, FileMode.Create, FileAccess.Write), encoding))
                 {
+                    writer.Write(linesToWrite);
                     string lineFromSrc;
                     while ((lineFromSrc = reader.ReadLine()) != null)
-                    {
-                        if (count == info.LineNum)
-                            writer.WriteLine(line);
                         writer.WriteLine(lineFromSrc);
-                        count++;
-                    }
                     reader.Close();
                     writer.Close();
                 }
-                FileHelper.FileReplaceEx(temp, fileName);
+                FileHelper.FileReplaceEx(tempFile, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Placed [{line}] to [{info.LineNum}]th row of [{info.FileName}]", cmd));
+                foreach (var line in prepLines)
+                    logs.Add(new LogInfo(LogState.Success, $"Prepened [{line}] to [{fileName}]", cmd));
+            }
+            else if (mode == TXTAddLineMode.Append)
+            {
+                File.AppendAllText(fileName, linesToWrite, encoding);
+                foreach (var line in prepLines)
+                    logs.Add(new LogInfo(LogState.Success, $"Appended [{line}] to [{fileName}]", cmd));
             }
 
             return logs;

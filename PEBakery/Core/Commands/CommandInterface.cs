@@ -101,8 +101,6 @@ namespace PEBakery.Core.Commands
 
                 uiCmd.Visibility = args.Item2;
                 uiCmdList.Add(uiCmd);
-
-                
             }
 
             UIRenderer.UpdatePlugin("Interface", uiCmdList);

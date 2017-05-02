@@ -114,7 +114,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Plugin.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode() ^ Section.Count;
+            return Plugin.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
         }
     }
     #endregion
@@ -280,37 +280,30 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 03 - Text
-    public enum TXTAddLineMode { Append, Prepend, Place };
+    public enum TXTAddLineMode { Append, Prepend };
     [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
     {
         public string FileName;
         public string Line;
-        public TXTAddLineMode Mode;
-        public int LineNum; // Optional, -1 if not used
+        public string Mode;
 
-        public CodeInfo_TXTAddLine(string fileName, string line, TXTAddLineMode mode, int lineNum = -1)
+        public CodeInfo_TXTAddLine(string fileName, string line, string mode)
         {
             FileName = fileName;
             Line = line;
             Mode = mode;
-            LineNum = lineNum;
         }
+    }
 
-        public override string ToString()
+    [Serializable]
+    public class CodeInfo_TXTAddLineOp : CodeInfo
+    {
+        public List<CodeInfo_TXTAddLine> InfoList;
+
+        public CodeInfo_TXTAddLineOp(List<CodeInfo_TXTAddLine> infoList)
         {
-            StringBuilder b = new StringBuilder();
-            b.Append(FileName);
-            b.Append(",");
-            b.Append(Line);
-            b.Append(",");
-            b.Append(Mode);
-            if (LineNum != -1)
-            {
-                b.Append(",");
-                b.Append(LineNum);
-            }
-            return b.ToString();
+            InfoList = infoList;
         }
     }
 
@@ -632,6 +625,7 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 08 - Interface
+    [Serializable]
     public class CodeInfo_Visible : CodeInfo
     { // Visible,<%InterfaceKey%>,<Visiblity>
         public string InterfaceKey; // Must start and end with %
@@ -644,9 +638,10 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
     public class CodeInfo_VisibleOp : CodeInfo
     { // Visible,<%InterfaceKey%>,<Visiblity>
-        public List<CodeInfo_Visible> InfoList; // 0 - InterfaceKey, 1 - Visibility
+        public List<CodeInfo_Visible> InfoList;
 
         public CodeInfo_VisibleOp(List<CodeInfo_Visible> infoList)
         {
