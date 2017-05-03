@@ -410,10 +410,6 @@ namespace PEBakery.Core
             { // Stop Building
                 throw new CriticalErrorException();
             }
-            catch (InternalCodeInfoException)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Command [{cmd.Type}] should have [CodeInfo_{cmd.Type}]", cmd, curDepth));
-            }
             catch (InvalidCodeCommandException e)
             {
                 logs.Add(new LogInfo(LogState.Error, e, e.Cmd, curDepth));

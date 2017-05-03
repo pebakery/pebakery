@@ -2,6 +2,7 @@
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,9 +16,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
             CodeInfo_INIRead info = cmd.Info as CodeInfo_INIRead;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -47,9 +47,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
             CodeInfo_INIWrite info = cmd.Info as CodeInfo_INIWrite;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -73,9 +72,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
             CodeInfo_INIDelete info = cmd.Info as CodeInfo_INIDelete;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -98,9 +96,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
             CodeInfo_INIAddSection info = cmd.Info as CodeInfo_INIAddSection;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -120,9 +117,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
             CodeInfo_INIDeleteSection info = cmd.Info as CodeInfo_INIDeleteSection;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.

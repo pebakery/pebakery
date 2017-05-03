@@ -260,7 +260,6 @@
   <ItemGroup>
     <None Include="Resources\DonutPng.png" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

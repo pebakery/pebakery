@@ -1,6 +1,7 @@
 ﻿using PEBakery.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,9 +15,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile));
             CodeInfo_ExtractFile info = cmd.Info as CodeInfo_ExtractFile;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);

@@ -104,21 +104,6 @@ namespace PEBakery.Exceptions
         public ExecuteException(string message) : base(message) { }
         public ExecuteException(string message, Exception inner) : base(message, inner) { }
     }
-
-    public class InternalCodeInfoException : Exception
-    {
-        public InternalCodeInfoException() { }
-    }
-
-    public class InternalStrFormatInfoException : Exception
-    {
-        public InternalStrFormatInfoException() { }
-    }
-
-    public class InternalSystemInfoException : Exception
-    {
-        public InternalSystemInfoException() { }
-    }
     #endregion
 
     #region Plugin
@@ -160,11 +145,11 @@ namespace PEBakery.Exceptions
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public class InternalErrorException : Exception
+    public class InternalException : Exception
     {
-        public InternalErrorException() { }
-        public InternalErrorException(string message) : base(message) { }
-        public InternalErrorException(string message, Exception inner) : base(message, inner) { }
+        public InternalException() { }
+        public InternalException(string message) : base(message) { }
+        public InternalException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 

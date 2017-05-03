@@ -42,7 +42,7 @@ namespace PEBakery.Core
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
         // 03 Text
         TXTAddLine = 300, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
-        TXTAddLineOp, TXTReplaceOp, TXTDelLineOp,
+        TXTAddLineOp, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
         INIWriteOp, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
@@ -66,7 +66,8 @@ namespace PEBakery.Core
         // 13 Control
         Set = 1300, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
         // 14 External Macro
-        Macro = 1400,    }
+        Macro = 1400,
+    }
 
     public enum DeprecatedCodeType
     {
@@ -352,6 +353,16 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(DeleteIfBeginWith);
             return b.ToString();
+        }
+    }
+
+    public class CodeInfo_TXTDelLineOp : CodeInfo
+    {
+        public List<CodeInfo_TXTDelLine> InfoList;
+
+        public CodeInfo_TXTDelLineOp(List<CodeInfo_TXTDelLine> infoList)
+        {
+            InfoList = infoList;
         }
     }
 
@@ -1205,7 +1216,7 @@ namespace PEBakery.Core
                 case BranchConditionType.Online:
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 1 argument");
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 1 argument");
             }
         }
 
@@ -1224,7 +1235,7 @@ namespace PEBakery.Core
                     Arg1 = arg1;
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 1 argument");
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 1 argument");
             }
         }
 
@@ -1245,7 +1256,7 @@ namespace PEBakery.Core
                     Arg2 = arg2;
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 2 arguments");
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 2 arguments");
             }
         }
 
@@ -1262,7 +1273,7 @@ namespace PEBakery.Core
                     Arg3 = arg3;
                     break;
                 default:
-                    throw new InternalErrorException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
             }
         }
 
@@ -1329,7 +1340,7 @@ namespace PEBakery.Core
                                 }
                                 break;
                             default:
-                                throw new InternalErrorException($"Cannot compare [{compArg1}] and [{compArg2}]");
+                                throw new InternalException($"Cannot compare [{compArg1}] and [{compArg2}]");
                         }
                     }
                     break;
@@ -1603,7 +1614,7 @@ namespace PEBakery.Core
                     }
                     break;
                 default:
-                    throw new InternalErrorException($"Internal BranchCondition check error");
+                    throw new InternalException($"Internal BranchCondition check error");
             }
             return match;
         }

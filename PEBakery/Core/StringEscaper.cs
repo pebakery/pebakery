@@ -146,7 +146,7 @@ namespace PEBakery.Core
             for (int x = 0; x < matches.Count; x++)
             {
                 if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int pIdx) == false)
-                    throw new InternalErrorException("ExpandVariables failure");
+                    throw new InternalException("ExpandVariables failure");
                 if (x == 0)
                     builder.Append(str.Substring(0, matches[0].Index));
                 else

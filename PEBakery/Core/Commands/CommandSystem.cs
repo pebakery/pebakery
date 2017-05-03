@@ -21,9 +21,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute));
             CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
@@ -79,7 +78,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
                     break;
                 default:
-                    throw new InternalErrorException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
+                    throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
             }
 
             if (cmd.Type != CodeType.ShellExecuteEx && info.ExitOutVar != null)
@@ -92,7 +91,7 @@ namespace PEBakery.Core.Commands
                 else if (log.State == LogState.Error)
                     logs.Add(log);
                 else
-                    throw new InternalErrorException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                    throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
             }
 
             return logs;

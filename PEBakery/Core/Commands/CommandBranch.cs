@@ -25,6 +25,7 @@ using System.IO;
 using Microsoft.Win32;
 using PEBakery.Exceptions;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace PEBakery.Core.Commands
 {
@@ -37,9 +38,8 @@ namespace PEBakery.Core.Commands
 
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool callback)
         {
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -89,9 +89,8 @@ namespace PEBakery.Core.Commands
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             // TODO
             if (info.Break)
@@ -165,9 +164,8 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
             CodeInfo_If info = cmd.Info as CodeInfo_If;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             if (info.Condition.Check(s, out string msg))
             { // Condition matched, run it
@@ -190,9 +188,8 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
             CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             if (s.ElseFlag)
             {

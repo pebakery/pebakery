@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using PEBakery.WPF;
 using System.Windows;
 using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace PEBakery.Core.Commands
 {
@@ -17,9 +18,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
             CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
             bool visibility = false;
@@ -64,9 +64,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
-            if (infoOp == null)
-                throw new InternalCodeInfoException();
 
             if (cmd.Addr.Plugin.Sections.ContainsKey("Interface") == false)
             {

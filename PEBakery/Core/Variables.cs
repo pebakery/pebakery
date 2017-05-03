@@ -216,7 +216,7 @@ namespace PEBakery.Core
         public LogInfo InternalSetValue(VarsType type, string key, string rawValue, bool privFixed)
         {
             if (!privFixed && type == VarsType.Fixed)
-                throw new InternalErrorException("Fixed variables cannot be written without privilege!");
+                throw new InternalException("Fixed variables cannot be written without privilege!");
 
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             // Check and remove circular reference

@@ -20,6 +20,7 @@ using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -34,9 +35,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileCreateBlank));
             CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 

@@ -2,6 +2,7 @@
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -15,9 +16,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
             CodeInfo_Message info = cmd.Info as CodeInfo_Message;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string message = StringEscaper.Preprocess(s, info.Message);
             MessageBoxImage image;
@@ -37,7 +37,7 @@ namespace PEBakery.Core.Commands
                     image = MessageBoxImage.Warning;
                     break;
                 default:
-                    throw new InternalErrorException("CodeInfo_Message's CodeMessageAction is invalid");
+                    throw new InternalException("CodeInfo_Message's CodeMessageAction is invalid");
             }
 
             if (info.Timeout == null)
@@ -71,9 +71,8 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
             CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
-            if (info == null)
-                throw new InternalCodeInfoException();
 
             string message = StringEscaper.Preprocess(s, info.Message);
 

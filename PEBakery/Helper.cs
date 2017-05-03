@@ -137,6 +137,40 @@ namespace PEBakery.Helper
         /// <param name="fs"></param>
         /// <param name="encoding"></param>
         /// <returns></returns>
+        public static void WriteTextBOM(string path, Encoding encoding)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+            {
+                if (encoding == Encoding.UTF8)
+                {
+                    byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+                    fs.Write(bom, 0, bom.Length);
+                }
+                else if (encoding == Encoding.Unicode)
+                {
+                    byte[] bom = new byte[] { 0xFF, 0xFE };
+                    fs.Write(bom, 0, bom.Length);
+                }
+                else if (encoding == Encoding.BigEndianUnicode)
+                {
+                    byte[] bom = new byte[] { 0xFE, 0xFF };
+                    fs.Write(bom, 0, bom.Length);
+                }
+                else if (encoding != Encoding.Default)
+                { // Unsupported Encoding
+                    throw new UnsupportedEncodingException($"[{encoding}] is not supported");
+                }
+
+                fs.Close();
+            }
+        }
+
+        /// <summary>
+        /// Write Unicode BOM into text file stream
+        /// </summary>
+        /// <param name="fs"></param>
+        /// <param name="encoding"></param>
+        /// <returns></returns>
         public static FileStream WriteTextBOM(FileStream fs, Encoding encoding)
         {
             if (encoding == Encoding.UTF8)
@@ -156,7 +190,7 @@ namespace PEBakery.Helper
             }
             else if (encoding != Encoding.Default)
             { // Unsupported Encoding
-                throw new UnsupportedEncodingException(encoding.ToString() + " is not supported");
+                throw new UnsupportedEncodingException($"[{encoding}] is not supported");
             }
 
             return fs;

@@ -813,24 +813,27 @@ namespace PEBakery.WPF
             Plugin p = node.Data;
             List<string> paths = Plugin.GetDisablePluginPaths(p);
 
-            foreach (string path in paths)
+            if (paths != null)
             {
-                string fullPath = p.Project.Variables.Expand(path);
-                    
-                Plugin pToDisable = p.Project.AllPluginList.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
-                if (pToDisable != null)
+                foreach (string path in paths)
                 {
-                    Ini.SetKey(fullPath, "Main", "Selected", "False");
-                    TreeViewModel found = FindPluginByFullPath(fullPath);
-                    if (found != null)
+                    string fullPath = p.Project.Variables.Expand(path);
+
+                    Plugin pToDisable = p.Project.AllPluginList.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                    if (pToDisable != null)
                     {
-                        if (node.Data.Type != PluginType.Directory && node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                        Ini.SetKey(fullPath, "Main", "Selected", "False");
+                        TreeViewModel found = FindPluginByFullPath(fullPath);
+                        if (found != null)
                         {
-                            found.Checked = false;
+                            if (node.Data.Type != PluginType.Directory && node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                            {
+                                found.Checked = false;
+                            }
                         }
                     }
                 }
-            }
+            }            
         }
     }
     #endregion
