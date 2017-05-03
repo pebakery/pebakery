@@ -345,7 +345,7 @@ namespace PEBakery.Core
             if (section.DataType == SectionDataType.IniDict)
                 dict = section.GetIniDict();
             else if (section.DataType == SectionDataType.Lines)
-                dict = Ini.ParseLinesVarStyle(section.GetLines());
+                dict = Ini.ParseIniLinesVarStyle(section.GetLines());
 
             if (dict.Keys.Count != 0)
                 return InternalAddDictionary(vars, dict);
@@ -356,14 +356,14 @@ namespace PEBakery.Core
         public List<LogInfo> AddVariables(VarsType type, string[] lines)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            Dictionary<string, string> dict = Ini.ParseLinesVarStyle(lines);
+            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict);
         }
 
         public List<LogInfo> AddVariables(VarsType type, List<string> lines)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            Dictionary<string, string> dict = Ini.ParseLinesVarStyle(lines);
+            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
             return InternalAddDictionary(vars, dict);
         }
 

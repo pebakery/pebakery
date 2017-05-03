@@ -89,16 +89,17 @@ namespace PEBakery.Helper
         /// <summary>
         /// Detect text file's encoding with BOM
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="filePath"></param>
         /// <returns></returns>
-        public static Encoding DetectTextEncoding(string fileName)
+        public static Encoding DetectTextEncoding(string filePath)
         {
             byte[] bom = new byte[4];
-            FileStream fs = null;
 
-            fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Read(bom, 0, bom.Length);
-            fs.Close();
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                fs.Read(bom, 0, bom.Length);
+                fs.Close();
+            }
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
@@ -280,9 +281,10 @@ namespace PEBakery.Helper
         public static string CreateTempFile()
         {
             string path = Path.GetTempFileName();
-            FileInfo fileInfo = new FileInfo(path);
-            fileInfo.Attributes = FileAttributes.Temporary;
-
+            FileInfo fileInfo = new FileInfo(path)
+            {
+                Attributes = FileAttributes.Temporary
+            };
             return path;
         }
 

@@ -69,7 +69,7 @@ namespace PEBakery.Core
 
             // Parse Section [APIVAR] into dictionary of CodeCommand
             macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
-            Dictionary<string, string> macroRawDict = Ini.ParseLinesIniStyle(macroSection.GetLines());
+            Dictionary<string, string> macroRawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
             foreach (var kv in macroRawDict)
             {
                 try

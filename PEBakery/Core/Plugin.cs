@@ -183,21 +183,23 @@ namespace PEBakery.Core
             }
             set
             {
-                selected = value;
-
-                string str = value.ToString();
-                if (type == PluginType.Plugin)
+                if (selected != value)
                 {
-                    sections["Main"].IniDict["Selected"] = str;
-                    Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
-                }
-                else if (type == PluginType.Link && linkLoaded)
-                {
-                    sections["Main"].IniDict["Selected"] = str;
-                    Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
-                    link.sections["Main"].IniDict["Selected"] = str;
-                    Ini.SetKey(link.FullPath, new IniKey("Main", "Selected", str));
-                    link.selected = value;
+                    selected = value;
+                    string str = value.ToString();
+                    if (type == PluginType.Plugin)
+                    {
+                        sections["Main"].IniDict["Selected"] = str;
+                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+                    }
+                    else if (type == PluginType.Link && linkLoaded)
+                    {
+                        sections["Main"].IniDict["Selected"] = str;
+                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
+                        link.sections["Main"].IniDict["Selected"] = str;
+                        Ini.SetKey(link.FullPath, new IniKey("Main", "Selected", str));
+                        link.selected = value;
+                    }
                 }
             }
         }
@@ -299,55 +301,54 @@ namespace PEBakery.Core
         public SectionDictionary ParsePlugin()
         {
             SectionDictionary dict = new SectionDictionary(StringComparer.OrdinalIgnoreCase);
-            StreamReader reader = new StreamReader(fullPath, FileHelper.DetectTextEncoding(fullPath));
 
-            // If file is blank
-            if (reader.Peek() == -1)
+            Encoding encoding = FileHelper.DetectTextEncoding(fullPath);
+            // using (StreamReader reader = new StreamReader(fullPath, encoding, true, Ini.BigBufSize))
+            using (StreamReader reader = new StreamReader(fullPath, encoding))
             {
+                string line;
+                string currentSection = string.Empty; // -1 == empty, 0, 1, ... == index value of sections array
+                bool inSection = false;
+                bool loadSection = false;
+                SectionType type = SectionType.None;
+                List<string> lines = new List<string>();
+                while ((line = reader.ReadLine()) != null)
+                { // Read text line by line
+                    line = line.Trim();
+                    if (line.StartsWith("[", StringComparison.Ordinal) &&
+                        line.EndsWith("]", StringComparison.Ordinal))
+                    { // Start of section
+                        if (inSection)
+                        { // End of section
+                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
+                            lines = new List<string>();
+                        }
+
+                        currentSection = line.Substring(1, line.Length - 2);
+                        type = DetectTypeOfSection(currentSection, false);
+                        if (LoadSectionAtPluginLoadTime(type))
+                            loadSection = true;
+                        inSection = true;
+                    }
+                    else if (inSection && loadSection)
+                    { // line of section
+                        lines.Add(line);
+                    }
+
+                    if (reader.Peek() == -1)
+                    { // End of .script
+                        if (inSection)
+                        {
+                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
+                            lines = new List<string>();
+                        }
+                    }
+                }
+
+                fullyParsed = true;
                 reader.Close();
-                throw new SectionNotFoundException(string.Concat("Unable to find section, file is empty"));
             }
 
-            string line;
-            string currentSection = string.Empty; // -1 == empty, 0, 1, ... == index value of sections array
-            bool inSection = false;
-            bool loadSection = false;
-            SectionType type = SectionType.None;
-            List<string> lines = new List<string>();
-            while ((line = reader.ReadLine()) != null)
-            { // Read text line by line
-                line = line.Trim();
-                if (line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal))
-                { // Start of section
-                    if (inSection)
-                    { // End of section
-                        dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
-                        lines = new List<string>();
-                    }
-
-                    currentSection = line.Substring(1, line.Length - 2);
-                    type = DetectTypeOfSection(currentSection, false);
-                    if (LoadSectionAtPluginLoadTime(type))
-                        loadSection = true;
-                    inSection = true;
-                }
-                else if (inSection && loadSection)
-                { // line of section
-                    lines.Add(line);
-                }
-
-                if (reader.Peek() == -1)
-                { // End of .script
-                    if (inSection)
-                    {
-                        dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
-                        lines = new List<string>();
-                    }
-                }
-            }
-
-            fullyParsed = true;
-            reader.Close();
             return dict;
         }
 
@@ -364,7 +365,7 @@ namespace PEBakery.Core
                         return false;
                 }
                 else
-                    encodedFolders = Ini.ParseSectionToStringList(fullPath, "EncodedFolders");
+                    encodedFolders = Ini.ParseIniSection(fullPath, "EncodedFolders");
             }
             catch (SectionNotFoundException) // No EncodedFolders section, exit
             {
@@ -450,10 +451,10 @@ namespace PEBakery.Core
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                    sectionKeys = Ini.ParseLinesIniStyle(lines);
+                    sectionKeys = Ini.ParseIniLinesIniStyle(lines);
                     return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
                 case SectionType.Variables:
-                    sectionKeys = Ini.ParseLinesVarStyle(lines);
+                    sectionKeys = Ini.ParseIniLinesVarStyle(lines);
                     return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
@@ -469,10 +470,9 @@ namespace PEBakery.Core
 
         private void CheckMainSection(PluginType type)
         {
-            if (!sections.ContainsKey("Main"))
-            {
-                throw new PluginParseException(fullPath + " is invalid, please Add [Main] Section");
-            }
+            if (sections.ContainsKey("Main") == false)
+                throw new PluginParseException($"[{fullPath}] is invalid, please Add [Main] Section");
+
             bool fail = true;
             if (sections["Main"].DataType == SectionDataType.IniDict)
             {
@@ -491,7 +491,7 @@ namespace PEBakery.Core
             }
 
             if (fail)
-                throw new PluginParseException(fullPath + " is invalid, check [Main] Section");
+                throw new PluginParseException($"[{fullPath}] is invalid, check [Main] Section");
         }
 
         public static List<string> GetDisablePluginPaths(Plugin p)
@@ -756,11 +756,11 @@ namespace PEBakery.Core
                 switch (dataType)
                 {
                     case SectionDataType.IniDict:
-                        iniDict = Ini.ParseSectionToDict(plugin.FullPath, SectionName);
+                        iniDict = Ini.ParseIniSectionToDict(plugin.FullPath, SectionName);
                         break;
                     case SectionDataType.Lines:
                         {
-                            lines = Ini.ParseSectionToStringList(plugin.FullPath, sectionName);
+                            lines = Ini.ParseIniSection(plugin.FullPath, sectionName);
                             if (convDataType == SectionDataConverted.Codes)
                             {
                                 SectionAddress addr = new SectionAddress(plugin, this);
@@ -865,7 +865,7 @@ namespace PEBakery.Core
                 if (loaded)
                     return lines;
                 else
-                    return Ini.ParseSectionToStringList(plugin.FullPath, sectionName);
+                    return Ini.ParseIniSection(plugin.FullPath, sectionName);
             }
             else
             {

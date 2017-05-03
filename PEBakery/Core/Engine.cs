@@ -181,7 +181,7 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
             int curDepth = s.CurDepth;
 
-            if (Enum.IsDefined(typeof(DeprecatedCodeType), cmd.Type.ToString()))
+            if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
             {
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
             }

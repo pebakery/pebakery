@@ -489,8 +489,6 @@ namespace PEBakery.WPF
             }
         }
 
-        
-
         private void StartRefreshWorker()
         {
             if (currentTree == null)

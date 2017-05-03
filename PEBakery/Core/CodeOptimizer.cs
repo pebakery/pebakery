@@ -32,7 +32,7 @@ namespace PEBakery.Core
             CodeType.Visible,
         };
 
-        public static List<CodeCommand> Optimize(List<CodeCommand> cmdList)
+        public static List<CodeCommand> OptimizeCommands(List<CodeCommand> cmdList)
         {
             List<CodeCommand> optimized = new List<CodeCommand>();
             
@@ -169,10 +169,9 @@ namespace PEBakery.Core
                     #endregion
                     #region Error
                     default:
-                        Debug.Assert(false);
+                        Trace.Assert(false);
                         break;
                         #endregion
-
                 }
             }
 
@@ -181,15 +180,21 @@ namespace PEBakery.Core
             {
                 if (1 < kv.Value.Count)
                 {
+                    CodeCommand opCmd = null;
                     switch (kv.Key)
                     {
+                        case CodeType.TXTAddLine:
+                            opCmd = OptimizeTXTAddLine(kv.Value);
+                            break;
+                        case CodeType.TXTDelLine:
+                            opCmd = OptimizeTXTDelLine(kv.Value);
+                            break;
                         case CodeType.Visible:
-                            {
-                                CodeCommand opCmd = OptimizeVisible(kv.Value);
-                                optimized.Add(opCmd);
-                            }
+                            opCmd = OptimizeVisible(kv.Value);
                             break;
                     }
+                    Trace.Assert(opCmd != null); // Logic Error
+                    optimized.Add(opCmd);
                 }
                 else if (1 == kv.Value.Count)
                 {
@@ -202,6 +207,7 @@ namespace PEBakery.Core
             return optimized;
         }
 
+        // TODO: Is there any more 'generic' way?
         private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
         {
             List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
@@ -228,7 +234,7 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
         }
 
@@ -246,6 +252,5 @@ namespace PEBakery.Core
             string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList));
         }
-
     }
 }

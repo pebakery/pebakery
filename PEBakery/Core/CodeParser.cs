@@ -87,7 +87,7 @@ namespace PEBakery.Core
             if (doOptimize)
             {
                 List<CodeCommand> optimizedList = new List<CodeCommand>();
-                return CodeOptimizer.Optimize(compiledList);
+                return CodeOptimizer.OptimizeCommands(compiledList);
             }
             else
             {
@@ -222,7 +222,9 @@ namespace PEBakery.Core
             bool isMacro = false;
             if (Enum.TryParse(typeStr, true, out CodeType type) == false)
                 isMacro = true;
-            if (Enum.IsDefined(typeof(CodeType), type) == false || type == CodeType.None || type == CodeType.Macro)
+            if (Enum.IsDefined(typeof(CodeType), type) == false ||
+                type == CodeType.None || type == CodeType.Macro ||
+                CodeCommand.OptimizedCodeType.Contains(type))
                 isMacro = true;
 
             if (isMacro)

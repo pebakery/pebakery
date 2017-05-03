@@ -221,6 +221,8 @@ namespace PEBakery.Core
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
                             link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null);
+
+                            Trace.Assert(p != null);
                         }
 
                         // Check Plugin Link's validity
@@ -328,13 +330,18 @@ namespace PEBakery.Core
                                 pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
                                 DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
                             {
-                                using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                try
                                 {
-                                    BinaryFormatter formatter = new BinaryFormatter();
-                                    p = (Plugin)formatter.Deserialize(memStream);
+                                    using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                    {
+                                        BinaryFormatter formatter = new BinaryFormatter();
+
+                                        p = formatter.Deserialize(memStream) as Plugin;
+                                        p.Project = this;
+                                        cached = 1;
+                                    }
                                 }
-                                p.Project = this;
-                                cached = 1;
+                                catch { }
                             }
                         }
 
@@ -350,6 +357,8 @@ namespace PEBakery.Core
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
                             p = new Plugin(type, pPath, this, projectRoot, level);
+
+                            Trace.Assert(p != null);
                         }
 
                         listLock.EnterWriteLock();
@@ -367,12 +376,14 @@ namespace PEBakery.Core
                     catch
                     {
                         worker.ReportProgress(cached);
+                        Trace.Assert(false);
                     }
                 });
             }).ToArray();
             Task.WaitAll(tasks);
 
             mainPlugin = allPluginList.Where(x => x.Level == MainLevel).FirstOrDefault();
+            Trace.Assert(mainPlugin != null);
         }
 
         public void PostLoad()
@@ -457,6 +468,8 @@ namespace PEBakery.Core
 
             foreach (Plugin p in pList)
             {
+                Trace.Assert(p != null);
+
                 if (p == this.MainPlugin)
                     continue;
 
@@ -481,6 +494,7 @@ namespace PEBakery.Core
                         dirDict[key] = nodeId;
                     }
                 }
+                Trace.Assert(p != null);
                 pTree.AddNode(nodeId, p);
             }
 
@@ -498,28 +512,31 @@ namespace PEBakery.Core
             });
 
             // Reflect Directory's Selected value
-            RecursiveDecideDirectorySelectedValue(pTree.Root);
+            RecursiveDecideDirectorySelectedValue(pTree.Root, 0);
 
             return pTree;
         }
 
         // TODO: It violates Tree<T>'s abstraction...
-        private SelectedState RecursiveDecideDirectorySelectedValue(List<Node<Plugin>> list)
+        private SelectedState RecursiveDecideDirectorySelectedValue(List<Node<Plugin>> list, int depth)
         {
             SelectedState final = SelectedState.None;
             foreach (Node<Plugin> node in list)
             {
                 if (0 < node.Child.Count)
                 { // Has child plugins
-                    SelectedState state = RecursiveDecideDirectorySelectedValue(node.Child);
-                    if (state == SelectedState.True)
-                        final = node.Data.Selected = SelectedState.True;
-                    else if (state == SelectedState.False)
+                    SelectedState state = RecursiveDecideDirectorySelectedValue(node.Child, depth + 1);
+                    if (depth != 0)
                     {
-                        if (final != SelectedState.True)
-                            final = SelectedState.False;
-                        if (node.Data.Selected != SelectedState.True)
-                            node.Data.Selected = SelectedState.False;
+                        if (state == SelectedState.True)
+                            final = node.Data.Selected = SelectedState.True;
+                        else if (state == SelectedState.False)
+                        {
+                            if (final != SelectedState.True)
+                                final = SelectedState.False;
+                            if (node.Data.Selected != SelectedState.True)
+                                node.Data.Selected = SelectedState.False;
+                        }
                     }
                 }
                 else // Does not have child plugin
@@ -631,443 +648,4 @@ namespace PEBakery.Core
             return targetPlugin;
         }
     }
-    /*
-    public class Project2
-    {
-        // Fields
-        private string projectName;
-        private string projectRoot;
-        private string baseDir;
-        private Plugin mainPlugin;
-        private List<Plugin> allPluginList;
-        private Tree<Plugin> allPlugins;
-        private Tree<Plugin> visiblePlugins;
-        private Variables variables;
-        public const int MainLevel = -256;  // Reserved level for script.project
-
-        private int loadedPluginCount;
-        private int allPluginCount;
-        private BackgroundWorker worker;
-        private PluginCache pluginCache;
-
-        // Properties
-        public string ProjectName { get { return projectName; } }
-        public string ProjectRoot { get { return projectRoot; } }
-        public string BaseDir { get => baseDir; }
-        public Plugin MainPlugin { get { return mainPlugin; } }
-        public List<Plugin> AllPluginList { get { return allPluginList; } }
-        public Tree<Plugin> AllPlugins { get { return allPlugins; } }
-        public Tree<Plugin> VisiblePlugins { get => visiblePlugins; }
-        public Variables Variables { get => variables; }
-        public int LoadedPluginCount { get => loadedPluginCount; }
-        public int AllPluginCount { get => allPluginCount; }
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="projectName"></param>
-        public Project2(string baseDir, string projectName, PluginCache cache, BackgroundWorker worker)
-        {
-            this.loadedPluginCount = 0;
-            this.allPluginCount = 0;
-            this.pluginCache = cache;
-            this.worker = worker;
-            this.projectName = projectName;
-            this.projectRoot = Path.Combine(baseDir, "Projects", projectName);
-            this.baseDir = baseDir;
-        }
-
-        public static int GetPluginCount(string searchDir)
-        {
-            int count = 1;
-            count += Directory.GetFiles(searchDir, "*.script", SearchOption.AllDirectories).Length;
-            count += Directory.GetFiles(searchDir, "*.plugin", SearchOption.AllDirectories).Length;
-            count += Directory.GetFiles(searchDir, "*.link", SearchOption.AllDirectories).Length;
-            return count;
-        }
-
-        public void Load()
-        {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-
-            this.allPluginList = CollectAllPlugins();
-            this.allPlugins = PluginListToTree(allPluginList);
-            List<Plugin> visiblePluginList = CollectVisiblePlugins(allPluginList);
-            this.visiblePlugins = PluginListToTree(visiblePluginList);
-            this.variables = new Variables(this);
-
-            stopwatch.Stop();
-        }
-
-        public Tree<Plugin> GetActivePlugin()
-        {
-            List<Plugin> activePluginList = CollectActivePlugins(allPluginList);
-            return PluginListToTree(activePluginList);
-        }
-
-        public List<Plugin> GetActivePluginList()
-        {
-            return CollectActivePlugins(allPluginList);
-        }
-
-        private List<Plugin> CollectAllPlugins()
-        {
-            List<string> pPathList = new List<string>
-            {
-                // Collect mainPlugin (script.project)
-                Path.Combine(projectRoot, "script.project")
-            };
-
-            // Collect all *.script, plugin, link
-            string[] scripts = Directory.GetFiles(projectRoot, "*.script", SearchOption.AllDirectories);
-            string[] plugins = Directory.GetFiles(projectRoot, "*.plugin", SearchOption.AllDirectories);
-            string[] links = Directory.GetFiles(projectRoot, "*.link", SearchOption.AllDirectories);
-            var files = scripts.Concat(plugins).Concat(links);
-            foreach (string file in files)
-            {
-                // level must be bigger than mainLevel, and not level 0
-                string ext = Path.GetExtension(file);
-                if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase) == false)
-                { // *.plugin, *.script
-                    int level = 0;
-                    try
-                    {
-                        level = int.Parse(Ini.GetKey(file, "Main", "Level"));
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    if (!(MainLevel < level))
-                    {
-                        continue;
-                    }
-                }
-
-                pPathList.Add(file);
-                allPluginCount++;
-            }
-
-            List<Plugin> pList = new List<Plugin>();
-            Task[] parseTasks = LoadPlugins(pPathList, pList);
-            Task.WaitAll(parseTasks);
-
-            // Set MainPlugin
-            this.mainPlugin = pList.Single(p => p.Level == MainLevel);
-            // Sort by level and filename (lexicographic)
-            return pList.OrderBy(p => p.Level).ThenBy(p => p.ShortPath).ToList();
-        }
-
-        private Task[] LoadPlugins(List<string> pPathList, List<Plugin> pList)
-        {
-            ReaderWriterLockSlim listLock = new ReaderWriterLockSlim();
-
-            int i = 0;
-            return pPathList.Select(pPath =>
-            {
-                int t = i++;
-                return Task.Run(() =>
-                {
-                    int cached = 0;
-                    string ext = Path.GetExtension(pPath);
-                    Plugin p = null;
-                    try
-                    {
-                        if (pluginCache != null && ext.Equals(".link", StringComparison.OrdinalIgnoreCase) == false)
-                        { // PluginCache enabled
-                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(pPath);
-                            string sPath = pPath.Remove(0, baseDir.Length + 1);
-                            DB_PluginCache pCache = pluginCache.Table<DB_PluginCache>()
-                                .FirstOrDefault(
-                                    x => sPath.Equals(x.Path, StringComparison.OrdinalIgnoreCase)
-                                    && DateTime.Equals(x.LastWriteTime, lastWriteTime));
-                            if (pCache != null)
-                            {
-                                using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
-                                {
-                                    BinaryFormatter formatter = new BinaryFormatter();
-                                    p = (Plugin)formatter.Deserialize(memStream);
-                                }
-                                p.Project = this;
-                                cached = 1;
-                            }
-                        }
-
-                        if (p == null)
-                        {
-                            if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                                p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
-                            else
-                            { // TODO : Lazy loading of link, takes too much time at start
-                                if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                                    p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
-                                else
-                                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
-                            }
-
-                            // Check Plugin Link's validity
-                            // Also, convert nested link to one-depth link
-                            if (p.Type == PluginType.Link)
-                            {
-                                Plugin link = p.Link;
-                                bool valid = false;
-                                do
-                                {
-                                    if (link == null)
-                                        return;
-                                    if (link.Type == PluginType.Plugin)
-                                    {
-                                        valid = true;
-                                        break;
-                                    }
-                                    link = link.Link;
-                                }
-                                while (link.Type != PluginType.Plugin);
-
-                                if (valid)
-                                    p.Link = link;
-                                else
-                                    return;
-                            }
-                        }
-
-                        listLock.EnterWriteLock();
-                        try
-                        {
-                            pList.Add(p);
-                        }
-                        finally
-                        {
-                            listLock.ExitWriteLock();
-                        }
-
-#if DEBUG
-                        Console.WriteLine(pPath);
-#endif
-
-                        Interlocked.Increment(ref loadedPluginCount);
-                        worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
-                    }
-                    catch
-                    { 
-                        Interlocked.Increment(ref loadedPluginCount);
-                        worker.ReportProgress(cached);
-                    }
-                });
-            }).ToArray();
-        }
-
-        private List<Plugin> CollectVisiblePlugins(List<Plugin> allPluginList)
-        {
-            List<Plugin> visiblePluginList = new List<Plugin>();
-            foreach (Plugin p in allPluginList)
-            {
-                if (p.Level != 0)
-                    visiblePluginList.Add(p);
-            }
-            return visiblePluginList;
-        }
-
-        /// <summary>
-        /// Filter active plugins from allPlugins dict
-        /// Active Plugins : Will-be-processed plugins
-        /// </summary>
-        /// <remarks>
-        /// Took 1ms, Tested on i5-6200U, 151 plugins (Win10PESE 2016-09-01 default)
-        /// Time elapsed: 00:00:14.0766582 -> 00:00:14.0767675
-        /// 
-        /// All Plugins : 155
-        /// </remarks>
-        private List<Plugin> CollectActivePlugins(List<Plugin> allPluginList)
-        {
-            List<Plugin> activePluginList = new List<Plugin>();
-            foreach (Plugin p in allPluginList)
-            {
-                bool active = false;
-                if (p.Type == PluginType.Plugin)
-                {
-                    if (p.Selected != SelectedState.None)
-                    {
-                        if (p.Mandatory || p.Selected == SelectedState.True)
-                            active = true;
-                    }
-                }
-                
-                if (active)
-                    activePluginList.Add(p);
-            }
-            return activePluginList;
-        }
-
-        private string PathKeyGenerator(string[] paths, int last)
-        { // last - start entry is 0
-            StringBuilder builder = new StringBuilder();
-            builder.Append(paths[0]);
-            for (int i = 1; i <= last; i++)
-            {
-                builder.Append(Path.DirectorySeparatorChar);
-                builder.Append(paths[i]);
-            }
-            return builder.ToString();
-        }
-
-        private Tree<Plugin> PluginListToTree(List<Plugin> pList)
-        {
-            Tree<Plugin> pTree = new Tree<Plugin>();
-            Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-            int rootId = pTree.AddNode(0, this.MainPlugin); // Root is script.project
-
-            foreach (Plugin p in pList)
-            {
-                if (p == this.MainPlugin)
-                    continue;
-
-                int nodeId = rootId;
-                string[] paths = p.ShortPath.Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
-
-                // Ex) Apps\Network\Mozilla_Firefox_CR.script
-                for (int i = 0; i < paths.Length - 1; i++)
-                {
-                    string pathKey = PathKeyGenerator(paths, i);
-                    string key = p.Level.ToString() + pathKey;
-                    if (dirDict.ContainsKey(key))
-                    {
-                        nodeId = dirDict[key];
-                    }
-                    else
-                    {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), this, projectRoot, baseDir, p.Level);
-                        nodeId = pTree.AddNode(nodeId, dirPlugin);
-                        dirDict[key] = nodeId;
-                    }
-                }
-                pTree.AddNode(nodeId, p);
-            }
-
-            // Sort - Plugin first, Directory last
-            pTree.Sort((x, y) => {
-                if (x.Data.Level == y.Data.Level)
-                {
-                    if (x.Data.Type == y.Data.Type)
-                        return x.Data.FullPath.CompareTo(y.Data.FullPath);
-                    else
-                        return x.Data.Type - y.Data.Type;
-                }
-                else
-                    return x.Data.Level - y.Data.Level;
-            });
-
-            // Reflect Directory's Selected value
-            RecursiveDecideDirectorySelectedValue(pTree.Root);
-
-            return pTree;
-        }
-
-        // TODO: It violates Tree<T>'s abstraction...
-        private SelectedState RecursiveDecideDirectorySelectedValue(List<Node<Plugin>> list)
-        {
-            SelectedState final = SelectedState.None;
-            foreach (Node<Plugin> node in list)
-            {
-                if (0 < node.Child.Count)
-                { // Has child plugins
-                    SelectedState state = RecursiveDecideDirectorySelectedValue(node.Child);
-                    if (state == SelectedState.True)
-                        final = node.Data.Selected = SelectedState.True;
-                    else if (state == SelectedState.False)
-                    {
-                        if (final != SelectedState.True)
-                            final = SelectedState.False;
-                        if (node.Data.Selected != SelectedState.True)
-                            node.Data.Selected = SelectedState.False;
-                    }
-                }
-                else // Does not have child plugin
-                {
-                    switch (node.Data.Selected)
-                    {
-                        case SelectedState.True:
-                            final = SelectedState.True;
-                            break;
-                        case SelectedState.False:
-                            if (final == SelectedState.None)
-                                final = SelectedState.False;
-                            break;
-                    }
-                }
-            }
-
-            return final;
-        }
-
-        /// <summary>
-        /// Return true if error
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <returns></returns>
-        public Plugin RefreshPlugin(Plugin plugin)
-        {
-            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, plugin.FullPath, StringComparison.OrdinalIgnoreCase));
-            if (idx == -1)
-                return null;
-
-            Node<Plugin> node = allPlugins.SearchNode(plugin);
-            string pPath = plugin.FullPath;
-            Plugin p;
-            try
-            {
-                if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, MainLevel);
-                else
-                {
-                    string ext = Path.GetExtension(pPath);
-                    if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, baseDir, null);
-                    else
-                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, baseDir, null);
-                }
-
-                // Check Plugin Link's validity
-                // Also, convert nested link to one-depth link
-                if (p.Type == PluginType.Link)
-                {
-                    Plugin link = p.Link;
-                    bool valid = false;
-                    do
-                    {
-                        if (link == null)
-                            return null;
-                        if (link.Type == PluginType.Plugin)
-                        {
-                            valid = true;
-                            break;
-                        }
-                        link = link.Link;
-                    }
-                    while (link.Type != PluginType.Plugin);
-
-                    if (valid)
-                        p.Link = link;
-                    else
-                        return null;
-                }
-            }
-            catch
-            { // Do nothing - intentionally left blank
-                return null;
-            }
-
-            allPluginList[idx] = p;
-            node.Data = p;
-            return p;
-        }
-
-        public Plugin GetPluginByFullPath(string fullPath)
-        {
-            return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
-        }
-    }
-    */
 }

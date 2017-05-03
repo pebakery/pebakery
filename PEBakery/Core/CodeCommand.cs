@@ -68,13 +68,6 @@ namespace PEBakery.Core
         // 14 External Macro
         Macro = 1400,
     }
-
-    public enum DeprecatedCodeType
-    {
-        WebGetIfNotExist, // Better to have as Macro
-        GetParam, // PEBakery can have infinite number of section params.
-        PackParam, // PEBakery can have infinite number of section params.
-    };
     #endregion
 
     #region SectionAddress
@@ -142,6 +135,25 @@ namespace PEBakery.Core
         {
             return RawCode;
         }
+
+        public readonly static CodeType[] DeprecatedCodeType = new CodeType[]
+        {
+            CodeType.WebGetIfNotExist, // Better to have as Macro
+            CodeType.GetParam, // PEBakery can have infinite number of section params.
+            CodeType.PackParam, // PEBakery can have infinite number of section params.
+        };
+
+        public readonly static CodeType[] OptimizedCodeType = new CodeType[]
+        {
+            CodeType.TXTAddLineOp, 
+            CodeType.TXTDelLineOp,
+            CodeType.INIReadOp,
+            CodeType.INIWriteOp,
+            CodeType.INIAddSectionOp,
+            CodeType.INIDeleteSectionOp,
+            CodeType.INIWriteTextLineOp,
+            CodeType.VisibleOp,
+        };
     }
     #endregion
 
@@ -405,36 +417,6 @@ namespace PEBakery.Core
 
     #region CodeInfo 04 - INI
     [Serializable]
-    public class CodeInfo_INIWrite : CodeInfo
-    {
-        public string FileName;
-        public string SectionName;
-        public string Key;
-        public string Value;
-
-        public CodeInfo_INIWrite(string fileName, string sectionName, string key, string value)
-        {
-            FileName = fileName;
-            SectionName = sectionName;
-            Key = key;
-            Value = value;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(FileName);
-            b.Append(",");
-            b.Append(SectionName);
-            b.Append(",");
-            b.Append(Key);
-            b.Append(",");
-            b.Append(Value);
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
     public class CodeInfo_INIRead : CodeInfo
     {
         public string FileName;
@@ -466,6 +448,58 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_INIReadOp : CodeInfo
+    {
+        public List<CodeInfo_INIRead> InfoList;
+
+        public CodeInfo_INIReadOp(List<CodeInfo_INIRead> infoList)
+        {
+            InfoList = infoList;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_INIWrite : CodeInfo
+    {
+        public string FileName;
+        public string SectionName;
+        public string Key;
+        public string Value;
+
+        public CodeInfo_INIWrite(string fileName, string sectionName, string key, string value)
+        {
+            FileName = fileName;
+            SectionName = sectionName;
+            Key = key;
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(Value);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_INIWriteOp : CodeInfo
+    {
+        public List<CodeInfo_INIWrite> InfoList;
+
+        public CodeInfo_INIWriteOp(List<CodeInfo_INIWrite> infoList)
+        {
+            InfoList = infoList;
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_INIDelete : CodeInfo
     {
         public string FileName;
@@ -488,6 +522,17 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(Key);
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_INIDeleteOp : CodeInfo
+    {
+        public List<CodeInfo_INIDelete> InfoList;
+
+        public CodeInfo_INIDeleteOp(List<CodeInfo_INIDelete> infoList)
+        {
+            InfoList = infoList;
         }
     }
 

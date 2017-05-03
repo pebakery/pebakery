@@ -64,7 +64,7 @@ namespace PEBakery.Lib
             { // Root NodeList
                 int id = idList.Max() + 1;
                 idList.Add(id);
-                Node<T> node = new Node<T>(parentId, id, data, root);
+                Node<T> node = new Node<T>(parentId, id, data, null);
                 root.Add(node);
                 count++;
                 return id;
