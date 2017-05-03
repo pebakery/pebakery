@@ -26,7 +26,7 @@
                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                     mc:Ignorable="d">
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/PEBakery.WPF;component/WPF/Controls/Spinner/AllBrushes.xaml" />
+        <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Spinner/AllBrushes.xaml" />
     </ResourceDictionary.MergedDictionaries>
     <Style TargetType="{x:Type custom:SpinnerControl}">
         <Setter Property="HorizontalAlignment" Value="Center" />

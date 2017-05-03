@@ -2,11 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:PEBakery.WPF">
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/PEBakery.WPF;component/WPF/Controls/Spinner/SpinnerControl.Generic.xaml"/>
-        <ResourceDictionary Source="/PEBakery.WPF;component/WPF/Controls/MahApps/ProgressRing.xaml"/>
-        <!--
-        <ResourceDictionary Source="/PEBakery.WPF;component/Controls/MahApps/ProgressRing.xaml"/>
-        <ResourceDictionary Source="/PEBakery.WPF;component/Controls/Spinner/SpinnerControl.Generic.xaml"/>
-        -->
+        <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Spinner/SpinnerControl.Generic.xaml"/>
+        <ResourceDictionary Source="/PEBakery;component/WPF/Controls/MahApps/ProgressRing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>
