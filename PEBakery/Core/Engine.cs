@@ -26,6 +26,7 @@ using System.IO;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
+using PEBakery.WPF;
 
 namespace PEBakery.Core
 {
@@ -164,7 +165,7 @@ namespace PEBakery.Core
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
                     s.CurDepth = -1;
-                    CommandBranch.RunExec(s, cbCmd, false, true);
+                    CommandBranch.RunExec(s, cbCmd, false, false, true);
                 }
                 else
                 {
@@ -196,7 +197,8 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Comment:
-                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                        if (s.LogComment)
+                            logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Error:
                         logs.Add(new LogInfo(LogState.Error, string.Empty));
@@ -434,6 +436,8 @@ namespace PEBakery.Core
         public bool RunOnePlugin;
         public DebugLevel DebugLevel;
         public long BuildId; // Used in logging
+        public bool LogComment; // Used in logging
+        public bool LogMacro; // Used in logging
 
         // Properties
         public string BaseDir { get => Project.BaseDir; }
@@ -459,6 +463,9 @@ namespace PEBakery.Core
             this.Plugins = project.GetActivePluginList();
             this.Logger = logger;
 
+            this.LogComment = true;
+            this.LogMacro = true;
+
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);
 
@@ -482,6 +489,18 @@ namespace PEBakery.Core
 
             this.OnBuildExit = null;
             this.OnPluginExit = null;
+        }
+
+        public void SetLogOption(SettingViewModel m)
+        {
+            LogComment = m.Log_Comment;
+            LogMacro = m.Log_Macro;
+        }
+
+        public void SetLogOption(bool logComment, bool logMacro)
+        {
+            LogComment = logComment;
+            LogMacro = logMacro;
         }
     }
 }

@@ -31,6 +31,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PEBakery.Core.Commands;
+using System.Collections.Concurrent;
 
 namespace PEBakery.Core
 {
@@ -246,6 +247,8 @@ namespace PEBakery.Core
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
+        public readonly ConcurrentStack<bool> TurnOff = new ConcurrentStack<bool>();
+
         private readonly Dictionary<long, DB_BuildInfo> buildDict = new Dictionary<long, DB_BuildInfo>();
         private readonly Dictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new Dictionary<long, Tuple<DB_Plugin, Stopwatch>>();
 
@@ -354,56 +357,90 @@ namespace PEBakery.Core
         /// <param name="message"></param>
         public void Build_Write(long buildId, string message)
         {
+            bool doNotLog = false;
+            if (0 < TurnOff.Count)
+            {
+                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                    doNotLog = false;
+            }
+
+            if (doNotLog == false)
+            {
 #if DEBUG
-            Debug_Write(message);
+                Debug_Write(message);
 #endif
 
-            DB_BuildLog dbCode = new DB_BuildLog()
-            {
-                Time = DateTime.Now,
-                BuildId = buildId,
-                Message = message,
-            };
-            DB.Insert(dbCode);
+                DB_BuildLog dbCode = new DB_BuildLog()
+                {
+                    Time = DateTime.Now,
+                    BuildId = buildId,
+                    Message = message,
+                };
+                DB.Insert(dbCode);
+
+                // Fire Event
+                BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
+            }
         }
 
         public void Build_Write(long buildId, LogInfo log)
         {
+            bool doNotLog = false;
+            if (0 < TurnOff.Count)
+            {
+                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                    doNotLog = false;
+            }
+
+            if (doNotLog == false)
+            {
 #if DEBUG
-            Debug_Write(log);
+                Debug_Write(log);
 #endif
 
-            DB_BuildLog dbCode = new DB_BuildLog()
-            {
-                Time = DateTime.Now,
-                BuildId = buildId,
-                Depth = log.Depth,
-                State = log.State,
-            };
+                DB_BuildLog dbCode = new DB_BuildLog()
+                {
+                    Time = DateTime.Now,
+                    BuildId = buildId,
+                    Depth = log.Depth,
+                    State = log.State,
+                };
 
-            if (log.Command == null)
-            {
-                dbCode.Message = log.Message;
-            }
-            else
-            {
-                if (log.Message == string.Empty)
-                    dbCode.Message = log.Command.Type.ToString();
+                if (log.Command == null)
+                {
+                    dbCode.Message = log.Message;
+                }
                 else
-                    dbCode.Message = $"{log.Command.Type} - {log.Message}";
-                dbCode.RawCode = log.Command.RawCode;
+                {
+                    if (log.Message == string.Empty)
+                        dbCode.Message = log.Command.Type.ToString();
+                    else
+                        dbCode.Message = $"{log.Command.Type} - {log.Message}";
+                    dbCode.RawCode = log.Command.RawCode;
+                }
+
+                DB.Insert(dbCode);
+
+                // Fire Event
+                BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
+
             }
-
-            DB.Insert(dbCode);
-
-            // Fire Event
-            BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
         }
 
         public void Build_Write(long buildId, IEnumerable<LogInfo> logs)
         {
-            foreach (LogInfo log in logs)
-                Build_Write(buildId, log);
+            bool doNotLog = false;
+            if (0 < TurnOff.Count)
+            {
+                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                    doNotLog = false;
+            }
+
+            if (doNotLog == false)
+            {
+                foreach (LogInfo log in logs)
+                    Build_Write(buildId, log);
+            }
         }
 
         public void System_Write(string message)
@@ -474,12 +511,26 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
-        {
+        public void LogStartOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        { 
+            bool turnOff = false;
+            if (0 < TurnOff.Count)
+            {
+                if (TurnOff.TryPeek(out turnOff) == false) // Stack Failure
+                    turnOff = false;
+            }
+
+            bool TurnOffOriginalValue = turnOff;
+            if (forceLog && TurnOffOriginalValue)
+                turnOff = false;
+
             if (logPluginName)
                 LogStartOfSection(buildId, addr.Section.SectionName, depth, cmd);
             else
                 LogStartOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+
+            if (forceLog && TurnOffOriginalValue)
+                turnOff = true;
         }
 
         public void LogStartOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)
@@ -500,12 +551,26 @@ namespace PEBakery.Core
                 Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogEndOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null)
+        public void LogEndOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
         {
+            bool turnOff = false;
+            if (0 < TurnOff.Count)
+            {
+                if (TurnOff.TryPeek(out turnOff) == false) // Stack Failure
+                    turnOff = false;
+            }
+
+            bool TurnOffOriginalValue = turnOff;
+            if (forceLog && TurnOffOriginalValue)
+                turnOff = false;
+
             if (logPluginName)
                 LogEndOfSection(buildId, addr.Section.SectionName, depth, cmd);
             else
                 LogEndOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+
+            if (forceLog && TurnOffOriginalValue)
+                turnOff = true;
         }
 
         public void LogEndOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)

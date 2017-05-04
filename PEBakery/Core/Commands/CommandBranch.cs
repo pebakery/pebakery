@@ -31,12 +31,12 @@ namespace PEBakery.Core.Commands
 {
     public static class CommandBranch
     {
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
         {
-            RunExec(s, cmd, preserveCurParams, false);
+            RunExec(s, cmd, preserveCurParams, forceLog, false);
         }
 
-        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool callback)
+        public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
             Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
@@ -68,7 +68,7 @@ namespace PEBakery.Core.Commands
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
+            s.Logger.LogStartOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
 
             // Exec utilizes [Variables] section of the plugin
             if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
@@ -84,7 +84,7 @@ namespace PEBakery.Core.Commands
                 Engine.RunSection(s, nextAddr, paramList, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
-            s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd);
+            s.Logger.LogEndOfSection(s.BuildId, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
         }
 
         public static void Loop(EngineState s, CodeCommand cmd)

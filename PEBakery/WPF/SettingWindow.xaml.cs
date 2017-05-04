@@ -226,6 +226,8 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
+                new IniKey("Log", "Macro"), // Boolean
+                new IniKey("Log", "Comment"), // Boolean
             };
             keys = Ini.GetKeys(settingFile, keys);
 
@@ -235,29 +237,60 @@ namespace PEBakery.WPF
             string str_Interface_ScaleFactor = dict["ScaleFactor"];
             string str_Plugin_EnableCache = dict["EnableCache"];
             string str_Plugin_AutoConvertToUTF8 = dict["AutoConvertToUTF8"];
+            string str_Log_Macro = dict["Macro"];
+            string str_Log_Comment = dict["Comment"];
 
             // General - EnableLongFilePath (Default = False)
-            if (str_General_EnableLongFilePath.Equals("True", StringComparison.OrdinalIgnoreCase))
-                General_EnableLongFilePath = true;
+            if (str_General_EnableLongFilePath != null)
+            {
+                if (str_General_EnableLongFilePath.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    General_EnableLongFilePath = true;
+            }
 
             // General - EnableLongFilePath (Default = True)
-            if (str_General_OptimizeCode.Equals("False", StringComparison.OrdinalIgnoreCase))
-                General_OptimizeCode = false;
+            if (str_General_OptimizeCode != null)
+            {
+                if (str_General_OptimizeCode.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    General_OptimizeCode = false;
+            }
 
             // Interface - ScaleFactor (Default = 100)
-            if (int.TryParse(str_Interface_ScaleFactor, NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
+            if (str_Interface_ScaleFactor != null)
             {
-                if (100 <= scaleFactor && scaleFactor <= 200)
-                    Interface_ScaleFactor = scaleFactor;
+                if (int.TryParse(str_Interface_ScaleFactor, NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
+                {
+                    if (100 <= scaleFactor && scaleFactor <= 200)
+                        Interface_ScaleFactor = scaleFactor;
+                }
             }
 
             // Plugin - EnableCache (Default = True)
-            if (str_Plugin_EnableCache.Equals("False", StringComparison.OrdinalIgnoreCase))
-                Plugin_EnableCache = false;
+            if (str_Plugin_EnableCache != null)
+            {
+                if (str_Plugin_EnableCache.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Plugin_EnableCache = false;
+            }
 
             // Plugin - AutoConvertToUTF8 (Default = False)
-            if (str_Plugin_AutoConvertToUTF8.Equals("True", StringComparison.OrdinalIgnoreCase))
-                Plugin_AutoConvertToUTF8 = true;
+            if (str_Plugin_AutoConvertToUTF8 != null)
+            {
+                if (str_Plugin_AutoConvertToUTF8.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Plugin_AutoConvertToUTF8 = true;
+            }
+
+            // Log - Macro (Default = True)
+            if (str_Log_Macro != null)
+            {
+                if (str_Log_Macro.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Log_Macro = false;
+            }
+
+            // Log - Comment (Default = True)
+            if (str_Log_Comment != null)
+            {
+                if (str_Log_Comment.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Log_Comment = false;
+            }
         }
 
         public void WriteToFile()
@@ -269,6 +302,8 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
+                new IniKey("Log", "Macro", Log_Macro.ToString()),
+                new IniKey("Log", "Comment", Log_Comment.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
         }

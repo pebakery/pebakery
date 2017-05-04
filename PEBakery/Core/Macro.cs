@@ -7,6 +7,8 @@ using System.IO;
 using PEBakery.Lib;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
+using System.Windows;
+using PEBakery.WPF;
 
 namespace PEBakery.Core
 {
@@ -112,7 +114,17 @@ namespace PEBakery.Core
                 paramDict[i + 1] = info.Args[i];
 
             s.CurSectionParams = paramDict;
-            CommandBranch.RunExec(s, macroCmd, true);
+
+            if (s.LogMacro)
+            {
+                CommandBranch.RunExec(s, macroCmd, true);
+            }
+            else // Do not log macro
+            {
+                s.Logger.TurnOff.Push(true);
+                CommandBranch.RunExec(s, macroCmd, true, true);
+                s.Logger.TurnOff.TryPop(out bool dummy);
+            }
         }
     }
 }

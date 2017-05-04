@@ -887,6 +887,11 @@ namespace PEBakery.WPF
                 worker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
                     EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MainWindow w = (Application.Current.MainWindow as MainWindow);
+                        s.SetLogOption(w.Setting);
+                    });
                     long buildId = Engine.RunBuildOneSection(s, addr, logMsg);
 
 
