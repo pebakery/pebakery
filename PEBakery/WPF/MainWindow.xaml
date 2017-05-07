@@ -1,0 +1,389 @@
+﻿<!--
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+    
+<Window x:Class="PEBakery.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        mc:Ignorable="d"
+        FontSize="13"
+        FontFamily="Segoe UI"
+        WindowStartupLocation="CenterScreen"
+        Title="PEBakery"
+        Width="900" Height="720"
+        MinWidth="800" MinHeight="600"
+        Closing="Window_Closing">
+    <Window.DataContext>
+        <local:MainViewModel/>
+    </Window.DataContext>
+    <Window.Resources>
+        <Style x:Key="BitmapButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Name="border" BorderThickness="0" BorderBrush="Black" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BackgroundButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Button
+                            BorderThickness="0"
+                            BorderBrush="Black">
+                            <Button.Background>
+                                <SolidColorBrush Opacity="1"></SolidColorBrush>
+                            </Button.Background>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Button>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.5" />
+                                <Setter Property="Background" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ImageButton" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Grid x:Name="Chrome" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.75" />
+                                <Setter Property="Cursor" Value="Hand" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Height="100" Background="LightBlue" Visibility="{Binding NormalInterfaceVisibility}">
+            <Grid
+                HorizontalAlignment="Right">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                </Grid.ColumnDefinitions>
+
+                <custom:ProgressRing
+                    x:Name="MainProgressRing"
+                    Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                    IsActive="{Binding ProgressRingActive}">
+                </custom:ProgressRing>
+                <Button Name="BuildButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Wrench" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="RefreshButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="SettingButton" Grid.Row="0" Grid.Column="3" Margin="5" Style="{StaticResource BackgroundButton}" Click="SettingButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Settings" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="LogButton" Grid.Row="0" Grid.Column="4" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="UpdateButton" Grid.Row="0" Grid.Column="5" Margin="5" Style="{StaticResource BackgroundButton}" Click="UpdateButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="AboutButton" Grid.Row="0" Grid.Column="6" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+
+                <TextBlock Text="Build" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="Refresh" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="Setting" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="Log" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="Update" Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="About" Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            </Grid>
+        </Border>
+        <Border DockPanel.Dock="Top" Height="100" Background="LightBlue" Visibility="{Binding BuildInterfaceVisibility}">
+            <Grid
+                HorizontalAlignment="Right">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="75" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                    <ColumnDefinition Width="75"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Name="BuildStopButton" Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="StopCircle" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="BuildLogButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+                <Button Name="BuildAboutButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+                    <Button.Content>
+                        <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="5" />
+                    </Button.Content>
+                </Button>
+
+                <TextBlock Text="Stop" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="Log" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+                <TextBlock Text="About" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            </Grid>
+        </Border>
+        <Grid DockPanel.Dock="Bottom" Height="20" x:Name="bottomDock" Panel.ZIndex="100">
+            <ProgressBar
+                Name="LoadProgressBar"
+                IsIndeterminate="False"
+                Minimum="0"
+                Maximum="100"
+                Value="0"
+                Visibility="{Binding BottomProgressBarVisibility}">
+            </ProgressBar>
+            <TextBlock
+                Name="StatusBar"
+                Background="Yellow" 
+                Text="{Binding StatusBarText}"
+                Visibility="{Binding BottomStatusBarVisibility}">
+            </TextBlock>
+        </Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TreeView
+                x:Name="MainTreeView"
+                Grid.Column="0"
+                Background="PaleGreen"
+                SelectedItemChanged="MainTreeView_SelectedItemChanged"
+                DataContext="{Binding Tree}"
+                ItemsSource="{Binding Child}"
+                Loaded="MainTreeView_Loaded"
+                VirtualizingStackPanel.IsVirtualizing="True"
+                VirtualizingStackPanel.VirtualizationMode="Recycling"
+                Visibility="{Binding NormalInterfaceVisibility}">
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Child}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <CheckBox
+                                Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                                Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
+                            <ContentPresenter
+                                Content="{Binding Icon}"
+                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
+                            </ContentPresenter>
+                            <TextBlock
+                                Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                                Text="{Binding Text}"></TextBlock>
+                        </Grid>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+            <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
+            <DockPanel Grid.Column="1" Background="White">
+                <Border DockPanel.Dock="Top" Height="100" Background="LightYellow">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ContentPresenter
+                            Name="PluginLogo"
+                            Grid.Row="0" Grid.Column="0"
+                            Margin="10"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            UseLayoutRounding="True">
+                        </ContentPresenter>
+                        <Grid
+                            Grid.Row="0" Grid.Column="1"
+                            Margin="0, 0, 6, 0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="70" />
+                            </Grid.RowDefinitions>
+
+                            <DockPanel
+                                Grid.Row="0">
+                                <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Name="PluginVersion"
+                                    Text="{Binding PluginVersionText}"
+                                    FontWeight="Bold" FontSize="14" 
+                                    VerticalAlignment="Center"/>
+                                <TextBlock
+                                    DockPanel.Dock="Right"
+                                    Name="PluginAuthor"
+                                    Text="{Binding PluginAuthorText}" 
+                                    Margin="0, 0, 10, 0"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right"
+                                    FontStretch="Condensed"
+                                    TextWrapping="Wrap" />
+                                <TextBlock
+                                    DockPanel.Dock="Left"
+                                    Name="PluginTitle"
+                                    FontStretch="SemiCondensed"
+                                    Text="{Binding PluginTitleText}" 
+                                    FontWeight="Bold" FontSize="16"
+                                    VerticalAlignment="Center"
+                                    TextWrapping="Wrap"/>
+                            </DockPanel>
+                            <TextBlock
+                                Grid.Row="1" Grid.Column="0"
+                                FontWeight="Medium"
+                                Name="PluginDescription"
+                                Text="{Binding PluginDescriptionText}"
+                                FontStretch="SemiCondensed"
+                                VerticalAlignment="Center"
+                                TextWrapping="Wrap"/>
+                        </Grid>
+
+                        <Grid
+                            Grid.Row="0"
+                            Grid.RowSpan="2" Grid.Column="3"
+                            Width="30"
+                            Visibility="{Binding NormalInterfaceVisibility}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                                <RowDefinition Height="30" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button
+                                Name="PluginRunButton"
+                                Grid.Row="0" Grid.Column="0"
+                                Click="PluginRunButton_Click">
+                                <Button.Content>
+                                    <iconPacks:PackIconMaterial Kind="Wrench" Width="Auto" Height="Auto" Margin="5"/>
+                                </Button.Content>
+                            </Button>
+                            <Button
+                                Name="PluginEditButton"
+                                Grid.Row="1" Grid.Column="0"
+                                Click="PluginEditButton_Click">
+                                <Button.Content>
+                                    <iconPacks:PackIconMaterial Kind="BorderColor" Width="Auto" Height="Auto" Margin="5"/>
+                                </Button.Content>
+                            </Button>
+                            <Button
+                                Name="PluginRefreshButton"
+                                Grid.Row="2" Grid.Column="0"
+                                Click="PluginRefreshButton_Click">
+                                <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer
+                    DockPanel.Dock="Top" 
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto"
+                    Visibility="{Binding NormalInterfaceVisibility}">
+                    <Canvas 
+                        Name="MainCanvas"
+                        Grid.Row="0" Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="10, 10, 10, 10"
+                        Panel.ZIndex="-1">
+                    </Canvas>
+                </ScrollViewer>
+
+                <Grid
+                    DockPanel.Dock="Top" 
+                    Visibility="{Binding BuildInterfaceVisibility}">
+                    <TextBlock Text="Test Build Interface"></TextBlock>
+                </Grid>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>
