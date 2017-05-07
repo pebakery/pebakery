@@ -34,7 +34,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
             CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -86,7 +86,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLineOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLineOp));
             CodeInfo_TXTAddLineOp infoOp = cmd.Info as CodeInfo_TXTAddLineOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
@@ -150,7 +150,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace));
             CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -187,7 +187,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
             CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -225,7 +225,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLineOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLineOp));
             CodeInfo_TXTDelLineOp infoOp = cmd.Info as CodeInfo_TXTDelLineOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
@@ -277,7 +277,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelSpaces));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelSpaces));
             CodeInfo_TXTDelSpaces info = cmd.Info as CodeInfo_TXTDelSpaces;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -316,7 +316,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelEmptyLines));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelEmptyLines));
             CodeInfo_TXTDelEmptyLines info = cmd.Info as CodeInfo_TXTDelEmptyLines;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);

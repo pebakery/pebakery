@@ -38,7 +38,7 @@ namespace PEBakery.Core.Commands
 
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);
@@ -89,7 +89,7 @@ namespace PEBakery.Core.Commands
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
 
             // TODO
@@ -164,7 +164,7 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
             CodeInfo_If info = cmd.Info as CodeInfo_If;
 
             if (info.Condition.Check(s, out string msg))
@@ -188,7 +188,7 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
             CodeInfo_Else info = cmd.Info as CodeInfo_Else;
 
             if (s.ElseFlag)

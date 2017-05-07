@@ -15,7 +15,7 @@ namespace Launcher
             Process proc = new Process();
             proc.StartInfo.UseShellExecute = true;
             proc.StartInfo.Verb = "Open";
-            proc.StartInfo.FileName = @"Binary\PEBakery.WPF.exe";
+            proc.StartInfo.FileName = @"Binary\PEBakery.exe";
             proc.StartInfo.WorkingDirectory = GetProgramAbsolutePath();
             // StringBuilder b = new StringBuilder("/basedir .");
             StringBuilder b = new StringBuilder();

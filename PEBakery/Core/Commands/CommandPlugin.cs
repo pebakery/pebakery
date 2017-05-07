@@ -33,7 +33,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile));
             CodeInfo_ExtractFile info = cmd.Info as CodeInfo_ExtractFile;
 
             string pluginFile = StringEscaper.Unescape(info.PluginFile);

@@ -32,7 +32,7 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> Set(EngineState s, CodeCommand cmd)
         {
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Set));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Set));
             CodeInfo_Set info = cmd.Info as CodeInfo_Set;
 
             List<LogInfo> logs = Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam));
             CodeInfo_GetParam info = cmd.Info as CodeInfo_GetParam;
 
             logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, s.CurSectionParams[info.Index]));
@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
         { // TODO : Not fully understand WB082's internal mechanism
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam));
             CodeInfo_PackParam info = cmd.Info as CodeInfo_PackParam;
 
             logs.Add(new LogInfo(LogState.Ignore,

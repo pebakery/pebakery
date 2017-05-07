@@ -223,7 +223,7 @@ namespace PEBakery.Core
                                 type = PluginType.Link;
                             link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null);
 
-                            Trace.Assert(p != null);
+                            Debug.Assert(p != null);
                         }
 
                         // Check Plugin Link's validity
@@ -359,7 +359,7 @@ namespace PEBakery.Core
                                 type = PluginType.Link;
                             p = new Plugin(type, pPath, this, projectRoot, level);
 
-                            Trace.Assert(p != null);
+                            Debug.Assert(p != null);
                         }
 
                         listLock.EnterWriteLock();
@@ -382,14 +382,13 @@ namespace PEBakery.Core
                             w.Logger.System_Write(new LogInfo(LogState.Error, e));
                         });
                         worker.ReportProgress(cached);
-                        Trace.Assert(false);
                     }
                 });
             }).ToArray();
             Task.WaitAll(tasks);
 
             mainPlugin = allPluginList.Where(x => x.Level == MainLevel).FirstOrDefault();
-            Trace.Assert(mainPlugin != null);
+            Debug.Assert(mainPlugin != null);
         }
 
         public void PostLoad()
@@ -474,7 +473,7 @@ namespace PEBakery.Core
 
             foreach (Plugin p in pList)
             {
-                Trace.Assert(p != null);
+                Debug.Assert(p != null);
 
                 if (p == this.MainPlugin)
                     continue;
@@ -500,7 +499,7 @@ namespace PEBakery.Core
                         dirDict[key] = nodeId;
                     }
                 }
-                Trace.Assert(p != null);
+                Debug.Assert(p != null);
                 pTree.AddNode(nodeId, p);
             }
 

@@ -34,7 +34,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
             CodeInfo_Message info = cmd.Info as CodeInfo_Message;
 
             string message = StringEscaper.Preprocess(s, info.Message);
@@ -89,7 +89,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
             CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
 
             string message = StringEscaper.Preprocess(s, info.Message);
