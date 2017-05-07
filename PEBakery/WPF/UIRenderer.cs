@@ -50,7 +50,6 @@ namespace PEBakery.WPF
 
         public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
         {
-            
             this.logger = logger;
             this.variables = plugin.Project.Variables;
 
@@ -66,6 +65,7 @@ namespace PEBakery.WPF
                 try
                 {
                     this.uiCodes = plugin.Sections[interfaceSectionName].GetUICodes(true);
+                    logger.System_Write(plugin.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
                 {
@@ -90,52 +90,53 @@ namespace PEBakery.WPF
 
             foreach (UICommand uiCmd in uiCodes)
             {
-                if (uiCmd.Visibility == false || uiCmd.Info.Valid == false)
+                if (uiCmd.Visibility == false)
                     continue;
 
                 try
                 {
                     switch (uiCmd.Type)
                     {
-                        case UIControlType.TextBox:
+                        case UIType.TextBox:
                             UIRenderer.RenderTextBox(renderInfo, uiCmd);
                             break;
-                        case UIControlType.TextLabel:
+                        case UIType.TextLabel:
                             UIRenderer.RenderTextLabel(renderInfo, uiCmd);
                             break;
-                        case UIControlType.NumberBox:
+                        case UIType.NumberBox:
                             UIRenderer.RenderNumberBox(renderInfo, uiCmd);
                             break;
-                        case UIControlType.CheckBox:
+                        case UIType.CheckBox:
                             UIRenderer.RenderCheckBox(renderInfo, uiCmd);
                             break;
-                        case UIControlType.ComboBox:
+                        case UIType.ComboBox:
                             UIRenderer.RenderComboBox(renderInfo, uiCmd);
                             break;
-                        case UIControlType.Image:
+                        case UIType.Image:
                             UIRenderer.RenderImage(renderInfo, uiCmd);
                             break;
-                        case UIControlType.TextFile:
+                        case UIType.TextFile:
                             UIRenderer.RenderTextFile(renderInfo, uiCmd);
                             break;
-                        case UIControlType.Button:
+                        case UIType.Button:
                             UIRenderer.RenderButton(renderInfo, uiCmd, logger);
                             break;
-                        case UIControlType.CheckList:
+                        case UIType.CheckList:
+                            // TODO: Implement, or deprecate?
                             break;
-                        case UIControlType.WebLabel:
+                        case UIType.WebLabel:
                             UIRenderer.RenderWebLabel(renderInfo, uiCmd);
                             break;
-                        case UIControlType.RadioButton:
+                        case UIType.RadioButton:
                             UIRenderer.RenderRadioButton(renderInfo, uiCmd);
                             break;
-                        case UIControlType.Bevel:
+                        case UIType.Bevel:
                             UIRenderer.RenderBevel(renderInfo, uiCmd);
                             break;
-                        case UIControlType.FileBox:
+                        case UIType.FileBox:
                             UIRenderer.RenderFileBox(renderInfo, uiCmd, variables);
                             break;
-                        case UIControlType.RadioGroup:
+                        case UIType.RadioGroup:
                             UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
                             break;
                         default:
@@ -894,8 +895,7 @@ namespace PEBakery.WPF
                     });
                     long buildId = Engine.RunBuildOneSection(s, addr, logMsg);
 
-
-#if DEBUG  // TODO: Remove this, this line is for Debug
+#if DEBUG  // TODO: Remove this later, this line is for Debug
                     logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
 #endif
                 };

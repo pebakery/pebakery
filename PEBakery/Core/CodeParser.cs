@@ -860,7 +860,7 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (string.Equals(arg, "GLOBAL", StringComparison.OrdinalIgnoreCase))
                                 global = true;
-                            else if (string.Equals(arg, "PREMENENT", StringComparison.OrdinalIgnoreCase))
+                            else if (string.Equals(arg, "PREMANENT", StringComparison.OrdinalIgnoreCase))
                                 permanent = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);

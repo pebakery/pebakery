@@ -10,11 +10,29 @@
         Loaded="Window_Loaded"
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
-        Width="800" Height="600"
+        Width="900" Height="640"
         MinWidth="640" MinHeight="480">
     <Window.Resources>
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <Style x:Key="AlternativeListViewColor" TargetType="{x:Type ListViewItem}">
+            <Style.Triggers>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="0">
+                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
+                    <Setter Property="Background" Value="White"></Setter>
+                </Trigger>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                    <Setter Property="TextBlock.Foreground" Value="Black"></Setter>
+                    <Setter Property="Background" Value="#f2f2f2"></Setter>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="LightBlue"/>
+                </Trigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="Background" Value="LightBlue"></Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
     <Grid>
@@ -29,7 +47,9 @@
                         Name="SystemLogListView"
                         HorizontalContentAlignment="Stretch"
                         SelectedIndex="{Binding SystemLogListSelectedIndex}"
-                        ItemsSource="{Binding SystemLogListModel}">
+                        ItemsSource="{Binding SystemLogListModel}"
+                        ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                        AlternationCount="2">
                         <ListView.View>
                             <custom:AutoSizedGridView>
                                 <GridViewColumn Header="Time" Width="Auto" DisplayMemberBinding="{Binding TimeStr}" />
@@ -42,20 +62,18 @@
             </TabItem>
             <TabItem Header="Build Log">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="65*"/>
-                        <ColumnDefinition Width="721*"/>
-                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"></RowDefinition>
                         <RowDefinition Height="Auto"></RowDefinition>
                         <RowDefinition></RowDefinition>
                     </Grid.RowDefinitions>
 
                     <DockPanel 
                         Margin="15, 15, 15, 0"
-                        Grid.Row="0" Grid.ColumnSpan="2">
+                        Grid.Row="0">
                         <TextBlock
                             DockPanel.Dock="Left"
+                            Width="100"
                             Margin="0, 0, 15, 0"
                             VerticalAlignment="Center"
                             Text="Select Build">
@@ -63,31 +81,90 @@
                         <ComboBox
                             Name="SelectBuildComboBox"
                             SelectedIndex="{Binding SelectBuildIndex}"
-                            ItemsSource="{Binding SelectBuildEntries}">
+                            ItemsSource="{Binding SelectBuildEntries}"
+                            AlternationCount="2">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <DockPanel 
+                        Margin="15, 15, 15, 0"
+                        Grid.Row="1">
+                        <TextBlock
+                            DockPanel.Dock="Left"
+                            Width="100"
+                            Margin="0, 0, 15, 0"
+                            VerticalAlignment="Center"
+                            Text="Select Plugin">
+                        </TextBlock>
+                        <ComboBox
+                            Name="SelectPluginComboBox"
+                            SelectedIndex="{Binding SelectPluginIndex}"
+                            ItemsSource="{Binding SelectPluginEntries}"
+                            AlternationCount="2">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
 
                     <TabControl
                         Margin="15, 15, 15, 0"
-                        Grid.Row="1" Grid.ColumnSpan="2">
-                        <TabItem Header="Log">
+                        Grid.Row="2">
+                        <TabItem Header="Log (Simple)">
                             <ListView
+                                Name="BuildLogSimpleListView"
+                                SelectedIndex="{Binding BuildLogSimpleSelectedIndex}"
                                 HorizontalContentAlignment="Stretch"
-                                ItemsSource="{Binding BuildLogListModel}">
+                                ItemsSource="{Binding BuildLogListModel}"
+                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                AlternationCount="2">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}"></TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListView>
+                        </TabItem>
+                        <TabItem Header="Log (Detail)">
+                            <ListView
+                                Name="BuildLogDetailListView"
+                                SelectedIndex="{Binding BuildLogDetailSelectedIndex}"
+                                HorizontalContentAlignment="Stretch"
+                                ItemsSource="{Binding BuildLogListModel}"
+                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                AlternationCount="2">
                                 <ListView.View>
-                                    <custom:PartAutoSizedGridView>
-                                        <custom:PartAutoSizedGridViewColumn Header="Time" Width="Auto" DisplayMemberBinding="{Binding TimeStr}" />
-                                        <custom:PartAutoSizedGridViewColumn Header="Depth" Width="Auto" DisplayMemberBinding="{Binding Depth}" />
-                                        <custom:PartAutoSizedGridViewColumn Header="State" Width="Auto" DisplayMemberBinding="{Binding StateStr}" />
-                                        <custom:PartAutoSizedGridViewColumn Header="Message" Width="300" ActivateAutoSize="False" DisplayMemberBinding="{Binding Message}" />
-                                        <custom:PartAutoSizedGridViewColumn Header="RawCode" Width="200" ActivateAutoSize="False" DisplayMemberBinding="{Binding RawCode}" />
-                                    </custom:PartAutoSizedGridView>
+                                    <GridView>
+                                        <GridViewColumn Header="Time" Width="150" DisplayMemberBinding="{Binding TimeStr}" />
+                                        <GridViewColumn Header="Depth" Width="40" DisplayMemberBinding="{Binding Depth}" />
+                                        <GridViewColumn Header="State" Width="60" DisplayMemberBinding="{Binding StateStr}" />
+                                        <GridViewColumn Header="Message" Width="360" DisplayMemberBinding="{Binding Message}" />
+                                        <GridViewColumn Header="RawCode" Width="200" DisplayMemberBinding="{Binding RawCode}" />
+                                    </GridView>
                                 </ListView.View>
                             </ListView>
                         </TabItem>
-                        <TabItem Header="Plugin">
-                        </TabItem>
                         <TabItem Header="Variable">
+                            <ListView
+                                HorizontalContentAlignment="Stretch"
+                                ItemsSource="{Binding VariableListModel}"
+                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                AlternationCount="2">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Type" Width="60" DisplayMemberBinding="{Binding Type}" />
+                                        <GridViewColumn Header="Key" Width="160" DisplayMemberBinding="{Binding Key}" />
+                                        <GridViewColumn Header="Value" Width="580" DisplayMemberBinding="{Binding Value}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
                         </TabItem>
                     </TabControl>
                 </Grid>

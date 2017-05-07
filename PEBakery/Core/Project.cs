@@ -32,6 +32,7 @@ using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite.Net;
 using System.Windows;
+using PEBakery.WPF;
 
 namespace PEBakery.Core
 {
@@ -373,8 +374,13 @@ namespace PEBakery.Core
 
                         worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
+                            w.Logger.System_Write(new LogInfo(LogState.Error, e));
+                        });
                         worker.ReportProgress(cached);
                         Trace.Assert(false);
                     }

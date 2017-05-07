@@ -81,7 +81,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
+            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
             if (cmd.Addr.Plugin.Sections.ContainsKey("Interface") == false)

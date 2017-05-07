@@ -355,7 +355,19 @@ namespace PEBakery.Core
         /// <param name="buildId"></param>
         /// <param name="time"></param>
         /// <param name="message"></param>
+
         public void Build_Write(long buildId, string message)
+        {
+            Build_Write(buildId, 0, message);
+        }
+
+        /// <summary>
+        /// Write LogInfo into DB_CodeLog
+        /// </summary>
+        /// <param name="buildId"></param>
+        /// <param name="time"></param>
+        /// <param name="message"></param>
+        public void Build_Write(long buildId, long pluginId, string message)
         {
             bool doNotLog = false;
             if (0 < TurnOff.Count)
@@ -374,6 +386,7 @@ namespace PEBakery.Core
                 {
                     Time = DateTime.Now,
                     BuildId = buildId,
+                    PluginId = pluginId,
                     Message = message,
                 };
                 DB.Insert(dbCode);
@@ -383,7 +396,17 @@ namespace PEBakery.Core
             }
         }
 
+        public void Build_Write(EngineState s, string message)
+        {
+            Build_Write(s.BuildId, s.PluginId, message);
+        }
+
         public void Build_Write(long buildId, LogInfo log)
+        {
+            Build_Write(buildId, 0, log);
+        }
+
+        public void Build_Write(long buildId, long pluginId, LogInfo log)
         {
             bool doNotLog = false;
             if (0 < TurnOff.Count)
@@ -402,6 +425,7 @@ namespace PEBakery.Core
                 {
                     Time = DateTime.Now,
                     BuildId = buildId,
+                    PluginId = pluginId,
                     Depth = log.Depth,
                     State = log.State,
                 };
@@ -423,11 +447,20 @@ namespace PEBakery.Core
 
                 // Fire Event
                 BuildLogUpdated?.Invoke(this, new BuildLogUpdateEventArgs(dbCode));
-
             }
         }
 
+        public void Build_Write(EngineState s, LogInfo log)
+        {
+            Build_Write(s.BuildId, s.PluginId, log);
+        }
+
         public void Build_Write(long buildId, IEnumerable<LogInfo> logs)
+        {
+            Build_Write(buildId, 0, logs);
+        }
+
+        public void Build_Write(long buildId, long pluginId, IEnumerable<LogInfo> logs)
         {
             bool doNotLog = false;
             if (0 < TurnOff.Count)
@@ -439,8 +472,13 @@ namespace PEBakery.Core
             if (doNotLog == false)
             {
                 foreach (LogInfo log in logs)
-                    Build_Write(buildId, log);
+                    Build_Write(buildId, pluginId, log);
             }
+        }
+
+        public void Build_Write(EngineState s, IEnumerable<LogInfo> logs)
+        {
+            Build_Write(s.BuildId, s.PluginId, logs);
         }
 
         public void System_Write(string message)
@@ -511,7 +549,12 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        {
+            LogStartOfSection(s.BuildId, s.PluginId, addr, depth, logPluginName, cmd, forceLog);
+        }
+
+        public void LogStartOfSection(long buildId, long pluginId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
         { 
             bool turnOff = false;
             if (0 < TurnOff.Count)
@@ -525,33 +568,38 @@ namespace PEBakery.Core
                 turnOff = false;
 
             if (logPluginName)
-                LogStartOfSection(buildId, addr.Section.SectionName, depth, cmd);
+                LogStartOfSection(buildId, pluginId, addr.Section.SectionName, depth, cmd);
             else
-                LogStartOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+                LogStartOfSection(buildId, pluginId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
         }
 
-        public void LogStartOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogStartOfSection(long buildId, long pluginId, string sectionName, int depth, CodeCommand cmd = null)
         {
             string msg = $"Processing Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogStartOfSection(long buildId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogStartOfSection(long buildId, long pluginId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
         {
             string msg = $"Processing [{pluginName}]'s Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogEndOfSection(long buildId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        {
+            LogEndOfSection(s.BuildId, s.PluginId, addr, depth, logPluginName, cmd, forceLog);
+        }
+
+        public void LogEndOfSection(long buildId, long pluginId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
         {
             bool turnOff = false;
             if (0 < TurnOff.Count)
@@ -565,30 +613,30 @@ namespace PEBakery.Core
                 turnOff = false;
 
             if (logPluginName)
-                LogEndOfSection(buildId, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(buildId, pluginId, addr.Section.SectionName, depth, cmd);
             else
-                LogEndOfSection(buildId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(buildId, pluginId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
         }
 
-        public void LogEndOfSection(long buildId, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogEndOfSection(long buildId, long pluginId, string sectionName, int depth, CodeCommand cmd = null)
         {
             string msg = $"End of Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogEndOfSection(long buildId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogEndOfSection(long buildId, long pluginId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
         {
             string msg = $"End of [{pluginName}]'s Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(buildId, new LogInfo(LogState.Info, msg, cmd, depth));
+                Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
         }
         #endregion
 
@@ -649,7 +697,7 @@ namespace PEBakery.Core
                                     .Where(x => x.BuildId == buildId)
                                     .OrderBy(x => x.Id);
                                 foreach (DB_BuildLog log in codeLogs)
-                                    writer.Write(log.Export(type));
+                                    writer.WriteLine(log.Export(type));
                                 writer.WriteLine();
                             }
                             writer.Close();
@@ -839,6 +887,8 @@ namespace PEBakery.Core
         public DateTime Time { get; set; }
         [ForeignKey(typeof(DB_BuildInfo))]
         public long BuildId { get; set; }
+        [ForeignKey(typeof(DB_Plugin))]
+        public long PluginId { get; set; }
         public int Depth { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]
@@ -848,6 +898,8 @@ namespace PEBakery.Core
 
         [ManyToOne] 
         public DB_BuildInfo BuildInfo { get; set; }
+        [ManyToOne]
+        public DB_Plugin Plugin { get; set; }
 
         // Used in LogWindow
         [Ignore]
@@ -864,6 +916,9 @@ namespace PEBakery.Core
         [Ignore]
         public string TimeStr { get => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture); }
 
+        [Ignore]
+        public string Text { get => Export(LogExportType.Text); }
+
         public string Export(LogExportType type)
         {
             StringBuilder b = new StringBuilder();
@@ -878,16 +933,16 @@ namespace PEBakery.Core
                         if (State == LogState.None)
                         { // No State
                             if (RawCode == null)
-                                b.AppendLine(Message);
+                                b.Append(Message);
                             else
-                                b.AppendLine($"{Message} ({RawCode})");
+                                b.Append($"{Message} ({RawCode})");
                         }
                         else
                         { // Has State
                             if (RawCode == null)
-                                b.AppendLine($"[{State}] {Message}");
+                                b.Append($"[{State}] {Message}");
                             else
-                                b.AppendLine($"[{State}] {Message} ({RawCode})");
+                                b.Append($"[{State}] {Message} ({RawCode})");
                         }
                     }
                     break;

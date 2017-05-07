@@ -66,7 +66,7 @@ namespace PEBakery.Core
             else
                 s.CurrentPlugin = p;
             PluginSection section = p.Sections["Process"];
-            s.Logger.Build_Write(s.BuildId, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
+            s.Logger.Build_Write(s, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
@@ -81,7 +81,7 @@ namespace PEBakery.Core
                 ReadyToRunPlugin(s.CurrentPlugin);
                 Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, s.CurrentPlugin.Sections["Process"]), new List<string>(), 0, false);
                 // End of Plugin
-                s.Logger.Build_Write(s.BuildId, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
+                s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
                 int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
                 if (curPluginIdx + 1 < s.Plugins.Count)
                 {
@@ -100,7 +100,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Build_Write(s.BuildId, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
+            s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
@@ -111,7 +111,7 @@ namespace PEBakery.Core
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
-            s.Logger.Build_Write(s.BuildId, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
+            s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             RunCommands(s, addr, codes, paramDict, depth, callback);
         }
@@ -120,11 +120,19 @@ namespace PEBakery.Core
         {
             long buildId = s.Logger.Build_Init(buildName, s);
             long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
-            s.Logger.LogStartOfSection(buildId, addr.Section.SectionName, 0, null);
+
+            s.BuildId = buildId;
+            s.PluginId = pluginId;
+
+            s.Logger.LogStartOfSection(buildId, pluginId, addr.Section.SectionName, 0, null);
+
             s.Variables.ResetVariables(VarsType.Local);
             s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
+
             Engine.RunSection(s, addr, new List<string>(), 1, true);
-            s.Logger.LogEndOfSection(buildId, addr.Section.SectionName, 0, null);
+
+            s.Logger.LogEndOfSection(buildId, pluginId, addr.Section.SectionName, 0, null);
+
             s.Logger.Build_Plugin_Finish(pluginId);
             s.Logger.Build_Finish(buildId);
 
@@ -135,9 +143,8 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes"));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
             }
-
 
             CodeCommand curCommand = codes[0];
             for (int idx = 0; idx < codes.Count; idx++)
@@ -160,7 +167,7 @@ namespace PEBakery.Core
         {
             if (cbCmd != null)
             {
-                s.Logger.Build_Write(s.BuildId, $"Processing callback of event [{eventName}]");
+                s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
 
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
@@ -172,7 +179,7 @@ namespace PEBakery.Core
                     s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Build_Write(s.BuildId, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
                 cbCmd = null;
             }
         }
@@ -421,7 +428,7 @@ namespace PEBakery.Core
                 logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
             }
 
-            s.Logger.Build_Write(s.BuildId, LogInfo.AddCommandDepth(logs, cmd, curDepth));
+            s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
         }
     }
 
@@ -436,6 +443,7 @@ namespace PEBakery.Core
         public bool RunOnePlugin;
         public DebugLevel DebugLevel;
         public long BuildId; // Used in logging
+        public long PluginId; // Used in logging
         public bool LogComment; // Used in logging
         public bool LogMacro; // Used in logging
 

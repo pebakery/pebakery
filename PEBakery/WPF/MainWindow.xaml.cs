@@ -560,7 +560,9 @@ namespace PEBakery.WPF
 
         private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
-            
+            BuildWindow window = new BuildWindow();
+
+            window.ShowDialog();
         }
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
@@ -612,6 +614,17 @@ namespace PEBakery.WPF
         {
             LogWindow dialog = new LogWindow(logger);
             dialog.Show();
+        }
+    }
+    #endregion
+
+    #region MainViewModel
+    public class MainViewModel : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyUpdate(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
     #endregion

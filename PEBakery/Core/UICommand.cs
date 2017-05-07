@@ -27,7 +27,7 @@ using System.Windows;
 namespace PEBakery.Core
 {
     #region Enum PluginUIControlType
-    public enum UIControlType
+    public enum UIType
     {
         None = -1,
         TextBox = 0,
@@ -108,7 +108,7 @@ namespace PEBakery.Core
         public string Key;
         public string Text;
         public bool Visibility;
-        public UIControlType Type;
+        public UIType Type;
         public Rect Rect;
         public UIInfo Info;
 
@@ -120,12 +120,12 @@ namespace PEBakery.Core
             this.Key = key;
             this.Text = string.Empty;
             this.Visibility = false;
-            this.Type = UIControlType.None;
+            this.Type = UIType.None;
             this.Rect = new Rect(0, 0, 0, 0);
 
         }
 
-        public UICommand(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
+        public UICommand(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIType type, Rect rect, UIInfo info)
         {
             this.RawLine = rawLine;
             this.Addr = addr;
@@ -178,12 +178,10 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo
     {
-        public bool Valid;
         public string ToolTip; // optional
 
-        public UIInfo(bool valid, string tooltip)
+        public UIInfo(string tooltip)
         {
-            this.Valid = valid;
             this.ToolTip = tooltip;
         }
 
@@ -211,8 +209,8 @@ namespace PEBakery.Core
     {
         public string Value;
 
-        public UIInfo_TextBox(bool valid, string tooltip,  string str)
-            : base(valid, tooltip)
+        public UIInfo_TextBox(string tooltip,  string str)
+            : base(tooltip)
         {
             this.Value = str;
         }
@@ -242,8 +240,8 @@ namespace PEBakery.Core
         public int FontSize;
         public UIInfo_TextLabel_Style Style;
 
-        public UIInfo_TextLabel(bool valid, string tooltip, int fontSize, UIInfo_TextLabel_Style style)
-            : base(valid, tooltip)
+        public UIInfo_TextLabel(string tooltip, int fontSize, UIInfo_TextLabel_Style style)
+            : base(tooltip)
         {
             this.FontSize = fontSize;
             this.Style = style;
@@ -273,8 +271,8 @@ namespace PEBakery.Core
         public int Max;
         public int Interval;
 
-        public UIInfo_NumberBox(bool valid, string tooltip,  int value, int min, int max, int interval)
-            : base(valid, tooltip)
+        public UIInfo_NumberBox(string tooltip,  int value, int min, int max, int interval)
+            : base(tooltip)
         {
             this.Value = value;
             this.Min = min;
@@ -308,8 +306,8 @@ namespace PEBakery.Core
         public bool Value;
         public string SectionName; // Optional
 
-        public UIInfo_CheckBox(bool valid, string tooltip, bool value, string sectionName = null)
-            : base(valid, tooltip)
+        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null)
+            : base(tooltip)
         {
             this.Value = value;
             this.SectionName = sectionName;
@@ -343,8 +341,8 @@ namespace PEBakery.Core
         public List<string> Items;
         public int Index;
 
-        public UIInfo_ComboBox(bool valid, string tooltip,  List<string> items, int index)
-            : base(valid, tooltip)
+        public UIInfo_ComboBox(string tooltip,  List<string> items, int index)
+            : base(tooltip)
         {
             Items = items;
             Index = index;
@@ -374,8 +372,8 @@ namespace PEBakery.Core
     {
         public string URL; // optional
 
-        public UIInfo_Image(bool valid, string toolTip, string url)
-            : base(valid, toolTip)
+        public UIInfo_Image(string toolTip, string url)
+            : base(toolTip)
         {
             URL = url;
         }
@@ -397,8 +395,8 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_TextFile : UIInfo
     {
-        public UIInfo_TextFile(bool valid, string tooltip)
-            : base(valid, tooltip)
+        public UIInfo_TextFile(string tooltip)
+            : base(tooltip)
         {
 
         }
@@ -422,8 +420,8 @@ namespace PEBakery.Core
         public string Picture; // Optional
         public bool ShowProgress; // Optional
 
-        public UIInfo_Button(bool valid, string tooltip, string sectionName, string picture, bool showProgress)
-            : base(valid, tooltip)
+        public UIInfo_Button(string tooltip, string sectionName, string picture, bool showProgress)
+            : base(tooltip)
         {
             this.SectionName = sectionName;
             this.Picture = picture;
@@ -466,8 +464,8 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_CheckList : UIInfo
     {
-        public UIInfo_CheckList(bool valid, string tooltip)
-            : base(valid, tooltip)
+        public UIInfo_CheckList(string tooltip)
+            : base(tooltip)
         {
 
         }
@@ -488,7 +486,8 @@ namespace PEBakery.Core
     {
         public string URL;
 
-        public UIInfo_WebLabel(bool valid, string tooltip,  string url) : base(valid, tooltip)
+        public UIInfo_WebLabel(string tooltip,  string url) 
+            : base(tooltip)
         {
             this.URL = url;
         }
@@ -513,13 +512,15 @@ namespace PEBakery.Core
         public bool Selected;
         public string SectionName; // optional
 
-        public UIInfo_RadioButton(bool valid, string tooltip,  bool selected) : base(valid, tooltip)
+        public UIInfo_RadioButton(string tooltip,  bool selected) 
+            : base(tooltip)
         {
             this.Selected = selected;
             this.SectionName = null;
         }
 
-        public UIInfo_RadioButton(bool valid, string tooltip,  bool selected, string sectionName) : base(valid, tooltip)
+        public UIInfo_RadioButton(string tooltip,  bool selected, string sectionName)
+            : base(tooltip)
         {
             this.Selected = selected;
             this.SectionName = sectionName;
@@ -548,8 +549,8 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
-        public UIInfo_Bevel(bool valid, string tooltip)
-            : base(valid, tooltip)
+        public UIInfo_Bevel(string tooltip)
+            : base(tooltip)
         {
 
         }
@@ -570,8 +571,8 @@ namespace PEBakery.Core
     {
         public bool IsFile;
 
-        public UIInfo_FileBox(bool valid, string tooltip,  bool isFile)
-            : base(valid, tooltip)
+        public UIInfo_FileBox(string tooltip, bool isFile)
+            : base(tooltip)
         {
             this.IsFile = isFile;
         }
@@ -596,8 +597,8 @@ namespace PEBakery.Core
         public List<string> Items;
         public int Selected;
 
-        public UIInfo_RadioGroup(bool valid, string tooltip,  List<string> items, int selected)
-            : base(valid, tooltip)
+        public UIInfo_RadioGroup(string tooltip,  List<string> items, int selected)
+            : base(tooltip)
         {
             this.Items = items;
             this.Selected = selected;

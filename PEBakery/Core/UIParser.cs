@@ -47,18 +47,22 @@ namespace PEBakery.Core
                 {
                     errorLogs.Add(new LogInfo(LogState.Error, $"{e.Message} [{e.UICmd.RawLine}]"));
                 }
+                catch (InvalidCommandException e)
+                {
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{e.Message} [{e.RawLine}]"));
+                }
                 catch (Exception e)
                 {
                     errorLogs.Add(new LogInfo(LogState.Error, e));
                 }
             }
 
-            return uiCmdList.Where(x => x.Type != UIControlType.None).ToList();
+            return uiCmdList.Where(x => x.Type != UIType.None).ToList();
         }
 
         public static UICommand ParseUICommand(List<string> rawLines, SectionAddress addr, ref int idx)
         {
-            UIControlType type = UIControlType.None;
+            UIType type = UIType.None;
             string rawLine = rawLines[idx].Trim();
 
             // Check if rawCode is Empty
@@ -85,15 +89,7 @@ namespace PEBakery.Core
 
             // Parse Operands
             List<string> args = new List<string>();
-            try
-            {
-                args = CodeParser.ParseArguments(slices, 0);
-            }
-            catch (InvalidCommandException e)
-            {
-                UICommand error = new UICommand(rawLine, addr, key);
-                throw new InvalidUICommandException(e.Message, error);
-            }
+            args = CodeParser.ParseArguments(slices, 0);
 
             // Check doublequote's occurence - must be 2n
             if (FileHelper.CountStringOccurrences(rawLine, "\"") % 2 == 1)
@@ -105,7 +101,7 @@ namespace PEBakery.Core
                 while (string.Equals(args.Last(), @"\", StringComparison.OrdinalIgnoreCase))
                 { // Split next line and append to List<string> operands
                     if (rawLines.Count <= idx) // Section ended with \, invalid grammar!
-                        throw new InvalidUICommandException($@"Last interface control [{rawLine}] cannot end with '\' ");
+                        throw new InvalidCommandException($@"Last interface control [{rawLine}] cannot end with '\' ");
                     idx++;
                     args.AddRange(rawLines[idx].Trim().Split(','));
                 }
@@ -131,55 +127,57 @@ namespace PEBakery.Core
             int.TryParse(args[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int width);
             int.TryParse(args[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
             Rect rect = new Rect(x, y, width, height);
-            UIInfo info = ParseUICommandInfo(type, args);
-            if (info.Valid == false)
-                return new UICommand(rawLine, addr, key);
+            UIInfo info;
+            try
+            {
+                info = ParseUICommandInfo(type, args);
+            }
+            catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
             return new UICommand(rawLine, addr, key, text, visibility, type, rect, info);
         }
 
-        public static UIControlType ParseControlType(string typeStr)
+        public static UIType ParseControlType(string typeStr)
         {
             // typeStr must be number
             if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled))
                 throw new InvalidCommandException("Only number can be used as UICommand type");
 
             bool failure = false;
-            if (Enum.TryParse(typeStr, false, out UIControlType type) == false)
+            if (Enum.TryParse(typeStr, false, out UIType type) == false)
                 failure = true;
-            if (Enum.IsDefined(typeof(UIControlType), type) == false)
+            if (Enum.IsDefined(typeof(UIType), type) == false)
                 failure = true;
 
             if (failure)
-                type = UIControlType.None;
+                type = UIType.None;
 
             return type;
         }
 
-        private static UIInfo ParseUICommandInfo(UIControlType type, List<string> arguments)
+        private static UIInfo ParseUICommandInfo(UIType type, List<string> arguments)
         {
             // Only use fields starting from 8th operand
             List<string> args = arguments.Skip(6).ToList(); // Remove Text, Visibility, X, Y, width, height
-            UIInfo error = new UIInfo(false, null);
 
             switch (type)
             {
-                case UIControlType.TextBox:
+                case UIType.TextBox:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
                         const int optOpCount = 1; // Tooltip
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
-                        return new UIInfo_TextBox(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount + optOpCount - 1), StringEscaper.Unescape(args[0]));
                     }
-                case UIControlType.TextLabel:
+                case UIType.TextLabel:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 2;
                         const int optOpCount = 1; // Tooltip
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int fontSize);
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
@@ -192,43 +190,43 @@ namespace PEBakery.Core
                         else if (string.Equals(args[1], "Strike", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Strike;
 
-                        return new UIInfo_TextLabel(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), fontSize, style);
+                        return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount + optOpCount - 1), fontSize, style);
                     }
-                case UIControlType.NumberBox:
+                case UIType.NumberBox:
                     {
                         const int minOpCount = 4;
                         const int maxOpCount = 4;
                         const int optOpCount = 1; // [Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value);
                         int.TryParse(args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int min);
                         int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int max);
                         int.TryParse(args[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int interval);
 
-                        return new UIInfo_NumberBox(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), value, min, max, interval);
+                        return new UIInfo_NumberBox(GetInfoTooltip(args, maxOpCount + optOpCount - 1), value, min, max, interval);
                     }
-                case UIControlType.CheckBox:
+                case UIType.CheckBox:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
                         const int optOpCount = 2; // [SectionToRun],[Tooltip] - 여태까지 CheckBox에 Section 달린 건 못 봤는데?
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool _checked = false;
                         if (string.Equals(args[0], "True", StringComparison.OrdinalIgnoreCase))
                             _checked = true;
                         else if (string.Equals(args[0], "False", StringComparison.OrdinalIgnoreCase) == false)
-                            return error;
+                            throw new InvalidCommandException($"Invalid argument [{args[0]}], must have [True] or [False]");
                         string sectionName = null;
                         if (maxOpCount < args.Count)
                             sectionName = args[maxOpCount];
 
-                        return new UIInfo_CheckBox(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), _checked, sectionName);
+                        return new UIInfo_CheckBox(GetInfoTooltip(args, maxOpCount + optOpCount - 1), _checked, sectionName);
                     }
-                case UIControlType.ComboBox:
+                case UIType.ComboBox:
                     { // Variable Length
                         List<string> items = new List<string>();
                         string last = args.Last();
@@ -249,35 +247,35 @@ namespace PEBakery.Core
 
                         int idx = items.IndexOf(arguments[0]);
                         if (idx == -1)
-                            return error;
+                            throw new InvalidCommandException($"[{type}] has wrong selected value [{arguments[0]}]");
 
-                        return new UIInfo_ComboBox(true, toolTip, items, idx);
+                        return new UIInfo_ComboBox(toolTip, items, idx);
                     }
-                case UIControlType.Image:
+                case UIType.Image:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
                         const int optOpCount = 2;  // [URL],[Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         string url = null;
                         if (maxOpCount < args.Count)
                             url = args[maxOpCount];
 
-                        return new UIInfo_Image(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), url);
+                        return new UIInfo_Image(GetInfoTooltip(args, maxOpCount + optOpCount - 1), url);
                     }
-                case UIControlType.TextFile:
+                case UIType.TextFile:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
                         const int optOpCount = 1; // [Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
-                        return new UIInfo_TextFile(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1));
+                        return new UIInfo_TextFile(GetInfoTooltip(args, maxOpCount + optOpCount - 1));
                     }
-                case UIControlType.Button:
+                case UIType.Button:
                     {
                         // Still had not figured why SectionName and ProgressShow duplicate
                         // It has 2 to 6 fixed operands. - Need more research.
@@ -286,7 +284,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 2;
                         const int optOpCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         string sectionName = args[0];
                         string picture = null;
@@ -301,59 +299,59 @@ namespace PEBakery.Core
                             if (string.Equals(args[2], "True", StringComparison.OrdinalIgnoreCase))
                                 showProgress = true;
                             else if (string.Equals(args[2], "False", StringComparison.OrdinalIgnoreCase) == false)
-                                return error;
+                                throw new InvalidCommandException($"Invalid argument [{args[2]}], must have [True] or [False]");
                         }
 
-                        return new UIInfo_Button(true, GetInfoTooltip(args, args.Count - 1), sectionName, picture, showProgress);
+                        return new UIInfo_Button(GetInfoTooltip(args, args.Count - 1), sectionName, picture, showProgress);
                     }
-                case UIControlType.CheckList:
+                case UIType.CheckList:
                     break;
-                case UIControlType.WebLabel:
+                case UIType.WebLabel:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
                         const int optOpCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
-                        return new UIInfo_WebLabel(true, GetInfoTooltip(args, maxOpCount + optOpCount), StringEscaper.Unescape(args[0]));
+                        return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount + optOpCount), StringEscaper.Unescape(args[0]));
                     }
-                case UIControlType.RadioButton:
+                case UIType.RadioButton:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
                         const int optOpCount = 2; // [SectionToRun],[Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool selected = false;
                         if (string.Equals(args[0], "True", StringComparison.OrdinalIgnoreCase))
                             selected = true;
                         else if (string.Equals(args[0], "False", StringComparison.OrdinalIgnoreCase) == false)
-                            return error;
+                            throw new InvalidCommandException($"Invalid argument [{args[0]}], must have [True] or [False]");
                         string sectionName = null;
                         if (maxOpCount < args.Count)
                             sectionName = args[maxOpCount];
 
-                        return new UIInfo_RadioButton(true, GetInfoTooltip(args, maxOpCount + optOpCount - 1), selected, sectionName);
+                        return new UIInfo_RadioButton(GetInfoTooltip(args, maxOpCount + optOpCount - 1), selected, sectionName);
                     }
-                case UIControlType.Bevel:
+                case UIType.Bevel:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
                         const int optOpCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
-                        return new UIInfo_Bevel(true, GetInfoTooltip(args, maxOpCount + optOpCount));
+                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount + optOpCount));
                     }
-                case UIControlType.FileBox:
+                case UIType.FileBox:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
                         const int optOpCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            return error;
+                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool isFile = false;
                         if (maxOpCount < args.Count)
@@ -365,9 +363,9 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new UIInfo_FileBox(true, GetInfoTooltip(args, maxOpCount + optOpCount), isFile);
+                        return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount + optOpCount), isFile);
                     }
-                case UIControlType.RadioGroup:
+                case UIType.RadioGroup:
                     { // Variable Length
                         List<string> items = new List<string>();
                         string last = args.Last();
@@ -386,14 +384,15 @@ namespace PEBakery.Core
                         for (int i = 0; i < count; i++)
                             items.Add(args[i]);
                         if (int.TryParse(args[count], NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
-                            return error;
+                            throw new InvalidCommandException($"Invalid argument [{args[count]}], must be integer");
 
-                        return new UIInfo_RadioGroup(true, toolTip, items, idx);
+                        return new UIInfo_RadioGroup(toolTip, items, idx);
                     }
                 default:
                     break;
             }
-            return error;
+
+            throw new InvalidCommandException($"Invalid UICommand [{type}]");
         }
 
         /// <summary>
