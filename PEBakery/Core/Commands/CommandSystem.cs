@@ -39,7 +39,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute));
             CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
 
             string verb = StringEscaper.Preprocess(s, info.Action);

@@ -35,7 +35,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
             CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
 
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
@@ -81,7 +81,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
             if (cmd.Addr.Plugin.Sections.ContainsKey("Interface") == false)

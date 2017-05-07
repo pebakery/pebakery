@@ -34,7 +34,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
             CodeInfo_INIRead info = cmd.Info as CodeInfo_INIRead;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -65,7 +65,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
             CodeInfo_INIWrite info = cmd.Info as CodeInfo_INIWrite;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -90,7 +90,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
             CodeInfo_INIDelete info = cmd.Info as CodeInfo_INIDelete;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -114,7 +114,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
             CodeInfo_INIAddSection info = cmd.Info as CodeInfo_INIAddSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
@@ -135,7 +135,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
             CodeInfo_INIDeleteSection info = cmd.Info as CodeInfo_INIDeleteSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);

@@ -71,12 +71,12 @@ namespace PEBakery.Core
                     #endregion
                     #region TXTAddLine
                     case CodeType.TXTAddLine:
-                        Trace.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_TXTAddLine));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_TXTAddLine));
                         switch (cmd.Type)
                         {
                             case CodeType.TXTAddLine:
                                 {
-                                    Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
 
                                     CodeInfo_TXTAddLine firstInfo = (opDict[state][0].Info as CodeInfo_TXTAddLine);
                                     if (cmd.Info is CodeInfo_TXTAddLine info &&
@@ -107,12 +107,12 @@ namespace PEBakery.Core
                     #endregion
                     #region TXTDelLine
                     case CodeType.TXTDelLine:
-                        Trace.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_TXTDelLine));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_TXTDelLine));
                         switch (cmd.Type)
                         {
                             case CodeType.TXTDelLine:
                                 {
-                                    Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
 
                                     CodeInfo_TXTDelLine firstInfo = (opDict[state][0].Info as CodeInfo_TXTDelLine);
                                     if (cmd.Info is CodeInfo_TXTDelLine info &&
@@ -169,7 +169,7 @@ namespace PEBakery.Core
                     #endregion
                     #region Error
                     default:
-                        Trace.Assert(false);
+                        Debug.Assert(false);
                         break;
                         #endregion
                 }
@@ -193,7 +193,7 @@ namespace PEBakery.Core
                             opCmd = OptimizeVisible(kv.Value);
                             break;
                     }
-                    Trace.Assert(opCmd != null); // Logic Error
+                    Debug.Assert(opCmd != null); // Logic Error
                     optimized.Add(opCmd);
                 }
                 else if (1 == kv.Value.Count)
@@ -213,7 +213,7 @@ namespace PEBakery.Core
             List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
             foreach (CodeCommand cmd in cmdList)
             {
-                Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
                 CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
 
                 infoList.Add(info);
@@ -228,7 +228,7 @@ namespace PEBakery.Core
             List<CodeInfo_TXTDelLine> infoList = new List<CodeInfo_TXTDelLine>();
             foreach (CodeCommand cmd in cmdList)
             {
-                Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
                 CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
 
                 infoList.Add(info);
@@ -243,7 +243,7 @@ namespace PEBakery.Core
             List<CodeInfo_Visible> infoList = new List<CodeInfo_Visible>();
             foreach (CodeCommand cmd in cmdList)
             {
-                Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
                 CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
 
                 infoList.Add(info);

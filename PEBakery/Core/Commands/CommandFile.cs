@@ -35,7 +35,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Trace.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileCreateBlank));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileCreateBlank));
             CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);

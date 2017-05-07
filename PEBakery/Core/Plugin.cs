@@ -292,7 +292,7 @@ namespace PEBakery.Core
                     }
                     break;
                 default:
-                    Debug.Assert(false); // Not implemented
+                    Debug.Assert(false); // Internal Error
                     break;
             }
         }
