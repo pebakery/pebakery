@@ -21,12 +21,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PEBakery.Lib;
 using System.IO;
+using System.Windows;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
+using System.ComponentModel;
 
 namespace PEBakery.Core
 {
@@ -43,6 +44,7 @@ namespace PEBakery.Core
     public class Engine
     {
         public static DebugLevel DebugLevel = DebugLevel.PrintExceptionStackTrace;
+        public static bool Running = false;
         public EngineState s;
 
         public Engine(EngineState state)
@@ -116,7 +118,50 @@ namespace PEBakery.Core
             RunCommands(s, addr, codes, paramDict, depth, callback);
         }
 
-        public static long RunBuildOneSection(EngineState s, SectionAddress addr, string buildName)
+        public static void RunOneSectionInUI(SectionAddress addr, string logMsg)
+        {
+            if (Engine.Running == false)
+            {
+                Engine.Running = true;
+                SettingViewModel setting = null;
+                Logger logger = null;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    w.Model.ProgressRingActive = true;
+                    setting = w.Setting;
+                    logger = w.Logger;
+                });
+
+                BackgroundWorker worker = new BackgroundWorker();
+                worker.DoWork += (object sender, DoWorkEventArgs e) =>
+                {
+                    EngineState s = new EngineState(Engine.DebugLevel, addr.Plugin.Project, logger, addr.Plugin);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MainWindow w = (Application.Current.MainWindow as MainWindow);
+                        s.SetLogOption(setting);
+                    });
+                    long buildId = Engine.RunOneSection(s, addr, logMsg);
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
+#endif
+                };
+                worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MainWindow w = (Application.Current.MainWindow as MainWindow);
+                        w.Model.ProgressRingActive = false;
+                    });
+                    Engine.Running = false;
+                };
+                worker.RunWorkerAsync();
+            }
+        }
+
+        public static long RunOneSection(EngineState s, SectionAddress addr, string buildName)
         {
             long buildId = s.Logger.Build_Init(buildName, s);
             long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);

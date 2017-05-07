@@ -488,7 +488,7 @@ namespace PEBakery.WPF
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                UIRenderer.RunSectionInUI(r, logger, addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
+                Engine.RunOneSectionInUI(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
@@ -541,7 +541,7 @@ namespace PEBakery.WPF
                     image.Source = bitmap;
                 }
 
-                if (string.Equals(uiCmd.Text, string.Empty, StringComparison.Ordinal))
+                if (uiCmd.Text.Equals(string.Empty, StringComparison.Ordinal))
                 { // No text, just image
                     button.Content = image;
                 }
@@ -877,13 +877,14 @@ namespace PEBakery.WPF
             Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
 
-        private static bool SectionRunning = false;
         private static void RunSectionInUI(RenderInfo r, Logger logger, SectionAddress addr, string logMsg)
         {
-            if (SectionRunning == false)
+            
+            /*
+            if (Engine.Running == false)
             {
-                SectionRunning = true;
-                r.Window.MainProgressRing.IsActive = true;
+                Engine.Running = true;
+                r.Window.Model.ProgressRingActive = true;
                 BackgroundWorker worker = new BackgroundWorker();
                 worker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
@@ -893,7 +894,7 @@ namespace PEBakery.WPF
                         MainWindow w = (Application.Current.MainWindow as MainWindow);
                         s.SetLogOption(w.Setting);
                     });
-                    long buildId = Engine.RunBuildOneSection(s, addr, logMsg);
+                    long buildId = Engine.RunOneSection(s, addr, logMsg);
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
                     logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
@@ -901,11 +902,12 @@ namespace PEBakery.WPF
                 };
                 worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
                 {
-                    r.Window.MainProgressRing.IsActive = false;
-                    SectionRunning = false;
+                    r.Window.Model.ProgressRingActive = false;
+                    Engine.Running = false;
                 };
                 worker.RunWorkerAsync();
             }
+            */
         }
         #endregion
     }

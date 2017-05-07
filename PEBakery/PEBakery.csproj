@@ -6,7 +6,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D6224DCE-02D5-4005-88FB-00A8E00CACE1}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PEBakery</RootNamespace>
     <AssemblyName>PEBakery</AssemblyName>
@@ -129,9 +129,6 @@
     <Compile Include="Core\Commands\CommandControl.cs" />
     <Compile Include="Core\Commands\CommandUI.cs" />
     <Compile Include="WPF\Controls\AutoSizedGridView\AutoSizedGridView.cs" />
-    <Compile Include="WPF\BuildWindow.xaml.cs">
-      <DependentUpon>BuildWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBox.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
       <DependentUpon>CustomMessageBoxWindow.xaml</DependentUpon>
@@ -161,10 +158,6 @@
     <Compile Include="ResultWin32.cs" />
     <Compile Include="Libs\TreeLib.cs" />
     <Compile Include="Core\Variables.cs" />
-    <Page Include="WPF\BuildWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

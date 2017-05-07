@@ -25,12 +25,10 @@ namespace PEBakery.WPF
     {
         private LogViewModel model;
 
-        public LogWindow(Logger logger)
+        public LogWindow()
         {
-            this.model = new LogViewModel(logger);
-            this.DataContext = model;
-
             InitializeComponent();
+            this.model = this.DataContext as LogViewModel;            
 
             model.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
             model.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
@@ -179,9 +177,10 @@ namespace PEBakery.WPF
         public Logger Logger { get; set; }
         public LogDB LogDB { get => Logger.DB; }
 
-        public LogViewModel(Logger logger)
+        public LogViewModel()
         {
-            Logger = logger;
+            MainWindow w = Application.Current.MainWindow as MainWindow;
+            Logger = w.Logger;
 
             RefreshSystemLog();
             RefreshBuildLog();
