@@ -78,6 +78,12 @@ namespace PEBakery.Core.Commands
             if (key.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
 
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             bool result = Ini.SetKey(fileName, sectionName, key, value);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] wrote to [{fileName}]", cmd));
@@ -102,6 +108,12 @@ namespace PEBakery.Core.Commands
             if (key.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
 
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             bool result = Ini.DeleteKey(fileName, sectionName, key);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
@@ -123,6 +135,12 @@ namespace PEBakery.Core.Commands
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
 
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             bool result = Ini.AddSection(fileName, sectionName);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] added to [{fileName}]", cmd));
@@ -143,6 +161,12 @@ namespace PEBakery.Core.Commands
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
 
             bool result = Ini.DeleteSection(fileName, sectionName);
             if (result)

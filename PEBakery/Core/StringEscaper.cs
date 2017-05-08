@@ -227,32 +227,31 @@ namespace PEBakery.Core
         #endregion
 
         #region PathSecurity
-        private static List<string> forbiddenPaths;
-
-        public static void PathSecurityInit()
+        private static readonly List<string> forbiddenPaths = new List<string>
         {
-            forbiddenPaths = new List<string>
-            {
-                Environment.GetEnvironmentVariable("WinDir"),
-                Environment.GetEnvironmentVariable("ProgramFiles"),
-                Environment.GetEnvironmentVariable("ProgramFiles(x86)")
-            };
-        }
+            Environment.GetEnvironmentVariable("WinDir"),
+            Environment.GetEnvironmentVariable("ProgramFiles"),
+            Environment.GetEnvironmentVariable("ProgramFiles(x86)")
+        };
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="path"></param>
-        /// <returns>Return true if path is forbidden</returns>
-        public static bool PathSecurityCheck(string path)
+        /// <returns>Return false if path is forbidden</returns>
+        public static bool PathSecurityCheck(string path, out string errorMsg)
         {
             string fullPath = Path.GetFullPath(path);
             foreach (string f in forbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
-                    return true;
+                {
+                    errorMsg = $"Cannot write into [{path}], [{f}] is write protected directory";
+                    return false;
+                }
             }
-            return false;
+            errorMsg = string.Empty;
+            return true;
         }
         #endregion
     }

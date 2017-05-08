@@ -54,8 +54,17 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{filePath}] will be overwritten", cmd));
+                    LogState state = LogState.Warning;
+                    if (info.NoWarn)
+                        state = LogState.Ignore;
+                    logs.Add(new LogInfo(state, $"[{filePath}] will be overwritten", cmd));
                 }
+            }
+
+            if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
