@@ -58,6 +58,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
             FileHelper.WriteTextBOM(fs, encoding).Close();
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));

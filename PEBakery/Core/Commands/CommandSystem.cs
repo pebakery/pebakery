@@ -79,7 +79,9 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.CreateNoWindow = true;
             }
             else
+            {
                 proc.StartInfo.Verb = verb;
+            }
             proc.Start();
 
             switch (cmd.Type)
