@@ -18,6 +18,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using PEBakery.Helper;
 using System.Threading;
+using System.Collections.ObjectModel;
 
 namespace PEBakery.WPF
 {
@@ -161,6 +162,64 @@ namespace PEBakery.WPF
         #endregion
 
         #region Log
+        private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
+        {
+            DebugLevel.Production.ToString(),
+            DebugLevel.PrintExceptionType.ToString(),
+            DebugLevel.PrintExceptionStackTrace.ToString()
+        };
+        public ObservableCollection<string> Log_DebugLevelList
+        {
+            get => log_DebugLevelList;
+            set
+            {
+                log_DebugLevelList = value;
+                OnPropertyUpdate("Log_DebugLevelList");
+            }
+        }
+
+        private int log_DebugLevelIndex;
+        public int Log_DebugLevelIndex
+        {
+            get => log_DebugLevelIndex;
+            set
+            {
+                log_DebugLevelIndex = value;
+                OnPropertyUpdate("Log_DebugLevelIndex");
+            }
+        }
+
+        public DebugLevel Log_DebugLevel
+        {
+            get
+            {
+                switch (Log_DebugLevelIndex)
+                {
+                    case 0:
+                        return DebugLevel.Production;
+                    case 1:
+                        return DebugLevel.PrintExceptionType;
+                    default:
+                        return DebugLevel.PrintExceptionStackTrace;
+                }
+            }
+            set
+            {
+                switch (value)
+                {
+                    case DebugLevel.Production:
+                        log_DebugLevelIndex = 0;
+                        break;
+                    case DebugLevel.PrintExceptionType:
+                        log_DebugLevelIndex = 1;
+                        break;
+                    default:
+                        log_DebugLevelIndex = 2;
+                        break;
+                }
+            }
+        }
+
         private string log_DBState;
         public string Log_DBState
         {
@@ -207,6 +266,11 @@ namespace PEBakery.WPF
             Plugin_EnableCache = true;
             Plugin_AutoConvertToUTF8 = false;
             // Log
+#if DEBUG
+            Log_DebugLevelIndex = 2; 
+#else
+            Log_DebugLevelIndex = 0;
+#endif
             Log_Macro = true;
             Log_Comment = true;
         }
@@ -226,6 +290,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
+                new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
             };
@@ -237,6 +302,7 @@ namespace PEBakery.WPF
             string str_Interface_ScaleFactor = dict["ScaleFactor"];
             string str_Plugin_EnableCache = dict["EnableCache"];
             string str_Plugin_AutoConvertToUTF8 = dict["AutoConvertToUTF8"];
+            string str_Log_DebugLevelIndex = dict["DebugLevel"];
             string str_Log_Macro = dict["Macro"];
             string str_Log_Comment = dict["Comment"];
 
@@ -278,6 +344,16 @@ namespace PEBakery.WPF
                     Plugin_AutoConvertToUTF8 = true;
             }
 
+            // Log - DebugLevel (Default = 0)
+            if (str_Log_DebugLevelIndex != null)
+            {
+                if (int.TryParse(str_Log_DebugLevelIndex, NumberStyles.Integer, CultureInfo.InvariantCulture, out int debugLevelIdx))
+                {
+                    if (0 <= debugLevelIdx && debugLevelIdx <= 2)
+                        Log_DebugLevelIndex = debugLevelIdx;
+                }
+            }
+
             // Log - Macro (Default = True)
             if (str_Log_Macro != null)
             {
@@ -302,6 +378,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
+                new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
             };
@@ -353,7 +430,7 @@ namespace PEBakery.WPF
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        #endregion
+#endregion
     }
-    #endregion
+#endregion
 }

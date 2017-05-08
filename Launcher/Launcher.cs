@@ -17,7 +17,6 @@ namespace Launcher
             proc.StartInfo.Verb = "Open";
             proc.StartInfo.FileName = @"Binary\PEBakery.exe";
             proc.StartInfo.WorkingDirectory = GetProgramAbsolutePath();
-            // StringBuilder b = new StringBuilder("/basedir .");
             StringBuilder b = new StringBuilder();
             foreach (string arg in args)
             {

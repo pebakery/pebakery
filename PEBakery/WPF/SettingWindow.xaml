@@ -126,6 +126,24 @@
             </TabItem>
             <TabItem Header="Log">
                 <StackPanel>
+                    <Grid
+                        Margin="15, 15, 15, 0"
+                        VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            Text="Debug Level">
+                        </TextBlock>
+                        <ComboBox
+                            Grid.Column="1"
+                            Name="ComboBox_LogDebugLevel"
+                            ItemsSource="{Binding Log_DebugLevelList}"
+                            SelectedIndex="{Binding Log_DebugLevelIndex}">
+                        </ComboBox>
+                    </Grid>
                     <DockPanel
                         Margin="15, 15, 15, 0"
                         VerticalAlignment="Center">

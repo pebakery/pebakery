@@ -43,7 +43,7 @@
             <RowDefinition></RowDefinition>
             <RowDefinition Height="60"></RowDefinition>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0" Name="MainTab">
+        <TabControl Grid.Row="0" Name="MainTab" SelectedIndex="{Binding SelectedTabIndex}">
             <TabItem Header="System Log">
                 <Grid>
                     <ListView
@@ -199,7 +199,8 @@
             <Button
                 Grid.Column="2"
                 Name="ExportButton"
-                Content="Export">
+                Content="Export"
+                Click="ExportButton_Click">
             </Button>
             
             <Button

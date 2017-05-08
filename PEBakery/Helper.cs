@@ -853,6 +853,20 @@ namespace PEBakery.Helper
         /// <param name="str2"></param>
         public static CompareStringNumberResult CompareStringNumber(string str1, string str2)
         {
+            try
+            { // Try Version class compare
+                Version v1 = new Version(str1);
+                Version v2 = new Version(str2);
+                int comp = v1.CompareTo(v2);
+                if (comp < 0)
+                    return CompareStringNumberResult.Smaller;
+                else if (comp == 0)
+                    return CompareStringNumberResult.Equal;
+                else
+                    return CompareStringNumberResult.Bigger;
+            }
+            catch { } // Do simple int/string compare
+
             ParseStringToNumberType type1 = ParseStringToNumber(str1, out long z1, out decimal r1);
             ParseStringToNumberType type2 = ParseStringToNumber(str2, out long z2, out decimal r2);
 

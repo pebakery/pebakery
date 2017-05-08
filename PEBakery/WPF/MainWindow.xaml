@@ -68,12 +68,13 @@
                             </Button.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Button>
-                        <ControlTemplate.Triggers>
+                        <!-- <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.5" />
-                                <Setter Property="Background" Value="White" />
+                                <Setter Property="Opacity" Value="1" />
+                                <Setter Property="BorderBrush" Value="Black" />
+                                <Setter Property="Foreground" Value="Gray" />
                             </Trigger>
-                        </ControlTemplate.Triggers>
+                        </ControlTemplate.Triggers> -->
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -255,6 +256,12 @@
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+
             </TreeView>
             <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
             <DockPanel Grid.Column="1" Background="White">

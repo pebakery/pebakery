@@ -241,12 +241,23 @@ namespace PEBakery.Core
         Text, HTML
     }
 
+    /// <summary>
+    /// How much information will be logged if an Exception is catched in ExecuteCommand?
+    /// </summary>
+    public enum DebugLevel
+    {
+        Production = 0, // Only Exception message
+        PrintExceptionType = 1, // Print Exception message with Exception type
+        PrintExceptionStackTrace = 2, // Print Exception message, type, and stack trace
+    }
+
     public class Logger
     {    
         public LogDB DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
+        public static DebugLevel DebugLevel;
         public readonly ConcurrentStack<bool> TurnOff = new ConcurrentStack<bool>();
 
         private readonly Dictionary<long, DB_BuildInfo> buildDict = new Dictionary<long, DB_BuildInfo>();
@@ -342,10 +353,10 @@ namespace PEBakery.Core
             // Plugins 
             DB_Plugin dbPlugin = pluginDict[id].Item1;
             Stopwatch watch = pluginDict[id].Item2;
+            watch.Stop();
             dbPlugin.ElapsedMilliSec = watch.ElapsedMilliseconds;
             DB.Update(dbPlugin);
 
-            watch.Stop();
             pluginDict.Remove(dbPlugin.Id);
         }
 
@@ -640,8 +651,32 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Export
-        public void Export(LogExportType type, long buildId, string exportFile)
+        #region ExportSystemLog, ExportBuildLog
+        public void ExportSystemLog(LogExportType type, string exportFile)
+        {
+            switch (type)
+            {
+                case LogExportType.Text:
+                    using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
+                    {
+                        writer.WriteLine($"- PEBakery System Log -");
+                        var logs = DB.Table<DB_SystemLog>().OrderBy(x => x.Time);
+                        foreach (DB_SystemLog log in logs)
+                        {
+                            if (log.State == LogState.None)
+                                writer.WriteLine($"[{log.TimeStr}] {log.Message}");
+                            else
+                                writer.WriteLine($"[{log.TimeStr}] [{log.State}] {log.Message}");
+                        }
+                        writer.Close();
+                    }
+                    break;
+                case LogExportType.HTML:
+                    break;
+            }
+        }
+
+        public void ExportBuildLog(LogExportType type, string exportFile, long buildId)
         {
             switch (type)
             {
@@ -650,7 +685,7 @@ namespace PEBakery.Core
                         using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
                         {
                             DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
-                            writer.WriteLine($"- Build <{dbBuild.Name}> -");
+                            writer.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
                             writer.WriteLine($"Started at  {dbBuild.StartTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                             writer.WriteLine($"Finished at {dbBuild.EndTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                             TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
@@ -717,7 +752,7 @@ namespace PEBakery.Core
         #region static LogExceptionMessage
         public static string LogExceptionMessage(Exception e)
         {
-            switch (Engine.DebugLevel)
+            switch (Logger.DebugLevel)
             {
                 case DebugLevel.Production:
                     if (e.GetType() == typeof(AggregateException))
@@ -775,7 +810,8 @@ namespace PEBakery.Core
                     else
                         return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message) + "\r\n" + e.StackTrace + "\r\n ";
                 default:
-                    return "Invalid DebugLevel. This is an internal error, PLEASE REPORT to PEBakery developer.";
+                    Debug.Assert(false);
+                    return "Internal Logic Error";
             }
         }
         #endregion
