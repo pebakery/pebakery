@@ -178,17 +178,17 @@
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Name="BuildStopButton" Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+                <Button Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="StopCircle" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>
                 </Button>
-                <Button Name="BuildLogButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+                <Button Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>
                 </Button>
-                <Button Name="BuildAboutButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+                <Button Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>

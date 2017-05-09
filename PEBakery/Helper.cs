@@ -437,6 +437,7 @@ namespace PEBakery.Helper
             bool isLongPathDisabled;
             try
             {
+                // false - 32767, true - 260
                 AppContext.TryGetSwitch("Switch.System.IO.UseLegacyPathHandling", out isLongPathDisabled);
             }
             catch

@@ -207,6 +207,8 @@ namespace PEBakery.Core
             return optimized;
         }
 
+        
+
         // TODO: Is there any more 'generic' way?
         private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
         {

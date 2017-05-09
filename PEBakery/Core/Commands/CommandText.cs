@@ -146,13 +146,13 @@ namespace PEBakery.Core.Commands
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : {Environment.NewLine}{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
             else if (mode == TXTAddLineMode.Append)
             {
                 File.AppendAllText(fileName, linesToWrite, encoding);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : {Environment.NewLine}{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
 
             return logs;

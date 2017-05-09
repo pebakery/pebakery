@@ -53,7 +53,8 @@ namespace PEBakery.Core
         // Properties
         public List<Project> Projects { get => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); }
         public List<string> ProjectNames { get => projectDict.Keys.OrderBy(x => x).ToList(); }
-        public Project this[int i] { get => Projects.FirstOrDefault(); }
+        public Project this[int i] { get => Projects[i]; }
+        public int Count { get => projectDict.Count; }
 
         public ProjectCollection(string baseDir, PluginCache pluginCache)
         {

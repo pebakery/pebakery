@@ -69,6 +69,94 @@ namespace PEBakery.WPF
         {
             Model.UpdateCacheDBState();
             Model.UpdateLogDBState();
+            Model.UpdateProjectList();
+        }
+
+        private void CheckBox_EnableLongFilePath_Click(object sender, RoutedEventArgs e)
+        {
+            if (Model.General_EnableLongFilePath)
+            {
+                string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (res == MessageBoxResult.Yes)
+                    Model.General_EnableLongFilePath = true;
+                else
+                    Model.General_EnableLongFilePath = false;
+            }
+        }
+
+        private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            {
+                ShowNewFolderButton = true,
+            };
+
+            if (0 < Model.Project_SourceDirectoryList.Count)
+                dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
+
+            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                bool exist = false;
+                for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
+                {
+                    string projName = Model.Project_SourceDirectoryList[i];
+                    if (projName.Equals(dialog.SelectedPath, StringComparison.OrdinalIgnoreCase))
+                    { // Selected Path exists
+                        exist = true;
+                        Model.Project_SourceDirectoryIndex = i;
+                        break;
+                    }
+                }
+
+                Project project = Model.Projects[Model.Project_SelectedIndex];
+                if (exist == false) // Add to list
+                {
+                    ObservableCollection<string> newSourceDirList = new ObservableCollection<string>();
+                    newSourceDirList.Add(dialog.SelectedPath);
+                    foreach (string dir in Model.Project_SourceDirectoryList)
+                        newSourceDirList.Add(dir);
+                    Model.Project_SourceDirectoryList = newSourceDirList;
+                    Model.Project_SourceDirectoryIndex = 0;
+                }
+            }
+        }
+
+        private void Button_ResetSourceDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            Model.Project_SourceDirectoryList = new ObservableCollection<string>();
+
+            int idx = Model.Project_SelectedIndex;
+            string fullPath = Model.Projects[idx].MainPlugin.FullPath;
+            Ini.SetKey(fullPath, "Main", "SourceDir", string.Empty);
+        }
+
+        private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            {
+                ShowNewFolderButton = true,
+                SelectedPath = Model.Project_TargetDirectory,
+            };
+            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                Model.Project_TargetDirectory = dialog.SelectedPath;
+            }
+        }
+
+        private void Button_ISOFile_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+            {
+                Filter = "ISO File (*.iso)|*.iso",
+                InitialDirectory = System.IO.Path.GetDirectoryName(Model.Project_ISOFile),
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                Model.Project_ISOFile = dialog.FileName;
+            }
         }
     }
 
@@ -83,11 +171,165 @@ namespace PEBakery.WPF
         private PluginCache cacheDB;
         public PluginCache CacheDB { set => cacheDB = value; }
 
+        private ProjectCollection projects;
+        public ProjectCollection Projects { get => projects; }
+
         public SettingViewModel(string settingFile)
         {
             this.settingFile = settingFile;
             ReadFromFile();
         }
+
+        #region Project
+        private string Project_DefaultStr;
+        public string Project_Default
+        {
+            get => Project_List[project_DefaultIndex];
+        }
+
+        private ObservableCollection<string> project_List;
+        public ObservableCollection<string> Project_List
+        {
+            get => project_List;
+            set
+            {
+                project_List = value;
+                OnPropertyUpdate("Project_List");
+            }
+        }
+
+        private int project_DefaultIndex;
+        public int Project_DefaultIndex
+        {
+            get => project_DefaultIndex;
+            set
+            {
+                project_DefaultIndex = value;
+                OnPropertyUpdate("Project_DefaultIndex");
+            }
+        }
+
+        private int project_SelectedIndex;
+        public int Project_SelectedIndex
+        {
+            get => project_SelectedIndex;
+            set
+            {
+                project_SelectedIndex = value;
+                
+                if (0 <= value && value < Project_List.Count)
+                {
+                    string fullPath = projects[value].MainPlugin.FullPath;
+                    IniKey[] keys = new IniKey[]
+                    {
+                        new IniKey("Main", "SourceDir"),
+                        new IniKey("Main", "TargetDir"),
+                        new IniKey("Main", "ISOFile"),
+                    };
+                    keys = Ini.GetKeys(fullPath, keys);
+
+                    Project_SourceDirectoryList = new ObservableCollection<string>();
+                    string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string rawDir in rawDirList)
+                    {
+                        string dir = rawDir.Trim();
+                        if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                            Project_SourceDirectoryList.Add(dir);
+                    }
+
+                    if (0 < Project_SourceDirectoryList.Count)
+                    {
+                        project_SourceDirectoryIndex = 0;
+                        OnPropertyUpdate("Project_SourceDirectoryIndex");
+                    }
+
+                    project_TargetDirectory = keys[1].Value;
+                    project_ISOFile = keys[2].Value;
+                    OnPropertyUpdate("Project_TargetDirectory");
+                    OnPropertyUpdate("Project_ISOFile");
+                }
+
+                OnPropertyUpdate("Project_SelectedIndex");
+            }
+        }
+
+        private ObservableCollection<string> project_SourceDirectoryList;
+        public ObservableCollection<string> Project_SourceDirectoryList
+        {
+            get => project_SourceDirectoryList;
+            set
+            {
+                project_SourceDirectoryList = value;
+                OnPropertyUpdate("Project_SourceDirectoryList");
+            }
+        }
+
+        private int project_SourceDirectoryIndex;
+        public int Project_SourceDirectoryIndex
+        {
+            get => project_SourceDirectoryIndex;
+            set
+            {
+                project_SourceDirectoryIndex = value;
+
+                Project project = Projects[Project_SelectedIndex];
+                project.Variables.SetFixedValue("SourceDir", Project_SourceDirectoryList[value]);
+
+                StringBuilder b = new StringBuilder(Project_SourceDirectoryList[value]);
+                for (int x = 0; x < Project_SourceDirectoryList.Count; x++)
+                {
+                    if (x == value)
+                        continue;
+
+                    b.Append(",");
+                    b.Append(Project_SourceDirectoryList[x]);
+                }
+                Ini.SetKey(project.MainPlugin.FullPath, "Main", "SourceDir", b.ToString());
+
+                OnPropertyUpdate("Project_SourceDirectoryIndex");
+            }
+        }
+
+        private string project_TargetDirectory;
+        public string Project_TargetDirectory
+        {
+            get => project_TargetDirectory;
+            set
+            {
+                if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
+                {
+                    Project project = projects[project_SelectedIndex];
+                    string fullPath = project.MainPlugin.FullPath;
+                    Ini.SetKey(fullPath, "Main", "TargetDir", value);
+                    project.Variables.SetFixedValue("TargetDir", value);
+                }
+
+                project_TargetDirectory = value;
+
+                OnPropertyUpdate("Project_TargetDirectory");
+            }
+        }
+
+        private string project_ISOFile;
+        public string Project_ISOFile
+        {
+            get => project_ISOFile;
+            set
+            {
+                if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
+                {
+                    Project project = projects[project_SelectedIndex];
+                    string fullPath = project.MainPlugin.FullPath;
+                    Ini.SetKey(fullPath, "Main", "ISOFile", value);
+                    project.Variables.SetFixedValue("ISOFile", value);
+                }
+
+                project_ISOFile = value;
+
+                OnPropertyUpdate("Project_ISOFile");
+            }
+        }
+        #endregion
 
         #region General
         private bool general_OptimizeCode;
@@ -108,6 +350,12 @@ namespace PEBakery.WPF
             set
             {
                 general_EnableLongFilePath = value;
+
+                if (value)
+                    AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false); // Path Length Limit = 32767
+                else
+                    AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", true); // Path Length Limit = 260
+
                 OnPropertyUpdate("General_EnableLongFilePath");
             }
         }
@@ -257,14 +505,20 @@ namespace PEBakery.WPF
         #region Utility
         public void SetToDefault()
         {
+            // Project
+            Project_DefaultStr = string.Empty;
+
             // General
             General_EnableLongFilePath = false;
             General_OptimizeCode = true;
+
             // Interface
             Interface_ScaleFactor = 100;
+
             // Plugin
             Plugin_EnableCache = true;
             Plugin_AutoConvertToUTF8 = false;
+
             // Log
 #if DEBUG
             Log_DebugLevelIndex = 2; 
@@ -293,6 +547,7 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
+                new IniKey("Project", "DefaultProject"), // String
             };
             keys = Ini.GetKeys(settingFile, keys);
 
@@ -305,6 +560,10 @@ namespace PEBakery.WPF
             string str_Log_DebugLevelIndex = dict["DebugLevel"];
             string str_Log_Macro = dict["Macro"];
             string str_Log_Comment = dict["Comment"];
+
+            // Project
+            if (dict["DefaultProject"] != null)
+                Project_DefaultStr = dict["DefaultProject"];
 
             // General - EnableLongFilePath (Default = False)
             if (str_General_EnableLongFilePath != null)
@@ -373,14 +632,15 @@ namespace PEBakery.WPF
         {
             IniKey[] keys = new IniKey[]
             {
-                new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
                 new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
+                new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
+                new IniKey("Project", "DefaultProject", Project_Default),
             };
             Ini.SetKeys(settingFile, keys);
         }
@@ -425,12 +685,37 @@ namespace PEBakery.WPF
             }
         }
 
+        public void UpdateProjectList()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                projects = w.Projects;
+            });
+
+            bool foundDefault = false;
+            List<string> projNameList = projects.ProjectNames;
+            Project_List = new ObservableCollection<string>();
+            for (int i = 0; i < projNameList.Count; i++)
+            {
+                Project_List.Add(projNameList[i]);
+                if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundDefault = true;
+                    Project_SelectedIndex = Project_DefaultIndex = i;
+                }
+            }
+
+            if (foundDefault == false)
+                Project_SelectedIndex = Project_DefaultIndex = projects.Count - 1;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-#endregion
+        #endregion
     }
-#endregion
+    #endregion
 }

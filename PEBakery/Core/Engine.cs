@@ -213,7 +213,7 @@ namespace PEBakery.Core
                     s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n", s.CurDepth));
                 cbCmd = null;
             }
         }
