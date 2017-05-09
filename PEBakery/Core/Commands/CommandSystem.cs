@@ -64,21 +64,24 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.WorkingDirectory = workDir;
             }
 
-            if (string.Equals(verb, "Open", StringComparison.OrdinalIgnoreCase))
+            if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
             {
                 proc.StartInfo.UseShellExecute = true;
                 proc.StartInfo.Verb = "Open";
             }
-            else if (string.Equals(verb, "Hide", StringComparison.OrdinalIgnoreCase))
+            else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
             {
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
+                proc.StartInfo.CreateNoWindow = true;
             }
             else
+            {
                 proc.StartInfo.Verb = verb;
+            }
             proc.Start();
 
             switch (cmd.Type)

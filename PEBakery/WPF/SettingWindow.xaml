@@ -22,12 +22,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         FontSize="13"
         FontFamily="Segoe UI"
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
-        Title="PEBakery Setting" Width="600" Height="480">
+        Title="PEBakery Setting"
+        Width="600" Height="480">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition></RowDefinition>
@@ -36,6 +38,167 @@
         <TabControl Grid.Row="0">
             <TabItem Header="Projects">
                 <StackPanel>
+                    <Grid
+                        Height="25"
+                        Margin="15, 15, 15, 0"
+                        VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Text="Default Project">
+                        </TextBlock>
+                        <ComboBox
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            ItemsSource="{Binding Project_List}"
+                            SelectedIndex="{Binding Project_DefaultIndex}">
+                        </ComboBox>
+                    </Grid>
+                    <Grid
+                        Height="25"
+                        Margin="15, 15, 15, 0"
+                        VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Text="Project Path Setting">
+                        </TextBlock>
+                        <ComboBox
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            ItemsSource="{Binding Project_List}"
+                            SelectedIndex="{Binding Project_SelectedIndex}">
+                        </ComboBox>
+                    </Grid>
+                    <Border
+                        Margin="15, 15, 15, 0"
+                        Height="Auto"
+                        BorderBrush="Gray"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <Grid
+                            Height="25"
+                            Margin="15, 15, 15, 0"
+                            VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"></ColumnDefinition>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="30"></ColumnDefinition>
+                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    Text="Source Directory">
+                                </TextBlock>
+                                <ComboBox
+                                    Grid.Column="1"
+                                    Margin="0, 0, 5, 0"
+                                    ItemsSource="{Binding Project_SourceDirectoryList}"
+                                    SelectedIndex="{Binding Project_SourceDirectoryIndex}">
+                                </ComboBox>
+                                <Button
+                                    Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    Name="Button_SourceDirectory"
+                                    Click="Button_SourceDirectory_Click">
+                                    <Button.Content>
+                                        <iconPacks:PackIconMaterial
+                                    Kind="FolderUpload"
+                                    Width="Auto"
+                                    Height="Auto"
+                                    Margin="2"/>
+                                    </Button.Content>
+                                </Button>
+                                <Button
+                            Grid.Column="3"
+                            Name="Button_ResetSourceDirectory"
+                            Click="Button_ResetSourceDirectory_Click">
+                                    <Button.Content>
+                                        <iconPacks:PackIconMaterial
+                                    Kind="Close"
+                                    Width="Auto"
+                                    Height="Auto"
+                                    Margin="4"/>
+                                    </Button.Content>
+                                </Button>
+                            </Grid>
+                            <Grid
+                        Height="25"
+                        Margin="15, 15, 15, 0"
+                        VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"></ColumnDefinition>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    Text="Target Directory">
+                                </TextBlock>
+                                <TextBox
+                                    Grid.Column="1"
+                                    Margin="0, 0, 5, 0"
+                                    VerticalContentAlignment="Center"
+                                    Text="{Binding Project_TargetDirectory}">
+                                </TextBox>
+                                <Button
+                                    Grid.Column="2"
+                                    Name="Button_TargetDirectory"
+                                    Click="Button_TargetDirectory_Click">
+                                    <Button.Content>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="FolderUpload"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="2"/>
+                                    </Button.Content>
+                                </Button>
+                            </Grid>
+                            <Grid
+                                Height="25"
+                                Margin="15, 15, 15, 15"
+                                VerticalAlignment="Center">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"></ColumnDefinition>
+                                    <ColumnDefinition></ColumnDefinition>
+                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    Text="ISO File">
+                                </TextBlock>
+                                <TextBox
+                                    Grid.Column="1"
+                                    Margin="0, 0, 5, 0"
+                                    VerticalContentAlignment="Center"
+                                    Text="{Binding Project_ISOFile}">
+                                </TextBox>
+                                <Button
+                                    Grid.Column="2"
+                                    Name="Button_ISOFile"
+                                    Click="Button_ISOFile_Click">
+                                    <Button.Content>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="FolderUpload"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="2"/>
+                                    </Button.Content>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </TabItem>
             <TabItem Header="General">
@@ -52,6 +215,7 @@
                         Margin="15, 15, 15, 0"
                         Content="Enable Long File Path Support"
                         ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
+                        Click="CheckBox_EnableLongFilePath_Click"
                         IsChecked="{Binding General_EnableLongFilePath}">
                     </CheckBox>
                 </StackPanel>
@@ -100,6 +264,7 @@
                     </CheckBox>
                     <DockPanel
                         Margin="15, 15, 15, 0"
+                        Height="25"
                         VerticalAlignment="Center">
                         <Button
                             Name="Button_ClearCache"
@@ -120,13 +285,34 @@
                         Margin="15, 15, 15, 0"
                         Content="Convert Plugins to UTF-8 automatically"
                         ToolTip="Turning on will break compability with WinBuilder 082."
+                        IsEnabled="False"
                         IsChecked="{Binding Plugin_ConvertToUTF8}">
                     </CheckBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Log">
                 <StackPanel>
+                    <Grid
+                        Margin="15, 15, 15, 0"
+                        VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"></ColumnDefinition>
+                            <ColumnDefinition></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Text="Debug Level">
+                        </TextBlock>
+                        <ComboBox
+                            Grid.Column="1"
+                            Name="ComboBox_LogDebugLevel"
+                            ItemsSource="{Binding Log_DebugLevelList}"
+                            SelectedIndex="{Binding Log_DebugLevelIndex}">
+                        </ComboBox>
+                    </Grid>
                     <DockPanel
+                        Height="25"
                         Margin="15, 15, 15, 0"
                         VerticalAlignment="Center">
                         <Button
@@ -138,6 +324,7 @@
                         </Button>
                         <TextBlock
                             Name="TextBlock_LogDBState"
+                            VerticalAlignment="Center"
                             Text="{Binding Log_DBState}">
                         </TextBlock>
                     </DockPanel>

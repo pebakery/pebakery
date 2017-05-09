@@ -31,19 +31,8 @@ using System.ComponentModel;
 
 namespace PEBakery.Core
 {
-    /// <summary>
-    /// How much information will be logged if an Exception is catched in ExecuteCommand?
-    /// </summary>
-    public enum DebugLevel
-    {
-        Production = 0, // Only Exception message
-        PrintExceptionType = 1, // Print Exception message with Exception type
-        PrintExceptionStackTrace = 2, // Print Exception message, type, and stack trace
-    }
-
     public class Engine
     {
-        public static DebugLevel DebugLevel = DebugLevel.PrintExceptionStackTrace;
         public static bool Running = false;
         public EngineState s;
 
@@ -136,7 +125,7 @@ namespace PEBakery.Core
                 BackgroundWorker worker = new BackgroundWorker();
                 worker.DoWork += (object sender, DoWorkEventArgs e) =>
                 {
-                    EngineState s = new EngineState(Engine.DebugLevel, addr.Plugin.Project, logger, addr.Plugin);
+                    EngineState s = new EngineState(addr.Plugin.Project, logger, addr.Plugin);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = (Application.Current.MainWindow as MainWindow);
@@ -145,7 +134,7 @@ namespace PEBakery.Core
                     long buildId = Engine.RunOneSection(s, addr, logMsg);
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
-                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
+                    logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
                 };
                 worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
@@ -224,7 +213,7 @@ namespace PEBakery.Core
                     s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]{Environment.NewLine}", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n", s.CurDepth));
                 cbCmd = null;
             }
         }
@@ -486,7 +475,6 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public bool RunOnePlugin;
-        public DebugLevel DebugLevel;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
         public bool LogComment; // Used in logging
@@ -509,9 +497,8 @@ namespace PEBakery.Core
         public CodeCommand OnBuildExit;
         public CodeCommand OnPluginExit;
 
-        public EngineState(DebugLevel debugLevel, Project project, Logger logger, Plugin pluginToRun = null)
+        public EngineState(Project project, Logger logger, Plugin pluginToRun = null)
         {
-            this.DebugLevel = debugLevel;
             this.Project = project;
             this.Plugins = project.GetActivePluginList();
             this.Logger = logger;

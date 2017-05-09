@@ -68,12 +68,13 @@
                             </Button.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Button>
-                        <ControlTemplate.Triggers>
+                        <!-- <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Opacity" Value="0.5" />
-                                <Setter Property="Background" Value="White" />
+                                <Setter Property="Opacity" Value="1" />
+                                <Setter Property="BorderBrush" Value="Black" />
+                                <Setter Property="Foreground" Value="Gray" />
                             </Trigger>
-                        </ControlTemplate.Triggers>
+                        </ControlTemplate.Triggers> -->
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -177,17 +178,17 @@
                     <ColumnDefinition Width="75"/>
                 </Grid.ColumnDefinitions>
 
-                <Button Name="BuildStopButton" Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+                <Button Grid.Row="0" Grid.Column="0" Margin="5" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="StopCircle" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>
                 </Button>
-                <Button Name="BuildLogButton" Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+                <Button Grid.Row="0" Grid.Column="1" Margin="5" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>
                 </Button>
-                <Button Name="BuildAboutButton" Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+                <Button Grid.Row="0" Grid.Column="2" Margin="5" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
                     <Button.Content>
                         <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="5" />
                     </Button.Content>
@@ -255,6 +256,12 @@
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+
             </TreeView>
             <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
             <DockPanel Grid.Column="1" Background="White">

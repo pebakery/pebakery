@@ -1343,7 +1343,6 @@ namespace PEBakery.Core
                         string compArg2 = StringEscaper.Preprocess(s, Arg2);
 
                         CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2);
-
                         switch (comp)
                         {
                             case CompareStringNumberResult.Equal: // For String and Number

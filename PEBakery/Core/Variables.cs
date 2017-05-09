@@ -73,6 +73,23 @@ namespace PEBakery.Core
 
         private List<LogInfo> LoadDefaultFixedVariables()
         {
+            // MainPlugin Path
+            string fullPath = project.MainPlugin.FullPath;
+
+            // SourceDir
+            string sourceDir = string.Empty;
+            string sourceDirs = Ini.GetKey(fullPath, "Main", "SourceDir");
+            string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string rawDir in rawDirList)
+            {
+                string dir = rawDir.Trim();
+                if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                {
+                    sourceDir = dir;
+                    break;
+                }
+            }
+
             List<LogInfo> logs = new List<LogInfo>
             {
                 // BaseDir
@@ -83,8 +100,12 @@ namespace PEBakery.Core
                 SetFixedValue("Version", App.Version.ToString()),
                 // ProjectDir
                 SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)),
+                // SourceDir
+                SetFixedValue("SourceDir", sourceDir),
                 // TargetDir
-                SetFixedValue("TargetDir", Path.Combine("%BaseDir%", "Target", project.ProjectName))
+                SetFixedValue("TargetDir", Ini.GetKey(fullPath, "Main", "TargetDir")),
+                // ISOFile
+                SetFixedValue("ISOFile", Ini.GetKey(fullPath, "Main", "ISOFile")),
             };
             return logs;
         }

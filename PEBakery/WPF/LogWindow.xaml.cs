@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -162,6 +163,52 @@ namespace PEBakery.WPF
                     break;
             }
         }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            string baseDir;
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                baseDir = w.BaseDir;
+            }
+
+            string title;
+            if (model.SelectedTabIndex == 0) // System Log
+            {
+                title = "Export System Log";
+            }
+            else // Build Log
+            {
+                title = "Export Build Log";
+            }
+
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
+            {
+                Title = title,
+                Filter = "Text File (*.txt)|*.txt",
+                InitialDirectory = System.IO.Path.GetDirectoryName(baseDir),
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (model.SelectedTabIndex == 0) // System Log
+                {
+                    model.Logger.ExportSystemLog(LogExportType.Text, dialog.FileName);
+                }
+                else // Build Log
+                {
+                    int idx = model.SelectBuildIndex;
+                    long buildId = model.SelectBuildEntries[idx].Item2; // Build Id
+                    model.Logger.ExportBuildLog(LogExportType.Text, dialog.FileName, buildId);
+                }
+            }
+
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = true;
+            proc.StartInfo.Verb = "Open";
+            proc.StartInfo.FileName = dialog.FileName;
+            proc.Start();
+        }
     }
 
     #region LogListModel
@@ -205,32 +252,49 @@ namespace PEBakery.WPF
         public void RefreshBuildLog()
         {
             // Populate SelectBuildEntries
-            List<Tuple<string, long>> list = new List<Tuple<string, long>>();
-            foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                string timeStr = b.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
-                list.Add(new Tuple<string, long>($"[{timeStr}] {b.Name} ({b.Id})", b.Id));
-            }
-            SelectBuildEntries = list;
-            SelectBuildIndex = 0;
+                SelectBuildEntries.Clear();
+                foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
+                {
+                    string timeStr = b.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+                    SelectBuildEntries.Add(new Tuple<string, long>($"[{timeStr}] {b.Name} ({b.Id})", b.Id));
+                }
+                SelectBuildIndex = 0;
+            });
         }
 
         public void RefreshPlugin(long? buildId)
         {
-            if (buildId == null) // Clear
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                SelectPluginEntries = new List<Tuple<string, long, long>>();
-                SelectPluginIndex = 0;
-            }
-            else
+                if (buildId == null) // Clear
+                {
+                    SelectPluginEntries.Clear();
+                    SelectPluginIndex = 0;
+                }
+                else
+                {
+                    // Populate SelectPluginEntries
+                    SelectPluginEntries.Clear();
+                    var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
+                    foreach (DB_Plugin p in plugins)
+                        SelectPluginEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
+                    SelectPluginIndex = 0;
+                }
+            });
+        }
+        #endregion
+
+        #region TabIndex
+        private int selectedTabIndex;
+        public int SelectedTabIndex
+        {
+            get => selectedTabIndex;
+            set
             {
-                // Populate SelectPluginEntries
-                List<Tuple<string, long, long>> list = new List<Tuple<string, long, long>>();
-                var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
-                foreach (DB_Plugin p in plugins)
-                    list.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long) buildId));
-                SelectPluginEntries = list;
-                SelectPluginIndex = 0;
+                selectedTabIndex = value;
+                OnPropertyUpdate("SelectedTabIndex");
             }
         }
         #endregion
@@ -289,8 +353,8 @@ namespace PEBakery.WPF
             }
         }
 
-        private List<Tuple<string, long>> selectBuildEntries;
-        public List<Tuple<string, long>> SelectBuildEntries
+        private ObservableCollection<Tuple<string, long>> selectBuildEntries = new ObservableCollection<Tuple<string, long>>();
+        public ObservableCollection<Tuple<string, long>> SelectBuildEntries
         {
             get => selectBuildEntries;
             set
@@ -325,9 +389,10 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("SelectPluginIndex");
             }
         }
-
-        private List<Tuple<string, long, long>> selectPluginEntries; // Plugin Name, Plugin Id, Build Id
-        public List<Tuple<string, long, long>> SelectPluginEntries
+        
+        // Plugin Name, Plugin Id, Build Id
+        private ObservableCollection<Tuple<string, long, long>> selectPluginEntries = new ObservableCollection<Tuple<string, long, long>>();
+        public ObservableCollection<Tuple<string, long, long>> SelectPluginEntries
         {
             get => selectPluginEntries;
             set

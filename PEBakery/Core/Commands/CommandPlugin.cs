@@ -60,6 +60,12 @@ namespace PEBakery.Core.Commands
                     throw new ExecuteException($"No plugin in [{fullPath}]");
             }
 
+            if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, info.DirName, info.FileName))
             using (FileStream fs = new FileStream(Path.Combine(extractTo, fileName), FileMode.Create, FileAccess.Write))
             {

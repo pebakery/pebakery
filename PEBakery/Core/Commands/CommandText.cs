@@ -48,6 +48,12 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             // Detect encoding of text
             // If text does not exists, create blank file
             Encoding encoding = Encoding.UTF8;
@@ -99,6 +105,12 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             List<string> prepLines = new List<string>();
             foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
             {
@@ -134,13 +146,13 @@ namespace PEBakery.Core.Commands
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : {Environment.NewLine}{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines prepened to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
             else if (mode == TXTAddLineMode.Append)
             {
                 File.AppendAllText(fileName, linesToWrite, encoding);
 
-                logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : {Environment.NewLine}{linesToWrite}", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }
 
             return logs;
@@ -156,6 +168,12 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string toBeReplaced = StringEscaper.Preprocess(s, info.ToBeReplaced);
             string replaceWith = StringEscaper.Preprocess(s, info.ReplaceWith);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
 
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");
@@ -192,6 +210,13 @@ namespace PEBakery.Core.Commands
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteIfBeginWith);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
@@ -229,6 +254,13 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTDelLineOp infoOp = cmd.Info as CodeInfo_TXTDelLineOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");
 
@@ -281,6 +313,11 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTDelSpaces info = cmd.Info as CodeInfo_TXTDelSpaces;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
 
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");
@@ -320,6 +357,11 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTDelEmptyLines info = cmd.Info as CodeInfo_TXTDelEmptyLines;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
 
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");

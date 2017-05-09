@@ -164,10 +164,9 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextBox(RenderInfo r, UICommand uiCmd)
         {
-            // It took time finding that WB082 textbox control's y coord is of textbox's, not textlabel's.
+            // WB082 textbox control's y coord is of textbox's, not textlabel's.
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
             UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
-            if (info == null)
-                return;
 
             TextBox box = new TextBox()
             {
@@ -209,9 +208,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextLabel(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextLabel));
             UIInfo_TextLabel info = uiCmd.Info as UIInfo_TextLabel;
-            if (info == null)
-                return;
 
             TextBlock block = new TextBlock()
             {
@@ -252,9 +250,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderNumberBox(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
             UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
-            if (info == null)
-                return;
 
             SpinnerControl spinner = new SpinnerControl()
             {
@@ -285,9 +282,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderCheckBox(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
             UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
-            if (info == null)
-                return;
 
             CheckBox checkBox = new CheckBox()
             {
@@ -323,9 +319,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderComboBox(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_ComboBox));
             UIInfo_ComboBox info = uiCmd.Info as UIInfo_ComboBox;
-            if (info == null)
-                return;
 
             ComboBox comboBox = new ComboBox()
             {
@@ -359,9 +354,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderImage(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Image));
             UIInfo_Image info = uiCmd.Info as UIInfo_Image;
-            if (info == null)
-                return;
 
             Image image = new Image()
             {
@@ -443,9 +437,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextFile(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextFile));
             UIInfo_TextFile info = uiCmd.Info as UIInfo_TextFile;
-            if (info == null)
-                return;
 
             MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
 
@@ -476,9 +469,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderButton(RenderInfo r, UICommand uiCmd, Logger logger)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Button));
             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
-            if (info == null)
-                return;
 
             Button button = new Button()
             {
@@ -587,9 +579,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderWebLabel(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_WebLabel));
             UIInfo_WebLabel info = uiCmd.Info as UIInfo_WebLabel;
-            if (info == null)
-                return;
 
             TextBlock block = new TextBlock()
             {
@@ -620,9 +611,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderBevel(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Bevel));
             UIInfo_Bevel info = uiCmd.Info as UIInfo_Bevel;
-            if (info == null)
-                return;
 
             Border bevel = new Border()
             {
@@ -645,9 +635,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioButton(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
             UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
-            if (info == null)
-                return;
 
             double fontSize = CalcFontPointScale();
 
@@ -686,9 +675,8 @@ namespace PEBakery.WPF
         public static void RenderFileBox(RenderInfo r, UICommand uiCmd, Variables variables)
         {
             // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_FileBox));
             UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
-            if (info == null)
-                return;
 
             TextBox box = new TextBox()
             {
@@ -719,10 +707,13 @@ namespace PEBakery.WPF
                 {
                     Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
                     { 
+                        Filter = "All Files|*.*",
                         InitialDirectory = System.IO.Path.GetDirectoryName(StringEscaper.Preprocess(variables, uiCmd.Text)),
                     };
                     if (dialog.ShowDialog() == true)
+                    {
                         box.Text = dialog.FileName;
+                    }
                 }
                 else
                 {
@@ -755,9 +746,8 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioGroup(RenderInfo r, UICommand uiCmd)
         {
+            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
             UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
-            if (info == null)
-                return;
 
             double fontSize = CalcFontPointScale();
 

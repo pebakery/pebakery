@@ -54,8 +54,10 @@ namespace PEBakery.Core.Commands
                 case CodeMessageAction.Warning:
                     image = MessageBoxImage.Warning;
                     break;
-                default:
-                    throw new InternalException("CodeInfo_Message's CodeMessageAction is invalid");
+                default: // Internal Logic Error
+                    Debug.Assert(false);
+                    image = MessageBoxImage.Information;
+                    break;
             }
 
             if (info.Timeout == null)

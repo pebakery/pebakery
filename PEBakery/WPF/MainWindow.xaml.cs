@@ -50,7 +50,11 @@ namespace PEBakery.WPF
     public partial class MainWindow : Window
     {
         private ProjectCollection projects;
+        public ProjectCollection Projects { get => projects; }
+
         private string baseDir;
+        public string BaseDir { get => baseDir; }
+
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
 
@@ -110,6 +114,7 @@ namespace PEBakery.WPF
 
             this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
             this.setting = new SettingViewModel(settingFile);
+            Logger.DebugLevel = setting.Log_DebugLevel;
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
@@ -119,7 +124,7 @@ namespace PEBakery.WPF
             }
             catch (SQLiteException e)
             { // Update failure
-                string msg = $"SQLite Error : {e.Message}{Environment.NewLine}{Environment.NewLine}Log database is corrupted.{Environment.NewLine}Please delete PEBakeryLog.db and restart.";
+                string msg = $"SQLite Error : {e.Message}\r\n\r\nLog database is corrupted.\r\nPlease delete PEBakeryLog.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
@@ -136,7 +141,7 @@ namespace PEBakery.WPF
                 }
                 catch (SQLiteException e)
                 { // Update failure
-                    string msg = $"SQLite Error : {e.Message}{Environment.NewLine}{Environment.NewLine}Cache database is corrupted.{Environment.NewLine}Please delete PEBakeryCache.db and restart.";
+                    string msg = $"SQLite Error : {e.Message}\r\n\r\nCache database is corrupted.\r\nPlease delete PEBakeryCache.db and restart.";
                     MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                     Application.Current.Shutdown(1);
                 }
@@ -198,6 +203,7 @@ namespace PEBakery.WPF
 
                 // Let's load plugins parallelly
                 projects.Load(worker);
+                setting.UpdateProjectList();
 
                 // Populate TreeView
                 Dispatcher.Invoke(() =>
@@ -207,9 +213,11 @@ namespace PEBakery.WPF
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
                         RecursivePopulateMainTreeView(plugins, Model.Tree, Model.Tree);
                     };
-                    currentTree = Model.Tree.Child[0];
-                    if (projects[0] != null)
-                        DrawPlugin(projects[0].MainPlugin);
+                    int pIdx = setting.Project_DefaultIndex;
+                    currentTree = Model.Tree.Child[pIdx];
+                    currentTree.IsExpanded = true;
+                    if (projects[pIdx] != null)
+                        DrawPlugin(projects[pIdx].MainPlugin);
                 });
             };
             loadWorker.WorkerReportsProgress = true;
@@ -251,11 +259,11 @@ namespace PEBakery.WPF
                 }
                 int stage = e.ProgressPercentage / 2 + 1;
                 if (stage == 1)
-                    msg = $"Stage {stage} ({loadedPluginCount} / {allPluginCount}) {Environment.NewLine}{msg}";
+                    msg = $"Stage {stage} ({loadedPluginCount} / {allPluginCount}) \r\n{msg}";
                 else
-                    msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) {Environment.NewLine}{msg}";
+                    msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
 
-                Model.PluginDescriptionText = $"PEBakery loading...{Environment.NewLine}{msg}";
+                Model.PluginDescriptionText = $"PEBakery loading...\r\n{msg}";
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -570,11 +578,17 @@ namespace PEBakery.WPF
             bool? result = dialog.ShowDialog();
             if (result == true)
             {
+                // Scale Factor
                 double newScaleFactor = setting.Interface_ScaleFactor;
                 if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                    StartRefreshWorker();
+                    DrawPlugin(currentTree.Node.Data);
+
+                // PluginCache
                 if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
                     StartCacheWorker();
+
+                // DebugLevel
+                Logger.DebugLevel = setting.Log_DebugLevel;
             }
         }
 
@@ -588,7 +602,8 @@ namespace PEBakery.WPF
             }
             else
             {
-                string msg = $"Cannot run [{p.Title}]!{Environment.NewLine}Please implement section [Process]";
+                string msg = $"Cannot run [{p.Title}]!\r\nPlease implement section [Process]";
+                Logger.System_Write(new LogInfo(LogState.Error, msg));
                 MessageBox.Show(msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -624,12 +639,12 @@ namespace PEBakery.WPF
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-
+            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-
+            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
     #endregion
@@ -827,6 +842,18 @@ namespace PEBakery.WPF
             this.root = root;
             this.parent = parent;
         }
+
+        private bool isExpanded = false;
+        public bool IsExpanded
+        {
+            get => isExpanded;
+            set
+            {
+                isExpanded = value;
+                OnPropertyUpdate("IsExpanded");
+            }
+        }
+
 
         public bool Checked
         {

@@ -534,7 +534,7 @@ namespace PEBakery.Lib
                                 if (processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(iniKeys[i].Section);
-                                    writer.WriteLine($"{Environment.NewLine}[{iniKeys[i].Section}]");
+                                    writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }
                                 processedKeys.Add(i);
                                 writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
@@ -749,7 +749,7 @@ namespace PEBakery.Lib
                     using (StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8))
                     {
                         foreach (string section in sections)
-                            writer.WriteLine($"{Environment.NewLine}[{section}]");
+                            writer.WriteLine($"\r\n[{section}]");
                         writer.Close();
                     }
                     return true;
@@ -808,7 +808,7 @@ namespace PEBakery.Lib
                                 if (processedSections.Any(s => s.Equals(sections[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(sections[i]);
-                                    writer.WriteLine($"{Environment.NewLine}[{sections[i]}]");
+                                    writer.WriteLine($"\r\n[{sections[i]}]");
                                 }
                                 processedIdxs.Add(i);
                             }
