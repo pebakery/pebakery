@@ -914,7 +914,7 @@ namespace PEBakery.Core
             }
             else
             {
-                throw new InternalException("GetUIDirectives must be used with SectionDataType.Interfaces");
+                throw new InternalException("GetUICodes must be used with SectionDataType.Interfaces");
             }
         }
 
@@ -937,7 +937,7 @@ namespace PEBakery.Core
             }
             else
             {
-                throw new InternalException("GetUIDirectives must be used with SectionDataType.Interfaces");
+                throw new InternalException("GetUICodes must be used with SectionDataType.Interfaces");
             }
         }
     }

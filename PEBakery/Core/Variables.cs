@@ -73,12 +73,32 @@ namespace PEBakery.Core
 
         private List<LogInfo> LoadDefaultFixedVariables()
         {
-            // MainPlugin Path
+            List<LogInfo> logs = new List<LogInfo>();
+
+            #region Builder Variables
+            // BaseDir
+            logs.Add(SetFixedValue("BaseDir", project.BaseDir));
+            // Tools
+            logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
+            // Version
+            logs.Add(SetFixedValue("Version", App.Version.ToString()));
+            #endregion
+
+            #region Project Variables
+            // Read from MainPlugin
             string fullPath = project.MainPlugin.FullPath;
+            IniKey[] keys = new IniKey[]
+            {
+                new IniKey("Main", "SourceDir"),
+                new IniKey("Main", "TargetDir"),
+                new IniKey("Main", "ISOFile"),
+            };
+            keys = Ini.GetKeys(fullPath, keys);
+            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             // SourceDir
             string sourceDir = string.Empty;
-            string sourceDirs = Ini.GetKey(fullPath, "Main", "SourceDir");
+            string sourceDirs = dict["SourceDir"];
             string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string rawDir in rawDirList)
             {
@@ -90,23 +110,45 @@ namespace PEBakery.Core
                 }
             }
 
-            List<LogInfo> logs = new List<LogInfo>
-            {
-                // BaseDir
-                SetFixedValue("BaseDir", project.BaseDir),
-                // Tools
-                SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")),
-                // Version
-                SetFixedValue("Version", App.Version.ToString()),
-                // ProjectDir
-                SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)),
-                // SourceDir
-                SetFixedValue("SourceDir", sourceDir),
-                // TargetDir
-                SetFixedValue("TargetDir", Ini.GetKey(fullPath, "Main", "TargetDir")),
-                // ISOFile
-                SetFixedValue("ISOFile", Ini.GetKey(fullPath, "Main", "ISOFile")),
+            // ProjectDir
+            logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
+            // SourceDir
+            logs.Add(SetFixedValue("SourceDir", sourceDir));
+            // TargetDir
+            logs.Add(SetFixedValue("TargetDir", dict["TargetDir"]));
+            // ISOFile
+            logs.Add(SetFixedValue("ISOFile", dict["ISOFile"]));
+            // ISODir
+            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(dict["ISOFile"])));
+            #endregion
+
+            #region Envrionment Variables
+            List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
+            { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
+                new Tuple<string, string>("TEMP", "TempDir"),
+                new Tuple<string, string>("USERNAME", "UserName"),
+                new Tuple<string, string>("USERPROFILE", "UserProfile"),
+                new Tuple<string, string>("WINDIR", "WindowsDir"),
+                new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
             };
+
+            if (Environment.Is64BitProcess)
+                envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
+
+            foreach (var tuple in envVarNames)
+            {
+                string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
+                if (envValue == null)
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
+                else
+                    logs.Add(SetFixedValue(tuple.Item2, envValue));
+            }
+
+            // WindowsVersion
+            OperatingSystem sysVer = Environment.OSVersion;
+            logs.Add(SetFixedValue("WindowsVersion", sysVer.Version.ToString()));
+            #endregion
+
             return logs;
         }
 

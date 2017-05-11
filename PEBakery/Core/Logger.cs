@@ -389,10 +389,6 @@ namespace PEBakery.Core
 
             if (doNotLog == false)
             {
-#if DEBUG
-                Debug_Write(message);
-#endif
-
                 DB_BuildLog dbCode = new DB_BuildLog()
                 {
                     Time = DateTime.Now,
@@ -428,10 +424,6 @@ namespace PEBakery.Core
 
             if (doNotLog == false)
             {
-#if DEBUG
-                Debug_Write(log);
-#endif
-
                 DB_BuildLog dbCode = new DB_BuildLog()
                 {
                     Time = DateTime.Now,
@@ -494,9 +486,6 @@ namespace PEBakery.Core
 
         public void System_Write(string message)
         {
-#if DEBUG
-            Debug_Write(message);
-#endif
             DB_SystemLog dbLog = new DB_SystemLog()
             {
                 Time = DateTime.Now,
@@ -512,9 +501,6 @@ namespace PEBakery.Core
 
         public void System_Write(LogInfo log)
         {
-#if DEBUG
-            Debug_Write(log);
-#endif
             DB_SystemLog dbLog = new DB_SystemLog()
             {
                 Time = DateTime.Now,

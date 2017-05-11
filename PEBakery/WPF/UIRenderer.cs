@@ -866,39 +866,6 @@ namespace PEBakery.WPF
 
             Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
-
-        private static void RunSectionInUI(RenderInfo r, Logger logger, SectionAddress addr, string logMsg)
-        {
-            
-            /*
-            if (Engine.Running == false)
-            {
-                Engine.Running = true;
-                r.Window.Model.ProgressRingActive = true;
-                BackgroundWorker worker = new BackgroundWorker();
-                worker.DoWork += (object sender, DoWorkEventArgs e) =>
-                {
-                    EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-                        s.SetLogOption(w.Setting);
-                    });
-                    long buildId = Engine.RunOneSection(s, addr, logMsg);
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
-#endif
-                };
-                worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-                {
-                    r.Window.Model.ProgressRingActive = false;
-                    Engine.Running = false;
-                };
-                worker.RunWorkerAsync();
-            }
-            */
-        }
         #endregion
     }
 

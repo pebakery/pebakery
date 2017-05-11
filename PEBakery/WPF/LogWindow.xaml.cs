@@ -201,13 +201,13 @@ namespace PEBakery.WPF
                     long buildId = model.SelectBuildEntries[idx].Item2; // Build Id
                     model.Logger.ExportBuildLog(LogExportType.Text, dialog.FileName, buildId);
                 }
-            }
 
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = true;
-            proc.StartInfo.Verb = "Open";
-            proc.StartInfo.FileName = dialog.FileName;
-            proc.Start();
+                Process proc = new Process();
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.FileName = dialog.FileName;
+                proc.Start();
+            }
         }
     }
 
@@ -339,7 +339,11 @@ namespace PEBakery.WPF
                     RefreshPlugin(SelectBuildEntries[value].Item2);
 
                     VariableListModel variableListModel = new VariableListModel();
-                    foreach (DB_Variable v in LogDB.Table<DB_Variable>().Where(x => x.BuildId == buildId))
+                    var vars = LogDB.Table<DB_Variable>()
+                        .Where(x => x.BuildId == buildId)
+                        .OrderBy(x => x.Type)
+                        .ThenBy(x => x.Key);
+                    foreach (DB_Variable v in vars)
                         variableListModel.Add(v);
                     VariableListModel = variableListModel;
                 }

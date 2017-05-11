@@ -45,11 +45,11 @@ namespace PEBakery.Core
                 catch (EmptyLineException) { } // Do nothing
                 catch (InvalidUICommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{e.Message} [{e.UICmd.RawLine}]"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{e.UICmd.RawLine}]"));
                 }
                 catch (InvalidCommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{e.Message} [{e.RawLine}]"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{e.RawLine}]"));
                 }
                 catch (Exception e)
                 {
@@ -167,7 +167,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 1;
                         const int optOpCount = 1; // Tooltip
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount + optOpCount - 1), StringEscaper.Unescape(args[0]));
                     }
@@ -177,7 +177,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 2;
                         const int optOpCount = 1; // Tooltip
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int fontSize);
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
@@ -198,7 +198,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 4;
                         const int optOpCount = 1; // [Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value);
                         int.TryParse(args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int min);
@@ -213,7 +213,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 1;
                         const int optOpCount = 2; // [SectionToRun],[Tooltip] - 여태까지 CheckBox에 Section 달린 건 못 봤는데?
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool _checked = false;
                         if (string.Equals(args[0], "True", StringComparison.OrdinalIgnoreCase))
@@ -257,7 +257,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 0;
                         const int optOpCount = 2;  // [URL],[Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         string url = null;
                         if (maxOpCount < args.Count)
@@ -271,7 +271,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 0;
                         const int optOpCount = 1; // [Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         return new UIInfo_TextFile(GetInfoTooltip(args, maxOpCount + optOpCount - 1));
                     }
@@ -284,7 +284,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 2;
                         const int optOpCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         string sectionName = args[0];
                         string picture = null;
@@ -312,7 +312,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 1;
                         const int optOpCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount + optOpCount), StringEscaper.Unescape(args[0]));
                     }
@@ -322,7 +322,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 1;
                         const int optOpCount = 2; // [SectionToRun],[Tooltip]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool selected = false;
                         if (string.Equals(args[0], "True", StringComparison.OrdinalIgnoreCase))
@@ -341,7 +341,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 0;
                         const int optOpCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount + optOpCount));
                     }
@@ -351,7 +351,7 @@ namespace PEBakery.Core
                         const int maxOpCount = 0;
                         const int optOpCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + optOpCount))
-                            throw new InvalidCommandException($"[{type}] can has [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
+                            throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + optOpCount}] arguments");
 
                         bool isFile = false;
                         if (maxOpCount < args.Count)

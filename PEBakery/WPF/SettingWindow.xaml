@@ -259,7 +259,6 @@
                         Margin="15, 15, 15, 0"
                         VerticalAlignment="Center"
                         Content="Enable Plugin Caching"
-                        ToolTip="Turn off this feature if your system is low in memory."
                         IsChecked="{Binding Plugin_EnableCache}">
                     </CheckBox>
                     <DockPanel

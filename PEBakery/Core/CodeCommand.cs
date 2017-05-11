@@ -1276,7 +1276,7 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistVar:
                 case BranchConditionType.ExistMacro:
                 case BranchConditionType.Ping:
-                case BranchConditionType.Question: // Can has 1 or 3 argument
+                case BranchConditionType.Question: // can have 1 or 3 argument
                     Arg1 = arg1;
                     break;
                 default:
@@ -1312,7 +1312,7 @@ namespace PEBakery.Core
             switch (type)
             {
                 case BranchConditionType.ExistRegKey:
-                case BranchConditionType.Question: // Can has 1 or 3 argument
+                case BranchConditionType.Question: // can have 1 or 3 argument
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
@@ -1559,7 +1559,7 @@ namespace PEBakery.Core
                             match = !match;
                     }
                     break;
-                case BranchConditionType.Question: // Can has 1 or 3 argument
+                case BranchConditionType.Question: // can have 1 or 3 argument
                     {
                         string question = StringEscaper.Preprocess(s, Arg1);
 

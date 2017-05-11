@@ -113,13 +113,13 @@ namespace PEBakery.WPF
             this.baseDir = argBaseDir;
 
             this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
-            this.setting = new SettingViewModel(settingFile);
+            App.Setting = this.setting = new SettingViewModel(settingFile);
             Logger.DebugLevel = setting.Log_DebugLevel;
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
-                logger = new Logger(logDBFile);
+                App.Logger = logger = new Logger(logDBFile);
                 logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
             catch (SQLiteException e)
@@ -181,7 +181,9 @@ namespace PEBakery.WPF
             int stage2LoadedCount = 0;
             int stage2CachedCount = 0;
 
-            LoadProgressBar.Value = 0;
+            Model.BottomProgressBarMinimum = 0;
+            Model.BottomProgressBarMaximum = 100;
+            Model.BottomProgressBarValue = 0;
             Model.ProgressRingActive = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
             loadWorker = new BackgroundWorker();
@@ -199,7 +201,7 @@ namespace PEBakery.WPF
                     projects = new ProjectCollection(baseDir, null);
 
                 allPluginCount = projects.PrepareLoad(out stage2LinksCount);
-                Dispatcher.Invoke(() => { LoadProgressBar.Maximum = allPluginCount + stage2LinksCount; });
+                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
 
                 // Let's load plugins parallelly
                 projects.Load(worker);
@@ -224,7 +226,7 @@ namespace PEBakery.WPF
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 Interlocked.Increment(ref loadedPluginCount);
-                LoadProgressBar.Value = loadedPluginCount;
+                Model.BottomProgressBarValue = loadedPluginCount;
                 string msg = string.Empty;
                 switch (e.ProgressPercentage)
                 {
@@ -646,6 +648,11 @@ namespace PEBakery.WPF
         {
             MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        private void ToolBoxButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
     #endregion
 
@@ -752,6 +759,39 @@ namespace PEBakery.WPF
             {
                 bottomStatusBarVisibility = value;
                 OnPropertyUpdate("BottomStatusBarVisibility");
+            }
+        }
+
+        private double bottomProgressBarMinimum = 0;
+        public double BottomProgressBarMinimum
+        {
+            get => bottomProgressBarMinimum;
+            set
+            {
+                bottomProgressBarMinimum = value;
+                OnPropertyUpdate("BottomProgressBarMinimum");
+            }
+        }
+
+        private double bottomProgressBarMaximum = 100;
+        public double BottomProgressBarMaximum
+        {
+            get => bottomProgressBarMaximum;
+            set
+            {
+                bottomProgressBarMaximum = value;
+                OnPropertyUpdate("BottomProgressBarMaximum");
+            }
+        }
+
+        private double bottomProgressBarValue = 0;
+        public double BottomProgressBarValue
+        {
+            get => bottomProgressBarValue;
+            set
+            {
+                bottomProgressBarValue = value;
+                OnPropertyUpdate("BottomProgressBarValue");
             }
         }
 
