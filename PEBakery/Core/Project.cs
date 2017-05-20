@@ -388,6 +388,7 @@ namespace PEBakery.Core
             }).ToArray();
             Task.WaitAll(tasks);
 
+            allPluginList = allPluginList.OrderBy(x => x.DirectFullPath).ToList();
             mainPlugin = allPluginList.Where(x => x.Level == MainLevel).FirstOrDefault();
             Debug.Assert(mainPlugin != null);
         }
@@ -495,7 +496,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, pathKey), this, projectRoot, p.Level);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, projectName, pathKey), this, projectRoot, p.Level);
                         nodeId = pTree.AddNode(nodeId, dirPlugin);
                         dirDict[key] = nodeId;
                     }

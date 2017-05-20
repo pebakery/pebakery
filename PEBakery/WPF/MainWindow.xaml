@@ -102,6 +102,18 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="FocusLightColor" TargetType="{x:Type TreeViewItem}">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="LightBlue"/>
+                </Trigger>
+                <!--
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="Background" Value="LightBlue"></Setter>
+                </Trigger>
+                -->
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <DockPanel>
         <Grid
@@ -148,37 +160,37 @@
                 HorizontalAlignment="Left"
                 IsActive="{Binding ProgressRingActive}">
             </custom:ProgressRing>
-            <Button Name="BuildButton" Grid.Row="0" Grid.Column="2" Margin="4" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+            <Button Grid.Row="0" Grid.Column="2" Margin="4" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="RefreshButton" Grid.Row="0" Grid.Column="3" Margin="4" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click">
+            <Button Grid.Row="0" Grid.Column="3" Margin="4" Style="{StaticResource BackgroundButton}" Click="RefreshButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="SettingButton" Grid.Row="0" Grid.Column="4" Margin="4" Style="{StaticResource BackgroundButton}" Click="SettingButton_Click">
+            <Button Grid.Row="0" Grid.Column="4" Margin="4" Style="{StaticResource BackgroundButton}" Click="SettingButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Settings" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="LogButton" Grid.Row="0" Grid.Column="5" Margin="4" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+            <Button Grid.Row="0" Grid.Column="5" Margin="4" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="ToolBoxButton" Grid.Row="0" Grid.Column="6" Margin="4" Style="{StaticResource BackgroundButton}" Click="ToolBoxButton_Click">
+            <Button Grid.Row="0" Grid.Column="6" Margin="4" Style="{StaticResource BackgroundButton}" Click="UtilityButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconModern Kind="BoxLayered" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="UpdateButton" Grid.Row="0" Grid.Column="7" Margin="4" Style="{StaticResource BackgroundButton}" Click="UpdateButton_Click">
+            <Button Grid.Row="0" Grid.Column="7" Margin="4" Style="{StaticResource BackgroundButton}" Click="UpdateButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Download" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Name="AboutButton" Grid.Row="0" Grid.Column="8" Margin="4" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+            <Button Grid.Row="0" Grid.Column="8" Margin="4" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
@@ -263,156 +275,278 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <TreeView
-                x:Name="MainTreeView"
+            <Grid
                 Grid.Column="0"
-                Background="PaleGreen"
-                SelectedItemChanged="MainTreeView_SelectedItemChanged"
-                DataContext="{Binding Tree}"
-                ItemsSource="{Binding Child}"
-                Loaded="MainTreeView_Loaded"
-                VirtualizingStackPanel.IsVirtualizing="True"
-                VirtualizingStackPanel.VirtualizationMode="Recycling"
                 Visibility="{Binding NormalInterfaceVisibility}">
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Child}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="20"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="20"/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
+                <TreeView
+                    x:Name="MainTreeView"
+                    Background="PaleGreen"
+                    DataContext="{Binding MainTree}"
+                    ItemsSource="{Binding Children}"
+                    Loaded="MainTreeView_Loaded"
+                    SelectedItemChanged="MainTreeView_SelectedItemChanged"
+                    VirtualizingStackPanel.IsVirtualizing="True"
+                    VirtualizingStackPanel.VirtualizationMode="Recycling">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type local:TreeViewModel}" ItemsSource="{Binding Children}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="20"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
 
-                            <CheckBox
-                                Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
-                                Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False"></CheckBox>
-                            <ContentPresenter
-                                Content="{Binding Icon}"
-                                Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
-                            </ContentPresenter>
-                            <TextBlock
-                                Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
-                                Text="{Binding Text}"></TextBlock>
-                        </Grid>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
-                    </Style>
-                </TreeView.ItemContainerStyle>
+                                <CheckBox
+                                    Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                                    Visibility="{Binding CheckBoxVisible}" IsChecked="{Binding Checked, Mode=TwoWay}" Focusable="False">
+                                </CheckBox>
+                                <ContentPresenter
+                                    Content="{Binding Icon}"
+                                    Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
+                                </ContentPresenter>
+                                <TextBlock
+                                    Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
+                                    Text="{Binding Text}">
+                                </TextBlock>
+                            </Grid>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            </Grid>
+            <Grid
+                Grid.Column="0"
+                Visibility="{Binding BuildInterfaceVisibility}">
+                <TreeView
+                    Background="PaleGreen"
+                    DataContext="{Binding BuildTree}"
+                    ItemsSource="{Binding Children}"
+                    VirtualizingStackPanel.IsVirtualizing="True"
+                    VirtualizingStackPanel.VirtualizationMode="Recycling">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate
+                            DataType="{x:Type local:TreeViewModel}"
+                            ItemsSource="{Binding Children}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="20"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
 
-            </TreeView>
+                                <ContentPresenter
+                                    Content="{Binding Icon}"
+                                    Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,2,3,2">
+                                </ContentPresenter>
+                                <TextBlock
+                                    Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                                    Text="{Binding Text}"
+                                    FontWeight="{Binding BuildFontWeight}"
+                                    Foreground="{Binding BuildBrush}">
+                                </TextBlock>
+                            </Grid>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="Focusable" Value="False" />
+                            <Setter Property="IsExpanded" Value="True" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            </Grid>
             <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
             <DockPanel Grid.Column="1" Background="White">
-                <Border DockPanel.Dock="Top" Height="100" Background="LightYellow">
-                    <Grid>
+                <Grid DockPanel.Dock="Top" Height="100" Background="LightYellow">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ContentPresenter
+                        Name="PluginLogo"
+                        Grid.Row="0" Grid.Column="0"
+                        Margin="10"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        UseLayoutRounding="True">
+                    </ContentPresenter>
+                    <Grid
+                        Grid.Row="0" Grid.Column="1"
+                        Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>
-                            <RowDefinition/>
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="70" />
                         </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
 
-                        <ContentPresenter
-                            Name="PluginLogo"
-                            Grid.Row="0" Grid.Column="0"
-                            Margin="10"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            UseLayoutRounding="True">
-                        </ContentPresenter>
-                        <Grid
-                            Grid.Row="0" Grid.Column="1"
-                            Margin="0, 0, 6, 0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="30" />
-                                <RowDefinition Height="70" />
-                            </Grid.RowDefinitions>
-
-                            <DockPanel
-                                Grid.Row="0">
-                                <TextBlock
-                                    DockPanel.Dock="Right"
-                                    Name="PluginVersion"
-                                    Text="{Binding PluginVersionText}"
-                                    FontWeight="Bold" FontSize="14" 
-                                    VerticalAlignment="Center"/>
-                                <TextBlock
-                                    DockPanel.Dock="Right"
-                                    Name="PluginAuthor"
-                                    Text="{Binding PluginAuthorText}" 
-                                    Margin="0, 0, 10, 0"
-                                    VerticalAlignment="Center"
-                                    HorizontalAlignment="Right"
-                                    FontStretch="Condensed"
-                                    TextWrapping="Wrap" />
-                                <TextBlock
-                                    DockPanel.Dock="Left"
-                                    Name="PluginTitle"
-                                    FontStretch="SemiCondensed"
-                                    Text="{Binding PluginTitleText}" 
-                                    FontWeight="Bold" FontSize="16"
-                                    VerticalAlignment="Center"
-                                    TextWrapping="Wrap"/>
-                            </DockPanel>
+                        <DockPanel Grid.Row="0">
                             <TextBlock
-                                Grid.Row="1" Grid.Column="0"
-                                FontWeight="Medium"
-                                Name="PluginDescription"
-                                Text="{Binding PluginDescriptionText}"
+                                DockPanel.Dock="Right"
+                                Name="PluginVersion"
+                                Text="{Binding PluginVersionText}"
+                                FontWeight="Bold" FontSize="14" 
+                                VerticalAlignment="Center"/>
+                            <TextBlock
+                                DockPanel.Dock="Right"
+                                Name="PluginAuthor"
+                                Text="{Binding PluginAuthorText}" 
+                                Margin="0, 0, 10, 0"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Right"
+                                FontStretch="Condensed"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                DockPanel.Dock="Left"
+                                Name="PluginTitle"
                                 FontStretch="SemiCondensed"
+                                Text="{Binding PluginTitleText}" 
+                                FontWeight="Bold" FontSize="16"
                                 VerticalAlignment="Center"
                                 TextWrapping="Wrap"/>
-                        </Grid>
-
-                        <Grid
-                            Grid.Row="0"
-                            Grid.RowSpan="2" Grid.Column="3"
-                            Width="30"
-                            Visibility="{Binding NormalInterfaceVisibility}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="30" />
-                                <RowDefinition Height="30" />
-                                <RowDefinition Height="30" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button
-                                Name="PluginRunButton"
-                                Grid.Row="0" Grid.Column="0"
-                                Click="PluginRunButton_Click">
-                                <Button.Content>
-                                    <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="5"/>
-                                </Button.Content>
-                            </Button>
-                            <Button
-                                Name="PluginEditButton"
-                                Grid.Row="1" Grid.Column="0"
-                                Click="PluginEditButton_Click">
-                                <Button.Content>
-                                    <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="5"/>
-                                </Button.Content>
-                            </Button>
-                            <Button
-                                Name="PluginRefreshButton"
-                                Grid.Row="2" Grid.Column="0"
-                                Click="PluginRefreshButton_Click">
-                                <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
-                            </Button>
-                        </Grid>
+                        </DockPanel>
+                        <TextBlock
+                            Grid.Row="1" Grid.Column="0"
+                            FontWeight="Medium"
+                            Name="PluginDescription"
+                            Text="{Binding PluginDescriptionText}"
+                            FontStretch="SemiCondensed"
+                            VerticalAlignment="Center"
+                            TextWrapping="Wrap">
+                        </TextBlock>
                     </Grid>
-                </Border>
 
-                <ScrollViewer
+                    <Grid
+                        Grid.Row="0"
+                        Grid.RowSpan="2" Grid.Column="3"
+                        Width="30"
+                        Visibility="{Binding NormalInterfaceVisibility}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="30" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            Grid.Row="0" Grid.Column="0"
+                            Click="PluginRunButton_Click">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="5"/>
+                            </Button.Content>
+                        </Button>
+                        <Button
+                            Grid.Row="1" Grid.Column="0"
+                            Click="PluginEditButton_Click">
+                            <Button.Content>
+                                <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="5"/>
+                            </Button.Content>
+                        </Button>
+                        <Button
+                            Grid.Row="2" Grid.Column="0"
+                            Click="PluginRefreshButton_Click">
+                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <Grid
                     DockPanel.Dock="Top" 
+                    HorizontalAlignment="Stretch"
+                    Visibility="{Binding BuildInterfaceVisibility}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="200"></RowDefinition>
+                        <RowDefinition Height="50"></RowDefinition>
+                        <RowDefinition Height="60"></RowDefinition>
+                        <RowDefinition Height="60"></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        TextAlignment="Center"
+                        Margin="20, 10, 20, 10"
+                        FontSize="24"
+                        FontWeight="Medium"
+                        Text="1 / 100">
+                    </TextBlock>
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Margin="0, 10, 20, 10"
+                        TextWrapping="Wrap"
+                        FontSize="18"
+                        Text="Test Interface">
+                    </TextBlock>
+
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        TextAlignment="Center"
+                        FontSize="18"
+                        FontWeight="Medium"
+                        Text="Command">
+                    </TextBlock>
+                    <ProgressBar
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Margin="0, 10, 20, 10">
+                    </ProgressBar>
+
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        TextAlignment="Center"
+                        FontSize="22"
+                        FontWeight="Medium"
+                        Text="Plugin">
+                    </TextBlock>
+                    <ProgressBar
+                        Grid.Row="2"
+                        Grid.Column="1"
+                        Margin="0, 10, 20, 10">
+                    </ProgressBar>
+
+                    <TextBlock
+                        Grid.Row="3"
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        TextAlignment="Center"
+                        FontSize="22"
+                        FontWeight="Medium"
+                        Text="Build">
+                    </TextBlock>
+                    <ProgressBar
+                        Grid.Row="3"
+                        Grid.Column="1"
+                        Margin="0, 10, 20, 10">
+                    </ProgressBar>
+                </Grid>
+                
+                <!-- This element should be placed at last, for max height stretch -->
+                <ScrollViewer
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     HorizontalScrollBarVisibility="Auto"
@@ -428,11 +562,6 @@
                     </Canvas>
                 </ScrollViewer>
 
-                <Grid
-                    DockPanel.Dock="Top" 
-                    Visibility="{Binding BuildInterfaceVisibility}">
-                    <TextBlock Text="Test Build Interface"></TextBlock>
-                </Grid>
             </DockPanel>
         </Grid>
     </DockPanel>
