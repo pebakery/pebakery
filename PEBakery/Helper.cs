@@ -49,7 +49,7 @@ using System.Security.Cryptography;
 // P/invoke
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
-using Microsoft.Win32.Interop;
+using BetterWin32Errors;
 
 // Library
 using Svg;
@@ -971,7 +971,7 @@ namespace PEBakery.Helper
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
         static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
         [DllImport("advapi32.dll", SetLastError = true)]
-        static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
+        public static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
         static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -1012,29 +1012,19 @@ namespace PEBakery.Helper
         public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
         public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
 
-        public static void HandleWin32Exception(string message)
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-            Win32Exception e = new Win32Exception(errorCode);
-            throw new Win32Exception($"{message}, Error [{errorCode}, {e.Message}]");
-        }
-
         public static void GetAdminPrivileges()
         {
-            IntPtr hToken;
             TOKEN_PRIVILEGES pRestoreToken = new TOKEN_PRIVILEGES();
             TOKEN_PRIVILEGES pBackupToken = new TOKEN_PRIVILEGES();
-            LUID restoreLUID;
-            LUID backupLUID;
 
-            if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out hToken))
-                HandleWin32Exception("OpenProcessToken failed");
+            if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, out IntPtr hToken))
+                throw new BetterWin32Errors.Win32Exception("OpenProcessToken failed");
 
-            if (!LookupPrivilegeValue(null, "SeRestorePrivilege", out restoreLUID))
-                HandleWin32Exception("LookupPrivilegeValue failed");
+            if (!LookupPrivilegeValue(null, "SeRestorePrivilege", out LUID restoreLUID))
+                throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
 
-            if (!LookupPrivilegeValue(null, "SeBackupPrivilege", out backupLUID))
-                HandleWin32Exception("LookupPrivilegeValue failed");
+            if (!LookupPrivilegeValue(null, "SeBackupPrivilege", out LUID backupLUID))
+                throw new BetterWin32Errors.Win32Exception("LookupPrivilegeValue failed");
 
             pRestoreToken.Count = 1;
             pRestoreToken.Luid = restoreLUID;
@@ -1045,15 +1035,23 @@ namespace PEBakery.Helper
             pBackupToken.Attr = SE_PRIVILEGE_ENABLED;
 
             if (!AdjustTokenPrivileges(hToken, false, ref pRestoreToken, 0, IntPtr.Zero, IntPtr.Zero))
-                HandleWin32Exception("AdjustTokenPrivileges failed");
-            if (Marshal.GetLastWin32Error() == ResultWin32.ERROR_NOT_ALL_ASSIGNED)
-                throw new Win32Exception($"AdjustTokenPrivileges failed, Try running this program with Administrator privilege.");
+            {
+                Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                if (error == Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                else
+                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+            }
             CloseHandle(hToken);
 
             if (!AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
-                HandleWin32Exception("AdjustTokenPrivileges failed");
-            if (Marshal.GetLastWin32Error() == ResultWin32.ERROR_NOT_ALL_ASSIGNED)
-                throw new Win32Exception($"AdjustTokenPrivileges failed, Try running this program with Administrator privilege.");
+            {
+                Win32Error error = BetterWin32Errors.Win32Exception.GetLastWin32Error();
+                if (error == Win32Error.ERROR_NOT_ALL_ASSIGNED)
+                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed, try running this program with Administrator privilege.");
+                else
+                    throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
+            }
             CloseHandle(hToken);
         }
 
