@@ -89,7 +89,11 @@ namespace PEBakery.Core
             s.MainViewModel.PluginAuthorText = p.Author;
             s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySectionName}]...";
 
-            s.MainViewModel.BuildPluginProgressBarMax = s.CurrentPlugin.Sections.Count;
+            long allLineCount = 0;
+            foreach (var kv in s.CurrentPlugin.Sections.Where(x => x.Value.Type == SectionType.Code))
+                allLineCount += kv.Value.Lines.Count;
+
+            s.MainViewModel.BuildPluginProgressBarMax = allLineCount;
             s.MainViewModel.BuildPluginProgressBarValue = 0;
             s.MainViewModel.BuildFullProgressBarValue = s.CurrentPluginIdx;
 
@@ -131,7 +135,6 @@ namespace PEBakery.Core
                     // End of Plugin
                     s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
                     s.Logger.Build_Write(s, Logger.LogSeperator);
-                    s.Logger.Build_Write(s, string.Empty);
 
                     // OnBuildExit event callback
                     Engine.CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
@@ -149,6 +152,7 @@ namespace PEBakery.Core
                         Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
                         break;
                     }
+                    s.Logger.Build_Write(s, string.Empty);
 
                     // Run Next Plugin
                     FinishRunPlugin(s.PluginId);
@@ -185,6 +189,8 @@ namespace PEBakery.Core
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             RunCommands(s, addr, codes, paramDict, depth, callback);
+
+            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
         }
        
         public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
@@ -232,7 +238,6 @@ namespace PEBakery.Core
                 }
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
                 s.Logger.Build_Write(s, Logger.LogSeperator);
-                s.Logger.Build_Write(s, string.Empty);
                 cbCmd = null;
             }
         }
