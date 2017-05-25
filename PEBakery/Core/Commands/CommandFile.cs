@@ -105,7 +105,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    File.Copy(srcFile, destFullPath, false);
+                    File.Copy(srcFile, destFullPath, true);
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]", cmd));
                 }
                 else // DestPath not exist, or it is file

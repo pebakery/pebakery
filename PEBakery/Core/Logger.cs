@@ -62,7 +62,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = null;
-            Depth = -1;
+            Depth = 0;
         }
 
         public LogInfo(LogState state, string message, CodeCommand command)
@@ -70,7 +70,7 @@ namespace PEBakery.Core
             State = state;
             Message = message;
             Command = command;
-            Depth = -1;
+            Depth = 0;
         }
 
         public LogInfo(LogState state, string message, int depth)
@@ -96,7 +96,7 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = null;
-            Depth = -1;
+            Depth = 0;
         }
 
         public LogInfo(LogState state, Exception e, CodeCommand command)
@@ -104,7 +104,7 @@ namespace PEBakery.Core
             State = state;
             Message = Logger.LogExceptionMessage(e);
             Command = command;
-            Depth = -1;
+            Depth = 0;
         }
 
         public LogInfo(LogState state, Exception e, int depth)

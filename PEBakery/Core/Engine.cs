@@ -44,7 +44,6 @@ namespace PEBakery.Core
         public Engine(EngineState state)
         {
             s = state;
-            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
         }
 
         /// <summary>
@@ -57,21 +56,33 @@ namespace PEBakery.Core
             // Turn off System,Log,Off
             s.Logger.SuspendLog = false;
 
+            // Set CurrentPlugin
+            // Note: s.CurrentPluginIdx is not touched here
             if (p == null)
                 p = s.CurrentPlugin;
             else
                 s.CurrentPlugin = p;
-            PluginSection section = p.Sections["Process"];
-            s.Logger.Build_Write(s, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
-            s.Variables.ResetVariables(VarsType.Local);
-            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
-
-            s.CurSectionParams = new Dictionary<int, string>();
-
+            // Init Per-Plugin Log
             s.PluginId = s.Logger.Build_Plugin_Init(buildId, s.CurrentPlugin, s.CurrentPluginIdx + 1);
 
-            // MainViewModel
+            // Log Plugin Build Start Message
+            string msg;
+            if (s.RunOnePlugin && s.EntrySectionName.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
+                msg = $"Processing section [{s.EntrySectionName}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+            else
+                msg = $"Processing plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+            s.Logger.Build_Write(s, msg);
+            s.Logger.Build_Write(s, Logger.LogSeperator);
+
+            // Load Default Per-Plugin Variables
+            s.Variables.ResetVariables(VarsType.Local);
+            s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin));
+
+            // Current Section Parameter - empty
+            s.CurSectionParams = new Dictionary<int, string>();
+
+            // Set Interface using MainWindow, MainViewModel
             s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
             s.MainViewModel.PluginVersionText = $"v{p.Version}";
@@ -94,6 +105,7 @@ namespace PEBakery.Core
 
         private void FinishRunPlugin(long pluginId)
         {
+            // Finish Per-Plugin Log
             s.Logger.Build_Plugin_Finish(pluginId);
         }
 
@@ -118,6 +130,8 @@ namespace PEBakery.Core
 
                     // End of Plugin
                     s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
+                    s.Logger.Build_Write(s, Logger.LogSeperator);
+                    s.Logger.Build_Write(s, string.Empty);
 
                     // OnBuildExit event callback
                     Engine.CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
@@ -144,9 +158,6 @@ namespace PEBakery.Core
                 }
 
                 s.Logger.Build_Finish(s.BuildId);
-
-                Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
 
                 return s.BuildId;
             });
@@ -219,7 +230,9 @@ namespace PEBakery.Core
                     s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+                s.Logger.Build_Write(s, Logger.LogSeperator);
+                s.Logger.Build_Write(s, string.Empty);
                 cbCmd = null;
             }
         }

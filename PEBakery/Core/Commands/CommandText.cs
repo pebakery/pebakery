@@ -48,11 +48,15 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
+            s.MainViewModel.BuildCommandProgressBarValue = 100;
+
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             // Detect encoding of text
             // If text does not exists, create blank file
@@ -105,11 +109,15 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
+            s.MainViewModel.BuildCommandProgressBarValue = 100;
+
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             List<string> prepLines = new List<string>();
             foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
@@ -123,6 +131,8 @@ namespace PEBakery.Core.Commands
                 b.AppendLine(line);
             string linesToWrite = b.ToString();
 
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
             // Detect encoding of text
             // If text does not exists, create blank file
             Encoding encoding = Encoding.UTF8;
@@ -130,6 +140,8 @@ namespace PEBakery.Core.Commands
                 encoding = FileHelper.DetectTextEncoding(fileName);
             else
                 FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             if (mode == TXTAddLineMode.Prepend)
             {

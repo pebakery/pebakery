@@ -934,6 +934,15 @@ namespace PEBakery.WPF
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
+
+                if (showProgress)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MainWindow w = Application.Current.MainWindow as MainWindow;
+                        w.DrawPlugin(addr.Plugin);
+                    });
+                }
             }
         }
         #endregion
