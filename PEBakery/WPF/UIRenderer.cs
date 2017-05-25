@@ -34,6 +34,8 @@ using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using System.Windows.Threading;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace PEBakery.WPF
 {
@@ -292,6 +294,15 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
+
+            if (info.SectionName != null)
+            {
+                checkBox.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                };
+            }
             
             checkBox.Checked += (object sender, RoutedEventArgs e) =>
             {
@@ -480,7 +491,7 @@ namespace PEBakery.WPF
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                Engine.RunOneSectionInUI(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
+                UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
@@ -648,6 +659,15 @@ namespace PEBakery.WPF
                 IsChecked = info.Selected,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
+
+            if (info.SectionName != null)
+            {
+                radio.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                };
+            }
 
             radio.Checked += (object sender, RoutedEventArgs e) =>
             {
@@ -865,6 +885,56 @@ namespace PEBakery.WPF
                 keys.Add(new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
 
             Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
+        }
+
+        private static async void RunOneSection(SectionAddress addr, string logMsg, bool showProgress)
+        {
+            if (Engine.WorkingLock == 0)
+            {
+                Interlocked.Increment(ref Engine.WorkingLock);
+
+                SettingViewModel setting = null;
+                Logger logger = null;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    w.Model.ProgressRingActive = true;
+
+                    // Populate BuildTree
+                    w.Model.BuildTree.Children.Clear();
+                    w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
+                    w.CurBuildTree = null;
+
+                    setting = w.Setting;
+                    logger = w.Logger;
+                });
+                    
+                EngineState s = new EngineState(addr.Plugin.Project, logger, addr.Plugin, addr.Section.SectionName);
+                s.SetLogOption(setting);
+
+                Engine.WorkingEngine = new Engine(s);
+
+                // Build Start, Switch to Build View
+                if (showProgress)
+                    s.MainViewModel.SwitchNormalBuildInterface = false;
+
+                // Run
+                long buildId = await Engine.WorkingEngine.Run(logMsg);
+
+                // Build Ended, Switch to Normal View
+                if (showProgress)
+                    s.MainViewModel.SwitchNormalBuildInterface = true;
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+#endif
+
+                // Turn off Progressring
+                s.MainViewModel.ProgressRingActive = false;
+
+                Engine.WorkingEngine = null;
+                Interlocked.Decrement(ref Engine.WorkingLock);
+            }
         }
         #endregion
     }

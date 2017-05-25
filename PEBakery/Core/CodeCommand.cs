@@ -175,6 +175,17 @@ namespace PEBakery.Core
 
     #region CodeInfo 01 - File
     [Serializable]
+    public class CodeInfo_DirMake : CodeInfo
+    {
+        public string DestDir;
+
+        public CodeInfo_DirMake(string destDir)
+        {
+            DestDir = destDir;
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_Expand : CodeInfo
     {
         public string SrcCab;
@@ -1925,6 +1936,71 @@ namespace PEBakery.Core
                 b.Append(VarNum);
             }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Exit : CodeInfo
+    { // Exit,<Message>[,NOWARN]
+        public string Message;
+        public bool NoWarn;
+
+        public CodeInfo_Exit(string message, bool noWarn)
+        {
+            Message = message;
+            NoWarn = noWarn;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Halt : CodeInfo
+    { // Halt,<Message>[,NOWARN]
+        public string Message;
+
+        public CodeInfo_Halt(string message)
+        {
+            Message = message;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Wait : CodeInfo
+    { // Wait,<Second>
+        public string Second;
+
+        public CodeInfo_Wait(string second)
+        {
+            Second = second;
+        }
+    }
+
+    [Serializable]
+    public enum BeepType { OK = 0, Error, Asterisk, Confirmation }
+
+    [Serializable]
+    public class CodeInfo_Beep : CodeInfo
+    { // Beep,<Type>
+        public string Type;
+
+        public CodeInfo_Beep(string type)
+        {
+            Type = type;
+        }
+
+        public BeepType TypeStringToEnum(EngineState s)
+        {
+            string typeStr = StringEscaper.Preprocess(s, Type);
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out BeepType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(BeepType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid BeepType [{typeStr}]");
+
+            return type;
         }
     }
     #endregion

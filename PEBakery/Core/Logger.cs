@@ -269,6 +269,8 @@ namespace PEBakery.Core
         public event PluginUpdateEventHandler PluginUpdated;
         public event VariableUpdateEventHandler VariableUpdated;
 
+        public static readonly string LogSeperator = "--------------------------------------------------------------------------------";
+
         public Logger(string path)
         {
             DB = new LogDB(path);
@@ -314,6 +316,8 @@ namespace PEBakery.Core
                     VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
             }
+
+            System_Write(new LogInfo(LogState.Info, $"Build [{name}] started"));
             
             return dbBuild.Id;
         }
@@ -323,6 +327,8 @@ namespace PEBakery.Core
             DB_BuildInfo dbBuild = buildDict[id];
             dbBuild.EndTime = DateTime.Now;
             DB.Update(dbBuild);
+
+            System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
 
             buildDict.Remove(id);
         }

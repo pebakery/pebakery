@@ -69,7 +69,7 @@ namespace PEBakery.Core.Commands
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    if (w.CurMainTree.Node.Data == cmd.Addr.Plugin)
+                    if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
                         w.DrawPlugin(cmd.Addr.Plugin);
                 });
             }
@@ -127,7 +127,7 @@ namespace PEBakery.Core.Commands
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Node.Data == cmd.Addr.Plugin)
+                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
                     w.DrawPlugin(cmd.Addr.Plugin);
             });
 

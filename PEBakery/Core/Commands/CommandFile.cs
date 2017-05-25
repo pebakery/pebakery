@@ -31,6 +31,160 @@ namespace PEBakery.Core.Commands
 {
     public static class CommandFile
     {
+        public static List<LogInfo> DirMake(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirMake));
+            CodeInfo_DirMake info = cmd.Info as CodeInfo_DirMake;
+
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            Directory.CreateDirectory(destDir);
+            logs.Add(new LogInfo(LogState.Success, $"Created Directory [{destDir}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> FileCopy(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileCopy));
+            CodeInfo_FileCopy info = cmd.Info as CodeInfo_FileCopy;
+
+            string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            // Check destPath is directory
+            bool destPathExists = false;
+            bool destPathIsDir = false;
+            if (Directory.Exists(destPath))
+            {
+                destPathExists = true;
+                destPathIsDir = true;
+            }
+            else if (File.Exists(destPath))
+            {
+                destPathExists = true;
+            }
+
+            // Check srcFileName contains wildcard
+            if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
+            { // No Wildcard
+                if (destPathIsDir) // DestPath exists, and it is directory
+                {
+                    Directory.CreateDirectory(destPath);
+                    string destFullPath = Path.Combine(destPath, Path.GetFileName(srcFile));
+                    if (File.Exists(destFullPath))
+                    {
+                        if (info.Preserve)
+                        {
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destFullPath}]", cmd));
+                            return logs;
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destFullPath}] will be overwritten", cmd));
+                        }
+                    }
+
+                    File.Copy(srcFile, destFullPath, false);
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]", cmd));
+                }
+                else // DestPath not exist, or it is file
+                {
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
+                    if (destPathExists)
+                    {
+                        if (info.Preserve)
+                        {
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destPath}]", cmd));
+                            return logs;
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten", cmd));
+                        }
+                    }
+                        
+                    File.Copy(srcFile, destPath, true);
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]", cmd));
+                }
+            }
+            else
+            { // With Wildcard
+                // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
+                string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
+
+                string[] files;
+                if (info.NoRec)
+                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile));
+                else
+                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
+
+                if (0 < files.Length)
+                { // One or more file will be copied
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]", cmd));
+
+                    if (destPathIsDir || !destPathExists)
+                    {
+                        if (destPathExists == false)
+                            Directory.CreateDirectory(destPath);
+
+                        foreach (string f in files)
+                        {
+                            string destFullPath = Path.Combine(destPath, Path.GetFileName(f));
+                            if (File.Exists(destFullPath))
+                            {
+                                if (info.Preserve)
+                                {
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destFullPath}]", cmd));
+                                    continue;
+                                }
+                                else
+                                {
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destFullPath}] will be overwritten", cmd));
+                                }
+                            }
+
+                            File.Copy(f, destFullPath, true);
+                            logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]", cmd));
+                        }
+
+                        logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Error, "<DestPath> must be directory when using wildcard in <SrcFile>", cmd));
+                        return logs;
+                    }
+                }
+                else
+                { // No file will be copied
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{srcFile}] not found", cmd));
+                }
+            }
+
+            return logs;
+        }
+
         public static List<LogInfo> FileCreateBlank(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -67,7 +221,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+            Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
             FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
             FileHelper.WriteTextBOM(fs, encoding).Close();
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));

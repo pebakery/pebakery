@@ -21,9 +21,12 @@ using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
@@ -79,6 +82,82 @@ namespace PEBakery.Core.Commands
             }
 
             logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, b.ToString()));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Exit(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit));
+            CodeInfo_Exit info = cmd.Info as CodeInfo_Exit;
+
+            s.PassCurrentPluginFlag = true;
+
+            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, info.Message, cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Halt(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
+            CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
+
+            s.ErrorHaltFlag = true;
+
+            logs.Add(new LogInfo(LogState.Error, info.Message, cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Wait(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait));
+            CodeInfo_Wait info = cmd.Info as CodeInfo_Wait;
+
+            if (int.TryParse(info.Second, NumberStyles.Integer, CultureInfo.InvariantCulture, out int second) == false)
+                throw new InvalidCodeCommandException($"Argument [{info.Second}] is not valid number", cmd);
+
+            // Task.Run(() => Thread.Sleep(second * 1000)).Wait();
+            Task.Delay(second * 1000).Wait();
+
+            logs.Add(new LogInfo(LogState.Success, $"Slept [{info.Second}] seconds", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Beep(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
+            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
+
+            BeepType type = info.TypeStringToEnum(s);
+
+            switch (type)
+            {
+                case BeepType.OK:
+                    SystemSounds.Beep.Play();
+                    break;
+                case BeepType.Error:
+                    SystemSounds.Exclamation.Play();
+                    break;
+                case BeepType.Confirmation:
+                    SystemSounds.Question.Play();
+                    break;
+                case BeepType.Asterisk:
+                    SystemSounds.Asterisk.Play();
+                    break;
+            }
+
+            logs.Add(new LogInfo(LogState.Success, $"Played sound [{type}]", cmd));
 
             return logs;
         }

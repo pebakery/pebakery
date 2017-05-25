@@ -273,19 +273,22 @@ namespace PEBakery.WPF
                 project_SourceDirectoryIndex = value;
 
                 Project project = Projects[Project_SelectedIndex];
-                project.Variables.SetFixedValue("SourceDir", Project_SourceDirectoryList[value]);
-
-                StringBuilder b = new StringBuilder(Project_SourceDirectoryList[value]);
-                for (int x = 0; x < Project_SourceDirectoryList.Count; x++)
+                if (0 <= value && value < Project_SourceDirectoryList.Count)
                 {
-                    if (x == value)
-                        continue;
+                    project.Variables.SetFixedValue("SourceDir", Project_SourceDirectoryList[value]);
 
-                    b.Append(",");
-                    b.Append(Project_SourceDirectoryList[x]);
+                    StringBuilder b = new StringBuilder(Project_SourceDirectoryList[value]);
+                    for (int x = 0; x < Project_SourceDirectoryList.Count; x++)
+                    {
+                        if (x == value)
+                            continue;
+
+                        b.Append(",");
+                        b.Append(Project_SourceDirectoryList[x]);
+                    }
+                    Ini.SetKey(project.MainPlugin.FullPath, "Main", "SourceDir", b.ToString());
                 }
-                Ini.SetKey(project.MainPlugin.FullPath, "Main", "SourceDir", b.ToString());
-
+                
                 OnPropertyUpdate("Project_SourceDirectoryIndex");
             }
         }

@@ -365,8 +365,13 @@
                 </TreeView>
             </Grid>
             <GridSplitter Width="3" HorizontalAlignment="Right" VerticalAlignment="Stretch" ResizeBehavior="CurrentAndNext"/>
-            <DockPanel Grid.Column="1" Background="White">
-                <Grid DockPanel.Dock="Top" Height="100" Background="LightYellow">
+            <Grid Grid.Column="1" Background="White">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="100"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Background="LightYellow">
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
@@ -465,88 +470,94 @@
                 </Grid>
 
                 <Grid
-                    DockPanel.Dock="Top" 
+                    Grid.Row="1"
                     HorizontalAlignment="Stretch"
                     Visibility="{Binding BuildInterfaceVisibility}">
+
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="200"></RowDefinition>
-                        <RowDefinition Height="50"></RowDefinition>
-                        <RowDefinition Height="60"></RowDefinition>
-                        <RowDefinition Height="60"></RowDefinition>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="25" />
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="25" />
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="25" />
+                        <RowDefinition Height="38" />
+                        <RowDefinition Height="10" />
                     </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="140"></ColumnDefinition>
-                        <ColumnDefinition></ColumnDefinition>
-                    </Grid.ColumnDefinitions>
 
-                    <TextBlock
+                    <Border
                         Grid.Row="0"
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        TextAlignment="Center"
-                        Margin="20, 10, 20, 10"
-                        FontSize="24"
-                        FontWeight="Medium"
-                        Text="1 / 100">
-                    </TextBlock>
-                    <TextBlock
-                        Grid.Row="0"
-                        Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Margin="0, 10, 20, 10"
-                        TextWrapping="Wrap"
-                        FontSize="18"
-                        Text="Test Interface">
-                    </TextBlock>
+                        BorderBrush="Gray"
+                        BorderThickness="1"
+                        Margin="20, 20, 20, 20">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock
+                                TextAlignment="Left"
+                                Margin="10, 10, 10, 0"
+                                TextWrapping="Wrap"
+                                FontWeight="SemiBold"
+                                Text="Message">
+                            </TextBlock>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                TextAlignment="Left"
+                                Margin="10, 10, 10, 0"
+                                TextWrapping="Wrap"
+                                Text="{Binding BuildEchoMessage}">
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
                     <TextBlock
                         Grid.Row="1"
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        TextAlignment="Center"
-                        FontSize="18"
-                        FontWeight="Medium"
-                        Text="Command">
+                        Margin="20, 0, 20, 5"
+                        TextAlignment="Left"
+                        FontWeight="SemiBold"
+                        Text="Command Progress">
                     </TextBlock>
-                    <ProgressBar
-                        Grid.Row="1"
-                        Grid.Column="1"
-                        Margin="0, 10, 20, 10">
-                    </ProgressBar>
 
-                    <TextBlock
-                        Grid.Row="2"
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        TextAlignment="Center"
-                        FontSize="22"
-                        FontWeight="Medium"
-                        Text="Plugin">
-                    </TextBlock>
                     <ProgressBar
                         Grid.Row="2"
-                        Grid.Column="1"
-                        Margin="0, 10, 20, 10">
+                        Margin="20, 0, 20, 10"
+                        Minimum="0"
+                        Maximum="{Binding BuildCommandProgressBarMax}"
+                        Value="{Binding BuildCommandProgressBarValue}">
                     </ProgressBar>
 
                     <TextBlock
                         Grid.Row="3"
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        TextAlignment="Center"
-                        FontSize="22"
-                        FontWeight="Medium"
-                        Text="Build">
+                        Margin="20, 0, 20, 5"
+                        TextAlignment="Left"
+                        FontWeight="SemiBold"
+                        Text="Plugin Progress">
+                    </TextBlock>
+
+                    <ProgressBar
+                        Grid.Row="4"
+                        Margin="20, 0, 20, 10"
+                        Minimum="0"
+                        Maximum="{Binding BuildPluginProgressBarMax}"
+                        Value="{Binding BuildPluginProgressBarValue}">
+                    </ProgressBar>
+
+                    <TextBlock
+                        Grid.Row="5"
+                        Margin="20, 0, 20, 5"
+                        TextAlignment="Left"
+                        FontWeight="SemiBold"
+                        Text="Full Progress">
                     </TextBlock>
                     <ProgressBar
-                        Grid.Row="3"
-                        Grid.Column="1"
-                        Margin="0, 10, 20, 10">
+                        Grid.Row="6"
+                        Margin="20, 0, 20, 10"
+                        Minimum="0"
+                        Maximum="{Binding BuildFullProgressBarMax}"
+                        Value="{Binding BuildFullProgressBarValue}">
                     </ProgressBar>
                 </Grid>
-                
-                <!-- This element should be placed at last, for max height stretch -->
+
                 <ScrollViewer
+                    Grid.Row="1"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     HorizontalScrollBarVisibility="Auto"
@@ -562,7 +573,7 @@
                     </Canvas>
                 </ScrollViewer>
 
-            </DockPanel>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

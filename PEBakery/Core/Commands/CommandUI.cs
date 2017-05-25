@@ -17,6 +17,7 @@
 */
 
 using PEBakery.Exceptions;
+using PEBakery.WPF;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -96,8 +97,11 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            // TODO
-            logs.Add(new LogInfo(LogState.Warning, $"Echo is not implemented yet", cmd));
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w.Model.BuildEchoMessage = message;
+            });
 
             logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
 

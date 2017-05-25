@@ -344,7 +344,14 @@ namespace PEBakery.Core
                 case CodeType.DirMove:
                     break;
                 case CodeType.DirMake:
-                    break;
+                    { // DirMake,<DestDir>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_DirMake(args[0]);
+                    }
                 case CodeType.Expand:
                     break;
                 case CodeType.FileCopy:
@@ -368,7 +375,7 @@ namespace PEBakery.Core
                                 preserve = true;
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
                                 noWarn = true;
-                            else if (arg.Equals("SHOW", StringComparison.OrdinalIgnoreCase)) // for compability with WB082
+                            else if (arg.Equals("SHOW", StringComparison.OrdinalIgnoreCase)) // deprecated, exist for compability with WB082
                                 show = true;
                             else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
                                 noRec = true;
@@ -861,9 +868,9 @@ namespace PEBakery.Core
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
-                            if (string.Equals(arg, "GLOBAL", StringComparison.OrdinalIgnoreCase))
+                            if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
                                 global = true;
-                            else if (string.Equals(arg, "PREMANENT", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("PREMANENT", StringComparison.OrdinalIgnoreCase))
                                 permanent = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
@@ -914,13 +921,48 @@ namespace PEBakery.Core
                 case CodeType.AddVariables:
                     break;
                 case CodeType.Exit:
-                    break;
+                    { // Exit,<Message>[,NOWARN]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool noWarn = false;
+                        if (1 < args.Count)
+                        {
+                            if (args[1].Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                                noWarn = true;
+                        }
+                        
+                        return new CodeInfo_Exit(args[0], noWarn);
+                    }
                 case CodeType.Halt:
-                    break;
+                    { // Halt,<Message>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_Halt(args[0]);
+                    }
                 case CodeType.Wait:
-                    break;
+                    { // Wait,<Second
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_Wait(args[0]);
+                    }
                 case CodeType.Beep:
-                    break;
+                    { // Beep,<Type>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_Beep(args[0]);
+                    }
                 #endregion
                 #region 14 External Macro
                 // 14 External Macro
