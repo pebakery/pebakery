@@ -24,12 +24,12 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class LogWindow : Window
     {
-        private LogViewModel model;
+        private LogViewModel model = new LogViewModel();
 
         public LogWindow()
         {
             InitializeComponent();
-            this.model = this.DataContext as LogViewModel;            
+            DataContext = model;
 
             model.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
             model.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
@@ -128,7 +128,7 @@ namespace PEBakery.WPF
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)

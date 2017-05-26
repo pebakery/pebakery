@@ -24,14 +24,11 @@ namespace PEBakery.Core
             // { @"#$z", "\x00\x00"} -> This should go to EngineRegistry
         };
 
+        public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine";
+
         public static string Unescape(string str)
         {
             return unescapeSeqs.Keys.Aggregate(str, (from, to) => from.Replace(to, unescapeSeqs[to]));
-        }
-
-        public static string UnescapePercent(string str)
-        {
-            return str.Replace(@"#$p", @"%");
         }
 
         public static List<string> Unescape(IEnumerable<string> strs)
@@ -39,6 +36,32 @@ namespace PEBakery.Core
             List<string> unescaped = new List<string>();
             foreach (string str in strs)
                 unescaped.Add(Unescape(str));
+            return unescaped;
+        }
+
+        public static string QuoteUnescape(string str)
+        {
+            return unescapeSeqs.Keys.Aggregate(str.Trim('\"'), (from, to) => from.Replace(to, unescapeSeqs[to]));
+        }
+
+        public static List<string> QuoteUnescape(IEnumerable<string> strs)
+        {
+            List<string> unescaped = new List<string>();
+            foreach (string str in strs)
+                unescaped.Add(QuoteUnescape(str));
+            return unescaped;
+        }
+
+        public static string UnescapePercent(string str)
+        {
+            return str.Replace(@"#$p", @"%");
+        }
+
+        public static List<string> UnescapePercent(IEnumerable<string> strs)
+        {
+            List<string> unescaped = new List<string>();
+            foreach (string str in strs)
+                unescaped.Add(UnescapePercent(str));
             return unescaped;
         }
 
@@ -59,21 +82,41 @@ namespace PEBakery.Core
             { "\r\n", @"#$x" },
         };
 
-        public static string Escape(string operand, bool fullEscape = false)
+        public static string Escape(string str, bool fullEscape = false, bool escapePercent = false)
         {
             Dictionary<string, string> dict;
             if (fullEscape)
                 dict = fullEscapeSeqs;
             else
                 dict = escapeSeqs;
-            return dict.Keys.Aggregate(operand, (from, to) => from.Replace(to, dict[to]));
+
+            str = dict.Keys.Aggregate(str, (from, to) => from.Replace(to, dict[to]));
+
+            if (escapePercent)
+                return EscapePercent(str);
+            else
+                return str;
         }
 
-        public static List<string> EscapeList(List<string> operands)
+        public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            for (int i = 0; i < operands.Count; i++)
-                operands[i] = Escape(operands[i]);
-            return operands;
+            List<string> escaped = new List<string>();
+            foreach (string str in strs)
+                escaped.Add(Escape(str, fullEscape, escapePercent));
+            return escaped;
+        }
+
+        public static string EscapePercent(string str)
+        {
+            return str.Replace(@"%", @"#$p");
+        }
+
+        public static List<string> EscapePercent(IEnumerable<string> strs)
+        {
+            List<string> unescaped = new List<string>();
+            foreach (string str in strs)
+                unescaped.Add(EscapePercent(str));
+            return unescaped;
         }
 
         public static string Doublequote(string str)
@@ -89,7 +132,8 @@ namespace PEBakery.Core
             bool needQoute = false;
 
             // Check if str need doublequote escaping
-            if (str.Contains(' ') || str.Contains('%') || str.Contains(','))
+            // if (str.Contains(' ') || str.Contains('%') || str.Contains(','))
+            if (str.Contains(' ') || str.Contains(','))
                 needQoute = true;
 
             // Let's escape characters

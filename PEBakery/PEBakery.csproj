@@ -148,6 +148,9 @@
     <Compile Include="Core\CodeCommand.cs" />
     <Compile Include="Core\Commands\CommandControl.cs" />
     <Compile Include="Core\Commands\CommandUI.cs" />
+    <Compile Include="WPF\AboutWindow.xaml.cs">
+      <DependentUpon>AboutWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\Controls\AutoSizedGridView\AutoSizedGridView.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBox.cs" />
     <Compile Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml.cs">
@@ -177,6 +180,13 @@
     <Compile Include="WPF\UIRenderer.cs" />
     <Compile Include="Libs\TreeLib.cs" />
     <Compile Include="Core\Variables.cs" />
+    <Compile Include="WPF\UtilityWindow.xaml.cs">
+      <DependentUpon>UtilityWindow.xaml</DependentUpon>
+    </Compile>
+    <Page Include="WPF\AboutWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -231,6 +241,10 @@
     <Page Include="WPF\Controls\Spinner\SpinnerControl.Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="WPF\UtilityWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

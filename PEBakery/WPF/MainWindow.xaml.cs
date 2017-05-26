@@ -693,7 +693,8 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            UtilityWindow dialog = new UtilityWindow();
+            dialog.Show();
         }
 
         private void LogButton_Click(object sender, RoutedEventArgs e)
