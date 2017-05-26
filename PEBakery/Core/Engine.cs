@@ -91,7 +91,7 @@ namespace PEBakery.Core
 
             long allLineCount = 0;
             foreach (var kv in s.CurrentPlugin.Sections.Where(x => x.Value.Type == SectionType.Code))
-                allLineCount += kv.Value.Lines.Count;
+                allLineCount += kv.Value.Lines.Count; // Why not Codes? PEBakery compiles code on-demand, so we have only lines at this time.
 
             s.MainViewModel.BuildPluginProgressBarMax = allLineCount;
             s.MainViewModel.BuildPluginProgressBarValue = 0;
@@ -110,6 +110,8 @@ namespace PEBakery.Core
         private void FinishRunPlugin(long pluginId)
         {
             // Finish Per-Plugin Log
+            s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
+            s.Logger.Build_Write(s, Logger.LogSeperator);
             s.Logger.Build_Plugin_Finish(pluginId);
         }
 
@@ -133,10 +135,9 @@ namespace PEBakery.Core
                     s.Logger.LogEndOfSection(s, addr, 0, true, null);
 
                     // End of Plugin
-                    s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
-                    s.Logger.Build_Write(s, Logger.LogSeperator);
+                    FinishRunPlugin(s.PluginId);
 
-                    // OnBuildExit event callback
+                    // OnPluginExit event callback
                     Engine.CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
 
                     if (s.Plugins.Count - 1 <= s.CurrentPluginIdx ||
@@ -155,7 +156,6 @@ namespace PEBakery.Core
                     s.Logger.Build_Write(s, string.Empty);
 
                     // Run Next Plugin
-                    FinishRunPlugin(s.PluginId);
                     s.CurrentPluginIdx += 1;
                     s.CurrentPlugin = s.Plugins[s.CurrentPluginIdx];
                     s.PassCurrentPluginFlag = false;

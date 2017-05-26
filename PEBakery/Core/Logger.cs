@@ -260,8 +260,8 @@ namespace PEBakery.Core
         public static DebugLevel DebugLevel;
         public readonly ConcurrentStack<bool> TurnOff = new ConcurrentStack<bool>();
 
-        private readonly Dictionary<long, DB_BuildInfo> buildDict = new Dictionary<long, DB_BuildInfo>();
-        private readonly Dictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new Dictionary<long, Tuple<DB_Plugin, Stopwatch>>();
+        private readonly ConcurrentDictionary<long, DB_BuildInfo> buildDict = new ConcurrentDictionary<long, DB_BuildInfo>();
+        private readonly ConcurrentDictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new ConcurrentDictionary<long, Tuple<DB_Plugin, Stopwatch>>();
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
@@ -324,18 +324,18 @@ namespace PEBakery.Core
 
         public void Build_Finish(long id)
         {
-            DB_BuildInfo dbBuild = buildDict[id];
+            buildDict.TryRemove(id, out DB_BuildInfo dbBuild);
+            if (dbBuild == null)
+                throw new KeyNotFoundException($"Unable to find DB_BuildInfo Instance, id = {id}");
+
             dbBuild.EndTime = DateTime.Now;
             DB.Update(dbBuild);
 
             System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
-
-            buildDict.Remove(id);
         }
 
         public long Build_Plugin_Init(long buildId, Plugin p, int order)
         {
-            // Plugins 
             DB_Plugin dbPlugin = new DB_Plugin()
             {
                 BuildId = buildId,
@@ -357,13 +357,16 @@ namespace PEBakery.Core
         public void Build_Plugin_Finish(long id)
         {
             // Plugins 
-            DB_Plugin dbPlugin = pluginDict[id].Item1;
-            Stopwatch watch = pluginDict[id].Item2;
+            // Plugins 
+            pluginDict.TryRemove(id, out Tuple<DB_Plugin, Stopwatch> tuple);
+            if (tuple == null)
+                throw new KeyNotFoundException($"Unable to find DB_Plugin Instance, id = {id}");
+
+            DB_Plugin dbPlugin = tuple.Item1;
+            Stopwatch watch = tuple.Item2;
             watch.Stop();
             dbPlugin.ElapsedMilliSec = watch.ElapsedMilliseconds;
             DB.Update(dbPlugin);
-
-            pluginDict.Remove(dbPlugin.Id);
         }
 
         /// <summary>
