@@ -148,7 +148,6 @@
     <Compile Include="Core\CodeParser.cs" />
     <Compile Include="Core\CodeCommand.cs" />
     <Compile Include="Core\Commands\CommandControl.cs" />
-    <Compile Include="Core\Commands\CommandUI.cs" />
     <Compile Include="WPF\AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>

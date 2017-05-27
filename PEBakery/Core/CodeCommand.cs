@@ -37,36 +37,40 @@ namespace PEBakery.Core
         // 00 Misc
         None = 0, Comment, Error, Unknown,
         // 01 File
-        CopyOrExpand = 100, DirCopy, DirDelete, DirMove, DirMake, Expand, FileCopy, FileDelete, FileRename, FileMove, FileCreateBlank, FileByteExtract,
+        FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
+        DirCopy, DirDelete, DirMove, DirMake, DirSize,
         // 02 Registry
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
         // 03 Text
         TXTAddLine = 300, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
-        TXTAddLineOp, TXTDelLineOp,
+        TXTAddLineOp = 380, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
+        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
-        Compress = 500, Decompress,
+        Compress = 500, Decompress, Expand, CopyOrExpand, 
         // 06 Network
         WebGet = 600, WebGetIfNotExist,
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800,
-        VisibleOp,
-        // 09 UI
-        Message = 900, Echo, Retrieve,
+        Visible = 800, Message, Echo, UserInput,
+        VisibleOp = 880,
+        Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
+        // 09 Hash
+        Hash = 900,
         // 10 StringFormat
         StrFormat = 1000,
-        // 11 System
-        System = 1100, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
-        // 12 Branch
-        Run = 1200, Exec, Loop, If, Else, Begin, End,
-        // 13 Control
-        Set = 1300, GetParam, PackParam, AddVariables, Exit, Halt, Wait, Beep, 
-        // 14 External Macro
-        Macro = 1400,
+        // 11 Math
+        Math = 1100,
+        // 12 System
+        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        // 13 Branch
+        Run = 1300, Exec, Loop, If, Else, Begin, End,
+        // 14 Control
+        Set = 1400, AddVariables, GetParam, PackParam, Exit, Halt, Wait, Beep, 
+        // 15 External Macro
+        Macro = 1500,
     }
     #endregion
 
@@ -175,56 +179,6 @@ namespace PEBakery.Core
 
     #region CodeInfo 01 - File
     [Serializable]
-    public class CodeInfo_DirMake : CodeInfo
-    {
-        public string DestDir;
-
-        public CodeInfo_DirMake(string destDir)
-        {
-            DestDir = destDir;
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_Expand : CodeInfo
-    {
-        public string SrcCab;
-        public string DestDir;
-        public bool IsSingleFile;
-        public string SingleFile;
-        public bool Preserve;
-        public bool NoWarn;
-
-        public CodeInfo_Expand(string srcCab, string destDir, bool isSingleFile, string singleFile, bool preserve, bool noWarn)
-        {
-            SrcCab = srcCab;
-            DestDir = destDir;
-            IsSingleFile = isSingleFile;
-            SingleFile = singleFile;
-            Preserve = preserve;
-            NoWarn = noWarn;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcCab);
-            b.Append(",");
-            b.Append(DestDir);
-            if (IsSingleFile)
-            {
-                b.Append(",");
-                b.Append(SingleFile);
-            }
-            if (Preserve)
-                b.Append(",PRESERVE");
-            if (NoWarn)
-                b.Append(",NOWARN");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
     public class CodeInfo_FileCopy : CodeInfo
     {
         public string SrcFile;
@@ -299,6 +253,17 @@ namespace PEBakery.Core
                     b.Append(",ANSI");
             }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_DirMake : CodeInfo
+    {
+        public string DestDir;
+
+        public CodeInfo_DirMake(string destDir)
+        {
+            DestDir = destDir;
         }
     }
     #endregion
@@ -654,6 +619,44 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 05 - Compress
+    [Serializable]
+    public class CodeInfo_Expand : CodeInfo
+    {
+        public string SrcCab;
+        public string DestDir;
+        public bool IsSingleFile;
+        public string SingleFile;
+        public bool Preserve;
+        public bool NoWarn;
+
+        public CodeInfo_Expand(string srcCab, string destDir, bool isSingleFile, string singleFile, bool preserve, bool noWarn)
+        {
+            SrcCab = srcCab;
+            DestDir = destDir;
+            IsSingleFile = isSingleFile;
+            SingleFile = singleFile;
+            Preserve = preserve;
+            NoWarn = noWarn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcCab);
+            b.Append(",");
+            b.Append(DestDir);
+            if (IsSingleFile)
+            {
+                b.Append(",");
+                b.Append(SingleFile);
+            }
+            if (Preserve)
+                b.Append(",PRESERVE");
+            if (NoWarn)
+                b.Append(",NOWARN");
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 06 - Network
@@ -715,10 +718,10 @@ namespace PEBakery.Core
             InfoList = infoList;
         }
     }
-    #endregion
 
-    #region CodeInfo 09 - UI
+    [Serializable]
     public enum CodeMessageAction { None, Information, Confirmation, Error, Warning }
+
     [Serializable]
     public class CodeInfo_Message : CodeInfo
     { // Message,<Message>[,ICON][,TIMEOUT]
@@ -769,6 +772,10 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
+    #endregion
+
+    #region CodeInfo 09 - Hash
+
     #endregion
 
     #region SubStrFormatType, SubStrFormatInfo
@@ -1198,7 +1205,11 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 11 - System
+    #region CodeInfo 11 - Math
+
+    #endregion
+
+    #region CodeInfo 12 - System
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>
@@ -1751,7 +1762,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 12 - Branch
+    #region CodeInfo 13 - Branch
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
@@ -1874,7 +1885,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 13 - Control
+    #region CodeInfo 14 - Control
     [Serializable]
     public class CodeInfo_Set : CodeInfo
     {
@@ -1904,6 +1915,21 @@ namespace PEBakery.Core
                 b.Append(",PERMANENT");
 
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_AddVariables : CodeInfo
+    {
+        public string PluginFile;
+        public string SectionName;
+        public bool Global;
+
+        public CodeInfo_AddVariables(string pluginFile, string sectionName, bool global)
+        {
+            PluginFile = pluginFile;
+            SectionName = sectionName;
+            Global = global;
         }
     }
 
@@ -2024,7 +2050,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 14 - Macro
+    #region CodeInfo 15 - Macro
     [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {

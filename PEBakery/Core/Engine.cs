@@ -259,7 +259,6 @@ namespace PEBakery.Core
                 switch (cmd.Type)
                 {
                     #region 00 Misc
-                    // 00 Misc
                     case CodeType.None:
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
@@ -275,20 +274,6 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 01 File
-                    // 01 File
-                    //case CodeType.CopyOrExpand:
-                    //    break;
-                    //case CodeType.DirCopy:
-                    //   break;
-                    //case CodeType.DirDelete:
-                    //    break;
-                    //case CodeType.DirMove:
-                    //    break;
-                    case CodeType.DirMake:
-                        logs.AddRange(CommandFile.DirMake(s, cmd));
-                        break;
-                    //case CodeType.Expand:
-                    //    break;
                     case CodeType.FileCopy:
                         logs.AddRange(CommandFile.FileCopy(s, cmd));
                         break;
@@ -300,11 +285,23 @@ namespace PEBakery.Core
                     case CodeType.FileCreateBlank:
                         logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
-                    //case CodeType.FileByteExtract:
+                    //case CodeType.FileSize:
+                    //    break;
+                    //case CodeType.FileVersion:
+                    //    break;
+                    //case CodeType.DirCopy:
+                    //   break;
+                    //case CodeType.DirDelete:
+                    //    break;
+                    //case CodeType.DirMove:
+                    //    break;
+                    case CodeType.DirMake:
+                        logs.AddRange(CommandFile.DirMake(s, cmd));
+                        break;
+                    //case CodeType.DirSize:
                     //    break;
                     #endregion
                     #region 02 Registry
-                    // 02 Registry
                     //case CodeType.RegHiveLoad:
                     //    break;
                     //case CodeType.RegHiveUnload:
@@ -325,7 +322,6 @@ namespace PEBakery.Core
                     //   break;
                     #endregion
                     #region 03 Text
-                    // 03 Text
                     case CodeType.TXTAddLine:
                         logs.AddRange(CommandText.TXTAddLine(s, cmd));
                         break;
@@ -346,7 +342,6 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 04 INI
-                    // 04 INI
                     case CodeType.INIRead:
                         logs.AddRange(CommandINI.INIRead(s, cmd));
                         break;
@@ -372,6 +367,10 @@ namespace PEBakery.Core
                     //     break;
                     // case CodeType.Decompress:
                     //     break;
+                    //case CodeType.Expand:
+                    //    break;
+                    //case CodeType.CopyOrExpand:
+                    //    break;
                     #endregion
                     #region 06 Network
                     //case CodeType.WebGet:
@@ -380,7 +379,6 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 07 Attach
-                    // 07 Attach
                     case CodeType.ExtractFile:
                         logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
                         break;
@@ -398,23 +396,31 @@ namespace PEBakery.Core
                     case CodeType.VisibleOp:
                         logs.AddRange(CommandInterface.VisibleOp(s, cmd));
                         break;
-                    #endregion
-                    #region 09 UI
                     case CodeType.Message:
-                        logs.AddRange(CommandUI.Message(s, cmd));
+                        logs.AddRange(CommandInterface.Message(s, cmd));
                         break;
                     case CodeType.Echo:
-                        logs.AddRange(CommandUI.Echo(s, cmd));
+                        logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
+                    //case CodeType.UserInput:
+                    //   break;
                     //case CodeType.Retrieve:
                     //   break;
                     #endregion
-                    #region 10 StringFormat
+                    #region 09 Hash
+                    //case CodeType.Hash:
+                    //    break;
+                    #endregion
+                    #region 10 String
                     case CodeType.StrFormat:
                         logs.AddRange(CommandString.StrFormat(s, cmd));
                         break;
                     #endregion
-                    #region 11 System
+                    #region 11 Math
+                    //case CodeType.Math:
+                    //    break;
+                    #endregion
+                    #region 12 System
                     // case CodeType.System:
                     //    break;
                     case CodeType.ShellExecute:
@@ -423,7 +429,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
-                    #region 12 Branch
+                    #region 13 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
                         CommandBranch.RunExec(s, cmd);
@@ -442,9 +448,12 @@ namespace PEBakery.Core
                     case CodeType.End:
                         throw new InternalParserException("CodeParser Error");
                     #endregion
-                    #region 13 Control
+                    #region 14 Control
                     case CodeType.Set:
                         logs.AddRange(CommandControl.Set(s, cmd));
+                        break;
+                    case CodeType.AddVariables:
+                        logs.AddRange(CommandControl.AddVariables(s, cmd));
                         break;
                     case CodeType.GetParam:
                         logs.AddRange(CommandControl.GetParam(s, cmd));
@@ -452,8 +461,6 @@ namespace PEBakery.Core
                     case CodeType.PackParam:
                         logs.AddRange(CommandControl.PackParam(s, cmd));
                         break;
-                    //case CodeType.AddVariables:
-                    //    break;
                     case CodeType.Exit:
                         logs.AddRange(CommandControl.Exit(s, cmd));
                         break;
@@ -467,7 +474,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandControl.Beep(s, cmd));
                         break;
                     #endregion
-                    #region 14 External Macro
+                    #region 15 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;

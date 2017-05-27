@@ -313,7 +313,6 @@ namespace PEBakery.Core
             switch (type)
             {
                 #region 00 Misc
-                // 00 Misc
                 case CodeType.None:
                     break;
                 case CodeType.Comment:
@@ -324,26 +323,6 @@ namespace PEBakery.Core
                     break;
                 #endregion
                 #region 01 File
-                // 01 File
-                case CodeType.CopyOrExpand:
-                    break;
-                case CodeType.DirCopy:
-                    break;
-                case CodeType.DirDelete:
-                    break;
-                case CodeType.DirMove:
-                    break;
-                case CodeType.DirMake:
-                    { // DirMake,<DestDir>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        return new CodeInfo_DirMake(args[0]);
-                    }
-                case CodeType.Expand:
-                    break;
                 case CodeType.FileCopy:
                     { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC][,SHOW]
                         const int minArgCount = 2;
@@ -436,11 +415,29 @@ namespace PEBakery.Core
 
                         return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
                     }
-                case CodeType.FileByteExtract:
+                case CodeType.FileSize:
+                    break;
+                case CodeType.FileVersion:
+                    break;
+                case CodeType.DirCopy:
+                    break;
+                case CodeType.DirDelete:
+                    break;
+                case CodeType.DirMove:
+                    break;
+                case CodeType.DirMake:
+                    { // DirMake,<DestDir>
+                        const int minArgCount = 1;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_DirMake(args[0]);
+                    }
+                case CodeType.DirSize:
                     break;
                 #endregion
                 #region 02 Registry
-                // 02 Registry
                 case CodeType.RegHiveLoad:
                     break;
                 case CodeType.RegHiveUnload:
@@ -461,7 +458,6 @@ namespace PEBakery.Core
                     break;
                 #endregion
                 #region 03 Text
-                // 03 Text
                 case CodeType.TXTAddLine:
                     { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
                         const int minArgCount = 3;
@@ -528,7 +524,6 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region 04 INI
-                // 04 INI
                 case CodeType.INIWrite:
                     { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
                         const int minArgCount = 4;
@@ -629,6 +624,10 @@ namespace PEBakery.Core
                     break;
                 case CodeType.Decompress:
                     break;
+                case CodeType.Expand:
+                    break;
+                case CodeType.CopyOrExpand:
+                    break;
                 #endregion
                 #region 06 Network
                 // 06 Network
@@ -691,9 +690,6 @@ namespace PEBakery.Core
 
                         return new CodeInfo_Visible(interfaceKey, visibility);
                     }
-                #endregion
-                #region 09 UI
-                // 09 UI
                 case CodeType.Message:
                     { // Message,<Message>[,ICON][,TIMEOUT]
                         const int minArgCount = 1;
@@ -739,15 +735,26 @@ namespace PEBakery.Core
 
                         return new CodeInfo_Echo(args[0], warn);
                     }
+                case CodeType.UserInput:
+                    break;
                 case CodeType.Retrieve:
+                    // Put Compability Shim here
+                    break;
+                #endregion
+                #region 09 Hash
+                case CodeType.Hash:
                     break;
                 #endregion
                 #region 10 String
-                // 10 StringFormat
                 case CodeType.StrFormat:
                     return ParseCodeInfoStrFormat(rawCode, args);
                 #endregion
-                #region 11 System
+                #region 11 Math
+                case CodeType.Math:
+                    // return ParseCodeInfoMath(rawCode, args);
+                    break;
+                #endregion
+                #region 12 System
                 // 11 System
                 case CodeType.System:
                     break;
@@ -789,8 +796,7 @@ namespace PEBakery.Core
                         return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
-                #region 12 Branch
-                // 12 Branch
+                #region 13 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
                     { // Run,%PluginFile%,<Section>[,PARAMS]
@@ -839,8 +845,7 @@ namespace PEBakery.Core
                 case CodeType.End:
                     return new CodeInfo();
                 #endregion
-                #region 13 Control
-                // 13 Control
+                #region 14 Control
                 case CodeType.Set:
                     { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT]
                         const int minArgCount = 2;
@@ -865,6 +870,28 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_Set(varName, varValue, global, permanent);
+                    }
+                case CodeType.AddVariables:
+                    { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string varName = args[0];
+                        string varValue = args[1];
+                        bool global = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                                global = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_AddVariables(varName, varValue, global);
                     }
                 case CodeType.GetParam:
                     { // GetParam,<Index>,<VarName>
@@ -906,8 +933,6 @@ namespace PEBakery.Core
 
                         return new CodeInfo_PackParam(startIdx, varName, varNum);
                     }
-                case CodeType.AddVariables:
-                    break;
                 case CodeType.Exit:
                     { // Exit,<Message>[,NOWARN]
                         const int minArgCount = 1;
@@ -952,8 +977,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Beep(args[0]);
                     }
                 #endregion
-                #region 14 External Macro
-                // 14 External Macro
+                #region 15 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
                 #endregion
