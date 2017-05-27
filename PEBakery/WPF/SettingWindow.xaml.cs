@@ -158,6 +158,11 @@ namespace PEBakery.WPF
                 Model.Project_ISOFile = dialog.FileName;
             }
         }
+
+        private void Button_MonospaceFont_Click(object sender, RoutedEventArgs e)
+        {
+            Model.General_MonospaceFont = FontHelper.ChooseFontDialog(Model.General_MonospaceFont, this, false, true);
+        }
     }
 
     #region SettingViewModel
@@ -362,6 +367,38 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("General_EnableLongFilePath");
             }
         }
+
+        private string general_MonospaceFontStr;
+        public string General_MonospaceFontStr
+        {
+            get => general_MonospaceFontStr;
+            set
+            {
+                general_MonospaceFontStr = value;
+                OnPropertyUpdate("General_MonospaceFontStr");
+            }
+        }
+
+        private FontHelper.WPFFont general_MonospaceFont;
+        public FontHelper.WPFFont General_MonospaceFont
+        {
+            get => general_MonospaceFont;
+            set
+            {
+                general_MonospaceFont = value;
+
+                OnPropertyUpdate("General_MonospaceFont");
+                General_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
+
+                OnPropertyUpdate("General_MonospaceFontFamily");
+                OnPropertyUpdate("General_MonospaceFontWeight");
+                OnPropertyUpdate("General_MonospaceFontSize");
+            }
+        }
+
+        public FontFamily General_MonospaceFontFamily { get => general_MonospaceFont.FontFamily; }
+        public FontWeight General_MonospaceFontWeight { get => general_MonospaceFont.FontWeight; }
+        public double General_MonospaceFontSize { get => general_MonospaceFont.FontSizeInDIP; }
         #endregion
 
         #region Interface
@@ -514,6 +551,7 @@ namespace PEBakery.WPF
             // General
             General_EnableLongFilePath = false;
             General_OptimizeCode = true;
+            General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
 
             // Interface
             Interface_ScaleFactor = 100;
@@ -544,6 +582,9 @@ namespace PEBakery.WPF
             {
                 new IniKey("General", "EnableLongFilePath"), // Boolean
                 new IniKey("General", "OptimizeCode"), // Boolean
+                new IniKey("General", "MonospaceFontFamily"),
+                new IniKey("General", "MonospaceFontWeight"),
+                new IniKey("General", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
@@ -557,6 +598,9 @@ namespace PEBakery.WPF
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
             string str_General_EnableLongFilePath = dict["EnableLongFilePath"];
             string str_General_OptimizeCode = dict["OptimizeCode"];
+            string str_Gereal_MonospaceFontFamiliy = dict["MonospaceFontFamily"];
+            string str_Gereal_MonospaceFontWeight = dict["MonospaceFontWeight"];
+            string str_Gereal_MonospaceFontSize = dict["MonospaceFontSize"];
             string str_Interface_ScaleFactor = dict["ScaleFactor"];
             string str_Plugin_EnableCache = dict["EnableCache"];
             string str_Plugin_AutoConvertToUTF8 = dict["AutoConvertToUTF8"];
@@ -581,6 +625,24 @@ namespace PEBakery.WPF
                 if (str_General_OptimizeCode.Equals("False", StringComparison.OrdinalIgnoreCase))
                     General_OptimizeCode = false;
             }
+
+            // General - MonospaceFont (Default = Consolas, Regular, 12pt
+            FontFamily monoFontFamiliy = General_MonospaceFont.FontFamily;
+            FontWeight monoFontWeight = General_MonospaceFont.FontWeight;
+            int monoFontSize = General_MonospaceFont.FontSizeInPoint;
+            if (str_Gereal_MonospaceFontFamiliy != null)
+                monoFontFamiliy = new FontFamily(str_Gereal_MonospaceFontFamiliy);
+            if (str_Gereal_MonospaceFontWeight != null)
+                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(str_Gereal_MonospaceFontWeight);
+            if (str_Gereal_MonospaceFontSize != null)
+            {
+                if (int.TryParse(str_Gereal_MonospaceFontSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
+                {
+                    if (0 < newMonoFontSize)
+                        monoFontSize = newMonoFontSize;
+                }
+            }
+            General_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             // Interface - ScaleFactor (Default = 100)
             if (str_Interface_ScaleFactor != null)
@@ -637,6 +699,9 @@ namespace PEBakery.WPF
             {
                 new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
                 new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
+                new IniKey("General", "MonospaceFontFamily", General_MonospaceFont.FontFamily.Source),
+                new IniKey("General", "MonospaceFontWeight", General_MonospaceFont.FontWeight.ToString()),
+                new IniKey("General", "MonospaceFontSize", General_MonospaceFont.FontSizeInPoint.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
@@ -646,6 +711,7 @@ namespace PEBakery.WPF
                 new IniKey("Project", "DefaultProject", Project_Default),
             };
             Ini.SetKeys(settingFile, keys);
+
         }
 
         public void ClearLogDB()

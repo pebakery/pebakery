@@ -1,4 +1,5 @@
 ﻿using PEBakery.Core;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,30 +24,14 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class UtilityWindow : Window
     {
-        UtilityViewModel model = new UtilityViewModel();
+        UtilityViewModel m;
 
-        public UtilityWindow()
+        public UtilityWindow(FontHelper.WPFFont monoFont)
         {
+            m = new UtilityViewModel(monoFont);
+
             InitializeComponent();
-            DataContext = model;
-        }
-
-        private void EscapeButton_Click(object sender, RoutedEventArgs e)
-        {
-            string str = StringEscaper.QuoteEscape(model.StringToConvert);
-            if (model.EscapePercentChecked)
-                model.ConvertedString = StringEscaper.EscapePercent(str);
-            else
-                model.ConvertedString = str;
-        }
-
-        private void UnescapeButton_Click(object sender, RoutedEventArgs e)
-        {
-            string str = StringEscaper.QuoteUnescape(model.StringToConvert);
-            if (model.EscapePercentChecked)
-                model.ConvertedString = StringEscaper.UnescapePercent(str);
-            else
-                model.ConvertedString = str;
+            DataContext = m;
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -54,39 +39,95 @@ namespace PEBakery.WPF
             Close();
         }
 
+        private void EscapeButton_Click(object sender, RoutedEventArgs e)
+        {
+            string str = StringEscaper.QuoteEscape(m.Escaper_StringToConvert);
+            if (m.EscapePercentChecked)
+                m.Escaper_ConvertedString = StringEscaper.EscapePercent(str);
+            else
+                m.Escaper_ConvertedString = str;
+        }
+
+        private void UnescapeButton_Click(object sender, RoutedEventArgs e)
+        {
+            string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
+            if (m.EscapePercentChecked)
+                m.Escaper_ConvertedString = StringEscaper.UnescapePercent(str);
+            else
+                m.Escaper_ConvertedString = str;
+        }
+
         private void EscapeSequenceLegend_Click(object sender, RoutedEventArgs e)
         {
-            model.ConvertedString = StringEscaper.Legend;
+            m.Escaper_ConvertedString = StringEscaper.Legend;
+        }
+
+        private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
+        {
+            string[] lines = m.Syntax_InputCode.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            m.Syntax_Output = "Not Imeplemented";
+
         }
     }
 
     #region UtiltiyViewModel
     public class UtilityViewModel : INotifyPropertyChanged
     {
-        public UtilityViewModel()
+        public FontHelper.WPFFont MonoFont { get; private set; }
+        public FontFamily MonoFontFamily { get => MonoFont.FontFamily; }
+        public FontWeight MonoFontWeight { get => MonoFont.FontWeight; }
+        public double MonoFontSize { get => MonoFont.FontSizeInDIP; }
+
+        public UtilityViewModel(FontHelper.WPFFont monoFont)
         {
-            MainWindow w = Application.Current.MainWindow as MainWindow;
+            // MainWindow w = Application.Current.MainWindow as MainWindow;
+            MonoFont = monoFont;
         }
 
-        private string stringToConvert = string.Empty;
-        public string StringToConvert
+        #region Syntax Checker
+        private string syntax_InputCode = string.Empty;
+        public string Syntax_InputCode
         {
-            get => stringToConvert;
+            get => syntax_InputCode;
             set
             {
-                stringToConvert = value;
-                OnPropertyUpdate("StringToConvert");
+                syntax_InputCode = value;
+                OnPropertyUpdate("Syntax_InputCode");
             }
         }
 
-        private string convertedString = string.Empty;
-        public string ConvertedString
+        private string syntax_Output = string.Empty;
+        public string Syntax_Output
         {
-            get => convertedString;
+            get => syntax_Output;
             set
             {
-                convertedString = value;
-                OnPropertyUpdate("ConvertedString");
+                syntax_Output = value;
+                OnPropertyUpdate("Syntax_Output");
+            }
+        }
+        #endregion
+
+        #region String Escaper
+        private string escaper_StringToConvert = string.Empty;
+        public string Escaper_StringToConvert
+        {
+            get => escaper_StringToConvert;
+            set
+            {
+                escaper_StringToConvert = value;
+                OnPropertyUpdate("Escaper_StringToConvert");
+            }
+        }
+
+        private string escaper_ConvertedString = string.Empty;
+        public string Escaper_ConvertedString
+        {
+            get => escaper_ConvertedString;
+            set
+            {
+                escaper_ConvertedString = value;
+                OnPropertyUpdate("Escaper_ConvertedString");
             }
         }
 
@@ -100,8 +141,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("EscapePercentChecked");
             }
         }
-
-        // 
+        #endregion
 
         #region Utility
         public event PropertyChangedEventHandler PropertyChanged;

@@ -138,6 +138,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Core\CodeOptimizer.cs" />
+    <Compile Include="Core\CodeValidator.cs" />
     <Compile Include="Core\Commands\CommandINI.cs" />
     <Compile Include="Core\Commands\CommandInterface.cs" />
     <Compile Include="Core\Commands\CommandPlugin.cs" />

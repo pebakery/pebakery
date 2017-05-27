@@ -17,11 +17,6 @@
             <RowDefinition Height="60"></RowDefinition>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
-            <TabItem Header="Syntax Checker">
-                <Grid>
-                    
-                </Grid>
-            </TabItem>
             <TabItem Header="String Escaper">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -42,16 +37,16 @@
                             FontWeight="Bold"
                             Text="String to Convert">
                         </TextBlock>
-                        <Border
+                        <TextBox 
                             Grid.Row="1"
-                            BorderBrush="Gray"
-                            BorderThickness="1">
-                            <TextBox 
-                                Grid.Row="1"
-                                VerticalContentAlignment="Stretch"
-                                Text="{Binding StringToConvert}">
-                            </TextBox>
-                        </Border>
+                            FontFamily="{Binding MonoFontFamily}"
+                            FontWeight="{Binding MonoFontWeight}"
+                            FontSize="{Binding MonoFontSize}"
+                            TextWrapping="Wrap"
+                            AcceptsReturn="True"
+                            VerticalContentAlignment="Stretch"
+                            Text="{Binding Escaper_StringToConvert}">
+                        </TextBox>
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="10, 10, 10, 10">
@@ -99,19 +94,91 @@
                             FontWeight="Bold"
                             Text="Converted String">
                         </TextBlock>
-                        <Border
+                        <TextBox 
                             Grid.Row="1"
-                            BorderBrush="Gray"
-                            BorderThickness="1">
-                            <TextBox 
-                                Grid.Row="1"
-                                VerticalContentAlignment="Stretch"
-                                Text="{Binding ConvertedString}">
-                            </TextBox>
-                        </Border>
+                            FontFamily="{Binding MonoFontFamily}"
+                            FontWeight="{Binding MonoFontWeight}"
+                            FontSize="{Binding MonoFontSize}"
+                            TextWrapping="Wrap"
+                            AcceptsReturn="True"
+                            VerticalContentAlignment="Stretch"
+                            Text="{Binding Escaper_ConvertedString}">
+                        </TextBox>
                     </Grid>
                 </Grid>
-                
+            </TabItem>
+            <TabItem Header="Syntax Checker">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                        <RowDefinition Height="50"></RowDefinition>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="10, 10, 10, 10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="22"></RowDefinition>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                            Grid.Row="0"
+                            VerticalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="Input Code">
+                        </TextBlock>
+                        <TextBox 
+                            Grid.Row="1"
+                            FontFamily="{Binding MonoFontFamily}"
+                            FontWeight="{Binding MonoFontWeight}"
+                            FontSize="{Binding MonoFontSize}"
+                            TextWrapping="Wrap"
+                            AcceptsReturn="True"
+                            VerticalContentAlignment="Stretch"
+                            Text="{Binding Syntax_InputCode}">
+                        </TextBox>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="10, 10, 10, 10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"></ColumnDefinition>
+                            <ColumnDefinition Width="20"></ColumnDefinition>
+                            <ColumnDefinition Width="100"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                            <ColumnDefinition Width="200"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <Button
+                            Grid.Column="0"
+                            Content="Syntax Check"
+                            Click="SyntaxCheckButton_Click">
+                        </Button>
+                    </Grid>
+
+                    <Grid Grid.Row="2" Margin="10, 10, 10, 10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="22"></RowDefinition>
+                            <RowDefinition></RowDefinition>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                            Grid.Row="0"
+                            VerticalAlignment="Center"
+                            FontWeight="Bold"
+                            Text="Output">
+                        </TextBlock>
+                        <TextBox 
+                            Grid.Row="1"
+                            FontFamily="{Binding MonoFontFamily}"
+                            FontWeight="{Binding MonoFontWeight}"
+                            FontSize="{Binding MonoFontSize}"
+                            TextWrapping="Wrap"
+                            AcceptsReturn="True"
+                            VerticalContentAlignment="Stretch"
+                            Text="{Binding Syntax_Output}">
+                        </TextBox>
+                    </Grid>
+                </Grid>
             </TabItem>
         </TabControl>
         <Grid Grid.Row="1" Margin="15, 15, 15, 15">
@@ -122,11 +189,11 @@
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="100"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            
+
             <Button
-                Grid.Row="0" Grid.Column="1"
-                Content="Close"
-                Click="CloseButton_Click">
+                    Grid.Row="0" Grid.Column="1"
+                    Content="Close"
+                    Click="CloseButton_Click">
             </Button>
         </Grid>
     </Grid>

@@ -553,8 +553,8 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
-                    if (type == ImageType.Svg)
+                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type);
+                    if (type == ImageHelper.ImageType.Svg)
                     {
                         Image image = new Image()
                         {
@@ -693,7 +693,7 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            UtilityWindow dialog = new UtilityWindow();
+            UtilityWindow dialog = new UtilityWindow(setting.General_MonospaceFont);
             dialog.Show();
         }
 
