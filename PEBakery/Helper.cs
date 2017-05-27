@@ -931,7 +931,7 @@ namespace PEBakery.Helper
         const long MB = 1024L * 1024L;
         const long KB = 1024L;
 
-        public static string ByteSizeToString(long byteSize)
+        public static string ByteSizeToHumanReadableString(long byteSize)
         {
             string str;
             if (PB <= byteSize)
@@ -946,6 +946,67 @@ namespace PEBakery.Helper
                 str = $"{((decimal)byteSize / KB):0.###}KB";
 
             return str;
+        }
+
+        public static decimal HumanReadableStringToByteSize(string str)
+        {
+            long multifier = 1;
+            int subStrEndIdx = 0;
+
+            if (str.EndsWith("PB", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = PB;
+                subStrEndIdx = 2;
+            }
+            else if (str.EndsWith("TB", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = TB;
+                subStrEndIdx = 2;
+            }
+            else if (str.EndsWith("GB", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = GB;
+                subStrEndIdx = 2;
+            }
+            else if (str.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = MB;
+                subStrEndIdx = 2;
+            }
+            else if (str.EndsWith("KB", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = KB;
+                subStrEndIdx = 2;
+            }
+
+            if (str.EndsWith("P", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = PB;
+                subStrEndIdx = 1;
+            }
+            else if (str.EndsWith("T", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = TB;
+                subStrEndIdx = 1;
+            }
+            else if (str.EndsWith("G", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = GB;
+                subStrEndIdx = 1;
+            }
+            else if (str.EndsWith("M", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = MB;
+                subStrEndIdx = 1;
+            }
+            else if (str.EndsWith("K", StringComparison.OrdinalIgnoreCase))
+            {
+                multifier = KB;
+                subStrEndIdx = 1;
+            }
+
+            str = str.Substring(0, str.Length - subStrEndIdx);
+            return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
         }
     }
 

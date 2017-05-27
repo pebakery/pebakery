@@ -48,10 +48,11 @@ namespace PEBakery.Core.Commands
             StrFormatType type = info.Type;
             switch (type)
             {
+                case StrFormatType.IntToBytes:
                 case StrFormatType.Bytes:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Bytes));
-                        StrFormatInfo_Bytes subInfo = info.SubInfo as StrFormatInfo_Bytes;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_IntToBytes));
+                        StrFormatInfo_IntToBytes subInfo = info.SubInfo as StrFormatInfo_IntToBytes;
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
                         if (long.TryParse(byteSizeStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long byteSize) == false)
@@ -60,9 +61,21 @@ namespace PEBakery.Core.Commands
                         if (byteSize < 0)
                             throw new ExecuteException($"[{byteSize}] must be positive integer");
 
-                        string destStr = NumberHelper.ByteSizeToString(byteSize);
+                        string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
+                case StrFormatType.BytesToInt:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_BytesToInt));
+                        StrFormatInfo_BytesToInt subInfo = info.SubInfo as StrFormatInfo_BytesToInt;
+
+                        string humanReadableByteSizeStr = StringEscaper.Preprocess(s, subInfo.HumanReadableByteSize);
+                        decimal dest = NumberHelper.HumanReadableStringToByteSize(humanReadableByteSizeStr);
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, decimal.Ceiling(dest).ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -125,8 +138,8 @@ namespace PEBakery.Core.Commands
                 case StrFormatType.Date:
                     {
                         /*
-                            * <yyyy-mmm-dd hh:nn am/pm> 
-                            */
+                        * <yyyy-mmm-dd hh:nn am/pm> 
+                        */
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
                         StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
 
@@ -175,7 +188,6 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.FileName:
                 case StrFormatType.DirPath:
-                case StrFormatType.Path:
                 case StrFormatType.Ext:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Path));
@@ -188,7 +200,7 @@ namespace PEBakery.Core.Commands
                         {
                             destStr = Path.GetFileName(srcStr);
                         }
-                        else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
+                        else if (type == StrFormatType.DirPath)
                         {
                             destStr = Path.GetDirectoryName(srcStr);
                         }

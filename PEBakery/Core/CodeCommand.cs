@@ -774,10 +774,11 @@ namespace PEBakery.Core
     #region SubStrFormatType, SubStrFormatInfo
     public enum StrFormatType
     { // 아니 왜 사칙연산이 StrFormat에 있지...
-        Bytes,
+        IntToBytes, Bytes, // IntToBytes == Bytes
+        BytesToInt,
         Ceil, Floor, Round, // Round added in PEBakery 
         Date,
-        FileName, DirPath, Path, Ext, // DirPath == Path
+        FileName, DirPath, Ext,
         Inc, Dec, Mult, Div,
         Left, Right,
         SubStr, // Added in PEBakery
@@ -793,12 +794,12 @@ namespace PEBakery.Core
     public class StrFormatInfo { }
 
     [Serializable]
-    public class StrFormatInfo_Bytes : StrFormatInfo
+    public class StrFormatInfo_IntToBytes : StrFormatInfo
     { // StrFormat,Bytes,<Integer>,<DestVarName>
         public string ByteSize;
         public string DestVarName;
 
-        public StrFormatInfo_Bytes(string byteSize, string destVarName)
+        public StrFormatInfo_IntToBytes(string byteSize, string destVarName)
         {
             ByteSize = byteSize;
             DestVarName = destVarName;
@@ -807,6 +808,24 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{ByteSize},{DestVarName}";
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_BytesToInt : StrFormatInfo
+    { // StrFormat,BytesToInt,<Bytes>,<DestVarName>
+        public string HumanReadableByteSize;
+        public string DestVarName;
+
+        public StrFormatInfo_BytesToInt(string byteSize, string destVarName)
+        {
+            HumanReadableByteSize = byteSize;
+            DestVarName = destVarName;
+        }
+
+        public override string ToString()
+        {
+            return $"{HumanReadableByteSize},{DestVarName}";
         }
     }
 

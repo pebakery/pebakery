@@ -77,17 +77,7 @@ namespace PEBakery.Core
                 errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.SectionName}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
-            bool doOptimize = App.Setting.General_OptimizeCode;
-            /*
-            bool doOptimize = false;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                doOptimize = w.Setting.General_OptimizeCode;
-            });
-            */
-
-            if (doOptimize)
+            if (App.Setting.General_OptimizeCode)
             {
                 List<CodeCommand> optimizedList = new List<CodeCommand>();
                 return CodeOptimizer.OptimizeCommands(compiledList);
@@ -859,8 +849,6 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string varName = args[0];
-                        // if (varName == null)
-                        //    throw new InvalidCommandException($"Variable name [{args[0]}] must start and end with %", rawCode);
                         string varValue = args[1];
                         bool global = false;
                         bool permanent = false;
@@ -870,7 +858,7 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
                                 global = true;
-                            else if (arg.Equals("PREMANENT", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
                                 permanent = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
@@ -1022,8 +1010,9 @@ namespace PEBakery.Core
 
             switch (type)
             {
+                case StrFormatType.IntToBytes:
                 case StrFormatType.Bytes:
-                    { // StrFormat,Bytes,<Integer>,<DestVarName>
+                    { // StrFormat,IntToBytes,<Integer>,<DestVarName>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1031,7 +1020,19 @@ namespace PEBakery.Core
                         if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
                         else
-                            info = new StrFormatInfo_Bytes(args[0], args[1]);
+                            info = new StrFormatInfo_IntToBytes(args[0], args[1]);
+                    }
+                    break;
+                case StrFormatType.BytesToInt:
+                    { // StrFormat,BytesToInt,<Bytes>,<DestVarName>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new StrFormatInfo_BytesToInt(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Ceil:
@@ -1066,7 +1067,6 @@ namespace PEBakery.Core
                     break;
                 case StrFormatType.FileName:
                 case StrFormatType.DirPath:
-                case StrFormatType.Path:
                 case StrFormatType.Ext:
                     {
                         // StrFormat,FileName,<FilePath>,<DestVarName>
