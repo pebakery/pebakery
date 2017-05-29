@@ -215,6 +215,7 @@ namespace PEBakery.Core
                 }
                 catch (CriticalErrorException)
                 { // Critical Error, stop build
+                    s.ErrorHaltFlag = true;
                     break;
                 }
             }

@@ -393,7 +393,7 @@ namespace PEBakery.Core
                 throw new InternalException("Fixed variables cannot be written without privilege!");
 
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            // Check and remove circular reference
+            // Check circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
                 return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
@@ -533,7 +533,7 @@ namespace PEBakery.Core
             return InternalAddDictionary(type, dict);
         }
 
-        public List<LogInfo> AddVariables(VarsType type, List<string> lines)
+        public List<LogInfo> AddVariables(VarsType type, IEnumerable<string> lines)
         {
             Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
             return InternalAddDictionary(type, dict);
@@ -561,7 +561,7 @@ namespace PEBakery.Core
             {
                 if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
-                    vars[kv.Key] = kv.Value;
+                    vars[kv.Key] = StringEscaper.QuoteUnescape(kv.Value);
                     
                     list.Add(new LogInfo(LogState.Success, $"{type} variable [%{kv.Key}%] set to [{kv.Value}]"));
                 }
@@ -610,11 +610,12 @@ namespace PEBakery.Core
                 if (FileHelper.CountStringOccurrences(varName, "%") == 2)
                 {
                     string varKey = varName.Substring(1, varName.Length - 2);
-                    varKey = StringEscaper.ExpandSectionParams(s, varKey);
-                    return varKey;
+                    return StringEscaper.ExpandSectionParams(s, varKey);
                 }
                 else
+                {
                     return null;
+                }
             }
             else
             {
@@ -624,8 +625,8 @@ namespace PEBakery.Core
 
         public static int GetSectionParamIndex(string secParam)
         {
-            Match matches = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
-            if (matches.Success)
+            Match match = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
+            if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
                     return paramIdx;
@@ -657,6 +658,9 @@ namespace PEBakery.Core
         {
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be positive integer");
+            if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
+                return new LogInfo(LogState.Error, $"Section parameter cannot have circular reference");
+                
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }

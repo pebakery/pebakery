@@ -185,63 +185,73 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            MatchCollection matches = Regex.Matches(str, @"(#\d+)", RegexOptions.Compiled);
-            StringBuilder builder = new StringBuilder();
-            for (int x = 0; x < matches.Count; x++)
+            Regex regex = new Regex(@"(#\d+)", RegexOptions.Compiled);
+            MatchCollection matches = regex.Matches(str);
+
+            int cnt = 0;
+
+            while (0 < matches.Count)
             {
-                if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int pIdx) == false)
-                    throw new InternalException("ExpandVariables failure");
-                if (x == 0)
-                    builder.Append(str.Substring(0, matches[0].Index));
-                else
+                cnt++;
+                if (cnt > 20)
                 {
-                    int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
-                    int endOffset = matches[x].Index - startOffset;
-                    builder.Append(str.Substring(startOffset, endOffset));
                 }
 
-                string param;
-                try
+                StringBuilder builder = new StringBuilder();
+                for (int x = 0; x < matches.Count; x++)
                 {
-                    param = s.CurSectionParams[pIdx];
-                }
-                catch (KeyNotFoundException)
-                {
+                    if (NumberHelper.ParseInt32(matches[x].Groups[1].ToString().Substring(1), out int pIdx) == false)
+                        throw new InternalException("ExpandVariables failure");
+                    if (x == 0)
+                        builder.Append(str.Substring(0, matches[0].Index));
+                    else
+                    {
+                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                        int endOffset = matches[x].Index - startOffset;
+                        builder.Append(str.Substring(startOffset, endOffset));
+                    }
+
                     /*
                     TODO: What is the internal logic of WB082?
-                    
+
                     Test Result
-                       In [Process]
-                           Message,#3
-                       Printed "#3"
-                       
-                       In [Process2] 
-                           Run,%ScriptFile%,Process2,Test)
-                           [Process2]
-                           Message,#3
+                        In [Process]
+                            Message,#3
+                        Printed "#3"
+
+                        In [Process2] 
+                            Run,%ScriptFile%,Process2,Test)
+                            [Process2]
+                            Message,#3
                         Printed ""
                     */
+                    string param;
+                    if (s.CurSectionParams.ContainsKey(pIdx))
+                    {
+                        param = s.CurSectionParams[pIdx];
+                    }
+                    else
+                    {
+                        // param = matches[x].Value;
+                        param = string.Empty;
+                    }
+                    builder.Append(param);
 
-                    // param = matches[x].Value;
-                    param = string.Empty;
+                    if (x + 1 == matches.Count) // Last iteration
+                        builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
-                builder.Append(param);
-
-                if (x + 1 == matches.Count) // Last iteration
-                    builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
-            }
-            if (0 < matches.Count) // Only copy it if variable exists
-            {
                 str = builder.ToString();
-            }
 
-            if (s.LoopRunning)
-            { // Escape #c
-                if (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1)
-                {
-                    str = str.Replace("#c", s.LoopCounter.ToString());
-                    str = str.Replace("#C", s.LoopCounter.ToString());
+                if (s.LoopRunning)
+                { // Escape #c
+                    if (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1)
+                    {
+                        str = str.Replace("#c", s.LoopCounter.ToString());
+                        str = str.Replace("#C", s.LoopCounter.ToString());
+                    }
                 }
+
+                matches = regex.Matches(str);
             }
 
             return str;
@@ -254,7 +264,7 @@ namespace PEBakery.Core
             return Unescape(ExpandVariables(s, str));
         }
 
-        public static List<string> Preprocess(EngineState s, List<string> strs)
+        public static List<string> Preprocess(EngineState s, IEnumerable<string> strs)
         {
             return Unescape(ExpandVariables(s, strs));
         }
@@ -264,7 +274,7 @@ namespace PEBakery.Core
             return Unescape(ExpandVariables(vars, str));
         }
 
-        public static List<string> Preprocess(Variables vars, List<string> strs)
+        public static List<string> Preprocess(Variables vars, IEnumerable<string> strs)
         {
             return Unescape(ExpandVariables(vars, strs));
         }
