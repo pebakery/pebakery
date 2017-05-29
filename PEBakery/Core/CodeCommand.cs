@@ -785,7 +785,7 @@ namespace PEBakery.Core
         BytesToInt,
         Ceil, Floor, Round, // Round added in PEBakery 
         Date,
-        FileName, DirPath, Ext,
+        FileName, DirPath, Path, Ext, // DirPath == Path
         Inc, Dec, Mult, Div,
         Left, Right,
         SubStr, // Added in PEBakery
@@ -1427,6 +1427,9 @@ namespace PEBakery.Core
                             default:
                                 throw new InternalException($"Cannot compare [{compArg1}] and [{compArg2}]");
                         }
+
+                        if (NotFlag)
+                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistFile:

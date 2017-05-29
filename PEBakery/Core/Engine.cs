@@ -177,10 +177,16 @@ namespace PEBakery.Core
 
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
+            List<CodeCommand> codes = addr.Section.GetCodes(true);
+            s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
+
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
                 paramDict[i + 1] = sectionParams[i];
-            RunSection(s, addr, paramDict, depth, callback);
+
+            RunCommands(s, addr, codes, paramDict, depth, callback);
+
+            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
@@ -188,7 +194,8 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
-            RunCommands(s, addr, codes, paramDict, depth, callback);
+            // Copy Param Dictionary by value, not reference
+            RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
 
             s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
         }
@@ -207,7 +214,7 @@ namespace PEBakery.Core
                 {
                     curCommand = codes[idx];
                     s.CurDepth = depth;
-                    s.CurSectionParams = sectionParams;
+                    s.CurSectionParams = sectionParams; 
                     ExecuteCommand(s, curCommand);
 
                     if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag)
@@ -558,7 +565,10 @@ namespace PEBakery.Core
                 Plugins = new List<Plugin>();
                 Tree<Plugin> tree = project.GetActivePlugin();
                 foreach (Plugin p in tree)
-                    Plugins.Add(p);
+                {
+                    if (p.Type != PluginType.Directory)
+                        Plugins.Add(p);
+                }
 
                 CurrentPlugin = Plugins[0]; // Main Plugin
                 CurrentPluginIdx = 0;

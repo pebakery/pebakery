@@ -188,6 +188,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case StrFormatType.FileName:
                 case StrFormatType.DirPath:
+                case StrFormatType.Path:
                 case StrFormatType.Ext:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Path));
@@ -200,7 +201,7 @@ namespace PEBakery.Core.Commands
                         {
                             destStr = Path.GetFileName(srcStr);
                         }
-                        else if (type == StrFormatType.DirPath)
+                        else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
                         {
                             destStr = Path.GetDirectoryName(srcStr);
                         }
@@ -404,10 +405,18 @@ namespace PEBakery.Core.Commands
                             int newIdx = srcStr.Substring(startIdx).IndexOf(subStr);
                             while (newIdx != -1)
                             {
-                                b.Append(srcStr.Substring(startIdx, newIdx));
+                                string tmpStr = srcStr.Substring(startIdx, newIdx);
+                                b.Append(tmpStr);
                                 b.Append(newStr);
-                                startIdx = newIdx + subStr.Length;
+
+                                startIdx += tmpStr.Length + subStr.Length;
                                 newIdx = srcStr.Substring(startIdx).IndexOf(subStr);
+
+                                if (newIdx == -1)
+                                {
+                                    b.Append(srcStr.Substring(startIdx));
+                                    break;
+                                }
                             }
                             destStr = b.ToString();
                         }

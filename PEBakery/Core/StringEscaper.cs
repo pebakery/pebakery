@@ -153,7 +153,13 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string ExpandVariables(EngineState s, string str)
         {
-            return s.Variables.Expand(ExpandSectionParams(s, str));
+            do
+            {
+                str = s.Variables.Expand(ExpandSectionParams(s, str));
+            }
+            while (Variables.DetermineType(str) != Variables.VarKeyType.None);
+
+            return str;
         }
 
         public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
@@ -188,15 +194,8 @@ namespace PEBakery.Core
             Regex regex = new Regex(@"(#\d+)", RegexOptions.Compiled);
             MatchCollection matches = regex.Matches(str);
 
-            int cnt = 0;
-
             while (0 < matches.Count)
             {
-                cnt++;
-                if (cnt > 20)
-                {
-                }
-
                 StringBuilder builder = new StringBuilder();
                 for (int x = 0; x < matches.Count; x++)
                 {
@@ -211,27 +210,31 @@ namespace PEBakery.Core
                         builder.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    /*
-                    TODO: What is the internal logic of WB082?
-
-                    Test Result
-                        In [Process]
-                            Message,#3
-                        Printed "#3"
-
-                        In [Process2] 
-                            Run,%ScriptFile%,Process2,Test)
-                            [Process2]
-                            Message,#3
-                        Printed ""
-                    */
                     string param;
                     if (s.CurSectionParams.ContainsKey(pIdx))
                     {
-                        param = s.CurSectionParams[pIdx];
+                        if (s.CurSectionParams[pIdx].Equals($"#{pIdx}", StringComparison.Ordinal))
+                            param = string.Empty; // Really, this should not happen, but happening (....)
+                        else
+                            param = s.CurSectionParams[pIdx];
                     }
                     else
                     {
+                        /*
+                        TODO: What is the internal logic of WB082?
+
+                        Test Result
+                            In [Process]
+                                Message,#3
+                            Printed "#3"
+
+                            In [Process2] 
+                                Run,%ScriptFile%,Process2,Test)
+                                [Process2]
+                                Message,#3
+                            Printed ""
+                        */
+
                         // param = matches[x].Value;
                         param = string.Empty;
                     }
@@ -244,11 +247,15 @@ namespace PEBakery.Core
 
                 if (s.LoopRunning)
                 { // Escape #c
-                    if (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1)
+                    int idx = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase);
+                    if (idx != -1)
                     {
-                        str = str.Replace("#c", s.LoopCounter.ToString());
-                        str = str.Replace("#C", s.LoopCounter.ToString());
+                        StringBuilder b = new StringBuilder();
+                        b.Append(str.Substring(0, idx));
+                        b.Append(s.LoopCounter);
+                        b.Append(str.Substring(idx + 2));
                     }
+                        
                 }
 
                 matches = regex.Matches(str);

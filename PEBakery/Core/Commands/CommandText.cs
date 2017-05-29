@@ -118,17 +118,9 @@ namespace PEBakery.Core.Commands
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
-
-            List<string> prepLines = new List<string>();
-            foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
-            {
-                string line = StringEscaper.Preprocess(s, info.Line);
-                prepLines.Add(line);
-            }
-
             StringBuilder b = new StringBuilder();
-            foreach (var line in prepLines)
-                b.AppendLine(line);
+            foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
+                b.AppendLine(StringEscaper.Preprocess(s, info.Line));
             string linesToWrite = b.ToString();
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
