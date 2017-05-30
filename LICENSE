@@ -631,7 +631,7 @@ copy of the Program in return for a fee.
 -------------------------------------------------------------------------------
 Portions of PEBakery is licensed under Apache License 2.0.
 
-- PEBakery.WPF/CabLib.cs
+- PEBakery/Libs/CabLib.cs
 Derived from Visual Studio Sample "Programmatically generate the Infopath form"
 https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
 
@@ -814,17 +814,17 @@ https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourc
 -------------------------------------------------------------------------------
 Portions of PEBakery is licensed under MIT License.
 
-- PEBakery.WPF/Controls/MahApps 
+- PEBakery/WPF/Controls/MahApps 
 Copyright (c) 2016 MahApps
 Derived from https://github.com/MahApps/MahApps.Metro
 
-- PEBakery.WPF/Controls/CustomMessageBox
+- PEBakery/WPF/Controls/CustomMessageBox
 Copyright (c) 2013 Evan Wondrasek / Apricity Software LLC
 Derived from https://github.com/evanwon/WPFCustomMessageBox
 
-- PEBakery.WPF/Helper.cs
-- PEBakery.WPF/IniLib.cs
-- PEBakery.WPF/TreeLib.cs
+- PEBakery/Helper.cs
+- PEBakery/Libs/IniLib.cs
+- PEBakery/Libs/TreeLib.cs
 Copyright (c) 2016-2017 Hajin Jang
 
 Portions of PEBakery uses libraries licensed under MIT License.
@@ -896,9 +896,17 @@ https://www.iconfinder.com/icons/208267/desert_donut_icon
 
 
 -------------------------------------------------------------------------------
+Portions of PEBakery is licensed under CC BY 3.0 US.
+
+- PEBakery/WPF/Svg/Donut.xaml
+Copyright (c) Numero Uno
+https://thenounproject.com/numerouno/
+
+
+-------------------------------------------------------------------------------
 Portions of PEBakery is licensed under Code Project Open License (CPOL) 1.02.
 
-- PEBakery.WPF/Controls/Spinner
+- PEBakery/WPF/Controls/Spinner
 Copyright (c) 2012 Barry Lapthorn
 https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control
 
