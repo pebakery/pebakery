@@ -195,19 +195,29 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_Path subInfo = info.SubInfo as StrFormatInfo_Path;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.FilePath);
-
                         string destStr = string.Empty;
-                        if (type == StrFormatType.FileName)
+
+                        if (srcStr.Trim().Equals(string.Empty, StringComparison.Ordinal)) // Empty or Whitespace string
                         {
-                            destStr = Path.GetFileName(srcStr);
+                            logs.Add(new LogInfo(LogState.Info, $"Source string [{srcStr}] is empty"));
                         }
-                        else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
+                        else 
                         {
-                            destStr = Path.GetDirectoryName(srcStr);
-                        }
-                        else if (type == StrFormatType.Ext)
-                        {
-                            destStr = Path.GetExtension(srcStr);
+                            if (type == StrFormatType.FileName)
+                            {
+                                destStr = Path.GetFileName(srcStr);
+                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
+                            }
+                            else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
+                            {
+                                destStr = Path.GetDirectoryName(srcStr);
+                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
+                            }
+                            else if (type == StrFormatType.Ext)
+                            {
+                                destStr = Path.GetExtension(srcStr);
+                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s extension is [{destStr}]"));
+                            }
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
@@ -464,19 +474,29 @@ namespace PEBakery.Core.Commands
 
                         char[] delim = delimStr.ToCharArray();
 
-                        string destStr;
+                        List<LogInfo> varLogs = null;
                         if (idx == 0)
                         {
-                            destStr = srcStr.Split(delim).Length.ToString();
+                            int delimCount = srcStr.Split(delim).Length;
+                            logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}] is split to [{delimCount}] strings."));
+                            varLogs = Variables.SetVariable(s, subInfo.DestVarName, delimCount.ToString());
+                            logs.AddRange(varLogs);
                         }
                         else
                         {
                             string[] slices = srcStr.Split(delim);
-                            destStr = slices[idx - 1];
+                            if (idx - 1 < slices.Length)
+                            {
+                                string destStr = slices[idx - 1];
+                                logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}]'s split index [{idx}] is [{destStr}]"));
+                                varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                                logs.AddRange(varLogs);
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bound [{slices.Length}]"));
+                            }
                         }
-
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
-                        logs.AddRange(varLogs);
                     }
                     break;
                 // Error

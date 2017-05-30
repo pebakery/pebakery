@@ -154,7 +154,7 @@ namespace PEBakery.Core
         public static string ExpandVariables(EngineState s, string str)
         {
             do
-            {
+            { // TODO: Prevent Infinite loop
                 str = s.Variables.Expand(ExpandSectionParams(s, str));
             }
             while (Variables.DetermineType(str) != Variables.VarKeyType.None);
@@ -213,10 +213,11 @@ namespace PEBakery.Core
                     string param;
                     if (s.CurSectionParams.ContainsKey(pIdx))
                     {
-                        if (s.CurSectionParams[pIdx].Equals($"#{pIdx}", StringComparison.Ordinal))
-                            param = string.Empty; // Really, this should not happen, but happening (....)
-                        else
-                            param = s.CurSectionParams[pIdx];
+                        //if (s.CurSectionParams[pIdx].Equals($"#{pIdx}", StringComparison.Ordinal))
+                        //    param = string.Empty; // TODO: Really, this code should not be reached, but being readched (....)
+                        //else
+                        //    param = s.CurSectionParams[pIdx];
+                        param = s.CurSectionParams[pIdx];
                     }
                     else
                     {
@@ -245,20 +246,20 @@ namespace PEBakery.Core
                 }
                 str = builder.ToString();
 
-                if (s.LoopRunning)
-                { // Escape #c
-                    int idx = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase);
-                    if (idx != -1)
-                    {
-                        StringBuilder b = new StringBuilder();
-                        b.Append(str.Substring(0, idx));
-                        b.Append(s.LoopCounter);
-                        b.Append(str.Substring(idx + 2));
-                    }
-                        
-                }
-
                 matches = regex.Matches(str);
+            }
+
+            if (s.LoopRunning)
+            { // Escape #c
+                int idx = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase);
+                if (idx != -1)
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.Append(str.Substring(0, idx));
+                    b.Append(s.LoopCounter);
+                    b.Append(str.Substring(idx + 2)); // +2 for removing #c
+                    str = b.ToString();
+                }
             }
 
             return str;
