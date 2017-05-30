@@ -111,7 +111,7 @@ namespace PEBakery.Core
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < info.Args.Count; i++)
-                paramDict[i + 1] = info.Args[i];
+                paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, info.Args[i]);
 
             s.CurSectionParams = paramDict;
 

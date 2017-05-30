@@ -45,11 +45,16 @@ namespace PEBakery.Core.Commands
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
+            if (File.Exists(filePath) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{filePath}] does not exists"));
+                return logs;
+            }
+
             StringBuilder b = new StringBuilder(filePath);
 
             Process proc = new Process();
             proc.StartInfo.FileName = filePath;
-
             if (info.Params != null)
             {
                 string parameters = StringEscaper.Preprocess(s, info.Params);

@@ -28,64 +28,151 @@ using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
 using System.ComponentModel;
+using PEBakery.Lib;
+using System.Threading;
 
 namespace PEBakery.Core
 {
     public class Engine
     {
-        public static bool Running = false;
+        public static Engine WorkingEngine; // Only 1 Instance can run at one time
+        public static int WorkingLock;
+
         public EngineState s;
+        private Task<long> task;
 
         public Engine(EngineState state)
         {
             s = state;
-            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
         }
 
         /// <summary>
         /// Ready to run an plugin
         /// </summary>
-        private void ReadyToRunPlugin(Plugin p = null)
+        private void ReadyRunPlugin(long buildId, Plugin p = null)
         {
             // Turn off System,ErrorOff
             s.Logger.ErrorOffCount = 0;
             // Turn off System,Log,Off
             s.Logger.SuspendLog = false;
 
+            // Set CurrentPlugin
+            // Note: s.CurrentPluginIdx is not touched here
             if (p == null)
                 p = s.CurrentPlugin;
             else
                 s.CurrentPlugin = p;
-            PluginSection section = p.Sections["Process"];
-            s.Logger.Build_Write(s, $"Processing plugin [{p.ShortPath}] ({s.Plugins.IndexOf(p)}/{s.Plugins.Count})");
 
+            // Init Per-Plugin Log
+            s.PluginId = s.Logger.Build_Plugin_Init(buildId, s.CurrentPlugin, s.CurrentPluginIdx + 1);
+
+            // Log Plugin Build Start Message
+            string msg;
+            if (s.RunOnePlugin && s.EntrySectionName.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
+                msg = $"Processing section [{s.EntrySectionName}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+            else
+                msg = $"Processing plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+            s.Logger.Build_Write(s, msg);
+            s.Logger.Build_Write(s, Logger.LogSeperator);
+
+            // Load Default Per-Plugin Variables
             s.Variables.ResetVariables(VarsType.Local);
-            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
+            s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin));
 
+            // Current Section Parameter - empty
             s.CurSectionParams = new Dictionary<int, string>();
+
+            // Set Interface using MainWindow, MainViewModel
+            s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
+            s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
+            s.MainViewModel.PluginVersionText = $"v{p.Version}";
+            s.MainViewModel.PluginAuthorText = p.Author;
+            s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySectionName}]...";
+
+            long allLineCount = 0;
+            foreach (var kv in s.CurrentPlugin.Sections.Where(x => x.Value.Type == SectionType.Code))
+                allLineCount += kv.Value.Lines.Count; // Why not Codes? PEBakery compiles code on-demand, so we have only lines at this time.
+
+            s.MainViewModel.BuildPluginProgressBarMax = allLineCount;
+            s.MainViewModel.BuildPluginProgressBarValue = 0;
+            s.MainViewModel.BuildFullProgressBarValue = s.CurrentPluginIdx;
+
+            Application.Current.Dispatcher.BeginInvoke((Action) (() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                if (w.CurBuildTree != null)
+                    w.CurBuildTree.BuildFocus = false;
+                w.CurBuildTree = s.MainViewModel.BuildTree.FindPluginByFullPath(s.CurrentPlugin.FullPath);
+                w.CurBuildTree.BuildFocus = true;
+            }));
         }
 
-        public void Build()
+        private void FinishRunPlugin(long pluginId)
         {
-            while (true)
+            // Finish Per-Plugin Log
+            s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
+            s.Logger.Build_Write(s, Logger.LogSeperator);
+            s.Logger.Build_Plugin_Finish(pluginId);
+        }
+
+        public Task<long> Run(string runName)
+        {
+            task = Task.Run(() =>
             {
-                ReadyToRunPlugin(s.CurrentPlugin);
-                Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, s.CurrentPlugin.Sections["Process"]), new List<string>(), 0, false);
-                // End of Plugin
-                s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
-                int curPluginIdx = s.Plugins.IndexOf(s.CurrentPlugin);
-                if (curPluginIdx + 1 < s.Plugins.Count)
+                s.BuildId = s.Logger.Build_Init(runName, s);
+
+                s.MainViewModel.BuildFullProgressBarMax = s.Plugins.Count;
+
+                while (true)
                 {
-                    s.NextPluginIdx = curPluginIdx + 1;
+                    ReadyRunPlugin(s.BuildId);
+
+                    // Run Main Section
+                    PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySectionName];
+                    SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
+                    s.Logger.LogStartOfSection(s, addr, 0, true, null);
+                    Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
+                    s.Logger.LogEndOfSection(s, addr, 0, true, null);
+
+                    // End of Plugin
+                    FinishRunPlugin(s.PluginId);
+
+                    // OnPluginExit event callback
+                    Engine.CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
+
+                    if (s.Plugins.Count - 1 <= s.CurrentPluginIdx ||
+                        s.RunOnePlugin || s.ErrorHaltFlag || s.UserHaltFlag)
+                    { // End of Build
+                        if (s.UserHaltFlag)
+                        {
+                            s.Logger.Build_Write(s, Logger.LogSeperator);
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Build stopped by user"));
+                            MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+
+                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
+                        break;
+                    }
+                    s.Logger.Build_Write(s, string.Empty);
+
+                    // Run Next Plugin
+                    s.CurrentPluginIdx += 1;
+                    s.CurrentPlugin = s.Plugins[s.CurrentPluginIdx];
+                    s.PassCurrentPluginFlag = false;
                 }
-                else
-                { 
-                    // End of plugins, build done. Exit.
-                    // OnBuildExit event callback
-                    Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
-                    break;
-                }
-            }
+
+                s.Logger.Build_Finish(s.BuildId);
+
+                return s.BuildId;
+            });
+
+            return task;
+        }
+
+        public void ForceStop()
+        {
+            s.UserHaltFlag = true;
+            task.Wait();
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
@@ -95,8 +182,11 @@ namespace PEBakery.Core
 
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
-                paramDict[i + 1] = sectionParams[i];
+                paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, sectionParams[i]);
+
             RunCommands(s, addr, codes, paramDict, depth, callback);
+
+            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
@@ -104,75 +194,12 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
-            RunCommands(s, addr, codes, paramDict, depth, callback);
+            // Copy Param Dictionary by value, not reference
+            RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
+
+            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
         }
-
-        public static void RunOneSectionInUI(SectionAddress addr, string logMsg)
-        {
-            if (Engine.Running == false)
-            {
-                Engine.Running = true;
-                SettingViewModel setting = null;
-                Logger logger = null;
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-                    w.Model.ProgressRingActive = true;
-                    setting = w.Setting;
-                    logger = w.Logger;
-                });
-
-                BackgroundWorker worker = new BackgroundWorker();
-                worker.DoWork += (object sender, DoWorkEventArgs e) =>
-                {
-                    EngineState s = new EngineState(addr.Plugin.Project, logger, addr.Plugin);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-                        s.SetLogOption(setting);
-                    });
-                    long buildId = Engine.RunOneSection(s, addr, logMsg);
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                    logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-                };
-                worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-                        w.Model.ProgressRingActive = false;
-                    });
-                    Engine.Running = false;
-                };
-                worker.RunWorkerAsync();
-            }
-        }
-
-        public static long RunOneSection(EngineState s, SectionAddress addr, string buildName)
-        {
-            long buildId = s.Logger.Build_Init(buildName, s);
-            long pluginId = s.Logger.Build_Plugin_Init(buildId, addr.Plugin, 1);
-
-            s.BuildId = buildId;
-            s.PluginId = pluginId;
-
-            s.Logger.LogStartOfSection(buildId, pluginId, addr.Section.SectionName, 0, null);
-
-            s.Variables.ResetVariables(VarsType.Local);
-            s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin);
-
-            Engine.RunSection(s, addr, new List<string>(), 1, true);
-
-            s.Logger.LogEndOfSection(buildId, pluginId, addr.Section.SectionName, 0, null);
-
-            s.Logger.Build_Plugin_Finish(pluginId);
-            s.Logger.Build_Finish(buildId);
-
-            return buildId;
-        }
-
+       
         public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
             if (codes.Count == 0)
@@ -187,11 +214,15 @@ namespace PEBakery.Core
                 {
                     curCommand = codes[idx];
                     s.CurDepth = depth;
-                    s.CurSectionParams = sectionParams;
+                    s.CurSectionParams = sectionParams; 
                     ExecuteCommand(s, curCommand);
+
+                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag)
+                        break;
                 }
                 catch (CriticalErrorException)
                 { // Critical Error, stop build
+                    s.ErrorHaltFlag = true;
                     break;
                 }
             }
@@ -213,7 +244,8 @@ namespace PEBakery.Core
                     s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]\r\n", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+                s.Logger.Build_Write(s, Logger.LogSeperator);
                 cbCmd = null;
             }
         }
@@ -228,12 +260,13 @@ namespace PEBakery.Core
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
             }
 
+            s.MainViewModel.BuildCommandProgressBarValue = 0;
+
             try
             {
                 switch (cmd.Type)
                 {
                     #region 00 Misc
-                    // 00 Misc
                     case CodeType.None:
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
@@ -249,21 +282,9 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 01 File
-                    // 01 File
-                    //case CodeType.CopyOrExpand:
-                    //    break;
-                    //case CodeType.DirCopy:
-                    //   break;
-                    //case CodeType.DirDelete:
-                    //    break;
-                    //case CodeType.DirMove:
-                    //    break;
-                    //case CodeType.DirMake:
-                    //    break;
-                    //case CodeType.Expand:
-                    //    break;
-                    //case CodeType.FileCopy:
-                    //    break;
+                    case CodeType.FileCopy:
+                        logs.AddRange(CommandFile.FileCopy(s, cmd));
+                        break;
                     //case CodeType.FileDelete:
                     //    break;
                     //case CodeType.FileRename:
@@ -272,11 +293,23 @@ namespace PEBakery.Core
                     case CodeType.FileCreateBlank:
                         logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
-                    //case CodeType.FileByteExtract:
+                    //case CodeType.FileSize:
+                    //    break;
+                    //case CodeType.FileVersion:
+                    //    break;
+                    //case CodeType.DirCopy:
+                    //   break;
+                    //case CodeType.DirDelete:
+                    //    break;
+                    //case CodeType.DirMove:
+                    //    break;
+                    case CodeType.DirMake:
+                        logs.AddRange(CommandFile.DirMake(s, cmd));
+                        break;
+                    //case CodeType.DirSize:
                     //    break;
                     #endregion
                     #region 02 Registry
-                    // 02 Registry
                     //case CodeType.RegHiveLoad:
                     //    break;
                     //case CodeType.RegHiveUnload:
@@ -297,7 +330,6 @@ namespace PEBakery.Core
                     //   break;
                     #endregion
                     #region 03 Text
-                    // 03 Text
                     case CodeType.TXTAddLine:
                         logs.AddRange(CommandText.TXTAddLine(s, cmd));
                         break;
@@ -318,7 +350,6 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 04 INI
-                    // 04 INI
                     case CodeType.INIRead:
                         logs.AddRange(CommandINI.INIRead(s, cmd));
                         break;
@@ -344,6 +375,10 @@ namespace PEBakery.Core
                     //     break;
                     // case CodeType.Decompress:
                     //     break;
+                    //case CodeType.Expand:
+                    //    break;
+                    //case CodeType.CopyOrExpand:
+                    //    break;
                     #endregion
                     #region 06 Network
                     //case CodeType.WebGet:
@@ -352,7 +387,6 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 07 Attach
-                    // 07 Attach
                     case CodeType.ExtractFile:
                         logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
                         break;
@@ -370,25 +404,31 @@ namespace PEBakery.Core
                     case CodeType.VisibleOp:
                         logs.AddRange(CommandInterface.VisibleOp(s, cmd));
                         break;
-                    #endregion
-                    #region 09 UI
                     case CodeType.Message:
-                        logs.AddRange(CommandUI.Message(s, cmd));
+                        logs.AddRange(CommandInterface.Message(s, cmd));
                         break;
                     case CodeType.Echo:
-                        logs.AddRange(CommandUI.Echo(s, cmd));
+                        logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
+                    //case CodeType.UserInput:
+                    //   break;
                     //case CodeType.Retrieve:
                     //   break;
-                    //case CodeType.Visible:
+                    #endregion
+                    #region 09 Hash
+                    //case CodeType.Hash:
                     //    break;
                     #endregion
-                    #region 10 StringFormat
+                    #region 10 String
                     case CodeType.StrFormat:
                         logs.AddRange(CommandString.StrFormat(s, cmd));
                         break;
                     #endregion
-                    #region 11 System
+                    #region 11 Math
+                    //case CodeType.Math:
+                    //    break;
+                    #endregion
+                    #region 12 System
                     // case CodeType.System:
                     //    break;
                     case CodeType.ShellExecute:
@@ -397,7 +437,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
-                    #region 12 Branch
+                    #region 13 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
                         CommandBranch.RunExec(s, cmd);
@@ -416,28 +456,33 @@ namespace PEBakery.Core
                     case CodeType.End:
                         throw new InternalParserException("CodeParser Error");
                     #endregion
-                    #region 13 Control
+                    #region 14 Control
                     case CodeType.Set:
-                        logs = CommandControl.Set(s, cmd);
+                        logs.AddRange(CommandControl.Set(s, cmd));
+                        break;
+                    case CodeType.AddVariables:
+                        logs.AddRange(CommandControl.AddVariables(s, cmd));
                         break;
                     case CodeType.GetParam:
-                        logs = CommandControl.GetParam(s, cmd);
+                        logs.AddRange(CommandControl.GetParam(s, cmd));
                         break;
                     case CodeType.PackParam:
-                        logs = CommandControl.PackParam(s, cmd);
+                        logs.AddRange(CommandControl.PackParam(s, cmd));
                         break;
-                    //case CodeType.AddVariables:
-                    //    break;
-                    //case CodeType.Exit:
-                    //    break;
-                    //case CodeType.Halt:
-                    //    break;
-                    //case CodeType.Wait:
-                    //    break;
-                    //case CodeType.Beep:
-                    //    break;
+                    case CodeType.Exit:
+                        logs.AddRange(CommandControl.Exit(s, cmd));
+                        break;
+                    case CodeType.Halt:
+                        logs.AddRange(CommandControl.Halt(s, cmd));
+                        break;
+                    case CodeType.Wait:
+                        logs.AddRange(CommandControl.Wait(s, cmd));
+                        break;
+                    case CodeType.Beep:
+                        logs.AddRange(CommandControl.Beep(s, cmd));
+                        break;
                     #endregion
-                    #region 14 External Macro
+                    #region 15 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;
@@ -463,6 +508,8 @@ namespace PEBakery.Core
             }
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
+
+            s.MainViewModel.BuildCommandProgressBarValue = 1000;
         }
     }
 
@@ -475,10 +522,7 @@ namespace PEBakery.Core
         public Macro Macro;
         public Logger Logger;
         public bool RunOnePlugin;
-        public long BuildId; // Used in logging
-        public long PluginId; // Used in logging
-        public bool LogComment; // Used in logging
-        public bool LogMacro; // Used in logging
+        public MainViewModel MainViewModel;
 
         // Properties
         public string BaseDir { get => Project.BaseDir; }
@@ -486,49 +530,68 @@ namespace PEBakery.Core
 
         // Fields : Engine's state
         public Plugin CurrentPlugin;
-        public int NextPluginIdx;
-        public Dictionary<int, string> CurSectionParams;
+        public int CurrentPluginIdx;
+        public Dictionary<int, string> CurSectionParams = new Dictionary<int, string>();
         public int CurDepth;
-        public bool ElseFlag;
-        public bool LoopRunning;
+        public bool ElseFlag = false;
+        public bool LoopRunning = false;
         public long LoopCounter;
+        public bool PassCurrentPluginFlag = false;
+        public bool ErrorHaltFlag = false;
+        public bool UserHaltFlag = false;
+        public long BuildId; // Used in logging
+        public long PluginId; // Used in logging
+        public bool LogComment = true; // Used in logging
+        public bool LogMacro = true; // Used in logging
 
         // Fields : System Commands
-        public CodeCommand OnBuildExit;
-        public CodeCommand OnPluginExit;
+        public CodeCommand OnBuildExit = null;
+        public CodeCommand OnPluginExit = null;
 
-        public EngineState(Project project, Logger logger, Plugin pluginToRun = null)
+        // Readonly Fields
+        public readonly string EntrySectionName;
+
+        public EngineState(Project project, Logger logger, Plugin pluginToRun = null, string entrySectionName = "Process")
         {
             this.Project = project;
-            this.Plugins = project.GetActivePluginList();
             this.Logger = logger;
-
-            this.LogComment = true;
-            this.LogMacro = true;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);
 
             if (pluginToRun == null) // Run just plugin
             {
+                // Why List -> Tree -> List? To sort.
+                Plugins = new List<Plugin>();
+                Tree<Plugin> tree = project.GetActivePlugin();
+                foreach (Plugin p in tree)
+                {
+                    if (p.Type != PluginType.Directory)
+                        Plugins.Add(p);
+                }
+
                 CurrentPlugin = Plugins[0]; // Main Plugin
-                NextPluginIdx = 0;
+                CurrentPluginIdx = 0;
+
                 RunOnePlugin = false;
             }
             else
             {
+                Plugins = new List<Plugin>() { pluginToRun };
+
                 CurrentPlugin = pluginToRun;
-                NextPluginIdx = Plugins.IndexOf(pluginToRun);
+                CurrentPluginIdx = Plugins.IndexOf(pluginToRun);
+
                 RunOnePlugin = true;
             }
-                
-            this.CurSectionParams = new Dictionary<int, string>();
-            this.CurDepth = 0;
-            this.ElseFlag = false;
-            this.LoopRunning = false;
 
-            this.OnBuildExit = null;
-            this.OnPluginExit = null;
+            EntrySectionName = entrySectionName;
+
+            Application.Current.Dispatcher.Invoke((Action)(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                MainViewModel = w.Model;
+            }));
         }
 
         public void SetLogOption(SettingViewModel m)

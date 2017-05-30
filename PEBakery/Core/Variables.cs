@@ -4,6 +4,7 @@ using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -73,12 +74,32 @@ namespace PEBakery.Core
 
         private List<LogInfo> LoadDefaultFixedVariables()
         {
-            // MainPlugin Path
+            List<LogInfo> logs = new List<LogInfo>();
+
+            #region Builder Variables
+            // BaseDir
+            logs.Add(SetFixedValue("BaseDir", project.BaseDir));
+            // Tools
+            logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
+            // Version
+            logs.Add(SetFixedValue("Version", App.Version.ToString()));
+            #endregion
+
+            #region Project Variables
+            // Read from MainPlugin
             string fullPath = project.MainPlugin.FullPath;
+            IniKey[] keys = new IniKey[]
+            {
+                new IniKey("Main", "SourceDir"),
+                new IniKey("Main", "TargetDir"),
+                new IniKey("Main", "ISOFile"),
+            };
+            keys = Ini.GetKeys(fullPath, keys);
+            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             // SourceDir
             string sourceDir = string.Empty;
-            string sourceDirs = Ini.GetKey(fullPath, "Main", "SourceDir");
+            string sourceDirs = dict["SourceDir"];
             string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string rawDir in rawDirList)
             {
@@ -90,23 +111,45 @@ namespace PEBakery.Core
                 }
             }
 
-            List<LogInfo> logs = new List<LogInfo>
-            {
-                // BaseDir
-                SetFixedValue("BaseDir", project.BaseDir),
-                // Tools
-                SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")),
-                // Version
-                SetFixedValue("Version", App.Version.ToString()),
-                // ProjectDir
-                SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)),
-                // SourceDir
-                SetFixedValue("SourceDir", sourceDir),
-                // TargetDir
-                SetFixedValue("TargetDir", Ini.GetKey(fullPath, "Main", "TargetDir")),
-                // ISOFile
-                SetFixedValue("ISOFile", Ini.GetKey(fullPath, "Main", "ISOFile")),
+            // ProjectDir
+            logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
+            // SourceDir
+            logs.Add(SetFixedValue("SourceDir", sourceDir));
+            // TargetDir
+            logs.Add(SetFixedValue("TargetDir", dict["TargetDir"]));
+            // ISOFile
+            logs.Add(SetFixedValue("ISOFile", dict["ISOFile"]));
+            // ISODir
+            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(dict["ISOFile"])));
+            #endregion
+
+            #region Envrionment Variables
+            List<Tuple<string, string>> envVarNames = new List<Tuple<string, string>>
+            { // Item1 - Windows Env Var Name, Item2 - PEBakery Env Var Name
+                new Tuple<string, string>("TEMP", "TempDir"),
+                new Tuple<string, string>("USERNAME", "UserName"),
+                new Tuple<string, string>("USERPROFILE", "UserProfile"),
+                new Tuple<string, string>("WINDIR", "WindowsDir"),
+                new Tuple<string, string>("ProgramFiles", "ProgramFilesDir"),
             };
+
+            if (Environment.Is64BitProcess)
+                envVarNames.Add(new Tuple<string, string>("ProgramFiles(x86)", "ProgramFilesDir_x86"));
+
+            foreach (var tuple in envVarNames)
+            {
+                string envValue = Environment.GetEnvironmentVariable(tuple.Item1);
+                if (envValue == null)
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
+                else
+                    logs.Add(SetFixedValue(tuple.Item2, envValue));
+            }
+
+            // WindowsVersion
+            OperatingSystem sysVer = Environment.OSVersion;
+            logs.Add(SetFixedValue("WindowsVersion", sysVer.Version.ToString()));
+            #endregion
+
             return logs;
         }
 
@@ -118,6 +161,7 @@ namespace PEBakery.Core
             if (project.MainPlugin.Sections.ContainsKey("Variables"))
             {
                 logs.AddRange(AddVariables(VarsType.Global, project.MainPlugin.Sections["Variables"]));
+                logs.Add(new LogInfo(LogState.None, Logger.LogSeperator));
             }
 
             return logs;
@@ -141,7 +185,116 @@ namespace PEBakery.Core
                 VarsType type = VarsType.Local;
                 if (p.FullPath.Equals(project.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
                     type = VarsType.Global;
-                logs.AddRange(AddVariables(type, p.Sections["Variables"]));
+
+                List<LogInfo> subLogs = AddVariables(type, p.Sections["Variables"]);
+                if (0 < subLogs.Count)
+                {
+                    logs.Add(new LogInfo(LogState.Info, "Import variables from [Variables]", 0));
+                    logs.AddRange(LogInfo.AddDepth(subLogs, 1));
+                    logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
+                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                }
+            }
+
+            // [Interface]
+            string interfaceSectionName = "Interface";
+            if (p.MainInfo.ContainsKey("Interface"))
+                interfaceSectionName = p.MainInfo["Interface"];
+
+            if (p.Sections.ContainsKey(interfaceSectionName))
+            {
+                List<UICommand> uiCodes = null;
+                try { uiCodes = p.Sections[interfaceSectionName].GetUICodes(true); }
+                catch { } // No [Interface] section, or unable to get List<UICommand>
+
+                if (uiCodes != null)
+                {
+                    List<LogInfo> subLogs = UICommandToVariables(uiCodes);
+                    if (0 < subLogs.Count)
+                    {
+                        logs.Add(new LogInfo(LogState.Info, $"Import variables from [{interfaceSectionName}]", 0));
+                        logs.AddRange(LogInfo.AddDepth(subLogs, 1));
+                        logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
+                        logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                    }
+                }
+            }
+
+            return logs;
+        }
+
+        public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            foreach (UICommand uiCmd in uiCodes)
+            {
+                bool valid = true;
+                string key = uiCmd.Key;
+                string value = string.Empty;
+
+                switch (uiCmd.Type)
+                {
+                    case UIType.TextBox:
+                        {
+                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
+                            UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
+
+                            value = info.Value;
+                        }
+                        break;
+                    case UIType.NumberBox:
+                        {
+                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
+                            UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
+
+                            value = info.Value.ToString();
+                        }
+                        break;
+                    case UIType.CheckBox:
+                        {
+                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
+                            UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
+
+                            value = info.Value.ToString();
+                        }
+                        break;
+                    case UIType.ComboBox:
+                        {
+                            value = uiCmd.Text;
+                        }
+                        break;
+                    case UIType.RadioButton:
+                        {
+                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
+                            UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
+
+                            value = info.Selected.ToString();
+                        }
+                        break;
+                    case UIType.FileBox:
+                        {
+                            value = uiCmd.Text;
+                        }
+                        break;
+                    case UIType.RadioGroup:
+                        {
+                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
+                            UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
+
+                            if (0 <= info.Selected && info.Selected < info.Items.Count)
+                                value = info.Items[info.Selected];
+                            else
+                                value = string.Empty;
+                        }
+                        break;
+                    default:
+                        valid = false;
+                        break;
+                }
+
+                if (valid)
+                    logs.Add(SetValue(VarsType.Local, key, value));
             }
 
             return logs;
@@ -240,7 +393,7 @@ namespace PEBakery.Core
                 throw new InternalException("Fixed variables cannot be written without privilege!");
 
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            // Check and remove circular reference
+            // Check circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
                 return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
@@ -360,7 +513,6 @@ namespace PEBakery.Core
 
         public List<LogInfo> AddVariables(VarsType type, PluginSection section)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = null;
 
             if (section.DataType == SectionDataType.IniDict)
@@ -369,7 +521,7 @@ namespace PEBakery.Core
                 dict = Ini.ParseIniLinesVarStyle(section.GetLines());
 
             if (dict.Keys.Count != 0)
-                return InternalAddDictionary(vars, dict);
+                return InternalAddDictionary(type, dict);
             else // empty
                 return new List<LogInfo>();
         }
@@ -378,20 +530,18 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
-            return InternalAddDictionary(vars, dict);
+            return InternalAddDictionary(type, dict);
         }
 
-        public List<LogInfo> AddVariables(VarsType type, List<string> lines)
+        public List<LogInfo> AddVariables(VarsType type, IEnumerable<string> lines)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
             Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
-            return InternalAddDictionary(vars, dict);
+            return InternalAddDictionary(type, dict);
         }
 
         public List<LogInfo> AddVariables(VarsType type, Dictionary<string, string> dict)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            return InternalAddDictionary(vars, dict);
+            return InternalAddDictionary(type, dict);
         }
 
         /// <summary>
@@ -402,15 +552,18 @@ namespace PEBakery.Core
         /// <param name="sectionDepth"></param>
         /// <param name="errorOff"></param>
         /// <returns>Return true if success</returns>
-        private List<LogInfo> InternalAddDictionary(Dictionary<string, string> vars, Dictionary<string, string> dict)
+        private List<LogInfo> InternalAddDictionary(VarsType type, Dictionary<string, string> dict)
         {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+
             List<LogInfo> list = new List<LogInfo>();
             foreach (var kv in dict)
             {
                 if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
-                    vars[kv.Key] = kv.Value;
-                    list.Add(new LogInfo(LogState.Success, $"Var [%{kv.Key}%] set to [{kv.Value}]"));
+                    vars[kv.Key] = StringEscaper.QuoteUnescape(kv.Value);
+                    
+                    list.Add(new LogInfo(LogState.Success, $"{type} variable [%{kv.Key}%] set to [{kv.Value}]"));
                 }
                 else
                 {
@@ -457,11 +610,12 @@ namespace PEBakery.Core
                 if (FileHelper.CountStringOccurrences(varName, "%") == 2)
                 {
                     string varKey = varName.Substring(1, varName.Length - 2);
-                    varKey = StringEscaper.ExpandSectionParams(s, varKey);
-                    return varKey;
+                    return StringEscaper.ExpandSectionParams(s, varKey);
                 }
                 else
+                {
                     return null;
+                }
             }
             else
             {
@@ -471,8 +625,8 @@ namespace PEBakery.Core
 
         public static int GetSectionParamIndex(string secParam)
         {
-            Match matches = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
-            if (matches.Success)
+            Match match = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
+            if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
                     return paramIdx;
@@ -504,6 +658,9 @@ namespace PEBakery.Core
         {
             if (pIdx <= 0)
                 return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be positive integer");
+            if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
+                return new LogInfo(LogState.Error, $"Section parameter cannot have circular reference");
+                
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }

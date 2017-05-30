@@ -26,6 +26,8 @@ using PEBakery.WPF;
 using System.Windows;
 using System.Windows.Threading;
 using System.Diagnostics;
+using System.Globalization;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
 {
@@ -69,7 +71,7 @@ namespace PEBakery.Core.Commands
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    if (w.CurrentTree.Node.Data == cmd.Addr.Plugin)
+                    if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
                         w.DrawPlugin(cmd.Addr.Plugin);
                 });
             }
@@ -127,9 +129,86 @@ namespace PEBakery.Core.Commands
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurrentTree.Node.Data == cmd.Addr.Plugin)
+                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
                     w.DrawPlugin(cmd.Addr.Plugin);
             });
+
+            return logs;
+        }
+
+        public static List<LogInfo> Message(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
+            CodeInfo_Message info = cmd.Info as CodeInfo_Message;
+
+            string message = StringEscaper.Preprocess(s, info.Message);
+            MessageBoxImage image;
+            switch (info.Action)
+            {
+                case CodeMessageAction.None:
+                case CodeMessageAction.Information:
+                    image = MessageBoxImage.Information;
+                    break;
+                case CodeMessageAction.Confirmation:
+                    image = MessageBoxImage.Question;
+                    break;
+                case CodeMessageAction.Error:
+                    image = MessageBoxImage.Error;
+                    break;
+                case CodeMessageAction.Warning:
+                    image = MessageBoxImage.Warning;
+                    break;
+                default: // Internal Logic Error
+                    Debug.Assert(false);
+                    image = MessageBoxImage.Information;
+                    break;
+            }
+
+            if (info.Timeout == null)
+            {
+                MessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image);
+            }
+            else
+            {
+                string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
+                if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeout) == false)
+                    throw new ExecuteException($"[{timeoutStr}] is not valid positive integer");
+                if (timeout <= 0)
+                    throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CustomMessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image, timeout);
+                });
+            }
+
+            string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            string firstLine = message;
+            if (0 < slices.Length)
+                firstLine = slices[0];
+            logs.Add(new LogInfo(LogState.Success, $"MessageBox [{firstLine}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Echo(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
+            CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
+
+            string message = StringEscaper.Preprocess(s, info.Message);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w.Model.BuildEchoMessage = message;
+            });
+
+            logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
 
             return logs;
         }

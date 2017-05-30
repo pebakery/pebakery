@@ -34,6 +34,8 @@ using MahApps.Metro.IconPacks;
 using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using System.Windows.Threading;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace PEBakery.WPF
 {
@@ -292,6 +294,15 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
+
+            if (info.SectionName != null)
+            {
+                checkBox.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                };
+            }
             
             checkBox.Checked += (object sender, RoutedEventArgs e) =>
             {
@@ -363,14 +374,14 @@ namespace PEBakery.WPF
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
-            if (ImageHelper.GetImageType(uiCmd.Text, out ImageType type))
+            if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType type))
                 return;
 
             Button button = new Button()
             {
                 Style = (Style)r.Window.FindResource("ImageButton")
             };
-            if (type == ImageType.Svg)
+            if (type == ImageHelper.ImageType.Svg)
             {
                 double width = uiCmd.Rect.Width * r.MasterScale;
                 double height = uiCmd.Rect.Height * r.MasterScale;
@@ -406,7 +417,7 @@ namespace PEBakery.WPF
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
                     MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
-                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageType t))
+                    if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType t))
                         return;
                     string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
                     FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write);
@@ -480,13 +491,13 @@ namespace PEBakery.WPF
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                Engine.RunOneSectionInUI(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]");
+                UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
                 MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
-                if (ImageHelper.GetImageType(info.Picture, out ImageType type))
+                if (ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
 
                 Image image = new Image()
@@ -496,7 +507,7 @@ namespace PEBakery.WPF
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
                 int margin = 5;
-                if (type == ImageType.Svg)
+                if (type == ImageHelper.ImageType.Svg)
                 {
                     ImageHelper.GetSvgSize(mem, out double width, out double height);
                     if (uiCmd.Rect.Width < uiCmd.Rect.Height)
@@ -649,6 +660,15 @@ namespace PEBakery.WPF
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
+            if (info.SectionName != null)
+            {
+                radio.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                };
+            }
+
             radio.Checked += (object sender, RoutedEventArgs e) =>
             {
                 RadioButton btn = sender as RadioButton;
@@ -751,32 +771,21 @@ namespace PEBakery.WPF
 
             double fontSize = CalcFontPointScale();
 
-            Border bevel = new Border()
+            GroupBox box = new GroupBox()
             {
-                IsHitTestVisible = false,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(1),
-                BorderBrush = Brushes.Gray,
-                ToolTip = info.ToolTip,
-            };
-
-            Border border = new Border()
-            {
-                Background = Brushes.White,
-                BorderThickness = new Thickness(2, 0, 2, 0),
-                BorderBrush = Brushes.White,
-            };
-            TextBlock block = new TextBlock()
-            {
-                Text = uiCmd.Text,
+                Header = uiCmd.Text,
                 FontSize = fontSize,
+                BorderBrush = Brushes.LightGray,
             };
-            border.Child = block;
+            SetToolTip(box, info.ToolTip);
 
-            SetToolTip(bevel, info.ToolTip);
-            SetToolTip(border, info.ToolTip);
+            StackPanel panel = new StackPanel()
+            {
+                Orientation = Orientation.Vertical,
+            };
+            box.Content = panel;
 
-            List<RadioButton> list = new List<RadioButton>();
+            Thickness margin = new Thickness(0, 0, 0, fontSize * 0.4);
             for (int i = 0; i < info.Items.Count; i++)
             {
                 RadioButton radio = new RadioButton()
@@ -786,13 +795,10 @@ namespace PEBakery.WPF
                     Tag = i,
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
+                    Margin = margin,
                 };
 
-                if (i == info.Selected)
-                    radio.IsChecked = true;
-                else
-                    radio.IsChecked = false;
-
+                radio.IsChecked = (i == info.Selected);
                 radio.Checked += (object sender, RoutedEventArgs e) =>
                 {
                     RadioButton btn = sender as RadioButton;
@@ -801,23 +807,12 @@ namespace PEBakery.WPF
                 };
 
                 SetToolTip(radio, info.ToolTip);
-            
-                list.Add(radio);
+
+                panel.Children.Add(radio);
             }
 
-            double pushToBottom = CalcFontPointScale() * 0.7;
-            Rect bevelRect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top + pushToBottom, uiCmd.Rect.Width, uiCmd.Rect.Height - pushToBottom);
-            Rect textRect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top, double.NaN, double.NaN); // NaN for auto width/height
-
-            // Keep order!
-            DrawToCanvas(r, bevel, bevelRect);
-            DrawToCanvas(r, border, textRect);
-            for (int i = 0; i < list.Count; i++)
-            {
-                double margin = CalcFontPointScale() * 1.7;
-                Rect rect = new Rect(uiCmd.Rect.Left + 5, uiCmd.Rect.Top + margin * (i + 1), double.NaN, double.NaN); // NaN for auto width/height
-                DrawToCanvas(r, list[i], rect);
-            }
+            Rect rect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top, uiCmd.Rect.Width, uiCmd.Rect.Height);
+            DrawToCanvas(r, box, rect);
         }
         #endregion
 
@@ -867,37 +862,63 @@ namespace PEBakery.WPF
             Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
 
-        private static void RunSectionInUI(RenderInfo r, Logger logger, SectionAddress addr, string logMsg)
+        private static async void RunOneSection(SectionAddress addr, string logMsg, bool showProgress)
         {
-            
-            /*
-            if (Engine.Running == false)
+            if (Engine.WorkingLock == 0)
             {
-                Engine.Running = true;
-                r.Window.Model.ProgressRingActive = true;
-                BackgroundWorker worker = new BackgroundWorker();
-                worker.DoWork += (object sender, DoWorkEventArgs e) =>
+                Interlocked.Increment(ref Engine.WorkingLock);
+
+                SettingViewModel setting = null;
+                Logger logger = null;
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    EngineState s = new EngineState(Engine.DebugLevel, r.Plugin.Project, logger, r.Plugin);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-                        s.SetLogOption(w.Setting);
-                    });
-                    long buildId = Engine.RunOneSection(s, addr, logMsg);
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    w.Model.ProgressRingActive = true;
+
+                    // Populate BuildTree
+                    w.Model.BuildTree.Children.Clear();
+                    w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
+                    w.CurBuildTree = null;
+
+                    setting = w.Setting;
+                    logger = w.Logger;
+                });
+                    
+                EngineState s = new EngineState(addr.Plugin.Project, logger, addr.Plugin, addr.Section.SectionName);
+                s.SetLogOption(setting);
+
+                Engine.WorkingEngine = new Engine(s);
+
+                // Build Start, Switch to Build View
+                if (showProgress)
+                    s.MainViewModel.SwitchNormalBuildInterface = false;
+
+                // Run
+                long buildId = await Engine.WorkingEngine.Run(logMsg);
+
+                // Build Ended, Switch to Normal View
+                if (showProgress)
+                    s.MainViewModel.SwitchNormalBuildInterface = true;
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
-                    logger.Export(LogExportType.Text, buildId, Path.Combine(s.BaseDir, "LogDebugDump.txt"));
+                logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
-                };
-                worker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+
+                // Turn off Progressring
+                s.MainViewModel.ProgressRingActive = false;
+
+                Engine.WorkingEngine = null;
+                Interlocked.Decrement(ref Engine.WorkingLock);
+
+                if (showProgress)
                 {
-                    r.Window.Model.ProgressRingActive = false;
-                    Engine.Running = false;
-                };
-                worker.RunWorkerAsync();
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MainWindow w = Application.Current.MainWindow as MainWindow;
+                        w.DrawPlugin(addr.Plugin);
+                    });
+                }
             }
-            */
         }
         #endregion
     }

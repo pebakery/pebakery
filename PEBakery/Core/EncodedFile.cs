@@ -86,9 +86,9 @@ namespace PEBakery.Core
         /// <param name="plugin"></param>
         /// <param name="mem"></param>
         /// <returns></returns>
-        public static MemoryStream ExtractLogo(Plugin plugin, out ImageType type)
+        public static MemoryStream ExtractLogo(Plugin plugin, out ImageHelper.ImageType type)
         {
-            type = ImageType.Bmp; // Dummy
+            type = ImageHelper.ImageType.Bmp; // Dummy
             if (plugin.Sections.ContainsKey("AuthorEncoded") == false)
                 throw new ExtractFileNotFoundException($"There is no encoded file by author");
             Dictionary<string, string> fileDict = plugin.Sections["AuthorEncoded"].GetIniDict();

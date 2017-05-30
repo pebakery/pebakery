@@ -24,18 +24,18 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class LogWindow : Window
     {
-        private LogViewModel model;
+        private LogViewModel m = new LogViewModel();
 
         public LogWindow()
         {
             InitializeComponent();
-            this.model = this.DataContext as LogViewModel;            
+            DataContext = m;
 
-            model.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
-            model.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
-            model.Logger.PluginUpdated += PluginUpdateEventHandler;
-            model.Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
-            model.Logger.VariableUpdated += VariableUpdateEventHandler;
+            m.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
+            m.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
+            m.Logger.PluginUpdated += PluginUpdateEventHandler;
+            m.Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
+            m.Logger.VariableUpdated += VariableUpdateEventHandler;
 
             SystemLogListView.UpdateLayout();
             SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
@@ -43,11 +43,11 @@ namespace PEBakery.WPF
 
        ~LogWindow()
         {
-            model.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
-            model.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
-            model.Logger.PluginUpdated -= PluginUpdateEventHandler;
-            model.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
-            model.Logger.VariableUpdated -= VariableUpdateEventHandler;
+            m.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+            m.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
+            m.Logger.PluginUpdated -= PluginUpdateEventHandler;
+            m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
+            m.Logger.VariableUpdated -= VariableUpdateEventHandler;
         }
 
         #region EventHandler
@@ -55,28 +55,32 @@ namespace PEBakery.WPF
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                model.SystemLogListModel.Add(e.Log);
-                model.SystemLogListSelectedIndex = model.SystemLogListModel.Count - 1;
+                m.SystemLogListModel.Add(e.Log);
+                m.SystemLogListSelectedIndex = m.SystemLogListModel.Count - 1;
                 SystemLogListView.UpdateLayout();
-                SystemLogListView.ScrollIntoView(SystemLogListView.Items[model.SystemLogListSelectedIndex]);
+                SystemLogListView.ScrollIntoView(SystemLogListView.Items[m.SystemLogListSelectedIndex]);
             });
-            model.OnPropertyUpdate("SystemLogListModel");
+            m.OnPropertyUpdate("SystemLogListModel");
         }
 
         public void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e)
         {
-            model.RefreshBuildLog();
+            m.RefreshBuildLog();
         }
 
         public void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e)
         {
-            if (model.SelectBuildEntries != null &&
-                model.SelectBuildEntries[model.SelectBuildIndex].Item2 == e.Log.BuildId)
+            if (m.SelectBuildEntries != null &&
+                m.SelectBuildIndex < m.SelectBuildEntries.Count &&
+                m.SelectBuildEntries[m.SelectBuildIndex].Item2 == e.Log.BuildId &&
+                m.SelectPluginEntries != null &&
+                m.SelectPluginIndex < m.SelectPluginEntries.Count &&
+                m.SelectPluginEntries[m.SelectPluginIndex].Item2 == e.Log.PluginId)
             {
                 Application.Current.Dispatcher.Invoke(() => 
                 {
-                    model.BuildLogListModel.Add(e.Log);
-                    model.OnPropertyUpdate("BuildLogListModel");
+                    m.BuildLogListModel.Add(e.Log);
+                    m.OnPropertyUpdate("BuildLogListModel");
 
                     if (0 < BuildLogSimpleListView.Items.Count)
                     {
@@ -95,20 +99,20 @@ namespace PEBakery.WPF
 
         public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
         {
-            model.RefreshPlugin(e.Log.BuildId);
+            m.RefreshPlugin(e.Log.BuildId);
         }
 
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
         {
-            if (model.SelectBuildEntries != null &&
-                model.SelectBuildEntries[model.SelectBuildIndex].Item2 == e.Log.BuildId)
+            if (m.SelectBuildEntries != null &&
+                m.SelectBuildEntries[m.SelectBuildIndex].Item2 == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        model.VariableListModel.Add(e.Log);
-                        model.OnPropertyUpdate("VariableListModel");
+                        m.VariableListModel.Add(e.Log);
+                        m.OnPropertyUpdate("VariableListModel");
                     });
                 }
             }
@@ -128,7 +132,7 @@ namespace PEBakery.WPF
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -137,10 +141,10 @@ namespace PEBakery.WPF
             switch (idx)
             {
                 case 0: // System Log 
-                    model.RefreshSystemLog();
+                    m.RefreshSystemLog();
                     break;
                 case 1: // Build Log
-                    model.RefreshBuildLog();
+                    m.RefreshBuildLog();
                     break;
             }
         }
@@ -151,15 +155,15 @@ namespace PEBakery.WPF
             switch (idx)
             {
                 case 0: // System Log 
-                    model.LogDB.DeleteAll<DB_SystemLog>();
-                    model.RefreshSystemLog();
+                    m.LogDB.DeleteAll<DB_SystemLog>();
+                    m.RefreshSystemLog();
                     break;
                 case 1: // Build Log
-                    model.LogDB.DeleteAll<DB_BuildInfo>();
-                    model.LogDB.DeleteAll<DB_BuildLog>();
-                    model.LogDB.DeleteAll<DB_Plugin>();
-                    model.LogDB.DeleteAll<DB_Variable>();
-                    model.RefreshBuildLog();
+                    m.LogDB.DeleteAll<DB_BuildInfo>();
+                    m.LogDB.DeleteAll<DB_BuildLog>();
+                    m.LogDB.DeleteAll<DB_Plugin>();
+                    m.LogDB.DeleteAll<DB_Variable>();
+                    m.RefreshBuildLog();
                     break;
             }
         }
@@ -173,7 +177,7 @@ namespace PEBakery.WPF
             }
 
             string title;
-            if (model.SelectedTabIndex == 0) // System Log
+            if (m.SelectedTabIndex == 0) // System Log
             {
                 title = "Export System Log";
             }
@@ -191,23 +195,23 @@ namespace PEBakery.WPF
 
             if (dialog.ShowDialog() == true)
             {
-                if (model.SelectedTabIndex == 0) // System Log
+                if (m.SelectedTabIndex == 0) // System Log
                 {
-                    model.Logger.ExportSystemLog(LogExportType.Text, dialog.FileName);
+                    m.Logger.ExportSystemLog(LogExportType.Text, dialog.FileName);
                 }
                 else // Build Log
                 {
-                    int idx = model.SelectBuildIndex;
-                    long buildId = model.SelectBuildEntries[idx].Item2; // Build Id
-                    model.Logger.ExportBuildLog(LogExportType.Text, dialog.FileName, buildId);
+                    int idx = m.SelectBuildIndex;
+                    long buildId = m.SelectBuildEntries[idx].Item2; // Build Id
+                    m.Logger.ExportBuildLog(LogExportType.Text, dialog.FileName, buildId);
                 }
-            }
 
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = true;
-            proc.StartInfo.Verb = "Open";
-            proc.StartInfo.FileName = dialog.FileName;
-            proc.Start();
+                Process proc = new Process();
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.FileName = dialog.FileName;
+                proc.Start();
+            }
         }
     }
 
@@ -339,7 +343,11 @@ namespace PEBakery.WPF
                     RefreshPlugin(SelectBuildEntries[value].Item2);
 
                     VariableListModel variableListModel = new VariableListModel();
-                    foreach (DB_Variable v in LogDB.Table<DB_Variable>().Where(x => x.BuildId == buildId))
+                    var vars = LogDB.Table<DB_Variable>()
+                        .Where(x => x.BuildId == buildId)
+                        .OrderBy(x => x.Type)
+                        .ThenBy(x => x.Key);
+                    foreach (DB_Variable v in vars)
                         variableListModel.Add(v);
                     VariableListModel = variableListModel;
                 }

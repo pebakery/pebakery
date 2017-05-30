@@ -174,7 +174,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region UICommandInfo
+    #region UIInfo
     [Serializable]
     public class UIInfo
     {
@@ -305,12 +305,14 @@ namespace PEBakery.Core
     {
         public bool Value;
         public string SectionName; // Optional
+        public bool ShowProgress; // Optional
 
-        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null)
+        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool showProgress = false)
             : base(tooltip)
         {
             this.Value = value;
             this.SectionName = sectionName;
+            this.ShowProgress = showProgress;
         }
 
         public override string ForgeRawLine()
@@ -323,7 +325,14 @@ namespace PEBakery.Core
             if (SectionName != null)
             {
                 builder.Append(",");
+                builder.Append("_");
                 builder.Append(SectionName);
+                builder.Append("_");
+                builder.Append(",");
+                if (ShowProgress)
+                    builder.Append("True");
+                else
+                    builder.Append("False");
             }
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
@@ -443,9 +452,7 @@ namespace PEBakery.Core
             else
                 builder.Append("False");
             builder.Append(",");
-            builder.Append("_");
             builder.Append(SectionName);
-            builder.Append("_");
             builder.Append(",");
             if (ShowProgress)
                 builder.Append("True");
@@ -511,19 +518,14 @@ namespace PEBakery.Core
     { // TODO: [ButtonOptional]
         public bool Selected;
         public string SectionName; // optional
+        public bool ShowProgress; // Optional
 
-        public UIInfo_RadioButton(string tooltip,  bool selected) 
-            : base(tooltip)
-        {
-            this.Selected = selected;
-            this.SectionName = null;
-        }
-
-        public UIInfo_RadioButton(string tooltip,  bool selected, string sectionName)
+        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool showProgress = false) 
             : base(tooltip)
         {
             this.Selected = selected;
             this.SectionName = sectionName;
+            this.ShowProgress = showProgress;
         }
 
         public override string ForgeRawLine()
@@ -533,7 +535,14 @@ namespace PEBakery.Core
             if (SectionName != null)
             {
                 builder.Append(",");
+                builder.Append("_");
                 builder.Append(SectionName);
+                builder.Append("_");
+                builder.Append(",");
+                if (ShowProgress)
+                    builder.Append("True");
+                else
+                    builder.Append("False");
             }
             builder.Append(base.ForgeRawLine());
             return builder.ToString();

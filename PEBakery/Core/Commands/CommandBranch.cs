@@ -53,7 +53,9 @@ namespace PEBakery.Core.Commands
 
             Plugin targetPlugin;
             if (inCurrentPlugin)
+            {
                 targetPlugin = s.CurrentPlugin;
+            }
             else
             {
                 string fullPath = StringEscaper.ExpandVariables(s, pluginFile);

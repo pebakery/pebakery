@@ -391,6 +391,29 @@ namespace PEBakery.Lib
                     string currentSection = null;
                     List<string> processedSections = new List<string>();
 
+                    // Is Original File Empty?
+                    if (reader.Peek() == -1)
+                    {
+                        reader.Close();
+
+                        // Write all and exit
+                        string beforeSection = string.Empty;
+                        for (int i = 0; i < iniKeys.Count; i++)
+                        {
+                            if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
+                            {
+                                if (0 < i)
+                                    writer.WriteLine();
+                                writer.WriteLine($"[{iniKeys[i].Section}]");
+                            }
+                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                            beforeSection = iniKeys[i].Section;
+                        }
+                        writer.Close();
+                        FileHelper.FileReplaceEx(tempPath, file);
+                        return true;
+                    }
+
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineWritten = false;
@@ -728,6 +751,12 @@ namespace PEBakery.Lib
         {
             return InternalAddSection(file, sections);
         }
+        /// <summary>
+        /// Return true if success
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="sections"></param>
+        /// <returns></returns>
         private static bool InternalAddSection(string file, List<string> sections)
         {
             ReaderWriterLockSlim rwLock;
@@ -760,10 +789,17 @@ namespace PEBakery.Lib
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
+                    // Is Original File Empty?
                     if (reader.Peek() == -1)
                     {
                         reader.Close();
-                        return false;
+
+                        // Write all and exit
+                        foreach (string section in sections)
+                            writer.WriteLine($"\r\n[{section}]");
+                        writer.Close();
+                        FileHelper.FileReplaceEx(tempPath, file);
+                        return true;
                     }
 
                     string rawLine = string.Empty;

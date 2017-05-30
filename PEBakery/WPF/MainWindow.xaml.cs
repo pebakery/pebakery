@@ -49,6 +49,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region Variables
         private ProjectCollection projects;
         public ProjectCollection Projects { get => projects; }
 
@@ -58,8 +59,11 @@ namespace PEBakery.WPF
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
 
-        private TreeViewModel currentTree;
-        public TreeViewModel CurrentTree { get => currentTree; }
+        private TreeViewModel curMainTree;
+        public TreeViewModel CurMainTree { get => curMainTree; }
+
+        private TreeViewModel curBuildTree;
+        public TreeViewModel CurBuildTree { get => curBuildTree; set => curBuildTree = value; }
 
         private Logger logger;
         public Logger Logger { get => logger; }
@@ -71,9 +75,10 @@ namespace PEBakery.WPF
         private SettingViewModel setting;
         public SettingViewModel Setting { get => setting; }
 
-        private readonly string LogSeperator = "--------------------------------------------------------------------------------";
         public MainViewModel Model;
+        #endregion
 
+        #region Constructor
         public MainWindow()
         {
             InitializeComponent();
@@ -86,7 +91,6 @@ namespace PEBakery.WPF
                 Application.Current.Shutdown(1);
             }  
 
-            // string argBaseDir = FileHelper.GetProgramAbsolutePath();
             string argBaseDir = Environment.CurrentDirectory;
             for (int i = 0; i < args.Length; i++)
             {
@@ -112,14 +116,14 @@ namespace PEBakery.WPF
 
             this.baseDir = argBaseDir;
 
-            this.settingFile = Path.Combine(argBaseDir, "PEBakery.ini");
-            this.setting = new SettingViewModel(settingFile);
+            this.settingFile = System.IO.Path.Combine(argBaseDir, "PEBakery.ini");
+            App.Setting = this.setting = new SettingViewModel(settingFile);
             Logger.DebugLevel = setting.Log_DebugLevel;
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
             {
-                logger = new Logger(logDBFile);
+                App.Logger = logger = new Logger(logDBFile);
                 logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
             }
             catch (SQLiteException e)
@@ -155,11 +159,14 @@ namespace PEBakery.WPF
 
             StartLoadWorker();
         }
+        #endregion
 
+        #region Background Workers
         private void StartLoadWorker()
         {
             Stopwatch watch = Stopwatch.StartNew();
 
+            // Set PEBakery Logo
             Image image = new Image()
             {
                 UseLayoutRounding = true,
@@ -168,8 +175,9 @@ namespace PEBakery.WPF
                 Source = ImageHelper.ToBitmapImage(Properties.Resources.DonutPng),
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-
             PluginLogo.Content = image;
+
+            // Prepare PEBakery Loading Information
             Model.PluginTitleText = "Welcome to PEBakery!";
             Model.PluginDescriptionText = "PEBakery loading...";
             logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{baseDir}]"));
@@ -181,7 +189,9 @@ namespace PEBakery.WPF
             int stage2LoadedCount = 0;
             int stage2CachedCount = 0;
 
-            LoadProgressBar.Value = 0;
+            Model.BottomProgressBarMinimum = 0;
+            Model.BottomProgressBarMaximum = 100;
+            Model.BottomProgressBarValue = 0;
             Model.ProgressRingActive = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
             loadWorker = new BackgroundWorker();
@@ -191,7 +201,6 @@ namespace PEBakery.WPF
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
-
                 // Init ProjectCollection
                 if (setting.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
                     projects = new ProjectCollection(baseDir, pluginCache);
@@ -199,7 +208,7 @@ namespace PEBakery.WPF
                     projects = new ProjectCollection(baseDir, null);
 
                 allPluginCount = projects.PrepareLoad(out stage2LinksCount);
-                Dispatcher.Invoke(() => { LoadProgressBar.Maximum = allPluginCount + stage2LinksCount; });
+                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
 
                 // Let's load plugins parallelly
                 projects.Load(worker);
@@ -211,11 +220,11 @@ namespace PEBakery.WPF
                     foreach (Project project in projects.Projects)
                     {
                         List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                        RecursivePopulateMainTreeView(plugins, Model.Tree, Model.Tree);
+                        RecursivePopulateTreeView(plugins, Model.MainTree, Model.MainTree);
                     };
                     int pIdx = setting.Project_DefaultIndex;
-                    currentTree = Model.Tree.Child[pIdx];
-                    currentTree.IsExpanded = true;
+                    curMainTree = Model.MainTree.Children[pIdx];
+                    curMainTree.IsExpanded = true;
                     if (projects[pIdx] != null)
                         DrawPlugin(projects[pIdx].MainPlugin);
                 });
@@ -224,7 +233,7 @@ namespace PEBakery.WPF
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
                 Interlocked.Increment(ref loadedPluginCount);
-                LoadProgressBar.Value = loadedPluginCount;
+                Model.BottomProgressBarValue = loadedPluginCount;
                 string msg = string.Empty;
                 switch (e.ProgressPercentage)
                 {
@@ -297,7 +306,7 @@ namespace PEBakery.WPF
                 Model.SwitchStatusProgressBar = true; // Show Status Bar
                 
                 logger.System_Write(new LogInfo(LogState.Info, msg));
-                logger.System_Write(LogSeperator);
+                logger.System_Write(Logger.LogSeperator);
 
                 // If plugin cache is enabled, generate cache.
                 if (setting.Plugin_EnableCache)
@@ -344,7 +353,7 @@ namespace PEBakery.WPF
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
                         logger.System_Write(new LogInfo(LogState.Info, msg));
-                        logger.System_Write(LogSeperator);
+                        logger.System_Write(Logger.LogSeperator);
 
                         Model.ProgressRingActive = false;
                     };
@@ -356,82 +365,196 @@ namespace PEBakery.WPF
                 }
             }
         }
-
-        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        
+        private void StartReloadPluginWorker()
         {
-            if (loadWorker.IsBusy == false)
-            {
-                (MainTreeView.DataContext as TreeViewModel).Child.Clear();
+            if (curMainTree == null)
+                return;
 
-                StartLoadWorker();
-            }
+            if (refreshWorker.IsBusy)
+                return;
+
+            Stopwatch watch = new Stopwatch();
+
+            Model.ProgressRingActive = true;
+            refreshWorker = new BackgroundWorker();
+            refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                watch.Start();
+                Plugin p = curMainTree.Plugin.Project.RefreshPlugin(curMainTree.Plugin);
+                if (p != null)
+                {
+                    curMainTree.Plugin = p;
+                    Dispatcher.Invoke(() => 
+                    {
+                        curMainTree.Plugin = p;
+                        DrawPlugin(curMainTree.Plugin);
+                    });
+                }
+            };
+            refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                Model.ProgressRingActive = false;
+                watch.Stop();
+                double sec = watch.Elapsed.TotalSeconds;
+                string msg = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. Took {sec:0.000}sec";
+                Model.StatusBarText = msg;
+            };
+            refreshWorker.RunWorkerAsync();
         }
 
-        private void RecursivePopulateMainTreeView(List<Node<Plugin>> plugins, TreeViewModel treeRoot, TreeViewModel treeParent)
+        private void StartBuildWorker()
         {
-            foreach (Node<Plugin> node in plugins)
+            Stopwatch watch = Stopwatch.StartNew();
+
+            int stage2LinksCount = 0;
+            int loadedPluginCount = 0;
+            int stage1CachedCount = 0;
+            int stage2LoadedCount = 0;
+            int stage2CachedCount = 0;
+
+            Model.BottomProgressBarMinimum = 0;
+            Model.BottomProgressBarMaximum = 100;
+            Model.BottomProgressBarValue = 0;
+            Model.ProgressRingActive = true;
+            Model.SwitchStatusProgressBar = false; // Show Progress Bar
+            loadWorker = new BackgroundWorker();
+
+            loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
-                Plugin p = node.Data;
+                string baseDir = (string)e.Argument;
+                BackgroundWorker worker = sender as BackgroundWorker;
 
-                TreeViewModel item = new TreeViewModel(treeRoot, treeParent);
-                treeParent.Child.Add(item);
-                item.Node = node;
+                // Init ProjectCollection
+                if (setting.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
+                    projects = new ProjectCollection(baseDir, pluginCache);
+                else  // Do not use PluginCache - Slow speed, less memory
+                    projects = new ProjectCollection(baseDir, null);
 
-                if (p.Type == PluginType.Directory)
-                {
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
-                }
-                else if (p.Type == PluginType.Plugin)
-                {
-                    if (p.Level == Project.MainLevel)
-                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
-                    else if (p.Mandatory)
-                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
-                    else
-                        item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
-                }
-                else if (p.Type == PluginType.Link)
-                {
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
-                }
+                allPluginCount = projects.PrepareLoad(out stage2LinksCount);
+                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
 
-                if (0 < node.Child.Count)
-                    RecursivePopulateMainTreeView(node.Child, treeRoot, item);
-            }
-        }
+                // Let's load plugins parallelly
+                projects.Load(worker);
+                setting.UpdateProjectList();
 
-        private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            var tree = sender as TreeView;
-
-            if (tree.SelectedItem is TreeViewModel)
-            {
-                TreeViewModel item = currentTree = tree.SelectedItem as TreeViewModel;
-
+                // Populate TreeView
                 Dispatcher.Invoke(() =>
                 {
-                    Stopwatch watch = new Stopwatch();
-                    watch.Start();
-                    DrawPlugin(item.Node.Data);
-                    watch.Stop();
-                    double sec = watch.Elapsed.TotalSeconds;
-                    Model.StatusBarText = $"{Path.GetFileName(currentTree.Node.Data.ShortPath)} rendered. Took {sec:0.000}sec";
+                    foreach (Project project in projects.Projects)
+                    {
+                        List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
+                        RecursivePopulateTreeView(plugins, Model.MainTree, Model.MainTree);
+                    };
+                    int pIdx = setting.Project_DefaultIndex;
+                    curMainTree = Model.MainTree.Children[pIdx];
+                    curMainTree.IsExpanded = true;
+                    if (projects[pIdx] != null)
+                        DrawPlugin(projects[pIdx].MainPlugin);
                 });
-            }
-        }
+            };
+            loadWorker.WorkerReportsProgress = true;
+            loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
+            {
+                Interlocked.Increment(ref loadedPluginCount);
+                Model.BottomProgressBarValue = loadedPluginCount;
+                string msg = string.Empty;
+                switch (e.ProgressPercentage)
+                {
+                    case 0:  // Stage 1
+                        if (e.UserState == null)
+                            msg = $"Error";
+                        else
+                            msg = $"{e.UserState}";
+                        break;
+                    case 1:  // Stage 1, Cached
+                        Interlocked.Increment(ref stage1CachedCount);
+                        if (e.UserState == null)
+                            msg = $"Cached - Error";
+                        else
+                            msg = $"Cached - {e.UserState}";
+                        break;
+                    case 2:  // Stage 2
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        if (e.UserState == null)
+                            msg = $"Error";
+                        else
+                            msg = $"{e.UserState}";
+                        break;
+                    case 3:  // Stage 2, Cached
+                        Interlocked.Increment(ref stage2LoadedCount);
+                        Interlocked.Increment(ref stage2CachedCount);
+                        if (e.UserState == null)
+                            msg = $"Cached - Error";
+                        else
+                            msg = $"Cached - {e.UserState}";
+                        break;
+                }
+                int stage = e.ProgressPercentage / 2 + 1;
+                if (stage == 1)
+                    msg = $"Stage {stage} ({loadedPluginCount} / {allPluginCount}) \r\n{msg}";
+                else
+                    msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
 
+                Model.PluginDescriptionText = $"PEBakery loading...\r\n{msg}";
+            };
+            loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                StringBuilder b = new StringBuilder();
+                b.Append("Projects [");
+                List<Project> projList = projects.Projects;
+                for (int i = 0; i < projList.Count; i++)
+                {
+                    b.Append(projList[i].ProjectName);
+                    if (i + 1 < projList.Count)
+                        b.Append(", ");
+                }
+                b.Append("] loaded");
+                logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
+
+                watch.Stop();
+                double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                string msg;
+                if (setting.Plugin_EnableCache)
+                {
+                    double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
+                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
+                    Model.StatusBarText = msg;
+                }
+                else
+                {
+                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    Model.StatusBarText = msg;
+                }
+                Model.ProgressRingActive = false;
+                Model.SwitchStatusProgressBar = true; // Show Status Bar
+
+                logger.System_Write(new LogInfo(LogState.Info, msg));
+                logger.System_Write(Logger.LogSeperator);
+
+                // If plugin cache is enabled, generate cache.
+                if (setting.Plugin_EnableCache)
+                    StartCacheWorker();
+            };
+            loadWorker.RunWorkerAsync(baseDir);
+        }
+        #endregion
+
+        #region DrawPlugin
         public void DrawPlugin(Plugin p)
         {
             Stopwatch watch = new Stopwatch();
             double size = PluginLogo.ActualWidth * MaxDpiScale;
             if (p.Type == PluginType.Directory)
+            {
                 PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+            }
             else
             {
                 try
                 {
-                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageType type);
-                    if (type == ImageType.Svg)
+                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type);
+                    if (type == ImageHelper.ImageType.Svg)
                     {
                         Image image = new Image()
                         {
@@ -486,42 +609,217 @@ namespace PEBakery.WPF
                 render.Render();
             }
         }
+        #endregion
 
-        private void StartRefreshWorker()
+        #region Main Buttons
+        private async void BuildButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTree == null)
-                return;
-
-            if (refreshWorker.IsBusy)
-                return;
-
-            Stopwatch watch = new Stopwatch();
-
-            Model.ProgressRingActive = true;
-            refreshWorker = new BackgroundWorker();
-            refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            // TODO: Exact Locking without Race Condition
+            if (Engine.WorkingLock == 0)  // Start Build
             {
-                watch.Start();
-                Plugin p = currentTree.Node.Data.Project.RefreshPlugin(currentTree.Node.Data);
-                if (p != null)
+                Interlocked.Increment(ref Engine.WorkingLock);
+
+                // Determine current project
+                Project project = curMainTree.Plugin.Project;
+
+                Tree<Plugin> activeTree = project.GetActivePlugin();
+                Model.BuildTree.Children.Clear();
+                RecursivePopulateTreeView(activeTree.Root, Model.BuildTree, Model.BuildTree);
+                curBuildTree = null;
+
+                EngineState s = new EngineState(project, logger);
+                s.SetLogOption(setting);
+
+                Engine.WorkingEngine = new Engine(s);
+
+                // Build Start, Switch to Build View
+                Model.SwitchNormalBuildInterface = false;
+
+                // Run
+                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+#endif
+
+                // Build Ended, Switch to Normal View
+                Model.SwitchNormalBuildInterface = true;
+                DrawPlugin(curMainTree.Plugin);
+
+                Engine.WorkingEngine = null;
+                Interlocked.Decrement(ref Engine.WorkingLock);
+            }
+            else // Stop Build
+            {
+                Engine.WorkingEngine?.ForceStop();
+
+                Engine.WorkingEngine = null;
+                Interlocked.Decrement(ref Engine.WorkingLock);
+            }
+        }
+
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (loadWorker.IsBusy == false)
+            {
+                (MainTreeView.DataContext as TreeViewModel).Children.Clear();
+
+                StartLoadWorker();
+            }
+        }
+
+        private void SettingButton_Click(object sender, RoutedEventArgs e)
+        {
+            double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
+            bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
+
+            SettingWindow dialog = new SettingWindow(setting);
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                // Scale Factor
+                double newScaleFactor = setting.Interface_ScaleFactor;
+                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                    DrawPlugin(curMainTree.Plugin);
+
+                // PluginCache
+                if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
+                    StartCacheWorker();
+
+                // DebugLevel
+                Logger.DebugLevel = setting.Log_DebugLevel;
+            }
+        }
+
+        private void UtilityButton_Click(object sender, RoutedEventArgs e)
+        {
+            UtilityWindow dialog = new UtilityWindow(setting.General_MonospaceFont);
+            dialog.Show();
+        }
+
+        private void LogButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogWindow dialog = new LogWindow();
+            dialog.Show();
+        }
+
+        private void UpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void AboutButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        #endregion
+
+        #region Plugin Buttons
+        private async void PluginRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            Plugin p = curMainTree.Plugin;
+            if (p.Sections.ContainsKey("Process"))
+            {
+                if (Engine.WorkingLock == 0)  // Start Build
                 {
-                    currentTree.Node.Data = p;
-                    Dispatcher.Invoke(() => 
-                    {
-                        currentTree.Node.Data = p;
-                        DrawPlugin(currentTree.Node.Data);
-                    });
+                    Interlocked.Increment(ref Engine.WorkingLock);
+
+                    // Populate BuildTree
+                    Model.BuildTree.Children.Clear();
+                    PopulateOneTreeView(p, Model.BuildTree, Model.BuildTree);
+                    curBuildTree = null;
+
+                    EngineState s = new EngineState(p.Project, logger, p);
+                    s.SetLogOption(setting);
+
+                    Engine.WorkingEngine = new Engine(s);
+
+                    // Build Start, Switch to Build View
+                    Model.SwitchNormalBuildInterface = false;
+
+                    // Run
+                    long buildId = await Engine.WorkingEngine.Run($"{p.Title} - Run");
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                    logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+#endif
+
+                    // Build Ended, Switch to Normal View
+                    Model.SwitchNormalBuildInterface = true;
+
+                    Engine.WorkingEngine = null;
+                    Interlocked.Decrement(ref Engine.WorkingLock);
                 }
-            };
-            refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+                else // Stop Build
+                {
+                    Engine.WorkingEngine?.ForceStop();
+
+                    Engine.WorkingEngine = null;
+                    Interlocked.Decrement(ref Engine.WorkingLock);
+                }
+            }
+            else
             {
-                Model.ProgressRingActive = false;
-                watch.Stop();
-                double sec = watch.Elapsed.TotalSeconds;
-                string msg = $"{Path.GetFileName(currentTree.Node.Data.ShortPath)} reloaded. Took {sec:0.000}sec";
-                Model.StatusBarText = msg;
+                string msg = $"Cannot run [{p.Title}]!\r\nPlease implement section [Process]";
+                Logger.System_Write(new LogInfo(LogState.Error, msg));
+                MessageBox.Show(msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PluginEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            ProcessStartInfo procInfo = new ProcessStartInfo()
+            {
+                Verb = "open",
+                FileName = curMainTree.Plugin.FullPath,
+                UseShellExecute = true
             };
-            refreshWorker.RunWorkerAsync();
+            Process.Start(procInfo);
+        }
+
+        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            StartReloadPluginWorker();
+        }
+        #endregion
+
+        #region TreeView Methods
+        private void RecursivePopulateTreeView(List<Node<Plugin>> plugins, TreeViewModel treeRoot, TreeViewModel treeParent)
+        {
+            foreach (Node<Plugin> node in plugins)
+            {
+                TreeViewModel item = PopulateOneTreeView(node.Data, treeRoot, treeParent);
+
+                if (0 < node.Child.Count)
+                    RecursivePopulateTreeView(node.Child, treeRoot, item);
+            }
+        }
+
+        public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
+        {
+            TreeViewModel item = new TreeViewModel(treeRoot, treeParent);
+            treeParent.Children.Add(item);
+            item.Plugin = p;
+
+            if (p.Type == PluginType.Directory)
+            {
+                item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+            }
+            else if (p.Type == PluginType.Plugin)
+            {
+                if (p.Level == Project.MainLevel)
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
+                else if (p.Mandatory)
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                else
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
+            }
+            else if (p.Type == PluginType.Link)
+            {
+                item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+            }
+
+            return item;
         }
 
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
@@ -556,96 +854,37 @@ namespace PEBakery.WPF
             }
         }
 
-        private void BuildButton_Click(object sender, RoutedEventArgs e)
+        private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            // Toggle Normal View with Build View
-            if (Model.SwitchNormalBuildInterface)
+            var tree = sender as TreeView;
+
+            if (tree.SelectedItem is TreeViewModel)
             {
-                Model.SwitchNormalBuildInterface = false;
-            }
-            else
-            {
-                Model.SwitchNormalBuildInterface = true;
-            }
-        }
+                TreeViewModel item = curMainTree = tree.SelectedItem as TreeViewModel;
 
-        private void SettingButton_Click(object sender, RoutedEventArgs e)
-        {
-            double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
-            bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
-
-            SettingWindow dialog = new SettingWindow(setting);
-            bool? result = dialog.ShowDialog();
-            if (result == true)
-            {
-                // Scale Factor
-                double newScaleFactor = setting.Interface_ScaleFactor;
-                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                    DrawPlugin(currentTree.Node.Data);
-
-                // PluginCache
-                if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
-                    StartCacheWorker();
-
-                // DebugLevel
-                Logger.DebugLevel = setting.Log_DebugLevel;
+                Dispatcher.Invoke(() =>
+                {
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    DrawPlugin(item.Plugin);
+                    watch.Stop();
+                    double sec = watch.Elapsed.TotalSeconds;
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} rendered. Took {sec:0.000}sec";
+                });
             }
         }
+        #endregion
 
-        private void PluginRunButton_Click(object sender, RoutedEventArgs e)
-        {
-            Plugin p = currentTree.Node.Data;
-            if (p.Sections.ContainsKey("Process"))
-            {
-                SectionAddress addr = new SectionAddress(p, p.Sections["Process"]);
-                Engine.RunOneSectionInUI(addr, $"{p.Title} - Run");
-            }
-            else
-            {
-                string msg = $"Cannot run [{p.Title}]!\r\nPlease implement section [Process]";
-                Logger.System_Write(new LogInfo(LogState.Error, msg));
-                MessageBox.Show(msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void PluginEditButton_Click(object sender, RoutedEventArgs e)
-        {
-            ProcessStartInfo procInfo = new ProcessStartInfo()
-            {
-                Verb = "open",
-                FileName = currentTree.Node.Data.FullPath,
-                UseShellExecute = true
-            };
-            Process.Start(procInfo);
-        }
-
-        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
-        {
-            StartRefreshWorker();
-        }
-
+        #region Window Event Handler
         private void Window_Closing(object sender, CancelEventArgs e)
         {
+            Engine.WorkingEngine?.ForceStop();
+
             logger.DB.Close();
             if (pluginCache != null)
                 pluginCache.WaitClose();
         }
-
-        private void LogButton_Click(object sender, RoutedEventArgs e)
-        {
-            LogWindow dialog = new LogWindow();
-            dialog.Show();
-        }
-
-        private void UpdateButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-
-        private void AboutButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        #endregion
     }
     #endregion
 
@@ -654,9 +893,11 @@ namespace PEBakery.WPF
     {
         public MainViewModel()
         {
-            this.tree = new TreeViewModel(null, null);
+            MainTree = new TreeViewModel(null, null);
+            BuildTree = new TreeViewModel(null, null);
         }
 
+        #region Normal Interface
         private bool progressRingActive = true;
         public bool ProgressRingActive
         {
@@ -755,6 +996,39 @@ namespace PEBakery.WPF
             }
         }
 
+        private double bottomProgressBarMinimum = 0;
+        public double BottomProgressBarMinimum
+        {
+            get => bottomProgressBarMinimum;
+            set
+            {
+                bottomProgressBarMinimum = value;
+                OnPropertyUpdate("BottomProgressBarMinimum");
+            }
+        }
+
+        private double bottomProgressBarMaximum = 100;
+        public double BottomProgressBarMaximum
+        {
+            get => bottomProgressBarMaximum;
+            set
+            {
+                bottomProgressBarMaximum = value;
+                OnPropertyUpdate("BottomProgressBarMaximum");
+            }
+        }
+
+        private double bottomProgressBarValue = 0;
+        public double BottomProgressBarValue
+        {
+            get => bottomProgressBarValue;
+            set
+            {
+                bottomProgressBarValue = value;
+                OnPropertyUpdate("BottomProgressBarValue");
+            }
+        }
+
         private Visibility bottomProgressBarVisibility = Visibility.Visible;
         public Visibility BottomProgressBarVisibility
         {
@@ -809,16 +1083,120 @@ namespace PEBakery.WPF
             }
         }
 
-        private TreeViewModel tree;
-        public TreeViewModel Tree
+        private TreeViewModel mainTree;
+        public TreeViewModel MainTree
         {
-            get => tree;
+            get => mainTree;
             set
             {
-                tree = value;
-                OnPropertyUpdate("Tree");
+                mainTree = value;
+                OnPropertyUpdate("MainTree");
             }
         }
+        #endregion
+
+        #region Build Interface
+        private TreeViewModel buildTree;
+        public TreeViewModel BuildTree
+        {
+            get => buildTree;
+            set
+            {
+                buildTree = value;
+                OnPropertyUpdate("BuildTree");
+            }
+        }
+
+        private string buildPosition = string.Empty;
+        public string BuildPosition
+        {
+            get => buildPosition;
+            set
+            {
+                buildPosition = value;
+                OnPropertyUpdate("BuildPosition");
+            }
+        }
+
+        private string buildEchoMessage = string.Empty;
+        public string BuildEchoMessage
+        {
+            get => buildEchoMessage;
+            set
+            {
+                buildEchoMessage = value;
+                OnPropertyUpdate("BuildEchoMessage");
+            }
+        }
+
+        public const double BuildCommandProgressBarMax = 1000;
+
+        private double buildCommandProgressBarValue = 0;
+        public double BuildCommandProgressBarValue
+        {
+            get => buildCommandProgressBarValue;
+            set
+            {
+                buildCommandProgressBarValue = value;
+                OnPropertyUpdate("BuildCommandProgressBarValue");
+            }
+        }
+
+        private double buildPluginProgressBarMax = 100;
+        public double BuildPluginProgressBarMax
+        {
+            get => buildPluginProgressBarMax;
+            set
+            {
+                buildPluginProgressBarMax = value;
+                OnPropertyUpdate("BuildPluginProgressBarMax");
+            }
+        }
+
+        private double buildPluginProgressBarValue = 0;
+        public double BuildPluginProgressBarValue
+        {
+            get => buildPluginProgressBarValue;
+            set
+            {
+                buildPluginProgressBarValue = value;
+                OnPropertyUpdate("BuildPluginProgressBarValue");
+            }
+        }
+
+        private Visibility buildFullProgressBarVisibility = Visibility.Visible;
+        public Visibility BuildFullProgressBarVisibility
+        {
+            get => buildFullProgressBarVisibility;
+            set
+            {
+                buildFullProgressBarVisibility = value;
+                OnPropertyUpdate("BuildFullProgressBarVisibility");
+            }
+        }
+
+        private double buildFullProgressBarMax = 100;
+        public double BuildFullProgressBarMax
+        {
+            get => buildFullProgressBarMax;
+            set
+            {
+                buildFullProgressBarMax = value;
+                OnPropertyUpdate("BuildFullProgressBarMax");
+            }
+        }
+
+        private double buildFullProgressBarValue = 0;
+        public double BuildFullProgressBarValue
+        {
+            get => buildFullProgressBarValue;
+            set
+            {
+                buildFullProgressBarValue = value;
+                OnPropertyUpdate("BuildFullProgressBarValue");
+            }
+        }
+        #endregion
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
@@ -839,7 +1217,10 @@ namespace PEBakery.WPF
 
         public TreeViewModel(TreeViewModel root, TreeViewModel parent)
         {
-            this.root = root;
+            if (root == null)
+                this.root = this;
+            else
+                this.root = root;
             this.parent = parent;
         }
 
@@ -854,12 +1235,49 @@ namespace PEBakery.WPF
             }
         }
 
+        #region Build Mode Property
+        private bool buildFocus = false;
+        public bool BuildFocus
+        {
+            get => buildFocus;
+            set
+            {
+                buildFocus = value;
+                icon.Foreground = BuildBrush;
+                OnPropertyUpdate("BuildFontWeight");
+                OnPropertyUpdate("BuildBrush");
+                OnPropertyUpdate("BuildIcon");
+            }
+        }
+
+        public FontWeight BuildFontWeight
+        {
+            get
+            {
+                if (buildFocus)
+                    return FontWeights.Bold;
+                else
+                    return FontWeights.Normal;
+            }
+        }
+
+        public Brush BuildBrush
+        {
+            get
+            {
+                if (buildFocus)
+                    return Brushes.Red;
+                else
+                    return Brushes.Black;
+            }
+        }
+        #endregion
 
         public bool Checked
         {
             get
             {
-                switch (node.Data.Selected)
+                switch (plugin.Selected)
                 {
                     case SelectedState.True:
                         return true;
@@ -873,16 +1291,16 @@ namespace PEBakery.WPF
                 w.Dispatcher.Invoke(() =>
                 {
                     w.Model.ProgressRingActive = true;
-                    if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                    if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
                     {
                         if (value)
                         {
-                            node.Data.Selected = SelectedState.True;
+                            plugin.Selected = SelectedState.True;
 
                             try
                             {
                                 // Run 'Disable' directive
-                                DisablePlugins(root, node);
+                                DisablePlugins(root, plugin);
                             }
                             catch (Exception e)
                             {
@@ -891,15 +1309,15 @@ namespace PEBakery.WPF
                         }
                         else
                         {
-                            node.Data.Selected = SelectedState.False;
+                            plugin.Selected = SelectedState.False;
                         }
 
 
-                        if (node.Data.Level != Project.MainLevel)
+                        if (plugin.Level != Project.MainLevel)
                         {
-                            if (0 < this.Child.Count)
+                            if (0 < this.Children.Count)
                             { // Set child plugins, too -> Top-down propagation
-                                foreach (TreeViewModel childModel in this.Child)
+                                foreach (TreeViewModel childModel in this.Children)
                                 {
                                     if (value)
                                         childModel.Checked = true;
@@ -925,7 +1343,7 @@ namespace PEBakery.WPF
 
             bool setParentChecked = false;
 
-            foreach (TreeViewModel sibling in parent.Child)
+            foreach (TreeViewModel sibling in parent.Children)
             { // Siblings
                 if (sibling.Checked)
                     setParentChecked = true;
@@ -939,12 +1357,12 @@ namespace PEBakery.WPF
             if (parent == null)
                 return;
 
-            if (node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+            if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
             {
                 if (value)
-                    node.Data.Selected = SelectedState.True;
+                    plugin.Selected = SelectedState.True;
                 else
-                    node.Data.Selected = SelectedState.False;
+                    plugin.Selected = SelectedState.False;
             }
 
             OnPropertyUpdate("Checked");
@@ -955,23 +1373,23 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (node.Data.Selected == SelectedState.None)
+                if (plugin.Selected == SelectedState.None)
                     return Visibility.Collapsed;
                 else
                     return Visibility.Visible;
             }
         }
 
-        public string Text { get => node.Data.Title; }
+        public string Text { get => plugin.Title; }
 
-        private Node<Plugin> node;
-        public Node<Plugin> Node
+        private Plugin plugin;
+        public Plugin Plugin
         {
-            get => node;
+            get => plugin;
             set
             {
-                node = value;
-                OnPropertyUpdate("Node");
+                plugin = value;
+                OnPropertyUpdate("Plugin");
             }
         }
 
@@ -987,7 +1405,7 @@ namespace PEBakery.WPF
         }
 
         private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
-        public ObservableCollection<TreeViewModel> Child { get => child; }
+        public ObservableCollection<TreeViewModel> Children { get => child; }
 
         public void SetIcon(Control icon)
         {
@@ -1000,22 +1418,22 @@ namespace PEBakery.WPF
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private TreeViewModel FindPluginByFullPath(string fullPath)
+        public TreeViewModel FindPluginByFullPath(string fullPath)
         {
             return RecursiveFindPluginByFullPath(root, fullPath); 
         }
 
         private static TreeViewModel RecursiveFindPluginByFullPath(TreeViewModel cur, string fullPath)
         {
-            if (cur.Node != null && cur.Node.Data != null)
+            if (cur.Plugin != null)
             {
-                if (fullPath.Equals(cur.Node.Data.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (fullPath.Equals(cur.Plugin.FullPath, StringComparison.OrdinalIgnoreCase))
                     return cur;
             }
 
-            if (0 < cur.Child.Count)
+            if (0 < cur.Children.Count)
             {
-                foreach (TreeViewModel next in cur.Child)
+                foreach (TreeViewModel next in cur.Children)
                 {
                     TreeViewModel found = RecursiveFindPluginByFullPath(next, fullPath);
                     if (found != null)
@@ -1027,12 +1445,11 @@ namespace PEBakery.WPF
             return null;
         }
 
-        private void DisablePlugins(TreeViewModel root, Node<Plugin> node)
+        private void DisablePlugins(TreeViewModel root, Plugin p)
         {
-            if (root == null || node == null || node.Data == null)
+            if (root == null || p == null)
                 return;
 
-            Plugin p = node.Data;
             List<string> paths = Plugin.GetDisablePluginPaths(p);
 
             if (paths != null)
@@ -1048,7 +1465,7 @@ namespace PEBakery.WPF
                         TreeViewModel found = FindPluginByFullPath(fullPath);
                         if (found != null)
                         {
-                            if (node.Data.Type != PluginType.Directory && node.Data.Mandatory == false && node.Data.Selected != SelectedState.None)
+                            if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
                             {
                                 found.Checked = false;
                             }

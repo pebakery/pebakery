@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(log);
                 }
             }
-            logs.Add(new LogInfo(LogState.Success, $"Var [{info.VarName}] set to [{value}], read from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Key [{key}] successfully read from [{fileName}]", cmd));
 
             return logs;
         }

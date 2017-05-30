@@ -5,6 +5,10 @@
              StartupUri="WPF/MainWindow.xaml"
              Startup = "App_Startup">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Svg/Donut.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

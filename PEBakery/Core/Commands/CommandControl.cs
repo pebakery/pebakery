@@ -21,9 +21,12 @@ using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
+using System.Media;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
@@ -36,6 +39,39 @@ namespace PEBakery.Core.Commands
             CodeInfo_Set info = cmd.Info as CodeInfo_Set;
 
             List<LogInfo> logs = Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
+
+            return logs;
+        }
+
+        public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
+        {
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddVariables));
+            CodeInfo_AddVariables info = cmd.Info as CodeInfo_AddVariables;
+
+            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+
+            bool inCurrentPlugin = false;
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase) ||
+                info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+
+            Plugin targetPlugin = s.CurrentPlugin;
+            if (inCurrentPlugin == false)
+            {
+                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                if (targetPlugin == null)
+                    throw new ExecuteException($"No plugin at [{fullPath}]");
+            }
+
+            // Does section exists?
+            if (!targetPlugin.Sections.ContainsKey(sectionName))
+                throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
+
+            SectionAddress addr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
+
+            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, addr.Section);
 
             return logs;
         }
@@ -79,6 +115,82 @@ namespace PEBakery.Core.Commands
             }
 
             logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, b.ToString()));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Exit(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit));
+            CodeInfo_Exit info = cmd.Info as CodeInfo_Exit;
+
+            s.PassCurrentPluginFlag = true;
+
+            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, info.Message, cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Halt(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
+            CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
+
+            s.ErrorHaltFlag = true;
+
+            logs.Add(new LogInfo(LogState.Error, info.Message, cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Wait(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait));
+            CodeInfo_Wait info = cmd.Info as CodeInfo_Wait;
+
+            if (int.TryParse(info.Second, NumberStyles.Integer, CultureInfo.InvariantCulture, out int second) == false)
+                throw new InvalidCodeCommandException($"Argument [{info.Second}] is not valid number", cmd);
+
+            // Task.Run(() => Thread.Sleep(second * 1000)).Wait();
+            Task.Delay(second * 1000).Wait();
+
+            logs.Add(new LogInfo(LogState.Success, $"Slept [{info.Second}] seconds", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Beep(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
+            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
+
+            BeepType type = info.TypeStringToEnum(s);
+
+            switch (type)
+            {
+                case BeepType.OK:
+                    SystemSounds.Beep.Play();
+                    break;
+                case BeepType.Error:
+                    SystemSounds.Exclamation.Play();
+                    break;
+                case BeepType.Confirmation:
+                    SystemSounds.Question.Play();
+                    break;
+                case BeepType.Asterisk:
+                    SystemSounds.Asterisk.Play();
+                    break;
+            }
+
+            logs.Add(new LogInfo(LogState.Success, $"Played sound [{type}]", cmd));
 
             return logs;
         }
