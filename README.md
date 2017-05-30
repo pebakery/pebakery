@@ -22,33 +22,39 @@ Part of PEBakery is licensed under MIT License and others.
 
 ## Working
 - GUI
-- WB082 Syntax Parser
+- Code Parser
 - PEBakery Engine
 
-## TODO
+## Need Help
+If you have any ideas, please let me know at [Issue Tracker](https://github.com/ied206/PEBakery/issues).
 - New Plugin Format
 - New Language and Grammar
 
 ## Command Status
-|   Class  | All | Implemented |
-|----------|-----|-------------|
-| File     | 12  | 1   |
-| Registry | 10  | 0   |
-| Text     | 5   | 5   |
-| INI      | 7   | 5   |
-| Network  | 1   | 0   |
-| Plugin   | 6   | 0   |
-| UI       | 11  | 0   |
-| String   | 26  | 25  |
-| System   | 16  | 3   |
-| Branch   | 31  | 29  |
-| Control  | 8   | 3   |
-| All      | 133 | 71  |
+58% Implemented
+
+|   Class   | All | Implemented |
+|-----------|-----|-------------|
+| File      | 11  | 3   |
+| Registry  | 10  | 0   |
+| Text      | 5   | 5   |
+| INI       | 7   | 5   |
+| Compress  | 4   | 0   |
+| Network   | 2   | 0   |
+| Attach    | 4   | 0   |
+| Interface | 5   | 3   |
+| Hash      | 5   | 0   |
+| String    | 27  | 27  |
+| Math      | 9   | 0   |
+| System    | 16  | 3   |
+| Branch    | 31  | 29  |
+| Control   | 8   | 8   |
+| All       | 144 | 83  |
 
 # Screenshots
-## 20170421 Build
-![Win10PESE by PEBakery 20170326](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
-![Korean IME by PEBakery 20170326](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
+## 20170530 Build
+![Win10PESE by PEBakery 20170530](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
+![Korean IME by PEBakery 20170530](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
 
 In WB082, same plugins are rendered like this:
 ![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
