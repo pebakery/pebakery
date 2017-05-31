@@ -1,6 +1,10 @@
 # PEBakery
 WinBuilder drop-in replacement. Stil in development.
 
+[![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master)
+
+[![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop)
+ 
 ## What is PEBakery?
 PEBakery is new, improved implementation of WinBuilder 082.
 
