@@ -16,9 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using PEBakery.Helper;
-using PEBakery.Lib;
-using PEBakery.Core;
 using MahApps.Metro.IconPacks;
 using System;
 using System.IO;
@@ -38,8 +35,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using SQLite.Net;
 using System.Text;
-using PEBakery.Exceptions;
 using System.Runtime.CompilerServices;
+using PEBakery.Helper;
+using PEBakery.Lib;
+using PEBakery.Core;
+using PEBakery.Exceptions;
 
 namespace PEBakery.WPF
 {
@@ -366,7 +366,7 @@ namespace PEBakery.WPF
             }
         }
         
-        private void StartReloadPluginWorker()
+        public void StartReloadPluginWorker()
         {
             if (curMainTree == null)
                 return;
@@ -610,6 +610,7 @@ namespace PEBakery.WPF
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
+                    DrawPlugin(curMainTree.Plugin);
 
                     Engine.WorkingEngine = null;
                     Interlocked.Decrement(ref Engine.WorkingLock);

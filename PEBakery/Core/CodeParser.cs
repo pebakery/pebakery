@@ -823,7 +823,7 @@ namespace PEBakery.Core
                 #region 12 System
                 // 11 System
                 case CodeType.System:
-                    break;
+                    return ParseCodeInfoSystem(rawCode, args, addr);
                 case CodeType.ShellExecute:
                 case CodeType.ShellExecuteEx:
                 case CodeType.ShellExecuteDelete:
@@ -1343,6 +1343,170 @@ namespace PEBakery.Core
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid StrFormatType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
+        #region ParseCodeInfoSystem, ParseSystemType
+        public static CodeInfo_System ParseCodeInfoSystem(string rawCode, List<string> args, SectionAddress addr)
+        {
+            SystemType type = ParseSystemType(args[0]);
+            SystemInfo info = new SystemInfo(); // Temp Measure
+
+            // Remove SystemType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case SystemType.Cursor:
+                    { // System,Cursor,<IconKind>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_Cursor(args[0]);
+                    }
+                    break;
+                case SystemType.ErrorOff:
+                    { // System,ErrorOff,[Lines]
+                        const int minArgCount = 0;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (args.Count == 0) // No args
+                            info = new SystemInfo_ErrorOff();
+                        else
+                            info = new SystemInfo_ErrorOff(args[0]);
+                    }
+                    break;
+                case SystemType.GetEnv:
+                    { // System,GetEnv,<EnvVarName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetEnv(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.GetFreeDrive:
+                    { // System,GetFreeDrive,<DestVar>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetFreeDrive(args[0]);
+                    }
+                    break;
+                case SystemType.GetFreeSpace:
+                    { // System,GetFreeSpace,<Path>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetFreeSpace(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.IsAdmin:
+                    { // System,IsAdmin,<DestVar>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_IsAdmin(args[0]);
+                    }
+                    break;
+                case SystemType.OnBuildExit:
+                    { // System,OnBuildExit,<Command>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+
+                        info = new SystemInfo_OnBuildExit(embed);
+                    }
+                    break;
+                case SystemType.OnScriptExit:
+                case SystemType.OnPluginExit:
+                    { // System,OnPluginExit,<Command>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+
+                        info = new SystemInfo_OnPluginExit(embed);
+                    }
+                    break;
+                case SystemType.RefreshInterface:
+                    { // System,RefreshInterface
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_RefreshInterface();
+                    }
+                    break;
+                case SystemType.RescanScripts:
+                    { // System,RescanScripts
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_RescanScripts();
+                    }
+                    break;
+                case SystemType.SaveLog:
+                    { // System,SaveLog,<DestPath>,[LogFormat]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        if (args.Count == 1)
+                            info = new SystemInfo_SaveLog(args[0]);
+                        else
+                            info = new SystemInfo_SaveLog(args[0], args[1]);
+                    }
+                    break;
+                default: // Error
+                    throw new InternalParserException($"Wrong SystemType [{type}]");
+            }
+
+            return new CodeInfo_System(type, info);
+        }
+
+        public static SystemType ParseSystemType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out SystemType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(SystemType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid SystemType [{typeStr}]");
 
             return type;
         }

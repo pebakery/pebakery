@@ -68,6 +68,7 @@ namespace PEBakery.Core.Commands
                 uiCmd.Visibility = visibility;
                 UIRenderer.UpdatePlugin("Interface", uiCmd);
 
+                // Re-render Plugin
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
@@ -126,6 +127,7 @@ namespace PEBakery.Core.Commands
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
 
+            // Re-render Plugin
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);

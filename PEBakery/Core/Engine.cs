@@ -23,13 +23,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows;
+using System.ComponentModel;
+using System.Threading;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
-using System.ComponentModel;
 using PEBakery.Lib;
-using System.Threading;
+
 
 namespace PEBakery.Core
 {
@@ -496,6 +497,7 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Stop Building
+                logs.Add(new LogInfo(LogState.Error, "Critical Error!", cmd, curDepth));
                 throw new CriticalErrorException();
             }
             catch (InvalidCodeCommandException e)
@@ -506,10 +508,30 @@ namespace PEBakery.Core
             {
                 logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
             }
+            
+            // If ErrorOffCount is on, ignore LogState.Error
+            if (0 < s.Logger.ErrorOffCount)
+            {
+                MuteLogError(logs);
+                s.Logger.ErrorOffCount -= 1;
+            }
 
-            s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
+            s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));                
 
             s.MainViewModel.BuildCommandProgressBarValue = 1000;
+        }
+
+        private static void MuteLogError(List<LogInfo> logs)
+        {
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                if (log.State == LogState.Error)
+                {
+                    log.State = LogState.Muted;
+                    logs[i] = log;
+                }
+            }
         }
     }
 

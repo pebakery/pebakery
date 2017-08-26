@@ -1210,6 +1210,209 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 12 - System
+    [Serializable]
+    public class CodeInfo_System : CodeInfo
+    {
+        public SystemType Type;
+        public SystemInfo SubInfo;
+
+        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo.ToString()}";
+        }
+    }
+
+    #region SystemType, SystemInfo
+    public enum SystemType
+    { // 아니 왜 사칙연산이 StrFormat에 있지...
+        Cursor,
+        ErrorOff,
+        GetEnv,
+        GetFreeDrive,
+        GetFreeSpace,
+        IsAdmin,
+        Log,
+        OnBuildExit,
+        OnScriptExit, OnPluginExit,
+        RefreshInterface,
+        RescanScripts,
+        SaveLog,
+    }
+
+    [Serializable]
+    public class SystemInfo { }
+
+    [Serializable]
+    public class SystemInfo_Cursor : SystemInfo
+    { // System,Cursor,<IconKind>
+        public string IconKind;
+
+        public SystemInfo_Cursor(string iconKind)
+        {
+            IconKind = iconKind;
+        }
+
+        public override string ToString()
+        {
+            return $"Cursor,{IconKind}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_ErrorOff : SystemInfo
+    { // System,ErrorOff,[Lines]
+        public string Lines;
+
+        public SystemInfo_ErrorOff(string lines = "1")
+        {
+            Lines = lines;
+        }
+
+        public override string ToString()
+        {
+            return $"ErrorOff,{Lines}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetEnv : SystemInfo
+    { // System,GetEnv,<EnvVarName>,<DestVar>
+        public string EnvVarName;
+        public string DestVar;
+
+        public SystemInfo_GetEnv(string envVarName, string destVar)
+        {
+            EnvVarName = envVarName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetEnv,{EnvVarName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeDrive : SystemInfo
+    { // System,GetFreeDrive,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_GetFreeDrive(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeSpace : SystemInfo
+    { // System,GetFreeSpace,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public SystemInfo_GetFreeSpace(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{Path},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_IsAdmin : SystemInfo
+    { // System,IsAdmin,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_IsAdmin(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"IsAdmin,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnBuildExit : SystemInfo
+    { // System,OnBuildExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnBuildExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnBuildExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnPluginExit : SystemInfo
+    { // System,OnPluginExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnPluginExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnPluginExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_RefreshInterface : SystemInfo
+    { // System,RefreshInterface
+        public SystemInfo_RefreshInterface() { }
+        public override string ToString() { return "RefreshInterface"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_RescanScripts : SystemInfo
+    { // System,RescanScripts
+        public SystemInfo_RescanScripts() { }
+        public override string ToString() { return "RescanScripts"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_SaveLog : SystemInfo
+    { // System,SaveLog,<DestPath>,[LogFormat]
+        public string DestPath;
+        public string LogFormat;
+
+        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        {
+            DestPath = destPath;
+            LogFormat = logFormat;
+        }
+
+        public override string ToString()
+        {
+            return $"SaveLog,{DestPath},{LogFormat}";
+        }
+    }
+    #endregion
+
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>

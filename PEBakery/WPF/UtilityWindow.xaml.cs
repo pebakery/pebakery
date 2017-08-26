@@ -68,6 +68,12 @@ namespace PEBakery.WPF
             m.Syntax_Output = "Not Imeplemented";
 
         }
+
+        private void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            // m.CodeBox_Input;
+            //p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null);
+        }
     }
 
     #region UtiltiyViewModel
@@ -83,30 +89,6 @@ namespace PEBakery.WPF
             // MainWindow w = Application.Current.MainWindow as MainWindow;
             MonoFont = monoFont;
         }
-
-        #region Syntax Checker
-        private string syntax_InputCode = string.Empty;
-        public string Syntax_InputCode
-        {
-            get => syntax_InputCode;
-            set
-            {
-                syntax_InputCode = value;
-                OnPropertyUpdate("Syntax_InputCode");
-            }
-        }
-
-        private string syntax_Output = string.Empty;
-        public string Syntax_Output
-        {
-            get => syntax_Output;
-            set
-            {
-                syntax_Output = value;
-                OnPropertyUpdate("Syntax_Output");
-            }
-        }
-        #endregion
 
         #region String Escaper
         private string escaper_StringToConvert = string.Empty;
@@ -139,6 +121,65 @@ namespace PEBakery.WPF
             {
                 escapePercentChecked = value;
                 OnPropertyUpdate("EscapePercentChecked");
+            }
+        }
+        #endregion
+
+        #region CodeBox
+        private int codeBox_SelectedProjectIndex;
+        public int CodeBox_SelectedProjectIndex
+        {
+            get => codeBox_SelectedProjectIndex;
+            set
+            {
+                codeBox_SelectedProjectIndex = value;
+                OnPropertyUpdate("CodeBox_SelectedProjectIndex");
+            }
+        }
+
+        private Tuple<string, Project> codeBox_Projects;
+        public Tuple<string, Project> CodeBox_Projects
+        {
+            get => codeBox_Projects;
+            set
+            {
+                codeBox_Projects = value;
+                OnPropertyUpdate("CodeBox_Projects");
+            }
+        }
+
+        private string codeBox_Input = string.Empty;
+        public string CodeBox_Input
+        {
+            get => codeBox_Input;
+            set
+            {
+                codeBox_Input = value;
+                OnPropertyUpdate("CodeBox_Input");
+            }
+        }
+        #endregion
+
+        #region Syntax Checker
+        private string syntax_InputCode = string.Empty;
+        public string Syntax_InputCode
+        {
+            get => syntax_InputCode;
+            set
+            {
+                syntax_InputCode = value;
+                OnPropertyUpdate("Syntax_InputCode");
+            }
+        }
+
+        private string syntax_Output = string.Empty;
+        public string Syntax_Output
+        {
+            get => syntax_Output;
+            set
+            {
+                syntax_Output = value;
+                OnPropertyUpdate("Syntax_Output");
             }
         }
         #endregion
