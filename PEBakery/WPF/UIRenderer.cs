@@ -299,8 +299,19 @@ namespace PEBakery.WPF
             {
                 checkBox.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    {
+                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke((Action)(() =>
+                        {
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
+                            w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        }));
+                    }
                 };
             }
             
@@ -490,8 +501,19 @@ namespace PEBakery.WPF
             };
             button.Click += (object sender, RoutedEventArgs e) =>
             {
-                SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
+                if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                {
+                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke((Action)(() =>
+                    {
+                        MainWindow w = Application.Current.MainWindow as MainWindow;
+                        w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                    }));
+                }
             };
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
@@ -668,6 +690,14 @@ namespace PEBakery.WPF
                     {
                         SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
                         UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke((Action)(() =>
+                        {
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
+                            w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        }));
                     }
                 };
             }

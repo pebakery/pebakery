@@ -163,8 +163,7 @@ namespace PEBakery.Core
                 return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo());
 
             // Split with period
-            // List<string> rawArgs = rawCode.Split(',').ToList();
-            Tuple<string, string> tuple = GetNextArgument(rawCode);
+            Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
             string codeTypeStr = tuple.Item1;
             string remainder = tuple.Item2;
 
@@ -191,10 +190,9 @@ namespace PEBakery.Core
             List<string> args = new List<string>();
             try
             {
-                // args = ParseArguments(rawArgs, 1);
                 while (remainder.Equals(string.Empty, StringComparison.Ordinal) == false)
                 {
-                    tuple = GetNextArgument(remainder);
+                    tuple = CodeParser.GetNextArgument(remainder);
                     args.Add(tuple.Item1);
                     remainder = tuple.Item2;
                 }

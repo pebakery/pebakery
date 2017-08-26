@@ -193,7 +193,7 @@ namespace PEBakery.Core
         public virtual string ForgeRawLine()
         {
             if (ToolTip != null)
-                return "," + StringEscaper.Escape(ToolTip);
+                return "," + StringEscaper.QuoteEscape($"__{ToolTip}");
             else
                 return string.Empty;
         }
@@ -451,6 +451,22 @@ namespace PEBakery.Core
                 builder.Append("True");
             else
                 builder.Append("False");
+            builder.Append(base.ForgeRawLine());
+            return builder.ToString();
+
+            /*
+            StringBuilder builder = new StringBuilder();
+            builder.Append(SectionName);
+            builder.Append(",");
+            if (Picture != null)
+                builder.Append(Picture);
+            else
+                builder.Append("0");
+            builder.Append(",");
+            if (ShowProgress)
+                builder.Append("True");
+            else
+                builder.Append("False");
             builder.Append(",");
             builder.Append(SectionName);
             builder.Append(",");
@@ -460,6 +476,7 @@ namespace PEBakery.Core
                 builder.Append("False");
             builder.Append(base.ForgeRawLine());
             return builder.ToString();
+            */
         }
 
         public override string ToString()

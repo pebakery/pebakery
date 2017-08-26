@@ -88,9 +88,19 @@ namespace PEBakery.Core
             // Split with spaces
             List<string> slices = rawLine.Split(',').ToList();
 
-            // Parse Operands
+            // Parse Arguments
             List<string> args = new List<string>();
-            args = CodeParser.ParseArguments(slices, 0);
+            try
+            {
+                string remainder = rawLine;
+                while (remainder.Equals(string.Empty, StringComparison.Ordinal) == false)
+                {
+                    Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
+                    args.Add(tuple.Item1);
+                    remainder = tuple.Item2;
+                }
+            }
+            catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Check doublequote's occurence - must be 2n
             if (FileHelper.CountStringOccurrences(rawLine, "\"") % 2 == 1)
@@ -217,8 +227,15 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
                         string sectionName = null;
+                        string tooltip = GetInfoTooltip(args, maxOpCount);
                         if (1 < args.Count)
-                            sectionName = args[1];
+                        {
+                            // If last args start with __, read that as ToolTip, not SectionName.
+                            if (args.Count == 2 && args[1].StartsWith("__", StringComparison.Ordinal))
+                                tooltip = args[1].Substring(2);
+                            else
+                                sectionName = args[1];
+                        }
 
                         bool showProgress = false;
                         if (2 < args.Count)
@@ -229,7 +246,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
                         }
 
-                        return new UIInfo_CheckBox(GetInfoTooltip(args, maxOpCount), _checked, sectionName, showProgress);
+                        return new UIInfo_CheckBox(tooltip, _checked, sectionName, showProgress);
                     }
                 case UIType.ComboBox:
                     { // Variable Length
@@ -333,8 +350,15 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must have [True] or [False]");
 
                         string sectionName = null;
+                        string tooltip = GetInfoTooltip(args, maxOpCount);
                         if (1 < args.Count)
-                            sectionName = args[1];
+                        {
+                            // If last args start with __, read that as ToolTip, not SectionName.
+                            if (args.Count == 2 && args[1].StartsWith("__", StringComparison.Ordinal))
+                                tooltip = args[1].Substring(2);
+                            else
+                                sectionName = args[1];
+                        }
 
                         bool showProgress = false;
                         if (2 < args.Count)
@@ -345,7 +369,7 @@ namespace PEBakery.Core
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
                         }
 
-                        return new UIInfo_RadioButton(GetInfoTooltip(args, maxOpCount), selected, sectionName, showProgress);
+                        return new UIInfo_RadioButton(tooltip, selected, sectionName, showProgress);
                     }
                 case UIType.Bevel:
                     {
