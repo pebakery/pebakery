@@ -50,6 +50,9 @@ namespace PEBakery.Core.Commands
                         SystemInfo_Cursor subInfo = info.SubInfo as SystemInfo_Cursor;
 
                         string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
                             System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
@@ -78,6 +81,8 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         // ExecuteCommand decrease ErrorOffCount after executing one command.
                         s.Logger.ErrorOffCount = lines + 1; // So add 1
 
@@ -97,6 +102,8 @@ namespace PEBakery.Core.Commands
                             envVarValue = string.Empty;
                         }
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         logs.Add(new LogInfo(LogState.Success, $"Environment variable [{envVarName}]'s value is [{envVarValue}]"));
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, envVarValue);
                         logs.AddRange(varLogs);
@@ -110,6 +117,9 @@ namespace PEBakery.Core.Commands
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         if (lastFreeLetter != '\0') // Success
                         {
                             logs.Add(new LogInfo(LogState.Success, $"Last free drive letter is [{lastFreeLetter}]"));
@@ -132,6 +142,8 @@ namespace PEBakery.Core.Commands
 
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         FileInfo f = new FileInfo(path);
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
                         long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
@@ -151,6 +163,8 @@ namespace PEBakery.Core.Commands
                             WindowsPrincipal principal = new WindowsPrincipal(identity);
                             isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
                         }
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                         string isAdminStr;
                         if (isAdmin)
@@ -174,6 +188,9 @@ namespace PEBakery.Core.Commands
                         SystemInfo_OnBuildExit subInfo = info.SubInfo as SystemInfo_OnBuildExit;
 
                         s.OnBuildExit = subInfo.Cmd;
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         logs.Add(new LogInfo(LogState.Success, "OnBuildExit event registered"));
                     }
                     break;
@@ -184,6 +201,9 @@ namespace PEBakery.Core.Commands
                         SystemInfo_OnPluginExit subInfo = info.SubInfo as SystemInfo_OnPluginExit;
 
                         s.OnPluginExit = subInfo.Cmd;
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         logs.Add(new LogInfo(LogState.Success, "OnPluginExit event registered"));
                     }
                     break;
@@ -200,6 +220,8 @@ namespace PEBakery.Core.Commands
                                 w.DrawPlugin(cmd.Addr.Plugin);
                         });
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         logs.Add(new LogInfo(LogState.Success, $"Rerender plugin [{cmd.Addr.Plugin.Title}]"));
                     }
                     break;
@@ -215,6 +237,8 @@ namespace PEBakery.Core.Commands
                             w.StartReloadPluginWorker();
                         });
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
+
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
                     }
                     break;
@@ -226,11 +250,15 @@ namespace PEBakery.Core.Commands
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
 
+                        s.MainViewModel.BuildCommandProgressBarValue = 300;
+
                         LogExportType logFormat = LogExportType.HTML;
                         if (logFormatStr.Equals("HTML", StringComparison.OrdinalIgnoreCase))
                             logFormat = LogExportType.HTML;
                         else if (logFormatStr.Equals("Text", StringComparison.OrdinalIgnoreCase))
                             logFormat = LogExportType.Text;
+
+                        s.MainViewModel.BuildCommandProgressBarValue = 600;
 
                         s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
 
@@ -259,6 +287,8 @@ namespace PEBakery.Core.Commands
 
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             if (File.Exists(filePath) == false)
             {
@@ -302,7 +332,12 @@ namespace PEBakery.Core.Commands
             {
                 proc.StartInfo.Verb = verb;
             }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 600;
+
             proc.Start();
+
+            s.MainViewModel.BuildCommandProgressBarValue = 800;
 
             switch (cmd.Type)
             {

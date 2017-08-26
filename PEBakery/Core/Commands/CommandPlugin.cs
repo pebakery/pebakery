@@ -17,6 +17,7 @@
 */
 
 using PEBakery.Exceptions;
+using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,6 +48,8 @@ namespace PEBakery.Core.Commands
             else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
 
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
             Plugin targetPlugin;
             if (inCurrentPlugin)
             {
@@ -66,8 +69,22 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, info.DirName, info.FileName))
-            using (FileStream fs = new FileStream(Path.Combine(extractTo, fileName), FileMode.Create, FileAccess.Write))
+            s.MainViewModel.BuildCommandProgressBarValue = 600;
+
+            string destPath;
+            if (Directory.Exists(extractTo)) // extractTo is dir
+            {
+                Directory.CreateDirectory(extractTo);
+                destPath = Path.Combine(extractTo, fileName);
+            }
+            else // extractTo is file
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(extractTo));
+                destPath = extractTo;
+            }
+
+            using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, fileName))
+            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
                 ms.CopyTo(fs);
@@ -75,7 +92,142 @@ namespace PEBakery.Core.Commands
                 fs.Close();
             }
 
+            s.MainViewModel.BuildCommandProgressBarValue = 900;
+
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{extractTo}]"));
+
+            return logs;
+        }
+
+        public static List<LogInfo> ExtractAndRun(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAndRun));
+            CodeInfo_ExtractAndRun info = cmd.Info as CodeInfo_ExtractAndRun;
+
+            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string dirName = StringEscaper.Preprocess(s, info.DirName);
+            string fileName = StringEscaper.Preprocess(s, info.FileName);
+            List<string> parameters = StringEscaper.Preprocess(s, info.Params);
+
+            bool inCurrentPlugin = false;
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
+
+            Plugin targetPlugin;
+            if (inCurrentPlugin)
+            {
+                targetPlugin = s.CurrentPlugin;
+            }
+            else
+            {
+                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                if (targetPlugin == null)
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+            }
+
+            string destPath = FileHelper.CreateTempFile();
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 400;
+
+            using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, info.FileName))
+            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+            {
+                ms.Position = 0;
+                ms.CopyTo(fs);
+                ms.Close();
+                fs.Close();
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 600;
+
+            Process proc = new Process();
+            proc.StartInfo.FileName = destPath;
+            proc.StartInfo.UseShellExecute = true;
+            proc.StartInfo.Verb = "Open";
+            proc.Start();
+
+            s.MainViewModel.BuildCommandProgressBarValue = 800;
+
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted and executed"));
+
+            return logs;
+        }
+
+        public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAllFiles));
+            CodeInfo_ExtractAllFiles info = cmd.Info as CodeInfo_ExtractAllFiles;
+
+            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string dirName = StringEscaper.Preprocess(s, info.DirName);
+            string extractTo = StringEscaper.Preprocess(s, info.ExtractTo);
+
+            bool inCurrentPlugin = false;
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+
+            s.MainViewModel.BuildCommandProgressBarValue = 100;
+
+            Plugin targetPlugin;
+            if (inCurrentPlugin)
+            {
+                targetPlugin = s.CurrentPlugin;
+            }
+            else
+            {
+                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                if (targetPlugin == null)
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+            }
+
+            if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
+
+            List<string> dirs = cmd.Addr.Plugin.Sections["EncodedFolders"].Lines;
+            bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
+            if (dirNameValid == false)
+                throw new ExecuteException($"Folder [{dirName}] not exists in [{pluginFile}]");
+
+            int i = 0;
+            Directory.CreateDirectory(extractTo);
+            Dictionary<string, string> fileDict = cmd.Addr.Plugin.Sections[dirName].IniDict;
+            foreach (string file in fileDict.Keys)
+            {
+                using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, file))
+                using (FileStream fs = new FileStream(Path.Combine(extractTo, file), FileMode.Create, FileAccess.Write))
+                {
+                    ms.Position = 0;
+                    ms.CopyTo(fs);
+                    ms.Close();
+                    fs.Close();
+                }
+
+                s.MainViewModel.BuildCommandProgressBarValue = 200 + ((fileDict.Count * i / fileDict.Count) * 800);
+            }
+
+            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{extractTo}]"));
 
             return logs;
         }

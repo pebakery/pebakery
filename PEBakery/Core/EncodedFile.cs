@@ -54,7 +54,7 @@ namespace PEBakery.Core
     Stream of mostly 0 and some bytes - Maybe hash? for integrity?
     
     Fortunately, footer is not essential to extract attached file.
-    Because of unknown footer, writing PEBakery's own attach format will be much better in future.
+    Because of unknown footer, writing PEBakery's own attach format is needed in future.
 
     [How to improve?]
     Use LZMA instead of zlib, for better compression rate
@@ -125,7 +125,7 @@ namespace PEBakery.Core
                 throw new ExtractFileFailException("Encoded lines are malformed");
 
             int.TryParse(value, out int blockCount);
-            encodedList.RemoveAt(0);
+            encodedList.RemoveAt(0); // Remove "lines=n"
 
             // Each line is 64KB block
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))

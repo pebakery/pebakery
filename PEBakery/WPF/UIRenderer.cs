@@ -664,8 +664,11 @@ namespace PEBakery.WPF
             {
                 radio.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    {
+                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                    }
                 };
             }
 

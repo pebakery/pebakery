@@ -445,6 +445,9 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_ShortLongPath));
                         StrFormatInfo_ShortLongPath subInfo = info.SubInfo as StrFormatInfo_ShortLongPath;
 
+                        // Will be deprecated
+                        logs.Add(new LogInfo(LogState.Warning, $"Command [StrFormatType,{info.Type}] is deprecated"));
+
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
 
                         string destStr;

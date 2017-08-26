@@ -143,6 +143,7 @@ namespace PEBakery.Core
         public readonly static CodeType[] DeprecatedCodeType = new CodeType[]
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
+            CodeType.ExtractAndRun, // Better to have as Macro
             CodeType.GetParam, // PEBakery can have infinite number of section params.
             CodeType.PackParam, // PEBakery can have infinite number of section params.
         };
@@ -662,7 +663,7 @@ namespace PEBakery.Core
     #region CodeInfo 06 - Network
     #endregion
 
-    #region CodeInfo 07 - Attach
+    #region CodeInfo 07 - Plugin
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
     { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
@@ -681,6 +682,28 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
+            return $"{PluginFile},{DirName},{FileName},{ExtractTo}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAndRun : CodeInfo
+    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName>,[Params]
+        public string PluginFile;
+        public string DirName;
+        public string FileName;
+        public string[] Params;
+
+        public CodeInfo_ExtractAndRun(string pluginFile, string dirName, string fileName, string[] parameters)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FileName = fileName;
+            Params = parameters;
+        }
+
+        public override string ToString()
+        {
             StringBuilder b = new StringBuilder();
             b.Append(PluginFile);
             b.Append(",");
@@ -688,8 +711,33 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(FileName);
             b.Append(",");
-            b.Append(ExtractTo);
+            for (int i = 0; i < Params.Length; i++)
+            {
+                b.Append(Params[i]);
+                if (i < Params.Length - 1)
+                    b.Append(",");
+            }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAllFiles : CodeInfo
+    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
+        public string PluginFile;
+        public string DirName;
+        public string ExtractTo;
+
+        public CodeInfo_ExtractAllFiles(string pluginFile, string dirName, string extractTo)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            ExtractTo = extractTo;
+        }
+
+        public override string ToString()
+        {
+            return $"{PluginFile},{DirName},{ExtractTo}";
         }
     }
     #endregion
@@ -775,7 +823,25 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 09 - Hash
+    [Serializable]
+    public class CodeInfo_Hash : CodeInfo
+    { // Hash,<HashType>,<FilePath>,<DestVar>
+        public string HashType;
+        public string FilePath;
+        public string DestVar;
 
+        public CodeInfo_Hash(string hashType, string filePath, string destVar)
+        {
+            HashType = hashType;
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{HashType},{FilePath},{DestVar}";
+        }
+    }
     #endregion
 
     #region SubStrFormatType, SubStrFormatInfo
