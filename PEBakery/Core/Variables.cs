@@ -690,10 +690,11 @@ namespace PEBakery.Core
 
                     if (log.State == LogState.Success)
                     { // SetValue success, write to IniFile
-                        if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", varKey, varValue))
-                            logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{varValue}]"));
+                        string finalValue = StringEscaper.ExpandVariables(s, varValue);
+                        if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", $"%{varKey}%", finalValue)) // To ensure final form being written
+                            logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{finalValue}]"));
                         else
-                            logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{varValue}] into script.project"));
+                            logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{finalValue}] into script.project"));
                     }
                     else
                     { // SetValue failed

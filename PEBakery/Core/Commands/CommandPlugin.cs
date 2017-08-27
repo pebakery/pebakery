@@ -74,12 +74,14 @@ namespace PEBakery.Core.Commands
             string destPath;
             if (Directory.Exists(extractTo)) // extractTo is dir
             {
-                Directory.CreateDirectory(extractTo);
                 destPath = Path.Combine(extractTo, fileName);
             }
             else // extractTo is file
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(extractTo));
+                if (File.Exists(extractTo))
+                    logs.Add(new LogInfo(LogState.Ignore, $"File [{extractTo}] will be overwritten"));
+                else
+                    Directory.CreateDirectory(Path.GetDirectoryName(extractTo));
                 destPath = extractTo;
             }
 
@@ -210,8 +212,16 @@ namespace PEBakery.Core.Commands
             if (dirNameValid == false)
                 throw new ExecuteException($"Folder [{dirName}] not exists in [{pluginFile}]");
 
+            
+            if (Directory.Exists(extractTo) == false)
+            {
+                if (File.Exists(extractTo))
+                    throw new ExecuteException($"Path [{dirName}] is file, cannot extract files");
+                else
+                    Directory.CreateDirectory(extractTo);
+            }
+
             int i = 0;
-            Directory.CreateDirectory(extractTo);
             Dictionary<string, string> fileDict = cmd.Addr.Plugin.Sections[dirName].IniDict;
             foreach (string file in fileDict.Keys)
             {
@@ -228,6 +238,74 @@ namespace PEBakery.Core.Commands
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{extractTo}]"));
+
+            return logs;
+        }
+
+        public static List<LogInfo> Encode(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Encode));
+            CodeInfo_Encode info = cmd.Info as CodeInfo_Encode;
+
+            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string dirName = StringEscaper.Preprocess(s, info.DirName);
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            bool inCurrentPlugin = false;
+            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true;
+
+
+            Plugin targetPlugin;
+            if (inCurrentPlugin)
+            {
+                targetPlugin = s.CurrentPlugin;
+            }
+            else
+            {
+                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
+                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
+                if (targetPlugin == null)
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
+
+            // Check srcFileName contains wildcard
+            if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
+            { // No Wildcard
+                EncodedFile.AttachFile(targetPlugin, dirName, Path.GetFileName(filePath), filePath);
+                s.MainViewModel.BuildCommandProgressBarValue = 600;
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{targetPlugin.FullPath}]", cmd));
+            }
+            else
+            { // With Wildcard
+                // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
+                string srcDirToFind = FileHelper.GetDirNameEx(filePath);
+                string[] files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
+
+                if (0 < files.Length)
+                { // One or more file will be copied
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{targetPlugin.FullPath}]", cmd));
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        EncodedFile.AttachFile(targetPlugin, dirName, Path.GetFileName(files[i]), files[i]);
+                        s.MainViewModel.BuildCommandProgressBarValue = 200 + (800 * (i + 1) / files.Length);
+                        logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
+                    }
+
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
+                }
+                else
+                { // No file will be copied
+                    s.MainViewModel.BuildCommandProgressBarValue = 600;
+                    logs.Add(new LogInfo(LogState.Warning, $"Files match wildcard [{filePath}] not found", cmd));
+                }
+            }
 
             return logs;
         }

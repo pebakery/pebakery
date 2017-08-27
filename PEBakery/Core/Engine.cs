@@ -294,10 +294,12 @@ namespace PEBakery.Core
                     case CodeType.FileCreateBlank:
                         logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
-                    //case CodeType.FileSize:
-                    //    break;
-                    //case CodeType.FileVersion:
-                    //    break;
+                    case CodeType.FileSize:
+                        logs.AddRange(CommandFile.FileSize(s, cmd));
+                        break;
+                    case CodeType.FileVersion:
+                        logs.AddRange(CommandFile.FileVersion(s, cmd));
+                        break;
                     //case CodeType.DirCopy:
                     //   break;
                     //case CodeType.DirDelete:
@@ -307,8 +309,9 @@ namespace PEBakery.Core
                     case CodeType.DirMake:
                         logs.AddRange(CommandFile.DirMake(s, cmd));
                         break;
-                    //case CodeType.DirSize:
-                    //    break;
+                    case CodeType.DirSize:
+                        logs.AddRange(CommandFile.DirSize(s, cmd));
+                        break;
                     #endregion
                     #region 02 Registry
                     //case CodeType.RegHiveLoad:
@@ -382,21 +385,24 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 06 Network
-                    //case CodeType.WebGet:
-                    //    break;
-                    //case CodeType.WebGetIfNotExist: // Deprecated
-                    //    break;
+                    case CodeType.WebGet:
+                    case CodeType.WebGetIfNotExist: // Deprecated
+                        logs.AddRange(CommandNetwork.WebGet(s, cmd));
+                        break;
                     #endregion
-                    #region 07 Attach
+                    #region 07 Plugin
                     case CodeType.ExtractFile:
                         logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
                         break;
-                    //case CodeType.ExtractAndRun:
-                    //    break;
-                    //case CodeType.ExtractAllFiles:
-                    //    break;
-                    //case CodeType.Encode:
-                    //    break;
+                    case CodeType.ExtractAndRun:
+                        logs.AddRange(CommandPlugin.ExtractAndRun(s, cmd));
+                        break;
+                    case CodeType.ExtractAllFiles:
+                        logs.AddRange(CommandPlugin.ExtractAllFiles(s, cmd));
+                        break;
+                    case CodeType.Encode:
+                        logs.AddRange(CommandPlugin.Encode(s, cmd));
+                        break;
                     #endregion
                     #region 08 Interface
                     case CodeType.Visible:
@@ -411,14 +417,14 @@ namespace PEBakery.Core
                     case CodeType.Echo:
                         logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
-                    //case CodeType.UserInput:
-                    //   break;
-                    //case CodeType.Retrieve:
-                    //   break;
+                    case CodeType.UserInput:
+                        logs.AddRange(CommandInterface.UserInput(s, cmd));
+                        break;
                     #endregion
                     #region 09 Hash
-                    //case CodeType.Hash:
-                    //    break;
+                    case CodeType.Hash:
+                        logs.AddRange(CommandHash.Hash(s, cmd));
+                        break;
                     #endregion
                     #region 10 String
                     case CodeType.StrFormat:
@@ -430,8 +436,9 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 12 System
-                    // case CodeType.System:
-                    //    break;
+                    case CodeType.System:
+                        logs.AddRange(CommandSystem.SystemCmd(s, cmd));
+                        break;
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:

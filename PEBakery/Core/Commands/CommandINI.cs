@@ -49,7 +49,8 @@ namespace PEBakery.Core.Commands
             string value = Ini.GetKey(fileName, sectionName, key);
             if (value != null)
             {
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value);
+                // List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value, true); // WB082 Behavior : put this into global, not local
                 foreach (LogInfo log in varLogs)
                 {
                     LogInfo.AddCommand(log, cmd);

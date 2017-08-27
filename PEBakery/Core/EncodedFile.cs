@@ -64,7 +64,15 @@ namespace PEBakery.Core
     {
         #region Extract File from Plugin
         // Need more research about Type 2 and its footer
-        // public static void AttachFile(Plugin plugin, string dirName, string fileName, string filePath)
+        public static Plugin AttachFile(Plugin p, string dirName, string fileName, string srcFilePath)
+        {
+            return Encode(p, dirName, fileName, new FileStream(srcFilePath, FileMode.Open, FileAccess.Read));
+        }
+
+        public static Plugin AttachFile(Plugin p, string dirName, string fileName, Stream srcStream)
+        {
+            return Encode(p, dirName, fileName, srcStream);
+        }
 
         /// <summary>
         /// Return true if failed
@@ -113,12 +121,79 @@ namespace PEBakery.Core
             return Decode(encoded);
         }
 
-        /// <summary>
-        /// Return true if fail
-        /// </summary>
-        /// <param name="encodedList"></param>
-        /// <param name="mem"></param>
-        /// <returns></returns>
+        private static Plugin Encode(Plugin p, string dirName, string fileName, Stream inputStream)
+        {
+            // Only support type 1
+            // TODO: Support encoding Type 2
+
+            // Check Overwrite
+            bool dirOverwrite = false;
+            bool fileOverwrite = false;
+            if (p.Sections.ContainsKey(dirName))
+            { // [{dirName}] section exists, check if there is already same file encoded
+                List<string> lines = p.Sections["EncodedFolders"].GetLines();
+                if (lines.FirstOrDefault(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)) != null)
+                    dirOverwrite = true;
+
+                lines = p.Sections[dirName].GetLines();
+                if (lines.FirstOrDefault(x => x.Equals(fileName, StringComparison.OrdinalIgnoreCase)) != null)
+                    fileOverwrite = true;
+            }
+
+            // Compress with Zlib
+            inputStream.Position = 0;
+            string encoded;
+            using (MemoryStream memStream = new MemoryStream())
+            using (DeflateStream zlibStream = new DeflateStream(memStream, CompressionLevel.Optimal))
+            {
+                inputStream.CopyTo(zlibStream);
+                zlibStream.Close();
+
+                byte[] compressed = new byte[2 + memStream.Length];
+                compressed[0] = 0x78;
+                compressed[1] = 0x9c;
+                Buffer.BlockCopy(memStream.ToArray(), 0, compressed, 2, (int) memStream.Length);
+                encoded = Convert.ToBase64String(compressed);
+
+                // Remove Base64 Padding (==, =)
+                if (encoded.EndsWith("==", StringComparison.Ordinal))
+                    encoded = encoded.Substring(0, encoded.Length - 2);
+                else if (encoded.EndsWith("=", StringComparison.Ordinal))
+                    encoded = encoded.Substring(0, encoded.Length - 1);
+            }
+
+            string section = $"[EncodedFile-{dirName}-{fileName}]";
+            List<IniKey> keys = new List<IniKey>();
+            for (int i = 0; i <= (encoded.Length / 4090); i++)
+            {
+                if (i < (encoded.Length / 4090)) // 1 Line is 4090 characters
+                {
+                    keys.Add(new IniKey(section, i.ToString(), encoded.Substring(i * 4090, 4090))); // X=eJyFk0Fr20AQhe8G...
+                }
+                else // Last Iteration
+                {
+                    keys.Add(new IniKey(section, i.ToString(), encoded.Substring(i * 4090, encoded.Length - (i * 4090)))); // X=N3q8ryccAAQWuBjqA5QvAAAAAA (end)
+                    keys.Insert(0, new IniKey(section, "lines", i.ToString())); // lines=X
+                }
+            }
+
+            // Write to file
+            if (fileOverwrite)
+            {
+                Ini.DeleteSection(p.FullPath, section); // Delete existing encoded file
+            }
+            
+            Ini.SetKeys(p.FullPath, keys); // Write into [EncodedFile-{dirName}-{fileName}]
+            Ini.SetKey(p.FullPath, dirName, fileName, $"{inputStream.Length},{encoded.Length}"); // UncompressedSize,EncodedSize
+
+            if (dirOverwrite == false)
+                Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName);
+
+            // Refresh Plugin
+            // TODO: How to update CurMainTree of MainWindows?
+            return p.Project.RefreshPlugin(p);
+        }
+
         private static MemoryStream Decode(List<string> encodedList)
         {
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))

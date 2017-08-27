@@ -221,7 +221,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeInfo(rawCode, type, macroType, args, addr);
+                info = ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -257,7 +257,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr);
+                info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -372,7 +372,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfo, CheckInfoArgumentCount
-        public static CodeInfo ParseCodeInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr)
+        public static CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, SectionAddress addr)
         {
             switch (type)
             {
@@ -480,9 +480,27 @@ namespace PEBakery.Core
                         return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
                     }
                 case CodeType.FileSize:
-                    break;
+                    { // FileSize,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_FileSize(args[0], args[1]);
+                    }
                 case CodeType.FileVersion:
-                    break;
+                    { // FileVersion,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_FileVersion(args[0], args[1]);
+                    }
                 case CodeType.DirCopy:
                     break;
                 case CodeType.DirDelete:
@@ -499,7 +517,16 @@ namespace PEBakery.Core
                         return new CodeInfo_DirMake(args[0]);
                     }
                 case CodeType.DirSize:
-                    break;
+                    { // DirSize,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_DirSize(args[0], args[1]);
+                    }
                 #endregion
                 #region 02 Registry
                 case CodeType.RegHiveLoad:
@@ -687,9 +714,29 @@ namespace PEBakery.Core
                 #region 06 Network
                 // 06 Network
                 case CodeType.WebGet:
-                    break;
-                case CodeType.WebGetIfNotExist:
-                    break;
+                case CodeType.WebGetIfNotExist: // Will be deprecated
+                    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5; // WB082 Spec allows args up to 5 - WebGet,<URL>,<DestPath>,[MD5_Digest],[ASK],[TIMEOUT_int]
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string url = args[0];
+                        string destPath = args[1];
+                        string hashType = null;
+                        string hashDigest = null;
+
+                        if (args.Count == 4) 
+                        {
+                            if (!(args[2].Length == 32)) // If this statement follows WB082 Spec, Just ignore.
+                            { 
+                                hashType = args[2];
+                                hashDigest = args[3];
+                            }
+                        }
+
+                        return new CodeInfo_WebGet(url, destPath, hashType, hashDigest);
+                    }
                 #endregion
                 #region 07 Plugin
                 // 07 Plugin
@@ -719,7 +766,13 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
                     }
                 case CodeType.Encode:
-                    break;
+                    { // Encode,%PluginFile%,<DirName>,<FileName>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_Encode(args[0], args[1], args[2]);
+                    }
                 #endregion
                 #region 08 Interface
                 case CodeType.Visible:
@@ -803,7 +856,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Echo(args[0], warn);
                     }
                 case CodeType.UserInput:
-                    break;
+                    return ParseCodeInfoUserInput(rawCode, args);
                 case CodeType.Retrieve:
                     { // Put Compability Shim here
                         const int argCount = 3;
@@ -815,32 +868,38 @@ namespace PEBakery.Core
 
                         if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.Dir -> UserInput.DirPath
+                            type = CodeType.UserInput;
                             args[0] = "DirPath";
-                            return ParseCodeInfo(rawCode, CodeType.UserInput, macroType, args, addr);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
                         else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.File -> UserInput.FilePath
+                            type = CodeType.UserInput;
                             args[0] = "FilePath";
-                            return ParseCodeInfo(rawCode, CodeType.UserInput, macroType, args, addr);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
                         else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileSize -> FileSize
+                            type = CodeType.FileSize;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, CodeType.FileSize, macroType, args, addr);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
                         else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FileVersion -> FileVersion
+                            type = CodeType.FileVersion;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, CodeType.FileVersion, macroType, args, addr);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
                         else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.FolderSize -> DirSize
+                            type = CodeType.DirSize;
                             args.RemoveAt(0);
-                            return ParseCodeInfo(rawCode, CodeType.DirSize, macroType, args, addr);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
                         else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
                         { // Retrieve.MD5 -> Hash.MD5
-                            return ParseCodeInfo(rawCode, CodeType.Hash, macroType, args, addr);
+                            type = CodeType.Hash;
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                         }
 
                         throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
@@ -1132,6 +1191,62 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ParseCodeInfoUserInput, ParseUserInputType
+        public static CodeInfo_UserInput ParseCodeInfoUserInput(string rawCode, List<string> args)
+        {
+            const int minArgCount = 3;
+            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
+
+            UserInputType type = ParseUserInputType(args[0]);
+            UserInputInfo info;
+
+            // Remove UserInputType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case UserInputType.DirPath:
+                case UserInputType.FilePath:
+                    {
+                        // UserInput,DirPath,<Path>,<DestVar>
+                        // UserInput,FilePath,<Path>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new UserInputInfo_DirFilePath(args[0], args[1]);
+                    }
+                    break;
+                default: // Error
+                    throw new InternalParserException($"Wrong StrFormatType [{type}]");
+            }
+
+            return new CodeInfo_UserInput(type, info);
+        }
+
+        public static UserInputType ParseUserInputType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out UserInputType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(UserInputType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid UserInputType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
         #region ParseCodeInfoStrFormat, ParseStrFormatType
         public static CodeInfo_StrFormat ParseCodeInfoStrFormat(string rawCode, List<string> args)
         {
@@ -1140,7 +1255,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
 
             StrFormatType type = ParseStrFormatType(args[0]);
-            StrFormatInfo info = new StrFormatInfo(); // Temp Measure
+            StrFormatInfo info;
 
             // Remove StrFormatType
             args.RemoveAt(0);
@@ -1399,7 +1514,7 @@ namespace PEBakery.Core
         public static CodeInfo_System ParseCodeInfoSystem(string rawCode, List<string> args, SectionAddress addr)
         {
             SystemType type = ParseSystemType(args[0]);
-            SystemInfo info = new SystemInfo(); // Temp Measure
+            SystemInfo info;
 
             // Remove SystemType
             args.RemoveAt(0);
@@ -1478,9 +1593,9 @@ namespace PEBakery.Core
                     break;
                 case SystemType.OnBuildExit:
                     { // System,OnBuildExit,<Command>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+                        const int minArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
 
@@ -1490,9 +1605,9 @@ namespace PEBakery.Core
                 case SystemType.OnScriptExit:
                 case SystemType.OnPluginExit:
                     { // System,OnPluginExit,<Command>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+                        const int minArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
 
@@ -1532,6 +1647,9 @@ namespace PEBakery.Core
                         else
                             info = new SystemInfo_SaveLog(args[0], args[1]);
                     }
+                    break;
+                case SystemType.FileRedirect:
+                    info = new SystemInfo();
                     break;
                 default: // Error
                     throw new InternalParserException($"Wrong SystemType [{type}]");

@@ -293,53 +293,22 @@ namespace PEBakery.Lib
         #endregion
 
         #region SetKey - Need Test
-        /// <summary>
-        /// Add key into ini file. Return true if success.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns>
-        /// Found values are stroed in returned IniKey.
-        /// </returns>
         public static bool SetKey(string file, string section, string key, string value)
         {
             return InternalSetKeys(file, new List<IniKey> { new IniKey(section, key, value) });
         }
-        /// <summary>
-        /// Add key into ini file. Return true if success.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns>
-        /// Found values are stroed in returned IniKey.
-        /// </returns>
+
         public static bool SetKey(string file, IniKey iniKey)
         {
             return InternalSetKeys(file, new List<IniKey> { iniKey });
         }
-        /// <summary>
-        /// Add key into ini file.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        /// <returns>
-        /// Found values are stroed in returned IniKey.
-        /// </returns>
-        public static bool SetKeys(string file, IniKey[] iniKeys)
+
+        public static bool SetKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalSetKeys(file, iniKeys.ToList());
         }
-        public static bool SetKeys(string file, List<IniKey> iniKeys)
-        {
-            return InternalSetKeys(file, iniKeys);
-        }
-        private static bool InternalSetKeys(string file, List<IniKey> iniKeys) 
+
+        private static bool InternalSetKeys(string file, List<IniKey> iniKeys, bool rawMode = false) 
         {
             ReaderWriterLockSlim rwLock;
             if (lockDict.ContainsKey(file))
@@ -371,7 +340,12 @@ namespace PEBakery.Lib
                                     writer.WriteLine();
                                 writer.WriteLine($"[{iniKeys[i].Section}]");
                             }
-                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
+                            if (rawMode)
+                                writer.WriteLine(iniKeys[i].Key);
+                            else
+                                writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
                             beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
@@ -406,7 +380,12 @@ namespace PEBakery.Lib
                                     writer.WriteLine();
                                 writer.WriteLine($"[{iniKeys[i].Section}]");
                             }
-                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                            
+                            if (rawMode)
+                                writer.WriteLine(iniKeys[i].Key);
+                            else
+                                writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
                             beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
@@ -446,7 +425,11 @@ namespace PEBakery.Lib
                                     if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                                     {
                                         processedKeys.Add(i);
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
+                                        if (rawMode)
+                                            writer.WriteLine(iniKeys[i].Key);
+                                        else
+                                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
@@ -488,7 +471,11 @@ namespace PEBakery.Lib
                                     { // key exists, so overwrite
                                         processedKeys.Add(i);
                                         thisLineWritten = true;
-                                        writer.WriteLine($"{keyOfLine}={iniKeys[i].Value}");
+
+                                        if (rawMode)
+                                            writer.WriteLine(iniKeys[i].Key);
+                                        else
+                                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
 
@@ -519,7 +506,11 @@ namespace PEBakery.Lib
                                     { // append key to section
                                         processedKeys.Add(i);
                                         thisLineWritten = true;
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
+                                        if (rawMode)
+                                            writer.WriteLine(iniKeys[i].Key);
+                                        else
+                                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
@@ -543,7 +534,11 @@ namespace PEBakery.Lib
                                         if (thisLineWritten == false)
                                             writer.WriteLine(rawLine);
                                         thisLineWritten = true;
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
+                                        if (rawMode)
+                                            writer.WriteLine(iniKeys[i].Key);
+                                        else
+                                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
@@ -560,7 +555,11 @@ namespace PEBakery.Lib
                                     writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }
                                 processedKeys.Add(i);
-                                writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+
+                                if (rawMode)
+                                    writer.WriteLine(iniKeys[i].Key);
+                                else
+                                    writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                             }
                         }
 
@@ -586,6 +585,23 @@ namespace PEBakery.Lib
                 rwLock.ExitWriteLock();
             }            
         }
+        #endregion
+
+        #region WriteRawText - Need Test
+        public static bool WriteRawLine(string file, string section, string line)
+        {
+            return InternalSetKeys(file, new List<IniKey> { new IniKey(section, line) }, true);
+        }
+
+        public static bool WriteRawLine(string file, IniKey iniKey)
+        {
+            return InternalSetKeys(file, new List<IniKey> { iniKey }, true);
+        }
+
+        public static bool WriteRawLine(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalSetKeys(file, iniKeys.ToList(), true);
+        }        
         #endregion
 
         #region DeleteKey - need test

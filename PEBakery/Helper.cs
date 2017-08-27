@@ -381,22 +381,6 @@ namespace PEBakery.Helper
             mmap.Dispose();
         }
 
-        public static void CopyStream(Stream srcStream, string destFile)
-        {
-            FileStream destStream = new FileStream(destFile, FileMode.Create, FileAccess.Write);
-
-            const int block = 4096; // Memory Page is 4KB!
-            byte[] buffer = new byte[block];
-            int len = 1;
-            while (0 < len)
-            {
-                len = srcStream.Read(buffer, 0, block);
-                destStream.Write(buffer, 0, len);
-            }
-
-            destStream.Close();
-        }
-
         /// <summary>
         /// Delete directory, handling open of the handle of the files
         /// </summary>
@@ -535,7 +519,7 @@ namespace PEBakery.Helper
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
             foreach (byte b in h)
-                builder.Append(b.ToString("X2"));
+                builder.Append(b.ToString("x2"));
             return builder.ToString();
         }
 
@@ -547,7 +531,7 @@ namespace PEBakery.Helper
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
             foreach (byte b in h)
-                builder.Append(b.ToString("X2"));
+                builder.Append(b.ToString("x2"));
             return builder.ToString();
         }
 
@@ -556,7 +540,7 @@ namespace PEBakery.Helper
             byte[] h = InternalCalcHash(type, stream);
             StringBuilder builder = new StringBuilder();
             foreach (byte b in h)
-                builder.Append(b.ToString("X2"));
+                builder.Append(b.ToString("x2"));
             return builder.ToString();
         }
 
@@ -654,17 +638,6 @@ namespace PEBakery.Helper
             }
 
             return hashType;
-        }
-    }
-
-    public static class WebHelper
-    {
-        public static async Task<Stream> GetStreamAsync(string url)
-        {
-            HttpClient client = new HttpClient();
-            // http://blog.stephencleary.com/2012/07/dont-block-on-async-code.html
-            // Set GetStreamAsync to use Thread Pool, to evade deadlock
-            return await client.GetStreamAsync(url).ConfigureAwait(false);
         }
     }
 

@@ -258,6 +258,42 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_FileSize : CodeInfo
+    { // FileSize,<FileName>,<DestVar>
+        public string FilePath;
+        public string DestVar;
+
+        public CodeInfo_FileSize(string filePath, string destVar)
+        {
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{FilePath},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_FileVersion : CodeInfo
+    { // FileVersion,<FilePath>,<DestVar>
+        public string filePath;
+        public string DestVar;
+
+        public CodeInfo_FileVersion(string filePath, string destVar)
+        {
+            this.filePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{filePath},{DestVar}";
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_DirMake : CodeInfo
     {
         public string DestDir;
@@ -267,6 +303,27 @@ namespace PEBakery.Core
             DestDir = destDir;
         }
     }
+
+    [Serializable]
+    public class CodeInfo_DirSize : CodeInfo
+    { // DirSize,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public CodeInfo_DirSize(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{Path},{DestVar}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 02 - Registry
     #endregion
 
     #region CodeInfo 03 - Text
@@ -661,6 +718,38 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 06 - Network
+    [Serializable]
+    public class CodeInfo_WebGet : CodeInfo
+    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+        public string URL;
+        public string DestPath;
+        public string HashType;
+        public string HashDigest;
+
+        public CodeInfo_WebGet(string url, string destPath, string hashType, string hashDigest)
+        {
+            URL = url;
+            DestPath = destPath;
+            HashType = hashType;
+            HashDigest = hashDigest;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(URL);
+            b.Append(",");
+            b.Append(DestPath);
+            if (HashType != null && HashDigest != null)
+            {
+                b.Append(",");
+                b.Append(HashType);
+                b.Append(",");
+                b.Append(HashDigest);
+            }
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 07 - Plugin
@@ -738,6 +827,26 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{PluginFile},{DirName},{ExtractTo}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Encode : CodeInfo
+    { // Encode,%PluginFile%,<DirName>,<FileName>
+        public string PluginFile;
+        public string DirName;
+        public string FilePath; // Can have Wildcard
+
+        public CodeInfo_Encode(string pluginFile, string dirName, string filePath)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FilePath = filePath;
+        }
+
+        public override string ToString()
+        {
+            return $"{PluginFile},{DirName},{FilePath}";
         }
     }
     #endregion
@@ -818,6 +927,53 @@ namespace PEBakery.Core
             if (Warn)
                 b.Append(",WARN");
             return b.ToString();
+        }
+    }
+
+    #region UserInputType, UserInputInfo
+    public enum UserInputType
+    { 
+        DirPath,
+        FilePath,
+    }
+
+    [Serializable]
+    public class UserInputInfo { }
+
+    [Serializable]
+    public class UserInputInfo_DirFilePath : UserInputInfo
+    { // UserInput,DirFilePath,<InitPath>,<DestVar>
+        public string InitPath;
+        public string DestVar;
+
+        public UserInputInfo_DirFilePath(string initPath, string destVar)
+        {
+            InitPath = initPath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{InitPath},{DestVar}";
+        }
+    }
+    #endregion
+
+    [Serializable]
+    public class CodeInfo_UserInput : CodeInfo
+    {
+        public UserInputType Type;
+        public UserInputInfo SubInfo;
+
+        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo}";
         }
     }
     #endregion
@@ -1309,6 +1465,7 @@ namespace PEBakery.Core
         RefreshInterface,
         RescanScripts,
         SaveLog,
+        FileRedirect, // Deprecated, WB082 Compability Shim
     }
 
     [Serializable]

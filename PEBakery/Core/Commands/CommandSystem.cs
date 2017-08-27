@@ -265,6 +265,8 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"Exported Build Log into [{destPath}]"));
                     }
                     break;
+                case SystemType.FileRedirect: // Do nothing
+                    break;
                 default: // Error
                     throw new InvalidCodeCommandException($"Wrong SystemType [{type}]");
             }
@@ -290,11 +292,13 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
+            /* - cmd.exe resides in %WinDir%\System32, but get trapped by this filter
             if (File.Exists(filePath) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, $"File [{filePath}] does not exists"));
                 return logs;
             }
+            */
 
             StringBuilder b = new StringBuilder(filePath);
 

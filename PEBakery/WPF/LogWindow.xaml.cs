@@ -38,7 +38,8 @@ namespace PEBakery.WPF
             m.Logger.VariableUpdated += VariableUpdateEventHandler;
 
             SystemLogListView.UpdateLayout();
-            SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
+            if (1 < SystemLogListView.Items.Count)
+                SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
         }
 
        ~LogWindow()

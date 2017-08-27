@@ -57,20 +57,16 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            byte[] digest;
+            string digest;
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                digest = HashHelper.CalcHash(hashType, fs);
+                digest = HashHelper.CalcHashString(hashType, fs);
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
 
-            StringBuilder b = new StringBuilder();
-            foreach (byte d in digest)
-                b.AppendFormat("{0:x2}", d);
-
-            logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{b}]"));
-            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, b.ToString());
+            logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{digest}]"));
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest.ToString());
             logs.AddRange(varLogs);
 
             return logs;
