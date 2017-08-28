@@ -108,17 +108,16 @@ namespace PEBakery.Core
                 int pIdx = str.IndexOf(",", nextIdx, StringComparison.Ordinal);
 
                 // There should be only whitespace in between ["] and [,]
-                if (pIdx == -1)
+                if (pIdx == -1) // Last one
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
                     Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
 
-                    string preNext = str.Substring(0, nextIdx + 1).Trim();
-                    string next = preNext.Substring(1, preNext.Length - 2);
-                    string remainder = str.Substring(nextIdx + 1).Trim();
-                    return new Tuple<string, string>(next, remainder);
+                    string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
+                    string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
+                    return new Tuple<string, string>(next, null);
                 }
-                else
+                else // [   Return SetError(@error,0,0)], [Append]
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
                     Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
@@ -134,7 +133,7 @@ namespace PEBakery.Core
                 int pIdx = str.IndexOf(",", StringComparison.Ordinal);
                 if (pIdx == -1) // Last one
                 {
-                    return new Tuple<string, string>(str, string.Empty);
+                    return new Tuple<string, string>(str, null);
                 }
                 else // [FileCreateBlank], [#3.au3]
                 {
@@ -190,7 +189,7 @@ namespace PEBakery.Core
             List<string> args = new List<string>();
             try
             {
-                while (remainder.Equals(string.Empty, StringComparison.Ordinal) == false)
+                while (remainder != null)
                 {
                     tuple = CodeParser.GetNextArgument(remainder);
                     args.Add(tuple.Item1);
@@ -1883,11 +1882,13 @@ namespace PEBakery.Core
                     if (info == null)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
-                    i = ParseNestedIf(cmd, codeList, i, compiledList);
+                    if (info.LinkParsed == false)
+                        i = ParseNestedIf(cmd, codeList, i, compiledList);
                     elseFlag = true;
 
                     CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                     info.Link = newLinkList;
+                    
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
                 { // Compile to ElseCompact
@@ -1897,8 +1898,8 @@ namespace PEBakery.Core
 
                     if (elseFlag)
                     {
-                        // compiledList.Add(cmd);
-                        i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
+                        if (info.LinkParsed == false)
+                            i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
 
                         CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                         info.Link = newLinkList;
@@ -1907,11 +1908,6 @@ namespace PEBakery.Core
                         throw new InvalidCodeCommandException("Else must be used after If", cmd);
                         
                 }
-                //else if (cmd.Type == CodeType.End)
-                //{
-                //    // elseFlag = true;
-                //    // throw new InvalidCodeCommandException("End must be matched with Begin", cmd);
-                //}
                 else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
                 {
                     elseFlag = false;
@@ -1935,25 +1931,30 @@ namespace PEBakery.Core
             // RawCode : If,%A%,Equal,B,Echo,Success
             // Condition : Equal,%A%,B,Echo,Success
             // Run if condition is met : Echo,Success
-            // BakeryCommand compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
+            // Command compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
 
+            CodeInfo_If info = cmd.Info as CodeInfo_If;
+            if (info == null)
+                throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+            newList.Add(cmd);
+            info.LinkParsed = true;
             CodeCommand ifCmd = cmd;
 
             // <Raw>
             // If,%A%,Equal,B,Echo,Success
             while (true)
             {
-                CodeInfo_If info = ifCmd.Info as CodeInfo_If;
-                if (info == null)
-                    throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                newList.Add(ifCmd);
-                info.LinkParsed = true;
-                info.Link.Add(info.Embed);
                 if (info.Embed.Type == CodeType.If) // Nested If
                 {
+                    info.Link.Add(info.Embed);
+
                     ifCmd = info.Embed;
                     newList = info.Link;
+
+                    info = ifCmd.Info as CodeInfo_If;
+                    if (info == null)
+                        throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -1961,7 +1962,10 @@ namespace PEBakery.Core
                     int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                     if (endIdx == -1)
                         throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
-                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1));
+
+                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                    info.LinkParsed = true;
+
                     return endIdx;
                 }
                 else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
@@ -1970,6 +1974,8 @@ namespace PEBakery.Core
                 }
                 else // Singleline If
                 {
+                    info.Link.Add(info.Embed);
+
                     return codeListIdx;
                 }
             }
@@ -1993,26 +1999,34 @@ namespace PEBakery.Core
 
             newList.Add(cmd);
             info.LinkParsed = true;
-            info.Link.Add(info.Embed);
 
             CodeCommand elseEmbCmd = info.Embed;
             if (elseEmbCmd.Type == CodeType.If) // Nested If
             {
+                info.Link.Add(elseEmbCmd);
+
                 CodeCommand ifCmd = elseEmbCmd;
                 List<CodeCommand> nestList = info.Link;
+
+                CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
+                if (ifInfo == null)
+                    throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+
+                ifInfo.LinkParsed = true;
+
                 while (true)
                 {
-                    CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
-                    if (info == null)
-                        throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                    nestList.Add(ifCmd);
-                    ifInfo.LinkParsed = true;
-                    ifInfo.Link.Add(info.Embed);
-                    if (info.Embed.Type == CodeType.If) // Nested If
+                    if (ifInfo.Embed.Type == CodeType.If) // Nested If
                     {
+                        ifInfo.Link.Add(info.Embed);
+
                         ifCmd = ifInfo.Embed;
                         nestList = ifInfo.Link;
+
+                        ifInfo = ifCmd.Info as CodeInfo_If;
+                        if (ifInfo == null)
+                            throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
                     }
                     else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {
@@ -2020,16 +2034,18 @@ namespace PEBakery.Core
                         int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                         if (endIdx == -1)
                             throw new InvalidCodeCommandException("Begin must be matched with End", ifCmd);
-                        info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1));
+                        ifInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
                         elseFlag = true;
                         return endIdx;
                     }
                     else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
                     {
+                        ifInfo.Link.Add(info.Embed);
                         throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with If", cmd);
                     }
                     else // Singleline If
                     {
+                        info.Link.Add(info.Embed);
                         elseFlag = true;
                         return codeListIdx;
                     }
@@ -2047,10 +2063,12 @@ namespace PEBakery.Core
             }
             else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
             {
+                info.Link.Add(info.Embed);
                 throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with Else", cmd);
             }
             else // Normal codes
             {
+                info.Link.Add(info.Embed);
                 elseFlag = false;
                 return codeListIdx;
             }

@@ -681,16 +681,17 @@ namespace PEBakery.Core
                 // Logs are written in variables.SetValue method
                 if (global)
                 {
-                    logs.Add(s.Variables.SetValue(VarsType.Global, varKey, varValue));
+                    string finalValue = StringEscaper.ExpandVariables(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
+                    logs.Add(s.Variables.SetValue(VarsType.Global, varKey, finalValue));
                 }
                 else if (permanent)
                 {
-                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, varValue);
+                    string finalValue = StringEscaper.ExpandVariables(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
+                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
                     logs.Add(log);
 
                     if (log.State == LogState.Success)
                     { // SetValue success, write to IniFile
-                        string finalValue = StringEscaper.ExpandVariables(s, varValue);
                         if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", $"%{varKey}%", finalValue)) // To ensure final form being written
                             logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{finalValue}]"));
                         else

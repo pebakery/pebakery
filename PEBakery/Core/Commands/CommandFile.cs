@@ -237,13 +237,14 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             string filePath = StringEscaper.Preprocess(s, info.filePath);
-            FileVersionInfo verInfo = FileVersionInfo.GetVersionInfo(filePath);
+            FileVersionInfo v = FileVersionInfo.GetVersionInfo(filePath);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
 
-            logs.Add(new LogInfo(LogState.Success, $"File [{filePath}]'s version is [{verInfo.FileVersion}]", cmd));
+            string verStr = $"{v.FileMajorPart}.{v.FileMinorPart}.{v.FileBuildPart}.{v.FilePrivatePart}";
+            logs.Add(new LogInfo(LogState.Success, $"File [{filePath}]'s version is [{verStr}]", cmd));
 
-            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verInfo.FileVersion); 
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verStr); 
             logs.AddRange(varLogs);
 
             return logs;

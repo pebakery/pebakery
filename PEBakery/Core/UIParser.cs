@@ -93,7 +93,7 @@ namespace PEBakery.Core
             try
             {
                 string remainder = rawLine;
-                while (remainder.Equals(string.Empty, StringComparison.Ordinal) == false)
+                while (remainder != null)
                 {
                     Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
                     args.Add(tuple.Item1);
