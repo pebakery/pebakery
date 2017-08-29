@@ -153,11 +153,15 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string ExpandVariables(EngineState s, string str)
         {
+            /*
             do
             { // TODO: Prevent Infinite loop
                 str = s.Variables.Expand(ExpandSectionParams(s, str));
             }
             while (Variables.DetermineType(str) != Variables.VarKeyType.None);
+            */
+
+            str = s.Variables.Expand(ExpandSectionParams(s, str));
 
             return str;
         }
@@ -234,6 +238,8 @@ namespace PEBakery.Core
                                 [Process2]
                                 Message,#3
                             Printed ""
+
+                            Process에서는 #1이 그대로 "#1"으로 초기화되고, 나머지에선 빈칸으로 처리되는 것 같다.
                         */
 
                         // param = matches[x].Value;

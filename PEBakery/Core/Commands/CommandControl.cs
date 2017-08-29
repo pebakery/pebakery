@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Media;
 using System.Text;
@@ -52,8 +53,12 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
             bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase) ||
-                info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            // if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase) ||
+            //     info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            //    inCurrentPlugin = true;
+
+            if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
+                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
 
             Plugin targetPlugin = s.CurrentPlugin;

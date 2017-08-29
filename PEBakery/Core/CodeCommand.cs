@@ -1868,7 +1868,11 @@ namespace PEBakery.Core
                             filePathContainsWildcard = false;
 
                         // Check if file exists
-                        if (filePathContainsWildcard)
+                        if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        {
+                            match = false;
+                        }
+                        else if (filePathContainsWildcard) 
                         {
                             string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
                             if (0 < list.Length)
@@ -1877,7 +1881,9 @@ namespace PEBakery.Core
                                 match = false;
                         }
                         else
+                        {
                             match = File.Exists(filePath);
+                        }
 
                         if (match)
                             logMessage = $"File [{filePath}] exists";
@@ -1897,8 +1903,12 @@ namespace PEBakery.Core
                         if (dirPath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
                             dirPathContainsWildcard = false;
 
-                        // Check if file exists
-                        if (dirPathContainsWildcard)
+                        // Check if directory exists
+                        if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        {
+                            match = false;
+                        }
+                        else if (dirPathContainsWildcard)
                         {
                             string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
                             if (0 < list.Length)
@@ -1907,7 +1917,9 @@ namespace PEBakery.Core
                                 match = false;
                         }
                         else
+                        {
                             match = Directory.Exists(dirPath);
+                        }
 
                         if (match)
                             logMessage = $"Directory [{dirPath}] exists";

@@ -1764,7 +1764,7 @@ namespace PEBakery.Core
                 }
                 else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
+                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
                 else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase)) // Deprecated

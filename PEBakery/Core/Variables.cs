@@ -354,7 +354,7 @@ namespace PEBakery.Core
              * Set,%C%,%A% -> Wrong
              */
 
-            string str = StringEscaper.UnescapePercent(Expand(value));
+            string str = value;
             while (true)
             {
                 if (str.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) != -1) // Found circular reference
@@ -396,7 +396,12 @@ namespace PEBakery.Core
             // Check circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
+                // This code cannot handle this case : [Set,%PluginPathShort%,\%PluginPathShort%]
+                // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
+
+                // To Handle [Set,%PluginPathShort%,\%PluginPathShort%], if curcular reference detected, bake into final form
+                vars[key] = Expand(rawValue);
+                return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
             }
             else
             { // Ex) %Joveler%=Variel\ied206.txt - Success
@@ -681,12 +686,12 @@ namespace PEBakery.Core
                 // Logs are written in variables.SetValue method
                 if (global)
                 {
-                    string finalValue = StringEscaper.ExpandVariables(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
+                    string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
                     logs.Add(s.Variables.SetValue(VarsType.Global, varKey, finalValue));
                 }
                 else if (permanent)
                 {
-                    string finalValue = StringEscaper.ExpandVariables(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
+                    string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
                     logs.Add(log);
 
@@ -704,7 +709,12 @@ namespace PEBakery.Core
                 }
                 else // Local
                 {
-                    logs.Add(s.Variables.SetValue(VarsType.Local, varKey, varValue));
+                    string finalValue = varValue;
+                    Variables.VarKeyType valType = Variables.DetermineType(varValue);
+                    if (valType == VarKeyType.SectionParams)
+                        finalValue = StringEscaper.ExpandSectionParams(s, varValue); // #1 -> Expand now (Seems to be WB082 behavior)
+
+                    logs.Add(s.Variables.SetValue(VarsType.Local, varKey, finalValue));
                 }
             }
             else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...

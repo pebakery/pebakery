@@ -46,9 +46,13 @@ namespace PEBakery.Core.Commands
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
             bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            //if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+            //    inCurrentPlugin = true;
+            //else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+            //     inCurrentPlugin = true;
+
+            if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
+                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true;
 
             Plugin targetPlugin;
@@ -68,9 +72,21 @@ namespace PEBakery.Core.Commands
             if (!targetPlugin.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
+            // Section Parameter
+            Dictionary<int, string> paramDict = new Dictionary<int, string>();
+            if (preserveCurParams)
+            {
+                paramDict = s.CurSectionParams;
+            }
+            else
+            {
+                for (int i = 0; i < paramList.Count; i++)
+                    paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, paramList[i]);
+            }
+
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             // Exec utilizes [Variables] section of the plugin
             if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
@@ -80,10 +96,11 @@ namespace PEBakery.Core.Commands
 
             // Run Section
             int depthBackup = s.CurDepth;
-            if (preserveCurParams)
-                Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
-            else
-                Engine.RunSection(s, nextAddr, paramList, s.CurDepth + 1, callback);
+            // if (preserveCurParams)
+            //     Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
+            // else
+            //    Engine.RunSection(s, nextAddr, paramList, s.CurDepth + 1, callback);
+            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
@@ -122,9 +139,13 @@ namespace PEBakery.Core.Commands
                 List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
                 bool inCurrentPlugin = false;
-                if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                    inCurrentPlugin = true;
-                else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                // if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                //     inCurrentPlugin = true;
+                // else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
+                //    inCurrentPlugin = true;
+
+                if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
+                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
                     inCurrentPlugin = true;
 
                 Plugin targetPlugin;

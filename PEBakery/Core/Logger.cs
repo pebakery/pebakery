@@ -555,12 +555,12 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, Dictionary<int, string> sectionParam, CodeCommand cmd = null, bool forceLog = false)
         {
-            LogStartOfSection(s.BuildId, s.PluginId, addr, depth, logPluginName, cmd, forceLog);
+            LogStartOfSection(s.BuildId, s.PluginId, addr, depth, logPluginName, sectionParam, cmd, forceLog);
         }
 
-        public void LogStartOfSection(long buildId, long pluginId, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(long buildId, long pluginId, SectionAddress addr, int depth, bool logPluginName, Dictionary<int, string> paramDict = null, CodeCommand cmd = null, bool forceLog = false)
         { 
             bool turnOff = false;
             if (0 < TurnOff.Count)
@@ -574,30 +574,72 @@ namespace PEBakery.Core
                 turnOff = false;
 
             if (logPluginName)
-                LogStartOfSection(buildId, pluginId, addr.Section.SectionName, depth, cmd);
+                LogStartOfSection(buildId, pluginId, addr.Section.SectionName, depth, paramDict, cmd);
             else
-                LogStartOfSection(buildId, pluginId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+                LogStartOfSection(buildId, pluginId, addr.Plugin.ShortPath, addr.Section.SectionName, depth, paramDict, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
         }
 
-        public void LogStartOfSection(long buildId, long pluginId, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogStartOfSection(long buildId, long pluginId, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
         {
             string msg = $"Processing Section [{sectionName}]";
             if (cmd == null)
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
+
+            // Write Section Parameters
+            if (paramDict != null && 0 < paramDict.Count)
+            {
+                int cnt = 0;
+                StringBuilder b = new StringBuilder();
+                b.Append("Params = { ");
+                foreach (var kv in paramDict)
+                {
+                    b.Append($"#{kv.Key}:[{kv.Value}]");
+                    if (cnt + 1 < paramDict.Count)
+                        b.Append(", ");
+                    cnt++;
+                }
+                b.Append(" }");
+
+                if (cmd == null)
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                else
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+            }
         }
 
-        public void LogStartOfSection(long buildId, long pluginId, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogStartOfSection(long buildId, long pluginId, string pluginName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
         {
             string msg = $"Processing [{pluginName}]'s Section [{sectionName}]";
             if (cmd == null)
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
+
+            // Write Section Parameters
+            if (paramDict != null && 0 < paramDict.Count)
+            {
+                int cnt = 0;
+                StringBuilder b = new StringBuilder();
+                b.Append("Params = { ");
+                foreach (var kv in paramDict)
+                {
+                    b.Append($"#{kv.Key}:[{kv.Value}]");
+                    if (cnt + 1 < paramDict.Count)
+                        b.Append(", ");
+                    cnt++;
+                }
+                b.Append(" }");
+
+                if (cmd == null)
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                else
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+            }
         }
 
         public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)

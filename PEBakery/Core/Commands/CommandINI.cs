@@ -28,7 +28,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
-    public static class CommandINI
+    public static class CommandIni
     {
         public static List<LogInfo> INIRead(EngineState s, CodeCommand cmd)
         {
@@ -57,7 +57,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(log);
                 }
             }
-            logs.Add(new LogInfo(LogState.Success, $"Key [{key}] successfully read from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] successfully read from [{fileName}]", cmd));
 
             return logs;
         }
