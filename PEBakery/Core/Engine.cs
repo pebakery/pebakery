@@ -172,6 +172,7 @@ namespace PEBakery.Core
                             MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
 
+                        // Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
                         Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
                         break;
                     }
@@ -250,11 +251,14 @@ namespace PEBakery.Core
             }
         }
 
-        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventName)
+        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventName, bool changeCurrentPlugin = false)
         {
             if (cbCmd != null)
             {
                 s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
+
+                if (changeCurrentPlugin)
+                    s.CurrentPlugin = cbCmd.Addr.Plugin;
 
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
@@ -761,6 +765,34 @@ namespace PEBakery.Core
         {
             LogComment = logComment;
             LogMacro = logMacro;
+        }
+
+        /// <summary>
+        /// Get Plugin Instance from path string.
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="pluginPath"></param>
+        /// <param name="inCurrentPlugin"></param>
+        /// <returns></returns>
+        public Plugin GetPluginInstance(CodeCommand cmd, string pluginPath, out bool inCurrentPlugin)
+        {
+            inCurrentPlugin = false;
+            if (pluginPath.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
+                pluginPath.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
+
+            string fullPath = StringEscaper.ExpandVariables(this, pluginPath);
+            Plugin p = this.Project.GetPluginByFullPath(fullPath);
+            if (p == null)
+            { // Cannot Find Plugin in Project
+                if (!File.Exists(fullPath))
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+                p = this.Project.LoadPluginMonkeyPatch(fullPath);
+                if (p == null)
+                    throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+            }
+
+            return p;
         }
     }
 }

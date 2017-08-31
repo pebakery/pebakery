@@ -55,7 +55,8 @@ namespace PEBakery.Core.Commands
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value, true); // WB082 Behavior : put this into global, not local
+
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.VarName, value, false); 
                 logs.AddRange(varLogs);
             }
             else
@@ -114,16 +115,16 @@ namespace PEBakery.Core.Commands
 
                 if (kv.Value != null)
                 {
-                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read [{i + 1}/{keys.Length}]", subCmd));
-                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].VarName, kv.Value, true); // WB082 Behavior : put this into global, not local
-                    foreach (LogInfo varLog in varLogs)
-                        logs.Add(LogInfo.AddCommand(varLog, subCmd));
+                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].VarName, kv.Value, false);
+                    logs.AddRange(varLogs);
 
                     successCount += 1;
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Could not read key [{kv.Key}]'s value [{i + 1}/{keys.Length}]", subCmd));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not read key [{kv.Key}]'s value", subCmd));
                 }
             }
             logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from [{fileName}]", cmd));
@@ -212,7 +213,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] written [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] written", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Success, $"Wrote [{keys.Length}] values to [{fileName}]", cmd));
             }
@@ -221,7 +222,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Error, $"Could not write key [{kv.Key}] and its value [{kv.Value}] [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not write key [{kv.Key}] and its value [{kv.Value}]", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] values to [{fileName}]", cmd));
             }
@@ -308,7 +309,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] deleted [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] deleted", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Success, $"Deleted [{keys.Length}] values from [{fileName}]", cmd));
             }
@@ -317,7 +318,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Error, $"Could not delete key [{kv.Key}] [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not delete key", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not delete [{keys.Length}] values from [{fileName}]", cmd));
             }
@@ -396,13 +397,13 @@ namespace PEBakery.Core.Commands
             if (result)
             {
                 for (int i = 0; i < sections.Length; i++)
-                    logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] added [{i + 1}/{sections.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] added", infoOp.Cmds[i]));
                 logs.Add(new LogInfo(LogState.Success, $"Added [{sections.Length}] sections to [{fileName}]", cmd));
             }
             else
             {
                 for (int i = 0; i < sections.Length; i++)
-                    logs.Add(new LogInfo(LogState.Error, $"Could not add section [{sections[i]}] [{i + 1}/{sections.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not add section [{sections[i]}]", infoOp.Cmds[i]));
                 logs.Add(new LogInfo(LogState.Error, $"Could not add [{sections.Length}] sections to [{fileName}]", cmd));
             }
 
@@ -480,13 +481,13 @@ namespace PEBakery.Core.Commands
             if (result)
             {
                 for (int i = 0; i < sections.Length; i++)
-                    logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] deleted [{i + 1}/{sections.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Section [{sections[i]}] deleted", infoOp.Cmds[i]));
                 logs.Add(new LogInfo(LogState.Success, $"Deleted [{sections.Length}] sections from [{fileName}]", cmd));
             }
             else
             {
                 for (int i = 0; i < sections.Length; i++)
-                    logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sections[i]}] [{i + 1}/{sections.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sections[i]}]", infoOp.Cmds[i]));
                 logs.Add(new LogInfo(LogState.Error, $"Could not delete [{sections.Length}] sections from [{fileName}]", cmd));
             }
 
@@ -568,7 +569,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Success, $"Line [{kv.Key}] written [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Success, $"Line [{kv.Key}] written", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Success, $"Wrote [{keys.Length}] lines to [{fileName}]", cmd));
             }
@@ -577,7 +578,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < keys.Length; i++)
                 {
                     IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Error, $"Could not write line [{kv.Key}] [{i + 1}/{keys.Length}]", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Error, $"Could not write line [{kv.Key}]", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] lines to [{fileName}]", cmd));
             }

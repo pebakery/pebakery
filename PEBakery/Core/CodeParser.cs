@@ -416,8 +416,8 @@ namespace PEBakery.Core
                     }
                 case CodeType.FileDelete:
                     { // FileDelete,<FilePath>[,NOWARN][,NOREC]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 4;
+                        const int minArgCount = 1;
+                        const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 

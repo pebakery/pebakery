@@ -2019,6 +2019,10 @@ namespace PEBakery.Core
                             filePathContainsWildcard = false;
 
                         // Check if file exists
+                        if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        {
+                            match = false;
+                        }
                         if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
                         {
                             match = false;
@@ -2055,7 +2059,11 @@ namespace PEBakery.Core
                             dirPathContainsWildcard = false;
 
                         // Check if directory exists
-                        if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        {
+                            match = false;
+                        }
+                        else if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
                         {
                             match = false;
                         }

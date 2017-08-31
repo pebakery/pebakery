@@ -495,10 +495,10 @@ namespace PEBakery.Core
                         builder.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (globalVars.ContainsKey(varName))
-                        builder.Append(globalVars[varName]);
-                    else if (localVars.ContainsKey(varName))
+                    if (localVars.ContainsKey(varName))
                         builder.Append(localVars[varName]);
+                    else if (globalVars.ContainsKey(varName))
+                        builder.Append(globalVars[varName]);
                     else if (fixedVars.ContainsKey(varName))
                         builder.Append(fixedVars[varName]);
                     else // variable not found
