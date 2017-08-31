@@ -37,22 +37,22 @@ If you have any ideas, please let me know at [Issue Tracker](https://github.com/
 - New Language and Grammar
 
 ## Command Status
-58% Implemented
+Command 78% Implemented
 
 |   Class   | All | Implemented |
 |-----------|-----|-------------|
-| File      | 11  | 3   |
+| File      | 11  | 6   |
 | Registry  | 10  | 0   |
 | Text      | 5   | 5   |
-| INI       | 7   | 5   |
+| INI       | 7   | 6   |
 | Compress  | 4   | 0   |
-| Network   | 2   | 0   |
-| Attach    | 4   | 0   |
-| Interface | 5   | 3   |
-| Hash      | 5   | 0   |
+| Network   | 2   | 2   |
+| Plugin    | 4   | 4   |
+| Interface | 5   | 5   |
+| Hash      | 5   | 5   |
 | String    | 27  | 27  |
 | Math      | 9   | 0   |
-| System    | 16  | 3   |
+| System    | 15  | 15  |
 | Branch    | 31  | 29  |
 | Control   | 8   | 8   |
 | All       | 144 | 83  |
