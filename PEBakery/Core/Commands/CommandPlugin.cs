@@ -37,31 +37,14 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile));
             CodeInfo_ExtractFile info = cmd.Info as CodeInfo_ExtractFile;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string extractTo = StringEscaper.Preprocess(s, info.ExtractTo);
 
-            bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-            {
-                targetPlugin = s.CurrentPlugin;
-            }
-            else
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-            }
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
             {
@@ -85,7 +68,7 @@ namespace PEBakery.Core.Commands
                 destPath = extractTo;
             }
 
-            using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, fileName))
+            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, fileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
@@ -108,31 +91,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAndRun));
             CodeInfo_ExtractAndRun info = cmd.Info as CodeInfo_ExtractAndRun;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Params);
 
-            bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-            {
-                targetPlugin = s.CurrentPlugin;
-            }
-            else
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-            }
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
             string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -143,7 +110,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 400;
 
-            using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, info.FileName))
+            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, info.FileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
@@ -174,30 +141,13 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAllFiles));
             CodeInfo_ExtractAllFiles info = cmd.Info as CodeInfo_ExtractAllFiles;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string extractTo = StringEscaper.Preprocess(s, info.ExtractTo);
 
-            bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
             s.MainViewModel.BuildCommandProgressBarValue = 100;
 
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-            {
-                targetPlugin = s.CurrentPlugin;
-            }
-            else
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-            }
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
             {
@@ -225,7 +175,7 @@ namespace PEBakery.Core.Commands
             Dictionary<string, string> fileDict = cmd.Addr.Plugin.Sections[dirName].IniDict;
             foreach (string file in fileDict.Keys)
             {
-                using (MemoryStream ms = EncodedFile.ExtractFile(targetPlugin, dirName, file))
+                using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, file))
                 using (FileStream fs = new FileStream(Path.Combine(extractTo, file), FileMode.Create, FileAccess.Write))
                 {
                     ms.Position = 0;
@@ -249,38 +199,20 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Encode));
             CodeInfo_Encode info = cmd.Info as CodeInfo_Encode;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            bool inCurrentPlugin = false;
-            if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-            else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
-
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-            {
-                targetPlugin = s.CurrentPlugin;
-            }
-            else
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-            }
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                EncodedFile.AttachFile(targetPlugin, dirName, Path.GetFileName(filePath), filePath);
+                EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
                 s.MainViewModel.BuildCommandProgressBarValue = 600;
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{targetPlugin.FullPath}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{p.FullPath}]", cmd));
             }
             else
             { // With Wildcard
@@ -290,10 +222,10 @@ namespace PEBakery.Core.Commands
 
                 if (0 < files.Length)
                 { // One or more file will be copied
-                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{targetPlugin.FullPath}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{p.FullPath}]", cmd));
                     for (int i = 0; i < files.Length; i++)
                     {
-                        EncodedFile.AttachFile(targetPlugin, dirName, Path.GetFileName(files[i]), files[i]);
+                        EncodedFile.AttachFile(p, dirName, Path.GetFileName(files[i]), files[i]);
                         s.MainViewModel.BuildCommandProgressBarValue = 200 + (800 * (i + 1) / files.Length);
                         logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
                     }

@@ -39,6 +39,7 @@ using System.Threading;
 
 namespace PEBakery.WPF
 {
+    // TODO: Fix potential memory leak due to event handler
     public class UIRenderer
     {
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
@@ -122,9 +123,6 @@ namespace PEBakery.WPF
                             break;
                         case UIType.Button:
                             UIRenderer.RenderButton(renderInfo, uiCmd, logger);
-                            break;
-                        case UIType.CheckList:
-                            // TODO: Implement, or deprecate?
                             break;
                         case UIType.WebLabel:
                             UIRenderer.RenderWebLabel(renderInfo, uiCmd);

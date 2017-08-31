@@ -1,4 +1,21 @@
-﻿using PEBakery.WPF;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 using System;
 using System.IO;
 using System.Windows;
@@ -478,12 +495,8 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            // string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
-            // return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
+            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
         }
 
         private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmdList)
@@ -497,56 +510,93 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
+            // string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
         }
 
         private static CodeCommand OptimizeINIRead(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_INIReadOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_INIReadOp(cmds));
         }
 
         private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_INIWriteOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_INIWriteOp(cmds));
         }
 
         private static CodeCommand OptimizeINIDelete(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIDeleteOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIDeleteOp(cmds));
         }
 
         private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_INIAddSectionOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_INIAddSectionOp(cmds));
         }
 
         private static CodeCommand OptimizeINIDeleteSection(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_INIDeleteSectionOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_INIDeleteSectionOp(cmds));
         }
 
         private static CodeCommand OptimizeINIWriteTextLine(List<CodeCommand> cmdList)
         {
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIWriteTextLineOp(cmdList));
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIWriteTextLineOp(cmds));
         }
 
         private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)

@@ -292,14 +292,6 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            /* - cmd.exe resides in %WinDir%\System32, but get trapped by this filter
-            if (File.Exists(filePath) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{filePath}] does not exists"));
-                return logs;
-            }
-            */
-
             StringBuilder b = new StringBuilder(filePath);
 
             Process proc = new Process();
@@ -361,13 +353,18 @@ namespace PEBakery.Core.Commands
                     throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
             }
 
-            if (cmd.Type != CodeType.ShellExecuteEx && info.ExitOutVar != null)
+            if (cmd.Type != CodeType.ShellExecuteEx)
             {
-                string exitOutVar = Variables.GetVariableName(s, info.ExitOutVar);
-                LogInfo log = Variables.SetVariable(s, info.ExitOutVar, proc.ExitCode.ToString()).First();
+                string exitOutVar;
+                if (info.ExitOutVar == null)
+                    exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                else
+                    exitOutVar = info.ExitOutVar;
+
+                LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
                 
                 if (log.State == LogState.Success)
-                    logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [%{info.ExitOutVar}%]"));
+                    logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
                 else if (log.State == LogState.Error)
                     logs.Add(log);
                 else

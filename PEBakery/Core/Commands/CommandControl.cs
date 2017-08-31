@@ -49,32 +49,16 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddVariables));
             CodeInfo_AddVariables info = cmd.Info as CodeInfo_AddVariables;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            bool inCurrentPlugin = false;
-            // if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase) ||
-            //     info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-            //    inCurrentPlugin = true;
-
-            if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
-                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
-            Plugin targetPlugin = s.CurrentPlugin;
-            if (inCurrentPlugin == false)
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin at [{fullPath}]");
-            }
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
             // Does section exists?
-            if (!targetPlugin.Sections.ContainsKey(sectionName))
+            if (!p.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
-            SectionAddress addr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
+            SectionAddress addr = new SectionAddress(p, p.Sections[sectionName]);
 
             List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, addr.Section);
 

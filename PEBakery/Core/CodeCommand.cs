@@ -182,22 +182,20 @@ namespace PEBakery.Core
     #region CodeInfo 01 - File
     [Serializable]
     public class CodeInfo_FileCopy : CodeInfo
-    {
+    { // FileCopy,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN],[NOREC]
         public string SrcFile;
         public string DestPath;
         public bool Preserve;
         public bool NoWarn;
         public bool NoRec;
-        public bool Show;
 
-        public CodeInfo_FileCopy(string srcFile, string destPath, bool preserve, bool noWarn, bool noRec, bool show)
+        public CodeInfo_FileCopy(string srcFile, string destPath, bool preserve, bool noWarn, bool noRec)
         {
             SrcFile = srcFile;
             DestPath = destPath;
             Preserve = preserve;
             NoWarn = noWarn;
             NoRec = noRec;
-            Show = show;
         }
 
         public override string ToString()
@@ -212,10 +210,53 @@ namespace PEBakery.Core
                 b.Append(",NOWARN");
             if (NoRec)
                 b.Append(",NOREC");
-            if (Show)
-                b.Append(",SHOW");
 
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_FileDelete : CodeInfo
+    { // FileDelete,<FilePath>[,NOWARN][,NOREC]
+        public string FilePath;
+        public bool NoWarn;
+        public bool NoRec;
+
+        public CodeInfo_FileDelete(string filePath, bool noWarn, bool noRec)
+        {
+            FilePath = filePath;
+            NoWarn = noWarn;
+            NoRec = noRec;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FilePath);
+            if (NoWarn)
+                b.Append(",NOWARN");
+            if (NoRec)
+                b.Append(",NOREC");
+
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_FileRename : CodeInfo
+    { // FileRename,<SrcPath>,<DestPath>
+        public string SrcPath;
+        public string DestPath;
+
+        public CodeInfo_FileRename(string srcPath, string destPath)
+        {
+            SrcPath = srcPath;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"FileRename,{SrcPath},{DestPath}";
         }
     }
 
@@ -279,24 +320,76 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_FileVersion : CodeInfo
     { // FileVersion,<FilePath>,<DestVar>
-        public string filePath;
+        public string FilePath;
         public string DestVar;
 
         public CodeInfo_FileVersion(string filePath, string destVar)
         {
-            this.filePath = filePath;
+            FilePath = filePath;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{filePath},{DestVar}";
+            return $"{FilePath},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_DirCopy : CodeInfo
+    { // Diropy,<SrcDir>,<DestPath>
+        public string SrcDir;
+        public string DestPath;
+
+        public CodeInfo_DirCopy(string srcDir, string destPath)
+        {
+            SrcDir = srcDir;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcDir},{DestPath}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_DirDelete : CodeInfo
+    { // FileDelete,<DirPath>
+        public string DirPath;
+
+        public CodeInfo_DirDelete(string dirPath)
+        {
+            DirPath = dirPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{DirPath}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_DirMove : CodeInfo
+    { // DirMove,<SrcDir>,<DestPath>
+        public string SrcDir;
+        public string DestPath;
+
+        public CodeInfo_DirMove(string srcPath, string destPath)
+        {
+            SrcDir = srcPath;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcDir},{DestPath}";
         }
     }
 
     [Serializable]
     public class CodeInfo_DirMake : CodeInfo
-    {
+    { // DirMake,<DestDir>
         public string DestDir;
 
         public CodeInfo_DirMake(string destDir)
@@ -1926,6 +2019,10 @@ namespace PEBakery.Core
                             filePathContainsWildcard = false;
 
                         // Check if file exists
+                        if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        {
+                            match = false;
+                        }
                         if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
                         {
                             match = false;
@@ -1962,7 +2059,11 @@ namespace PEBakery.Core
                             dirPathContainsWildcard = false;
 
                         // Check if directory exists
-                        if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                        {
+                            match = false;
+                        }
+                        else if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
                         {
                             match = false;
                         }

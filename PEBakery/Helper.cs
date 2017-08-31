@@ -291,7 +291,7 @@ namespace PEBakery.Helper
             catch (IOException)
             {
                 // However, File.Replace throws IOException if src and dest files are in different volume.
-                // In this case, use File.Copy as fallback.
+                // In this case, try File.Copy as fallback.
                 File.Copy(src, dest, true);
                 File.Delete(src);
             }
@@ -368,26 +368,53 @@ namespace PEBakery.Helper
         }
 
         /// <summary>
-        /// Delete directory, handling open of the handle of the files
+        /// Copy directory.
         /// </summary>
         /// <remarks>
-        /// http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true
+        /// Based on Official MSDN Code
+        /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
         /// </remarks>
-        /// <param name="path"></param>
-        /// <param name="recursive"></param>
-        public static void DirectoryDeleteEx(string path, bool recursive)
+        /// <param name="srcDir"></param>
+        /// <param name="destDir"></param>
+        /// <param name="copySubDirs"></param>
+        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, string wildcard = null)
         {
-            try
+            // Get the subdirectories for the specified directory.
+            DirectoryInfo dir = new DirectoryInfo(srcDir);
+
+            if (!dir.Exists)
+                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {srcDir}");
+
+            DirectoryInfo[] dirs;
+            if (wildcard == null) // No wildcard
+                dirs = dir.GetDirectories();
+            else // With wildcard
+                dirs = dir.GetDirectories(wildcard);
+
+            // If the destination directory doesn't exist, create it.
+            if (!Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            // Get the files in the directory and copy them to the new location.
+            FileInfo[] files;
+            if (wildcard == null) // No wildcard
+                files = dir.GetFiles();
+            else // With wildcard
+                files = dir.GetFiles(wildcard);
+            foreach (FileInfo file in files)
             {
-                Directory.Delete(path, true);
+                string temppath = Path.Combine(destDir, file.Name);
+                file.CopyTo(temppath, false);
             }
-            catch (IOException)
+
+            // If copying subdirectories, copy them and their contents to new location.
+            if (copySubDirs)
             {
-                Directory.Delete(path, true);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Directory.Delete(path, true);
+                foreach (DirectoryInfo subdir in dirs)
+                {
+                    string temppath = Path.Combine(destDir, subdir.Name);
+                    DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+                }
             }
         }
 

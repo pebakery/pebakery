@@ -41,35 +41,14 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
-            string pluginFile = StringEscaper.Unescape(info.PluginFile);
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            bool inCurrentPlugin = false;
-            //if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-            //    inCurrentPlugin = true;
-            //else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-            //     inCurrentPlugin = true;
+            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
-            if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
-                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true;
-
-            Plugin targetPlugin;
-            if (inCurrentPlugin)
-            {
-                targetPlugin = s.CurrentPlugin;
-            }
-            else
-            {
-                string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                if (targetPlugin == null)
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-            }
-            
             // Does section exists?
-            if (!targetPlugin.Sections.ContainsKey(sectionName))
+            if (!p.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
             // Section Parameter
@@ -85,21 +64,17 @@ namespace PEBakery.Core.Commands
             }
 
             // Branch to new section
-            SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
+            SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             // Exec utilizes [Variables] section of the plugin
-            if (cmd.Type == CodeType.Exec && targetPlugin.Sections.ContainsKey("Varaibles"))
+            if (cmd.Type == CodeType.Exec && p.Sections.ContainsKey("Varaibles"))
             {
-                s.Variables.AddVariables(VarsType.Local, targetPlugin.Sections["Variables"]);
+                s.Variables.AddVariables(VarsType.Local, p.Sections["Variables"]);
             }
 
             // Run Section
             int depthBackup = s.CurDepth;
-            // if (preserveCurParams)
-            //     Engine.RunSection(s, nextAddr, s.CurSectionParams, s.CurDepth + 1, callback);
-            // else
-            //    Engine.RunSection(s, nextAddr, paramList, s.CurDepth + 1, callback);
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             s.CurDepth = depthBackup;
@@ -134,44 +109,25 @@ namespace PEBakery.Core.Commands
                 long loopCount = endIdx - startIdx + 1;
 
                 // Prepare Loop
-                string pluginFile = StringEscaper.Unescape(info.PluginFile);
+                string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
-                bool inCurrentPlugin = false;
-                // if (info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
-                //     inCurrentPlugin = true;
-                // else if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
-                //    inCurrentPlugin = true;
-
-                if (info.PluginFile.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
-                info.PluginFile.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
-                    inCurrentPlugin = true;
-
-                Plugin targetPlugin;
-                if (inCurrentPlugin)
-                    targetPlugin = s.CurrentPlugin;
-                else
-                {
-                    string fullPath = StringEscaper.ExpandVariables(s, pluginFile);
-                    targetPlugin = s.Project.GetPluginByFullPath(fullPath);
-                    if (targetPlugin == null)
-                        throw new ExecuteException($"No plugin in [{fullPath}]");
-                }
+                Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
 
                 // Does section exists?
-                if (!targetPlugin.Sections.ContainsKey(sectionName))
+                if (!p.Sections.ContainsKey(sectionName))
                     throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
 
                 string logMessage;
                 if (inCurrentPlugin)
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
                 else
-                    logMessage = $"Loop [{targetPlugin.Title}]'s Section [{sectionName}] [{loopCount}] times";
+                    logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
                 // Loop it
-                SectionAddress nextAddr = new SectionAddress(targetPlugin, targetPlugin.Sections[sectionName]);
+                SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
                 for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                 { // Counter Variable is [#c]
                     s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
