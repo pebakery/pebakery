@@ -23,6 +23,7 @@ using System.IO;
 using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
+using System.Linq;
 using System.Windows;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
@@ -143,6 +144,7 @@ namespace PEBakery.Core
         public readonly static CodeType[] DeprecatedCodeType = new CodeType[]
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
+            CodeType.ExtractAndRun, // Better to have as Macro
             CodeType.GetParam, // PEBakery can have infinite number of section params.
             CodeType.PackParam, // PEBakery can have infinite number of section params.
         };
@@ -257,6 +259,42 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_FileSize : CodeInfo
+    { // FileSize,<FileName>,<DestVar>
+        public string FilePath;
+        public string DestVar;
+
+        public CodeInfo_FileSize(string filePath, string destVar)
+        {
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{FilePath},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_FileVersion : CodeInfo
+    { // FileVersion,<FilePath>,<DestVar>
+        public string filePath;
+        public string DestVar;
+
+        public CodeInfo_FileVersion(string filePath, string destVar)
+        {
+            this.filePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{filePath},{DestVar}";
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_DirMake : CodeInfo
     {
         public string DestDir;
@@ -266,6 +304,27 @@ namespace PEBakery.Core
             DestDir = destDir;
         }
     }
+
+    [Serializable]
+    public class CodeInfo_DirSize : CodeInfo
+    { // DirSize,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public CodeInfo_DirSize(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{Path},{DestVar}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 02 - Registry
     #endregion
 
     #region CodeInfo 03 - Text
@@ -425,12 +484,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIReadOp : CodeInfo
-    {
-        public List<CodeInfo_INIRead> InfoList;
-
-        public CodeInfo_INIReadOp(List<CodeInfo_INIRead> infoList)
+    {   
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIRead> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIRead).ToList();
+        }
+
+        public CodeInfo_INIReadOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -467,11 +530,15 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_INIWriteOp : CodeInfo
     {
-        public List<CodeInfo_INIWrite> InfoList;
-
-        public CodeInfo_INIWriteOp(List<CodeInfo_INIWrite> infoList)
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIWrite> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIWrite).ToList();
+        }
+
+        public CodeInfo_INIWriteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -504,11 +571,15 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_INIDeleteOp : CodeInfo
     {
-        public List<CodeInfo_INIDelete> InfoList;
-
-        public CodeInfo_INIDeleteOp(List<CodeInfo_INIDelete> infoList)
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIDelete> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIDelete).ToList();
+        }
+
+        public CodeInfo_INIDeleteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -535,6 +606,21 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_INIAddSectionOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIAddSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIAddSection).ToList();
+        }
+
+        public CodeInfo_INIAddSectionOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
     {
         public string FileName;
@@ -557,8 +643,23 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIWriteTextLine : CodeInfo
+    public class CodeInfo_INIDeleteSectionOp : CodeInfo
     {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIDeleteSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIDeleteSection).ToList();
+        }
+
+        public CodeInfo_INIDeleteSectionOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_INIWriteTextLine : CodeInfo
+    { // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
         public string FileName;
         public string SectionName;
         public string Line;
@@ -583,6 +684,21 @@ namespace PEBakery.Core
             if (Append)
                 b.Append(",APPEND");
             return b.ToString();
+        }
+    }
+   
+    [Serializable]
+    public class CodeInfo_INIWriteTextLineOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIWriteTextLine> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIWriteTextLine).ToList();
+        }
+
+        public CodeInfo_INIWriteTextLineOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -660,9 +776,41 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 06 - Network
+    [Serializable]
+    public class CodeInfo_WebGet : CodeInfo
+    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+        public string URL;
+        public string DestPath;
+        public string HashType;
+        public string HashDigest;
+
+        public CodeInfo_WebGet(string url, string destPath, string hashType, string hashDigest)
+        {
+            URL = url;
+            DestPath = destPath;
+            HashType = hashType;
+            HashDigest = hashDigest;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(URL);
+            b.Append(",");
+            b.Append(DestPath);
+            if (HashType != null && HashDigest != null)
+            {
+                b.Append(",");
+                b.Append(HashType);
+                b.Append(",");
+                b.Append(HashDigest);
+            }
+            return b.ToString();
+        }
+    }
     #endregion
 
-    #region CodeInfo 07 - Attach
+    #region CodeInfo 07 - Plugin
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
     { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
@@ -681,6 +829,28 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
+            return $"{PluginFile},{DirName},{FileName},{ExtractTo}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAndRun : CodeInfo
+    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName>,[Params]
+        public string PluginFile;
+        public string DirName;
+        public string FileName;
+        public string[] Params;
+
+        public CodeInfo_ExtractAndRun(string pluginFile, string dirName, string fileName, string[] parameters)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FileName = fileName;
+            Params = parameters;
+        }
+
+        public override string ToString()
+        {
             StringBuilder b = new StringBuilder();
             b.Append(PluginFile);
             b.Append(",");
@@ -688,8 +858,53 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(FileName);
             b.Append(",");
-            b.Append(ExtractTo);
+            for (int i = 0; i < Params.Length; i++)
+            {
+                b.Append(Params[i]);
+                if (i < Params.Length - 1)
+                    b.Append(",");
+            }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_ExtractAllFiles : CodeInfo
+    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
+        public string PluginFile;
+        public string DirName;
+        public string ExtractTo;
+
+        public CodeInfo_ExtractAllFiles(string pluginFile, string dirName, string extractTo)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            ExtractTo = extractTo;
+        }
+
+        public override string ToString()
+        {
+            return $"{PluginFile},{DirName},{ExtractTo}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Encode : CodeInfo
+    { // Encode,%PluginFile%,<DirName>,<FileName>
+        public string PluginFile;
+        public string DirName;
+        public string FilePath; // Can have Wildcard
+
+        public CodeInfo_Encode(string pluginFile, string dirName, string filePath)
+        {
+            PluginFile = pluginFile;
+            DirName = dirName;
+            FilePath = filePath;
+        }
+
+        public override string ToString()
+        {
+            return $"{PluginFile},{DirName},{FilePath}";
         }
     }
     #endregion
@@ -772,10 +987,75 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
+
+    #region UserInputType, UserInputInfo
+    public enum UserInputType
+    { 
+        DirPath,
+        FilePath,
+    }
+
+    [Serializable]
+    public class UserInputInfo { }
+
+    [Serializable]
+    public class UserInputInfo_DirFilePath : UserInputInfo
+    { // UserInput,DirFilePath,<InitPath>,<DestVar>
+        public string InitPath;
+        public string DestVar;
+
+        public UserInputInfo_DirFilePath(string initPath, string destVar)
+        {
+            InitPath = initPath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{InitPath},{DestVar}";
+        }
+    }
+    #endregion
+
+    [Serializable]
+    public class CodeInfo_UserInput : CodeInfo
+    {
+        public UserInputType Type;
+        public UserInputInfo SubInfo;
+
+        public CodeInfo_UserInput(UserInputType type, UserInputInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo}";
+        }
+    }
     #endregion
 
     #region CodeInfo 09 - Hash
+    [Serializable]
+    public class CodeInfo_Hash : CodeInfo
+    { // Hash,<HashType>,<FilePath>,<DestVar>
+        public string HashType;
+        public string FilePath;
+        public string DestVar;
 
+        public CodeInfo_Hash(string hashType, string filePath, string destVar)
+        {
+            HashType = hashType;
+            FilePath = filePath;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{HashType},{FilePath},{DestVar}";
+        }
+    }
     #endregion
 
     #region SubStrFormatType, SubStrFormatInfo
@@ -1210,6 +1490,210 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 12 - System
+    [Serializable]
+    public class CodeInfo_System : CodeInfo
+    {
+        public SystemType Type;
+        public SystemInfo SubInfo;
+
+        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo.ToString()}";
+        }
+    }
+
+    #region SystemType, SystemInfo
+    public enum SystemType
+    { // 아니 왜 사칙연산이 StrFormat에 있지...
+        Cursor,
+        ErrorOff,
+        GetEnv,
+        GetFreeDrive,
+        GetFreeSpace,
+        IsAdmin,
+        Log,
+        OnBuildExit,
+        OnScriptExit, OnPluginExit,
+        RefreshInterface,
+        RescanScripts,
+        SaveLog,
+        FileRedirect, // Deprecated, WB082 Compability Shim
+    }
+
+    [Serializable]
+    public class SystemInfo { }
+
+    [Serializable]
+    public class SystemInfo_Cursor : SystemInfo
+    { // System,Cursor,<IconKind>
+        public string IconKind;
+
+        public SystemInfo_Cursor(string iconKind)
+        {
+            IconKind = iconKind;
+        }
+
+        public override string ToString()
+        {
+            return $"Cursor,{IconKind}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_ErrorOff : SystemInfo
+    { // System,ErrorOff,[Lines]
+        public string Lines;
+
+        public SystemInfo_ErrorOff(string lines = "1")
+        {
+            Lines = lines;
+        }
+
+        public override string ToString()
+        {
+            return $"ErrorOff,{Lines}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetEnv : SystemInfo
+    { // System,GetEnv,<EnvVarName>,<DestVar>
+        public string EnvVarName;
+        public string DestVar;
+
+        public SystemInfo_GetEnv(string envVarName, string destVar)
+        {
+            EnvVarName = envVarName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetEnv,{EnvVarName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeDrive : SystemInfo
+    { // System,GetFreeDrive,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_GetFreeDrive(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeSpace : SystemInfo
+    { // System,GetFreeSpace,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public SystemInfo_GetFreeSpace(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{Path},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_IsAdmin : SystemInfo
+    { // System,IsAdmin,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_IsAdmin(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"IsAdmin,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnBuildExit : SystemInfo
+    { // System,OnBuildExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnBuildExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnBuildExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnPluginExit : SystemInfo
+    { // System,OnPluginExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnPluginExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnPluginExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_RefreshInterface : SystemInfo
+    { // System,RefreshInterface
+        public SystemInfo_RefreshInterface() { }
+        public override string ToString() { return "RefreshInterface"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_RescanScripts : SystemInfo
+    { // System,RescanScripts
+        public SystemInfo_RescanScripts() { }
+        public override string ToString() { return "RescanScripts"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_SaveLog : SystemInfo
+    { // System,SaveLog,<DestPath>,[LogFormat]
+        public string DestPath;
+        public string LogFormat;
+
+        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        {
+            DestPath = destPath;
+            LogFormat = logFormat;
+        }
+
+        public override string ToString()
+        {
+            return $"SaveLog,{DestPath},{LogFormat}";
+        }
+    }
+    #endregion
+
     /// <summary>
     /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
     /// </summary>
@@ -1442,7 +1926,11 @@ namespace PEBakery.Core
                             filePathContainsWildcard = false;
 
                         // Check if file exists
-                        if (filePathContainsWildcard)
+                        if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        {
+                            match = false;
+                        }
+                        else if (filePathContainsWildcard) 
                         {
                             string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
                             if (0 < list.Length)
@@ -1451,7 +1939,9 @@ namespace PEBakery.Core
                                 match = false;
                         }
                         else
+                        {
                             match = File.Exists(filePath);
+                        }
 
                         if (match)
                             logMessage = $"File [{filePath}] exists";
@@ -1471,8 +1961,12 @@ namespace PEBakery.Core
                         if (dirPath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
                             dirPathContainsWildcard = false;
 
-                        // Check if file exists
-                        if (dirPathContainsWildcard)
+                        // Check if directory exists
+                        if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        {
+                            match = false;
+                        }
+                        else if (dirPathContainsWildcard)
                         {
                             string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
                             if (0 < list.Length)
@@ -1481,7 +1975,9 @@ namespace PEBakery.Core
                                 match = false;
                         }
                         else
+                        {
                             match = Directory.Exists(dirPath);
+                        }
 
                         if (match)
                             logMessage = $"Directory [{dirPath}] exists";

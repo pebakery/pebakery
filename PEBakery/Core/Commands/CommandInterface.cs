@@ -28,6 +28,7 @@ using System.Windows.Threading;
 using System.Diagnostics;
 using System.Globalization;
 using PEBakery.WPF.Controls;
+using System.IO;
 
 namespace PEBakery.Core.Commands
 {
@@ -68,6 +69,7 @@ namespace PEBakery.Core.Commands
                 uiCmd.Visibility = visibility;
                 UIRenderer.UpdatePlugin("Interface", uiCmd);
 
+                // Re-render Plugin
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
@@ -126,6 +128,7 @@ namespace PEBakery.Core.Commands
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
 
+            // Re-render Plugin
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
@@ -209,6 +212,83 @@ namespace PEBakery.Core.Commands
             });
 
             logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> UserInput(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_UserInput));
+            CodeInfo_UserInput info = cmd.Info as CodeInfo_UserInput;
+
+            UserInputType type = info.Type;
+            switch (type)
+            {
+                case UserInputType.DirPath:
+                case UserInputType.FilePath:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFilePath));
+                        UserInputInfo_DirFilePath subInfo = info.SubInfo as UserInputInfo_DirFilePath;
+
+                        string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
+                        string selectedPath = initPath;
+                        if (type == UserInputType.FilePath)
+                        {
+                            string filter = "All Files|*.*";
+                            string initFile = Path.GetFileName(initPath);
+                            if (initFile.StartsWith("*.", StringComparison.Ordinal) || initFile.Equals("*", StringComparison.Ordinal))
+                            { // If wildcard exists, apply to filter.
+                                string ext = Path.GetExtension(initFile);
+                                if (1 < ext.Length && ext.StartsWith(".", StringComparison.Ordinal))
+                                    ext = ext.Substring(1);
+                                filter = $"{ext} Files|{initFile}";
+                            }
+
+                            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+                            {
+                                Filter = filter,
+                                InitialDirectory = Path.GetDirectoryName(initPath),
+                            };
+
+                            if (dialog.ShowDialog() == true)
+                            {
+                                selectedPath = dialog.FileName;
+                                logs.Add(new LogInfo(LogState.Success, $"File path [{selectedPath}] was chosen by user"));
+                            }
+                            else
+                            {
+                                throw new ExecuteException("File path was not chosen by user");
+                            }
+                        }
+                        else
+                        {
+                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                            {
+                                ShowNewFolderButton = true,
+                                SelectedPath = initPath,
+                            };
+                            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+
+                            if (result == System.Windows.Forms.DialogResult.OK)
+                            {
+                                selectedPath = dialog.SelectedPath;
+                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                            }
+                            else
+                            {
+                                throw new ExecuteException("Directory path was not chosen by user");
+                            }
+                        }
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
+                default: // Error
+                    throw new InvalidCodeCommandException($"Wrong UserInputType [{type}]");
+            }
 
             return logs;
         }

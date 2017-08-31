@@ -68,7 +68,7 @@ namespace PEBakery.Core.Commands
 
             if (mode == TXTAddLineMode.Prepend)
             {
-                string tempPath = FileHelper.CreateTempFile();
+                string tempPath = Path.GetTempFileName();
                 using (StreamReader reader = new StreamReader(fileName, encoding))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -137,7 +137,7 @@ namespace PEBakery.Core.Commands
 
             if (mode == TXTAddLineMode.Prepend)
             {
-                string tempPath = FileHelper.CreateTempFile();
+                string tempPath = Path.GetTempFileName();
                 using (StreamReader reader = new StreamReader(fileName, encoding))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -183,8 +183,8 @@ namespace PEBakery.Core.Commands
                 throw new ExecuteException($"File [{fileName}] not exists");
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
-            string tempPath = FileHelper.CreateTempFile();
             int i = 0;
+            string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
@@ -226,7 +226,7 @@ namespace PEBakery.Core.Commands
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
-            string tempPath = FileHelper.CreateTempFile();
+            string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
@@ -278,7 +278,7 @@ namespace PEBakery.Core.Commands
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
             
             int count = 0;
-            string tempPath = FileHelper.CreateTempFile();
+            string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
@@ -328,7 +328,7 @@ namespace PEBakery.Core.Commands
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
-            string tempPath = FileHelper.CreateTempFile();
+            string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
@@ -372,7 +372,7 @@ namespace PEBakery.Core.Commands
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
-            string tempPath = FileHelper.CreateTempFile();
+            string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {

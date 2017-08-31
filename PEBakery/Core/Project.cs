@@ -245,13 +245,15 @@ namespace PEBakery.Core
                     {
                         p.LinkLoaded = true;
                         p.Link = link;
-                        worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
+                        if (worker != null)
+                            worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
                     }
                     else
                     {
                         int idx = allPluginList.IndexOf(p);
                         removeIdxs.Add(idx);
-                        worker.ReportProgress(cached);
+                        if (worker != null)
+                            worker.ReportProgress(cached);
                     }
                 });
             }).ToArray();
@@ -331,7 +333,7 @@ namespace PEBakery.Core
                             if (pCache != null &&
                                 pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
                                 DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
-                            {
+                            { // Cache Hit
                                 try
                                 {
                                     using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
@@ -343,12 +345,12 @@ namespace PEBakery.Core
                                         cached = 1;
                                     }
                                 }
-                                catch { }
+                                catch { } // Cache Error
                             }
                         }
 
                         if (p == null)
-                        {
+                        { // Cache Miss
                             int? level = null;
                             if (pPath.Equals(mainPluginPath, StringComparison.Ordinal))
                                 level = MainLevel;
@@ -373,7 +375,8 @@ namespace PEBakery.Core
                             listLock.ExitWriteLock();
                         }
 
-                        worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
+                        if (worker != null)
+                            worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
                     }
                     catch (Exception e)
                     {
@@ -382,7 +385,8 @@ namespace PEBakery.Core
                             MainWindow w = Application.Current.MainWindow as MainWindow;
                             w.Logger.System_Write(new LogInfo(LogState.Error, e));
                         });
-                        worker.ReportProgress(cached);
+                        if (worker != null)
+                            worker.ReportProgress(cached);
                     }
                 });
             }).ToArray();

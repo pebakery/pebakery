@@ -29,9 +29,16 @@ namespace PEBakery.Core
         {
             CodeType.TXTAddLine,
             CodeType.TXTDelLine,
+            CodeType.INIRead,
+            CodeType.INIWrite,
+            CodeType.INIDelete,
+            CodeType.INIAddSection,
+            CodeType.INIDeleteSection,
+            CodeType.INIWriteTextLine,
             CodeType.Visible,
         };
 
+        #region OptimizeCommands
         public static List<CodeCommand> OptimizeCommands(List<CodeCommand> cmdList)
         {
             List<CodeCommand> optimized = new List<CodeCommand>();
@@ -59,6 +66,18 @@ namespace PEBakery.Core
                                 state = CodeType.TXTDelLine;
                                 opDict[CodeType.TXTDelLine].Add(cmd);
                                 break;
+                            case CodeType.INIWrite:
+                                state = CodeType.INIWrite;
+                                opDict[CodeType.INIWrite].Add(cmd);
+                                break;
+                            case CodeType.INIRead:
+                                state = CodeType.INIRead;
+                                opDict[CodeType.INIRead].Add(cmd);
+                                break;
+                            case CodeType.INIWriteTextLine:
+                                state = CodeType.INIWriteTextLine;
+                                opDict[CodeType.INIWriteTextLine].Add(cmd);
+                                break;
                             case CodeType.Visible:
                                 state = CodeType.Visible;
                                 opDict[CodeType.Visible].Add(cmd);
@@ -77,12 +96,13 @@ namespace PEBakery.Core
                             case CodeType.TXTAddLine:
                                 {
                                     Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
-
                                     CodeInfo_TXTAddLine firstInfo = (opDict[state][0].Info as CodeInfo_TXTAddLine);
                                     if (cmd.Info is CodeInfo_TXTAddLine info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
                                         info.Mode.Equals(firstInfo.Mode, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
+                                    else
+                                        goto default;
                                 }
                                 break;
                             case CodeType.Comment: // Remove comments
@@ -118,6 +138,8 @@ namespace PEBakery.Core
                                     if (cmd.Info is CodeInfo_TXTDelLine info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
+                                    else
+                                        goto default;
                                 }
                                 break;
                             case CodeType.Comment: // Remove comments
@@ -131,6 +153,223 @@ namespace PEBakery.Core
                                 else
                                 {
                                     CodeCommand opCmd = OptimizeTXTAddLine(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIRead
+                    case CodeType.INIRead:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIRead));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIRead:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
+                                    CodeInfo_INIRead firstInfo = (opDict[state][0].Info as CodeInfo_INIRead);
+                                    if (cmd.Info is CodeInfo_INIRead info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIRead(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIWrite
+                    case CodeType.INIWrite:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIWrite));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIWrite:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
+                                    CodeInfo_INIWrite firstInfo = (opDict[state][0].Info as CodeInfo_INIWrite);
+                                    if (cmd.Info is CodeInfo_INIWrite info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIWrite(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIDelete
+                    case CodeType.INIDelete:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIDelete));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIDelete:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
+                                    CodeInfo_INIDelete firstInfo = (opDict[state][0].Info as CodeInfo_INIDelete);
+                                    if (cmd.Info is CodeInfo_INIDelete info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIDelete(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIAddSection
+                    case CodeType.INIAddSection:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIAddSection));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIAddSection:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
+                                    CodeInfo_INIAddSection firstInfo = (opDict[state][0].Info as CodeInfo_INIAddSection);
+                                    if (cmd.Info is CodeInfo_INIAddSection info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIAddSection(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIDeleteSection
+                    case CodeType.INIDeleteSection:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIDeleteSection));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIDeleteSection:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
+                                    CodeInfo_INIDeleteSection firstInfo = (opDict[state][0].Info as CodeInfo_INIDeleteSection);
+                                    if (cmd.Info is CodeInfo_INIDeleteSection info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIDeleteSection(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region INIWriteTextLine
+                    case CodeType.INIWriteTextLine:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIWriteTextLine));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIWriteTextLine:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWriteTextLine));
+                                    CodeInfo_INIWriteTextLine firstInfo = (opDict[state][0].Info as CodeInfo_INIWriteTextLine);
+                                    if (cmd.Info is CodeInfo_INIWriteTextLine info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
+                                        info.Append == firstInfo.Append)
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIWriteTextLine(opDict[state]);
                                     optimized.Add(opCmd);
                                 }
                                 opDict[state].Clear();
@@ -189,6 +428,24 @@ namespace PEBakery.Core
                         case CodeType.TXTDelLine:
                             opCmd = OptimizeTXTDelLine(kv.Value);
                             break;
+                        case CodeType.INIWrite:
+                            opCmd = OptimizeINIWrite(kv.Value);
+                            break;
+                        case CodeType.INIRead:
+                            opCmd = OptimizeINIRead(kv.Value);
+                            break;
+                        case CodeType.INIDelete:
+                            opCmd = OptimizeINIDelete(kv.Value);
+                            break;
+                        case CodeType.INIAddSection:
+                            opCmd = OptimizeINIAddSection(kv.Value);
+                            break;
+                        case CodeType.INIDeleteSection:
+                            opCmd = OptimizeINIDeleteSection(kv.Value);
+                            break;
+                        case CodeType.INIWriteTextLine:
+                            opCmd = OptimizeINIWriteTextLine(kv.Value);
+                            break;
                         case CodeType.Visible:
                             opCmd = OptimizeVisible(kv.Value);
                             break;
@@ -206,10 +463,10 @@ namespace PEBakery.Core
 
             return optimized;
         }
+        #endregion
 
-        
-
-        // TODO: Is there any more 'generic' way?
+        #region Optimize Individual
+        // TODO: Is there any 'generic' way?
         private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
         {
             List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
@@ -221,8 +478,12 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
+            // string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            // return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
         }
 
         private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmdList)
@@ -240,6 +501,54 @@ namespace PEBakery.Core
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
         }
 
+        private static CodeCommand OptimizeINIRead(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_INIReadOp(cmdList));
+        }
+
+        private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_INIWriteOp(cmdList));
+        }
+
+        private static CodeCommand OptimizeINIDelete(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIDeleteOp(cmdList));
+        }
+
+        private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_INIAddSectionOp(cmdList));
+        }
+
+        private static CodeCommand OptimizeINIDeleteSection(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_INIDeleteSectionOp(cmdList));
+        }
+
+        private static CodeCommand OptimizeINIWriteTextLine(List<CodeCommand> cmdList)
+        {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+                b.AppendLine(cmdList[0].RawCode);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIWriteTextLineOp(cmdList));
+        }
+
         private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)
         {
             List<CodeInfo_Visible> infoList = new List<CodeInfo_Visible>();
@@ -254,5 +563,6 @@ namespace PEBakery.Core
             string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList));
         }
+        #endregion
     }
 }

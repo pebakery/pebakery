@@ -31,30 +31,6 @@ namespace PEBakery.Core.Commands
 {
     public static class CommandFile
     {
-        public static List<LogInfo> DirMake(EngineState s, CodeCommand cmd)
-        {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirMake));
-            CodeInfo_DirMake info = cmd.Info as CodeInfo_DirMake;
-
-            string destDir = StringEscaper.Preprocess(s, info.DestDir);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
-            // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
-
-            Directory.CreateDirectory(destDir);
-            logs.Add(new LogInfo(LogState.Success, $"Created Directory [{destDir}]", cmd));
-
-            return logs;
-        }
-
         public static List<LogInfo> FileCopy(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -123,7 +99,7 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten", cmd));
                         }
                     }
-                        
+
                     File.Copy(srcFile, destPath, true);
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]", cmd));
                 }
@@ -225,6 +201,104 @@ namespace PEBakery.Core.Commands
             FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
             FileHelper.WriteTextBOM(fs, encoding).Close();
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> FileSize(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileSize));
+            CodeInfo_FileSize info = cmd.Info as CodeInfo_FileSize;
+
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
+            FileInfo fileInfo = new FileInfo(filePath);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 700;
+
+            logs.Add(new LogInfo(LogState.Success, $"File [{filePath}] is [{fileInfo.Length}B]", cmd));
+
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, fileInfo.Length.ToString());
+            logs.AddRange(varLogs);
+
+            return logs;
+        }
+
+        public static List<LogInfo> FileVersion(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileVersion));
+            CodeInfo_FileVersion info = cmd.Info as CodeInfo_FileVersion;
+
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            string filePath = StringEscaper.Preprocess(s, info.filePath);
+            FileVersionInfo v = FileVersionInfo.GetVersionInfo(filePath);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 700;
+
+            string verStr = $"{v.FileMajorPart}.{v.FileMinorPart}.{v.FileBuildPart}.{v.FilePrivatePart}";
+            logs.Add(new LogInfo(LogState.Success, $"File [{filePath}]'s version is [{verStr}]", cmd));
+
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verStr); 
+            logs.AddRange(varLogs);
+
+            return logs;
+        }
+
+        public static List<LogInfo> DirMake(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirMake));
+            CodeInfo_DirMake info = cmd.Info as CodeInfo_DirMake;
+
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            Directory.CreateDirectory(destDir);
+            logs.Add(new LogInfo(LogState.Success, $"Created Directory [{destDir}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> DirSize(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirSize));
+            CodeInfo_DirSize info = cmd.Info as CodeInfo_DirSize;
+
+            s.MainViewModel.BuildCommandProgressBarValue = 200;
+
+            string path = StringEscaper.Preprocess(s, info.Path);
+
+            string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+            long dirSize = 0;
+            for (int i = 0; i < files.Length; i++)
+            {
+                FileInfo fileInfo = new FileInfo(files[i]);
+                dirSize += fileInfo.Length;
+
+                s.MainViewModel.BuildCommandProgressBarValue = 200 + (800 * (i + 1) / files.Length);
+            }
+
+            logs.Add(new LogInfo(LogState.Success, $"Directory [{path}] is [{dirSize}B]", cmd));
+
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, dirSize.ToString());
+            logs.AddRange(varLogs);
 
             return logs;
         }

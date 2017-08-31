@@ -154,6 +154,13 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region EncodedFile
+    public class EncodeFileFailException : Exception
+    {
+        public EncodeFileFailException() { }
+        public EncodeFileFailException(string message) : base(message) { }
+        public EncodeFileFailException(string message, Exception inner) : base(message, inner) { }
+    }
+
     public class ExtractFileFailException : Exception
     {
         public ExtractFileFailException() { }

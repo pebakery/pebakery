@@ -8,64 +8,90 @@ namespace UnitTest
     [TestClass]
     public class UnitTest_CodeParser
     {
-        [TestMethod]
-        public void GetNextArgument()
+        public static void CodeParser_GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
         {
-            List<string> codes = new List<string>
-            {
-                @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append",
-                @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append",
-                @"StrFormat,REPLACE,#2,\,,#8",
-            };
+            Tuple<string, string> tuple;
+            string next, remainder = code;
 
-            List<List<Tuple<string, string>>> testcases = new List<List<Tuple<string, string>>>()
+            foreach (Tuple<string, string> testcase in testcases)
             {
-                new List<Tuple<string, string>>()
-                {
-                    new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
-                    new Tuple<string, string>(@"#3.au3", @"""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
-                    new Tuple<string, string>(@"IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))", @"Append"),
-                    new Tuple<string, string>(@"Append", string.Empty),
-                    new Tuple<string, string>(string.Empty, string.Empty),
-                },
-                new List<Tuple<string, string>>()
-                {
-                    new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
-                    new Tuple<string, string>(@"#3.au3", @"""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
-                    new Tuple<string, string>(@"   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  ", @"Append"),
-                    new Tuple<string, string>(@"Append", string.Empty),
-                    new Tuple<string, string>(string.Empty, string.Empty),
-                },
-                new List<Tuple<string, string>>()
-                {
-                    new Tuple<string, string>(@"StrFormat", @"REPLACE,#2,\,,#8"),
-                    new Tuple<string, string>(@"REPLACE", @"#2,\,,#8"),
-                    new Tuple<string, string>(@"#2", @"\,,#8"),
-                    new Tuple<string, string>(@"\", @",#8"),
-                    new Tuple<string, string>(string.Empty, @"#8"),
-                    new Tuple<string, string>(@"#8", string.Empty),
-                    new Tuple<string, string>(string.Empty, string.Empty),
-                },
-            };
-            
-            for (int i = 0; i < codes.Count; i++)
-            {
-                Tuple<string, string> tuple;
-                string next, remainder = codes[i];
-                
-                foreach (Tuple<string, string> testcase in testcases[i])
-                {
-                    tuple = CodeParser.GetNextArgument(remainder);
-                    next = tuple.Item1;
-                    remainder = tuple.Item2;
+                tuple = CodeParser.GetNextArgument(remainder);
+                next = tuple.Item1;
+                remainder = tuple.Item2;
 
-                    Console.WriteLine(next);
+                Console.WriteLine(next);
+                if (remainder != null)
                     Console.WriteLine(remainder);
+                else
+                    Console.WriteLine("null");
 
-                    Assert.IsTrue(next.Equals(testcase.Item1, StringComparison.Ordinal));
+                Assert.IsTrue(next.Equals(testcase.Item1, StringComparison.Ordinal));
+                if (remainder != null)
                     Assert.IsTrue(remainder.Equals(testcase.Item2, StringComparison.Ordinal));
-                }
+                else
+                    Assert.IsTrue(remainder == null);
             }
+        }
+
+        [TestMethod]
+        public void CodeParser_GetNextArgument_1()
+        {
+            string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
+            List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
+            {
+                new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
+                new Tuple<string, string>(@"#3.au3", @"""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append"),
+                new Tuple<string, string>(@"IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))", @"Append"),
+                new Tuple<string, string>(@"Append", null),
+            };
+
+            CodeParser_GetNextArgument_Test(code, testcases);
+        }
+
+        [TestMethod]
+        public void CodeParser_GetNextArgument_2()
+        {
+            string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
+            List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
+            {
+                new Tuple<string, string>(@"TXTAddLine", @"#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
+                new Tuple<string, string>(@"#3.au3", @"""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append"),
+                new Tuple<string, string>(@"   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  ", @"Append"),
+                new Tuple<string, string>(@"Append", null),
+            };
+
+            CodeParser_GetNextArgument_Test(code, testcases);
+        }
+
+        [TestMethod]
+        public void CodeParser_GetNextArgument_3()
+        {
+            string code = @"StrFormat,REPLACE,#2,\,,#8";
+            List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
+            {
+                new Tuple<string, string>(@"StrFormat", @"REPLACE,#2,\,,#8"),
+                new Tuple<string, string>(@"REPLACE", @"#2,\,,#8"),
+                new Tuple<string, string>(@"#2", @"\,,#8"),
+                new Tuple<string, string>(@"\", @",#8"),
+                new Tuple<string, string>(string.Empty, @"#8"),
+                new Tuple<string, string>(@"#8", null),
+            };
+
+            CodeParser_GetNextArgument_Test(code, testcases);
+        }
+
+        [TestMethod]
+        public void CodeParser_GetNextArgument_4()
+        {
+            string code = @"Set,%Waik2Tools%,";
+            List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
+            {
+                new Tuple<string, string>(@"Set", @"%Waik2Tools%,"),
+                new Tuple<string, string>(@"%Waik2Tools%", string.Empty),
+                new Tuple<string, string>(string.Empty, null),
+            };
+
+            CodeParser_GetNextArgument_Test(code, testcases);
         }
     }
 }

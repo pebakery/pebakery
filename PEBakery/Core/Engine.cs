@@ -23,13 +23,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Windows;
+using System.ComponentModel;
+using System.Threading;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
-using System.ComponentModel;
 using PEBakery.Lib;
-using System.Threading;
+using System.Diagnostics;
 
 namespace PEBakery.Core
 {
@@ -77,10 +78,31 @@ namespace PEBakery.Core
 
             // Load Default Per-Plugin Variables
             s.Variables.ResetVariables(VarsType.Local);
-            s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(s.CurrentPlugin));
+            s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(p));
+
+            s.Variables.SetFixedValue("ScriptFile", p.FullPath);
+            s.Variables.SetFixedValue("PluginFile", p.FullPath);
+            s.Variables.SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
+            s.Variables.SetFixedValue("PluginDir", Path.GetDirectoryName(p.FullPath));
+            s.Variables.SetFixedValue("ScriptTitle", p.Title);
+            s.Variables.SetFixedValue("PluginTitle", p.Title);
+
+            // Load Interface's Value
+            LoadInterfaceToVariables(s);           
 
             // Current Section Parameter - empty
-            s.CurSectionParams = new Dictionary<int, string>();
+            s.CurSectionParams = new Dictionary<int, string>()
+            { // This value follows WB082 Behavior (Can't figure out why developer set init values like this)
+                { 1, "#1" },
+                { 2, "#2" },
+                { 3, "#3" },
+                { 4, "#4" },
+                { 5, "#5" },
+                { 6, "#6" },
+                { 7, "#7" },
+                { 8, "#8" },
+                { 9, "#9" },
+            };
 
             // Set Interface using MainWindow, MainViewModel
             s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
@@ -91,7 +113,7 @@ namespace PEBakery.Core
 
             long allLineCount = 0;
             foreach (var kv in s.CurrentPlugin.Sections.Where(x => x.Value.Type == SectionType.Code))
-                allLineCount += kv.Value.Lines.Count; // Why not Codes? PEBakery compiles code on-demand, so we have only lines at this time.
+                allLineCount += kv.Value.Lines.Count; // Why not Codes? PEBakery compiles code on-demand, so we have only Lines at this time.
 
             s.MainViewModel.BuildPluginProgressBarMax = allLineCount;
             s.MainViewModel.BuildPluginProgressBarValue = 0;
@@ -130,7 +152,7 @@ namespace PEBakery.Core
                     // Run Main Section
                     PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySectionName];
                     SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
-                    s.Logger.LogStartOfSection(s, addr, 0, true, null);
+                    s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
                     Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
                     s.Logger.LogEndOfSection(s, addr, 0, true, null);
 
@@ -194,7 +216,7 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
-            // Copy Param Dictionary by value, not reference
+            // Must copy ParamDict by value, not reference
             RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
 
             s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
@@ -293,10 +315,12 @@ namespace PEBakery.Core
                     case CodeType.FileCreateBlank:
                         logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
-                    //case CodeType.FileSize:
-                    //    break;
-                    //case CodeType.FileVersion:
-                    //    break;
+                    case CodeType.FileSize:
+                        logs.AddRange(CommandFile.FileSize(s, cmd));
+                        break;
+                    case CodeType.FileVersion:
+                        logs.AddRange(CommandFile.FileVersion(s, cmd));
+                        break;
                     //case CodeType.DirCopy:
                     //   break;
                     //case CodeType.DirDelete:
@@ -306,8 +330,9 @@ namespace PEBakery.Core
                     case CodeType.DirMake:
                         logs.AddRange(CommandFile.DirMake(s, cmd));
                         break;
-                    //case CodeType.DirSize:
-                    //    break;
+                    case CodeType.DirSize:
+                        logs.AddRange(CommandFile.DirSize(s, cmd));
+                        break;
                     #endregion
                     #region 02 Registry
                     //case CodeType.RegHiveLoad:
@@ -353,20 +378,39 @@ namespace PEBakery.Core
                     case CodeType.INIRead:
                         logs.AddRange(CommandINI.INIRead(s, cmd));
                         break;
+                    case CodeType.INIReadOp:
+                        logs.AddRange(CommandINI.INIReadOp(s, cmd));
+                        break;
                     case CodeType.INIWrite:
                         logs.AddRange(CommandINI.INIWrite(s, cmd));
+                        break;
+                    case CodeType.INIWriteOp:
+                        logs.AddRange(CommandINI.INIWriteOp(s, cmd));
                         break;
                     case CodeType.INIDelete:
                         logs.AddRange(CommandINI.INIDelete(s, cmd));
                         break;
+                    case CodeType.INIDeleteOp:
+                        logs.AddRange(CommandINI.INIDeleteOp(s, cmd));
+                        break;
                     case CodeType.INIAddSection:
                         logs.AddRange(CommandINI.INIAddSection(s, cmd));
+                        break;
+                    case CodeType.INIAddSectionOp:
+                        logs.AddRange(CommandINI.INIAddSectionOp(s, cmd));
                         break;
                     case CodeType.INIDeleteSection:
                         logs.AddRange(CommandINI.INIDeleteSection(s, cmd));
                         break;
-                    //case CodeType.INIWriteTextLine:
-                    //    break;
+                    case CodeType.INIDeleteSectionOp:
+                        logs.AddRange(CommandINI.INIDeleteSectionOp(s, cmd));
+                        break;
+                    case CodeType.INIWriteTextLine:
+                        logs.AddRange(CommandINI.INIWriteTextLine(s, cmd));
+                        break;
+                    case CodeType.INIWriteTextLineOp:
+                        logs.AddRange(CommandINI.INIWriteTextLineOp(s, cmd));
+                        break;
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
@@ -381,21 +425,24 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 06 Network
-                    //case CodeType.WebGet:
-                    //    break;
-                    //case CodeType.WebGetIfNotExist: // Deprecated
-                    //    break;
+                    case CodeType.WebGet:
+                    case CodeType.WebGetIfNotExist: // Deprecated
+                        logs.AddRange(CommandNetwork.WebGet(s, cmd));
+                        break;
                     #endregion
-                    #region 07 Attach
+                    #region 07 Plugin
                     case CodeType.ExtractFile:
                         logs.AddRange(CommandPlugin.ExtractFile(s, cmd));
                         break;
-                    //case CodeType.ExtractAndRun:
-                    //    break;
-                    //case CodeType.ExtractAllFiles:
-                    //    break;
-                    //case CodeType.Encode:
-                    //    break;
+                    case CodeType.ExtractAndRun:
+                        logs.AddRange(CommandPlugin.ExtractAndRun(s, cmd));
+                        break;
+                    case CodeType.ExtractAllFiles:
+                        logs.AddRange(CommandPlugin.ExtractAllFiles(s, cmd));
+                        break;
+                    case CodeType.Encode:
+                        logs.AddRange(CommandPlugin.Encode(s, cmd));
+                        break;
                     #endregion
                     #region 08 Interface
                     case CodeType.Visible:
@@ -410,14 +457,14 @@ namespace PEBakery.Core
                     case CodeType.Echo:
                         logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
-                    //case CodeType.UserInput:
-                    //   break;
-                    //case CodeType.Retrieve:
-                    //   break;
+                    case CodeType.UserInput:
+                        logs.AddRange(CommandInterface.UserInput(s, cmd));
+                        break;
                     #endregion
                     #region 09 Hash
-                    //case CodeType.Hash:
-                    //    break;
+                    case CodeType.Hash:
+                        logs.AddRange(CommandHash.Hash(s, cmd));
+                        break;
                     #endregion
                     #region 10 String
                     case CodeType.StrFormat:
@@ -429,8 +476,9 @@ namespace PEBakery.Core
                     //    break;
                     #endregion
                     #region 12 System
-                    // case CodeType.System:
-                    //    break;
+                    case CodeType.System:
+                        logs.AddRange(CommandSystem.SystemCmd(s, cmd));
+                        break;
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:
@@ -496,6 +544,7 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Stop Building
+                logs.Add(new LogInfo(LogState.Error, "Critical Error!", cmd, curDepth));
                 throw new CriticalErrorException();
             }
             catch (InvalidCodeCommandException e)
@@ -506,10 +555,111 @@ namespace PEBakery.Core
             {
                 logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
             }
+            
+            // If ErrorOffCount is on, ignore LogState.Error
+            if (0 < s.Logger.ErrorOffCount)
+            {
+                MuteLogError(logs);
+                s.Logger.ErrorOffCount -= 1;
+            }
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
             s.MainViewModel.BuildCommandProgressBarValue = 1000;
+        }
+
+        private static void MuteLogError(List<LogInfo> logs)
+        {
+            for (int i = 0; i < logs.Count; i++)
+            {
+                LogInfo log = logs[i];
+                if (log.State == LogState.Error)
+                {
+                    log.State = LogState.Muted;
+                    logs[i] = log;
+                }
+            }
+        }
+
+        private void LoadInterfaceToVariables(EngineState s)
+        {
+            Plugin p = s.CurrentPlugin;
+
+            string interfaceSectionName = "Interface";
+            if (p.MainInfo.ContainsKey("Interface"))
+                interfaceSectionName = p.MainInfo["Interface"];
+
+            if (p.Sections.ContainsKey(interfaceSectionName))
+            {
+                try
+                {
+                    List<UICommand> uiCodes = p.Sections[interfaceSectionName].GetUICodes(true);
+                    foreach (UICommand uiCmd in uiCodes)
+                    {
+                        switch (uiCmd.Type)
+                        {
+                            case UIType.TextBox:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
+                                    UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value);
+                                }
+                                break;
+                            case UIType.NumberBox:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
+                                    UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value.ToString());
+                                }
+                                break;
+                            case UIType.CheckBox:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
+                                    UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value ? "True" : "False");
+                                }
+                                break;
+                            case UIType.ComboBox:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_ComboBox));
+                                    UIInfo_ComboBox info = uiCmd.Info as UIInfo_ComboBox;
+
+                                    if (0 <= info.Index && info.Index < info.Items.Count)
+                                        s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Items[info.Index]);
+                                }
+                                break;
+                            case UIType.RadioButton:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
+                                    UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Selected ? "True" : "False");
+                                }
+                                break;
+                            case UIType.FileBox:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_FileBox));
+                                    UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, uiCmd.Text);
+                                }
+                                break;
+                            case UIType.RadioGroup:
+                                {
+                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
+                                    UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
+
+                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Selected.ToString());
+                                }
+                                break;
+                        }
+                    }
+                }
+                catch { } // No Interface or Error -> Do nothing
+            }
         }
     }
 
@@ -586,6 +736,8 @@ namespace PEBakery.Core
             }
 
             EntrySectionName = entrySectionName;
+
+            CurSectionParams = new Dictionary<int, string>();
 
             Application.Current.Dispatcher.Invoke((Action)(() =>
             {

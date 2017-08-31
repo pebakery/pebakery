@@ -108,17 +108,16 @@ namespace PEBakery.Core
                 int pIdx = str.IndexOf(",", nextIdx, StringComparison.Ordinal);
 
                 // There should be only whitespace in between ["] and [,]
-                if (pIdx == -1)
+                if (pIdx == -1) // Last one
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
                     Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
 
-                    string preNext = str.Substring(0, nextIdx + 1).Trim();
-                    string next = preNext.Substring(1, preNext.Length - 2);
-                    string remainder = str.Substring(nextIdx + 1).Trim();
-                    return new Tuple<string, string>(next, remainder);
+                    string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
+                    string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
+                    return new Tuple<string, string>(next, null);
                 }
-                else
+                else // [   Return SetError(@error,0,0)], [Append]
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
                     Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
@@ -134,7 +133,7 @@ namespace PEBakery.Core
                 int pIdx = str.IndexOf(",", StringComparison.Ordinal);
                 if (pIdx == -1) // Last one
                 {
-                    return new Tuple<string, string>(str, string.Empty);
+                    return new Tuple<string, string>(str, null);
                 }
                 else // [FileCreateBlank], [#3.au3]
                 {
@@ -163,8 +162,7 @@ namespace PEBakery.Core
                 return new CodeCommand(rawCode, addr, CodeType.Comment, new CodeInfo());
 
             // Split with period
-            // List<string> rawArgs = rawCode.Split(',').ToList();
-            Tuple<string, string> tuple = GetNextArgument(rawCode);
+            Tuple<string, string> tuple = CodeParser.GetNextArgument(rawCode);
             string codeTypeStr = tuple.Item1;
             string remainder = tuple.Item2;
 
@@ -191,10 +189,9 @@ namespace PEBakery.Core
             List<string> args = new List<string>();
             try
             {
-                // args = ParseArguments(rawArgs, 1);
-                while (remainder.Equals(string.Empty, StringComparison.Ordinal) == false)
+                while (remainder != null)
                 {
-                    tuple = GetNextArgument(remainder);
+                    tuple = CodeParser.GetNextArgument(remainder);
                     args.Add(tuple.Item1);
                     remainder = tuple.Item2;
                 }
@@ -223,7 +220,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeInfo(rawCode, type, macroType, args, addr);
+                info = ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -259,7 +256,7 @@ namespace PEBakery.Core
             CodeInfo info;
             try
             {
-                info = ParseCodeInfo(rawCode, type, macroType, args.Skip(1).ToList(), addr);
+                info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), addr);
                 return new CodeCommand(rawCode, addr, type, info);
             }
             catch (InvalidCommandException e)
@@ -374,7 +371,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfo, CheckInfoArgumentCount
-        public static CodeInfo ParseCodeInfo(string rawCode, CodeType type, string macroType, List<string> args, SectionAddress addr)
+        public static CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, SectionAddress addr)
         {
             switch (type)
             {
@@ -482,9 +479,27 @@ namespace PEBakery.Core
                         return new CodeInfo_FileCreateBlank(filePath, preserve, noWarn, encoding);
                     }
                 case CodeType.FileSize:
-                    break;
+                    { // FileSize,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_FileSize(args[0], args[1]);
+                    }
                 case CodeType.FileVersion:
-                    break;
+                    { // FileVersion,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_FileVersion(args[0], args[1]);
+                    }
                 case CodeType.DirCopy:
                     break;
                 case CodeType.DirDelete:
@@ -501,7 +516,16 @@ namespace PEBakery.Core
                         return new CodeInfo_DirMake(args[0]);
                     }
                 case CodeType.DirSize:
-                    break;
+                    { // DirSize,<FileName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_DirSize(args[0], args[1]);
+                    }
                 #endregion
                 #region 02 Registry
                 case CodeType.RegHiveLoad:
@@ -546,10 +570,9 @@ namespace PEBakery.Core
                     }
                 case CodeType.TXTReplace:
                     { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
-                        const int minArgCount = 3;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         if (args[1].Contains("#$x"))
                             throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
@@ -560,10 +583,9 @@ namespace PEBakery.Core
                     }
                 case CodeType.TXTDelLine:
                     { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
-                        const int minArgCount = 2;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         if (args[1].Contains("#$x"))
                             throw new InvalidCommandException($"Keyword cannot include line feed", rawCode);
@@ -572,19 +594,17 @@ namespace PEBakery.Core
                     }
                 case CodeType.TXTDelSpaces:
                     { // TXTDelSpaces,<FileName>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_TXTDelSpaces(args[0]);
                     }
                 case CodeType.TXTDelEmptyLines:
                     { // TXTDelEmptyLines,<FileName>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_TXTDelEmptyLines(args[0]);
                     }
@@ -592,19 +612,17 @@ namespace PEBakery.Core
                 #region 04 INI
                 case CodeType.INIWrite:
                     { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
-                        const int minArgCount = 4;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_INIWrite(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.INIRead:
                     { // INIWrite,<FileName>,<SectionName>,<Key>,<VarName>
-                        const int minArgCount = 4;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         string varName = args[3];
                         if (varName == null)
@@ -614,28 +632,25 @@ namespace PEBakery.Core
                     }
                 case CodeType.INIDelete:
                     { // INIDelete,<FileName>,<SectionName>,<Key>
-                        const int minArgCount = 3;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_INIDelete(args[0], args[1], args[2]);
                     }
                 case CodeType.INIAddSection:
                     { // INIAddSection,<FileName>,<SectionName>
-                        const int minArgCount = 2;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_INIAddSection(args[0], args[1]);
                     }
                 case CodeType.INIDeleteSection:
                     { // INIDeleteSection,<FileName>,<SectionName>
-                        const int minArgCount = 2;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_INIDeleteSection(args[0], args[1]);
                     }
@@ -698,27 +713,65 @@ namespace PEBakery.Core
                 #region 06 Network
                 // 06 Network
                 case CodeType.WebGet:
-                    break;
-                case CodeType.WebGetIfNotExist:
-                    break;
-                #endregion
-                #region 07 Attach
-                // 06 Attach, Interface
-                case CodeType.ExtractFile:
-                    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
-                        const int minArgCount = 4;
-                        const int maxArgCount = 4;
+                case CodeType.WebGetIfNotExist: // Will be deprecated
+                    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5; // WB082 Spec allows args up to 5 - WebGet,<URL>,<DestPath>,[MD5_Digest],[ASK],[TIMEOUT_int]
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string url = args[0];
+                        string destPath = args[1];
+                        string hashType = null;
+                        string hashDigest = null;
+
+                        if (args.Count == 4) 
+                        {
+                            if (!(args[2].Length == 32)) // If this statement follows WB082 Spec, Just ignore.
+                            { 
+                                hashType = args[2];
+                                hashDigest = args[3];
+                            }
+                        }
+
+                        return new CodeInfo_WebGet(url, destPath, hashType, hashDigest);
+                    }
+                #endregion
+                #region 07 Plugin
+                // 07 Plugin
+                case CodeType.ExtractFile:
+                    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.ExtractAndRun:
-                    break;
+                    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName> // ,[Params] - deprecated
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], new string[0]);
+                    }
                 case CodeType.ExtractAllFiles:
-                    break;
+                    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
+                    }
                 case CodeType.Encode:
-                    break;
+                    { // Encode,%PluginFile%,<DirName>,<FileName>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_Encode(args[0], args[1], args[2]);
+                    }
                 #endregion
                 #region 08 Interface
                 case CodeType.Visible:
@@ -802,14 +855,67 @@ namespace PEBakery.Core
                         return new CodeInfo_Echo(args[0], warn);
                     }
                 case CodeType.UserInput:
-                    break;
+                    return ParseCodeInfoUserInput(rawCode, args);
                 case CodeType.Retrieve:
-                    // Put Compability Shim here
-                    break;
+                    { // Put Compability Shim here
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
+
+                        if (args[0].Equals("Dir", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.Dir -> UserInput.DirPath
+                            type = CodeType.UserInput;
+                            args[0] = "DirPath";
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+                        else if (args[0].Equals("File", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.File -> UserInput.FilePath
+                            type = CodeType.UserInput;
+                            args[0] = "FilePath";
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+                        else if (args[0].Equals("FileSize", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FileSize -> FileSize
+                            type = CodeType.FileSize;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+                        else if (args[0].Equals("FileVersion", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FileVersion -> FileVersion
+                            type = CodeType.FileVersion;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+                        else if (args[0].Equals("FolderSize", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.FolderSize -> DirSize
+                            type = CodeType.DirSize;
+                            args.RemoveAt(0);
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+                        else if (args[0].Equals("MD5", StringComparison.OrdinalIgnoreCase))
+                        { // Retrieve.MD5 -> Hash.MD5
+                            type = CodeType.Hash;
+                            return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
+                        }
+
+                        throw new InvalidCommandException($"Invalid command [Retrieve,{args[0]}]", rawCode);
+                    }
                 #endregion
                 #region 09 Hash
                 case CodeType.Hash:
-                    break;
+                    { // Hash,<HashType>,<FilePath>,<DestVar>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
+                        else
+                            return new CodeInfo_Hash(args[0], args[1], args[2]);
+                    }
                 #endregion
                 #region 10 String
                 case CodeType.StrFormat:
@@ -823,7 +929,7 @@ namespace PEBakery.Core
                 #region 12 System
                 // 11 System
                 case CodeType.System:
-                    break;
+                    return ParseCodeInfoSystem(rawCode, args, addr);
                 case CodeType.ShellExecute:
                 case CodeType.ShellExecuteEx:
                 case CodeType.ShellExecuteDelete:
@@ -1048,8 +1154,7 @@ namespace PEBakery.Core
                     return new CodeInfo_Macro(macroType, args);
                 #endregion
                 #region Error
-                // Error
-                default:
+                default: // Error
                     throw new InternalParserException($"Wrong CodeType [{type}]");
                 #endregion
             }
@@ -1085,6 +1190,62 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ParseCodeInfoUserInput, ParseUserInputType
+        public static CodeInfo_UserInput ParseCodeInfoUserInput(string rawCode, List<string> args)
+        {
+            const int minArgCount = 3;
+            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
+
+            UserInputType type = ParseUserInputType(args[0]);
+            UserInputInfo info;
+
+            // Remove UserInputType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case UserInputType.DirPath:
+                case UserInputType.FilePath:
+                    {
+                        // UserInput,DirPath,<Path>,<DestVar>
+                        // UserInput,FilePath,<Path>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new UserInputInfo_DirFilePath(args[0], args[1]);
+                    }
+                    break;
+                default: // Error
+                    throw new InternalParserException($"Wrong StrFormatType [{type}]");
+            }
+
+            return new CodeInfo_UserInput(type, info);
+        }
+
+        public static UserInputType ParseUserInputType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out UserInputType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(UserInputType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid UserInputType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
         #region ParseCodeInfoStrFormat, ParseStrFormatType
         public static CodeInfo_StrFormat ParseCodeInfoStrFormat(string rawCode, List<string> args)
         {
@@ -1093,7 +1254,7 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
 
             StrFormatType type = ParseStrFormatType(args[0]);
-            StrFormatInfo info = new StrFormatInfo(); // Temp Measure
+            StrFormatInfo info;
 
             // Remove StrFormatType
             args.RemoveAt(0);
@@ -1348,6 +1509,173 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region ParseCodeInfoSystem, ParseSystemType
+        public static CodeInfo_System ParseCodeInfoSystem(string rawCode, List<string> args, SectionAddress addr)
+        {
+            SystemType type = ParseSystemType(args[0]);
+            SystemInfo info;
+
+            // Remove SystemType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case SystemType.Cursor:
+                    { // System,Cursor,<IconKind>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_Cursor(args[0]);
+                    }
+                    break;
+                case SystemType.ErrorOff:
+                    { // System,ErrorOff,[Lines]
+                        const int minArgCount = 0;
+                        const int maxArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (args.Count == 0) // No args
+                            info = new SystemInfo_ErrorOff();
+                        else
+                            info = new SystemInfo_ErrorOff(args[0]);
+                    }
+                    break;
+                case SystemType.GetEnv:
+                    { // System,GetEnv,<EnvVarName>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetEnv(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.GetFreeDrive:
+                    { // System,GetFreeDrive,<DestVar>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetFreeDrive(args[0]);
+                    }
+                    break;
+                case SystemType.GetFreeSpace:
+                    { // System,GetFreeSpace,<Path>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_GetFreeSpace(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.IsAdmin:
+                    { // System,IsAdmin,<DestVar>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_IsAdmin(args[0]);
+                    }
+                    break;
+                case SystemType.OnBuildExit:
+                    { // System,OnBuildExit,<Command>
+                        const int minArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+
+                        info = new SystemInfo_OnBuildExit(embed);
+                    }
+                    break;
+                case SystemType.OnScriptExit:
+                case SystemType.OnPluginExit:
+                    { // System,OnPluginExit,<Command>
+                        const int minArgCount = 1;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
+
+                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+
+                        info = new SystemInfo_OnPluginExit(embed);
+                    }
+                    break;
+                case SystemType.RefreshInterface:
+                    { // System,RefreshInterface
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_RefreshInterface();
+                    }
+                    break;
+                case SystemType.RescanScripts:
+                    { // System,RescanScripts
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_RescanScripts();
+                    }
+                    break;
+                case SystemType.SaveLog:
+                    { // System,SaveLog,<DestPath>,[LogFormat]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        if (args.Count == 1)
+                            info = new SystemInfo_SaveLog(args[0]);
+                        else
+                            info = new SystemInfo_SaveLog(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.FileRedirect:
+                    info = new SystemInfo();
+                    break;
+                default: // Error
+                    throw new InternalParserException($"Wrong SystemType [{type}]");
+            }
+
+            return new CodeInfo_System(type, info);
+        }
+
+        public static SystemType ParseSystemType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out SystemType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(SystemType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid SystemType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
         public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, SectionAddress addr)
         {
@@ -1436,7 +1764,7 @@ namespace PEBakery.Core
                 }
                 else if (condStr.Equals("ExistSection", StringComparison.OrdinalIgnoreCase))
                 {
-                    cond = new BranchCondition(BranchConditionType.ExistSection, true, args[cIdx + 1], args[cIdx + 2]);
+                    cond = new BranchCondition(BranchConditionType.ExistSection, notFlag, args[cIdx + 1], args[cIdx + 2]);
                     embIdx = cIdx + 3;
                 }
                 else if (condStr.Equals("NotExistSection", StringComparison.OrdinalIgnoreCase)) // Deprecated
@@ -1554,11 +1882,13 @@ namespace PEBakery.Core
                     if (info == null)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
-                    i = ParseNestedIf(cmd, codeList, i, compiledList);
+                    if (info.LinkParsed == false)
+                        i = ParseNestedIf(cmd, codeList, i, compiledList);
                     elseFlag = true;
 
                     CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                     info.Link = newLinkList;
+                    
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
                 { // Compile to ElseCompact
@@ -1568,8 +1898,8 @@ namespace PEBakery.Core
 
                     if (elseFlag)
                     {
-                        // compiledList.Add(cmd);
-                        i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
+                        if (info.LinkParsed == false)
+                            i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
 
                         CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                         info.Link = newLinkList;
@@ -1578,11 +1908,6 @@ namespace PEBakery.Core
                         throw new InvalidCodeCommandException("Else must be used after If", cmd);
                         
                 }
-                //else if (cmd.Type == CodeType.End)
-                //{
-                //    // elseFlag = true;
-                //    // throw new InvalidCodeCommandException("End must be matched with Begin", cmd);
-                //}
                 else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
                 {
                     elseFlag = false;
@@ -1606,25 +1931,30 @@ namespace PEBakery.Core
             // RawCode : If,%A%,Equal,B,Echo,Success
             // Condition : Equal,%A%,B,Echo,Success
             // Run if condition is met : Echo,Success
-            // BakeryCommand compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
+            // Command compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
 
+            CodeInfo_If info = cmd.Info as CodeInfo_If;
+            if (info == null)
+                throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+            newList.Add(cmd);
+            info.LinkParsed = true;
             CodeCommand ifCmd = cmd;
 
             // <Raw>
             // If,%A%,Equal,B,Echo,Success
             while (true)
             {
-                CodeInfo_If info = ifCmd.Info as CodeInfo_If;
-                if (info == null)
-                    throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                newList.Add(ifCmd);
-                info.LinkParsed = true;
-                info.Link.Add(info.Embed);
                 if (info.Embed.Type == CodeType.If) // Nested If
                 {
+                    info.Link.Add(info.Embed);
+
                     ifCmd = info.Embed;
                     newList = info.Link;
+
+                    info = ifCmd.Info as CodeInfo_If;
+                    if (info == null)
+                        throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -1632,7 +1962,10 @@ namespace PEBakery.Core
                     int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                     if (endIdx == -1)
                         throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
-                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1));
+
+                    info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                    info.LinkParsed = true;
+
                     return endIdx;
                 }
                 else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
@@ -1641,6 +1974,8 @@ namespace PEBakery.Core
                 }
                 else // Singleline If
                 {
+                    info.Link.Add(info.Embed);
+
                     return codeListIdx;
                 }
             }
@@ -1664,26 +1999,34 @@ namespace PEBakery.Core
 
             newList.Add(cmd);
             info.LinkParsed = true;
-            info.Link.Add(info.Embed);
 
             CodeCommand elseEmbCmd = info.Embed;
             if (elseEmbCmd.Type == CodeType.If) // Nested If
             {
+                info.Link.Add(elseEmbCmd);
+
                 CodeCommand ifCmd = elseEmbCmd;
                 List<CodeCommand> nestList = info.Link;
+
+                CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
+                if (ifInfo == null)
+                    throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+
+                ifInfo.LinkParsed = true;
+
                 while (true)
                 {
-                    CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
-                    if (info == null)
-                        throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                    nestList.Add(ifCmd);
-                    ifInfo.LinkParsed = true;
-                    ifInfo.Link.Add(info.Embed);
-                    if (info.Embed.Type == CodeType.If) // Nested If
+                    if (ifInfo.Embed.Type == CodeType.If) // Nested If
                     {
+                        ifInfo.Link.Add(info.Embed);
+
                         ifCmd = ifInfo.Embed;
                         nestList = ifInfo.Link;
+
+                        ifInfo = ifCmd.Info as CodeInfo_If;
+                        if (ifInfo == null)
+                            throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
                     }
                     else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {
@@ -1691,16 +2034,18 @@ namespace PEBakery.Core
                         int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                         if (endIdx == -1)
                             throw new InvalidCodeCommandException("Begin must be matched with End", ifCmd);
-                        info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1));
+                        ifInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
                         elseFlag = true;
                         return endIdx;
                     }
                     else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
                     {
+                        ifInfo.Link.Add(info.Embed);
                         throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with If", cmd);
                     }
                     else // Singleline If
                     {
+                        info.Link.Add(info.Embed);
                         elseFlag = true;
                         return codeListIdx;
                     }
@@ -1718,10 +2063,12 @@ namespace PEBakery.Core
             }
             else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
             {
+                info.Link.Add(info.Embed);
                 throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with Else", cmd);
             }
             else // Normal codes
             {
+                info.Link.Add(info.Embed);
                 elseFlag = false;
                 return codeListIdx;
             }

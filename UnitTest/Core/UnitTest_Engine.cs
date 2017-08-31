@@ -7,9 +7,18 @@ namespace UnitTest.Core
     [TestClass]
     public class UnitTest_Engine
     {
+        // public EngineState CreateEngineState()
+        public void CreateEngineState()
+        {
+            // ProjectCollection projects = new ProjectCollection(baseDir, null);
+            // projects.Load(worker);
+            // return new EngineState();
+        }
+
         [TestMethod]
         public void TestMethod1()
         {
+            Console.WriteLine(@"..\..\..\TestSuite");
         }
     }
 }
