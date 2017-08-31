@@ -134,7 +134,7 @@ namespace PEBakery.Core.Commands
                     throw new ExecuteException($"No plugin in [{fullPath}]");
             }
 
-            string destPath = FileHelper.CreateTempFile();
+            string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));

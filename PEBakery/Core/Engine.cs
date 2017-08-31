@@ -92,7 +92,7 @@ namespace PEBakery.Core
 
             // Current Section Parameter - empty
             s.CurSectionParams = new Dictionary<int, string>()
-            { // This value follows WB082 Behavior (Can't figure out why they set init values like this)
+            { // This value follows WB082 Behavior (Can't figure out why developer set init values like this)
                 { 1, "#1" },
                 { 2, "#2" },
                 { 3, "#3" },
@@ -216,7 +216,7 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
-            // Copy Param Dictionary by value, not reference
+            // Must copy ParamDict by value, not reference
             RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
 
             s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
@@ -376,22 +376,41 @@ namespace PEBakery.Core
                     #endregion
                     #region 04 INI
                     case CodeType.INIRead:
-                        logs.AddRange(CommandIni.INIRead(s, cmd));
+                        logs.AddRange(CommandINI.INIRead(s, cmd));
+                        break;
+                    case CodeType.INIReadOp:
+                        logs.AddRange(CommandINI.INIReadOp(s, cmd));
                         break;
                     case CodeType.INIWrite:
-                        logs.AddRange(CommandIni.INIWrite(s, cmd));
+                        logs.AddRange(CommandINI.INIWrite(s, cmd));
+                        break;
+                    case CodeType.INIWriteOp:
+                        logs.AddRange(CommandINI.INIWriteOp(s, cmd));
                         break;
                     case CodeType.INIDelete:
-                        logs.AddRange(CommandIni.INIDelete(s, cmd));
+                        logs.AddRange(CommandINI.INIDelete(s, cmd));
+                        break;
+                    case CodeType.INIDeleteOp:
+                        logs.AddRange(CommandINI.INIDeleteOp(s, cmd));
                         break;
                     case CodeType.INIAddSection:
-                        logs.AddRange(CommandIni.INIAddSection(s, cmd));
+                        logs.AddRange(CommandINI.INIAddSection(s, cmd));
+                        break;
+                    case CodeType.INIAddSectionOp:
+                        logs.AddRange(CommandINI.INIAddSectionOp(s, cmd));
                         break;
                     case CodeType.INIDeleteSection:
-                        logs.AddRange(CommandIni.INIDeleteSection(s, cmd));
+                        logs.AddRange(CommandINI.INIDeleteSection(s, cmd));
                         break;
-                    //case CodeType.INIWriteTextLine:
-                    //    break;
+                    case CodeType.INIDeleteSectionOp:
+                        logs.AddRange(CommandINI.INIDeleteSectionOp(s, cmd));
+                        break;
+                    case CodeType.INIWriteTextLine:
+                        logs.AddRange(CommandINI.INIWriteTextLine(s, cmd));
+                        break;
+                    case CodeType.INIWriteTextLineOp:
+                        logs.AddRange(CommandINI.INIWriteTextLineOp(s, cmd));
+                        break;
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
@@ -544,7 +563,7 @@ namespace PEBakery.Core
                 s.Logger.ErrorOffCount -= 1;
             }
 
-            s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));                
+            s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
             s.MainViewModel.BuildCommandProgressBarValue = 1000;
         }

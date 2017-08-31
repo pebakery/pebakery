@@ -187,7 +187,7 @@ namespace PEBakery.Core
             Ini.SetKey(p.FullPath, dirName, fileName, $"{inputStream.Length},{encoded.Length}"); // UncompressedSize,EncodedSize
 
             if (dirOverwrite == false)
-                Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName);
+                Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
 
             // Refresh Plugin
             // TODO: How to update CurMainTree of MainWindows?

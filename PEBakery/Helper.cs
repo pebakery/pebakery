@@ -276,20 +276,6 @@ namespace PEBakery.Helper
         }
 
         /// <summary>
-        /// Create temp file and mark with temp attribute.
-        /// </summary>
-        /// <returns></returns>
-        public static string CreateTempFile()
-        {
-            string path = Path.GetTempFileName();
-            FileInfo fileInfo = new FileInfo(path)
-            {
-                Attributes = FileAttributes.Temporary
-            };
-            return path;
-        }
-
-        /// <summary>
         /// Replace src with dest. 
         /// </summary>
         /// <param name="src"></param>

@@ -8,7 +8,7 @@ namespace UnitTest
     [TestClass]
     public class UnitTest_CodeParser
     {
-        public static void GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
+        public static void CodeParser_GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
         {
             Tuple<string, string> tuple;
             string next, remainder = code;
@@ -34,7 +34,7 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void GetNextArgument_1()
+        public void CodeParser_GetNextArgument_1()
         {
             string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
@@ -45,11 +45,11 @@ namespace UnitTest
                 new Tuple<string, string>(@"Append", null),
             };
 
-            GetNextArgument_Test(code, testcases);
+            CodeParser_GetNextArgument_Test(code, testcases);
         }
 
         [TestMethod]
-        public void GetNextArgument_2()
+        public void CodeParser_GetNextArgument_2()
         {
             string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
@@ -60,11 +60,11 @@ namespace UnitTest
                 new Tuple<string, string>(@"Append", null),
             };
 
-            GetNextArgument_Test(code, testcases);
+            CodeParser_GetNextArgument_Test(code, testcases);
         }
 
         [TestMethod]
-        public void GetNextArgument_3()
+        public void CodeParser_GetNextArgument_3()
         {
             string code = @"StrFormat,REPLACE,#2,\,,#8";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
@@ -77,11 +77,11 @@ namespace UnitTest
                 new Tuple<string, string>(@"#8", null),
             };
 
-            GetNextArgument_Test(code, testcases);
+            CodeParser_GetNextArgument_Test(code, testcases);
         }
 
         [TestMethod]
-        public void GetNextArgument_4()
+        public void CodeParser_GetNextArgument_4()
         {
             string code = @"Set,%Waik2Tools%,";
             List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
@@ -91,7 +91,7 @@ namespace UnitTest
                 new Tuple<string, string>(string.Empty, null),
             };
 
-            GetNextArgument_Test(code, testcases);
+            CodeParser_GetNextArgument_Test(code, testcases);
         }
     }
 }

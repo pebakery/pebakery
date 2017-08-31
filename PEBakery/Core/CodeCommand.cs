@@ -23,6 +23,7 @@ using System.IO;
 using System.Net.NetworkInformation;
 using System.Globalization;
 using System;
+using System.Linq;
 using System.Windows;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
@@ -483,12 +484,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIReadOp : CodeInfo
-    {
-        public List<CodeInfo_INIRead> InfoList;
-
-        public CodeInfo_INIReadOp(List<CodeInfo_INIRead> infoList)
+    {   
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIRead> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIRead).ToList();
+        }
+
+        public CodeInfo_INIReadOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -525,11 +530,15 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_INIWriteOp : CodeInfo
     {
-        public List<CodeInfo_INIWrite> InfoList;
-
-        public CodeInfo_INIWriteOp(List<CodeInfo_INIWrite> infoList)
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIWrite> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIWrite).ToList();
+        }
+
+        public CodeInfo_INIWriteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -562,11 +571,15 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_INIDeleteOp : CodeInfo
     {
-        public List<CodeInfo_INIDelete> InfoList;
-
-        public CodeInfo_INIDeleteOp(List<CodeInfo_INIDelete> infoList)
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIDelete> Infos
         {
-            InfoList = infoList;
+            get => Cmds.Select(x => x.Info as CodeInfo_INIDelete).ToList();
+        }
+
+        public CodeInfo_INIDeleteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -593,6 +606,21 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_INIAddSectionOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIAddSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIAddSection).ToList();
+        }
+
+        public CodeInfo_INIAddSectionOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
     {
         public string FileName;
@@ -615,8 +643,23 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIWriteTextLine : CodeInfo
+    public class CodeInfo_INIDeleteSectionOp : CodeInfo
     {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIDeleteSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIDeleteSection).ToList();
+        }
+
+        public CodeInfo_INIDeleteSectionOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_INIWriteTextLine : CodeInfo
+    { // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
         public string FileName;
         public string SectionName;
         public string Line;
@@ -641,6 +684,21 @@ namespace PEBakery.Core
             if (Append)
                 b.Append(",APPEND");
             return b.ToString();
+        }
+    }
+   
+    [Serializable]
+    public class CodeInfo_INIWriteTextLineOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_INIWriteTextLine> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_INIWriteTextLine).ToList();
+        }
+
+        public CodeInfo_INIWriteTextLineOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
