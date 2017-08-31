@@ -478,12 +478,8 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            // string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
-            // return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < cmdList.Count; i++)
-                b.AppendLine(cmdList[0].RawCode);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
+            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
         }
 
         private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmdList)
@@ -497,8 +493,15 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
+            // string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
         }
 
         private static CodeCommand OptimizeINIRead(List<CodeCommand> cmdList)

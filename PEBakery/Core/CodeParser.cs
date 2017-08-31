@@ -387,7 +387,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 01 File
                 case CodeType.FileCopy:
-                    { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC][,SHOW]
+                    { // FileCopy,<SrcFile>,<DestPath>[,PRESERVE][,NOWARN][,NOREC]
                         const int minArgCount = 2;
                         const int maxArgCount = 6;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -398,7 +398,6 @@ namespace PEBakery.Core
                         bool preserve = false;
                         bool noWarn = false;
                         bool noRec = false;
-                        bool show = false;
 
                         for (int i = minArgCount; i < args.Count; i++)
                         {
@@ -407,22 +406,47 @@ namespace PEBakery.Core
                                 preserve = true;
                             else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
                                 noWarn = true;
-                            else if (arg.Equals("SHOW", StringComparison.OrdinalIgnoreCase)) // deprecated, exist for compability with WB082
-                                show = true;
                             else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
                                 noRec = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_FileCopy(srcFile, destPath, preserve, noWarn, noRec, show);
+                        return new CodeInfo_FileCopy(srcFile, destPath, preserve, noWarn, noRec);
                     }
                 case CodeType.FileDelete:
-                    break;
+                    { // FileDelete,<FilePath>[,NOWARN][,NOREC]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string filePath = args[0];
+                        bool noWarn = false;
+                        bool noRec = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                                noWarn = true;
+                            else if (arg.Equals("NOREC", StringComparison.OrdinalIgnoreCase)) // no recursive wildcard copy
+                                noRec = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_FileDelete(filePath, noWarn, noRec);
+                    }
                 case CodeType.FileRename:
-                    break;
                 case CodeType.FileMove:
-                    break;
+                    { // FileRename,<SrcPath>,<DestPath>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_FileRename(args[0], args[1]);
+                    }
                 case CodeType.FileCreateBlank:
                     { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16LE | UTF16BE | ANSI]
                         const int minArgCount = 1;
@@ -460,7 +484,7 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
-                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
                                     throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
@@ -501,17 +525,34 @@ namespace PEBakery.Core
                         return new CodeInfo_FileVersion(args[0], args[1]);
                     }
                 case CodeType.DirCopy:
-                    break;
+                    { // DirCopy,<SrcFile>,<DestPath>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_DirCopy(args[0], args[1]);
+                    }
                 case CodeType.DirDelete:
-                    break;
+                    { // DirDelete,<DirPath>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_DirDelete(args[0]);
+                    }
                 case CodeType.DirMove:
-                    break;
+                    { // DirMove,<SrcDir>,<DestPath>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_DirMove(args[0], args[1]);
+                    }
                 case CodeType.DirMake:
                     { // DirMake,<DestDir>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_DirMake(args[0]);
                     }

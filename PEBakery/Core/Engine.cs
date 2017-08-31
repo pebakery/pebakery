@@ -307,11 +307,13 @@ namespace PEBakery.Core
                     case CodeType.FileCopy:
                         logs.AddRange(CommandFile.FileCopy(s, cmd));
                         break;
-                    //case CodeType.FileDelete:
-                    //    break;
-                    //case CodeType.FileRename:
-                    //case CodeType.FileMove:
-                    //    break;
+                    case CodeType.FileDelete:
+                        logs.AddRange(CommandFile.FileDelete(s, cmd));
+                        break;
+                    case CodeType.FileRename:
+                    case CodeType.FileMove:
+                        logs.AddRange(CommandFile.FileRename(s, cmd));
+                        break;
                     case CodeType.FileCreateBlank:
                         logs.AddRange(CommandFile.FileCreateBlank(s, cmd));
                         break;
@@ -321,12 +323,15 @@ namespace PEBakery.Core
                     case CodeType.FileVersion:
                         logs.AddRange(CommandFile.FileVersion(s, cmd));
                         break;
-                    //case CodeType.DirCopy:
-                    //   break;
-                    //case CodeType.DirDelete:
-                    //    break;
-                    //case CodeType.DirMove:
-                    //    break;
+                   case CodeType.DirCopy:
+                        logs.AddRange(CommandFile.DirCopy(s, cmd));
+                       break;
+                    case CodeType.DirDelete:
+                        logs.AddRange(CommandFile.DirDelete(s, cmd));
+                        break;
+                    case CodeType.DirMove:
+                        logs.AddRange(CommandFile.DirMove(s, cmd));
+                        break;
                     case CodeType.DirMake:
                         logs.AddRange(CommandFile.DirMake(s, cmd));
                         break;

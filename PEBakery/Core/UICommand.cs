@@ -39,7 +39,7 @@ namespace PEBakery.Core
         TextFile = 6,
         // 7 was to be EditValues, but WinBuilder 082 didn't implemented this
         Button = 8,
-        CheckList = 9,
+        // 9 is CheckList, but rarely used so deprecated
         WebLabel = 10,
         RadioButton = 11,
         Bevel = 12,

@@ -48,6 +48,8 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
             // Check destPath is directory
             bool destPathExists = false;
             bool destPathIsDir = false;
@@ -72,12 +74,12 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destFullPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite file [{destFullPath}]", cmd));
                             return logs;
                         }
                         else
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destFullPath}] will be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{destFullPath}] will be overwritten", cmd));
                         }
                     }
 
@@ -91,12 +93,12 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite file [{destPath}]", cmd));
                             return logs;
                         }
                         else
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{destPath}] will be overwritten", cmd));
                         }
                     }
 
@@ -161,6 +163,97 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        public static List<LogInfo> FileDelete(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileDelete));
+            CodeInfo_FileDelete info = cmd.Info as CodeInfo_FileDelete;
+
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            // Check srcFileName contains wildcard
+            if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
+            { // No Wildcard
+                if (File.Exists(filePath))
+                { // Delete File
+                    File.Delete(filePath);
+
+                    logs.Add(new LogInfo(LogState.Success, $"Deleted file [{filePath}]"));
+                }
+                else
+                {
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{filePath}] not exists"));
+                }
+
+            }
+            else
+            { // With Wildcard
+                // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
+                string srcDirToFind = FileHelper.GetDirNameEx(filePath);
+
+                string[] files;
+                if (info.NoRec)
+                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
+                else
+                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
+
+                if (0 < files.Length)
+                { // One or more file will be deleted
+                    foreach(string f in files)
+                    {
+                        File.Delete(f);
+                        logs.Add(new LogInfo(LogState.Success, $"File [{f}] deleted"));
+                    }
+
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
+                }
+                else
+                { // No file will be deleted
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{filePath}] not found"));
+                }
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> FileRename(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileRename));
+            CodeInfo_FileRename info = cmd.Info as CodeInfo_FileRename;
+
+            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            File.Move(srcPath, destPath);
+            if (cmd.Type == CodeType.FileRename)
+                logs.Add(new LogInfo(LogState.Success, $"File [{srcPath}] renamed to [{destPath}]"));
+            else
+                logs.Add(new LogInfo(LogState.Success, $"File [{srcPath}] moved to [{destPath}]"));
+
+            return logs;
+        }
+
         public static List<LogInfo> FileCreateBlank(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -190,6 +283,8 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(state, $"[{filePath}] will be overwritten", cmd));
                 }
             }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
             {
@@ -236,7 +331,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            string filePath = StringEscaper.Preprocess(s, info.filePath);
+            string filePath = StringEscaper.Preprocess(s, info.FilePath);
             FileVersionInfo v = FileVersionInfo.GetVersionInfo(filePath);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
@@ -246,6 +341,126 @@ namespace PEBakery.Core.Commands
 
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, verStr); 
             logs.AddRange(varLogs);
+
+            return logs;
+        }
+
+        public static List<LogInfo> DirCopy(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirCopy));
+            CodeInfo_DirCopy info = cmd.Info as CodeInfo_DirCopy;
+
+            string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            // DestPath must be directory 
+            if (File.Exists(destPath))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Cannot overwrite file [{destPath}] with directory [{srcDir}]"));
+                return logs;
+            }
+
+            if (Directory.Exists(destPath))
+                logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
+            else
+                Directory.CreateDirectory(destPath);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 700;
+
+            // Check srcDir contains wildcard
+            if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1)
+            { // No Wildcard
+                FileHelper.DirectoryCopy(srcDir, destPath, true, null);
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
+            }
+            else
+            { // With Wildcard
+                string wildcard = Path.GetFileName(srcDir);
+                FileHelper.DirectoryCopy(srcDir, destPath, true, wildcard);
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> DirDelete(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirDelete));
+            CodeInfo_DirDelete info = cmd.Info as CodeInfo_DirDelete;
+
+            string dirPath = StringEscaper.Preprocess(s, info.DirPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(dirPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            // Delete Directory
+            Directory.Delete(dirPath, true);
+
+            logs.Add(new LogInfo(LogState.Success, $"Deleted directory [{dirPath}]"));
+
+            return logs;
+        }
+
+        public static List<LogInfo> DirMove(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirMove));
+            CodeInfo_DirMove info = cmd.Info as CodeInfo_DirMove;
+
+            string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+            // DestPath must be directory 
+            if (File.Exists(destPath))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"[{destPath}] is a file, not a directory"));
+                return logs;
+            }
+
+            if (Directory.Exists(destPath))
+            { // Cannot use Directory.Move, should copy and delete directory.
+                logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
+
+                FileHelper.DirectoryCopy(srcDir, destPath, true, null);
+                Directory.Delete(srcDir, true);
+
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));
+            }
+            else
+            { 
+                Directory.Move(srcDir, destPath);
+
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));
+            }
 
             return logs;
         }
