@@ -129,15 +129,19 @@ namespace UnitTest.Libs
 
             Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
 
+            string read;
             using (StreamReader r = new StreamReader(tempFile))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-Key=Value
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("Key=Value");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -154,16 +158,20 @@ Key=Value
 
             Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "B"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-Key=B
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("Key=B");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -181,23 +189,26 @@ Key=B
 
             Assert.IsTrue(Ini.SetKeys(tempFile, keys));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section2]
-20=English
-
-[Section1]
-10=한국어
-
-[Section3]
-30=Français
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section2]");
+            b.AppendLine("20=English");
+            b.AppendLine();
+            b.AppendLine("[Section1]");
+            b.AppendLine("10=한국어");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine("30=Français");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -230,31 +241,34 @@ Key=B
 
             Assert.IsTrue(Ini.SetKeys(tempFile, keys));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-00=A
-01=B
-02=C
-03=D
-04=Unicode
-
-[Section2]
-10=한
-11=국
-12=어
-13=한글
-[Section3]
-20=韓
-21=國
-22=語
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("00=A");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine("03=D");
+            b.AppendLine("04=Unicode");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("11=국");
+            b.AppendLine("12=어");
+            b.AppendLine("13=한글");
+            b.AppendLine("[Section3]");
+            b.AppendLine("20=韓");
+            b.AppendLine("21=國");
+            b.AppendLine("22=語");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -267,16 +281,20 @@ Key=B
 
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "RawLine"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-RawLine
-";
-                r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                read = r.ReadToEnd();
+                r.Close();  
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("RawLine");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -293,17 +311,21 @@ RawLine
 
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "LineAppend", true));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-1=A
-LineAppend
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("1=A");
+            b.AppendLine("LineAppend");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -320,17 +342,21 @@ LineAppend
 
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "LinePrepend", false));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-LinePrepend
-1=A
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("LinePrepend");
+            b.AppendLine("1=A");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -364,31 +390,34 @@ LinePrepend
 
             Assert.IsTrue(Ini.WriteRawLines(tempFile, keys, false));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-한중일 (CJK)
-10=한국어
-11=中文
-12=にほんご
-
-[Section2]
-영어
-20=English
-[Section3]
-프랑스어
-30=Français
-
-[Section4]
-עברית
-العربية
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("한중일 (CJK)");
+            b.AppendLine("10=한국어");
+            b.AppendLine("11=中文");
+            b.AppendLine("12=にほんご");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("영어");
+            b.AppendLine("20=English");
+            b.AppendLine("[Section3]");
+            b.AppendLine("프랑스어");
+            b.AppendLine("30=Français");
+            b.AppendLine();
+            b.AppendLine("[Section4]");
+            b.AppendLine("עברית");
+            b.AppendLine("العربية");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -420,31 +449,34 @@ LinePrepend
 
             Assert.IsTrue(Ini.WriteRawLines(tempFile, keys, true));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-10=한국어
-11=中文
-12=にほんご
-한중일 (CJK)
-
-[Section2]
-20=English
-영어
-[Section3]
-30=Français
-프랑스어
-
-[Section4]
-עברית
-العربية
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("10=한국어");
+            b.AppendLine("11=中文");
+            b.AppendLine("12=にほんご");
+            b.AppendLine("한중일 (CJK)");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("20=English");
+            b.AppendLine("영어");
+            b.AppendLine("[Section3]");
+            b.AppendLine("30=Français");
+            b.AppendLine("프랑스어");
+            b.AppendLine();
+            b.AppendLine("[Section4]");
+            b.AppendLine("עברית");
+            b.AppendLine("العربية");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -466,18 +498,22 @@ LinePrepend
 
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "2"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-1=A
-3=C
-4=D
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("1=A");
+            b.AppendLine("3=C");
+            b.AppendLine("4=D");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -498,19 +534,23 @@ LinePrepend
             // Induce Error
             Assert.IsFalse(Ini.DeleteKey(tempFile, "Section", "5"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
-            { // Must be same
-                string read = r.ReadToEnd(); 
-                string comp = @"[Section]
-1=A
-2=B
-3=C
-4=D
-";
+            {
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("1=A");
+            b.AppendLine("2=B");
+            b.AppendLine("3=C");
+            b.AppendLine("4=D");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -531,17 +571,21 @@ LinePrepend
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "2"));
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "4"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
-            { // Must be same
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-1=A
-3=C
-";
+            {
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("1=A");
+            b.AppendLine("3=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -574,23 +618,27 @@ LinePrepend
         
             bool result = Ini.DeleteKeys(tempFile, keys);
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-01=B
-02=C
-
-[Section2]
-10=한
-[Section3]
-21=國
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("[Section3]");
+            b.AppendLine("21=國");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -599,18 +647,23 @@ LinePrepend
         public void IniLib_AddSection_1()
         {
             string tempFile = Path.GetTempFileName();
-
+            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             Assert.IsTrue(Ini.AddSection(tempFile, "Section"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-";
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -628,17 +681,22 @@ LinePrepend
 
             Assert.IsTrue(Ini.AddSection(tempFile, "Section"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
-            { // Must be same
-                string read = r.ReadToEnd();
-                string comp = @"[Section]
-1=A
-2=B
-";
+            {
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section]");
+            b.AppendLine("1=A");
+            b.AppendLine("2=B");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -664,27 +722,32 @@ LinePrepend
 
             Assert.IsTrue(Ini.AddSection(tempFile, "Section4"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
-            { // Must be same
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-00=A
-01=B
-02=C
-
-[Section2]
-10=한
-11=국
-[Section3]
-20=韓
-21=國
-
-[Section4]
-";
+            {
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("00=A");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("11=국");
+            b.AppendLine("[Section3]");
+            b.AppendLine("20=韓");
+            b.AppendLine("21=國");
+            b.AppendLine();
+            b.AppendLine("[Section4]");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -704,20 +767,24 @@ LinePrepend
 
             Assert.IsTrue(Ini.AddSections(tempFile, sections));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-
-[Section3]
-
-[Section2]
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -747,30 +814,34 @@ LinePrepend
                 "Section2",
             };
 
-            bool result = Ini.AddSections(tempFile, sections);
+            Assert.IsTrue(Ini.AddSections(tempFile, sections));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-00=A
-01=B
-02=C
-
-[Section2]
-10=한
-11=국
-[Section3]
-20=韓
-21=國
-
-[Section4]
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("00=A");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("11=국");
+            b.AppendLine("[Section3]");
+            b.AppendLine("20=韓");
+            b.AppendLine("21=國");
+            b.AppendLine();
+            b.AppendLine("[Section4]");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -844,22 +915,27 @@ LinePrepend
 
             Assert.IsTrue(Ini.DeleteSection(tempFile, "Section2"));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
-            { // Must be same
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-00=A
-01=B
-02=C
-
-[Section3]
-20=韓
-21=國
-";
+            {
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("00=A");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine();
+            b.AppendLine("[Section3]");
+            b.AppendLine("20=韓");
+            b.AppendLine("21=國");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -893,18 +969,22 @@ LinePrepend
 
             Assert.IsTrue(Ini.DeleteSections(tempFile, sections));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section2]
-10=한
-11=국
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("11=국");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -936,26 +1016,30 @@ LinePrepend
 
             Assert.IsFalse(Ini.DeleteSections(tempFile, sections));
 
+            string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
-                string read = r.ReadToEnd();
-                string comp = @"[Section1]
-00=A
-01=B
-02=C
-
-[Section2]
-10=한
-11=국
-[Section3]
-20=韓
-21=國
-";
-
+                read = r.ReadToEnd();
                 r.Close();
-                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("00=A");
+            b.AppendLine("01=B");
+            b.AppendLine("02=C");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("10=한");
+            b.AppendLine("11=국");
+            b.AppendLine("[Section3]");
+            b.AppendLine("20=韓");
+            b.AppendLine("21=國");
+
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
     }

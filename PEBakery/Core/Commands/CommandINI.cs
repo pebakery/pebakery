@@ -17,7 +17,6 @@
 */
 
 using PEBakery.Exceptions;
-using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
