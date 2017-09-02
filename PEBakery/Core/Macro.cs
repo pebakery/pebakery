@@ -18,28 +18,30 @@ namespace PEBakery.Core
         private Plugin macroPlugin; // sciprt.project - %API%
         private PluginSection macroSection; // sciprt.project - %APIVAR%
         private Dictionary<string, CodeCommand> macroDict; // Macro Library - [ApiVar]
+        private Dictionary<string, CodeCommand> localDict; // Local Macro from [Variables]
 
         public bool MacroEnabled { get => macroEnabled; }
         public Plugin MacroPlugin { get => macroPlugin; }
         public PluginSection MacroSection { get => macroSection; }
         public Dictionary<string, CodeCommand> MacroDict { get => macroDict; } // Macro Library - [ApiVar]
+        public Dictionary<string, CodeCommand> LocalDict { get => localDict; } // Local Macro from [Variables]
 
-        public Macro(Project project, Variables variables, out List<LogInfo> results)
+        public Macro(Project project, Variables variables, out List<LogInfo> logs)
         {
             macroEnabled = true;
-            results = new List<LogInfo>();
+            logs = new List<LogInfo>();
             if (project.MainPlugin.Sections.ContainsKey("Variables") == false)
-            { 
+            {
                 macroEnabled = false;
-                results.Add(new LogInfo(LogState.Info, "Macro not defined"));
+                logs.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
-            Dictionary<string, string> varDict = project.MainPlugin.Sections["Variables"].GetIniDict();
-            if (varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR") == false)
+            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(project.MainPlugin.Sections["Variables"].GetLines());
+            if ((varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")) == false)
             {
                 macroEnabled = false;
-                results.Add(new LogInfo(LogState.Info, "Macro not defined"));
+                logs.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
@@ -50,7 +52,7 @@ namespace PEBakery.Core
             if (macroPlugin == null)
             {
                 macroEnabled = false;
-                results.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro plugin [{rawPluginPath}"));
+                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro plugin [{rawPluginPath}"));
                 return;
             }
 
@@ -58,7 +60,7 @@ namespace PEBakery.Core
             if (macroPlugin.Sections.ContainsKey(varDict["APIVAR"]) == false)
             {
                 macroEnabled = false;
-                results.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
+                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
                 return;
             }
             macroSection = macroPlugin.Sections[varDict["APIVAR"]];
@@ -71,22 +73,67 @@ namespace PEBakery.Core
 
             // Parse Section [APIVAR] into dictionary of CodeCommand
             macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
+            SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
             Dictionary<string, string> macroRawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
             foreach (var kv in macroRawDict)
             {
                 try
                 {
-                    SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
                     if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
                         && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
                         macroDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
                 }
                 catch (Exception e)
                 {
-                    results.Add(new LogInfo(LogState.Error, e));
+                    logs.Add(new LogInfo(LogState.Error, e));
                 }
             }
-            
+
+            // Prepare Local Macro Dict
+            localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        public List<LogInfo> LoadLocalMacroDict(Plugin p)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            localDict.Clear();
+
+            if (p.Sections.ContainsKey("Variables"))
+            {
+                PluginSection section = p.Sections["Variables"];
+                
+                // [Variables]'s type is SectionDataType.Lines
+                // Pick key-value only if key is not wrapped by %
+                Dictionary<string, string> dict =
+                    Ini.ParseIniLinesIniStyle(section.GetLines())
+                    .Where(x => !(x.Key.StartsWith("%", StringComparison.Ordinal) && x.Key.EndsWith("%", StringComparison.Ordinal)))
+                    .ToDictionary(x => x.Key, x => x.Value);
+
+                if (0 < dict.Keys.Count)
+                {
+                    SectionAddress addr = new SectionAddress(p, section);
+
+                    int count = 0;
+                    logs.Add(new LogInfo(LogState.Info, "Import Macro from [Variables]", 0));
+                    foreach (var kv in dict)
+                    {
+                        try
+                        {
+                            localDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
+                            logs.Add(new LogInfo(LogState.Success, $"Macro [{kv.Key}] set to [{kv.Value}]", 1));
+                            count += 1;
+                        }
+                        catch (Exception e)
+                        {
+                            logs.Add(new LogInfo(LogState.Error, e));
+                        }
+                    }
+                    logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
+                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                }
+            }
+
+            return logs;
         }
     }
 
@@ -99,13 +146,18 @@ namespace PEBakery.Core
                 throw new InvalidCodeCommandException("Command [Macro] should have [CodeInfo_Macro]", cmd);
 
             CodeCommand macroCmd;
-            try
+            if (s.Macro.MacroDict.ContainsKey(info.MacroType))
             {
                 macroCmd = s.Macro.MacroDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
             }
-            catch (KeyNotFoundException)
-            {
+            else if (s.Macro.LocalDict.ContainsKey(info.MacroType))
+            { // Try to find [infoMacroType] in [Variables] <- I hate undocumented behaviors!
+                macroCmd = s.Macro.LocalDict[info.MacroType];
+                macroCmd.RawCode = cmd.RawCode;
+            }
+            else 
+            { 
                 throw new CodeCommandException($"Invalid Command [{info.MacroType}]", cmd);
             }
 

@@ -144,6 +144,7 @@
     <Compile Include="Core\Commands\CommandInterface.cs" />
     <Compile Include="Core\Commands\CommandNetwork.cs" />
     <Compile Include="Core\Commands\CommandPlugin.cs" />
+    <Compile Include="Core\Commands\CommandRegistry.cs" />
     <Compile Include="Core\Commands\CommandString.cs" />
     <Compile Include="Core\Commands\CommandSystem.cs" />
     <Compile Include="Core\Commands\CommandText.cs" />

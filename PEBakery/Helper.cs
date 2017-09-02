@@ -1103,73 +1103,85 @@ namespace PEBakery.Helper
             CloseHandle(hToken);
         }
 
-        public static RegistryKey ParseRootKeyToRegKey(string rootKey)
-        {
-            return InternalParseRootKeyToRegKey(rootKey, false);
-        }
-
-        public static RegistryKey ParseRootKeyToRegKey(string rootKey, bool exception)
-        {
-            return InternalParseRootKeyToRegKey(rootKey, exception);
-        }
-
-        public static RegistryKey InternalParseRootKeyToRegKey(string rootKey, bool exception)
+        public static RegistryKey ParseStringToRegKey(string rootKey)
         {
             RegistryKey regRoot;
-            if (string.Equals(rootKey, "HKCR", StringComparison.OrdinalIgnoreCase))
+            if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.ClassesRoot; // HKEY_CLASSES_ROOT
-            else if (string.Equals(rootKey, "HKCU", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.CurrentUser; // HKEY_CURRENT_USER
-            else if (string.Equals(rootKey, "HKLM", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.LocalMachine; // HKEY_LOCAL_MACHINE
-            else if (string.Equals(rootKey, "HKU", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.Users; // HKEY_USERS
-            else if (string.Equals(rootKey, "HKPD", StringComparison.OrdinalIgnoreCase))
-                regRoot = Registry.PerformanceData; // HKEY_PERFORMANCE_DATA
-            else if (string.Equals(rootKey, "HKCC", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.CurrentConfig; // HKEY_CURRENT_CONFIG
             else
-            {
-                if (exception)
-                    throw new InvalidRegistryKeyException();
-                else
-                    regRoot = null;
-            }
+                regRoot = null;
             return regRoot;
         }
 
-        public static UInt32 ParseRootKeyToUInt32(string rootKey)
+        public static string RegKeyToString(RegistryKey regKey)
         {
-            return InternalParseRootKeyToUInt32(rootKey, false);
+            string rootKey;
+            if (regKey == Registry.ClassesRoot)
+                rootKey = "HKCR";
+            else if (regKey == Registry.CurrentUser)
+                rootKey = "HKCU";
+            else if (regKey == Registry.LocalMachine)
+                rootKey = "HKLM";
+            else if (regKey == Registry.Users)
+                rootKey = "HKU";
+            else if (regKey == Registry.CurrentConfig)
+                rootKey = "HKCC";
+            else
+                rootKey = null;
+            return rootKey;
         }
 
-        public static UInt32 ParseRootKeyToUInt32(string rootKey, bool exception)
+        public static string RegKeyToFullString(RegistryKey regKey)
         {
-            return InternalParseRootKeyToUInt32(rootKey, exception);
+            string rootKey;
+            if (regKey == Registry.ClassesRoot)
+                rootKey = "HKEY_CLASSES_ROOT";
+            else if (regKey == Registry.CurrentUser)
+                rootKey = "HKEY_CURRENT_USER";
+            else if (regKey == Registry.LocalMachine)
+                rootKey = "HKEY_LOCAL_MACHINE";
+            else if (regKey == Registry.Users)
+                rootKey = "HKEY_USERS";
+            else if (regKey == Registry.CurrentConfig)
+                rootKey = "HKEY_CURRENT_CONFIG";
+            else
+                rootKey = null;
+            return rootKey;
         }
 
-        public static UInt32 InternalParseRootKeyToUInt32(string rootKey, bool exception)
+        public static UInt32 ParseStringToUInt32(string rootKey)
         {
             UInt32 hKey;
-            if (string.Equals(rootKey, "HKCR", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCR;
-            else if (string.Equals(rootKey, "HKCU", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCU;
-            else if (string.Equals(rootKey, "HKLM", StringComparison.OrdinalIgnoreCase))
-                hKey = HKLM;
-            else if (string.Equals(rootKey, "HKU", StringComparison.OrdinalIgnoreCase))
-                hKey = HKU;
-            else if (string.Equals(rootKey, "HKPD", StringComparison.OrdinalIgnoreCase))
-                hKey = HKPD;
-            else if (string.Equals(rootKey, "HKCC", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCC;
+            if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCR; // HKEY_CLASSES_ROOT
+            else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCU; // HKEY_CURRENT_USER
+            else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
+                hKey = HKLM; // HKEY_LOCAL_MACHINE
+            else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
+                hKey = HKU; // HKEY_USERS
+            else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCC; // HKEY_CURRENT_CONFIG
             else
-            {
-                if (exception)
-                    throw new InvalidRegistryKeyException();
-                else
-                    hKey = 0;
-            }
+                hKey = 0;
             return hKey;
         }
     }

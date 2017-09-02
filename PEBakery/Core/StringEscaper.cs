@@ -309,7 +309,7 @@ namespace PEBakery.Core
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
-            string fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
             foreach (string f in forbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))

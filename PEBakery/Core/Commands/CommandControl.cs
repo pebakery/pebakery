@@ -52,7 +52,7 @@ namespace PEBakery.Core.Commands
             string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath,  pluginFile, out bool inCurrentPlugin);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))

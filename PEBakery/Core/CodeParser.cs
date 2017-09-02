@@ -28,6 +28,7 @@ using PEBakery.Core.Commands;
 using System.Windows;
 using PEBakery.WPF;
 using System.Diagnostics;
+using Microsoft.Win32;
 
 namespace PEBakery.Core
 {
@@ -271,8 +272,8 @@ namespace PEBakery.Core
             macroType = null;
 
             // There must be no number in yypeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as CodeType");
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
             bool isMacro = false;
             if (Enum.TryParse(typeStr, true, out CodeType type) == false)
@@ -291,6 +292,7 @@ namespace PEBakery.Core
             return type;
         }
 
+        /*
         private enum ParseState { Normal, Merge }
         public static List<string> ParseArguments(List<string> slices, int start)
         {
@@ -368,6 +370,7 @@ namespace PEBakery.Core
 
             return argList;
         }
+        */
         #endregion
 
         #region ParseCodeInfo, CheckInfoArgumentCount
@@ -570,23 +573,164 @@ namespace PEBakery.Core
                 #endregion
                 #region 02 Registry
                 case CodeType.RegHiveLoad:
-                    break;
+                    { // RegHiveLoad,<KeyPath>,<HiveFile>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_RegHiveLoad(args[0], args[1]);
+                    }
                 case CodeType.RegHiveUnload:
-                    break;
+                    { // RegHiveUnload,<KeyPath>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_RegHiveUnload(args[0]);
+                    }
                 case CodeType.RegImport:
-                    break;
-                case CodeType.RegWrite:
-                    break;
+                    { // RegImport,<RegFile>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_RegImport(args[0]);
+                    }
+                case CodeType.RegExport:
+                    { // RegExport,<Key>,<RegFile>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_RegExport(args[0], args[1]);
+                    }
                 case CodeType.RegRead:
-                    break;
-                case CodeType.RegDelete:
-                    break;
-                case CodeType.RegWriteBin:
-                    break;
+                    { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        
+                        string destVar = args[3];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
+                    }
+                case CodeType.RegWrite:
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
+                        const int argCount = 5;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+
+                        string valTypeStr = args[1];
+                        RegValueType valType;
+                        try
+                        {
+                            valType = CodeParser.ParseRegValueType(valTypeStr);
+                        } 
+                        catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
+
+                        RegValueType[] allowTypes = new RegValueType[]
+                        {
+                            RegValueType.REG_NONE,
+                            RegValueType.REG_SZ,
+                            RegValueType.REG_EXPAND_SZ,
+                            RegValueType.REG_BINARY,
+                            RegValueType.REG_DWORD,
+                            RegValueType.REG_MULTI_SZ,
+                            RegValueType.REG_QWORD,
+                        };
+                        if (allowTypes.Contains(valType) == false) // Not allowed
+                            throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
+
+                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4]);
+                    }
                 case CodeType.RegReadBin:
-                    break;
+                    { // RegReadBin,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+
+                        string destVar = args[3];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
+                    }
+                case CodeType.RegWriteBin:
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
+                        const int argCount = 5;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+
+                        string valTypeStr = args[1];
+                        RegValueType valType;
+                        try
+                        {
+                            valType = CodeParser.ParseRegValueType(valTypeStr);
+                        }
+                        catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
+
+                        RegValueType[] allowTypes = new RegValueType[]
+                        {
+                            RegValueType.REG_SZ,
+                            RegValueType.REG_EXPAND_SZ,
+                            RegValueType.REG_MULTI_SZ,
+                        };
+                        if (allowTypes.Contains(valType) == false) // Not allowed
+                            throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
+
+                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4]);
+                    }
+                case CodeType.RegDelete:
+                    { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        string keyPath = args[1];
+                        string valueName = null;
+                        if (args.Count == maxArgCount)
+                            valueName = args[2];
+
+                        return new CodeInfo_RegDelete(hKey, keyPath, valueName);
+                    }
                 case CodeType.RegMulti:
-                    break;
+                    { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
+                        const int minArgCount = 5;
+                        const int maxArgCount = 6;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        string keyPath = args[1];
+                        string valueName = args[2];
+
+                        string valTypeStr = args[3];
+                        RegMultiType valType;
+                        try
+                        {
+                            valType = CodeParser.ParseRegMultiType(valTypeStr);
+                        }
+                        catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
+
+                        string arg1 = args[4];
+                        string arg2 = null;
+                        if (args.Count == maxArgCount)
+                            arg2 = args[5];
+                        
+                        return new CodeInfo_RegMulti(hKey, keyPath, valueName, valType, arg1, arg2);
+                    }
                 #endregion
                 #region 03 Text
                 case CodeType.TXTAddLine:
@@ -665,11 +809,11 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        string varName = args[3];
-                        if (varName == null)
-                            throw new InvalidCommandException($"Variable name [{args[3]}] must start and end with %", rawCode);
+                        string destVar = args[3];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
 
-                        return new CodeInfo_INIRead(args[0], args[1], args[2], varName);
+                        return new CodeInfo_INIRead(args[0], args[1], args[2], destVar);
                     }
                 case CodeType.INIDelete:
                     { // INIDelete,<FileName>,<SectionName>,<Key>
@@ -897,6 +1041,14 @@ namespace PEBakery.Core
                     }
                 case CodeType.UserInput:
                     return ParseCodeInfoUserInput(rawCode, args);
+                case CodeType.AddInterface:
+                    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_AddInterface(args[0], args[1], args[2]);
+                    }
                 case CodeType.Retrieve:
                     { // Put Compability Shim here
                         const int argCount = 3;
@@ -1228,6 +1380,45 @@ namespace PEBakery.Core
                     return false;
             }
             
+        }
+        #endregion
+
+        #region ParseRegValueType, ParseRegMultiType
+        public static RegValueType ParseRegValueType(string typeStr)
+        {
+            // typeStr must be valid number
+            if (uint.TryParse(typeStr, NumberStyles.Number, CultureInfo.InvariantCulture, out uint typeInt) == false)
+                throw new InvalidCommandException($"[{typeStr}] is not valid number");
+
+            // Convert typeStr to base 10 integer string
+            bool failure = false;
+            if (Enum.TryParse(typeInt.ToString(), false, out RegValueType type) == false)
+                failure = true;
+            if (Enum.IsDefined(typeof(RegValueType), type) == false)
+                failure = true;
+
+            if (failure)
+                throw new InvalidCommandException("Invalid UICommand type");
+
+            return type;
+        }
+
+        public static RegMultiType ParseRegMultiType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out RegMultiType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(RegMultiType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid RegMultiType [{typeStr}]");
+
+            return type;
         }
         #endregion
 

@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
-    public class CommandNetwork
+    public static class CommandNetwork
     {
         public static List<LogInfo> WebGet(EngineState s, CodeCommand cmd)
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]

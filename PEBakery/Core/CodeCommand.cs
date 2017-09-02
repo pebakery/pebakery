@@ -41,9 +41,9 @@ namespace PEBakery.Core
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy, DirDelete, DirMove, DirMake, DirSize,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegImport, RegWrite, RegRead, RegDelete, RegWriteBin, RegReadBin, RegMulti,
+        RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegReadBin, RegWriteBin, RegDelete, RegMulti,
         // 03 Text
-        TXTAddLine = 300, TXTReplace, TXTDelLine, TXTDelSpaces, TXTDelEmptyLines,
+        TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
@@ -55,7 +55,7 @@ namespace PEBakery.Core
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800, Message, Echo, UserInput,
+        Visible = 800, Message, Echo, UserInput, AddInterface,
         VisibleOp = 880,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
@@ -418,6 +418,255 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 02 - Registry
+    public enum RegValueType : byte
+    {
+        REG_NONE = 0, // No value type
+        REG_SZ = 1, // Unicode NULL-terminated string
+        REG_EXPAND_SZ = 2, // Will-be-expanded Unicode NULL-terminated string
+        REG_BINARY = 3, // Binary   Ex) 14,f3,2a
+        REG_DWORD = 4, // 32bit (LE) integer
+        REG_MULTI_SZ = 7, // Multiple Unicode Strings
+        REG_QWORD = 11, // 64bit integer
+    }
+
+    [Serializable]
+    public class CodeInfo_RegHiveLoad : CodeInfo
+    { // RegHiveLoad,<KeyPath>,<HiveFile>
+        public string KeyPath;
+        public string HiveFile;
+
+        public CodeInfo_RegHiveLoad(string keyPath, string hiveFile)
+        {
+            KeyPath = keyPath;
+            HiveFile = hiveFile;
+        }
+
+        public override string ToString()
+        {
+            return $"{KeyPath},{HiveFile}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegHiveUnload : CodeInfo
+    { // RegHiveUnload,<KeyPath>
+        public string KeyPath;
+
+        public CodeInfo_RegHiveUnload(string keyPath)
+        {
+            KeyPath = keyPath;
+        }
+
+        public override string ToString()
+        {
+            return KeyPath;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegImport : CodeInfo
+    { // RegImport,<RegFile>
+        public string RegFile;
+
+        public CodeInfo_RegImport(string regFile)
+        {
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            return RegFile;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegExport : CodeInfo
+    { // RegExport,<Key>,<RegFile>
+        public string KeyPath;
+        public string RegFile;
+
+        public CodeInfo_RegExport(string keyPath, string regFile)
+        {
+            KeyPath = keyPath;
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            return $"{KeyPath},{RegFile}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegRead : CodeInfo
+    { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+        public RegistryKey HKey;
+        public string KeyPath;
+        public string ValueName;
+        public string DestVar;
+
+        public CodeInfo_RegRead(RegistryKey hKey, string keyPath, string valueName, string destVar)
+        {
+            HKey = hKey;
+            KeyPath = keyPath;
+            ValueName = valueName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},{KeyPath},{ValueName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegWrite : CodeInfo
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
+        public RegistryKey HKey;
+        public RegValueType ValueType;
+        public string KeyPath;
+        public string ValueName;
+        public string ValueData;
+
+        public CodeInfo_RegWrite(RegistryKey hKey, RegValueType valueType, string keyPath, string valueName, string valueData)
+        {
+            HKey = hKey;
+            ValueType = valueType;
+            KeyPath = keyPath;
+            ValueName = valueName;
+            ValueData = valueData;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},0x{((byte)ValueType).ToString("X")},{KeyPath},{ValueName},{ValueData}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegReadBin : CodeInfo
+    { // RegReadBin,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+        public RegistryKey HKey;
+        public string Key;
+        public string ValueName;
+        public string DestVar;
+
+        public CodeInfo_RegReadBin(RegistryKey hKey, string key, string valueName, string destVar)
+        {
+            HKey = hKey;
+            Key = key;
+            ValueName = valueName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},{Key},{ValueName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegWriteBin : CodeInfo
+    { // RegWriteBin,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
+        public RegistryKey HKey;
+        public RegValueType ValueType;
+        public string KeyPath;
+        public string ValueName;
+        public string ValueData;
+
+        public CodeInfo_RegWriteBin(RegistryKey hKey, RegValueType valueType, string keyPath, string valueName, string valueData)
+        {
+            HKey = hKey;
+            ValueType = valueType;
+            KeyPath = keyPath;
+            ValueName = valueName;
+            ValueData = valueData;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},0x{((byte)ValueType).ToString("X")},{KeyPath},{ValueName},{ValueData}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegDelete : CodeInfo
+    { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+        public RegistryKey HKey;
+        public string KeyPath;
+        public string ValueName;
+
+        public CodeInfo_RegDelete(RegistryKey hKey, string keyPath, string valueName = null)
+        {
+            HKey = hKey;
+            KeyPath = keyPath;
+            ValueName = valueName;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(RegistryHelper.RegKeyToString(HKey));
+            b.Append(",");
+            b.Append(KeyPath);
+            if (ValueName != null)
+            {
+                b.Append(",");
+                b.Append(ValueName);
+            }
+            return b.ToString();
+        }
+    }
+
+    public enum RegMultiType
+    {
+        Append = 0, Prepend, Before, Behind, Place, Delete, Index
+    }
+
+    [Serializable]
+    public class CodeInfo_RegMulti : CodeInfo
+    { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
+        public RegistryKey HKey;
+        public string KeyPath;
+        public string ValueName;
+        public RegMultiType Type;
+        public string Arg1;
+        public string Arg2;
+
+        public CodeInfo_RegMulti(RegistryKey hKey, string keyPath, string valueName, RegMultiType type, string arg1, string arg2 = null)
+        {
+            HKey = hKey;
+            KeyPath = keyPath;
+            ValueName = valueName;
+            Type = type;
+            Arg1 = arg1;
+            Arg2 = arg2;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+
+            StringBuilder b = new StringBuilder();
+            b.Append(HKeyStr);
+            b.Append(",");
+            b.Append(KeyPath);
+            b.Append(",");
+            b.Append(Type.ToString().ToUpper());
+            b.Append(",");
+            b.Append(Arg1); // Always, should exist
+            if (Arg2 != null)
+            {
+                b.Append(",");
+                b.Append(Arg2);
+            }
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 03 - Text
@@ -1125,6 +1374,26 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{Type},{SubInfo}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_AddInterface : CodeInfo
+    { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
+        public string PluginFile;
+        public string Interface;
+        public string Prefix;
+
+        public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
+        {
+            PluginFile = scriptFile;
+            Interface = interfaceSection;
+            Prefix = prefix;
+        }
+
+        public override string ToString()
+        {
+            return $"{PluginFile},{Interface},{Prefix}";
         }
     }
     #endregion
@@ -2109,7 +2378,7 @@ namespace PEBakery.Core
                         string rootKey = StringEscaper.Preprocess(s, Arg1);
                         string subKey = StringEscaper.Preprocess(s, Arg2);
 
-                        using (RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey))
+                        using (RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey))
                         {
                             if (regRoot == null)
                                 throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
@@ -2134,7 +2403,7 @@ namespace PEBakery.Core
                         string valueName = StringEscaper.Preprocess(s, Arg3);
 
                         match = true;
-                        using (RegistryKey regRoot = RegistryHelper.ParseRootKeyToRegKey(rootKey))
+                        using (RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey))
                         {
                             if (regRoot == null)
                                 throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");

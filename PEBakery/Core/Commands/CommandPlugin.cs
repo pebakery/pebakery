@@ -44,7 +44,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
             {
@@ -99,7 +99,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -147,7 +147,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 100;
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
             {
@@ -203,7 +203,7 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 

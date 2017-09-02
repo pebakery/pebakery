@@ -45,7 +45,7 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
@@ -113,7 +113,7 @@ namespace PEBakery.Core.Commands
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
-                Plugin p = s.GetPluginInstance(cmd, pluginFile, out bool inCurrentPlugin);
+                Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
                 // Does section exists?
                 if (!p.Sections.ContainsKey(sectionName))

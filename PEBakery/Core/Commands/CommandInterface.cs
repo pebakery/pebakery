@@ -292,5 +292,39 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        public static List<LogInfo> AddInterface(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface));
+            CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
+
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
+            string prefix = StringEscaper.Preprocess(s, info.Prefix);
+
+            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            if (p.Sections.ContainsKey(interfaceSection))
+            {
+                List<UICommand> uiCodes = null;
+                try { uiCodes = p.Sections[interfaceSection].GetUICodes(true); }
+                catch { } // No [Interface] section, or unable to get List<UICommand>
+
+                if (uiCodes != null)
+                {
+                    List<LogInfo> subLogs = s.Variables.UICommandToVariables(uiCodes, prefix);
+                    if (0 < subLogs.Count)
+                    {
+                        s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
+                        logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
+                        s.Logger.Build_Write(s, subLogs);
+                        s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
+                    }
+                }
+            }
+
+            return logs;
+        }
     }
 }

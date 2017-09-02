@@ -118,6 +118,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
 
                     List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].VarName, kv.Value, false);
+                    LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
 
                     successCount += 1;
