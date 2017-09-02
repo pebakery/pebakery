@@ -707,7 +707,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt32(string str, out Int32 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -725,7 +725,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt32(string str, out UInt32 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -743,7 +743,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt64(string str, out Int64 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -761,7 +761,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt64(string str, out UInt64 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -779,12 +779,16 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseDecimal(string str, out decimal value)
         {
-            if (string.Equals(str, string.Empty))
+            if (str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
             }
-            return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return decimal.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>

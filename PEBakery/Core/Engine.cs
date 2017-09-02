@@ -165,6 +165,10 @@ namespace PEBakery.Core
                             MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
 
+                        // Reset Halt Flags before running OnBuildExit
+                        s.ErrorHaltFlag = false;
+                        s.UserHaltFlag = false;
+
                         // OnBuildExit event callback
                         Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
                         break;

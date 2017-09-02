@@ -75,7 +75,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_ErrorOff subInfo = info.SubInfo as SystemInfo_ErrorOff;
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
-                        if (int.TryParse(linesStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int lines) == false)
+                        if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not valid integer");
 
                         if (lines <= 0)

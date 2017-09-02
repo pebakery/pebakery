@@ -26,6 +26,7 @@ using Microsoft.Win32;
 using PEBakery.Exceptions;
 using System.Globalization;
 using System.Diagnostics;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -101,10 +102,10 @@ namespace PEBakery.Core.Commands
             else
             {
                 string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
-                if (long.TryParse(startIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long startIdx) == false)
+                if (NumberHelper.ParseInt64(startIdxStr, out long startIdx) == false)
                     throw new ExecuteException($"Argument [{startIdxStr}] is not valid integer");
                 string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
-                if (long.TryParse(endIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long endIdx) == false)
+                if (NumberHelper.ParseInt64(endIdxStr, out long endIdx) == false)
                     throw new ExecuteException($"Argument [{endIdxStr}] is not valid integer");
                 long loopCount = endIdx - startIdx + 1;
 

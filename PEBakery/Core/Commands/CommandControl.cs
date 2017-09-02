@@ -17,6 +17,7 @@
 */
 
 using PEBakery.Exceptions;
+using PEBakery.Helper;
 using PEBakery.Lib;
 using System;
 using System.Collections.Generic;
@@ -143,7 +144,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait));
             CodeInfo_Wait info = cmd.Info as CodeInfo_Wait;
 
-            if (int.TryParse(info.Second, NumberStyles.Integer, CultureInfo.InvariantCulture, out int second) == false)
+            if (NumberHelper.ParseInt32(info.Second, out int second) == false)
                 throw new InvalidCodeCommandException($"Argument [{info.Second}] is not valid number", cmd);
 
             // Task.Run(() => Thread.Sleep(second * 1000)).Wait();

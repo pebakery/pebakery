@@ -1265,7 +1265,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        if (int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int index) == false)
+                        if (NumberHelper.ParseInt32(args[0], out int index) == false)
                             throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
 
                         string varName = args[1];
@@ -1281,7 +1281,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        if (int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int startIdx) == false)
+                        if (NumberHelper.ParseInt32(args[0], out int startIdx) == false)
                             throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
 
                         string varName = args[1];
@@ -1387,7 +1387,7 @@ namespace PEBakery.Core
         public static RegValueType ParseRegValueType(string typeStr)
         {
             // typeStr must be valid number
-            if (uint.TryParse(typeStr, NumberStyles.Number, CultureInfo.InvariantCulture, out uint typeInt) == false)
+            if (NumberHelper.ParseInt32(typeStr, out int typeInt) == false)
                 throw new InvalidCommandException($"[{typeStr}] is not valid number");
 
             // Convert typeStr to base 10 integer string

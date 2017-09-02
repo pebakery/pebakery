@@ -29,6 +29,7 @@ using System.Diagnostics;
 using System.Globalization;
 using PEBakery.WPF.Controls;
 using System.IO;
+using PEBakery.Helper;
 
 namespace PEBakery.Core.Commands
 {
@@ -176,7 +177,8 @@ namespace PEBakery.Core.Commands
             else
             {
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
-                if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int timeout) == false)
+                
+                if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
                     throw new ExecuteException($"[{timeoutStr}] is not valid positive integer");
                 if (timeout <= 0)
                     throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");

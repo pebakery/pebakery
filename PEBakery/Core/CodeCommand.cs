@@ -2234,9 +2234,9 @@ namespace PEBakery.Core
                         {
                             case CompareStringNumberResult.Equal: // For String and Number
                                 {
-                                    if (Type == BranchConditionType.Equal
-                                        || Type == BranchConditionType.SmallerEqual
-                                        || Type == BranchConditionType.BiggerEqual
+                                    if (Type == BranchConditionType.Equal && !NotFlag
+                                        || Type == BranchConditionType.SmallerEqual && !NotFlag
+                                        || Type == BranchConditionType.BiggerEqual && !NotFlag
                                         || Type == BranchConditionType.Smaller && NotFlag
                                         || Type == BranchConditionType.Bigger && NotFlag)
                                         match = true;
@@ -2245,27 +2245,33 @@ namespace PEBakery.Core
                                 break;
                             case CompareStringNumberResult.Smaller: // For Number
                                 {
-                                    if (Type == BranchConditionType.Smaller
-                                        || Type == BranchConditionType.SmallerEqual
+                                    if (Type == BranchConditionType.Smaller && !NotFlag
+                                        || Type == BranchConditionType.SmallerEqual && !NotFlag
                                         || Type == BranchConditionType.Bigger && NotFlag
-                                        || Type == BranchConditionType.BiggerEqual && NotFlag)
+                                        || Type == BranchConditionType.BiggerEqual && NotFlag
+                                        || Type == BranchConditionType.Equal && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
                                 }
                                 break;
                             case CompareStringNumberResult.Bigger: // For Number
                                 {
-                                    if (Type == BranchConditionType.Bigger
-                                        || Type == BranchConditionType.BiggerEqual
+                                    if (Type == BranchConditionType.Bigger && !NotFlag
+                                        || Type == BranchConditionType.BiggerEqual && !NotFlag
                                         || Type == BranchConditionType.Smaller && NotFlag
-                                        || Type == BranchConditionType.SmallerEqual && NotFlag)
+                                        || Type == BranchConditionType.SmallerEqual && NotFlag
+                                        || Type == BranchConditionType.Equal && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
                                 }
                                 break;
                             case CompareStringNumberResult.NotEqual: // For String
                                 {
-                                    if (Type == BranchConditionType.Equal && NotFlag)
+                                    if (Type == BranchConditionType.Equal && NotFlag
+                                        || Type == BranchConditionType.Smaller && !NotFlag
+                                        || Type == BranchConditionType.SmallerEqual && NotFlag
+                                        || Type == BranchConditionType.Bigger && !NotFlag
+                                        || Type == BranchConditionType.BiggerEqual && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is not equal to [{compArg2}]";
                                 }
@@ -2273,9 +2279,6 @@ namespace PEBakery.Core
                             default:
                                 throw new InternalException($"Cannot compare [{compArg1}] and [{compArg2}]");
                         }
-
-                        if (NotFlag)
-                            match = !match;
                     }
                     break;
                 case BranchConditionType.ExistFile:
@@ -2483,7 +2486,7 @@ namespace PEBakery.Core
                         if (autoTimeout)
                         {
                             string timeoutStr = StringEscaper.Preprocess(s, Arg2);
-                            if (int.TryParse(timeoutStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout) == false)
+                            if (NumberHelper.ParseInt32(timeoutStr, out timeout) == false)
                                 autoTimeout = false;
 
                             string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
