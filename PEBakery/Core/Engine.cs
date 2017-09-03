@@ -98,7 +98,10 @@ namespace PEBakery.Core
             };
 
             // Set Interface using MainWindow, MainViewModel
-            s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
+            if (s.RunOnePlugin)
+                s.MainViewModel.PluginTitleText = StringEscaper.Unescape(p.Title);
+            else
+                s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
             s.MainViewModel.PluginVersionText = $"v{p.Version}";
             s.MainViewModel.PluginAuthorText = p.Author;
