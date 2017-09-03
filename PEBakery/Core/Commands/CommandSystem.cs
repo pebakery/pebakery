@@ -320,8 +320,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                proc.StartInfo.RedirectStandardOutput = true;
-                proc.StartInfo.RedirectStandardError = true;
                 proc.StartInfo.CreateNoWindow = true;
             }
             else

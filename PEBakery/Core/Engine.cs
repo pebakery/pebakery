@@ -225,9 +225,10 @@ namespace PEBakery.Core
             if (codes.Count == 0)
             {
                 s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                return;
             }
 
-            CodeCommand curCommand = codes[0];
+            CodeCommand curCommand;
             for (int idx = 0; idx < codes.Count; idx++)
             {
                 try

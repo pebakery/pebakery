@@ -1159,19 +1159,19 @@ namespace PEBakery.Core
         public string PluginFile;
         public string DirName;
         public string FileName;
-        public string ExtractTo;
+        public string DestDir;
 
         public CodeInfo_ExtractFile(string pluginFile, string dirName, string fileName, string extractTo)
         {
             PluginFile = pluginFile;
             DirName = dirName;
             FileName = fileName;
-            ExtractTo = extractTo;
+            DestDir = extractTo;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{FileName},{ExtractTo}";
+            return $"{PluginFile},{DirName},{FileName},{DestDir}";
         }
     }
 
@@ -1215,18 +1215,18 @@ namespace PEBakery.Core
     { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
         public string PluginFile;
         public string DirName;
-        public string ExtractTo;
+        public string DestDir;
 
         public CodeInfo_ExtractAllFiles(string pluginFile, string dirName, string extractTo)
         {
             PluginFile = pluginFile;
             DirName = dirName;
-            ExtractTo = extractTo;
+            DestDir = extractTo;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{ExtractTo}";
+            return $"{PluginFile},{DirName},{DestDir}";
         }
     }
 

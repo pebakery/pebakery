@@ -30,6 +30,22 @@ namespace PEBakery.Core.Commands
 {
     public static class CommandPlugin
     {
+        /*
+         * WB082 Behavior
+         * ExtractFile : DestDir는 반드시 Directory 이름으로 간주한다. 없으면 생성한다.
+         * Ex) (...),README.txt,%BaseDir%\Temp\Hello
+         *   -> Hello가 존재하지 않을 경우 : Hello 디렉토리를 만들고 그 밑에 압축해제
+         *   -> Hello가 파일일 경우 : 실패
+         *   -> Hello가 디렉토리일 경우 : 디렉터리 밑에 압축해제
+         * 
+         * ExtractAllFiles
+         * Ex) (...),Fonts,%BaseDir%\Temp\Hello
+         *   -> Hello가 존재하지 않을 경우 : 실패
+         *   -> Hello가 파일일 경우 : 실패
+         *   -> Hello가 디렉토리일 경우 : 디렉터리 밑에 압축해제
+         * 
+         */
+
         public static List<LogInfo> ExtractFile(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -40,13 +56,13 @@ namespace PEBakery.Core.Commands
             string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string extractTo = StringEscaper.Preprocess(s, info.ExtractTo);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
-            if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
@@ -55,17 +71,22 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 600;
 
             string destPath;
-            if (Directory.Exists(extractTo)) // extractTo is dir
+            if (Directory.Exists(destDir)) // DestDir already exists
             {
-                destPath = Path.Combine(extractTo, fileName);
+                destPath = Path.Combine(destDir, fileName);
             }
-            else // extractTo is file
+            else 
             {
-                if (File.Exists(extractTo))
-                    logs.Add(new LogInfo(LogState.Ignore, $"File [{extractTo}] will be overwritten"));
+                if (File.Exists(destDir)) // Error, cannot proceed
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not a directory."));
+                    return logs;
+                }
                 else
-                    Directory.CreateDirectory(Path.GetDirectoryName(extractTo));
-                destPath = extractTo;
+                {
+                    Directory.CreateDirectory(destDir);
+                }
+                destPath = destDir;
             }
 
             using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, fileName))
@@ -79,7 +100,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 900;
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{extractTo}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{destDir}]"));
 
             return logs;
         }
@@ -143,13 +164,13 @@ namespace PEBakery.Core.Commands
 
             string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
-            string extractTo = StringEscaper.Preprocess(s, info.ExtractTo);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
-            if (StringEscaper.PathSecurityCheck(extractTo, out string errorMsg) == false)
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
@@ -160,15 +181,20 @@ namespace PEBakery.Core.Commands
             List<string> dirs = cmd.Addr.Plugin.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
-                throw new ExecuteException($"Folder [{dirName}] not exists in [{pluginFile}]");
+                throw new ExecuteException($"Directory [{dirName}] not exists in [{pluginFile}]");
 
-            
-            if (Directory.Exists(extractTo) == false)
+            if (!Directory.Exists(destDir))
             {
-                if (File.Exists(extractTo))
-                    throw new ExecuteException($"Path [{dirName}] is file, cannot extract files");
+                if (File.Exists(destDir))
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not directory, DestDir must be directory"));
+                    return logs;
+                }
                 else
-                    Directory.CreateDirectory(extractTo);
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"Directory [{destDir}] does not exists, DestDir must exists"));
+                    return logs;
+                }
             }
 
             int i = 0;
@@ -176,7 +202,7 @@ namespace PEBakery.Core.Commands
             foreach (string file in fileDict.Keys)
             {
                 using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, file))
-                using (FileStream fs = new FileStream(Path.Combine(extractTo, file), FileMode.Create, FileAccess.Write))
+                using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
                 {
                     ms.Position = 0;
                     ms.CopyTo(fs);
@@ -187,7 +213,7 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.BuildCommandProgressBarValue = 200 + ((fileDict.Count * i / fileDict.Count) * 800);
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{extractTo}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{destDir}]"));
 
             return logs;
         }
