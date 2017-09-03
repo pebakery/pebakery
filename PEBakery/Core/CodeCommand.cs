@@ -418,17 +418,6 @@ namespace PEBakery.Core
     #endregion
 
     #region CodeInfo 02 - Registry
-    public enum RegValueType : byte
-    {
-        REG_NONE = 0, // No value type
-        REG_SZ = 1, // Unicode NULL-terminated string
-        REG_EXPAND_SZ = 2, // Will-be-expanded Unicode NULL-terminated string
-        REG_BINARY = 3, // Binary   Ex) 14,f3,2a
-        REG_DWORD = 4, // 32bit (LE) integer
-        REG_MULTI_SZ = 7, // Multiple Unicode Strings
-        REG_QWORD = 11, // 64bit integer
-    }
-
     [Serializable]
     public class CodeInfo_RegHiveLoad : CodeInfo
     { // RegHiveLoad,<KeyPath>,<HiveFile>
@@ -524,12 +513,12 @@ namespace PEBakery.Core
     public class CodeInfo_RegWrite : CodeInfo
     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
         public RegistryKey HKey;
-        public RegValueType ValueType;
+        public RegistryValueKind ValueType;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegValueType valueType, string keyPath, string valueName, string valueData)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData)
         {
             HKey = hKey;
             ValueType = valueType;
@@ -549,14 +538,14 @@ namespace PEBakery.Core
     public class CodeInfo_RegReadBin : CodeInfo
     { // RegReadBin,<HKey>,<KeyPath>,<ValueName>,<DestVar>
         public RegistryKey HKey;
-        public string Key;
+        public string KeyPath;
         public string ValueName;
         public string DestVar;
 
         public CodeInfo_RegReadBin(RegistryKey hKey, string key, string valueName, string destVar)
         {
             HKey = hKey;
-            Key = key;
+            KeyPath = key;
             ValueName = valueName;
             DestVar = destVar;
         }
@@ -564,7 +553,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},{Key},{ValueName},{DestVar}";
+            return $"{HKeyStr},{KeyPath},{ValueName},{DestVar}";
         }
     }
 
@@ -572,12 +561,12 @@ namespace PEBakery.Core
     public class CodeInfo_RegWriteBin : CodeInfo
     { // RegWriteBin,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
         public RegistryKey HKey;
-        public RegValueType ValueType;
+        public RegistryValueKind ValueType;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
 
-        public CodeInfo_RegWriteBin(RegistryKey hKey, RegValueType valueType, string keyPath, string valueName, string valueData)
+        public CodeInfo_RegWriteBin(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData)
         {
             HKey = hKey;
             ValueType = valueType;
@@ -1046,32 +1035,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIMerge : CodeInfo
-    {
-        // INIMerge,<SrcFileName>,<DestFileName>
-        // INIMerge,<SrcFileName>,<SectionName>,<DestFileName>
-        public string SrcFileName;
-        public string DestFileName;
-        public string SectionName; // optional
+    { // INIMerge,<SrcFile>,<DestFile>
+        public string SrcFile;
+        public string DestFile;
 
-        public CodeInfo_INIMerge(string srcFileName, string destFileName, string sectionName = null)
+        public CodeInfo_INIMerge(string srcFile, string destFile)
         {
-            SrcFileName = srcFileName;
-            DestFileName = destFileName;
-            SectionName = sectionName;
+            SrcFile = srcFile;
+            DestFile = destFile;
         }
 
         public override string ToString()
         {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcFileName);
-            b.Append(",");
-            b.Append(DestFileName);
-            if (SectionName != null)
-            {
-                b.Append(",");
-                b.Append(SectionName);
-            }
-            return b.ToString();
+            return $"{SrcFile},{DestFile}";
         }
     }
     #endregion
@@ -1079,19 +1055,17 @@ namespace PEBakery.Core
     #region CodeInfo 05 - Compress
     [Serializable]
     public class CodeInfo_Expand : CodeInfo
-    {
+    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
         public string SrcCab;
         public string DestDir;
-        public bool IsSingleFile;
         public string SingleFile;
         public bool Preserve;
         public bool NoWarn;
 
-        public CodeInfo_Expand(string srcCab, string destDir, bool isSingleFile, string singleFile, bool preserve, bool noWarn)
+        public CodeInfo_Expand(string srcCab, string destDir, string singleFile, bool preserve, bool noWarn)
         {
             SrcCab = srcCab;
             DestDir = destDir;
-            IsSingleFile = isSingleFile;
             SingleFile = singleFile;
             Preserve = preserve;
             NoWarn = noWarn;
@@ -1103,11 +1077,41 @@ namespace PEBakery.Core
             b.Append(SrcCab);
             b.Append(",");
             b.Append(DestDir);
-            if (IsSingleFile)
+            if (SingleFile != null)
             {
                 b.Append(",");
                 b.Append(SingleFile);
             }
+            if (Preserve)
+                b.Append(",PRESERVE");
+            if (NoWarn)
+                b.Append(",NOWARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_CopyOrExpand : CodeInfo
+    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
+        public string SrcFile;
+        public string DestPath;
+        public bool Preserve;
+        public bool NoWarn;
+
+        public CodeInfo_CopyOrExpand(string srcCab, string destDir, bool preserve, bool noWarn)
+        {
+            SrcFile = srcCab;
+            DestPath = destDir;
+            Preserve = preserve;
+            NoWarn = noWarn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            b.Append(",");
+            b.Append(DestPath);
             if (Preserve)
                 b.Append(",PRESERVE");
             if (NoWarn)
@@ -2123,7 +2127,13 @@ namespace PEBakery.Core
         Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual,
         // Existance
         // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
-        ExistFile, ExistDir, ExistSection, ExistRegSection, ExistRegKey, ExistVar, ExistMacro,
+        ExistFile,
+        ExistDir,
+        ExistSection,
+        ExistRegSection, ExistRegSubKey,
+        ExistRegKey, ExistRegValue,
+        ExistVar,
+        ExistMacro,
         // ETC
         Ping, Online, Question,
         // Deprecated
@@ -2184,6 +2194,7 @@ namespace PEBakery.Core
                 case BranchConditionType.BiggerEqual:
                 case BranchConditionType.ExistSection:
                 case BranchConditionType.ExistRegSection:
+                case BranchConditionType.ExistRegSubKey:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     break;
@@ -2199,6 +2210,7 @@ namespace PEBakery.Core
             switch (type)
             {
                 case BranchConditionType.ExistRegKey:
+                case BranchConditionType.ExistRegValue:
                 case BranchConditionType.Question: // can have 1 or 3 argument
                     Arg1 = arg1;
                     Arg2 = arg2;
@@ -2377,22 +2389,21 @@ namespace PEBakery.Core
                     }
                     break;
                 case BranchConditionType.ExistRegSection:
+                case BranchConditionType.ExistRegSubKey:
                     {
                         string rootKey = StringEscaper.Preprocess(s, Arg1);
                         string subKey = StringEscaper.Preprocess(s, Arg2);
 
-                        using (RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey))
+                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        if (regRoot == null)
+                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
-                            if (regRoot == null)
-                                throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
-                            using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
-                            {
-                                match = (regSubKey != null);
-                                if (match)
-                                    logMessage = $"Registry Key [{rootKey}\\{subKey}] exists";
-                                else
-                                    logMessage = $"Registry Key [{rootKey}\\{subKey}] does not exist";
-                            }
+                            match = (regSubKey != null);
+                            if (match)
+                                logMessage = $"Registry Key [{rootKey}\\{subKey}] exists";
+                            else
+                                logMessage = $"Registry Key [{rootKey}\\{subKey}] does not exist";
                         }
 
                         if (NotFlag)
@@ -2400,31 +2411,30 @@ namespace PEBakery.Core
                     }
                     break;
                 case BranchConditionType.ExistRegKey:
+                case BranchConditionType.ExistRegValue:
                     {
                         string rootKey = StringEscaper.Preprocess(s, Arg1);
                         string subKey = StringEscaper.Preprocess(s, Arg2);
                         string valueName = StringEscaper.Preprocess(s, Arg3);
 
                         match = true;
-                        using (RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey))
+                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        if (regRoot == null)
+                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
-                            if (regRoot == null)
-                                throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
-                            using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                            if (regSubKey == null)
+                                match = false;
+                            else
                             {
-                                if (regSubKey == null)
+                                object value = regSubKey.GetValue(valueName, null);
+                                if (value == null)
                                     match = false;
-                                else
-                                {
-                                    object value = regSubKey.GetValue(valueName);
-                                    if (value == null)
-                                        match = false;
-                                }
-                                if (match)
-                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
-                                else
-                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
                             }
+                            if (match)
+                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
+                            else
+                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
                         }
 
                         if (NotFlag)

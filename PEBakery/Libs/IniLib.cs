@@ -1239,6 +1239,57 @@ namespace PEBakery.Lib
         }
         #endregion
 
+        #region Merge
+        public static bool Merge(string srcFile, string destFile)
+        {
+            IniFile srcIniFile = new IniFile(srcFile);
+
+            bool result = true;
+            // kvSec => Key: Section Value:<Key-Value>
+            foreach (var kvSec in srcIniFile.Sections)
+            {
+                List<IniKey> keys = new List<IniKey>();
+
+                // kvKey => Key:Key Value:Value
+                foreach (var kvKey in kvSec.Value)
+                    keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
+
+                result = result & InternalSetKeys(destFile, keys);
+            }
+
+            return result;
+        }
+
+        public static bool Merge(string srcFile1, string srcFile2, string destFile)
+        {
+            IniFile[] srcIniFiles = new IniFile[2]
+            {
+                new IniFile(srcFile1),
+                new IniFile(srcFile2),
+            };
+
+            bool result = true;
+            foreach (IniFile srcIniFile in srcIniFiles)
+            {
+                // kvSec => Key: Section Value:<Key-Value>
+                foreach (var kvSec in srcIniFile.Sections)
+                {
+                    List<IniKey> keys = new List<IniKey>();
+
+                    // kvKey => Key:Key Value:Value
+                    foreach (var kvKey in kvSec.Value)
+                        keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
+
+                    result = result & InternalSetKeys(destFile, keys); 
+                }
+            }
+
+            return result;
+        }
+
+        
+        #endregion
+
         #region Utility
         /// <summary>
         /// Parse INI style strings into dictionary
@@ -1249,6 +1300,7 @@ namespace PEBakery.Lib
         {
             return InternalParseIniLinesRegex(@"^([^=]+)=(.*)$", lines);
         }
+
         /// <summary>
         /// Parse PEBakery-Variable style strings into dictionary
         /// </summary>
@@ -1259,6 +1311,7 @@ namespace PEBakery.Lib
         {
             return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
         }
+
         /// <summary>
         /// Parse strings with regex.
         /// </summary>
@@ -1357,9 +1410,9 @@ namespace PEBakery.Lib
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static List<string>[] ParseIniSections(string file, IEnumerable<string> enumberableSections)
+        public static List<string>[] ParseIniSections(string file, IEnumerable<string> sectionList)
         {
-            string[] sections = enumberableSections.Distinct().ToArray(); // Remove duplicate
+            string[] sections = sectionList.Distinct().ToArray(); // Remove duplicate
 
             List<string>[] lines = new List<string>[sections.Length];
             for (int i = 0; i < sections.Length; i++)
@@ -1429,6 +1482,85 @@ namespace PEBakery.Lib
             }
 
             return lines;
+        }
+
+        public static Dictionary<string, StringDictionary> ParseToDict(string srcFile)
+        {
+            ReaderWriterLockSlim rwLock;
+
+            if (lockDict.ContainsKey(srcFile))
+            {
+                rwLock = lockDict[srcFile];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                lockDict[srcFile] = rwLock;
+            }
+
+            Dictionary<string, StringDictionary> dict = new Dictionary<string, StringDictionary>(StringComparer.OrdinalIgnoreCase);
+
+            rwLock.EnterReadLock();
+            try
+            {
+                if (!File.Exists(srcFile))
+                    return dict; // Return Empty dict if srcFile does not exist
+
+                Encoding encoding = FileHelper.DetectTextEncoding(srcFile);
+                using (StreamReader reader = new StreamReader(srcFile, encoding))
+                {
+                    // Is Original File Empty?
+                    if (reader.Peek() == -1)
+                    {
+                        reader.Close();
+
+                        // Return Empty Dict
+                        return dict;
+                    }
+
+                    string line = string.Empty;
+                    string section = null;
+
+                    while ((line = reader.ReadLine()) != null)
+                    { // Read text line by line
+                        line = line.Trim(); // Remove whitespace
+                        if (line.StartsWith("#", StringComparison.Ordinal) ||
+                            line.StartsWith(";", StringComparison.Ordinal) ||
+                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                            continue;
+
+                        // Check if encountered section head Ex) [Process]
+                        if (line.StartsWith("[", StringComparison.Ordinal) &&
+                            line.EndsWith("]", StringComparison.Ordinal))
+                        {
+                            section = line.Substring(1, line.Length - 2);
+                            dict[section] = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+                            continue;
+                        }
+
+                        // Read Keys
+                        if (section != null)
+                        {
+                            int idx = line.IndexOf('=');
+                            if (idx != -1 && idx != 0) // there is key, and key name is not empty
+                            {
+                                string key = line.Substring(0, idx);
+                                string value = line.Substring(idx + 1);
+
+                                dict[section][key] = value;
+                            }
+                        }
+                    }
+                    reader.Close();
+                }
+
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
+
+            return dict;
         }
 
         /// <summary>
@@ -1540,4 +1672,18 @@ namespace PEBakery.Lib
         }
         #endregion
     }
+
+    #region 
+    public class IniFile
+    {
+        public string FilePath { get; set; }
+        public Dictionary<string, StringDictionary> Sections { get; set; }
+        
+        public IniFile(string filePath)
+        {
+            FilePath = filePath;
+            Sections = Ini.ParseToDict(filePath);
+        }
+    }
+    #endregion
 }

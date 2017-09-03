@@ -321,6 +321,10 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 proc.StartInfo.CreateNoWindow = true;
+
+                // Redirecting Standard Stream without reading can full buffer, which leads to hang
+                //proc.StartInfo.RedirectStandardError = true;
+                //proc.StartInfo.RedirectStandardOutput = true;
             }
             else
             {

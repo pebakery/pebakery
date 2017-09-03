@@ -1042,5 +1042,459 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
+
+        #region Merge2
+        [TestMethod]
+        public void IniLib_Merge2_1()
+        {
+            string tempFile = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge2_2()
+        {
+            string tempFile = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.Unicode);
+
+            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(destFile, false, Encoding.Unicode))
+            {
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            b.AppendLine();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");           
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge2_3()
+        {
+            string tempFile = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.Unicode))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(destFile, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("04=D");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("04=D");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge2_4()
+        {
+            string tempFile = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+            FileHelper.WriteTextBOM(destFile, Encoding.BigEndianUnicode);
+
+            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.Unicode))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("02=D");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(destFile, false, Encoding.BigEndianUnicode))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+        #endregion
+
+        #region Merge3
+        [TestMethod]
+        public void IniLib_Merge3_1()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            Assert.IsTrue(read.Equals(string.Empty, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge3_2()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge3_3()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge3_4()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("04=D");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=B");
+            b.AppendLine("04=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge3_5()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            FileHelper.WriteTextBOM(tempFile2, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("02=D");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("01=A");
+            b.AppendLine("02=D");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void IniLib_Merge3_6()
+        {
+            string tempFile1 = Path.GetTempFileName();
+            string tempFile2 = Path.GetTempFileName();
+            string destFile = Path.GetTempFileName();
+
+            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+
+            using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("01=A");
+                w.WriteLine("02=B");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("02=D");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("03=C");
+                w.Close();
+            }
+
+            using (StreamWriter w = new StreamWriter(destFile, false, Encoding.UTF8))
+            {
+                w.WriteLine("[Section1]");
+                w.WriteLine("02=E");
+                w.WriteLine();
+                w.WriteLine("[Section2]");
+                w.WriteLine("04=F");
+                w.Close();
+            }
+
+            Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
+
+            string read;
+            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            using (StreamReader r = new StreamReader(destFile, encoding))
+            {
+                read = r.ReadToEnd();
+                r.Close();
+            }
+
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("[Section1]");
+            b.AppendLine("02=D");
+            b.AppendLine("01=A");
+            b.AppendLine();
+            b.AppendLine("[Section2]");
+            b.AppendLine("04=F");
+            b.AppendLine("03=C");
+            string comp = b.ToString();
+
+            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+        }
+        #endregion
     }
 }

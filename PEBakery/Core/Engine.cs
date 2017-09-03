@@ -342,22 +342,27 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 02 Registry
-                    //case CodeType.RegHiveLoad:
-                    //    break;
-                    //case CodeType.RegHiveUnload:
-                    //    break;
+                    case CodeType.RegHiveLoad:
+                        logs.AddRange(CommandRegistry.RegHiveLoad(s, cmd));
+                        break;
+                    case CodeType.RegHiveUnload:
+                        logs.AddRange(CommandRegistry.RegHiveUnload(s, cmd));
+                        break;
                     //case CodeType.RegImport:
                     //    break;
-                    //case CodeType.RegWrite:
+                    //case CodeType.RegExport:
                     //    break;
                     case CodeType.RegRead:
                         logs.AddRange(CommandRegistry.RegRead(s, cmd));
                         break;
-                    //case CodeType.RegDelete:
+                    //case CodeType.RegWrite:
                     //    break;
+                    case CodeType.RegReadBin:
+                        logs.AddRange(CommandRegistry.RegReadBin(s, cmd));
+                        break;
                     //case CodeType.RegWriteBin:
                     //    break;
-                    //case CodeType.RegReadBin:
+                    //case CodeType.RegDelete:
                     //    break;
                     //case CodeType.RegMulti:
                     //   break;

@@ -499,6 +499,7 @@ namespace PEBakery.Helper
         }
     }
 
+    #region HashHelper
     public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 };
 
     public static class HashHelper
@@ -653,7 +654,9 @@ namespace PEBakery.Helper
             return hashType;
         }
     }
+    #endregion
 
+    #region StringHelper
     public static class StringHelper
     {
         /// <summary>
@@ -683,7 +686,9 @@ namespace PEBakery.Helper
                 return false;
         }
     }
+    #endregion
 
+    #region NumberHelper
     public enum ParseStringToNumberType
     {
         String, Integer, Decimal
@@ -999,7 +1004,9 @@ namespace PEBakery.Helper
             return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
         }
     }
+    #endregion
 
+    #region RegistryHelper
     /// <summary>
     /// Exception used in BakeryEngine::ParseCommand
     /// </summary>
@@ -1025,7 +1032,7 @@ namespace PEBakery.Helper
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
-        static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
+        public static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]
@@ -1094,7 +1101,6 @@ namespace PEBakery.Helper
                 else
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
             }
-            CloseHandle(hToken);
 
             if (!AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
             {
@@ -1189,7 +1195,9 @@ namespace PEBakery.Helper
             return hKey;
         }
     }
+    #endregion
 
+    #region CompressHelper
     public static class CompressHelper
     {
         /// <summary>
@@ -1235,7 +1243,9 @@ namespace PEBakery.Helper
             return cab.ExtractSingleFile(target, destDir);
         }
     }
+    #endregion
 
+    #region ImageHelper
     public static class ImageHelper
     {
         public enum ImageType
@@ -1391,7 +1401,9 @@ namespace PEBakery.Helper
             return icon;
         }
     }
+    #endregion
 
+    #region FontHelper
     public static class FontHelper
     {
         // if we specify CharSet.Auto instead of CharSet.Ansi, then the string will be unreadable
@@ -1704,4 +1716,5 @@ namespace PEBakery.Helper
             return new WPFFont(fontFamily, fontWeight, fontSize);
         }
     }
+    #endregion
 }

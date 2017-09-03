@@ -627,22 +627,22 @@ namespace PEBakery.Core
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
 
                         string valTypeStr = args[1];
-                        RegValueType valType;
+                        RegistryValueKind valType;
                         try
                         {
-                            valType = CodeParser.ParseRegValueType(valTypeStr);
+                            valType = CodeParser.ParseRegistryValueKind(valTypeStr);
                         } 
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
-                        RegValueType[] allowTypes = new RegValueType[]
+                        RegistryValueKind[] allowTypes = new RegistryValueKind[]
                         {
-                            RegValueType.REG_NONE,
-                            RegValueType.REG_SZ,
-                            RegValueType.REG_EXPAND_SZ,
-                            RegValueType.REG_BINARY,
-                            RegValueType.REG_DWORD,
-                            RegValueType.REG_MULTI_SZ,
-                            RegValueType.REG_QWORD,
+                            RegistryValueKind.None,
+                            RegistryValueKind.String,
+                            RegistryValueKind.ExpandString,
+                            RegistryValueKind.Binary,
+                            RegistryValueKind.DWord,
+                            RegistryValueKind.MultiString,
+                            RegistryValueKind.QWord,
                         };
                         if (allowTypes.Contains(valType) == false) // Not allowed
                             throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
@@ -672,18 +672,19 @@ namespace PEBakery.Core
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
 
                         string valTypeStr = args[1];
-                        RegValueType valType;
+                        RegistryValueKind valType;
                         try
                         {
-                            valType = CodeParser.ParseRegValueType(valTypeStr);
+                            valType = CodeParser.ParseRegistryValueKind(valTypeStr);
                         }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
-                        RegValueType[] allowTypes = new RegValueType[]
+                        RegistryValueKind[] allowTypes = new RegistryValueKind[]
                         {
-                            RegValueType.REG_SZ,
-                            RegValueType.REG_EXPAND_SZ,
-                            RegValueType.REG_MULTI_SZ,
+                            RegistryValueKind.String,
+                            RegistryValueKind.ExpandString,
+                            RegistryValueKind.Binary,
+                            RegistryValueKind.MultiString,
                         };
                         if (allowTypes.Contains(valType) == false) // Not allowed
                             throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
@@ -858,30 +859,12 @@ namespace PEBakery.Core
                         return new CodeInfo_INIWriteTextLine(args[0], args[1], args[2], append);
                     }
                 case CodeType.INIMerge:
-                    {
-                        // INIMerge,<SrcFileName>,<DestFileName>
-                        // INIMerge,<SrcFileName>,<SectionName>,<DestFileName>
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                    { // INIMerge,<SrcFile>,<DestFile>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        string srcFileName = args[0];
-                        string destFileName;
-                        string sectionName = null;
-                        if (args.Count == minArgCount)
-                        {
-                            destFileName = args[1];
-                        }
-                        else if (args.Count == maxArgCount)
-                        {
-                            destFileName = args[2];
-                            sectionName = args[1];
-                        }
-                        else
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        return new CodeInfo_INIMerge(srcFileName, destFileName, sectionName);
+                        return new CodeInfo_INIMerge(args[0], args[1]);
                     }
                 #endregion
                 #region 05 Compress
@@ -1384,7 +1367,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseRegValueType, ParseRegMultiType
-        public static RegValueType ParseRegValueType(string typeStr)
+        public static RegistryValueKind ParseRegistryValueKind(string typeStr)
         {
             // typeStr must be valid number
             if (NumberHelper.ParseInt32(typeStr, out int typeInt) == false)
@@ -1392,9 +1375,9 @@ namespace PEBakery.Core
 
             // Convert typeStr to base 10 integer string
             bool failure = false;
-            if (Enum.TryParse(typeInt.ToString(), false, out RegValueType type) == false)
+            if (Enum.TryParse(typeInt.ToString(), false, out RegistryValueKind type) == false)
                 failure = true;
-            if (Enum.IsDefined(typeof(RegValueType), type) == false)
+            if (Enum.IsDefined(typeof(RegistryValueKind), type) == false)
                 failure = true;
 
             if (failure)
