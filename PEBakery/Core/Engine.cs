@@ -351,24 +351,24 @@ namespace PEBakery.Core
                     case CodeType.RegHiveUnload:
                         logs.AddRange(CommandRegistry.RegHiveUnload(s, cmd));
                         break;
-                    //case CodeType.RegImport:
-                    //    break;
-                    //case CodeType.RegExport:
-                    //    break;
+                    case CodeType.RegImport:
+                        logs.AddRange(CommandRegistry.RegImport(s, cmd));
+                        break;
+                    case CodeType.RegExport:
+                        logs.AddRange(CommandRegistry.RegExport(s, cmd));
+                        break;
                     case CodeType.RegRead:
                         logs.AddRange(CommandRegistry.RegRead(s, cmd));
                         break;
-                    //case CodeType.RegWrite:
-                    //    break;
-                    case CodeType.RegReadBin:
-                        logs.AddRange(CommandRegistry.RegReadBin(s, cmd));
+                    case CodeType.RegWrite:
+                        logs.AddRange(CommandRegistry.RegWrite(s, cmd));
                         break;
-                    //case CodeType.RegWriteBin:
-                    //    break;
-                    //case CodeType.RegDelete:
-                    //    break;
-                    //case CodeType.RegMulti:
-                    //   break;
+                    case CodeType.RegDelete:
+                        logs.AddRange(CommandRegistry.RegDelete(s, cmd));
+                        break;
+                    case CodeType.RegMulti:
+                        logs.AddRange(CommandRegistry.RegMulti(s, cmd));
+                        break;
                     #endregion
                     #region 03 Text
                     case CodeType.TXTAddLine:
@@ -430,15 +430,19 @@ namespace PEBakery.Core
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
-                    #region 05 Compress
-                    // case CodeType.Compress:
-                    //     break;
-                    // case CodeType.Decompress:
-                    //     break;
-                    //case CodeType.Expand:
-                    //    break;
-                    //case CodeType.CopyOrExpand:
-                    //    break;
+                    #region 05 Archive
+                    case CodeType.Compress:
+                        logs.AddRange(CommandArchive.Compress(s, cmd));
+                        break;
+                    case CodeType.Decompress:
+                        logs.AddRange(CommandArchive.Decompress(s, cmd));
+                        break;
+                    case CodeType.Expand:
+                        logs.AddRange(CommandArchive.Expand(s, cmd));
+                        break;
+                    case CodeType.CopyOrExpand:
+                        logs.AddRange(CommandArchive.CopyOrExpand(s, cmd));
+                        break;
                     #endregion
                     #region 06 Network
                     case CodeType.WebGet:
@@ -491,8 +495,9 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 11 Math
-                    //case CodeType.Math:
-                    //    break;
+                    case CodeType.Math:
+                        logs.AddRange(CommandMath.Math(s, cmd));
+                        break;
                     #endregion
                     #region 12 System
                     case CodeType.System:

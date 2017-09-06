@@ -380,13 +380,10 @@ namespace PEBakery.Core
             {
                 #region 00 Misc
                 case CodeType.None:
-                    break;
                 case CodeType.Comment:
-                    break;
                 case CodeType.Error:
-                    break;
                 case CodeType.Unknown:
-                    break;
+                    return null;
                 #endregion
                 #region 01 File
                 case CodeType.FileCopy:
@@ -597,12 +594,14 @@ namespace PEBakery.Core
                         return new CodeInfo_RegImport(args[0]);
                     }
                 case CodeType.RegExport:
-                    { // RegExport,<Key>,<RegFile>
-                        const int argCount = 2;
+                    { // RegExport,<HKey>,<KeyPath>,<RegFile>
+                        const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        return new CodeInfo_RegExport(args[0], args[1]);
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+
+                        return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
                 case CodeType.RegRead:
                     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
@@ -619,10 +618,10 @@ namespace PEBakery.Core
                         return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
                     }
                 case CodeType.RegWrite:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
-                        const int argCount = 5;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
+                        const int minArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
+                            throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
 
@@ -647,49 +646,11 @@ namespace PEBakery.Core
                         if (allowTypes.Contains(valType) == false) // Not allowed
                             throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
 
-                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4]);
-                    }
-                case CodeType.RegReadBin:
-                    { // RegReadBin,<HKey>,<KeyPath>,<ValueName>,<DestVar>
-                        const int argCount = 4;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                        string[] valueDatas = null;
+                        if (valType == RegistryValueKind.Binary || valType == RegistryValueKind.MultiString)
+                            valueDatas = args.Skip(4).Take(args.Count - 4).ToArray();
 
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-
-                        string destVar = args[3];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
-
-                        return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
-                    }
-                case CodeType.RegWriteBin:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
-                        const int argCount = 5;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-
-                        string valTypeStr = args[1];
-                        RegistryValueKind valType;
-                        try
-                        {
-                            valType = CodeParser.ParseRegistryValueKind(valTypeStr);
-                        }
-                        catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
-
-                        RegistryValueKind[] allowTypes = new RegistryValueKind[]
-                        {
-                            RegistryValueKind.String,
-                            RegistryValueKind.ExpandString,
-                            RegistryValueKind.Binary,
-                            RegistryValueKind.MultiString,
-                        };
-                        if (allowTypes.Contains(valType) == false) // Not allowed
-                            throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
-
-                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4]);
+                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], valueDatas);
                     }
                 case CodeType.RegDelete:
                     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
@@ -867,16 +828,202 @@ namespace PEBakery.Core
                         return new CodeInfo_INIMerge(args[0], args[1]);
                     }
                 #endregion
-                #region 05 Compress
-                // 05 Compress
+                #region 05 Archive
                 case CodeType.Compress:
-                    break;
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        ArchiveCompressFormat format;
+                        string formatStr = args[0];
+                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveCompressFormat.Zip;
+                        else
+                            throw new InvalidCommandException($"[{formatStr}] is not valid ArchiveCompressType", rawCode);
+
+                        ArchiveHelper.CompressLevel? compLevel = null;
+                        Encoding encoding = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("STORE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Store;
+                            }
+                            else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Fastest;
+                            }
+                            else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Normal;
+                            }
+                            else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (compLevel != null)
+                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                compLevel = ArchiveHelper.CompressLevel.Best;
+                            }
+                            else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.UTF8;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.BigEndianUnicode;
+                            }
+                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.ASCII;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
+                    }
                 case CodeType.Decompress:
-                    break;
+                    {  // Decompress,<Format>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        ArchiveDecompressFormat format;
+                        string formatStr = args[0];
+                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveDecompressFormat.Zip;
+                        else if (formatStr.Equals("Rar", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveDecompressFormat.Rar;
+                        else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
+                            format = ArchiveDecompressFormat.SevenZip;
+                        else
+                            throw new InvalidCommandException($"[{formatStr}] is not valid ArchiveDecompressType", rawCode);
+
+                        Encoding encoding = null;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.UTF8;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.Unicode;
+                            }
+                            else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.BigEndianUnicode;
+                            }
+                            else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (encoding != null)
+                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                encoding = Encoding.ASCII;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_Decompress(format, args[1], args[2], encoding);
+                    }
                 case CodeType.Expand:
-                    break;
+                    { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string srcCab = args[0];
+                        string destDir = args[1];
+                        string singleFile = null;
+                        bool preserve = false;
+                        bool noWarn = false;
+
+                        if (3 < args.Count)
+                            singleFile = args[2];
+
+                        for (int i = 3; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                                preserve = true;
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                                noWarn = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_Expand(srcCab, destDir, singleFile, preserve, noWarn);
+                    }
                 case CodeType.CopyOrExpand:
-                    break;
+                    { // CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string srcFile = args[0];
+                        string destPath = args[1];
+                        bool preserve = false;
+                        bool noWarn = false;
+
+                        for (int i = 2; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
+                                preserve = true;
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                                noWarn = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_CopyOrExpand(srcFile, destPath, preserve, noWarn);
+                    }
                 #endregion
                 #region 06 Network
                 // 06 Network
@@ -1099,8 +1246,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 11 Math
                 case CodeType.Math:
-                    // return ParseCodeInfoMath(rawCode, args);
-                    break;
+                    return ParseCodeInfoMath(rawCode, args);
                 #endregion
                 #region 12 System
                 // 11 System
@@ -1334,9 +1480,6 @@ namespace PEBakery.Core
                     throw new InternalParserException($"Wrong CodeType [{type}]");
                 #endregion
             }
-
-            // Temp Measure
-            return new CodeInfo();
         }
 
         /// <summary>
@@ -1719,6 +1862,219 @@ namespace PEBakery.Core
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid StrFormatType [{typeStr}]");
+
+            return type;
+        }
+        #endregion
+
+        #region ParseCodeInfoMath, ParseMathType
+        public static CodeInfo_Math ParseCodeInfoMath(string rawCode, List<string> args)
+        {
+            MathType type = ParseMathType(args[0]);
+            MathInfo info;
+
+            // Remove MathType
+            args.RemoveAt(0);
+
+            switch (type)
+            {
+                case MathType.Add:
+                case MathType.Sub:
+                case MathType.Mul:
+                case MathType.Div:
+                    {
+                        // Math,Add,<DestVar>,<Src1>,<Src2>
+                        // Math,Sub,<DestVar>,<Src1>,<Src2>
+                        // Math,Mul,<DestVar>,<Src1>,<Src2>
+                        // Math,Div,<DestVar>,<Src1>,<Src2>
+
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Check DestVar
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        info = new MathInfo_Arithmetic(args[0], args[1], args[2]);
+                    }
+                    break;
+                case MathType.IntDiv:
+                    { // Math,IntDiv,<QuotientVar>,<RemainderVar>,<Src1>,<Src2>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                        
+                        // Check DestVar
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        info = new MathInfo_IntDiv(args[0], args[1], args[2], args[3]);
+                    }
+                    break;
+                case MathType.BitAnd:
+                case MathType.BitOr:
+                case MathType.BitXor:
+                    {
+                        // Math,BitAnd,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+                        // Math,BitOr,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+                        // Math,BitXor,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check DestVar
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        uint size = 32;
+                        if (args.Count == maxArgCount)
+                        {
+                            string sizeStr = args[3];
+                            if (sizeStr.Equals("8", StringComparison.Ordinal))
+                                size = 8;
+                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
+                                size = 16;
+                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
+                                size = 32;
+                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
+                                size = 64;
+                            else
+                                throw new InvalidCommandException($"Size must be one of [8, 16, 32, 64]", rawCode);
+                        }
+
+                        info = new MathInfo_BitLogicOper(args[0], args[1], args[2], size);
+                    }
+                    break;
+                case MathType.BitNot:
+                    {  // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check DestVar
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        uint size = 32;
+                        if (args.Count == maxArgCount)
+                        {
+                            string sizeStr = args[3];
+                            if (sizeStr.Equals("8", StringComparison.Ordinal))
+                                size = 8;
+                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
+                                size = 16;
+                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
+                                size = 32;
+                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
+                                size = 64;
+                            else
+                                throw new InvalidCommandException($"Size must be one of [8, 16, 32, 64]", rawCode);
+                        }
+
+                        info = new MathInfo_BitNot(args[0], args[1], size);
+                    }
+                    break;
+                case MathType.BitShift:
+                    { // Math,BitShift,<DestVar>,<Src>,<Shift>,<LEFT|RIGHT>,[8|16|32|64],[UNSIGNED]
+                        const int minArgCount = 4;
+                        const int maxArgCount = 6;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        // Check DestVar
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+
+                        uint size = 32;
+                        bool _unsigned = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("UNSIGNED", StringComparison.OrdinalIgnoreCase))
+                                _unsigned = true;
+                            else if (arg.Equals("8", StringComparison.Ordinal))
+                                size = 8;
+                            else if (arg.Equals("16", StringComparison.Ordinal))
+                                size = 16;
+                            else if (arg.Equals("32", StringComparison.Ordinal))
+                                size = 32;
+                            else if (arg.Equals("64", StringComparison.Ordinal))
+                                size = 64;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        info = new MathInfo_BitShift(args[0], args[1], args[2], args[3], size, _unsigned);
+                    }
+                    break;
+                case MathType.Ceil:
+                case MathType.Floor:
+                case MathType.Round:
+                    {
+                        // Math,Ceil,<DestVar>,<Src>,<Unit>
+                        // Math,Floor,<DestVar>,<Src>,<Unit>
+                        // Math,Round,<DestVar>,<Src>,<Unit>
+
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new MathInfo_CeilFloorRound(args[0], args[1], args[2]);
+                    }
+                    break;
+                case MathType.Abs:
+                    { // Math,Abs,<DestVar>,<Src>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new MathInfo_Abs(args[0], args[1]);
+                    }
+                    break;
+                case MathType.Pow:
+                    { // Math,Pow,<DestVar>,<Base>,<Power>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new MathInfo_Pow(args[0], args[1], args[2]);
+                    }
+                    break;
+                // Error
+                default:
+                    throw new InternalParserException($"Wrong MathType [{type}]");
+            }
+
+            return new CodeInfo_Math(type, info);
+        }
+
+        public static MathType ParseMathType(string typeStr)
+        {
+            // There must be no number in typeStr
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (Enum.TryParse(typeStr, true, out MathType type) == false)
+                invalid = true;
+            if (Enum.IsDefined(typeof(MathType), type) == false)
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid MathType [{typeStr}]");
 
             return type;
         }

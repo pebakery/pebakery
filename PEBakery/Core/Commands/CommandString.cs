@@ -63,7 +63,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -75,7 +75,7 @@ namespace PEBakery.Core.Commands
                         string humanReadableByteSizeStr = StringEscaper.Preprocess(s, subInfo.HumanReadableByteSize);
                         decimal dest = NumberHelper.HumanReadableStringToByteSize(humanReadableByteSizeStr);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, decimal.Ceiling(dest).ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, decimal.Ceiling(dest).ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -181,7 +181,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = DateTime.Now.ToString(dotNetFormatStr, CultureInfo.InvariantCulture);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
 
                     }
@@ -220,7 +220,7 @@ namespace PEBakery.Core.Commands
                             }
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -232,12 +232,17 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic));
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVarName);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not valid number");
+                            throw new ExecuteException($"[{srcStr}] is not valid positive number");
+                        if (src < 0)
+                            throw new ExecuteException($"[{srcStr}] is not positive number");
+
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseDecimal(operandStr, out decimal operand))
                             throw new ExecuteException($"[{operandStr}] is not valid number");
+                        if (operand < 0)
+                            throw new ExecuteException($"[{operandStr}] is not positive number");
 
                         decimal dest = src;
                         if (type == StrFormatType.Inc) // +
@@ -249,7 +254,7 @@ namespace PEBakery.Core.Commands
                         else if (type == StrFormatType.Div) // /
                             dest /= operand;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, dest.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -279,7 +284,7 @@ namespace PEBakery.Core.Commands
                                 destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
                             }
 
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                             logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                         }
                         catch (ArgumentOutOfRangeException)
@@ -314,7 +319,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = srcStr.Substring(startPos, len);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -325,7 +330,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, srcStr.Length.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, srcStr.Length.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -383,7 +388,7 @@ namespace PEBakery.Core.Commands
                         Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
                         string destStr = srcStr.Substring(0, match.Index);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -397,7 +402,7 @@ namespace PEBakery.Core.Commands
 
                         int idx = srcStr.IndexOf(subStr, StringComparison.OrdinalIgnoreCase) + 1;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, idx.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, idx.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -439,7 +444,7 @@ namespace PEBakery.Core.Commands
                             destStr = srcStr.Replace(subStr, newStr);
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -464,7 +469,7 @@ namespace PEBakery.Core.Commands
                             destStr = FileHelper.GetLongPath(srcStr);
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -486,7 +491,7 @@ namespace PEBakery.Core.Commands
                         {
                             int delimCount = srcStr.Split(delim).Length;
                             logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}] is split to [{delimCount}] strings."));
-                            varLogs = Variables.SetVariable(s, subInfo.DestVarName, delimCount.ToString());
+                            varLogs = Variables.SetVariable(s, subInfo.DestVar, delimCount.ToString());
                             logs.AddRange(varLogs);
                         }
                         else
@@ -496,7 +501,7 @@ namespace PEBakery.Core.Commands
                             {
                                 string destStr = slices[idx - 1];
                                 logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}]'s split index [{idx}] is [{destStr}]"));
-                                varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                                varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                                 logs.AddRange(varLogs);
                             }
                             else

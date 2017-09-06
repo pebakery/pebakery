@@ -41,7 +41,7 @@ namespace PEBakery.Core
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy, DirDelete, DirMove, DirMake, DirSize,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegReadBin, RegWriteBin, RegDelete, RegMulti,
+        RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTDelLineOp,
@@ -262,7 +262,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileCreateBlank : CodeInfo
-    { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8 | UTF16 | UTF16BE | ANSI]
+    { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8|UTF16|UTF16BE|ANSI]
         public string FilePath;
         public bool Preserve;
         public bool NoWarn;
@@ -471,18 +471,21 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegExport : CodeInfo
     { // RegExport,<Key>,<RegFile>
+        public RegistryKey HKey;
         public string KeyPath;
         public string RegFile;
 
-        public CodeInfo_RegExport(string keyPath, string regFile)
+        public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
         {
+            HKey = hKey;
             KeyPath = keyPath;
             RegFile = regFile;
         }
 
         public override string ToString()
         {
-            return $"{KeyPath},{RegFile}";
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},{KeyPath},{RegFile}";
         }
     }
 
@@ -511,74 +514,48 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
+        public string[] ValueDatas;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
         {
             HKey = hKey;
             ValueType = valueType;
             KeyPath = keyPath;
             ValueName = valueName;
             ValueData = valueData;
+            ValueDatas = valueDatas;
         }
 
         public override string ToString()
         {
-            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},0x{((byte)ValueType).ToString("X")},{KeyPath},{ValueName},{ValueData}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_RegReadBin : CodeInfo
-    { // RegReadBin,<HKey>,<KeyPath>,<ValueName>,<DestVar>
-        public RegistryKey HKey;
-        public string KeyPath;
-        public string ValueName;
-        public string DestVar;
-
-        public CodeInfo_RegReadBin(RegistryKey hKey, string key, string valueName, string destVar)
-        {
-            HKey = hKey;
-            KeyPath = key;
-            ValueName = valueName;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},{KeyPath},{ValueName},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_RegWriteBin : CodeInfo
-    { // RegWriteBin,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData>
-        public RegistryKey HKey;
-        public RegistryValueKind ValueType;
-        public string KeyPath;
-        public string ValueName;
-        public string ValueData;
-
-        public CodeInfo_RegWriteBin(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData)
-        {
-            HKey = hKey;
-            ValueType = valueType;
-            KeyPath = keyPath;
-            ValueName = valueName;
-            ValueData = valueData;
-        }
-
-        public override string ToString()
-        {
-            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},0x{((byte)ValueType).ToString("X")},{KeyPath},{ValueName},{ValueData}";
+            StringBuilder b = new StringBuilder();
+            b.Append(RegistryHelper.RegKeyToString(HKey));
+            b.Append(",0x");
+            b.Append(((byte)ValueType).ToString("X"));
+            b.Append(",");
+            b.Append(KeyPath);
+            b.Append(",");
+            if (ValueDatas == null)
+            {
+                b.Append(ValueName);
+                b.Append(",");
+            }
+            else
+            {
+                for (int i = 0; i < ValueDatas.Length; i++)
+                {
+                    b.Append(ValueDatas[i]);
+                    if (i + 1 < ValueDatas.Length)
+                        b.Append(",");
+                }
+            }
+            return b.ToString();
         }
     }
 
@@ -622,16 +599,16 @@ namespace PEBakery.Core
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
-        public RegMultiType Type;
+        public RegMultiType ActionType;
         public string Arg1;
         public string Arg2;
 
-        public CodeInfo_RegMulti(RegistryKey hKey, string keyPath, string valueName, RegMultiType type, string arg1, string arg2 = null)
+        public CodeInfo_RegMulti(RegistryKey hKey, string keyPath, string valueName, RegMultiType actionType, string arg1, string arg2 = null)
         {
             HKey = hKey;
             KeyPath = keyPath;
             ValueName = valueName;
-            Type = type;
+            ActionType = actionType;
             Arg1 = arg1;
             Arg2 = arg2;
         }
@@ -645,7 +622,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");
-            b.Append(Type.ToString().ToUpper());
+            b.Append(ActionType.ToString().ToUpper());
             b.Append(",");
             b.Append(Arg1); // Always, should exist
             if (Arg2 != null)
@@ -662,7 +639,7 @@ namespace PEBakery.Core
     public enum TXTAddLineMode { Append, Prepend };
     [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
-    {
+    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
         public string FileName;
         public string Line;
         public string Mode;
@@ -677,7 +654,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_TXTAddLineOp : CodeInfo
-    {
+    { 
         public List<CodeInfo_TXTAddLine> InfoList;
 
         public CodeInfo_TXTAddLineOp(List<CodeInfo_TXTAddLine> infoList)
@@ -688,7 +665,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
-    {
+    { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
         public string FileName;
         public string ToBeReplaced;
         public string ReplaceWith;
@@ -1052,15 +1029,129 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 05 - Compress
+    #region CodeInfo 05 - Archive
+    public enum ArchiveCompressFormat
+    {
+        Zip = 1,
+    }
+
+    public enum ArchiveDecompressFormat
+    {
+        Auto = 0,
+        Zip = 1,
+        Rar = 2,
+        SevenZip = 3,
+    }
+
+    [Serializable]
+    public class CodeInfo_Compress : CodeInfo
+    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+        public ArchiveCompressFormat Format;
+        public string SrcPath;
+        public string DestArchive;
+        public ArchiveHelper.CompressLevel? CompressLevel;
+        public Encoding Encoding;
+
+        public CodeInfo_Compress(ArchiveCompressFormat format, string srcDir, string destArchive, ArchiveHelper.CompressLevel? compressLevel, Encoding encoding)
+        {
+            Format = format;
+            SrcPath = srcDir;
+            DestArchive = destArchive;
+            CompressLevel = compressLevel;
+            Encoding = encoding;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            switch (Format)
+            {
+                case ArchiveCompressFormat.Zip:
+                    b.Append("Zip");
+                    break;
+            }
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestArchive);
+            if (CompressLevel != null)
+            {
+                b.Append(",");
+                b.Append(CompressLevel.ToString().ToUpper());
+            }
+            if (Encoding != null)
+            {
+                if (Encoding == Encoding.UTF8)
+                    b.Append(",UTF8");
+                else if (Encoding == Encoding.Unicode)
+                    b.Append(",UTF16");
+                else if (Encoding == Encoding.BigEndianUnicode)
+                    b.Append(",UTF16BE");
+                else if (Encoding == Encoding.ASCII)
+                    b.Append(",ANSI");
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_Decompress : CodeInfo
+    { // Decompress,<Format>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+        public ArchiveDecompressFormat Format;
+        public string SrcArchive;
+        public string DestDir;
+        public Encoding Encoding;
+
+        public CodeInfo_Decompress(ArchiveDecompressFormat format, string srcArchive, string destArchive, Encoding encoding)
+        {
+            Format = format;
+            SrcArchive = srcArchive;
+            DestDir = destArchive;
+            Encoding = encoding;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            switch (Format)
+            {
+                case ArchiveDecompressFormat.Zip:
+                    b.Append("Zip");
+                    break;
+                case ArchiveDecompressFormat.Rar:
+                    b.Append("Rar");
+                    break;
+                case ArchiveDecompressFormat.SevenZip:
+                    b.Append("7z");
+                    break;
+            }
+            b.Append(",");
+            b.Append(SrcArchive);
+            b.Append(",");
+            b.Append(DestDir);
+            if (Encoding != null)
+            {
+                if (Encoding == Encoding.UTF8)
+                    b.Append(",UTF8");
+                else if (Encoding == Encoding.Unicode)
+                    b.Append(",UTF16");
+                else if (Encoding == Encoding.BigEndianUnicode)
+                    b.Append(",UTF16BE");
+                else if (Encoding == Encoding.ASCII)
+                    b.Append(",ANSI");
+            }
+            return b.ToString();
+        }
+    }
+
     [Serializable]
     public class CodeInfo_Expand : CodeInfo
     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
         public string SrcCab;
         public string DestDir;
         public string SingleFile;
-        public bool Preserve;
-        public bool NoWarn;
+        public bool Preserve; // Only enabled if SingleFile is set
+        public bool NoWarn; // Only enabled if SingleFile is set
 
         public CodeInfo_Expand(string srcCab, string destDir, string singleFile, bool preserve, bool noWarn)
         {
@@ -1424,7 +1515,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region SubStrFormatType, SubStrFormatInfo
+    #region StrFormatType, StrFormatInfo
     public enum StrFormatType
     { // 아니 왜 사칙연산이 StrFormat에 있지...
         IntToBytes, Bytes, // IntToBytes == Bytes
@@ -1443,42 +1534,41 @@ namespace PEBakery.Core
         Split,
     }
 
-    [Serializable]
     public class StrFormatInfo { }
 
     [Serializable]
     public class StrFormatInfo_IntToBytes : StrFormatInfo
-    { // StrFormat,Bytes,<Integer>,<DestVarName>
+    { // StrFormat,Bytes,<Integer>,<DestVar>
         public string ByteSize;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_IntToBytes(string byteSize, string destVarName)
+        public StrFormatInfo_IntToBytes(string byteSize, string destVar)
         {
             ByteSize = byteSize;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{ByteSize},{DestVarName}";
+            return $"{ByteSize},{DestVar}";
         }
     }
 
     [Serializable]
     public class StrFormatInfo_BytesToInt : StrFormatInfo
-    { // StrFormat,BytesToInt,<Bytes>,<DestVarName>
+    { // StrFormat,BytesToInt,<Bytes>,<DestVar>
         public string HumanReadableByteSize;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_BytesToInt(string byteSize, string destVarName)
+        public StrFormatInfo_BytesToInt(string byteSize, string destVar)
         {
             HumanReadableByteSize = byteSize;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{HumanReadableByteSize},{DestVarName}";
+            return $"{HumanReadableByteSize},{DestVar}";
         }
     }
 
@@ -1490,7 +1580,6 @@ namespace PEBakery.Core
         // StrFormat,Round,<SizeVar>,<RoundTo>
         // <RoundTo> can be [PositiveInteger], [K], [M], [G], [T], [P]
 
-        // These value's type must be integer, but set to string because of variables system
         public string SizeVar;
         public string RoundTo;
 
@@ -1508,20 +1597,20 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_Date : StrFormatInfo
-    { // StrFormat,Date,<DestVarName>,<FormatString>
-        public string DestVarName;
+    { // StrFormat,Date,<DestVar>,<FormatString>
+        public string DestVar;
         public string FormatString;
 
-        public StrFormatInfo_Date(string destVarName, string formatString)
+        public StrFormatInfo_Date(string destVar, string formatString)
         {
-            DestVarName = destVarName;
+            DestVar = destVar;
             FormatString = formatString;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(DestVarName);
+            b.Append(DestVar);
             b.Append(",");
             b.Append(StringEscaper.Doublequote(FormatString));
             return b.ToString();
@@ -1531,16 +1620,16 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Path : StrFormatInfo
     {
-        // StrFormat,FileName,<FilePath>,<DestVarName>
-        // StrFormat,DirPath,<FilePath>,<DestVarName> -- Same with StrFormat,Path
-        // StrFormat,Ext,<FilePath>,<DestVarName>
+        // StrFormat,FileName,<FilePath>,<DestVar>
+        // StrFormat,DirPath,<FilePath>,<DestVar> -- Same with StrFormat,Path
+        // StrFormat,Ext,<FilePath>,<DestVar>
         public string FilePath;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_Path(string filePath, string destVarName)
+        public StrFormatInfo_Path(string filePath, string destVar)
         {
             FilePath = filePath;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1548,32 +1637,32 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.Doublequote(FilePath));
             b.Append(",");
-            b.Append(DestVarName);            
+            b.Append(DestVar);            
             return b.ToString();
         }
     }
 
     [Serializable]
     public class StrFormatInfo_Arithmetic : StrFormatInfo
-    { // Note : Integer can be negative integer, not like WB082's limitation
-        // StrFormat,Inc,<DestVarName>,<Integer>
-        // StrFormat,Dec,<DestVarName>,<Integer>
-        // StrFormat,Mult,<DestVarName>,<Integer>
-        // StrFormat,Div,<DestVarName>,<Integer>
+    {
+        // StrFormat,Inc,<DestVar>,<Integer>
+        // StrFormat,Dec,<DestVar>,<Integer>
+        // StrFormat,Mult,<DestVar>,<Integer>
+        // StrFormat,Div,<DestVar>,<Integer>
 
-        public string DestVarName;
+        public string DestVar;
         public string Integer; // These value's type must be integer, but set to string because of variables system
 
-        public StrFormatInfo_Arithmetic(string destVarName, string integer)
+        public StrFormatInfo_Arithmetic(string destVar, string integer)
         {
-            DestVarName = destVarName;
+            DestVar = destVar;
             Integer = integer;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(DestVarName);
+            b.Append(DestVar);
             b.Append(",");
             b.Append(StringEscaper.Doublequote(Integer));
             return b.ToString();
@@ -1583,17 +1672,17 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_LeftRight : StrFormatInfo
     { // Note : Integer can be negative integer, not like WB082's limitation
-        // StrFormat,Left,<SrcString>,<Integer>,<DestVarName>
-        // StrFormat,Right,<SrcString>,<Integer>,<DestVarName>
+        // StrFormat,Left,<SrcString>,<Integer>,<DestVar>
+        // StrFormat,Right,<SrcString>,<Integer>,<DestVar>
         public string SrcString;
-        public string Integer; // These value's type must be integer, but set to string because of variables system
-        public string DestVarName;
+        public string Integer; 
+        public string DestVar;
 
-        public StrFormatInfo_LeftRight(string srcString, string integer, string destVarName)
+        public StrFormatInfo_LeftRight(string srcString, string integer, string destVar)
         {
             SrcString = srcString;
             Integer = integer;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1603,25 +1692,25 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.Doublequote(Integer));
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
-    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVarName>
+    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVar>
         public string SrcString;
-        public string StartPos; // These value's type must be integer, but set to string because of variables system
-        public string Length; // These value's type must be integer, but set to string because of variables system
-        public string DestVarName;
+        public string StartPos;
+        public string Length;
+        public string DestVar;
 
-        public StrFormatInfo_SubStr(string srcString, string startPos, string length, string destVarName)
+        public StrFormatInfo_SubStr(string srcString, string startPos, string length, string destVar)
         {
             SrcString = srcString;
             StartPos = startPos;
             Length = length;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1633,7 +1722,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.Doublequote(Length));
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
@@ -1642,12 +1731,12 @@ namespace PEBakery.Core
     public class StrFormatInfo_Len : StrFormatInfo
     { // StrFormat,Len,<SrcString>,<DestVarName>
         public string SrcString;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_Len(string srcString, string destVarName)
+        public StrFormatInfo_Len(string srcString, string destVar)
         {
             SrcString = srcString;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1655,7 +1744,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcString);
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
@@ -1663,19 +1752,19 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Trim : StrFormatInfo
     {
-        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVarName>
-        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVarName>
-        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVarName>
+        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVar>
+        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVar>
+        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVar>
 
         public string SrcString;
         public string ToTrim;
         public string DestVarName;
 
-        public StrFormatInfo_Trim(string srcString, string trimValue, string destVarName)
+        public StrFormatInfo_Trim(string srcString, string trimValue, string destVar)
         {
             SrcString = srcString;
             ToTrim = trimValue;
-            DestVarName = destVarName;
+            DestVarName = destVar;
         }
 
         public override string ToString()
@@ -1692,14 +1781,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class StrFormatInfo_NTrim : StrFormatInfo
-    { // StrFormat,NTrim,<SrcString>,<DestVarName>
+    { // StrFormat,NTrim,<SrcString>,<DestVar>
         public string SrcString;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_NTrim(string srcString,  string destVarName)
+        public StrFormatInfo_NTrim(string srcString,  string destVar)
         {
             SrcString = srcString;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1707,23 +1796,23 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(SrcString);
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class StrFormatInfo_Pos : StrFormatInfo
-    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVarName>
+    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVar>
         public string SrcString;
         public string SubString;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_Pos(string srcString, string subString, string destVarName)
+        public StrFormatInfo_Pos(string srcString, string subString, string destVar)
         {
             SrcString = srcString;
             SubString = subString;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1733,7 +1822,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(SubString));
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
@@ -1741,20 +1830,20 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Replace : StrFormatInfo
     {
-        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
-        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
+        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
+        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
 
         public string SrcString;
         public string ToBeReplaced;
         public string ReplaceWith;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith, string destVarName)
+        public StrFormatInfo_Replace(string srcString, string toBeReplaced, string replaceWith, string destVar)
         {
             SrcString = srcString;
             ToBeReplaced = toBeReplaced;
             ReplaceWith = replaceWith;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1766,7 +1855,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(ReplaceWith));
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
@@ -1774,16 +1863,16 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_ShortLongPath : StrFormatInfo
     {
-        // StrFormat,ShortPath,<SrcString>,<DestVarName>
-        // StrFormat,LongPath,<SrcString>,<DestVarName>
+        // StrFormat,ShortPath,<SrcString>,<DestVar>
+        // StrFormat,LongPath,<SrcString>,<DestVar>
 
         public string SrcString;
-        public string DestVarName;
+        public string DestVar;
 
-        public StrFormatInfo_ShortLongPath(string srcString, string destVarName)
+        public StrFormatInfo_ShortLongPath(string srcString, string destVar)
         {
             SrcString = srcString;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1791,25 +1880,25 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(StringEscaper.QuoteEscape(SrcString));
             b.Append(",");
-            b.Append(DestVarName);
+            b.Append(DestVar);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class StrFormatInfo_Split : StrFormatInfo
-    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVarName>
+    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVar>
         public string SrcString;
         public string Delimeter;
-        public string Index; // These value's type must be integer, but set to string because of variables system
-        public string DestVarName;
+        public string Index; 
+        public string DestVar;
 
-        public StrFormatInfo_Split(string srcString, string delimeter, string index, string destVarName)
+        public StrFormatInfo_Split(string srcString, string delimeter, string index, string destVar)
         {
             SrcString = srcString;
             Delimeter = delimeter;
             Index = index;
-            DestVarName = destVarName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -1821,7 +1910,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(StringEscaper.QuoteEscape(Index));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(DestVarName));
+            b.Append(StringEscaper.QuoteEscape(DestVar));
             return b.ToString();
         }
     }
@@ -1851,8 +1940,269 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 11 - Math
+    #region MathType, MathInfo
+    public enum MathType
+    { 
+        Add, Sub, Mul, Div,
+        IntDiv,
+        BoolAnd, BoolOr, BoolXor,
+        BoolNot,
+        BitAnd, BitOr, BitXor,
+        BitNot,
+        BitShift,
+        Ceil, Floor, Round, 
+        Abs,
+        Pow,
+    }
 
+    public class MathInfo { }
+
+    [Serializable]
+    public class MathInfo_Arithmetic : MathInfo
+    { 
+        // Math,Add,<DestVar>,<Src1>,<Src2>
+        // Math,Sub,<DestVar>,<Src1>,<Src2>
+        // Math,Mul,<DestVar>,<Src1>,<Src2>
+        // Math,Div,<DestVar>,<Src1>,<Src2>
+
+        public string DestVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_Arithmetic(string destVar, string src1, string src2)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_IntDiv : MathInfo
+    { // Math,IntDiv,<QuotientVar>,<RemainderVar>,<Src1>,<Src2>
+        public string QuotientVar;
+        public string RemainderVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_IntDiv(string quotientVar, string remainderVar, string src1, string src2)
+        {
+            QuotientVar = quotientVar;
+            RemainderVar = remainderVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{QuotientVar},{RemainderVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BoolLogicOper : MathInfo
+    {
+        // Math,BoolAnd,<DestVar>,<Src1>,<Src2>
+        // Math,BoolOr,<DestVar>,<Src1>,<Src2>
+        // Math,BoolXor,<DestVar>,<Src1>,<Src2>
+
+        public string DestVar;
+        public string Src1;
+        public string Src2;
+
+        public MathInfo_BoolLogicOper(string destVar, string src1, string src2)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BoolNot : MathInfo
+    { // Math,BoolNot,<DestVar>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_BoolNot(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitLogicOper : MathInfo
+    {
+        // Math,BitAnd,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+        // Math,BitOr,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+        // Math,BitXor,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+
+        public string DestVar;
+        public string Src1;
+        public string Src2;
+        public uint Size;
+
+        public MathInfo_BitLogicOper(string destVar, string src1, string src2, uint size)
+        {
+            DestVar = destVar;
+            Src1 = src1;
+            Src2 = src2;
+            Size = size;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src1},{Src2},{Size}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitNot : MathInfo
+    { // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
+        public string DestVar;
+        public string Src;
+        public uint Size;
+
+        public MathInfo_BitNot(string destVar, string src, uint size)
+        {
+            DestVar = destVar;
+            Src = src;
+            Size = size;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Size}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_BitShift : MathInfo
+    { // Math,BitShift,<DestVar>,<Src>,<Shift>,<LEFT|RIGHT>,[8|16|32|64],[UNSIGNED]
+        public string DestVar;
+        public string Src;
+        public string Shift;
+        public string LeftRight;
+        public uint Size;
+        public bool Unsigned;
+
+        public MathInfo_BitShift(string destVar, string src, string shift, string leftRight, uint size, bool _unsigned)
+        {
+            DestVar = destVar;
+            Src = src;
+            Shift = shift;
+            LeftRight = leftRight;
+            Size = size;
+            Unsigned = _unsigned;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Shift},{LeftRight},{Size},{Unsigned}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_CeilFloorRound : MathInfo
+    {
+        // Math,Ceil,<DestVar>,<Src>,<Unit>
+        // Math,Floor,<DestVar>,<Src>,<Unit>
+        // Math,Round,<DestVar>,<Src>,<Unit>
+
+        public string DestVar;
+        public string Src;
+        public string Unit;
+
+        public MathInfo_CeilFloorRound(string destVar, string src, string unit)
+        {
+            DestVar = destVar;
+            Src = src;
+            Unit = unit;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Unit}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Abs : MathInfo
+    { // Math,Abs,<DestVar>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_Abs(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Pow : MathInfo
+    { // Math,Pow,<DestVar>,<Base>,<PowerOf>
+        public string DestVar;
+        public string Base;
+        public string Power;
+
+        public MathInfo_Pow(string destVar, string _base, string powerOf)
+        {
+            DestVar = destVar;
+            Base = _base;
+            Power = powerOf;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Base},{Power}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 11 - Math
+    [Serializable]
+    public class CodeInfo_Math : CodeInfo
+    {
+        public MathType Type;
+        public MathInfo SubInfo;
+
+        public CodeInfo_Math(MathType type, MathInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Type);
+            b.Append(",");
+            b.Append(SubInfo);
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 12 - System
@@ -2241,10 +2591,10 @@ namespace PEBakery.Core
                         string compArg1 = StringEscaper.Preprocess(s, Arg1);
                         string compArg2 = StringEscaper.Preprocess(s, Arg2);
 
-                        CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2);
+                        NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2);
                         switch (comp)
                         {
-                            case CompareStringNumberResult.Equal: // For String and Number
+                            case NumberHelper.CompareStringNumberResult.Equal: // For String and Number
                                 {
                                     if (Type == BranchConditionType.Equal && !NotFlag
                                         || Type == BranchConditionType.SmallerEqual && !NotFlag
@@ -2255,7 +2605,7 @@ namespace PEBakery.Core
                                     logMessage = $"[{compArg1}] is equal to [{compArg2}]";
                                 }
                                 break;
-                            case CompareStringNumberResult.Smaller: // For Number
+                            case NumberHelper.CompareStringNumberResult.Smaller: // For Number
                                 {
                                     if (Type == BranchConditionType.Smaller && !NotFlag
                                         || Type == BranchConditionType.SmallerEqual && !NotFlag
@@ -2266,7 +2616,7 @@ namespace PEBakery.Core
                                     logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
                                 }
                                 break;
-                            case CompareStringNumberResult.Bigger: // For Number
+                            case NumberHelper.CompareStringNumberResult.Bigger: // For Number
                                 {
                                     if (Type == BranchConditionType.Bigger && !NotFlag
                                         || Type == BranchConditionType.BiggerEqual && !NotFlag
@@ -2277,7 +2627,7 @@ namespace PEBakery.Core
                                     logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
                                 }
                                 break;
-                            case CompareStringNumberResult.NotEqual: // For String
+                            case NumberHelper.CompareStringNumberResult.NotEqual: // For String
                                 {
                                     if (Type == BranchConditionType.Equal && NotFlag
                                         || Type == BranchConditionType.Smaller && !NotFlag
@@ -2401,9 +2751,9 @@ namespace PEBakery.Core
                         {
                             match = (regSubKey != null);
                             if (match)
-                                logMessage = $"Registry Key [{rootKey}\\{subKey}] exists";
+                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] exists";
                             else
-                                logMessage = $"Registry Key [{rootKey}\\{subKey}] does not exist";
+                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
                         }
 
                         if (NotFlag)
