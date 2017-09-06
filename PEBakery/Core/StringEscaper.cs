@@ -2,6 +2,7 @@
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -309,7 +310,20 @@ namespace PEBakery.Core
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
-            string fullPath = Path.GetFullPath(path);
+            bool containsInvalidChars = false;
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            foreach (char ch in invalidChars)
+            {
+                if (path.IndexOf(ch) != -1)
+                    containsInvalidChars = true;
+            }
+
+            string fullPath;
+            if (containsInvalidChars)
+                fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
+            else
+                fullPath = Path.GetFullPath(path);
+
             foreach (string f in forbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
@@ -320,6 +334,99 @@ namespace PEBakery.Core
             }
             errorMsg = string.Empty;
             return true;
+        }
+        #endregion
+
+        #region Registry
+        public static string PackRegBinary(byte[] bin)
+        { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
+            StringBuilder b = new StringBuilder();
+
+            for (int i = 0; i < bin.Length; i++)
+            {
+                b.Append(bin[i].ToString("0:2X"));
+                if (i + 1 < bin.Length)
+                    b.Append(",");
+            }
+
+            return b.ToString();
+        }
+
+        public static bool UnpackRegBinary(string packStr, out byte[] bin)
+        { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
+            int count = (packStr.Length + 1) / 3;
+            bin = new byte[count]; // 3n-1
+
+            for (int i = 0; i < count; i++)
+            {
+                if (!byte.TryParse(packStr.Substring(i * 3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte b))
+                    return false;
+                bin[i] = b;
+            }
+
+            return true;
+        }
+
+        public static string PackRegMultiBinary(IEnumerable<string> multiStrs)
+        {
+            StringBuilder b = new StringBuilder();
+
+            string[] list = multiStrs.ToArray();
+            for (int i = 0; i < list.Length; i++)
+            {
+                byte[] bin = Encoding.Unicode.GetBytes(list[i]);
+                b.Append(StringEscaper.PackRegBinary(bin));
+                if (i + 1 < bin.Length)
+                    b.Append(",00,00");
+            }
+
+            return b.ToString();
+        }
+
+        public static string PackRegMultiString(IEnumerable<string> multiStrs)
+        {
+            // RegRead,HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink,Batang,%A%
+            // MSMINCHO.TTC,MS PMincho#$zMINGLIU.TTC,PMingLiU#$zSIMSUN.TTC,SimSun#$zMALGUN.TTF,Malgun Gothic#$zYUGOTHM.TTC,Yu Gothic UI#$zMSJH.TTC,Microsoft JhengHei UI#$zMSYH.TTC,Microsoft YaHei UI#$zSEGUISYM.TTF,Segoe UI Symbol
+
+            string[] list = multiStrs.ToArray();
+
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < list.Length; i++)
+            {
+                b.Append(list[i]);
+                if (i + 1 < list.Length)
+                    b.Append("#$z");
+            }
+            return b.ToString();
+        }
+
+        public static List<string> UnpackRegMultiString(string packStr)
+        {
+            // RegRead,HKLM,SOFTWARE\Microsoft\Windows NT\CurrentVersion\FontLink\SystemLink,Batang,%A%
+            // MSMINCHO.TTC,MS PMincho#$zMINGLIU.TTC,PMingLiU#$zSIMSUN.TTC,SimSun#$zMALGUN.TTF,Malgun Gothic#$zYUGOTHM.TTC,Yu Gothic UI#$zMSJH.TTC,Microsoft JhengHei UI#$zMSYH.TTC,Microsoft YaHei UI#$zSEGUISYM.TTF,Segoe UI Symbol
+
+            List<string> list = new List<string>();
+
+            string next = packStr;
+            while (next != null)
+            {
+                int pIdx = next.IndexOf("#$z", StringComparison.Ordinal);
+                if (pIdx != -1)
+                { // Not Last One
+                    string now = next.Substring(0, pIdx);
+                    next = next.Substring(pIdx + 3);
+
+                    list.Add(now);
+                }
+                else
+                { // Last One
+                    list.Add(next);
+
+                    next = null;
+                }
+            }
+
+            return list;
         }
         #endregion
     }

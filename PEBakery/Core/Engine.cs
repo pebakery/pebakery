@@ -80,15 +80,8 @@ namespace PEBakery.Core
             s.Variables.ResetVariables(VarsType.Local);
             s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(p));
 
-            s.Variables.SetFixedValue("ScriptFile", p.FullPath);
-            s.Variables.SetFixedValue("PluginFile", p.FullPath);
-            s.Variables.SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
-            s.Variables.SetFixedValue("PluginDir", Path.GetDirectoryName(p.FullPath));
-            s.Variables.SetFixedValue("ScriptTitle", p.Title);
-            s.Variables.SetFixedValue("PluginTitle", p.Title);
-
-            // Load Interface's Value
-            LoadInterfaceToVariables(s);           
+            // Load Per-Plugin Macro
+            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
 
             // Current Section Parameter - empty
             s.CurSectionParams = new Dictionary<int, string>()
@@ -105,7 +98,10 @@ namespace PEBakery.Core
             };
 
             // Set Interface using MainWindow, MainViewModel
-            s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
+            if (s.RunOnePlugin)
+                s.MainViewModel.PluginTitleText = StringEscaper.Unescape(p.Title);
+            else
+                s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
             s.MainViewModel.PluginVersionText = $"v{p.Version}";
             s.MainViewModel.PluginAuthorText = p.Author;
@@ -172,8 +168,12 @@ namespace PEBakery.Core
                             MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
 
-                        // Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
-                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit");
+                        // Reset Halt Flags before running OnBuildExit
+                        s.ErrorHaltFlag = false;
+                        s.UserHaltFlag = false;
+
+                        // OnBuildExit event callback
+                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
                         break;
                     }
                     s.Logger.Build_Write(s, string.Empty);
@@ -228,9 +228,10 @@ namespace PEBakery.Core
             if (codes.Count == 0)
             {
                 s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                return;
             }
 
-            CodeCommand curCommand = codes[0];
+            CodeCommand curCommand;
             for (int idx = 0; idx < codes.Count; idx++)
             {
                 try
@@ -344,24 +345,30 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 02 Registry
-                    //case CodeType.RegHiveLoad:
-                    //    break;
-                    //case CodeType.RegHiveUnload:
-                    //    break;
-                    //case CodeType.RegImport:
-                    //    break;
-                    //case CodeType.RegWrite:
-                    //    break;
-                    //case CodeType.RegRead:
-                    //    break;
-                    //case CodeType.RegDelete:
-                    //    break;
-                    //case CodeType.RegWriteBin:
-                    //    break;
-                    //case CodeType.RegReadBin:
-                    //    break;
-                    //case CodeType.RegMulti:
-                    //   break;
+                    case CodeType.RegHiveLoad:
+                        logs.AddRange(CommandRegistry.RegHiveLoad(s, cmd));
+                        break;
+                    case CodeType.RegHiveUnload:
+                        logs.AddRange(CommandRegistry.RegHiveUnload(s, cmd));
+                        break;
+                    case CodeType.RegImport:
+                        logs.AddRange(CommandRegistry.RegImport(s, cmd));
+                        break;
+                    case CodeType.RegExport:
+                        logs.AddRange(CommandRegistry.RegExport(s, cmd));
+                        break;
+                    case CodeType.RegRead:
+                        logs.AddRange(CommandRegistry.RegRead(s, cmd));
+                        break;
+                    case CodeType.RegWrite:
+                        logs.AddRange(CommandRegistry.RegWrite(s, cmd));
+                        break;
+                    case CodeType.RegDelete:
+                        logs.AddRange(CommandRegistry.RegDelete(s, cmd));
+                        break;
+                    case CodeType.RegMulti:
+                        logs.AddRange(CommandRegistry.RegMulti(s, cmd));
+                        break;
                     #endregion
                     #region 03 Text
                     case CodeType.TXTAddLine:
@@ -423,15 +430,19 @@ namespace PEBakery.Core
                     //case CodeType.INIMerge:
                     //    break;
                     #endregion
-                    #region 05 Compress
-                    // case CodeType.Compress:
-                    //     break;
-                    // case CodeType.Decompress:
-                    //     break;
-                    //case CodeType.Expand:
-                    //    break;
-                    //case CodeType.CopyOrExpand:
-                    //    break;
+                    #region 05 Archive
+                    case CodeType.Compress:
+                        logs.AddRange(CommandArchive.Compress(s, cmd));
+                        break;
+                    case CodeType.Decompress:
+                        logs.AddRange(CommandArchive.Decompress(s, cmd));
+                        break;
+                    case CodeType.Expand:
+                        logs.AddRange(CommandArchive.Expand(s, cmd));
+                        break;
+                    case CodeType.CopyOrExpand:
+                        logs.AddRange(CommandArchive.CopyOrExpand(s, cmd));
+                        break;
                     #endregion
                     #region 06 Network
                     case CodeType.WebGet:
@@ -469,6 +480,9 @@ namespace PEBakery.Core
                     case CodeType.UserInput:
                         logs.AddRange(CommandInterface.UserInput(s, cmd));
                         break;
+                    case CodeType.AddInterface:
+                        logs.AddRange(CommandInterface.AddInterface(s, cmd));
+                        break;
                     #endregion
                     #region 09 Hash
                     case CodeType.Hash:
@@ -481,8 +495,9 @@ namespace PEBakery.Core
                         break;
                     #endregion
                     #region 11 Math
-                    //case CodeType.Math:
-                    //    break;
+                    case CodeType.Math:
+                        logs.AddRange(CommandMath.Math(s, cmd));
+                        break;
                     #endregion
                     #region 12 System
                     case CodeType.System:
@@ -589,87 +604,6 @@ namespace PEBakery.Core
                 }
             }
         }
-
-        private void LoadInterfaceToVariables(EngineState s)
-        {
-            Plugin p = s.CurrentPlugin;
-
-            string interfaceSectionName = "Interface";
-            if (p.MainInfo.ContainsKey("Interface"))
-                interfaceSectionName = p.MainInfo["Interface"];
-
-            if (p.Sections.ContainsKey(interfaceSectionName))
-            {
-                try
-                {
-                    List<UICommand> uiCodes = p.Sections[interfaceSectionName].GetUICodes(true);
-                    foreach (UICommand uiCmd in uiCodes)
-                    {
-                        switch (uiCmd.Type)
-                        {
-                            case UIType.TextBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
-                                    UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value);
-                                }
-                                break;
-                            case UIType.NumberBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
-                                    UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value.ToString());
-                                }
-                                break;
-                            case UIType.CheckBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
-                                    UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Value ? "True" : "False");
-                                }
-                                break;
-                            case UIType.ComboBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_ComboBox));
-                                    UIInfo_ComboBox info = uiCmd.Info as UIInfo_ComboBox;
-
-                                    if (0 <= info.Index && info.Index < info.Items.Count)
-                                        s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Items[info.Index]);
-                                }
-                                break;
-                            case UIType.RadioButton:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
-                                    UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Selected ? "True" : "False");
-                                }
-                                break;
-                            case UIType.FileBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_FileBox));
-                                    UIInfo_FileBox info = uiCmd.Info as UIInfo_FileBox;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, uiCmd.Text);
-                                }
-                                break;
-                            case UIType.RadioGroup:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
-                                    UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
-
-                                    s.Variables.SetValue(VarsType.Local, uiCmd.Key, info.Selected.ToString());
-                                }
-                                break;
-                        }
-                    }
-                }
-                catch { } // No Interface or Error -> Do nothing
-            }
-        }
     }
 
     public class EngineState
@@ -770,18 +704,14 @@ namespace PEBakery.Core
         /// <summary>
         /// Get Plugin Instance from path string.
         /// </summary>
-        /// <param name="cmd"></param>
-        /// <param name="pluginPath"></param>
-        /// <param name="inCurrentPlugin"></param>
-        /// <returns></returns>
-        public Plugin GetPluginInstance(CodeCommand cmd, string pluginPath, out bool inCurrentPlugin)
+        public Plugin GetPluginInstance(CodeCommand cmd, string currentPluginPath, string loadPluginPath, out bool inCurrentPlugin)
         {
             inCurrentPlugin = false;
-            if (pluginPath.Equals(cmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase) ||
-                pluginPath.Equals(Path.GetDirectoryName(cmd.Addr.Plugin.FullPath), StringComparison.OrdinalIgnoreCase))
+            if (loadPluginPath.Equals(currentPluginPath, StringComparison.OrdinalIgnoreCase) ||
+                loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
 
-            string fullPath = StringEscaper.ExpandVariables(this, pluginPath);
+            string fullPath = StringEscaper.ExpandVariables(this, loadPluginPath);
             Plugin p = this.Project.GetPluginByFullPath(fullPath);
             if (p == null)
             { // Cannot Find Plugin in Project

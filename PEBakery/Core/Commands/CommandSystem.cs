@@ -75,7 +75,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_ErrorOff subInfo = info.SubInfo as SystemInfo_ErrorOff;
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
-                        if (int.TryParse(linesStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int lines) == false)
+                        if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not valid integer");
 
                         if (lines <= 0)
@@ -294,82 +294,87 @@ namespace PEBakery.Core.Commands
 
             StringBuilder b = new StringBuilder(filePath);
 
-            Process proc = new Process();
-            proc.StartInfo.FileName = filePath;
-            if (info.Params != null)
+            using (Process proc = new Process())
             {
-                string parameters = StringEscaper.Preprocess(s, info.Params);
-                proc.StartInfo.Arguments = parameters;
-                b.Append(" ");
-                b.Append(parameters);
-            }
+                proc.StartInfo.FileName = filePath;
+                if (info.Params != null)
+                {
+                    string parameters = StringEscaper.Preprocess(s, info.Params);
+                    proc.StartInfo.Arguments = parameters;
+                    b.Append(" ");
+                    b.Append(parameters);
+                }
 
-            if (info.WorkDir != null)
-            {
-                string workDir = StringEscaper.Preprocess(s, info.WorkDir);
-                proc.StartInfo.WorkingDirectory = workDir;
-            }
+                if (info.WorkDir != null)
+                {
+                    string workDir = StringEscaper.Preprocess(s, info.WorkDir);
+                    proc.StartInfo.WorkingDirectory = workDir;
+                }
 
-            if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
-            {
-                proc.StartInfo.UseShellExecute = true;
-                proc.StartInfo.Verb = "Open";
-            }
-            else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
-            {
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
-                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                proc.StartInfo.RedirectStandardOutput = true;
-                proc.StartInfo.RedirectStandardError = true;
-                proc.StartInfo.CreateNoWindow = true;
-            }
-            else
-            {
-                proc.StartInfo.Verb = verb;
-            }
+                if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
+                {
+                    proc.StartInfo.UseShellExecute = true;
+                    proc.StartInfo.Verb = "Open";
+                }
+                else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
+                {
+                    proc.StartInfo.UseShellExecute = false;
+                    proc.StartInfo.Verb = "Open";
+                    proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    proc.StartInfo.CreateNoWindow = true;
 
-            s.MainViewModel.BuildCommandProgressBarValue = 600;
-
-            proc.Start();
-
-            s.MainViewModel.BuildCommandProgressBarValue = 800;
-
-            switch (cmd.Type)
-            {
-                case CodeType.ShellExecute:
-                    proc.WaitForExit();
-                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
-                    break;
-                case CodeType.ShellExecuteEx:
-                    logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
-                    break;
-                case CodeType.ShellExecuteDelete:
-                    proc.WaitForExit();
-                    File.Delete(filePath);
-                    logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
-                    break;
-                default:
-                    throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
-            }
-
-            if (cmd.Type != CodeType.ShellExecuteEx)
-            {
-                string exitOutVar;
-                if (info.ExitOutVar == null)
-                    exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                    // Redirecting Standard Stream without reading can full buffer, which leads to hang
+                    //proc.StartInfo.RedirectStandardError = true;
+                    //proc.StartInfo.RedirectStandardOutput = true;
+                }
                 else
-                    exitOutVar = info.ExitOutVar;
+                {
+                    proc.StartInfo.Verb = verb;
+                }
 
-                LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+                s.MainViewModel.BuildCommandProgressBarValue = 600;
+
+                proc.Start();
+
+                s.MainViewModel.BuildCommandProgressBarValue = 800;
+
+                switch (cmd.Type)
+                {
+                    case CodeType.ShellExecute:
+                        proc.WaitForExit();
+                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
+                        break;
+                    case CodeType.ShellExecuteEx:
+                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
+                        break;
+                    case CodeType.ShellExecuteDelete:
+                        proc.WaitForExit();
+                        File.Delete(filePath);
+                        logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
+                        break;
+                    default:
+                        throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
+                }
+
+                if (cmd.Type != CodeType.ShellExecuteEx)
+                {
+                    string exitOutVar;
+                    if (info.ExitOutVar == null)
+                        exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                    else
+                        exitOutVar = info.ExitOutVar;
+
+                    LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+
+                    if (log.State == LogState.Success)
+                        logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
+                    else if (log.State == LogState.Error)
+                        logs.Add(log);
+                    else
+                        throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                }
+            }
                 
-                if (log.State == LogState.Success)
-                    logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
-                else if (log.State == LogState.Error)
-                    logs.Add(log);
-                else
-                    throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
-            }
 
             return logs;
         }

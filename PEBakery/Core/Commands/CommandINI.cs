@@ -118,6 +118,7 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
 
                     List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].VarName, kv.Value, false);
+                    LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
 
                     successCount += 1;
@@ -583,6 +584,36 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] lines to [{fileName}]", cmd));
             }
 
+            return logs;
+        }
+
+        public static List<LogInfo> INIMerge(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIMerge));
+            CodeInfo_INIMerge info = cmd.Info as CodeInfo_INIMerge;
+
+            string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
+            string destFile = StringEscaper.Preprocess(s, info.DestFile);
+
+            s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            if (StringEscaper.PathSecurityCheck(destFile, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            s.MainViewModel.BuildCommandProgressBarValue = 700;
+
+            bool result = Ini.Merge(srcFile, destFile);
+            if (result)
+                logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
+            else
+                logs.Add(new LogInfo(LogState.Error, $"Could not merge [{srcFile}] into [{destFile}]", cmd));
+
+            
             return logs;
         }
     }

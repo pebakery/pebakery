@@ -172,12 +172,18 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             // ScriptFile, PluginFile
-            SetValue(VarsType.Local, "PluginFile", p.FullPath);
-            SetValue(VarsType.Local, "ScriptFile", p.FullPath);
+            SetFixedValue("ScriptFile", p.FullPath);
+            SetFixedValue("PluginFile", p.FullPath);
+            // SetValue(VarsType.Local, "PluginFile", p.FullPath);
+            // SetValue(VarsType.Local, "ScriptFile", p.FullPath);
 
             // ScriptDir, PluginDir
-            SetValue(VarsType.Local, "PluginDir", Path.GetDirectoryName(p.FullPath));
-            SetValue(VarsType.Local, "ScriptDir", Path.GetDirectoryName(p.FullPath));
+            SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
+            SetFixedValue("PluginDir", Path.GetDirectoryName(p.FullPath));
+
+            // ScriptTitle, PluginTitle
+            SetFixedValue("ScriptTitle", p.Title);
+            SetFixedValue("PluginTitle", p.Title);
 
             // [Variables]
             if (p.Sections.ContainsKey("Variables"))
@@ -189,7 +195,7 @@ namespace PEBakery.Core
                 List<LogInfo> subLogs = AddVariables(type, p.Sections["Variables"]);
                 if (0 < subLogs.Count)
                 {
-                    logs.Add(new LogInfo(LogState.Info, "Import variables from [Variables]", 0));
+                    logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
                     logs.AddRange(LogInfo.AddDepth(subLogs, 1));
                     logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
                     logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
@@ -197,14 +203,14 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            string interfaceSectionName = "Interface";
+            string interfaceSection = "Interface";
             if (p.MainInfo.ContainsKey("Interface"))
-                interfaceSectionName = p.MainInfo["Interface"];
+                interfaceSection = p.MainInfo["Interface"];
 
-            if (p.Sections.ContainsKey(interfaceSectionName))
+            if (p.Sections.ContainsKey(interfaceSection))
             {
                 List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[interfaceSectionName].GetUICodes(true); }
+                try { uiCodes = p.Sections[interfaceSection].GetUICodes(true); }
                 catch { } // No [Interface] section, or unable to get List<UICommand>
 
                 if (uiCodes != null)
@@ -212,7 +218,7 @@ namespace PEBakery.Core
                     List<LogInfo> subLogs = UICommandToVariables(uiCodes);
                     if (0 < subLogs.Count)
                     {
-                        logs.Add(new LogInfo(LogState.Info, $"Import variables from [{interfaceSectionName}]", 0));
+                        logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{interfaceSection}]", 0));
                         logs.AddRange(LogInfo.AddDepth(subLogs, 1));
                         logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
                         logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
@@ -223,15 +229,16 @@ namespace PEBakery.Core
             return logs;
         }
 
-        public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes)
+        public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes, string prefix = null)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             foreach (UICommand uiCmd in uiCodes)
             {
-                bool valid = true;
-                string key = uiCmd.Key;
-                string value = string.Empty;
+                string destVar = uiCmd.Key;
+                if (prefix != null && prefix.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    destVar = $"{prefix}_{uiCmd.Key}";
+                string value = null;
 
                 switch (uiCmd.Type)
                 {
@@ -256,7 +263,7 @@ namespace PEBakery.Core
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
                             UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
 
-                            value = info.Value.ToString();
+                            value = info.Value ? "True" : "False";
                         }
                         break;
                     case UIType.ComboBox:
@@ -269,7 +276,7 @@ namespace PEBakery.Core
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
                             UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
 
-                            value = info.Selected.ToString();
+                            value = info.Selected ? "True" : "False";
                         }
                         break;
                     case UIType.FileBox:
@@ -282,19 +289,13 @@ namespace PEBakery.Core
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
                             UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
 
-                            if (0 <= info.Selected && info.Selected < info.Items.Count)
-                                value = info.Items[info.Selected];
-                            else
-                                value = string.Empty;
+                            value = info.Selected.ToString();
                         }
-                        break;
-                    default:
-                        valid = false;
                         break;
                 }
 
-                if (valid)
-                    logs.Add(SetValue(VarsType.Local, key, value));
+                if (value != null)
+                    logs.Add(SetValue(VarsType.Local, destVar, value));
             }
 
             return logs;
@@ -693,7 +694,6 @@ namespace PEBakery.Core
                 {
                     string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
-                    logs.Add(log);
 
                     if (log.State == LogState.Success)
                     { // SetValue success, write to IniFile

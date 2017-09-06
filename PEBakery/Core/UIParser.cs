@@ -134,10 +134,10 @@ namespace PEBakery.Core
             // Forge UICommand
             string text = StringEscaper.Unescape(args[0]);
             bool visibility = string.Equals(args[1], "1", StringComparison.Ordinal);
-            int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int x);
-            int.TryParse(args[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int y);
-            int.TryParse(args[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int width);
-            int.TryParse(args[5], NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
+            NumberHelper.ParseInt32(args[2], out int x);
+            NumberHelper.ParseInt32(args[3], out int y);
+            NumberHelper.ParseInt32(args[4], out int width);
+            NumberHelper.ParseInt32(args[5], out int height);
             Rect rect = new Rect(x, y, width, height);
             UIInfo info;
             try { info = ParseUICommandInfo(type, args); }
@@ -186,7 +186,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int fontSize);
+                        NumberHelper.ParseInt32(args[0], out int fontSize);
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
                         if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Bold;
@@ -206,10 +206,10 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        int.TryParse(args[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value);
-                        int.TryParse(args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int min);
-                        int.TryParse(args[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int max);
-                        int.TryParse(args[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int interval);
+                        NumberHelper.ParseInt32(args[0], out int value);
+                        NumberHelper.ParseInt32(args[1], out int min);
+                        NumberHelper.ParseInt32(args[2], out int max);
+                        NumberHelper.ParseInt32(args[3], out int interval);
 
                         return new UIInfo_NumberBox(GetInfoTooltip(args, maxOpCount), value, min, max, interval);
                     }
@@ -417,7 +417,8 @@ namespace PEBakery.Core
 
                         for (int i = 0; i < count; i++)
                             items.Add(args[i]);
-                        if (int.TryParse(args[count], NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
+                        
+                        if (NumberHelper.ParseInt32(args[count], out int idx) == false)
                             throw new InvalidCommandException($"Invalid argument [{args[count]}], must be integer");
 
                         return new UIInfo_RadioGroup(toolTip, items, idx);

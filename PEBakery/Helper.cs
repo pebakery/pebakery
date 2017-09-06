@@ -56,6 +56,17 @@ using Svg;
 using MahApps.Metro.IconPacks;
 using System.Windows.Interop;
 
+// SharpCompress
+
+using SharpCompress.Common;
+using SharpCompress.Archives;
+using SharpCompress.Archives.Zip;
+using SharpCompress.Writers.Zip;
+using SharpCompress.Writers;
+using SharpCompress.Readers;
+using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+
 namespace PEBakery.Helper
 {
     public class UnsupportedEncodingException : Exception
@@ -199,22 +210,6 @@ namespace PEBakery.Helper
         }
 
         /// <summary>
-        /// Read full text from file, detecting encoding by BOM.
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        public static string ReadTextFile(string fileName)
-        {
-            FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-            char[] buffer = new char[fs.Length];
-            StreamReader sr = new StreamReader(fs, DetectTextEncoding(fileName));
-            sr.Read(buffer, 0, buffer.Length);
-            sr.Close();
-            fs.Close();
-            return new string(buffer);
-        }
-
-        /// <summary>
         /// Read program's version from assembly
         /// </summary>
         /// <returns></returns>
@@ -285,7 +280,7 @@ namespace PEBakery.Helper
             try
             {
                 // File.Copy removes ACL and ADS.
-                // Instead, use File.Replace
+                // Instead, use File.Replace.
                 File.Replace(src, dest, null);
             }
             catch (IOException)
@@ -336,35 +331,35 @@ namespace PEBakery.Helper
         {
             long size = FileHelper.GetFileSize(srcFile);
 
-            MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open);
-            MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor();
-
-            FileStream stream = new FileStream(destFile, FileMode.Create, FileAccess.Write);
-
-            const int block = 4096; // Memory Page is 4KB!
-            byte[] buffer = new byte[block];
-            for (long i = offset - (offset % block); i < offset + length; i += block)
+            using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
+            using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor())
+            using (FileStream stream = new FileStream(destFile, FileMode.Create, FileAccess.Write))
             {
-                if (i == offset - (offset % block)) // First block
+                const int block = 4096; // Memory Page is 4KB!
+                byte[] buffer = new byte[block];
+                for (long i = offset - (offset % block); i < offset + length; i += block)
                 {
-                    accessor.ReadArray(i, buffer, 0, block);
-                    stream.Write(buffer, (int)(offset % block), block - (int)(offset % block));
+                    if (i == offset - (offset % block)) // First block
+                    {
+                        accessor.ReadArray(i, buffer, 0, block);
+                        stream.Write(buffer, (int)(offset % block), block - (int)(offset % block));
+                    }
+                    else if (offset + length - block <= i) // Last block // i < offset + length + block - ((offset + length) % block)
+                    {
+                        accessor.ReadArray(i, buffer, 0, (int)((offset + length) % block));
+                        stream.Write(buffer, 0, (int)((offset + length) % block));
+                    }
+                    else // Middle. Just copy whole block
+                    {
+                        accessor.ReadArray(i, buffer, 0, block);
+                        stream.Write(buffer, 0, block);
+                    }
                 }
-                else if (offset + length - block <= i) // Last block // i < offset + length + block - ((offset + length) % block)
-                {
-                    accessor.ReadArray(i, buffer, 0, (int)((offset + length) % block));
-                    stream.Write(buffer, 0, (int)((offset + length) % block));
-                }
-                else // Middle. Just copy whole block
-                {
-                    accessor.ReadArray(i, buffer, 0, block);
-                    stream.Write(buffer, 0, block);
-                }
-            }
 
-            stream.Close();
-            accessor.Dispose();
-            mmap.Dispose();
+                stream.Close();
+                accessor.Dispose();
+                mmap.Dispose();
+            }
         }
 
         /// <summary>
@@ -499,6 +494,7 @@ namespace PEBakery.Helper
         }
     }
 
+    #region HashHelper
     public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 };
 
     public static class HashHelper
@@ -653,7 +649,9 @@ namespace PEBakery.Helper
             return hashType;
         }
     }
+    #endregion
 
+    #region StringHelper
     public static class StringHelper
     {
         /// <summary>
@@ -683,31 +681,139 @@ namespace PEBakery.Helper
                 return false;
         }
     }
+    #endregion
 
-    public enum ParseStringToNumberType
-    {
-        String, Integer, Decimal
-    }
-
-    [Flags]
-    public enum CompareStringNumberResult
-    {
-        None = 0,
-        Equal = 1,
-        NotEqual = 2,
-        Smaller = 4,
-        Bigger = 8,
-    }
-
+    #region NumberHelper
     public static class NumberHelper
     {
+        public enum ParseStringToNumberType
+        {
+            String, Integer, Decimal
+        }
+
+        [Flags]
+        public enum CompareStringNumberResult
+        {
+            None = 0,
+            Equal = 1,
+            NotEqual = 2,
+            Smaller = 4,
+            Bigger = 8,
+        }
+
+        public enum StringNumberType
+        {
+            PositiveInteger, NegativeInteger, HexInteger, Decimal, NotNumber
+        }
+
+        public static StringNumberType IsStringHexInteger(string str)
+        {
+            int pCnt = FileHelper.CountStringOccurrences(str, ".");
+            if (1 < pCnt)
+                return StringNumberType.NotNumber;
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            { // 0x
+                if (pCnt == 1)
+                    return StringNumberType.NotNumber;
+                else
+                    return StringNumberType.HexInteger;
+            }
+            else
+            {
+                if (pCnt == 1)
+                {
+                    return StringNumberType.Decimal;
+                }
+                else
+                {
+                    if (str.StartsWith("-", StringComparison.Ordinal))
+                        return StringNumberType.NegativeInteger;
+                    else
+                        return StringNumberType.PositiveInteger;
+                }
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns>Return false if failed</returns>
+        public static bool ParseInt8(string str, out sbyte value)
+        {
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return sbyte.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return sbyte.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseUInt8(string str, out byte value)
+        {
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return byte.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return byte.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns>Return false if failed</returns>
+        public static bool ParseInt16(string str, out Int16 value)
+        {
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return Int16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return Int16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseUInt16(string str, out UInt16 value)
+        {
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return UInt16.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return UInt16.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns>Return false if failed</returns>
         public static bool ParseInt32(string str, out Int32 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -725,7 +831,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt32(string str, out UInt32 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -743,7 +849,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt64(string str, out Int64 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -761,7 +867,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt64(string str, out UInt64 value)
         {
-            if (str == null || string.Equals(str, string.Empty))
+            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
@@ -777,14 +883,36 @@ namespace PEBakery.Helper
         /// decimal parser, supports base 10 and 16 at same time
         /// </summary>
         /// <returns></returns>
-        public static bool ParseDecimal(string str, out decimal value)
+        public static bool ParseDouble(string str, out double value)
         {
-            if (string.Equals(str, string.Empty))
+            if (str.Equals(string.Empty, StringComparison.Ordinal))
             {
                 value = 0;
                 return false;
             }
-            return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return double.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return double.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+        }
+
+        /// <summary>
+        /// decimal parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseDecimal(string str, out decimal value)
+        {
+            if (str.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                value = 0;
+                return false;
+            }
+
+            if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                return decimal.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            else
+                return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>
@@ -831,8 +959,6 @@ namespace PEBakery.Helper
                 return ParseStringToNumberType.String;
             }
         }
-
-
 
         /// <summary>
         /// Compare string, which would be number
@@ -994,8 +1120,18 @@ namespace PEBakery.Helper
             str = str.Substring(0, str.Length - subStrEndIdx);
             return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
         }
-    }
 
+        public static decimal DecimalPower(decimal val, int pow)
+        {
+            decimal ret = 1;
+            for (int i = 0; i < pow; i++)
+                ret *= val;
+            return (long)ret;
+        }
+    }
+    #endregion
+
+    #region RegistryHelper
     /// <summary>
     /// Exception used in BakeryEngine::ParseCommand
     /// </summary>
@@ -1021,7 +1157,7 @@ namespace PEBakery.Helper
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
-        static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
+        public static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]
@@ -1090,7 +1226,6 @@ namespace PEBakery.Helper
                 else
                     throw new BetterWin32Errors.Win32Exception("AdjustTokenPrivileges failed");
             }
-            CloseHandle(hToken);
 
             if (!AdjustTokenPrivileges(hToken, false, ref pBackupToken, 0, IntPtr.Zero, IntPtr.Zero))
             {
@@ -1103,78 +1238,94 @@ namespace PEBakery.Helper
             CloseHandle(hToken);
         }
 
-        public static RegistryKey ParseRootKeyToRegKey(string rootKey)
-        {
-            return InternalParseRootKeyToRegKey(rootKey, false);
-        }
-
-        public static RegistryKey ParseRootKeyToRegKey(string rootKey, bool exception)
-        {
-            return InternalParseRootKeyToRegKey(rootKey, exception);
-        }
-
-        public static RegistryKey InternalParseRootKeyToRegKey(string rootKey, bool exception)
+        public static RegistryKey ParseStringToRegKey(string rootKey)
         {
             RegistryKey regRoot;
-            if (string.Equals(rootKey, "HKCR", StringComparison.OrdinalIgnoreCase))
+            if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.ClassesRoot; // HKEY_CLASSES_ROOT
-            else if (string.Equals(rootKey, "HKCU", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.CurrentUser; // HKEY_CURRENT_USER
-            else if (string.Equals(rootKey, "HKLM", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.LocalMachine; // HKEY_LOCAL_MACHINE
-            else if (string.Equals(rootKey, "HKU", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.Users; // HKEY_USERS
-            else if (string.Equals(rootKey, "HKPD", StringComparison.OrdinalIgnoreCase))
-                regRoot = Registry.PerformanceData; // HKEY_PERFORMANCE_DATA
-            else if (string.Equals(rootKey, "HKCC", StringComparison.OrdinalIgnoreCase))
+            else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
                 regRoot = Registry.CurrentConfig; // HKEY_CURRENT_CONFIG
             else
-            {
-                if (exception)
-                    throw new InvalidRegistryKeyException();
-                else
-                    regRoot = null;
-            }
+                regRoot = null;
             return regRoot;
         }
 
-        public static UInt32 ParseRootKeyToUInt32(string rootKey)
+        public static string RegKeyToString(RegistryKey regKey)
         {
-            return InternalParseRootKeyToUInt32(rootKey, false);
+            string rootKey;
+            if (regKey == Registry.ClassesRoot)
+                rootKey = "HKCR";
+            else if (regKey == Registry.CurrentUser)
+                rootKey = "HKCU";
+            else if (regKey == Registry.LocalMachine)
+                rootKey = "HKLM";
+            else if (regKey == Registry.Users)
+                rootKey = "HKU";
+            else if (regKey == Registry.CurrentConfig)
+                rootKey = "HKCC";
+            else
+                rootKey = null;
+            return rootKey;
         }
 
-        public static UInt32 ParseRootKeyToUInt32(string rootKey, bool exception)
+        public static string RegKeyToFullString(RegistryKey regKey)
         {
-            return InternalParseRootKeyToUInt32(rootKey, exception);
+            string rootKey;
+            if (regKey == Registry.ClassesRoot)
+                rootKey = "HKEY_CLASSES_ROOT";
+            else if (regKey == Registry.CurrentUser)
+                rootKey = "HKEY_CURRENT_USER";
+            else if (regKey == Registry.LocalMachine)
+                rootKey = "HKEY_LOCAL_MACHINE";
+            else if (regKey == Registry.Users)
+                rootKey = "HKEY_USERS";
+            else if (regKey == Registry.CurrentConfig)
+                rootKey = "HKEY_CURRENT_CONFIG";
+            else
+                rootKey = null;
+            return rootKey;
         }
 
-        public static UInt32 InternalParseRootKeyToUInt32(string rootKey, bool exception)
+        public static UInt32 ParseStringToUInt32(string rootKey)
         {
             UInt32 hKey;
-            if (string.Equals(rootKey, "HKCR", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCR;
-            else if (string.Equals(rootKey, "HKCU", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCU;
-            else if (string.Equals(rootKey, "HKLM", StringComparison.OrdinalIgnoreCase))
-                hKey = HKLM;
-            else if (string.Equals(rootKey, "HKU", StringComparison.OrdinalIgnoreCase))
-                hKey = HKU;
-            else if (string.Equals(rootKey, "HKPD", StringComparison.OrdinalIgnoreCase))
-                hKey = HKPD;
-            else if (string.Equals(rootKey, "HKCC", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCC;
+            if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCR; // HKEY_CLASSES_ROOT
+            else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCU; // HKEY_CURRENT_USER
+            else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
+                hKey = HKLM; // HKEY_LOCAL_MACHINE
+            else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
+                hKey = HKU; // HKEY_USERS
+            else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
+                rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
+                hKey = HKCC; // HKEY_CURRENT_CONFIG
             else
-            {
-                if (exception)
-                    throw new InvalidRegistryKeyException();
-                else
-                    hKey = 0;
-            }
+                hKey = 0;
             return hKey;
         }
-    }
 
-    public static class CompressHelper
+        
+    }
+    #endregion
+
+    #region CompressHelper
+    public static class ArchiveHelper
     {
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
@@ -1186,9 +1337,8 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir)
         {
-            List<string> nop;
             CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractAll(destDir, out nop);
+            return cab.ExtractAll(destDir, out List<string> nop);
         }
 
         /// <summary>
@@ -1218,8 +1368,156 @@ namespace PEBakery.Helper
             CabExtract cab = new CabExtract(srcCabFile);
             return cab.ExtractSingleFile(target, destDir);
         }
-    }
 
+        public enum CompressLevel
+        {
+            Store = 0,
+            Fastest = 1,
+            Normal = 6,
+            Best = 9,
+        }
+
+        private static bool CompressLevel_HelperToLibDeflate(ArchiveHelper.CompressLevel helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel libLevel)
+        {
+            
+            switch (helperLevel)
+            {
+                case ArchiveHelper.CompressLevel.Store:
+                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
+                    return true;
+                case ArchiveHelper.CompressLevel.Fastest:
+                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
+                    return true;
+                case ArchiveHelper.CompressLevel.Normal:
+                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
+                    return true;
+                case ArchiveHelper.CompressLevel.Best:
+                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
+                    return true;
+                default:
+                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Level6;
+                    return false;
+            }
+        }
+
+        public static void CompressZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
+        {
+            if (!CompressLevel_HelperToLibDeflate(helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel compLevel))
+                throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
+
+            ArchiveEncoding arcEnc = new ArchiveEncoding() { Default = encoding };
+            ZipWriterOptions options = new ZipWriterOptions(CompressionType.Deflate)
+            {
+                LeaveStreamOpen = false,
+                ArchiveEncoding = arcEnc,
+                DeflateCompressionLevel = compLevel,
+                UseZip64 = false,
+            };
+
+            using (FileStream stream = new FileStream(destArchive, FileMode.Create, FileAccess.Write))
+            {
+                using (ZipWriter writer = new ZipWriter(stream, options))
+                {
+                    if (Directory.Exists(srcPath))
+                    {
+                        writer.WriteAll(srcPath, "*", SearchOption.AllDirectories);
+                    }
+                    else
+                    {
+                        if (File.Exists(srcPath))
+                            writer.Write(Path.GetFileName(srcPath), srcPath);
+                        else
+                            throw new ArgumentException($"[{srcPath}] does not exist");
+                    }
+                }
+
+                stream.Close();
+            }
+        }
+
+        public static void DecompressAuto(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        {
+            ExtractionOptions exOptions = new ExtractionOptions()
+            {
+                ExtractFullPath = true,
+                Overwrite = overwrite,
+            };
+
+            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
+            if (encoding != null)
+                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
+
+            using (Stream stream = new FileStream(srcArchive, FileMode.Open, FileAccess.Read))
+            using (var reader = ReaderFactory.Open(stream, rOptions))
+            {
+                while (reader.MoveToNextEntry())
+                {
+                    if (!reader.Entry.IsDirectory)
+                        reader.WriteEntryToDirectory(destDir, exOptions);
+                }
+            }
+        }
+
+        public static void DecompressZip(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        {
+            ExtractionOptions exOptions = new ExtractionOptions()
+            {
+                ExtractFullPath = true,
+                Overwrite = overwrite,
+            };
+
+            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
+            if (encoding != null)
+                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
+
+            using (var archive = ZipArchive.Open(srcArchive, rOptions))
+            {
+                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
+                    entry.WriteToDirectory(destDir, exOptions);
+            }
+        }
+
+        public static void DecompressRar(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        {
+            ExtractionOptions exOptions = new ExtractionOptions()
+            {
+                ExtractFullPath = true,
+                Overwrite = overwrite,
+            };
+
+            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
+            if (encoding != null)
+                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
+
+            using (var archive = RarArchive.Open(srcArchive, rOptions))
+            {
+                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
+                    entry.WriteToDirectory(destDir, exOptions);
+            }
+        }
+
+        public static void Decompress7z(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        {
+            ExtractionOptions exOptions = new ExtractionOptions()
+            {
+                ExtractFullPath = true,
+                Overwrite = overwrite,
+            };
+
+            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
+            if (encoding != null)
+                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
+
+            using (var archive = SevenZipArchive.Open(srcArchive, rOptions))
+            {
+                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
+                    entry.WriteToDirectory(destDir, exOptions);
+            }
+        }
+    }
+    #endregion
+
+    #region ImageHelper
     public static class ImageHelper
     {
         public enum ImageType
@@ -1375,7 +1673,9 @@ namespace PEBakery.Helper
             return icon;
         }
     }
+    #endregion
 
+    #region FontHelper
     public static class FontHelper
     {
         // if we specify CharSet.Auto instead of CharSet.Ansi, then the string will be unreadable
@@ -1688,4 +1988,5 @@ namespace PEBakery.Helper
             return new WPFFont(fontFamily, fontWeight, fontSize);
         }
     }
+    #endregion
 }

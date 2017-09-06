@@ -453,9 +453,10 @@ namespace PEBakery.Core
                 case SectionType.AttachFileList:
                     sectionKeys = Ini.ParseIniLinesIniStyle(lines);
                     return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
+                // case SectionType.Variables:
+                //     sectionKeys = Ini.ParseIniLinesVarStyle(lines);
+                //     return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
                 case SectionType.Variables:
-                    sectionKeys = Ini.ParseIniLinesVarStyle(lines);
-                    return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.Uninspected:
@@ -522,12 +523,15 @@ namespace PEBakery.Core
             List<string> paths = new List<string>();
             try
             {
-                paths = CodeParser.ParseArguments(rawPaths, 0);
+                string remainder = rawLine;
+                while (remainder != null)
+                {
+                    Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
+                    paths.Add(tuple.Item1);
+                    remainder = tuple.Item2;
+                }
             }
-            catch (InvalidCommandException e)
-            {
-                throw new ExecuteException(e.Message, e);
-            }
+            catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             for (int i = 0; i < paths.Count; i++)
                 paths[i] = p.Project.Variables.Expand(paths[i]);
@@ -736,8 +740,8 @@ namespace PEBakery.Core
                 case SectionType.Main:
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
-                case SectionType.Variables:
                     return SectionDataType.IniDict;
+                case SectionType.Variables: // Because of Local Macros, cannot set to IniDict
                 case SectionType.Interface:
                 case SectionType.Code:
                 case SectionType.AttachFolderList:

@@ -581,52 +581,12 @@ namespace PEBakery.Core
 
             Node<Plugin> node = allPlugins.SearchNode(plugin);
             string pPath = plugin.FullPath;
-            Plugin p;
-            try
-            {
-                if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel);
-                else
-                {
-                    string ext = Path.GetExtension(pPath);
-                    if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null);
-                    else
-                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null);
-                }
+            Plugin p = LoadPlugin(pPath);
 
-                // Check Plugin Link's validity
-                // Also, convert nested link to one-depth link
-                if (p.Type == PluginType.Link)
-                {
-                    Plugin link = p.Link;
-                    bool valid = false;
-                    do
-                    {
-                        if (link == null)
-                            return null;
-                        if (link.Type == PluginType.Plugin)
-                        {
-                            valid = true;
-                            break;
-                        }
-                        link = link.Link;
-                    }
-                    while (link.Type != PluginType.Plugin);
+            if (p != null)
+                allPluginList[idx] = p;
+                node.Data = p;
 
-                    if (valid)
-                        p.Link = link;
-                    else
-                        return null;
-                }
-            }
-            catch
-            { // Do nothing - intentionally left blank
-                return null;
-            }
-
-            allPluginList[idx] = p;
-            node.Data = p;
             return p;
         }
 
@@ -638,19 +598,24 @@ namespace PEBakery.Core
         /// <returns></returns>
         public Plugin LoadPluginMonkeyPatch(string pPath)
         {
-            // Limit: fullPath must be in Projects directory
-            if (pPath.StartsWith(this.projectRoot, StringComparison.OrdinalIgnoreCase) == false)
+            // Limit: fullPath must be in BaseDir
+            if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
+            return LoadPlugin(pPath);
+        }
+
+        public Plugin LoadPlugin(string pPath)
+        {
             Plugin p;
             try
             {
-                if (string.Equals(pPath, Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
                     p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel);
                 else
                 {
                     string ext = Path.GetExtension(pPath);
-                    if (string.Equals(ext, ".link", StringComparison.OrdinalIgnoreCase))
+                    if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                         p = new Plugin(PluginType.Link, pPath, this, projectRoot, null);
                     else
                         p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null);
@@ -686,7 +651,6 @@ namespace PEBakery.Core
                 return null;
             }
 
-            allPluginList.Add(p);
             return p;
         }
 

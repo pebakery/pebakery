@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_IntToBytes subInfo = info.SubInfo as StrFormatInfo_IntToBytes;
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
-                        if (long.TryParse(byteSizeStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long byteSize) == false)
+                        if (NumberHelper.ParseInt64(byteSizeStr, out long byteSize) == false)
                             throw new ExecuteException($"[{byteSizeStr}] is not valid integer");
 
                         if (byteSize < 0)
@@ -63,7 +63,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -75,7 +75,7 @@ namespace PEBakery.Core.Commands
                         string humanReadableByteSizeStr = StringEscaper.Preprocess(s, subInfo.HumanReadableByteSize);
                         decimal dest = NumberHelper.HumanReadableStringToByteSize(humanReadableByteSizeStr);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, decimal.Ceiling(dest).ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, decimal.Ceiling(dest).ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -89,7 +89,7 @@ namespace PEBakery.Core.Commands
                         // subInfo.SizeVar;
                         string roundToStr = StringEscaper.Preprocess(s, subInfo.RoundTo);
                         // Is roundToStr number?
-                        if (long.TryParse(roundToStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long roundTo) == false)
+                        if (NumberHelper.ParseInt64(roundToStr, out long roundTo) == false)
                         { // Is roundToStr is one of K, M, G, T, P?
                             if (roundToStr.Equals("K", StringComparison.OrdinalIgnoreCase))
                                 roundTo = KB;
@@ -109,7 +109,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{roundTo}] must be positive integer");
 
                         string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
-                        if (long.TryParse(srcIntStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out long srcInt) == false)
+                        if (!NumberHelper.ParseInt64(srcIntStr, out long srcInt))
                             throw new ExecuteException($"[{srcIntStr}] is not valid integer");
                         long destInt;
                         if (type == StrFormatType.Ceil)
@@ -181,7 +181,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = DateTime.Now.ToString(dotNetFormatStr, CultureInfo.InvariantCulture);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
 
                     }
@@ -220,7 +220,7 @@ namespace PEBakery.Core.Commands
                             }
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -232,12 +232,17 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic));
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVarName);
-                        if (decimal.TryParse(srcStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal src) == false)
-                            throw new ExecuteException($"[{srcStr}] is not valid number");
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
+                        if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
+                            throw new ExecuteException($"[{srcStr}] is not valid positive number");
+                        if (src < 0)
+                            throw new ExecuteException($"[{srcStr}] is not positive number");
+
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
-                        if (decimal.TryParse(operandStr, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal operand) == false)
+                        if (!NumberHelper.ParseDecimal(operandStr, out decimal operand))
                             throw new ExecuteException($"[{operandStr}] is not valid number");
+                        if (operand < 0)
+                            throw new ExecuteException($"[{operandStr}] is not positive number");
 
                         decimal dest = src;
                         if (type == StrFormatType.Inc) // +
@@ -249,7 +254,7 @@ namespace PEBakery.Core.Commands
                         else if (type == StrFormatType.Div) // /
                             dest /= operand;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, dest.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -261,7 +266,8 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
                         string cutLenStr = StringEscaper.Preprocess(s, subInfo.Integer);
-                        if (int.TryParse(cutLenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
+
+                        if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             throw new ExecuteException($"[{cutLenStr}] is not valid integer");
                         if (cutLen < 0)
                             throw new ExecuteException($"[{cutLen}] must be positive integer");
@@ -278,7 +284,7 @@ namespace PEBakery.Core.Commands
                                 destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
                             }
 
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                             logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
                         }
                         catch (ArgumentOutOfRangeException)
@@ -294,12 +300,13 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
                         string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
-                        if (int.TryParse(startPosStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int startPos) == false)
+
+                        if (!NumberHelper.ParseInt32(startPosStr, out int startPos))
                             throw new ExecuteException($"[{startPosStr}] is not valid integer");
                         if (startPos < 0)
                             throw new ExecuteException($"[{startPos}] must be positive integer");
                         string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
-                        if (int.TryParse(lenStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int len) == false)
+                        if (!NumberHelper.ParseInt32(lenStr, out int len))
                             throw new ExecuteException($"[{lenStr}] is not valid integer");
                         if (len < 0)
                             throw new ExecuteException($"[{len}] must be positive integer");
@@ -312,7 +319,7 @@ namespace PEBakery.Core.Commands
 
                         string destStr = srcStr.Substring(startPos, len);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -323,7 +330,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, srcStr.Length.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, srcStr.Length.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -342,14 +349,16 @@ namespace PEBakery.Core.Commands
                         {
                             if (type == StrFormatType.LTrim) // string.Substring
                             {
-                                if (int.TryParse(toTrim, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
+                                
+
+                                if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
                                     logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
 
                                 destStr = srcStr.Substring(cutLen);
                             }
                             else if (type == StrFormatType.RTrim) // string.Substring
                             {
-                                if (int.TryParse(toTrim, NumberStyles.Integer, CultureInfo.InvariantCulture, out int cutLen) == false)
+                                if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
                                     logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
 
                                 destStr = srcStr.Substring(0, srcStr.Length - cutLen);
@@ -379,7 +388,7 @@ namespace PEBakery.Core.Commands
                         Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
                         string destStr = srcStr.Substring(0, match.Index);
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -393,7 +402,7 @@ namespace PEBakery.Core.Commands
 
                         int idx = srcStr.IndexOf(subStr, StringComparison.OrdinalIgnoreCase) + 1;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, idx.ToString());
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, idx.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -435,7 +444,7 @@ namespace PEBakery.Core.Commands
                             destStr = srcStr.Replace(subStr, newStr);
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -460,7 +469,7 @@ namespace PEBakery.Core.Commands
                             destStr = FileHelper.GetLongPath(srcStr);
                         }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -472,7 +481,7 @@ namespace PEBakery.Core.Commands
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
                         string delimStr = StringEscaper.Preprocess(s, subInfo.Delimeter);
                         string idxStr = StringEscaper.Preprocess(s, subInfo.Index);
-                        if (int.TryParse(idxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int idx) == false)
+                        if (!NumberHelper.ParseInt32(idxStr, out int idx))
                             throw new ExecuteException($"[{idxStr}] is not valid integer");
 
                         char[] delim = delimStr.ToCharArray();
@@ -482,7 +491,7 @@ namespace PEBakery.Core.Commands
                         {
                             int delimCount = srcStr.Split(delim).Length;
                             logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}] is split to [{delimCount}] strings."));
-                            varLogs = Variables.SetVariable(s, subInfo.DestVarName, delimCount.ToString());
+                            varLogs = Variables.SetVariable(s, subInfo.DestVar, delimCount.ToString());
                             logs.AddRange(varLogs);
                         }
                         else
@@ -492,7 +501,7 @@ namespace PEBakery.Core.Commands
                             {
                                 string destStr = slices[idx - 1];
                                 logs.Add(new LogInfo(LogState.Success, $"String [{srcStr}]'s split index [{idx}] is [{destStr}]"));
-                                varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
+                                varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                                 logs.AddRange(varLogs);
                             }
                             else
