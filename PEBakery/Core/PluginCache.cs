@@ -1,4 +1,5 @@
-﻿using SQLite.Net;
+﻿using PEBakery.Helper;
+using SQLite.Net;
 using SQLite.Net.Attributes;
 using SQLite.Net.Platform.Win32;
 using SQLiteNetExtensions.Attributes;
@@ -29,25 +30,17 @@ namespace PEBakery.Core
             CreateTable<DB_PluginCache>();
         }
 
-        public void WaitClose()
+        public async void WaitClose()
         {
-            if (dbLock == 0)
-            {
-                base.Close();
-                return;
-            }
-
-            DispatcherTimer Timer = new DispatcherTimer();
-            Timer.Tick += (object tickSender, EventArgs tickArgs) =>
+            while (true)
             {
                 if (dbLock == 0)
                 {
                     base.Close();
-                    (tickSender as DispatcherTimer).Stop();
+                    return;
                 }
-            };
-            Timer.Interval = TimeSpan.FromSeconds(0.2);
-            Timer.Start();
+                await Task.Delay(200);
+            }
         }
 
         public void CachePlugins(ProjectCollection projects, BackgroundWorker worker)

@@ -121,7 +121,8 @@ namespace PEBakery.Core
                 if (w.CurBuildTree != null)
                     w.CurBuildTree.BuildFocus = false;
                 w.CurBuildTree = s.MainViewModel.BuildTree.FindPluginByFullPath(s.CurrentPlugin.FullPath);
-                w.CurBuildTree.BuildFocus = true;
+                if (w.CurBuildTree != null)
+                    w.CurBuildTree.BuildFocus = true;
             }));
         }
 
@@ -161,11 +162,16 @@ namespace PEBakery.Core
                     if (s.Plugins.Count - 1 <= s.CurrentPluginIdx ||
                         s.RunOnePlugin || s.ErrorHaltFlag || s.UserHaltFlag)
                     { // End of Build
+                        bool alertErrorHalt = s.ErrorHaltFlag;
+                        bool alertUserHalt = s.UserHaltFlag;
+
                         if (s.UserHaltFlag)
                         {
+                            s.MainViewModel.PluginDescriptionText = "Build stop requested by user";
                             s.Logger.Build_Write(s, Logger.LogSeperator);
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Build stopped by user"));
-                            MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Build stop requested by user"));
+
+                            alertUserHalt = true;
                         }
 
                         // Reset Halt Flags before running OnBuildExit
@@ -174,6 +180,12 @@ namespace PEBakery.Core
 
                         // OnBuildExit event callback
                         Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
+
+                        if (alertUserHalt)
+                            MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                        else if (alertErrorHalt)
+                            MessageBox.Show("Build stopped by error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+
                         break;
                     }
                     s.Logger.Build_Write(s, string.Empty);
@@ -195,7 +207,12 @@ namespace PEBakery.Core
         public void ForceStop()
         {
             s.UserHaltFlag = true;
-            task.Wait();
+        }
+
+        public Task ForceStopWait()
+        {
+            s.UserHaltFlag = true;
+            return Task.Run(() => task.Wait());
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
@@ -655,6 +672,7 @@ namespace PEBakery.Core
             if (pluginToRun == null) // Run just plugin
             {
                 // Why List -> Tree -> List? To sort.
+                // TODO: Better way?
                 Plugins = new List<Plugin>();
                 Tree<Plugin> tree = project.GetActivePlugin();
                 foreach (Plugin p in tree)

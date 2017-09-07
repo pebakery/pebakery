@@ -596,13 +596,20 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns></returns>
-        public Plugin LoadPluginMonkeyPatch(string pPath)
+        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false)
         {
             // Limit: fullPath must be in BaseDir
             if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
-            return LoadPlugin(pPath);
+            Plugin p = LoadPlugin(pPath);
+            if (addToList)
+            {
+                allPluginList.Add(p);
+                allPluginCount += 1;
+            }
+                
+            return p;
         }
 
         public Plugin LoadPlugin(string pPath)

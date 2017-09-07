@@ -9,6 +9,7 @@
         Title="UtilityWindow"
         FontFamily="Segoe UI"
         FontSize="13"
+        Closed="Window_Closed"
         Width="800" Height="640"
         MinWidth="640" MinHeight="480">
     <Grid>

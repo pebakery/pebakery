@@ -35,7 +35,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using SQLite.Net;
 using System.Text;
-using System.Runtime.CompilerServices;
 using PEBakery.Helper;
 using PEBakery.Lib;
 using PEBakery.Core;
@@ -58,6 +57,7 @@ namespace PEBakery.WPF
 
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
+        private BackgroundWorker cacheWorker = new BackgroundWorker();
 
         private TreeViewModel curMainTree;
         public TreeViewModel CurMainTree { get => curMainTree; }
@@ -76,6 +76,9 @@ namespace PEBakery.WPF
         public SettingViewModel Setting { get => setting; }
 
         public MainViewModel Model;
+
+        public LogWindow logDialog = null;
+        public UtilityWindow utilityDialog = null;
         #endregion
 
         #region Constructor
@@ -324,7 +327,7 @@ namespace PEBakery.WPF
                 try
                 {
                     Stopwatch watch = new Stopwatch();
-                    BackgroundWorker cacheWorker = new BackgroundWorker();
+                    cacheWorker = new BackgroundWorker();
 
                     Model.ProgressRingActive = true;
                     int updatedCount = 0;
@@ -397,8 +400,7 @@ namespace PEBakery.WPF
                 Model.ProgressRingActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                string msg = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. Took {sec:0.000}sec";
-                Model.StatusBarText = msg;
+                Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. Took {sec:0.000}sec";
             };
             refreshWorker.RunWorkerAsync();
         }
@@ -516,9 +518,6 @@ namespace PEBakery.WPF
             else // Stop Build
             {
                 Engine.WorkingEngine?.ForceStop();
-
-                Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
             }
         }
 
@@ -557,14 +556,23 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            UtilityWindow dialog = new UtilityWindow(setting.General_MonospaceFont);
-            dialog.Show();
+            // UtilityWindow dialog = new UtilityWindow(setting.General_MonospaceFont);
+            //dialog.Show();
+
+            if (UtilityWindow.Count == 0)
+            {
+                utilityDialog = new UtilityWindow(setting.General_MonospaceFont);
+                utilityDialog.Show();
+            }
         }
 
         private void LogButton_Click(object sender, RoutedEventArgs e)
         {
-            LogWindow dialog = new LogWindow();
-            dialog.Show();
+            if (LogWindow.Count == 0)
+            {
+                logDialog = new LogWindow();
+                logDialog.Show();
+            }
         }
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
@@ -618,9 +626,6 @@ namespace PEBakery.WPF
                 else // Stop Build
                 {
                     Engine.WorkingEngine?.ForceStop();
-
-                    Engine.WorkingEngine = null;
-                    Interlocked.Decrement(ref Engine.WorkingLock);
                 }
             }
             else
@@ -734,20 +739,44 @@ namespace PEBakery.WPF
                     DrawPlugin(item.Plugin);
                     watch.Stop();
                     double sec = watch.Elapsed.TotalSeconds;
-                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} rendered. Took {sec:0.000}sec";
+                    string filename = Path.GetFileName(curMainTree.Plugin.ShortPath);
+                    Model.StatusBarText = $"{filename} rendered. Took {sec:0.000}sec";
                 });
             }
         }
         #endregion
 
         #region Window Event Handler
-        private void Window_Closing(object sender, CancelEventArgs e)
+        private async void Window_Closing(object sender, CancelEventArgs e)
         {
-            Engine.WorkingEngine?.ForceStop();
+            if (Engine.WorkingEngine != null)
+                await Engine.WorkingEngine.ForceStopWait();
 
-            logger.DB.Close();
+            if (0 < LogWindow.Count)
+            {
+                logDialog.Close();
+                logDialog = null;
+            }
+
+            if (0 < UtilityWindow.Count)
+            {
+                utilityDialog.Close();
+                utilityDialog = null;
+            }
+
+            // TODO: Do this in more clean way
+            while (refreshWorker.IsBusy)
+                await Task.Delay(500);
+
+            while (cacheWorker.IsBusy)
+                await Task.Delay(500);
+
+            while (loadWorker.IsBusy)
+                await Task.Delay(500);
+
             if (pluginCache != null)
                 pluginCache.WaitClose();
+            logger.DB.Close();
         }
         #endregion
     }

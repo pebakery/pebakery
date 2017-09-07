@@ -87,8 +87,9 @@ PEBakery needs to be documented, especially for plugin developers.
 - Design of PEBakery
 - Command Grammar and Usage
 
-## New Format Proposal
+## Proposal
 Plan PEBakery's future with your own hands!
+- Add Useful Commands
 - New Plugin Format
 - New Language and Grammar
 
