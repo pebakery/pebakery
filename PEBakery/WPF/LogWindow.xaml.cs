@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,10 +25,14 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class LogWindow : Window
     {
+        public static int Count = 0;
+
         private LogViewModel m = new LogViewModel();
 
         public LogWindow()
         {
+            Interlocked.Increment(ref LogWindow.Count);
+
             InitializeComponent();
             DataContext = m;
 
@@ -40,15 +45,6 @@ namespace PEBakery.WPF
             SystemLogListView.UpdateLayout();
             if (1 < SystemLogListView.Items.Count)
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
-        }
-
-       ~LogWindow()
-        {
-            m.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
-            m.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
-            m.Logger.PluginUpdated -= PluginUpdateEventHandler;
-            m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
-            m.Logger.VariableUpdated -= VariableUpdateEventHandler;
         }
 
         #region EventHandler
@@ -120,6 +116,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Window Event
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             
@@ -131,6 +128,19 @@ namespace PEBakery.WPF
                 Close();
         }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            m.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
+            m.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
+            m.Logger.PluginUpdated -= PluginUpdateEventHandler;
+            m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
+            m.Logger.VariableUpdated -= VariableUpdateEventHandler;
+
+            Interlocked.Decrement(ref LogWindow.Count);
+        }
+        #endregion
+
+        #region Button Event
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -214,6 +224,9 @@ namespace PEBakery.WPF
                 proc.Start();
             }
         }
+        #endregion
+
+        
     }
 
     #region LogListModel

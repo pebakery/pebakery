@@ -260,11 +260,21 @@ namespace PEBakery.Core
                         this.description = sections["Main"].IniDict["Description"];
                         if (level == null)
                         {
-                            if (int.TryParse(sections["Main"].IniDict["Level"], out this.level) == false)
+                            if (sections["Main"].IniDict.ContainsKey("Level"))
+                            {
+                                if (!int.TryParse(sections["Main"].IniDict["Level"], out this.level))
+                                    this.level = 0;
+                            }
+                            else
+                            {
                                 this.level = 0;
+                            }
+                            
                         }
                         else
+                        {
                             this.level = (int)level;
+                        }
 
                         // Optional Entry
                         if (sections["Main"].IniDict.ContainsKey("Author"))
@@ -479,9 +489,15 @@ namespace PEBakery.Core
             {
                 if (type == PluginType.Plugin)
                 {
+                    /*
                     if (sections["Main"].IniDict.ContainsKey("Title")
                         && sections["Main"].IniDict.ContainsKey("Description")
                         && sections["Main"].IniDict.ContainsKey("Level"))
+                        fail = false;
+                        */
+
+                    if (sections["Main"].IniDict.ContainsKey("Title")
+                        && sections["Main"].IniDict.ContainsKey("Description"))
                         fail = false;
                 }
                 else if (type == PluginType.Link)

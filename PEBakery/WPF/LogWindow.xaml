@@ -7,6 +7,7 @@
         xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         FontFamily="Segoe UI"
+        Closed="Window_Closed"
         Loaded="Window_Loaded"
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"

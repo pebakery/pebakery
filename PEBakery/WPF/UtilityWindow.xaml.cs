@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,16 +26,41 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class UtilityWindow : Window
     {
+        public static int Count = 0;
+
         UtilityViewModel m;
 
         public UtilityWindow(FontHelper.WPFFont monoFont)
         {
+            Interlocked.Increment(ref UtilityWindow.Count);
+
             m = new UtilityViewModel(monoFont);
 
             InitializeComponent();
             DataContext = m;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                List<Project> projList = w.Projects.Projects;
+                for (int i = 0; i < projList.Count; i++)
+                {
+                    Project proj = projList[i];
+
+                    m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
+
+                    if (proj.ProjectName.Equals(w.CurMainTree.Plugin.Project.ProjectName, StringComparison.Ordinal))
+                        m.CodeBox_SelectedProjectIndex = i;
+                }
+            });
         }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            Interlocked.Decrement(ref UtilityWindow.Count);
+        }
+
+        #region Button Event
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -62,18 +89,103 @@ namespace PEBakery.WPF
             m.Escaper_ConvertedString = StringEscaper.Legend;
         }
 
+        private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
+        {
+            Encoding encoding = Encoding.UTF8;
+            if (File.Exists(m.CodeFile))
+                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+
+            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            {
+                writer.Write(m.CodeBox_Input);
+                writer.Close();
+            }
+
+            if (Engine.WorkingLock == 0)  // Start Build
+            {
+                Interlocked.Increment(ref Engine.WorkingLock);
+
+                Project project = m.CodeBox_CurrentProject;
+                Plugin p = project.LoadPluginMonkeyPatch(m.CodeFile);
+
+                Logger logger = null;
+                SettingViewModel setting = null;
+                MainViewModel mainModel = null;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    logger = w.Logger;
+                    setting = w.Setting;
+                    mainModel = w.Model;
+                });
+
+                EngineState s = new EngineState(project, logger, p);
+                s.SetLogOption(setting);
+
+                Engine.WorkingEngine = new Engine(s);
+
+                // Build Start, Switch to Build View
+                mainModel.SwitchNormalBuildInterface = false;
+
+                // Run
+                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                logger.ExportBuildLog(LogExportType.Text, System.IO.Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+#endif
+
+                // Build Ended, Switch to Normal View
+                mainModel.SwitchNormalBuildInterface = true;
+                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    w.DrawPlugin(w.CurMainTree.Plugin);
+                });
+
+                Engine.WorkingEngine = null;
+
+                Interlocked.Decrement(ref Engine.WorkingLock);
+            }
+            else
+            {
+                MessageBox.Show("Engine is already running", "Build Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            string[] lines = m.Syntax_InputCode.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-            m.Syntax_Output = "Not Imeplemented";
+            Project project = m.CodeBox_CurrentProject;
 
-        }
+            Plugin p = project.MainPlugin;
+            PluginSection section;
+            if (project.MainPlugin.Sections.ContainsKey("Process"))
+                section = p.Sections["Process"];
+            else
+                section = new PluginSection(p, "Process", SectionType.Code, new List<string>());
+            SectionAddress addr = new SectionAddress(p, section);
 
-        private void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
-        {
-            // m.CodeBox_Input;
-            //p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null);
+            List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<CodeCommand> cmds = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> errorLogs);
+
+            if (0 < errorLogs.Count)
+            {
+                for (int i = 0; i < errorLogs.Count; i++)
+                {
+                    LogInfo log = errorLogs[i];
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
+
+                    m.Syntax_Output = b.ToString();
+                }
+            }
+            else
+            {
+                m.Syntax_Output = "No error";
+            }
         }
+        #endregion
     }
 
     #region UtiltiyViewModel
@@ -126,25 +238,55 @@ namespace PEBakery.WPF
         #endregion
 
         #region CodeBox
+        private string codeFile;
+        public string CodeFile { get => codeFile; }
+
         private int codeBox_SelectedProjectIndex;
         public int CodeBox_SelectedProjectIndex
         {
             get => codeBox_SelectedProjectIndex;
             set
             {
-                codeBox_SelectedProjectIndex = value;
+                if (0 <= value && value < codeBox_Projects.Count)
+                {
+                    codeBox_SelectedProjectIndex = value;
+
+                    Project proj = codeBox_Projects[value].Item2;
+                    codeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
+                    if (File.Exists(codeFile))
+                    {
+                        Encoding encoding = FileHelper.DetectTextEncoding(codeFile);
+                        using (StreamReader reader = new StreamReader(codeFile, encoding))
+                        {
+                            CodeBox_Input = reader.ReadToEnd();
+                            OnPropertyUpdate("CodeBox_Input");
+                        }
+                    }
+                }               
+
                 OnPropertyUpdate("CodeBox_SelectedProjectIndex");
             }
         }
 
-        private Tuple<string, Project> codeBox_Projects;
-        public Tuple<string, Project> CodeBox_Projects
+        private ObservableCollection<Tuple<string, Project>> codeBox_Projects = new ObservableCollection<Tuple<string, Project>>();
+        public ObservableCollection<Tuple<string, Project>> CodeBox_Projects
         {
             get => codeBox_Projects;
             set
             {
                 codeBox_Projects = value;
                 OnPropertyUpdate("CodeBox_Projects");
+            }
+        }
+        public Project CodeBox_CurrentProject
+        {
+            get
+            {
+                int i = codeBox_SelectedProjectIndex;
+                if (0 <= i && i < codeBox_Projects.Count)
+                    return codeBox_Projects[i].Item2;
+                else
+                    return null;
             }
         }
 

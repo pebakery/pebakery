@@ -66,6 +66,7 @@ using SharpCompress.Writers;
 using SharpCompress.Readers;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
+using System.Threading;
 
 namespace PEBakery.Helper
 {
@@ -76,6 +77,7 @@ namespace PEBakery.Helper
         public UnsupportedEncodingException(string message, Exception inner) : base(message, inner) { }
     }
 
+    #region FileHelper
     /// <summary>
     /// Contains static helper methods.
     /// </summary>
@@ -493,6 +495,7 @@ namespace PEBakery.Helper
             return str;
         }
     }
+    #endregion
 
     #region HashHelper
     public enum HashType { None, MD5, SHA1, SHA256, SHA384, SHA512 };
@@ -1324,7 +1327,7 @@ namespace PEBakery.Helper
     }
     #endregion
 
-    #region CompressHelper
+    #region ArchiveHelper
     public static class ArchiveHelper
     {
         /// <summary>
