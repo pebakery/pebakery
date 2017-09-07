@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -155,6 +156,12 @@ namespace PEBakery.WPF
 
         private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
         {
+            if (m.Syntax_InputCode.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                m.Syntax_Output = "No Code";
+                return;
+            }
+
             Project project = m.CodeBox_CurrentProject;
 
             Plugin p = project.MainPlugin;
@@ -167,6 +174,24 @@ namespace PEBakery.WPF
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
             List<CodeCommand> cmds = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> errorLogs);
+
+            // Check Macros
+            Macro macro = new Macro(project, project.Variables, out List<LogInfo> macroLogs);
+
+            if (macro.MacroEnabled)
+            {
+                foreach (CodeCommand cmd in cmds)
+                {
+                    if (cmd.Type == CodeType.Macro)
+                    {
+                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro));
+                        CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+
+                        if (!macro.MacroDict.ContainsKey(info.MacroType))
+                            errorLogs.Add(new LogInfo(LogState.Error, $"Invalid Command or Macro [{info.MacroType}]", cmd));
+                    }
+                }
+            }
 
             if (0 < errorLogs.Count)
             {
@@ -182,7 +207,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                m.Syntax_Output = "No error";
+                m.Syntax_Output = "No Error";
             }
         }
         #endregion
@@ -261,6 +286,20 @@ namespace PEBakery.WPF
                             CodeBox_Input = reader.ReadToEnd();
                             OnPropertyUpdate("CodeBox_Input");
                         }
+                    }
+                    else
+                    {
+                        CodeBox_Input = @"[Main]
+Title=CodeBox
+Description=Test Commands
+
+[Variables]
+
+[Process]
+// Write Commands Here
+//--------------------
+
+";
                     }
                 }               
 

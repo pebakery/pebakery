@@ -46,6 +46,9 @@
                             TextWrapping="Wrap"
                             AcceptsReturn="True"
                             VerticalContentAlignment="Stretch"
+                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.CanContentScroll="True"
                             Text="{Binding Escaper_StringToConvert}">
                         </TextBox>
                     </Grid>
@@ -103,6 +106,10 @@
                             TextWrapping="Wrap"
                             AcceptsReturn="True"
                             VerticalContentAlignment="Stretch"
+                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.CanContentScroll="True"
+                            IsReadOnly="True"
                             Text="{Binding Escaper_ConvertedString}">
                         </TextBox>
                     </Grid>
@@ -258,8 +265,9 @@
                             AcceptsReturn="True"
                             VerticalContentAlignment="Stretch"
                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto"
-                        ScrollViewer.CanContentScroll="True"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.CanContentScroll="True"
+                            IsReadOnly="True"
                             Text="{Binding Syntax_Output}">
                         </TextBox>
                     </Grid>
