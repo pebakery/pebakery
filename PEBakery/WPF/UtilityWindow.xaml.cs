@@ -89,13 +89,6 @@ namespace PEBakery.WPF
             m.Escaper_ConvertedString = StringEscaper.Legend;
         }
 
-        private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
-        {
-            string[] lines = m.Syntax_InputCode.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-            m.Syntax_Output = "Not Imeplemented";
-
-        }
-
         private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
@@ -105,6 +98,7 @@ namespace PEBakery.WPF
             using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
             {
                 writer.Write(m.CodeBox_Input);
+                writer.Close();
             }
 
             if (Engine.WorkingLock == 0)  // Start Build
@@ -156,6 +150,39 @@ namespace PEBakery.WPF
             else
             {
                 MessageBox.Show("Engine is already running", "Build Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
+        {
+            Project project = m.CodeBox_CurrentProject;
+
+            Plugin p = project.MainPlugin;
+            PluginSection section;
+            if (project.MainPlugin.Sections.ContainsKey("Process"))
+                section = p.Sections["Process"];
+            else
+                section = new PluginSection(p, "Process", SectionType.Code, new List<string>());
+            SectionAddress addr = new SectionAddress(p, section);
+
+            List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<CodeCommand> cmds = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> errorLogs);
+
+            if (0 < errorLogs.Count)
+            {
+                for (int i = 0; i < errorLogs.Count; i++)
+                {
+                    LogInfo log = errorLogs[i];
+
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
+
+                    m.Syntax_Output = b.ToString();
+                }
+            }
+            else
+            {
+                m.Syntax_Output = "No error";
             }
         }
         #endregion

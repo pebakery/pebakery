@@ -47,17 +47,6 @@ namespace PEBakery.WPF
                 SystemLogListView.ScrollIntoView(SystemLogListView.Items[SystemLogListView.Items.Count - 1]);
         }
 
-        /*
-       ~LogWindow()
-        {
-            m.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
-            m.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
-            m.Logger.PluginUpdated -= PluginUpdateEventHandler;
-            m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
-            m.Logger.VariableUpdated -= VariableUpdateEventHandler;
-        }
-        */
-
         #region EventHandler
         public void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e)
         {
