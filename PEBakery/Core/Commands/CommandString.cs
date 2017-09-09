@@ -264,8 +264,8 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_LeftRight));
                         StrFormatInfo_LeftRight subInfo = info.SubInfo as StrFormatInfo_LeftRight;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
-                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.CutLen);
 
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             throw new ExecuteException($"[{cutLenStr}] is not valid integer");
@@ -276,20 +276,16 @@ namespace PEBakery.Core.Commands
                         try
                         {
                             if (type == StrFormatType.Left)
-                            {
                                 destStr = srcStr.Substring(0, cutLen);
-                            }
                             else if (type == StrFormatType.Right)
-                            {
                                 destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
-                            }
 
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
-                            logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                            logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
                         }
                         catch (ArgumentOutOfRangeException)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{cutLen}] is not valid index"));
+                        { // Correct WB082 behavior : Not error, but just empty string
+                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not valid index"));
+                            logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, string.Empty));
                         }
                     }
                     break;

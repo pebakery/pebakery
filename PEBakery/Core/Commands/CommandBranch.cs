@@ -46,7 +46,7 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
@@ -69,9 +69,11 @@ namespace PEBakery.Core.Commands
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             // Exec utilizes [Variables] section of the plugin
-            if (cmd.Type == CodeType.Exec && p.Sections.ContainsKey("Varaibles"))
+            if (cmd.Type == CodeType.Exec && p.Sections.ContainsKey("Variables"))
             {
-                s.Variables.AddVariables(VarsType.Local, p.Sections["Variables"]);
+                List<LogInfo> varLogs = s.Variables.AddVariables(VarsType.Local, p.Sections["Variables"]);
+                LogInfo.AddDepth(varLogs, s.CurDepth + 1);
+                s.Logger.Build_Write(s, varLogs);
             }
 
             // Run Section
@@ -114,7 +116,7 @@ namespace PEBakery.Core.Commands
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
 
-                Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+                Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
                 // Does section exists?
                 if (!p.Sections.ContainsKey(sectionName))

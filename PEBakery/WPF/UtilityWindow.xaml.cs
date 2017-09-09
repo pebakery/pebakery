@@ -90,7 +90,20 @@ namespace PEBakery.WPF
             m.Escaper_ConvertedString = StringEscaper.Legend;
         }
 
-        private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
+        private void CodeBoxSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            Encoding encoding = Encoding.UTF8;
+            if (File.Exists(m.CodeFile))
+                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+
+            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            {
+                writer.Write(m.CodeBox_Input);
+                writer.Close();
+            }
+        }
+
+        private void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
             if (File.Exists(m.CodeFile))
@@ -104,49 +117,9 @@ namespace PEBakery.WPF
 
             if (Engine.WorkingLock == 0)  // Start Build
             {
-                Interlocked.Increment(ref Engine.WorkingLock);
-
                 Project project = m.CodeBox_CurrentProject;
                 Plugin p = project.LoadPluginMonkeyPatch(m.CodeFile);
-
-                Logger logger = null;
-                SettingViewModel setting = null;
-                MainViewModel mainModel = null;
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    logger = w.Logger;
-                    setting = w.Setting;
-                    mainModel = w.Model;
-                });
-
-                EngineState s = new EngineState(project, logger, p);
-                s.SetLogOption(setting);
-
-                Engine.WorkingEngine = new Engine(s);
-
-                // Build Start, Switch to Build View
-                mainModel.SwitchNormalBuildInterface = false;
-
-                // Run
-                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                logger.ExportBuildLog(LogExportType.Text, System.IO.Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-
-                // Build Ended, Switch to Normal View
-                mainModel.SwitchNormalBuildInterface = true;
-                
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    w.DrawPlugin(w.CurMainTree.Plugin);
-                });
-
-                Engine.WorkingEngine = null;
-
-                Interlocked.Decrement(ref Engine.WorkingLock);
+                Engine.RunEngine(project, p);
             }
             else
             {
@@ -188,22 +161,20 @@ namespace PEBakery.WPF
                         CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
 
                         if (!macro.MacroDict.ContainsKey(info.MacroType))
-                            errorLogs.Add(new LogInfo(LogState.Error, $"Invalid Command or Macro [{info.MacroType}]", cmd));
+                            errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
                     }
                 }
             }
 
             if (0 < errorLogs.Count)
             {
+                StringBuilder b = new StringBuilder();
                 for (int i = 0; i < errorLogs.Count; i++)
                 {
                     LogInfo log = errorLogs[i];
-
-                    StringBuilder b = new StringBuilder();
                     b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
-
-                    m.Syntax_Output = b.ToString();
                 }
+                m.Syntax_Output = b.ToString();
             }
             else
             {
@@ -211,6 +182,8 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
+        
     }
 
     #region UtiltiyViewModel

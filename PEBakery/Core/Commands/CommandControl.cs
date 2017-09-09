@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
             string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath,  pluginFile, out bool inCurrentPlugin);
+            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath,  pluginFile, out bool inCurrentPlugin);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
@@ -130,7 +130,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
 
-            s.ErrorHaltFlag = true;
+            s.CmdHaltFlag = true;
 
             logs.Add(new LogInfo(LogState.Error, info.Message, cmd));
 

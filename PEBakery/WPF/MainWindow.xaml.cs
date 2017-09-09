@@ -478,13 +478,11 @@ namespace PEBakery.WPF
         #endregion
 
         #region Main Buttons
-        private async void BuildButton_Click(object sender, RoutedEventArgs e)
+        private void BuildButton_Click(object sender, RoutedEventArgs e)
         {
             // TODO: Exact Locking without Race Condition
             if (Engine.WorkingLock == 0)  // Start Build
             {
-                Interlocked.Increment(ref Engine.WorkingLock);
-
                 // Determine current project
                 Project project = curMainTree.Plugin.Project;
 
@@ -493,27 +491,7 @@ namespace PEBakery.WPF
                 RecursivePopulateTreeView(activeTree.Root, Model.BuildTree, Model.BuildTree);
                 curBuildTree = null;
 
-                EngineState s = new EngineState(project, logger);
-                s.SetLogOption(setting);
-
-                Engine.WorkingEngine = new Engine(s);
-
-                // Build Start, Switch to Build View
-                Model.SwitchNormalBuildInterface = false;
-
-                // Run
-                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-
-                // Build Ended, Switch to Normal View
-                Model.SwitchNormalBuildInterface = true;
-                DrawPlugin(curMainTree.Plugin);
-
-                Engine.WorkingEngine = null;
-                Interlocked.Decrement(ref Engine.WorkingLock);
+                Engine.RunEngine(project);
             }
             else // Stop Build
             {

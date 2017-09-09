@@ -222,7 +222,7 @@ namespace PEBakery.Core
                             PluginType type = PluginType.Plugin;
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
-                            link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null);
+                            link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null, false);
 
                             Debug.Assert(p != null);
                         }
@@ -360,7 +360,7 @@ namespace PEBakery.Core
                             PluginType type = PluginType.Plugin;
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
-                            p = new Plugin(type, pPath, this, projectRoot, level);
+                            p = new Plugin(type, pPath, this, projectRoot, level, false);
 
                             Debug.Assert(p != null);
                         }
@@ -500,7 +500,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, projectName, pathKey), this, projectRoot, p.Level);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, projectName, pathKey), this, projectRoot, p.Level, false);
                         nodeId = pTree.AddNode(nodeId, dirPlugin);
                         dirDict[key] = nodeId;
                     }
@@ -596,13 +596,13 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns></returns>
-        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false)
+        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false, bool ignoreMain = false)
         {
             // Limit: fullPath must be in BaseDir
             if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
-            Plugin p = LoadPlugin(pPath);
+            Plugin p = LoadPlugin(pPath, ignoreMain);
             if (addToList)
             {
                 allPluginList.Add(p);
@@ -612,20 +612,20 @@ namespace PEBakery.Core
             return p;
         }
 
-        public Plugin LoadPlugin(string pPath)
+        public Plugin LoadPlugin(string pPath, bool ignoreMain = false)
         {
             Plugin p;
             try
             {
                 if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel);
+                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel, ignoreMain);
                 else
                 {
                     string ext = Path.GetExtension(pPath);
                     if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null);
+                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null, false);
                     else
-                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null);
+                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null, ignoreMain);
                 }
 
                 // Check Plugin Link's validity

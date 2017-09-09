@@ -31,6 +31,7 @@ using PEBakery.Core.Commands;
 using PEBakery.WPF;
 using PEBakery.Lib;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace PEBakery.Core
 {
@@ -69,8 +70,8 @@ namespace PEBakery.Core
 
             // Log Plugin Build Start Message
             string msg;
-            if (s.RunOnePlugin && s.EntrySectionName.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
-                msg = $"Processing section [{s.EntrySectionName}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+            if (s.RunOnePlugin && s.EntrySection.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
+                msg = $"Processing section [{s.EntrySection}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
             else
                 msg = $"Processing plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
             s.Logger.Build_Write(s, msg);
@@ -97,6 +98,9 @@ namespace PEBakery.Core
                 { 9, "#9" },
             };
 
+            // Clear Processed Section Hashes
+            s.ProcessedSectionHashes.Clear();
+
             // Set Interface using MainWindow, MainViewModel
             if (s.RunOnePlugin)
                 s.MainViewModel.PluginTitleText = StringEscaper.Unescape(p.Title);
@@ -105,7 +109,7 @@ namespace PEBakery.Core
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
             s.MainViewModel.PluginVersionText = $"v{p.Version}";
             s.MainViewModel.PluginAuthorText = p.Author;
-            s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySectionName}]...";
+            s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySection}]...";
 
             long allLineCount = 0;
             foreach (var kv in s.CurrentPlugin.Sections.Where(x => x.Value.Type == SectionType.Code))
@@ -147,7 +151,7 @@ namespace PEBakery.Core
                     ReadyRunPlugin(s.BuildId);
 
                     // Run Main Section
-                    PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySectionName];
+                    PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
                     SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
                     s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
                     Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
@@ -157,13 +161,14 @@ namespace PEBakery.Core
                     FinishRunPlugin(s.PluginId);
 
                     // OnPluginExit event callback
-                    Engine.CheckAndRunCallback(s, ref s.OnPluginExit, "OnPluginExit");
+                    Engine.CheckAndRunCallback(s, ref s.OnPluginExit, FinishEventParam(s), "OnPluginExit");
 
                     if (s.Plugins.Count - 1 <= s.CurrentPluginIdx ||
-                        s.RunOnePlugin || s.ErrorHaltFlag || s.UserHaltFlag)
+                        s.RunOnePlugin || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     { // End of Build
                         bool alertErrorHalt = s.ErrorHaltFlag;
                         bool alertUserHalt = s.UserHaltFlag;
+                        bool alertCmdHalt = s.CmdHaltFlag;
 
                         if (s.UserHaltFlag)
                         {
@@ -174,17 +179,22 @@ namespace PEBakery.Core
                             alertUserHalt = true;
                         }
 
+                        string eventParam = FinishEventParam(s);
+
                         // Reset Halt Flags before running OnBuildExit
                         s.ErrorHaltFlag = false;
                         s.UserHaltFlag = false;
+                        s.CmdHaltFlag = false;
 
                         // OnBuildExit event callback
-                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, "OnBuildExit", true);
+                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
 
                         if (alertUserHalt)
-                            MessageBox.Show("Build stopped by user", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show("Build Stopped by User", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                        else if (alertCmdHalt)
+                            MessageBox.Show("Build Stopped by Halt Command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         else if (alertErrorHalt)
-                            MessageBox.Show("Build stopped by error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show("Build Stopped by Error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
 
                         break;
                     }
@@ -226,7 +236,9 @@ namespace PEBakery.Core
 
             RunCommands(s, addr, codes, paramDict, depth, callback);
 
-            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
+            // Increase only if cmd resides is CurrentPlugin
+            if (s.CurrentPlugin.Equals(addr.Plugin))
+                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
 
         public static void RunSection(EngineState s, SectionAddress addr, Dictionary<int, string> paramDict, int depth, bool callback)
@@ -237,7 +249,9 @@ namespace PEBakery.Core
             // Must copy ParamDict by value, not reference
             RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
 
-            s.MainViewModel.BuildPluginProgressBarValue += addr.Section.Lines.Count;
+            // Increase only if cmd resides is CurrentPlugin
+            if (s.CurrentPlugin.Equals(addr.Plugin))
+                s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
        
         public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
@@ -269,7 +283,7 @@ namespace PEBakery.Core
             }
         }
 
-        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventName, bool changeCurrentPlugin = false)
+        private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentPlugin = false)
         {
             if (cbCmd != null)
             {
@@ -278,14 +292,20 @@ namespace PEBakery.Core
                 if (changeCurrentPlugin)
                     s.CurrentPlugin = cbCmd.Addr.Plugin;
 
+                s.CurDepth = 0;
                 if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
                 {
-                    s.CurDepth = -1;
+                    Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
+                    CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
+                    if (1 <= info.Parameters.Count)
+                        info.Parameters[0] = eventParam; 
+                    else
+                        info.Parameters.Add(eventParam);
+
                     CommandBranch.RunExec(s, cbCmd, false, false, true);
                 }
                 else
                 {
-                    s.CurDepth = 0;
                     ExecuteCommand(s, cbCmd);
                 }
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
@@ -606,9 +626,17 @@ namespace PEBakery.Core
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
+            // Increase only if cmd resides is CurrentPlugin
+            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) &&
+                (s.CurrentPlugin.Equals(cmd.Addr.Plugin)))
+            {
+                s.MainViewModel.BuildPluginProgressBarValue += 1;
+            }
+
             s.MainViewModel.BuildCommandProgressBarValue = 1000;
         }
 
+        #region Static Methods
         private static void MuteLogError(List<LogInfo> logs)
         {
             for (int i = 0; i < logs.Count; i++)
@@ -621,6 +649,90 @@ namespace PEBakery.Core
                 }
             }
         }
+
+        public async static void RunEngine(Project project, Plugin p = null)
+        {
+            if (Engine.WorkingLock == 0)  // Start Build
+            {
+                Interlocked.Increment(ref Engine.WorkingLock);
+
+                Logger logger = null;
+                SettingViewModel setting = null;
+                MainViewModel mainModel = null;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    logger = w.Logger;
+                    setting = w.Setting;
+                    mainModel = w.Model;
+                });
+
+                EngineState s = new EngineState(project, logger, p);
+                s.SetLogOption(setting);
+
+                Engine.WorkingEngine = new Engine(s);
+
+                // Build Start, Switch to Build View
+                mainModel.SwitchNormalBuildInterface = false;
+
+                // Run
+                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
+
+#if DEBUG  // TODO: Remove this later, this line is for Debug
+                logger.ExportBuildLog(LogExportType.Text, System.IO.Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
+#endif
+
+                // Build Ended, Switch to Normal View
+                mainModel.SwitchNormalBuildInterface = true;
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    w.DrawPlugin(w.CurMainTree.Plugin);
+                });
+
+                Engine.WorkingEngine = null;
+
+                Interlocked.Decrement(ref Engine.WorkingLock);
+            }
+        }
+
+        public string FinishEventParam(EngineState s)
+        {
+            if (s.UserHaltFlag)
+                return "STOP";
+            else if (s.CmdHaltFlag)
+                return "HALT";
+            else if (s.ErrorHaltFlag)
+                return "ERROR";
+            else
+                return "DONE";
+        }
+
+        /// <summary>
+        /// Get Plugin Instance from path string.
+        /// </summary>
+        public static Plugin GetPluginInstance(EngineState s, CodeCommand cmd, string currentPluginPath, string loadPluginPath, out bool inCurrentPlugin)
+        {
+            inCurrentPlugin = false;
+            if (loadPluginPath.Equals(currentPluginPath, StringComparison.OrdinalIgnoreCase) ||
+                loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
+                inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
+
+            string fullPath = StringEscaper.ExpandVariables(s, loadPluginPath);
+            Plugin p = s.Project.GetPluginByFullPath(fullPath);
+            if (p == null)
+            { // Cannot Find Plugin in Project
+                if (!File.Exists(fullPath))
+                    throw new ExecuteException($"No plugin in [{fullPath}]");
+                p = s.Project.LoadPluginMonkeyPatch(fullPath, false, true);
+                if (p == null)
+                    throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+            }
+
+            return p;
+        }
+        #endregion
     }
 
     public class EngineState
@@ -648,20 +760,22 @@ namespace PEBakery.Core
         public long LoopCounter;
         public bool PassCurrentPluginFlag = false;
         public bool ErrorHaltFlag = false;
+        public bool CmdHaltFlag = false;
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
         public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
+        public List<int> ProcessedSectionHashes = new List<int>();
 
         // Fields : System Commands
         public CodeCommand OnBuildExit = null;
         public CodeCommand OnPluginExit = null;
 
         // Readonly Fields
-        public readonly string EntrySectionName;
+        public readonly string EntrySection;
 
-        public EngineState(Project project, Logger logger, Plugin pluginToRun = null, string entrySectionName = "Process")
+        public EngineState(Project project, Logger logger, Plugin runSingle = null, string entrySection = "Process")
         {
             this.Project = project;
             this.Logger = logger;
@@ -669,7 +783,7 @@ namespace PEBakery.Core
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);
 
-            if (pluginToRun == null) // Run just plugin
+            if (runSingle == null) // Run just plugin
             {
                 // Why List -> Tree -> List? To sort.
                 // TODO: Better way?
@@ -688,15 +802,15 @@ namespace PEBakery.Core
             }
             else
             {
-                Plugins = new List<Plugin>() { pluginToRun };
+                Plugins = new List<Plugin>() { runSingle };
 
-                CurrentPlugin = pluginToRun;
-                CurrentPluginIdx = Plugins.IndexOf(pluginToRun);
+                CurrentPlugin = runSingle;
+                CurrentPluginIdx = Plugins.IndexOf(runSingle);
 
                 RunOnePlugin = true;
             }
 
-            EntrySectionName = entrySectionName;
+            EntrySection = entrySection;
 
             CurSectionParams = new Dictionary<int, string>();
 
@@ -717,30 +831,6 @@ namespace PEBakery.Core
         {
             LogComment = logComment;
             LogMacro = logMacro;
-        }
-
-        /// <summary>
-        /// Get Plugin Instance from path string.
-        /// </summary>
-        public Plugin GetPluginInstance(CodeCommand cmd, string currentPluginPath, string loadPluginPath, out bool inCurrentPlugin)
-        {
-            inCurrentPlugin = false;
-            if (loadPluginPath.Equals(currentPluginPath, StringComparison.OrdinalIgnoreCase) ||
-                loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
-                inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
-
-            string fullPath = StringEscaper.ExpandVariables(this, loadPluginPath);
-            Plugin p = this.Project.GetPluginByFullPath(fullPath);
-            if (p == null)
-            { // Cannot Find Plugin in Project
-                if (!File.Exists(fullPath))
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-                p = this.Project.LoadPluginMonkeyPatch(fullPath);
-                if (p == null)
-                    throw new ExecuteException($"Unable to load plugin [{fullPath}]");
-            }
-
-            return p;
         }
     }
 }

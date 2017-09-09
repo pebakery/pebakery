@@ -144,7 +144,7 @@ namespace PEBakery.Core
             inputStream.Position = 0;
             string encoded;
             using (MemoryStream memStream = new MemoryStream())
-            using (DeflateStream zlibStream = new DeflateStream(memStream, CompressionLevel.Optimal))
+            using (DeflateStream zlibStream = new DeflateStream(memStream, CompressionLevel.Fastest))
             {
                 inputStream.CopyTo(zlibStream);
                 zlibStream.Close();
@@ -208,8 +208,8 @@ namespace PEBakery.Core
             keys = null; // Please GC this
 
             StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < base64Blocks.Count; i++)
-                builder.Append(base64Blocks[i]);
+            foreach (string block in base64Blocks)
+                builder.Append(block);
                 
             switch (builder.Length % 4)
             {
@@ -224,43 +224,53 @@ namespace PEBakery.Core
                     break;
             }
 
-            MemoryStream mem = new MemoryStream();
+            MemoryStream mem = null;
             string encoded = builder.ToString();
             builder = null; // Please GC this
             byte[] decoded = Convert.FromBase64String(encoded);
             encoded = null; // Please GC this
-            if (decoded[0] == 0x78 && decoded[1] == 0x9c)
+            if (decoded[0] == 0x78 && decoded[1] == 0x01 || // No compression
+                decoded[0] == 0x78 && decoded[1] == 0x9C || // Default compression
+                decoded[0] == 0x78 && decoded[1] == 0xDA) // Best compression
             { // Type 1, encoded with Zlib. 
-                MemoryStream zlibMem = new MemoryStream(decoded);
-                decoded = null;
-                // Remove zlib magic number, converting to deflate data stream
-                zlibMem.ReadByte(); // 0x78
-                zlibMem.ReadByte(); // 0x9c
+                using (MemoryStream zlibMem = new MemoryStream(decoded))
+                {
+                    decoded = null;
+                    // Remove zlib magic number, converting to deflate data stream
+                    zlibMem.ReadByte(); // 0x78
+                    zlibMem.ReadByte(); // 0x9c
 
-                // DeflateStream internally use zlib library, starting from .Net 4.5
-                DeflateStream zlibStream = new DeflateStream(zlibMem, CompressionMode.Decompress);
-                mem.Position = 0;
-                zlibStream.CopyTo(mem);
-                zlibStream.Close();
+                    mem = new MemoryStream();
+                    // DeflateStream internally use zlib library, starting from .Net 4.5
+                    using (DeflateStream zlibStream = new DeflateStream(zlibMem, CompressionMode.Decompress))
+                    {
+                        mem.Position = 0;
+                        zlibStream.CopyTo(mem);
+                        zlibStream.Close();
+                    }
+                } 
             }
             else
             { // Type 2, for already compressed file
                 // Main file : encoded without zlib
-                // Metadata at Footer : zlib compressed -> do not use. Maybe for integrity purpose?
+                // Metadata at footer : zlib compressed -> do not used. Maybe for integrity purpose?
                 bool failure = true;
                 for (int i = decoded.Length - 1; 0 < i; i--)
                 {
-                    if (decoded[i - 1] == 0x78 && decoded[i] == 0x9c)
+                    if (decoded[i - 1] == 0x78 && decoded[i] == 0x01 || // No compression
+                        decoded[i - 1] == 0x78 && decoded[i] == 0x9C || // Default compression
+                        decoded[i - 1] == 0x78 && decoded[i] == 0xDA) // Best compression
                     { // Found footer zlib stream
                         int idx = i - 1;
                         byte[] body = decoded.Take(idx).ToArray();
                         // byte[] footer = decoded.Skip(idx).ToArray();
                         mem = new MemoryStream(body);
                         failure = false;
+                        break;
                     }
                 }
                 if (failure)
-                    throw new ExtractFileFailException("Extract faild.");
+                    throw new ExtractFileFailException("Extract failed");
             }
 
             return mem;

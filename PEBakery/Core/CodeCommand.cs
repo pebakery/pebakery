@@ -1674,23 +1674,23 @@ namespace PEBakery.Core
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Left,<SrcString>,<Integer>,<DestVar>
         // StrFormat,Right,<SrcString>,<Integer>,<DestVar>
-        public string SrcString;
-        public string Integer; 
+        public string SrcStr;
+        public string CutLen; 
         public string DestVar;
 
         public StrFormatInfo_LeftRight(string srcString, string integer, string destVar)
         {
-            SrcString = srcString;
-            Integer = integer;
+            SrcStr = srcString;
+            CutLen = integer;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Integer));
+            b.Append(StringEscaper.Doublequote(CutLen));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2657,7 +2657,7 @@ namespace PEBakery.Core
                         {
                             match = false;
                         }
-                        if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        else if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
                         {
                             match = false;
                         }
