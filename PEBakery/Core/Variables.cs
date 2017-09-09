@@ -100,27 +100,38 @@ namespace PEBakery.Core
             // SourceDir
             string sourceDir = string.Empty;
             string sourceDirs = dict["SourceDir"];
-            string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string rawDir in rawDirList)
+            if (sourceDirs != null) // Empty
             {
-                string dir = rawDir.Trim();
-                if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string rawDir in rawDirList)
                 {
-                    sourceDir = dir;
-                    break;
+                    string dir = rawDir.Trim();
+                    if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    {
+                        sourceDir = dir;
+                        break;
+                    }
                 }
             }
+
+            string targetDir = dict["TargetDir"];
+            if (targetDir == null)
+                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+
+            string isoFile = dict["ISOFile"];
+            if (isoFile == null)
+                isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
 
             // ProjectDir
             logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
             // SourceDir
             logs.Add(SetFixedValue("SourceDir", sourceDir));
             // TargetDir
-            logs.Add(SetFixedValue("TargetDir", dict["TargetDir"]));
+            logs.Add(SetFixedValue("TargetDir", targetDir));
             // ISOFile
-            logs.Add(SetFixedValue("ISOFile", dict["ISOFile"]));
+            logs.Add(SetFixedValue("ISOFile", isoFile));
             // ISODir
-            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(dict["ISOFile"])));
+            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(isoFile)));
             #endregion
 
             #region Envrionment Variables

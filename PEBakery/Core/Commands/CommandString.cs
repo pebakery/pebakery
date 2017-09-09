@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_IntToBytes subInfo = info.SubInfo as StrFormatInfo_IntToBytes;
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
-                        if (NumberHelper.ParseInt64(byteSizeStr, out long byteSize) == false)
+                        if (!NumberHelper.ParseInt64(byteSizeStr, out long byteSize))
                             throw new ExecuteException($"[{byteSizeStr}] is not valid integer");
 
                         if (byteSize < 0)
@@ -89,7 +89,7 @@ namespace PEBakery.Core.Commands
                         // subInfo.SizeVar;
                         string roundToStr = StringEscaper.Preprocess(s, subInfo.RoundTo);
                         // Is roundToStr number?
-                        if (NumberHelper.ParseInt64(roundToStr, out long roundTo) == false)
+                        if (!NumberHelper.ParseInt64(roundToStr, out long roundTo))
                         { // Is roundToStr is one of K, M, G, T, P?
                             if (roundToStr.Equals("K", StringComparison.OrdinalIgnoreCase))
                                 roundTo = KB;

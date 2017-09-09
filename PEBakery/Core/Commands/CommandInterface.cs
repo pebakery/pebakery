@@ -207,11 +207,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w.Model.BuildEchoMessage = message;
-            });
+            s.MainViewModel.BuildEchoMessage = message;
 
             logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
 

@@ -175,8 +175,6 @@ namespace PEBakery.Core
                             s.MainViewModel.PluginDescriptionText = "Build stop requested by user";
                             s.Logger.Build_Write(s, Logger.LogSeperator);
                             s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Build stop requested by user"));
-
-                            alertUserHalt = true;
                         }
 
                         string eventParam = FinishEventParam(s);
@@ -314,7 +312,7 @@ namespace PEBakery.Core
             }
         }
 
-        private static void ExecuteCommand(EngineState s, CodeCommand cmd)
+        public static void ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
             int curDepth = s.CurDepth;
@@ -650,53 +648,6 @@ namespace PEBakery.Core
             }
         }
 
-        public async static void RunEngine(Project project, Plugin p = null)
-        {
-            if (Engine.WorkingLock == 0)  // Start Build
-            {
-                Interlocked.Increment(ref Engine.WorkingLock);
-
-                Logger logger = null;
-                SettingViewModel setting = null;
-                MainViewModel mainModel = null;
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    logger = w.Logger;
-                    setting = w.Setting;
-                    mainModel = w.Model;
-                });
-
-                EngineState s = new EngineState(project, logger, p);
-                s.SetLogOption(setting);
-
-                Engine.WorkingEngine = new Engine(s);
-
-                // Build Start, Switch to Build View
-                mainModel.SwitchNormalBuildInterface = false;
-
-                // Run
-                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                logger.ExportBuildLog(LogExportType.Text, System.IO.Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-
-                // Build Ended, Switch to Normal View
-                mainModel.SwitchNormalBuildInterface = true;
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    w.DrawPlugin(w.CurMainTree.Plugin);
-                });
-
-                Engine.WorkingEngine = null;
-
-                Interlocked.Decrement(ref Engine.WorkingLock);
-            }
-        }
-
         public string FinishEventParam(EngineState s)
         {
             if (s.UserHaltFlag)
@@ -775,7 +726,7 @@ namespace PEBakery.Core
         // Readonly Fields
         public readonly string EntrySection;
 
-        public EngineState(Project project, Logger logger, Plugin runSingle = null, string entrySection = "Process")
+        public EngineState(Project project, Logger logger, MainViewModel mainModel, Plugin runSingle = null, string entrySection = "Process")
         {
             this.Project = project;
             this.Logger = logger;
@@ -814,11 +765,7 @@ namespace PEBakery.Core
 
             CurSectionParams = new Dictionary<int, string>();
 
-            Application.Current.Dispatcher.Invoke((Action)(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                MainViewModel = w.Model;
-            }));
+            MainViewModel = mainModel;
         }
 
         public void SetLogOption(SettingViewModel m)

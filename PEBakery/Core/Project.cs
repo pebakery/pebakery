@@ -665,5 +665,10 @@ namespace PEBakery.Core
         {
             return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
         }
+
+        public Plugin GetPluginByShortPath(string shortPath)
+        {
+            return AllPluginList.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

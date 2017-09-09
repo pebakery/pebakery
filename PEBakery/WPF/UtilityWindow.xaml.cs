@@ -103,7 +103,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
+        private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
             if (File.Exists(m.CodeFile))
@@ -117,9 +117,29 @@ namespace PEBakery.WPF
 
             if (Engine.WorkingLock == 0)  // Start Build
             {
+                Interlocked.Increment(ref Engine.WorkingLock);
+
                 Project project = m.CodeBox_CurrentProject;
                 Plugin p = project.LoadPluginMonkeyPatch(m.CodeFile);
-                Engine.RunEngine(project, p);
+
+                Logger logger = null;
+                SettingViewModel setting = null;
+                MainViewModel mainModel = null;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    logger = w.Logger;
+                    setting = w.Setting;
+                    mainModel = w.Model;
+                });
+
+                EngineState s = new EngineState(p.Project, logger, mainModel, p);
+                s.SetLogOption(setting);
+
+                await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+
+                Engine.WorkingEngine = null;
+                Interlocked.Decrement(ref Engine.WorkingLock);
             }
             else
             {
