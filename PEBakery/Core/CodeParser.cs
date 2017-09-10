@@ -1621,7 +1621,7 @@ namespace PEBakery.Core
             {
                 case StrFormatType.IntToBytes:
                 case StrFormatType.Bytes:
-                    { // StrFormat,IntToBytes,<Integer>,<DestVarName>
+                    { // StrFormat,IntToBytes,<Integer>,<DestVar>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1633,7 +1633,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.BytesToInt:
-                    { // StrFormat,BytesToInt,<Bytes>,<DestVarName>
+                    { // StrFormat,BytesToInt,<Bytes>,<DestVar>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1663,15 +1663,133 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Date:
-                    { // StrFormat,Date,<DestVarName>,<FormatString>
+                    { // StrFormat,Date,<DestVar>,<FormatString>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_Date(args[0], args[1]);
+                        string destVar = args[0];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        // Check if there are only characters which are allowed
+                        char[] allowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', }; // Year, Month, Date, Hour, Minute, Second, Millisecond
+                        string wbFormatStr = args[1].ToLower();
+                        foreach (char ch in wbFormatStr)
+                        {
+                            if ('a' <= ch && ch <= 'z')
+                            {
+                                if (!allowedChars.Contains(ch))
+                                    throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
+                            }
+                        }
+
+                        // Convert WB Date Format String to .Net Date Format String
+                        int idx = 0;
+                        StringBuilder b = new StringBuilder("");
+                        while (idx < wbFormatStr.Length)
+                        {
+                            if (idx + 4 <= wbFormatStr.Length)
+                            {
+                                string first4 = wbFormatStr.Substring(idx, 4);
+                                if (first4.Equals("yyyy", StringComparison.Ordinal))
+                                {
+                                    b.Append("yyyy");
+                                    idx += 4;
+                                    continue;
+                                }
+                            }
+
+                            if (idx + 3 <= wbFormatStr.Length)
+                            {
+                                string first3 = wbFormatStr.Substring(idx, 3);
+                                if (first3.Equals("zzz", StringComparison.Ordinal))
+                                {
+                                    b.Append("fff");
+                                    idx += 3;
+                                    continue;
+                                }
+                            }
+
+                            if (idx + 2 <= wbFormatStr.Length)
+                            {
+                                string first2 = wbFormatStr.Substring(idx, 2);
+                                if (first2.Equals("yy", StringComparison.Ordinal))
+                                {
+                                    b.Append("yy");
+                                    idx += 2;
+                                    continue;
+                                }
+                                else if (first2.Equals("mm", StringComparison.Ordinal))
+                                {
+                                    b.Append("MM");
+                                    idx += 2;
+                                    continue;
+                                }
+                                else if (first2.Equals("dd", StringComparison.Ordinal))
+                                {
+                                    b.Append("dd");
+                                    idx += 2;
+                                    continue;
+                                }
+                                else if (first2.Equals("hh", StringComparison.Ordinal))
+                                {
+                                    b.Append("HH");
+                                    idx += 2;
+                                    continue;
+                                }
+                                else if (first2.Equals("nn", StringComparison.Ordinal))
+                                {
+                                    b.Append("mm");
+                                    idx += 2;
+                                    continue;
+                                }
+                                else if (first2.Equals("ss", StringComparison.Ordinal))
+                                {
+                                    b.Append("ss");
+                                    idx += 2;
+                                    continue;
+                                }
+                            }
+
+                            char ch = wbFormatStr[idx];
+                            if (ch == 'm')
+                            {
+                                b.Append("M");
+                                idx += 1;
+                            }
+                            else if (ch == 'd')
+                            {
+                                b.Append("d");
+                                idx += 1;
+                            }
+                            else if (ch == 'h')
+                            {
+                                b.Append("H");
+                                idx += 1;
+                            }
+                            else if (ch == 'n')
+                            {
+                                b.Append("m");
+                                idx += 1;
+                            }
+                            else if (ch == 's')
+                            {
+                                b.Append("s");
+                                idx += 1;
+                            }
+                            else if ('a' <= ch && ch <= 'z')
+                            { // Error!
+                                throw new InvalidCommandException($"Invalid date format string [{args[1]}], check index [{idx}]", rawCode);
+                            }
+                            else
+                            { // Only if token is not alphabet
+                                b.Append(ch);
+                                idx += 1;
+                            }
+                        }
+
+                        info = new StrFormatInfo_Date(destVar, b.ToString());
                     }
                     break;
                 case StrFormatType.FileName:
@@ -1679,18 +1797,19 @@ namespace PEBakery.Core
                 case StrFormatType.Path:
                 case StrFormatType.Ext:
                     {
-                        // StrFormat,FileName,<FilePath>,<DestVarName>
-                        // StrFormat,DirPath,<FilePath>,<DestVarName> -- Same with StrFormat,Path
-                        // StrFormat,Ext,<FilePath>,<DestVarName>
+                        // StrFormat,FileName,<FilePath>,<DestVar>
+                        // StrFormat,DirPath,<FilePath>,<DestVar> -- Same with StrFormat,Path
+                        // StrFormat,Ext,<FilePath>,<DestVar>
 
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode); 
-                        else
-                            info = new StrFormatInfo_Path(args[0], args[1]);
+                        string destVar = args[1];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode); 
+                        
+                        info = new StrFormatInfo_Path(args[0], destVar);
                     }
                     break;
                 case StrFormatType.Inc:
@@ -1698,10 +1817,10 @@ namespace PEBakery.Core
                 case StrFormatType.Mult:
                 case StrFormatType.Div:
                     {
-                        // StrFormat,Inc,<DestVarName>,<Integer>
-                        // StrFormat,Dec,<DestVarName>,<Integer>
-                        // StrFormat,Mult,<DestVarName>,<Integer>
-                        // StrFormat,Div,<DestVarName>,<Integer>
+                        // StrFormat,Inc,<DestVar>,<Integer>
+                        // StrFormat,Dec,<DestVar>,<Integer>
+                        // StrFormat,Mult,<DestVar>,<Integer>
+                        // StrFormat,Div,<DestVar>,<Integer>
 
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -1716,8 +1835,8 @@ namespace PEBakery.Core
                 case StrFormatType.Left:
                 case StrFormatType.Right:
                     {
-                        // StrFormat,Left,<SrcString>,<Integer>,<DestVarName>
-                        // StrFormat,Right,<SrcString>,<Integer>,<DestVarName>
+                        // StrFormat,Left,<SrcString>,<Integer>,<DestVar>
+                        // StrFormat,Right,<SrcString>,<Integer>,<DestVar>
 
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -1730,7 +1849,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.SubStr:
-                    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVarName>
+                    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1742,7 +1861,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Len:
-                    { // StrFormat,Len,<SrcString>,<DestVarName>
+                    { // StrFormat,Len,<SrcString>,<DestVar>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1757,9 +1876,9 @@ namespace PEBakery.Core
                 case StrFormatType.RTrim:
                 case StrFormatType.CTrim:
                     {
-                        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVarName>
-                        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVarName>
-                        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVarName>
+                        // StrFormat,LTrim,<SrcString>,<Integer>,<DestVar>
+                        // StrFormat,RTrim,<SrcString>,<Integer>,<DestVar>
+                        // StrFormat,CTrim,<SrcString>,<Chars>,<DestVar>
 
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -1772,7 +1891,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.NTrim:
-                    { // StrFormat,NTrim,<SrcString>,<DestVarName>
+                    { // StrFormat,NTrim,<SrcString>,<DestVar>
 
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -1785,7 +1904,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Pos:
-                    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVarName>
+                    { // StrFormat,Pos,<SrcString>,<SubString>,<DestVar>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1799,8 +1918,8 @@ namespace PEBakery.Core
                 case StrFormatType.Replace:
                 case StrFormatType.ReplaceX:
                     {
-                        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
-                        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVarName>
+                        // StrFormat,Replace,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
+                        // StrFormat,ReplaceX,<SrcString>,<ToBeReplaced>,<ReplaceWith>,<DestVar>
 
                         const int argCount = 4;
                         if (args.Count != argCount)
@@ -1815,8 +1934,8 @@ namespace PEBakery.Core
                 case StrFormatType.ShortPath:
                 case StrFormatType.LongPath:
                     {
-                        // StrFormat,ShortPath,<SrcString>,<DestVarName>
-                        // StrFormat,LongPath,<SrcString>,<DestVarName>
+                        // StrFormat,ShortPath,<SrcString>,<DestVar>
+                        // StrFormat,LongPath,<SrcString>,<DestVar>
 
                         const int argCount = 2;
                         if (args.Count != argCount)
@@ -1829,7 +1948,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Split:
-                    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVarName>
+                    { // StrFormat,Split,<SrcString>,<Delimeter>,<Index>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);

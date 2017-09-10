@@ -115,12 +115,12 @@ namespace PEBakery.Core.Commands
                         if (type == StrFormatType.Ceil)
                         {
                             long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder;
+                            destInt = srcInt - remainder + roundTo;
                         }
                         else if (type == StrFormatType.Floor)
                         {
                             long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder + roundTo;
+                            destInt = srcInt - remainder;
                         }
                         else // if (type == StrFormatType.Round)
                         {
@@ -136,22 +136,22 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case StrFormatType.Date:
-                    {
-                        /*
-                        * <yyyy-mmm-dd hh:nn am/pm> 
-                        */
+                    { // <yyyy-mmm-dd hh:nn am/pm> 
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
                         StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
 
+                        string dotNetFormatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
+                        /*
                         string wbFormatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
 
+                        // TODO: More precise parsing
                         Dictionary<string, string> wbDateTime = new Dictionary<string, string>(StringComparer.Ordinal)
                         {
                             // Year
                             [@"(?<!y)(yyyy)(?!y)"] = @"yyyy",
                             [@"(?<!y)(yy)(?!y)"] = @"yy",
                             // Month
-                            [@"(?<!m)(mmm)(?!m)"] = @"MMM",
+                            // [@"(?<!m)(mmm)(?!m)"] = @"MMM", // Unused in Win10PESE, because of wonderful bug! (Instead of "MMM", "M" is used, in fact)
                             [@"(?<!m)(mm)(?!m)"] = @"MM",
                             [@"(?<!m)(m)(?!m)"] = @"M",
                             // Date
@@ -166,8 +166,11 @@ namespace PEBakery.Core.Commands
                             // Second
                             [@"(?<!s)(ss)(?!s)"] = @"ss",
                             [@"(?<!s)(s)(?!s)"] = @"s",
+                            // Millisecond
+                            [@"(?<!z)(zzz)(?!z)"] = @"fff",
                         };
 
+                        // -> Unused in Win10PESE, deprecated
                         if (Regex.IsMatch(wbFormatStr, @"(am\/pm)", RegexOptions.Compiled))
                         { // AM/PM Found, change 24 hours into 12 hours
                             wbDateTime[@"(am\/pm)"] = @"tt";
@@ -178,6 +181,7 @@ namespace PEBakery.Core.Commands
                         string dotNetFormatStr = wbFormatStr;
                         foreach (var kv in wbDateTime)
                             dotNetFormatStr = Regex.Replace(dotNetFormatStr, kv.Key, kv.Value);
+                        */
 
                         string destStr = DateTime.Now.ToString(dotNetFormatStr, CultureInfo.InvariantCulture);
 
@@ -208,9 +212,54 @@ namespace PEBakery.Core.Commands
                                 destStr = Path.GetFileName(srcStr);
                                 logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
                             }
-                            else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
-                            {
-                                destStr = Path.GetDirectoryName(srcStr);
+                            else if (type == StrFormatType.DirPath)
+                            { // Does not includes Last Seperator
+                                int bsIdx = srcStr.LastIndexOf('\\');
+                                int sIdx = srcStr.LastIndexOf('/');
+
+                                if (bsIdx != -1 && sIdx != -1)
+                                { // Slash and BackSlash cannot exist at same time
+                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
+                                    return logs;
+                                }
+
+                                if (bsIdx != -1)
+                                { // Normal file path
+                                    destStr = Path.GetDirectoryName(srcStr);
+                                }
+                                else
+                                { // URL
+                                    if (sIdx == -1)
+                                        destStr = string.Empty;
+                                    else
+                                        destStr = srcStr.Substring(0, sIdx);
+                                }
+
+                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
+                            }
+                            else if (type == StrFormatType.Path)
+                            { // Includes Last Seperator - Default WB082 Behavior
+                                int bsIdx = srcStr.LastIndexOf('\\');
+                                int sIdx = srcStr.LastIndexOf('/');
+
+                                if (bsIdx != -1 && sIdx != -1)
+                                { // Slash and BackSlash cannot exist at same time
+                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
+                                    return logs;
+                                }
+
+                                if (bsIdx != -1)
+                                { // Normal file path
+                                    destStr = Path.GetDirectoryName(srcStr) + '\\';
+                                }
+                                else
+                                { // URL
+                                    if (sIdx == -1)
+                                        destStr = string.Empty;
+                                    else
+                                        destStr = srcStr.Substring(0, sIdx + 1);
+                                }
+                                
                                 logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
                             }
                             else if (type == StrFormatType.Ext)

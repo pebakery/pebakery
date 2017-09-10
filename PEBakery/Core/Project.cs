@@ -266,7 +266,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class Project
+    public class Project : ICloneable
     {
         // Fields
         private readonly string projectName;
@@ -295,6 +295,7 @@ namespace PEBakery.Core
         public int LoadedPluginCount { get => loadedPluginCount; }
         public int AllPluginCount { get => allPluginCount; }
 
+        #region Constructor
         public Project(string baseDir, string projectName)
         {
             this.loadedPluginCount = 0;
@@ -304,7 +305,9 @@ namespace PEBakery.Core
             this.projectDir = Path.Combine(baseDir, "Projects", projectName);
             this.baseDir = baseDir;
         }
+        #endregion
 
+        #region Load Plugins
         public void Load(List<string> allPluginPathList, PluginCache pluginCache, BackgroundWorker worker)
         {
             ReaderWriterLockSlim listLock = new ReaderWriterLockSlim();
@@ -318,7 +321,7 @@ namespace PEBakery.Core
 
             // Load plugins from disk or cache
             Task[] tasks = allPluginPathList.Select(pPath =>
-            {              
+            {
                 return Task.Run(() =>
                 {
                     int cached = 0;
@@ -405,6 +408,101 @@ namespace PEBakery.Core
             this.Variables = new Variables(this);
         }
 
+        /// <summary>
+        /// Return true if error
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns></returns>
+        public Plugin RefreshPlugin(Plugin plugin)
+        {
+            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, plugin.FullPath, StringComparison.OrdinalIgnoreCase));
+            if (idx == -1)
+                return null;
+
+            Node<Plugin> node = allPlugins.SearchNode(plugin);
+            string pPath = plugin.FullPath;
+            Plugin p = LoadPlugin(pPath);
+
+            if (p != null)
+                allPluginList[idx] = p;
+            node.Data = p;
+
+            return p;
+        }
+
+        /// <summary>
+        /// Load plugin into project while running
+        /// Return true if error
+        /// </summary>
+        /// <param name="plugin"></param>
+        /// <returns></returns>
+        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false, bool ignoreMain = false)
+        {
+            // Limit: fullPath must be in BaseDir
+            if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
+                return null;
+
+            Plugin p = LoadPlugin(pPath, ignoreMain);
+            if (addToList)
+            {
+                allPluginList.Add(p);
+                allPluginCount += 1;
+            }
+
+            return p;
+        }
+
+        public Plugin LoadPlugin(string pPath, bool ignoreMain = false)
+        {
+            Plugin p;
+            try
+            {
+                if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel, ignoreMain);
+                else
+                {
+                    string ext = Path.GetExtension(pPath);
+                    if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
+                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null, false);
+                    else
+                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null, ignoreMain);
+                }
+
+                // Check Plugin Link's validity
+                // Also, convert nested link to one-depth link
+                if (p.Type == PluginType.Link)
+                {
+                    Plugin link = p.Link;
+                    bool valid = false;
+                    do
+                    {
+                        if (link == null)
+                            return null;
+                        if (link.Type == PluginType.Plugin)
+                        {
+                            valid = true;
+                            break;
+                        }
+                        link = link.Link;
+                    }
+                    while (link.Type != PluginType.Plugin);
+
+                    if (valid)
+                        p.Link = link;
+                    else
+                        return null;
+                }
+            }
+            catch
+            { // Do nothing - intentionally left blank
+                return null;
+            }
+
+            return p;
+        }
+        #endregion
+
+        #region Active, Visible Plugins
         public Tree<Plugin> GetActivePlugin()
         {
             List<Plugin> activePluginList = CollectActivePlugins(allPluginList);
@@ -457,7 +555,9 @@ namespace PEBakery.Core
             }
             return activePluginList;
         }
+        #endregion
 
+        #region Plugin Trees
         private string PathKeyGenerator(string[] paths, int last)
         { // last - start entry is 0
             StringBuilder builder = new StringBuilder();
@@ -567,100 +667,9 @@ namespace PEBakery.Core
 
             return final;
         }
+        #endregion
 
-        /// <summary>
-        /// Return true if error
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <returns></returns>
-        public Plugin RefreshPlugin(Plugin plugin)
-        {
-            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, plugin.FullPath, StringComparison.OrdinalIgnoreCase));
-            if (idx == -1)
-                return null;
-
-            Node<Plugin> node = allPlugins.SearchNode(plugin);
-            string pPath = plugin.FullPath;
-            Plugin p = LoadPlugin(pPath);
-
-            if (p != null)
-                allPluginList[idx] = p;
-                node.Data = p;
-
-            return p;
-        }
-
-        /// <summary>
-        /// Load plugin into project while running
-        /// Return true if error
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <returns></returns>
-        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false, bool ignoreMain = false)
-        {
-            // Limit: fullPath must be in BaseDir
-            if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
-                return null;
-
-            Plugin p = LoadPlugin(pPath, ignoreMain);
-            if (addToList)
-            {
-                allPluginList.Add(p);
-                allPluginCount += 1;
-            }
-                
-            return p;
-        }
-
-        public Plugin LoadPlugin(string pPath, bool ignoreMain = false)
-        {
-            Plugin p;
-            try
-            {
-                if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel, ignoreMain);
-                else
-                {
-                    string ext = Path.GetExtension(pPath);
-                    if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null, false);
-                    else
-                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null, ignoreMain);
-                }
-
-                // Check Plugin Link's validity
-                // Also, convert nested link to one-depth link
-                if (p.Type == PluginType.Link)
-                {
-                    Plugin link = p.Link;
-                    bool valid = false;
-                    do
-                    {
-                        if (link == null)
-                            return null;
-                        if (link.Type == PluginType.Plugin)
-                        {
-                            valid = true;
-                            break;
-                        }
-                        link = link.Link;
-                    }
-                    while (link.Type != PluginType.Plugin);
-
-                    if (valid)
-                        p.Link = link;
-                    else
-                        return null;
-                }
-            }
-            catch
-            { // Do nothing - intentionally left blank
-                return null;
-            }
-
-            return p;
-        }
-
+        #region GetPluginByPath
         public Plugin GetPluginByFullPath(string fullPath)
         {
             return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
@@ -670,5 +679,21 @@ namespace PEBakery.Core
         {
             return AllPluginList.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
         }
+        #endregion
+
+        #region Clone
+        public object Clone()
+        {
+            Project project = new Project(baseDir, projectName)
+            {
+                mainPlugin = this.mainPlugin,
+                allPluginList = new List<Plugin>(this.allPluginList),
+                variables = this.variables.Clone() as Variables,
+                loadedPluginCount = this.loadedPluginCount,
+                allPluginCount = this.allPluginCount,
+            };
+            return project;
+        }
+        #endregion
     }
 }

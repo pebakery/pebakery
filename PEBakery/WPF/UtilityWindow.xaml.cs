@@ -136,6 +136,8 @@ namespace PEBakery.WPF
                 EngineState s = new EngineState(p.Project, logger, mainModel, p);
                 s.SetLogOption(setting);
 
+                Engine.WorkingEngine = new Engine(s);
+
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
                 Engine.WorkingEngine = null;

@@ -13,6 +13,13 @@ namespace UnitTest.Libs
     {
         #region GetKey
         [TestMethod]
+        public void IniLib_GetKey()
+        {
+            IniLib_GetKey_1();
+            IniLib_GetKey_2();
+            IniLib_GetKey_3();
+        }
+        
         public void IniLib_GetKey_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -20,7 +27,6 @@ namespace UnitTest.Libs
             Assert.IsNull(Ini.GetKey(tempFile, "Section", "Key"));
         }
 
-        [TestMethod]
         public void IniLib_GetKey_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -39,7 +45,6 @@ namespace UnitTest.Libs
             Assert.IsFalse(Ini.GetKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
         }
         
-        [TestMethod]
         public void IniLib_GetKey_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -74,6 +79,11 @@ namespace UnitTest.Libs
 
         #region GetKeys
         [TestMethod]
+        public void IniLib_GetKeys()
+        {
+            IniLib_GetKeys_1();
+        }
+
         public void IniLib_GetKeys_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -123,6 +133,12 @@ namespace UnitTest.Libs
 
         #region SetKey
         [TestMethod]
+        public void IniLib_SetKey()
+        {
+            IniLib_SetKey_1();
+            IniLib_SetKey_2();
+        }
+
         public void IniLib_SetKey_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -144,7 +160,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_SetKey_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -177,6 +192,12 @@ namespace UnitTest.Libs
 
         #region SetKeys
         [TestMethod]
+        public void IniLib_SetKeys()
+        {
+            IniLib_SetKeys_1();
+            IniLib_SetKeys_2();
+        }
+
         public void IniLib_SetKeys_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -211,7 +232,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_SetKeys_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -274,6 +294,13 @@ namespace UnitTest.Libs
 
         #region WriteRawLine
         [TestMethod]
+        public void IniLib_WriteRawLine()
+        {
+            IniLib_WriteRawLine_1();
+            IniLib_WriteRawLine_2();
+            IniLib_WriteRawLine_3();
+        }
+
         public void IniLib_WriteRawLine_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -297,7 +324,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_WriteRawLine_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -328,7 +354,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_WriteRawLine_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -362,6 +387,12 @@ namespace UnitTest.Libs
 
         #region WriteRawLines
         [TestMethod]
+        public void IniLib_WriteRawLines()
+        {
+            IniLib_WriteRawLines_1();
+            IniLib_WriteRawLines_2();
+        }
+
         public void IniLib_WriteRawLines_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -420,7 +451,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_WriteRawLines_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -482,6 +512,13 @@ namespace UnitTest.Libs
 
         #region DeleteKey
         [TestMethod]
+        public void IniLib_DeleteKey()
+        {
+            IniLib_DeleteKey_1();
+            IniLib_DeleteKey_2();
+            IniLib_DeleteKey_3();
+        }
+
         public void IniLib_DeleteKey_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -516,7 +553,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_DeleteKey_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -553,7 +589,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_DeleteKey_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -591,6 +626,11 @@ namespace UnitTest.Libs
 
         #region DeleteKeys
         [TestMethod]
+        public void IniLib_DeleteKeys()
+        {
+            IniLib_DeleteKeys_1();
+        }
+
         public void IniLib_DeleteKeys_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -644,6 +684,13 @@ namespace UnitTest.Libs
 
         #region AddSection
         [TestMethod]
+        public void IniLIb_AddSection()
+        {
+            IniLib_AddSection_1();
+            IniLib_AddSection_2();
+            IniLib_AddSection_3();
+        }
+
         public void IniLib_AddSection_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -666,7 +713,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_AddSection_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -699,7 +745,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_AddSection_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -753,6 +798,12 @@ namespace UnitTest.Libs
 
         #region AddSections
         [TestMethod]
+        public void IniLib_AddSections()
+        {
+            IniLib_AddSections_1();
+            IniLib_AddSections_2();
+        }
+
         public void IniLib_AddSections_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -787,7 +838,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_AddSections_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -847,6 +897,13 @@ namespace UnitTest.Libs
 
         #region DeleteSection
         [TestMethod]
+        public void IniLib_DeleteSection()
+        {
+            IniLib_DeleteSection_1();
+            IniLib_DeleteSection_2();
+            IniLib_DeleteSection_3();
+        }
+
         public void IniLib_DeleteSection_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -866,7 +923,6 @@ namespace UnitTest.Libs
             }
         }
 
-        [TestMethod]
         public void IniLib_DeleteSection_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -892,7 +948,6 @@ namespace UnitTest.Libs
             }
         }
 
-        [TestMethod]
         public void IniLib_DeleteSection_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -941,6 +996,12 @@ namespace UnitTest.Libs
 
         #region DeleteSections
         [TestMethod]
+        public void IniLib_DeleteSections()
+        {
+            IniLib_DeleteSections_1();
+            IniLib_DeleteSections_2();
+        }
+
         public void IniLib_DeleteSections_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -987,7 +1048,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_DeleteSections_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -1045,6 +1105,14 @@ namespace UnitTest.Libs
 
         #region Merge2
         [TestMethod]
+        public void IniLib_Merge2()
+        {
+            IniLib_Merge2_1();
+            IniLib_Merge2_2();
+            IniLib_Merge2_3();
+            IniLib_Merge2_4();
+        }
+        
         public void IniLib_Merge2_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -1080,7 +1148,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge2_2()
         {
             string tempFile = Path.GetTempFileName();
@@ -1126,7 +1193,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge2_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -1176,7 +1242,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge2_4()
         {
             string tempFile = Path.GetTempFileName();
@@ -1228,6 +1293,16 @@ namespace UnitTest.Libs
 
         #region Merge3
         [TestMethod]
+        public void IniLib_Merge3()
+        {
+            IniLib_Merge3_1();
+            IniLib_Merge3_2();
+            IniLib_Merge3_3();
+            IniLib_Merge3_4();
+            IniLib_Merge3_5();
+            IniLib_Merge3_6();
+        }
+
         public void IniLib_Merge3_1()
         {
             string tempFile1 = Path.GetTempFileName();
@@ -1249,7 +1324,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(string.Empty, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge3_2()
         {
             string tempFile1 = Path.GetTempFileName();
@@ -1286,7 +1360,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge3_3()
         {
             string tempFile1 = Path.GetTempFileName();
@@ -1333,7 +1406,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge3_4()
         {
             string tempFile1 = Path.GetTempFileName();
@@ -1384,7 +1456,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge3_5()
         {
             string tempFile1 = Path.GetTempFileName();
@@ -1435,7 +1506,6 @@ namespace UnitTest.Libs
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
         }
 
-        [TestMethod]
         public void IniLib_Merge3_6()
         {
             string tempFile1 = Path.GetTempFileName();

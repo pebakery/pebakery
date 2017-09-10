@@ -44,7 +44,7 @@ However, building whole project is quite buggy and needs to be improved.
 
 ## Command Status
 Prototype implementation of commands is done.  
-0% of commands are tested to work properly.
+6.5% of commands are tested to work properly.
 
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
@@ -57,12 +57,12 @@ Prototype implementation of commands is done.
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
 | Hash      | 5   | 5           | 0      |
-| String    | 27  | 27          | 0      |
+| String    | 27  | 27          | 10     |
 | Math      | 19  | 19          | 0      |
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 8   | 8           | 0      |
-| All       | 152 | 152         | 0      |
+| All       | 152 | 152         | 10     |
 
 
 # Help Needed
