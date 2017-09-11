@@ -87,6 +87,9 @@ PEBakery needs to be documented, especially for plugin developers.
 - Design of PEBakery
 - Command Grammar and Usage
 
+## Optimization
+It would be better to have more faster, robust PEBakery.
+
 ## Proposal
 Plan PEBakery's future with your own hands!
 - Add Useful Commands

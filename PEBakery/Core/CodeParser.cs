@@ -185,7 +185,7 @@ namespace PEBakery.Core
                 CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException("Doublequote's number should be even number", error);
             }
-                
+
             // Parse Arguments
             List<string> args = new List<string>();
             try
@@ -610,7 +610,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-                        
+
                         string destVar = args[3];
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
@@ -630,7 +630,7 @@ namespace PEBakery.Core
                         try
                         {
                             valType = CodeParser.ParseRegistryValueKind(valTypeStr);
-                        } 
+                        }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         RegistryValueKind[] allowTypes = new RegistryValueKind[]
@@ -690,7 +690,7 @@ namespace PEBakery.Core
                         string arg2 = null;
                         if (args.Count == maxArgCount)
                             arg2 = args[5];
-                        
+
                         return new CodeInfo_RegMulti(hKey, keyPath, valueName, valType, arg1, arg2);
                     }
                 #endregion
@@ -1040,10 +1040,10 @@ namespace PEBakery.Core
                         string hashType = null;
                         string hashDigest = null;
 
-                        if (args.Count == 4) 
+                        if (args.Count == 4)
                         {
                             if (!(args[2].Length == 32)) // If this statement follows WB082 Spec, Just ignore.
-                            { 
+                            {
                                 hashType = args[2];
                                 hashDigest = args[3];
                             }
@@ -1440,7 +1440,7 @@ namespace PEBakery.Core
                             if (args[1].Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
                                 noWarn = true;
                         }
-                        
+
                         return new CodeInfo_Exit(args[0], noWarn);
                     }
                 case CodeType.Halt:
@@ -1478,7 +1478,7 @@ namespace PEBakery.Core
                 #region Error
                 default: // Error
                     throw new InternalParserException($"Wrong CodeType [{type}]");
-                #endregion
+                    #endregion
             }
         }
 
@@ -1505,7 +1505,7 @@ namespace PEBakery.Core
                 else
                     return false;
             }
-            
+
         }
         #endregion
 
@@ -1672,124 +1672,12 @@ namespace PEBakery.Core
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
 
-                        // Check if there are only characters which are allowed
-                        char[] allowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', }; // Year, Month, Date, Hour, Minute, Second, Millisecond
-                        string wbFormatStr = args[1].ToLower();
-                        foreach (char ch in wbFormatStr)
-                        {
-                            if ('a' <= ch && ch <= 'z')
-                            {
-                                if (!allowedChars.Contains(ch))
-                                    throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
-                            }
-                        }
-
                         // Convert WB Date Format String to .Net Date Format String
-                        int idx = 0;
-                        StringBuilder b = new StringBuilder("");
-                        while (idx < wbFormatStr.Length)
-                        {
-                            if (idx + 4 <= wbFormatStr.Length)
-                            {
-                                string first4 = wbFormatStr.Substring(idx, 4);
-                                if (first4.Equals("yyyy", StringComparison.Ordinal))
-                                {
-                                    b.Append("yyyy");
-                                    idx += 4;
-                                    continue;
-                                }
-                            }
+                        string formatStr = StrFormat_Date_FormatString(args[1]);
+                        if (formatStr == null)
+                            throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
-                            if (idx + 3 <= wbFormatStr.Length)
-                            {
-                                string first3 = wbFormatStr.Substring(idx, 3);
-                                if (first3.Equals("zzz", StringComparison.Ordinal))
-                                {
-                                    b.Append("fff");
-                                    idx += 3;
-                                    continue;
-                                }
-                            }
-
-                            if (idx + 2 <= wbFormatStr.Length)
-                            {
-                                string first2 = wbFormatStr.Substring(idx, 2);
-                                if (first2.Equals("yy", StringComparison.Ordinal))
-                                {
-                                    b.Append("yy");
-                                    idx += 2;
-                                    continue;
-                                }
-                                else if (first2.Equals("mm", StringComparison.Ordinal))
-                                {
-                                    b.Append("MM");
-                                    idx += 2;
-                                    continue;
-                                }
-                                else if (first2.Equals("dd", StringComparison.Ordinal))
-                                {
-                                    b.Append("dd");
-                                    idx += 2;
-                                    continue;
-                                }
-                                else if (first2.Equals("hh", StringComparison.Ordinal))
-                                {
-                                    b.Append("HH");
-                                    idx += 2;
-                                    continue;
-                                }
-                                else if (first2.Equals("nn", StringComparison.Ordinal))
-                                {
-                                    b.Append("mm");
-                                    idx += 2;
-                                    continue;
-                                }
-                                else if (first2.Equals("ss", StringComparison.Ordinal))
-                                {
-                                    b.Append("ss");
-                                    idx += 2;
-                                    continue;
-                                }
-                            }
-
-                            char ch = wbFormatStr[idx];
-                            if (ch == 'm')
-                            {
-                                b.Append("M");
-                                idx += 1;
-                            }
-                            else if (ch == 'd')
-                            {
-                                b.Append("d");
-                                idx += 1;
-                            }
-                            else if (ch == 'h')
-                            {
-                                b.Append("H");
-                                idx += 1;
-                            }
-                            else if (ch == 'n')
-                            {
-                                b.Append("m");
-                                idx += 1;
-                            }
-                            else if (ch == 's')
-                            {
-                                b.Append("s");
-                                idx += 1;
-                            }
-                            else if ('a' <= ch && ch <= 'z')
-                            { // Error!
-                                throw new InvalidCommandException($"Invalid date format string [{args[1]}], check index [{idx}]", rawCode);
-                            }
-                            else
-                            { // Only if token is not alphabet
-                                b.Append(ch);
-                                idx += 1;
-                            }
-                        }
-
-                        info = new StrFormatInfo_Date(destVar, b.ToString());
+                        info = new StrFormatInfo_Date(destVar, formatStr);
                     }
                     break;
                 case StrFormatType.FileName:
@@ -1807,8 +1695,8 @@ namespace PEBakery.Core
 
                         string destVar = args[1];
                         if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode); 
-                        
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
                         info = new StrFormatInfo_Path(args[0], destVar);
                     }
                     break;
@@ -1844,12 +1732,12 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
-                        
+
                         info = new StrFormatInfo_LeftRight(args[0], args[1], args[2]);
                     }
                     break;
                 case StrFormatType.SubStr:
-                    { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVar>
+                    { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1861,7 +1749,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Len:
-                    { // StrFormat,Len,<SrcString>,<DestVar>
+                    { // StrFormat,Len,<SrcStr>,<DestVar>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1904,6 +1792,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case StrFormatType.Pos:
+                case StrFormatType.PosX:
                     { // StrFormat,Pos,<SrcString>,<SubString>,<DestVar>
                         const int argCount = 3;
                         if (args.Count != argCount)
@@ -1911,7 +1800,7 @@ namespace PEBakery.Core
 
                         if (Variables.DetermineType(args[2]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[2]}] is not valid variable name", rawCode);
-                        
+
                         info = new StrFormatInfo_Pos(args[0], args[1], args[2]);
                     }
                     break;
@@ -1983,6 +1872,101 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Invalid StrFormatType [{typeStr}]");
 
             return type;
+        }
+
+        private static readonly Dictionary<string, string> FormatStringMap = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            // Year
+            [@"yyyy"] = @"yyyy",
+            [@"yy"] = @"yy",
+            // Month
+            [@"mm"] = @"MM",
+            [@"m"] = @"M",
+            // Date
+            [@"dd"] = @"dd",
+            [@"d"] = @"d",
+            // Hour
+            [@"hh"] = @"HH",
+            [@"h"] = @"H",
+            // Minute
+            [@"nn"] = @"mm",
+            [@"n"] = @"m",
+            // Second
+            [@"ss"] = @"ss",
+            [@"s"] = @"s",
+            // Millisecond
+            [@"zzz"] = @"fff",
+        };
+
+        // Year, Month, Date, Hour, Minute, Second, Millisecond
+        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', }; 
+
+        private static string StrFormat_Date_FormatString(string str)
+        {
+            // Check if there are only characters which are allowed
+            string wbFormatStr = str.ToLower();
+            foreach (char ch in wbFormatStr)
+            {
+                if ('a' <= ch && ch <= 'z')
+                {
+                    if (!FormatStringAllowedChars.Contains(ch))
+                        return null;
+                }
+            }
+
+            Dictionary<string, bool> matched = new Dictionary<string, bool>(StringComparer.Ordinal);
+            foreach (var kv in FormatStringMap)
+                matched[kv.Key] = false;
+
+            Dictionary<string, string>[] partialMaps = new Dictionary<string, string>[4];
+            for (int i = 0; i < 4; i++)
+                partialMaps[i] = FormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
+
+            int idx = 0;
+            bool processed = false;
+            StringBuilder b = new StringBuilder();
+            while (idx < wbFormatStr.Length)
+            {
+                for (int i = 4; 0 < i; i--)
+                {
+                    processed = false;
+                    if (idx + i <= wbFormatStr.Length)
+                    {
+                        string token = wbFormatStr.Substring(idx, i);
+                        foreach (var kv in partialMaps[i - 1])
+                        {
+                            if (token.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (matched[kv.Key]) // Already matched -> Error
+                                    return null;
+
+                                b.Append(kv.Value);
+                                processed = true;
+
+                                // Ex) yyyy matched -> log yy with yyyy
+                                string[] keys = matched.Where(x => x.Key[0] == kv.Key[0]).Select(x => x.Key).ToArray();
+                                foreach (var key in keys)
+                                    matched[key] = true;
+
+                                idx += i;
+                            }
+                        }
+                    }
+                }
+
+                if (processed == false && idx < wbFormatStr.Length)
+                {
+                    char ch = wbFormatStr[idx];
+                    if ('a' <= ch && ch <= 'z') // Error
+                        return null;
+
+                    // Only if token is not alphabet
+                    b.Append(ch);
+                    idx += 1;
+                }
+            }
+
+            return b.ToString();
         }
         #endregion
 

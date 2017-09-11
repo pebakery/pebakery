@@ -25,6 +25,8 @@ namespace UnitTest.Libs
             string tempFile = Path.GetTempFileName();
 
             Assert.IsNull(Ini.GetKey(tempFile, "Section", "Key"));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_GetKey_2()
@@ -43,6 +45,8 @@ namespace UnitTest.Libs
             Assert.IsTrue(Ini.GetKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
             Assert.IsTrue(Ini.GetKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
             Assert.IsFalse(Ini.GetKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         
         public void IniLib_GetKey_3()
@@ -74,6 +78,8 @@ namespace UnitTest.Libs
             Assert.IsTrue(Ini.GetKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
             Assert.IsTrue(Ini.GetKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
             Assert.IsTrue(Ini.GetKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -128,6 +134,8 @@ namespace UnitTest.Libs
             Assert.IsTrue(keys[7].Value.Equals("G", StringComparison.Ordinal));
             Assert.IsTrue(keys[8].Value.Equals("A", StringComparison.Ordinal));
             Assert.IsTrue(keys[9].Value.Equals("D", StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -158,6 +166,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_SetKey_2()
@@ -187,6 +197,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -230,6 +242,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_SetKeys_2()
@@ -289,6 +303,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -352,6 +368,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_WriteRawLine_3()
@@ -382,6 +400,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -449,6 +469,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_WriteRawLines_2()
@@ -507,6 +529,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -551,6 +575,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_DeleteKey_2()
@@ -587,6 +613,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_DeleteKey_3()
@@ -621,6 +649,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -679,6 +709,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -711,6 +743,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_AddSection_2()
@@ -743,6 +777,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_AddSection_3()
@@ -793,6 +829,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -836,6 +874,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_AddSections_2()
@@ -892,6 +932,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -921,6 +963,8 @@ namespace UnitTest.Libs
                 r.Close();
                 Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_DeleteSection_2()
@@ -946,6 +990,8 @@ namespace UnitTest.Libs
                 r.Close();
                 Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_DeleteSection_3()
@@ -991,6 +1037,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -1046,6 +1094,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
 
         public void IniLib_DeleteSections_2()
@@ -1100,6 +1150,8 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
         }
         #endregion
 
@@ -1146,6 +1198,9 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge2_2()
@@ -1191,6 +1246,9 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge2_3()
@@ -1240,6 +1298,9 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge2_4()
@@ -1288,6 +1349,9 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile);
+            File.Delete(destFile);
         }
         #endregion
 
@@ -1322,6 +1386,10 @@ namespace UnitTest.Libs
             }
 
             Assert.IsTrue(read.Equals(string.Empty, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge3_2()
@@ -1358,6 +1426,10 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge3_3()
@@ -1404,6 +1476,10 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge3_4()
@@ -1454,6 +1530,10 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge3_5()
@@ -1504,6 +1584,10 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
 
         public void IniLib_Merge3_6()
@@ -1564,6 +1648,10 @@ namespace UnitTest.Libs
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+
+            File.Delete(tempFile1);
+            File.Delete(tempFile2);
+            File.Delete(destFile);
         }
         #endregion
     }
