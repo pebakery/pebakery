@@ -1528,7 +1528,7 @@ namespace PEBakery.Core
         SubStr, // Added in PEBakery
         Len,
         LTrim, RTrim, CTrim, NTrim,
-        Pos,
+        Pos, PosX,
         Replace, ReplaceX,
         ShortPath, LongPath,
         Split,
@@ -1674,23 +1674,23 @@ namespace PEBakery.Core
     { // Note : Integer can be negative integer, not like WB082's limitation
         // StrFormat,Left,<SrcString>,<Integer>,<DestVar>
         // StrFormat,Right,<SrcString>,<Integer>,<DestVar>
-        public string SrcString;
-        public string Integer; 
+        public string SrcStr;
+        public string CutLen; 
         public string DestVar;
 
         public StrFormatInfo_LeftRight(string srcString, string integer, string destVar)
         {
-            SrcString = srcString;
-            Integer = integer;
+            SrcStr = srcString;
+            CutLen = integer;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
-            b.Append(StringEscaper.Doublequote(Integer));
+            b.Append(StringEscaper.Doublequote(CutLen));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -1700,14 +1700,14 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_SubStr : StrFormatInfo
     { // StrFormat,SubStr,<SrcString>,<StartPos>,<Length>,<DestVar>
-        public string SrcString;
-        public string StartPos;
-        public string Length;
+        public string SrcStr;
+        public string StartPos; // Index start from 1, not 0!
+        public string Length; 
         public string DestVar;
 
         public StrFormatInfo_SubStr(string srcString, string startPos, string length, string destVar)
         {
-            SrcString = srcString;
+            SrcStr = srcString;
             StartPos = startPos;
             Length = length;
             DestVar = destVar;
@@ -1716,7 +1716,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
             b.Append(StringEscaper.Doublequote(StartPos));
             b.Append(",");
@@ -1730,19 +1730,19 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Len : StrFormatInfo
     { // StrFormat,Len,<SrcString>,<DestVarName>
-        public string SrcString;
+        public string SrcStr;
         public string DestVar;
 
         public StrFormatInfo_Len(string srcString, string destVar)
         {
-            SrcString = srcString;
+            SrcStr = srcString;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -1756,13 +1756,13 @@ namespace PEBakery.Core
         // StrFormat,RTrim,<SrcString>,<Integer>,<DestVar>
         // StrFormat,CTrim,<SrcString>,<Chars>,<DestVar>
 
-        public string SrcString;
+        public string SrcStr;
         public string ToTrim;
         public string DestVarName;
 
         public StrFormatInfo_Trim(string srcString, string trimValue, string destVar)
         {
-            SrcString = srcString;
+            SrcStr = srcString;
             ToTrim = trimValue;
             DestVarName = destVar;
         }
@@ -1770,7 +1770,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
             b.Append(StringEscaper.Doublequote(ToTrim));
             b.Append(",");
@@ -1782,19 +1782,19 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_NTrim : StrFormatInfo
     { // StrFormat,NTrim,<SrcString>,<DestVar>
-        public string SrcString;
+        public string SrcStr;
         public string DestVar;
 
         public StrFormatInfo_NTrim(string srcString,  string destVar)
         {
-            SrcString = srcString;
+            SrcStr = srcString;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(SrcString);
+            b.Append(SrcStr);
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -1804,23 +1804,23 @@ namespace PEBakery.Core
     [Serializable]
     public class StrFormatInfo_Pos : StrFormatInfo
     { // StrFormat,Pos,<SrcString>,<SubString>,<DestVar>
-        public string SrcString;
-        public string SubString;
+        public string SrcStr;
+        public string SubStr;
         public string DestVar;
 
         public StrFormatInfo_Pos(string srcString, string subString, string destVar)
         {
-            SrcString = srcString;
-            SubString = subString;
+            SrcStr = srcString;
+            SubStr = subString;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(StringEscaper.QuoteEscape(SrcString));
+            b.Append(StringEscaper.QuoteEscape(SrcStr));
             b.Append(",");
-            b.Append(StringEscaper.QuoteEscape(SubString));
+            b.Append(StringEscaper.QuoteEscape(SubStr));
             b.Append(",");
             b.Append(DestVar);
             return b.ToString();
@@ -2657,7 +2657,7 @@ namespace PEBakery.Core
                         {
                             match = false;
                         }
-                        if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        else if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
                         {
                             match = false;
                         }

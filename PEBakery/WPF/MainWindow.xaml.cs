@@ -74,8 +74,7 @@ namespace PEBakery.WPF
         private readonly string settingFile;
         private SettingViewModel setting;
         public SettingViewModel Setting { get => setting; }
-
-        public MainViewModel Model;
+        public MainViewModel Model { get; private set; }
 
         public LogWindow logDialog = null;
         public UtilityWindow utilityDialog = null;
@@ -85,7 +84,7 @@ namespace PEBakery.WPF
         public MainWindow()
         {
             InitializeComponent();
-            this.Model = this.DataContext as MainViewModel;
+            Model = this.DataContext as MainViewModel;
 
             string[] args = App.Args;
             if (int.TryParse(Properties.Resources.IntegerVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
@@ -493,7 +492,7 @@ namespace PEBakery.WPF
                 RecursivePopulateTreeView(activeTree.Root, Model.BuildTree, Model.BuildTree);
                 curBuildTree = null;
 
-                EngineState s = new EngineState(project, logger);
+                EngineState s = new EngineState(project, logger, Model);
                 s.SetLogOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
@@ -556,9 +555,6 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            // UtilityWindow dialog = new UtilityWindow(setting.General_MonospaceFont);
-            //dialog.Show();
-
             if (UtilityWindow.Count == 0)
             {
                 utilityDialog = new UtilityWindow(setting.General_MonospaceFont);
@@ -601,13 +597,8 @@ namespace PEBakery.WPF
                     PopulateOneTreeView(p, Model.BuildTree, Model.BuildTree);
                     curBuildTree = null;
 
-                    EngineState s = new EngineState(p.Project, logger, p);
+                    EngineState s = new EngineState(p.Project, logger, Model, p);
                     s.SetLogOption(setting);
-
-                    Engine.WorkingEngine = new Engine(s);
-
-                    // Build Start, Switch to Build View
-                    Model.SwitchNormalBuildInterface = false;
 
                     // Run
                     long buildId = await Engine.WorkingEngine.Run($"{p.Title} - Run");

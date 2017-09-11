@@ -899,44 +899,43 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                SettingViewModel setting = null;
                 Logger logger = null;
+                MainViewModel mainModel = null;
+                SettingViewModel setting = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
-                    w.Model.ProgressRingActive = true;
+
+                    logger = w.Logger;
+                    mainModel = w.Model;
+                    setting = w.Setting;
 
                     // Populate BuildTree
                     w.Model.BuildTree.Children.Clear();
                     w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
                     w.CurBuildTree = null;
-
-                    setting = w.Setting;
-                    logger = w.Logger;
                 });
-                    
-                EngineState s = new EngineState(addr.Plugin.Project, logger, addr.Plugin, addr.Section.SectionName);
+
+                mainModel.ProgressRingActive = true;
+
+                EngineState s = new EngineState(addr.Plugin.Project, logger, mainModel, addr.Plugin, addr.Section.SectionName);
                 s.SetLogOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
                 // Build Start, Switch to Build View
                 if (showProgress)
-                    s.MainViewModel.SwitchNormalBuildInterface = false;
+                    mainModel.SwitchNormalBuildInterface = false;
 
                 // Run
                 long buildId = await Engine.WorkingEngine.Run(logMsg);
 
                 // Build Ended, Switch to Normal View
                 if (showProgress)
-                    s.MainViewModel.SwitchNormalBuildInterface = true;
+                    mainModel.SwitchNormalBuildInterface = true;
 
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-
-                // Turn off Progressring
-                s.MainViewModel.ProgressRingActive = false;
+                // Turn off ProgressRing
+                mainModel.ProgressRingActive = false;
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);

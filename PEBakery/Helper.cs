@@ -861,7 +861,7 @@ namespace PEBakery.Helper
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                 return Int64.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
             else
-                return Int64.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+                return Int64.TryParse(str, NumberStyles.Integer | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out value);
         }
 
         /// <summary>

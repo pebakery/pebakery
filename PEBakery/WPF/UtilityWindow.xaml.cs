@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -89,6 +90,19 @@ namespace PEBakery.WPF
             m.Escaper_ConvertedString = StringEscaper.Legend;
         }
 
+        private void CodeBoxSaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            Encoding encoding = Encoding.UTF8;
+            if (File.Exists(m.CodeFile))
+                encoding = FileHelper.DetectTextEncoding(m.CodeFile);
+
+            using (StreamWriter writer = new StreamWriter(m.CodeFile, false, encoding))
+            {
+                writer.Write(m.CodeBox_Input);
+                writer.Close();
+            }
+        }
+
         private async void CodeBoxRunButton_Click(object sender, RoutedEventArgs e)
         {
             Encoding encoding = Encoding.UTF8;
@@ -119,32 +133,14 @@ namespace PEBakery.WPF
                     mainModel = w.Model;
                 });
 
-                EngineState s = new EngineState(project, logger, p);
+                EngineState s = new EngineState(p.Project, logger, mainModel, p);
                 s.SetLogOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
-                // Build Start, Switch to Build View
-                mainModel.SwitchNormalBuildInterface = false;
-
-                // Run
-                long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
-
-#if DEBUG  // TODO: Remove this later, this line is for Debug
-                logger.ExportBuildLog(LogExportType.Text, System.IO.Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
-#endif
-
-                // Build Ended, Switch to Normal View
-                mainModel.SwitchNormalBuildInterface = true;
-                
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    w.DrawPlugin(w.CurMainTree.Plugin);
-                });
+                await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
                 Engine.WorkingEngine = null;
-
                 Interlocked.Decrement(ref Engine.WorkingLock);
             }
             else
@@ -155,6 +151,12 @@ namespace PEBakery.WPF
 
         private void SyntaxCheckButton_Click(object sender, RoutedEventArgs e)
         {
+            if (m.Syntax_InputCode.Equals(string.Empty, StringComparison.Ordinal))
+            {
+                m.Syntax_Output = "No Code";
+                return;
+            }
+
             Project project = m.CodeBox_CurrentProject;
 
             Plugin p = project.MainPlugin;
@@ -168,24 +170,42 @@ namespace PEBakery.WPF
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
             List<CodeCommand> cmds = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> errorLogs);
 
+            // Check Macros
+            Macro macro = new Macro(project, project.Variables, out List<LogInfo> macroLogs);
+
+            if (macro.MacroEnabled)
+            {
+                foreach (CodeCommand cmd in cmds)
+                {
+                    if (cmd.Type == CodeType.Macro)
+                    {
+                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro));
+                        CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+
+                        if (!macro.MacroDict.ContainsKey(info.MacroType))
+                            errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
+                    }
+                }
+            }
+
             if (0 < errorLogs.Count)
             {
+                StringBuilder b = new StringBuilder();
                 for (int i = 0; i < errorLogs.Count; i++)
                 {
                     LogInfo log = errorLogs[i];
-
-                    StringBuilder b = new StringBuilder();
                     b.AppendLine($"[{i + 1}/{errorLogs.Count}] {log.Message} ({log.Command})");
-
-                    m.Syntax_Output = b.ToString();
                 }
+                m.Syntax_Output = b.ToString();
             }
             else
             {
-                m.Syntax_Output = "No error";
+                m.Syntax_Output = "No Error";
             }
         }
         #endregion
+
+        
     }
 
     #region UtiltiyViewModel
@@ -261,6 +281,20 @@ namespace PEBakery.WPF
                             CodeBox_Input = reader.ReadToEnd();
                             OnPropertyUpdate("CodeBox_Input");
                         }
+                    }
+                    else
+                    {
+                        CodeBox_Input = @"[Main]
+Title=CodeBox
+Description=Test Commands
+
+[Variables]
+
+[Process]
+// Write Commands Here
+//--------------------
+
+";
                     }
                 }               
 

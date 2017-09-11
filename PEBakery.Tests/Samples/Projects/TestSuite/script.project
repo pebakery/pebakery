@@ -1,3 +1,16 @@
+[Main]
+Title=TestSuite
+Type=plugin
+Author=ied206
+Description=PEBakery's Test Suite
+Credits=
+Version=001
+Download_Level=0
+Level=5
+Selected=True
+Mandatory=False
+NoWarning=False
+
 [Variables]
 %ProjectName%=TestSuite
 %API%=%ProjectDir%\Build\Macro_Library.script
@@ -19,18 +32,7 @@ _ML_RF_Plugin=
 _ML_RF_Method=
 _ML_UnMount=Yes
 
-[Main]
-Title=TestSuite
-Type=plugin
-Author=ied206
-Description=PEBakery's Test Suite
-Credits=
-Version=001
-Download_Level=0
-Level=5
-Selected=True
-Mandatory=False
-NoWarning=False
+
 
 
 [Process]

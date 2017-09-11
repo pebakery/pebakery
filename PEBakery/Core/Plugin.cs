@@ -204,7 +204,7 @@ namespace PEBakery.Core
             }
         }
 
-        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level)
+        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level, bool ignoreMain)
         {
             this.fullPath = fullPath;
             this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
@@ -253,52 +253,62 @@ namespace PEBakery.Core
                     {
                         sections = ParsePlugin();
                         InspectTypeOfUninspectedCodeSection();
-                        CheckMainSection(PluginType.Plugin);
-
-                        // Mandatory Entry
-                        this.title = sections["Main"].IniDict["Title"];
-                        this.description = sections["Main"].IniDict["Description"];
-                        if (level == null)
+                        if (!ignoreMain)
                         {
-                            if (sections["Main"].IniDict.ContainsKey("Level"))
+                            CheckMainSection(PluginType.Plugin);
+                            // Mandatory Entry
+                            this.title = sections["Main"].IniDict["Title"];
+                            this.description = sections["Main"].IniDict["Description"];
+                            if (level == null)
                             {
-                                if (!int.TryParse(sections["Main"].IniDict["Level"], out this.level))
+                                if (sections["Main"].IniDict.ContainsKey("Level"))
+                                {
+                                    if (!int.TryParse(sections["Main"].IniDict["Level"], out this.level))
+                                        this.level = 0;
+                                }
+                                else
+                                {
                                     this.level = 0;
+                                }
+
                             }
                             else
                             {
-                                this.level = 0;
+                                this.level = (int)level;
                             }
-                            
+
+                            // Optional Entry
+                            if (sections["Main"].IniDict.ContainsKey("Author"))
+                                this.author = sections["Main"].IniDict["Author"];
+                            if (sections["Main"].IniDict.ContainsKey("Version"))
+                                this.version = int.Parse(sections["Main"].IniDict["Version"]);
+                            if (sections["Main"].IniDict.ContainsKey("Selected"))
+                            {
+                                string src = sections["Main"].IniDict["Selected"];
+                                if (string.Equals(src, "True", StringComparison.OrdinalIgnoreCase))
+                                    this.selected = SelectedState.True;
+                                else if (string.Equals(src, "None", StringComparison.OrdinalIgnoreCase))
+                                    this.selected = SelectedState.None;
+                                else
+                                    this.selected = SelectedState.False;
+                            }
+                            if (sections["Main"].IniDict.ContainsKey("Mandatory"))
+                            {
+                                if (string.Equals(sections["Main"].IniDict["Mandatory"], "True", StringComparison.OrdinalIgnoreCase))
+                                    this.mandatory = true;
+                                else
+                                    this.mandatory = false;
+                            }
+                            this.link = null;
                         }
                         else
                         {
-                            this.level = (int)level;
+                            this.title = Path.GetFileName(fullPath);
+                            this.description = string.Empty;
+                            this.level = 0;
                         }
 
-                        // Optional Entry
-                        if (sections["Main"].IniDict.ContainsKey("Author"))
-                            this.author = sections["Main"].IniDict["Author"];
-                        if (sections["Main"].IniDict.ContainsKey("Version"))
-                            this.version = int.Parse(sections["Main"].IniDict["Version"]);
-                        if (sections["Main"].IniDict.ContainsKey("Selected"))
-                        {
-                            string src = sections["Main"].IniDict["Selected"];
-                            if (string.Equals(src, "True", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.True;
-                            else if (string.Equals(src, "None", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.None;
-                            else
-                                this.selected = SelectedState.False;
-                        }
-                        if (sections["Main"].IniDict.ContainsKey("Mandatory"))
-                        {
-                            if (string.Equals(sections["Main"].IniDict["Mandatory"], "True", StringComparison.OrdinalIgnoreCase))
-                                this.mandatory = true;
-                            else
-                                this.mandatory = false;
-                        }
-                        this.link = null;
+                        
                     }
                     break;
                 default:
@@ -560,6 +570,26 @@ namespace PEBakery.Core
                 return sections["Main"].IniDict["Link"];
             else
                 return this.title;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Plugin p)
+            {
+                if (this.FullPath.Equals(p.FullPath, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return fullPath.GetHashCode() ^ shortPath.GetHashCode();
         }
     }
     #endregion

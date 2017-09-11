@@ -3,9 +3,8 @@
 
 # Joveler-specific Resoures
 res/
-PEBakery-Engine/Resoures/BuildDate.txt
-TestSuite/WorkBench/TestSuite/Dest/
-TestSuite/log.txt
+PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
+*.db
 
 # User-specific files
 *.suo

@@ -207,11 +207,7 @@ namespace PEBakery.Core.Commands
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                w.Model.BuildEchoMessage = message;
-            });
+            s.MainViewModel.BuildEchoMessage = message;
 
             logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
 
@@ -306,7 +302,7 @@ namespace PEBakery.Core.Commands
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Plugin p = s.GetPluginInstance(cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
             if (p.Sections.ContainsKey(interfaceSection))
             {
                 List<UICommand> uiCodes = null;

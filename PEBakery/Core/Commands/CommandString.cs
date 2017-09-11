@@ -55,7 +55,7 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_IntToBytes subInfo = info.SubInfo as StrFormatInfo_IntToBytes;
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
-                        if (NumberHelper.ParseInt64(byteSizeStr, out long byteSize) == false)
+                        if (!NumberHelper.ParseInt64(byteSizeStr, out long byteSize))
                             throw new ExecuteException($"[{byteSizeStr}] is not valid integer");
 
                         if (byteSize < 0)
@@ -89,7 +89,7 @@ namespace PEBakery.Core.Commands
                         // subInfo.SizeVar;
                         string roundToStr = StringEscaper.Preprocess(s, subInfo.RoundTo);
                         // Is roundToStr number?
-                        if (NumberHelper.ParseInt64(roundToStr, out long roundTo) == false)
+                        if (!NumberHelper.ParseInt64(roundToStr, out long roundTo))
                         { // Is roundToStr is one of K, M, G, T, P?
                             if (roundToStr.Equals("K", StringComparison.OrdinalIgnoreCase))
                                 roundTo = KB;
@@ -115,12 +115,12 @@ namespace PEBakery.Core.Commands
                         if (type == StrFormatType.Ceil)
                         {
                             long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder;
+                            destInt = srcInt - remainder + roundTo;
                         }
                         else if (type == StrFormatType.Floor)
                         {
                             long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder + roundTo;
+                            destInt = srcInt - remainder;
                         }
                         else // if (type == StrFormatType.Round)
                         {
@@ -136,54 +136,16 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case StrFormatType.Date:
-                    {
-                        /*
-                        * <yyyy-mmm-dd hh:nn am/pm> 
-                        */
+                    { // <yyyy-mmm-dd hh:nn am/pm> 
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
                         StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
 
-                        string wbFormatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
+                        string formatStr = StringEscaper.Preprocess(s, subInfo.FormatString);
 
-                        Dictionary<string, string> wbDateTime = new Dictionary<string, string>(StringComparer.Ordinal)
-                        {
-                            // Year
-                            [@"(?<!y)(yyyy)(?!y)"] = @"yyyy",
-                            [@"(?<!y)(yy)(?!y)"] = @"yy",
-                            // Month
-                            [@"(?<!m)(mmm)(?!m)"] = @"MMM",
-                            [@"(?<!m)(mm)(?!m)"] = @"MM",
-                            [@"(?<!m)(m)(?!m)"] = @"M",
-                            // Date
-                            [@"(?<!d)(dd)(?!d)"] = @"dd",
-                            [@"(?<!d)(d)(?!d)"] = @"d",
-                            // Hour
-                            [@"(?<!h)(hh)(?!h)"] = @"HH",
-                            [@"(?<!h)(h)(?!h)"] = @"H",
-                            // Minute
-                            [@"(?<!n)(nn)(?!n)"] = @"mm",
-                            [@"(?<!n)(n)(?!n)"] = @"m",
-                            // Second
-                            [@"(?<!s)(ss)(?!s)"] = @"ss",
-                            [@"(?<!s)(s)(?!s)"] = @"s",
-                        };
-
-                        if (Regex.IsMatch(wbFormatStr, @"(am\/pm)", RegexOptions.Compiled))
-                        { // AM/PM Found, change 24 hours into 12 hours
-                            wbDateTime[@"(am\/pm)"] = @"tt";
-                            wbDateTime[@"(?<!h)(hh)(?!h)"] = @"hh";
-                            wbDateTime[@"(?<!h)(h)(?!h)"] = @"h";
-                        }
-
-                        string dotNetFormatStr = wbFormatStr;
-                        foreach (var kv in wbDateTime)
-                            dotNetFormatStr = Regex.Replace(dotNetFormatStr, kv.Key, kv.Value);
-
-                        string destStr = DateTime.Now.ToString(dotNetFormatStr, CultureInfo.InvariantCulture);
+                        string destStr = DateTime.Now.ToString(formatStr, CultureInfo.InvariantCulture);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
-
                     }
                     break;
                 case StrFormatType.FileName:
@@ -208,9 +170,54 @@ namespace PEBakery.Core.Commands
                                 destStr = Path.GetFileName(srcStr);
                                 logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
                             }
-                            else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
-                            {
-                                destStr = Path.GetDirectoryName(srcStr);
+                            else if (type == StrFormatType.DirPath)
+                            { // Does not includes Last Seperator
+                                int bsIdx = srcStr.LastIndexOf('\\');
+                                int sIdx = srcStr.LastIndexOf('/');
+
+                                if (bsIdx != -1 && sIdx != -1)
+                                { // Slash and BackSlash cannot exist at same time
+                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
+                                    return logs;
+                                }
+
+                                if (bsIdx != -1)
+                                { // Normal file path
+                                    destStr = Path.GetDirectoryName(srcStr);
+                                }
+                                else
+                                { // URL
+                                    if (sIdx == -1)
+                                        destStr = string.Empty;
+                                    else
+                                        destStr = srcStr.Substring(0, sIdx);
+                                }
+
+                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
+                            }
+                            else if (type == StrFormatType.Path)
+                            { // Includes Last Seperator - Default WB082 Behavior
+                                int bsIdx = srcStr.LastIndexOf('\\');
+                                int sIdx = srcStr.LastIndexOf('/');
+
+                                if (bsIdx != -1 && sIdx != -1)
+                                { // Slash and BackSlash cannot exist at same time
+                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
+                                    return logs;
+                                }
+
+                                if (bsIdx != -1)
+                                { // Normal file path
+                                    destStr = Path.GetDirectoryName(srcStr) + '\\';
+                                }
+                                else
+                                { // URL
+                                    if (sIdx == -1)
+                                        destStr = string.Empty;
+                                    else
+                                        destStr = srcStr.Substring(0, sIdx + 1);
+                                }
+                                
                                 logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
                             }
                             else if (type == StrFormatType.Ext)
@@ -233,18 +240,16 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
-                        if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not valid positive number");
-                        if (src < 0)
-                            throw new ExecuteException($"[{srcStr}] is not positive number");
+                        if (!NumberHelper.ParseInt64(srcStr, out long src))
+                            throw new ExecuteException($"[{srcStr}] is not valid integer");
 
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
-                        if (!NumberHelper.ParseDecimal(operandStr, out decimal operand))
-                            throw new ExecuteException($"[{operandStr}] is not valid number");
+                        if (!NumberHelper.ParseInt64(operandStr, out long operand))
+                            throw new ExecuteException($"[{operandStr}] is not valid integer");
                         if (operand < 0)
-                            throw new ExecuteException($"[{operandStr}] is not positive number");
+                            throw new ExecuteException($"[{operandStr}] is not positive integer");
 
-                        decimal dest = src;
+                        long dest = src;
                         if (type == StrFormatType.Inc) // +
                             dest += operand;
                         else if (type == StrFormatType.Dec) // -
@@ -264,8 +269,8 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_LeftRight));
                         StrFormatInfo_LeftRight subInfo = info.SubInfo as StrFormatInfo_LeftRight;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
-                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string cutLenStr = StringEscaper.Preprocess(s, subInfo.CutLen);
 
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             throw new ExecuteException($"[{cutLenStr}] is not valid integer");
@@ -277,47 +282,53 @@ namespace PEBakery.Core.Commands
                         {
                             if (type == StrFormatType.Left)
                             {
-                                destStr = srcStr.Substring(0, cutLen);
+                                if (cutLen <= srcStr.Length)
+                                    destStr = srcStr.Substring(0, cutLen);
+                                else
+                                    destStr = srcStr;
                             }
                             else if (type == StrFormatType.Right)
                             {
-                                destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
+                                if (cutLen <= srcStr.Length)
+                                    destStr = srcStr.Substring(srcStr.Length - cutLen, cutLen);
+                                else
+                                    destStr = srcStr;
                             }
 
-                            List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
-                            logs.AddRange(LogInfo.AddCommand(varLogs, cmd));
+                            logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
                         }
                         catch (ArgumentOutOfRangeException)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{cutLen}] is not valid index"));
+                        { // Correct WB082 behavior : Not error, but just empty string
+                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not valid index"));
+                            logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, string.Empty));
                         }
                     }
                     break;
                 case StrFormatType.SubStr:
-                    {
+                    { // Index start from 1, not 0!
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_SubStr));
                         StrFormatInfo_SubStr subInfo = info.SubInfo as StrFormatInfo_SubStr;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
 
                         if (!NumberHelper.ParseInt32(startPosStr, out int startPos))
                             throw new ExecuteException($"[{startPosStr}] is not valid integer");
-                        if (startPos < 0)
+                        if (startPos <= 0)
                             throw new ExecuteException($"[{startPos}] must be positive integer");
                         string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
                         if (!NumberHelper.ParseInt32(lenStr, out int len))
                             throw new ExecuteException($"[{lenStr}] is not valid integer");
-                        if (len < 0)
+                        if (len <= 0)
                             throw new ExecuteException($"[{len}] must be positive integer");
 
                         // Error handling
-                        if (srcStr.Length <= startPos)
-                            logs.Add(new LogInfo(LogState.Error, $"Start position [{startPos}] cannot be bigger than source string's length [{srcStr.Length}]"));
-                        if (srcStr.Length - startPos < len)
-                            logs.Add(new LogInfo(LogState.Error, $"Length [{len}] cannot be bigger than [{srcStr.Length - startPos}]"));
+                        if (srcStr.Length <= (startPos - 1))
+                            throw new ExecuteException($"Start position [{startPos}] cannot be bigger than source string's length [{srcStr.Length}]");
+                        if (srcStr.Length - (startPos - 1) < len)
+                            throw new ExecuteException($"Length [{len}] cannot be bigger than [{srcStr.Length - startPos}]");
 
-                        string destStr = srcStr.Substring(startPos, len);
+                        string destStr = srcStr.Substring(startPos - 1, len);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
@@ -328,7 +339,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Len));
                         StrFormatInfo_Len subInfo = info.SubInfo as StrFormatInfo_Len;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, srcStr.Length.ToString());
                         logs.AddRange(varLogs);
@@ -341,7 +352,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Trim));
                         StrFormatInfo_Trim subInfo = info.SubInfo as StrFormatInfo_Trim;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
                         string toTrim = StringEscaper.Preprocess(s, subInfo.ToTrim);
 
                         string destStr = string.Empty;
@@ -349,10 +360,12 @@ namespace PEBakery.Core.Commands
                         {
                             if (type == StrFormatType.LTrim) // string.Substring
                             {
-                                
-
                                 if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
                                     logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
+
+                                // Error handling
+                                if (srcStr.Length < cutLen)
+                                    throw new ExecuteException($"Length [{cutLen}] cannot be bigger than source string's length");
 
                                 destStr = srcStr.Substring(cutLen);
                             }
@@ -361,10 +374,17 @@ namespace PEBakery.Core.Commands
                                 if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
                                     logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
 
+                                // Error handling
+                                if (srcStr.Length < cutLen)
+                                    throw new ExecuteException($"Length [{cutLen}] cannot be bigger than source string's length");
+
                                 destStr = srcStr.Substring(0, srcStr.Length - cutLen);
                             }
                             else if (type == StrFormatType.CTrim) // string.Trim
                             {
+                                if (toTrim.Length == 0)
+                                    throw new ExecuteException("No characters to trim");
+
                                 char[] chArr = toTrim.ToCharArray();
                                 destStr = srcStr.Trim(chArr);
                             }
@@ -383,24 +403,36 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_NTrim));
                         StrFormatInfo_NTrim subInfo = info.SubInfo as StrFormatInfo_NTrim;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
                         Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
-                        string destStr = srcStr.Substring(0, match.Index);
+                        string destStr;
+                        if (match.Success)
+                            destStr = srcStr.Substring(0, match.Index);
+                        else
+                            destStr = srcStr;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
                 case StrFormatType.Pos:
+                case StrFormatType.PosX:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Pos));
                         StrFormatInfo_Pos subInfo = info.SubInfo as StrFormatInfo_Pos;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcString);
-                        string subStr = StringEscaper.Preprocess(s, subInfo.SubString);
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+                        string subStr = StringEscaper.Preprocess(s, subInfo.SubStr);
 
-                        int idx = srcStr.IndexOf(subStr, StringComparison.OrdinalIgnoreCase) + 1;
+                        StringComparison comp = StringComparison.OrdinalIgnoreCase;
+                        if (type == StrFormatType.PosX)
+                            comp = StringComparison.Ordinal;
+
+                        // 0 if not found
+                        int idx = 0;
+                        if (!subStr.Equals(string.Empty, StringComparison.Ordinal))
+                            idx = srcStr.IndexOf(subStr, comp) + 1;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, idx.ToString());
                         logs.AddRange(varLogs);
@@ -417,31 +449,43 @@ namespace PEBakery.Core.Commands
                         string newStr = StringEscaper.Preprocess(s, subInfo.ReplaceWith);
 
                         string destStr;
-                        if (type == StrFormatType.Replace)
+                        StringComparison comp = StringComparison.OrdinalIgnoreCase;
+                        if (type == StrFormatType.ReplaceX)
+                            comp = StringComparison.Ordinal;
+
+                        if (subStr.Equals(string.Empty, StringComparison.Ordinal))
                         {
-                            StringBuilder b = new StringBuilder();
-                            int startIdx = 0;
-                            int newIdx = srcStr.Substring(startIdx).IndexOf(subStr);
-                            while (newIdx != -1)
-                            {
-                                string tmpStr = srcStr.Substring(startIdx, newIdx);
-                                b.Append(tmpStr);
-                                b.Append(newStr);
-
-                                startIdx += tmpStr.Length + subStr.Length;
-                                newIdx = srcStr.Substring(startIdx).IndexOf(subStr);
-
-                                if (newIdx == -1)
-                                {
-                                    b.Append(srcStr.Substring(startIdx));
-                                    break;
-                                }
-                            }
-                            destStr = b.ToString();
+                            destStr = srcStr;
                         }
                         else
                         {
-                            destStr = srcStr.Replace(subStr, newStr);
+                            StringBuilder b = new StringBuilder();
+                            int startIdx = 0;
+                            int newIdx = srcStr.Substring(startIdx).IndexOf(subStr, comp);
+                            if (newIdx != -1)
+                            {
+                                while (newIdx != -1)
+                                {
+                                    string tmpStr = srcStr.Substring(startIdx, newIdx);
+                                    b.Append(tmpStr);
+                                    b.Append(newStr);
+
+                                    startIdx += tmpStr.Length + subStr.Length;
+                                    newIdx = srcStr.Substring(startIdx).IndexOf(subStr, comp);
+
+                                    if (newIdx == -1)
+                                    {
+                                        b.Append(srcStr.Substring(startIdx));
+                                        break;
+                                    }
+                                }
+
+                                destStr = b.ToString();
+                            }
+                            else
+                            {
+                                destStr = srcStr;
+                            }
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);

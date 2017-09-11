@@ -8,6 +8,15 @@ namespace UnitTest
     [TestClass]
     public class UnitTest_CodeParser
     {
+        [TestMethod]
+        public void CodeParser_GetNextArgument()
+        {
+            CodeParser_GetNextArgument_1();
+            CodeParser_GetNextArgument_2();
+            CodeParser_GetNextArgument_3();
+            CodeParser_GetNextArgument_4();
+        }
+
         public static void CodeParser_GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
         {
             Tuple<string, string> tuple;
@@ -33,7 +42,6 @@ namespace UnitTest
             }
         }
 
-        [TestMethod]
         public void CodeParser_GetNextArgument_1()
         {
             string code = @"TXTAddLine,#3.au3,""IniWrite(#$q#3.ini#$q,#$qInfoHostOS#$q,#$qSystemDir#$q,SHGetSpecialFolderPath(37))"",Append";
@@ -48,7 +56,6 @@ namespace UnitTest
             CodeParser_GetNextArgument_Test(code, testcases);
         }
 
-        [TestMethod]
         public void CodeParser_GetNextArgument_2()
         {
             string code = @"TXTAddLine,#3.au3,""   Return SetError($BOOL[0],0,DllStructGetData($lpszPath,1))  "",Append";
@@ -63,7 +70,6 @@ namespace UnitTest
             CodeParser_GetNextArgument_Test(code, testcases);
         }
 
-        [TestMethod]
         public void CodeParser_GetNextArgument_3()
         {
             string code = @"StrFormat,REPLACE,#2,\,,#8";
@@ -80,7 +86,6 @@ namespace UnitTest
             CodeParser_GetNextArgument_Test(code, testcases);
         }
 
-        [TestMethod]
         public void CodeParser_GetNextArgument_4()
         {
             string code = @"Set,%Waik2Tools%,";

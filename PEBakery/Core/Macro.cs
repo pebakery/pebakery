@@ -17,8 +17,8 @@ namespace PEBakery.Core
         private bool macroEnabled; // Can use macro or not?
         private Plugin macroPlugin; // sciprt.project - %API%
         private PluginSection macroSection; // sciprt.project - %APIVAR%
-        private Dictionary<string, CodeCommand> macroDict; // Macro Library - [ApiVar]
-        private Dictionary<string, CodeCommand> localDict; // Local Macro from [Variables]
+        private Dictionary<string, CodeCommand> macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Macro Library - [ApiVar]
+        private Dictionary<string, CodeCommand> localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Local Macro from [Variables]
 
         public bool MacroEnabled { get => macroEnabled; }
         public Plugin MacroPlugin { get => macroPlugin; }
@@ -27,7 +27,7 @@ namespace PEBakery.Core
         public Dictionary<string, CodeCommand> LocalDict { get => localDict; } // Local Macro from [Variables]
 
         public Macro(Project project, Variables variables, out List<LogInfo> logs)
-        {
+        { 
             macroEnabled = true;
             logs = new List<LogInfo>();
             if (project.MainPlugin.Sections.ContainsKey("Variables") == false)
@@ -72,7 +72,6 @@ namespace PEBakery.Core
             variables.AddVariables(VarsType.Global, macroSection);
 
             // Parse Section [APIVAR] into dictionary of CodeCommand
-            macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
             SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
             Dictionary<string, string> macroRawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
             foreach (var kv in macroRawDict)
@@ -88,9 +87,6 @@ namespace PEBakery.Core
                     logs.Add(new LogInfo(LogState.Error, e));
                 }
             }
-
-            // Prepare Local Macro Dict
-            localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
         }
 
         public List<LogInfo> LoadLocalMacroDict(Plugin p)

@@ -20,13 +20,14 @@ namespace PEBakery.Core
         Local = 2,
     };
 
-    public class Variables
+    public class Variables : ICloneable
     {
         /*
          * Variables 우선순위
          * local variables > global variables > fixed variables
          */
 
+        #region Variables
         // Fields
         private Project project;
         private Dictionary<string, string> fixedVars; // Once constructed, it must be read-only.
@@ -49,7 +50,9 @@ namespace PEBakery.Core
             get => GetValue(type, key);
             set => SetValue(type, key, value);
         }
+        #endregion
 
+        #region Constructor
         public Variables(Project project)
         {
             this.project = project;
@@ -71,7 +74,9 @@ namespace PEBakery.Core
             logs = LoadDefaultFixedVariables();
             logs.AddRange(LoadDefaultGlobalVariables());
         }
+        #endregion
 
+        #region LoadDefaults
         private List<LogInfo> LoadDefaultFixedVariables()
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -100,27 +105,38 @@ namespace PEBakery.Core
             // SourceDir
             string sourceDir = string.Empty;
             string sourceDirs = dict["SourceDir"];
-            string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string rawDir in rawDirList)
+            if (sourceDirs != null) // Empty
             {
-                string dir = rawDir.Trim();
-                if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string rawDir in rawDirList)
                 {
-                    sourceDir = dir;
-                    break;
+                    string dir = rawDir.Trim();
+                    if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                    {
+                        sourceDir = dir;
+                        break;
+                    }
                 }
             }
+
+            string targetDir = dict["TargetDir"];
+            if (targetDir == null)
+                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+
+            string isoFile = dict["ISOFile"];
+            if (isoFile == null)
+                isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
 
             // ProjectDir
             logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
             // SourceDir
             logs.Add(SetFixedValue("SourceDir", sourceDir));
             // TargetDir
-            logs.Add(SetFixedValue("TargetDir", dict["TargetDir"]));
+            logs.Add(SetFixedValue("TargetDir", targetDir));
             // ISOFile
-            logs.Add(SetFixedValue("ISOFile", dict["ISOFile"]));
+            logs.Add(SetFixedValue("ISOFile", isoFile));
             // ISODir
-            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(dict["ISOFile"])));
+            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(isoFile)));
             #endregion
 
             #region Envrionment Variables
@@ -300,7 +316,9 @@ namespace PEBakery.Core
 
             return logs;
         }
+        #endregion
 
+        
         private Dictionary<string, string> GetVarsMatchesType(VarsType type)
         {
             switch (type)
@@ -468,10 +486,19 @@ namespace PEBakery.Core
 
         public bool TryGetValue(string key, out string value)
         {
-            bool fixedResult = fixedVars.TryGetValue(key, out value);
-            bool globalResult = globalVars.TryGetValue(key, out value);
-            bool localResult = localVars.TryGetValue(key, out value);
-            value = Expand(value);
+            bool fixedResult = fixedVars.TryGetValue(key, out string fixedValue);
+            bool globalResult = globalVars.TryGetValue(key, out string globalValue);
+            bool localResult = localVars.TryGetValue(key, out string localValue);
+
+            if (localResult)
+                value = Expand(localValue);
+            else if (globalResult)
+                value = Expand(globalValue);
+            else if (fixedResult)
+                value = Expand(fixedValue);
+            else
+                value = string.Empty;
+
             return fixedResult || localResult || globalResult;
         }
 
@@ -727,6 +754,19 @@ namespace PEBakery.Core
             }
 
             return logs;
+        }
+        #endregion
+
+        #region Clone
+        public object Clone()
+        {
+            Variables variables = new Variables(project)
+            {
+                fixedVars = new Dictionary<string, string>(this.fixedVars, StringComparer.OrdinalIgnoreCase),
+                globalVars = new Dictionary<string, string>(this.globalVars, StringComparer.OrdinalIgnoreCase),
+                localVars = new Dictionary<string, string>(this.localVars, StringComparer.OrdinalIgnoreCase),
+            };
+            return variables;
         }
         #endregion
     }
