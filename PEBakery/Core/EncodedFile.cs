@@ -36,17 +36,32 @@ namespace PEBakery.Core
     Concat all lines into one long string, append '=', '==' or nothing according to length.
     (Need '=' padding to be appended to be .Net acknowledgled base64 format)
     Decode base64 encoded string to get binary, which follows these 2 types
-     
+    
+    Add)
+    There is three zlib magic number : 78 01, 78 9c, 78 da. 
+    All of them can be used in Type 1 or Type 2.
+
     [Type 1]
     Zlib Compressed File
     - Used in most file
-    - Base64 encoded string always start with 'eJ'
-    - Base64 decoded bytes always start with '78 9c' (in hex) - which is zlib stream's magic number
+    - Base64 encoded string always starts with 'eJ'
+    - Base64 decoded bytes always starts with zlib magic number
+
+    Note) 
+    If I attach files allowing current Type 1 scheme, PEBakery can extract files.
+    However, WB082 refuses with this message : 
+        The archive was created with a different version of ZLBArchive (v-1953426545)
+    Which means, a metedata record must exists.
+
+    Hypothesis)
+    Type 1 also has a footer like Type 2.
+    If I attach files allowing current Type 1 scheme, PEBakery can extract files while WB082 refuses.
+    Need more research.
     
     [Type 2]
     Untouched File + Zlib Compressed Footer
     - Used in already compressed file (Ex 7z)
-    - Base64 decoded footer always start with '78 9c' (in hex) - which is zlib stream's magic number
+    - Base64 decoded footer always starts with zlib magic number
     
     Footer : 550Byte (Decompressed)
     [Length of FileName]
@@ -54,10 +69,11 @@ namespace PEBakery.Core
     Stream of mostly 0 and some bytes - Maybe hash? for integrity?
     
     Fortunately, footer is not essential to extract attached file.
-    Because of unknown footer, writing PEBakery's own attach format is needed in future.
+    Because of unknown footer, attached file by PEBakery is not compatible with WB082 for now.
 
     [How to improve?]
     Use LZMA instead of zlib, for better compression rate
+    Design new plugin format which is robust
     */
 
     public class EncodedFile
@@ -66,7 +82,13 @@ namespace PEBakery.Core
         // Need more research about Type 2 and its footer
         public static Plugin AttachFile(Plugin p, string dirName, string fileName, string srcFilePath)
         {
-            return Encode(p, dirName, fileName, new FileStream(srcFilePath, FileMode.Open, FileAccess.Read));
+            Plugin newPlugin = null;
+            using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
+            {
+                newPlugin = Encode(p, dirName, fileName, fs);
+                fs.Close();
+            }
+            return newPlugin;
         }
 
         public static Plugin AttachFile(Plugin p, string dirName, string fileName, Stream srcStream)
@@ -127,15 +149,15 @@ namespace PEBakery.Core
             // TODO: Support encoding Type 2
 
             // Check Overwrite
-            bool dirOverwrite = false;
+            // bool dirOverwrite = false;
             bool fileOverwrite = false;
             if (p.Sections.ContainsKey(dirName))
             { // [{dirName}] section exists, check if there is already same file encoded
-                List<string> lines = p.Sections["EncodedFolders"].GetLines();
-                if (lines.FirstOrDefault(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)) != null)
-                    dirOverwrite = true;
+                // List<string> lines = p.Sections["EncodedFolders"].GetLines();
+                // if (lines.FirstOrDefault(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)) != null)
+                //     dirOverwrite = true;   
 
-                lines = p.Sections[dirName].GetLines();
+                List<string> lines = p.Sections[dirName].GetLines();
                 if (lines.FirstOrDefault(x => x.Equals(fileName, StringComparison.OrdinalIgnoreCase)) != null)
                     fileOverwrite = true;
             }
@@ -144,7 +166,7 @@ namespace PEBakery.Core
             inputStream.Position = 0;
             string encoded;
             using (MemoryStream memStream = new MemoryStream())
-            using (DeflateStream zlibStream = new DeflateStream(memStream, CompressionLevel.Fastest))
+            using (DeflateStream zlibStream = new DeflateStream(memStream, CompressionLevel.Fastest, true))
             {
                 inputStream.CopyTo(zlibStream);
                 zlibStream.Close();
@@ -162,7 +184,7 @@ namespace PEBakery.Core
                     encoded = encoded.Substring(0, encoded.Length - 1);
             }
 
-            string section = $"[EncodedFile-{dirName}-{fileName}]";
+            string section = $"EncodedFile-{dirName}-{fileName}";
             List<IniKey> keys = new List<IniKey>();
             for (int i = 0; i <= (encoded.Length / 4090); i++)
             {
@@ -177,17 +199,35 @@ namespace PEBakery.Core
                 }
             }
 
-            // Write to file
-            if (fileOverwrite)
-            {
-                Ini.DeleteSection(p.FullPath, section); // Delete existing encoded file
-            }
-            
-            Ini.SetKeys(p.FullPath, keys); // Write into [EncodedFile-{dirName}-{fileName}]
-            Ini.SetKey(p.FullPath, dirName, fileName, $"{inputStream.Length},{encoded.Length}"); // UncompressedSize,EncodedSize
+            // Before writing to file, backup
+            string tempFile = Path.GetTempFileName();
+            File.Copy(p.FullPath, tempFile, true);
 
-            if (dirOverwrite == false)
+            // Write to file
+            try
+            {
+                // Write folder info to [EncodedFolders]
+                //if (dirOverwrite == false)
+                //    Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
                 Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
+
+                // Write file info into [{dirName}]
+                Ini.SetKey(p.FullPath, dirName, fileName, $"{inputStream.Length},{encoded.Length}"); // UncompressedSize,EncodedSize
+
+                // Write encoded file into [EncodedFile-{dirName}-{fileName}]
+                if (fileOverwrite)
+                    Ini.DeleteSection(p.FullPath, section); // Delete existing encoded file
+                Ini.SetKeys(p.FullPath, keys); // Write into 
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(tempFile, p.FullPath, true);
+                throw new EncodedFileFailException($"Error while writing encoded file into [{p.FullPath}]");
+            }
+            finally
+            { // Delete temp script
+                File.Delete(tempFile);
+            }
 
             // Refresh Plugin
             // TODO: How to update CurMainTree of MainWindows?
@@ -197,14 +237,14 @@ namespace PEBakery.Core
         private static MemoryStream Decode(List<string> encodedList)
         {
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new ExtractFileFailException("Encoded lines are malformed");
+                throw new EncodedFileFailException("Encoded lines are malformed");
 
             int.TryParse(value, out int blockCount);
             encodedList.RemoveAt(0); // Remove "lines=n"
 
             // Each line is 64KB block
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                throw new ExtractFileFailException("Encoded lines are malformed");
+                throw new EncodedFileFailException("Encoded lines are malformed");
             keys = null; // Please GC this
 
             StringBuilder builder = new StringBuilder();
@@ -270,9 +310,10 @@ namespace PEBakery.Core
                     }
                 }
                 if (failure)
-                    throw new ExtractFileFailException("Extract failed");
+                    throw new EncodedFileFailException("Extract failed");
             }
 
+            mem.Position = 0;
             return mem;
         }
         #endregion

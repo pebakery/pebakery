@@ -1,5 +1,5 @@
 # PEBakery
-WinBuilder drop-in replacement. Stil in development.
+WinBuilder drop-in replacement.
 
 Master Build Status  
 [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master)
@@ -25,6 +25,7 @@ PEBakery is mainly licensed under GPL Version 3.
 Part of PEBakery is licensed under MIT License and others.
 
 
+
 # Build
 To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
@@ -35,6 +36,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 ## Requirement
 - C# 7 Compiler
 - .Net Framework 4.7
+
 
 
 # Current State
@@ -65,13 +67,14 @@ However, building whole project is quite buggy and needs to be improved.
 | Network   | 2   | 2           | 0      |
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
-| Hash      | 5   | 5           | 0      |
+| Hash      | 5   | 5           | 5      |
 | String    | 29  | 29          | 27     |
 | Math      | 19  | 19          | 0      |
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 152 | 152         | 33     |
+| All       | 152 | 152         | 38     |
+
 
 
 # Help Needed
@@ -86,7 +89,9 @@ PEBakery now have its skeleton finished, but has lots of bugs.
 WB082 has lots of undocumented behaviors, and it takes time to inspect all of them.  
 As a result, many commands behave different from WB082.
 
-You can contribute by finding correct behavior of WB082 commands.
+Especially, research about WB082's file attachment scheme is highly necessary.  
+Without this information, PEBakery can only extract file with integrity checking skipped.  
+For anyone interested, you can see my note at [EncodedFile.cs](https://github.com/ied206/PEBakery/blob/develop/PEBakery/Core/EncodedFile.cs).
 
 ## UI
 PEBakery needs more well-designed UI.
@@ -106,6 +111,7 @@ Plan PEBakery's future with your own hands!
 - New Language and Grammar
 
 
+
 # Screenshots
 ## 20170530 Build
 ![Win10PESE by PEBakery 20170530](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
@@ -114,4 +120,3 @@ Plan PEBakery's future with your own hands!
 In WB082, same plugins are rendered like this:  
 ![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
 ![Korean IME by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082-Korean_IME.png)
-

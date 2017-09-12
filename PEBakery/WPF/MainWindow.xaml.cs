@@ -816,7 +816,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string pluginVersionText = "v0.1";
+        private string pluginVersionText = "v0.90";
         public string PluginVersionText
         {
             get => pluginVersionText;

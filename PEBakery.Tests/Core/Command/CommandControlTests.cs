@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.Lib;
@@ -9,12 +27,12 @@ using System.Diagnostics;
 namespace UnitTest.Core.Command
 {
     [TestClass]
-    public class UnitTest_CommandControl
+    public class CommandControlTests
     {
         #region Set
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_Set()
+        public void Control_Set()
         {
             Set_1();
             Set_2();
@@ -24,7 +42,7 @@ namespace UnitTest.Core.Command
         public void Set_1()
         {
             string rawCode = "Set,%Dest%,PEBakery";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Local, "Dest");
@@ -34,7 +52,7 @@ namespace UnitTest.Core.Command
         public void Set_2()
         {
             string rawCode = "Set,%Dest%,PEBakery,GLOBAL";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Dest");
@@ -43,13 +61,13 @@ namespace UnitTest.Core.Command
 
         public void Set_3()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
 
             string pPath = s.Project.MainPlugin.FullPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
             string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
-            UnitTest_Engine.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
@@ -65,7 +83,7 @@ namespace UnitTest.Core.Command
         #region AddVariables
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_AddVariables()
+        public void Control_AddVariables()
         {
             AddVariables_1();
             AddVariables_2();
@@ -73,7 +91,7 @@ namespace UnitTest.Core.Command
 
         public void AddVariables_1()
         { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             string tempFile = "AddVariables_1.script";
             string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
             Directory.CreateDirectory(Path.GetDirectoryName(pPath));
@@ -88,7 +106,7 @@ namespace UnitTest.Core.Command
             }
 
             string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars";
-            UnitTest_Engine.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
 
             Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "A").Equals("1", StringComparison.Ordinal));
             Assert.IsTrue(s.Variables.GetValue(VarsType.Local, "B").Equals("2", StringComparison.Ordinal));
@@ -99,7 +117,7 @@ namespace UnitTest.Core.Command
 
         public void AddVariables_2()
         { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             string tempFile = "AddVariables_2.script";
             string pPath = Path.Combine(s.BaseDir, "Temp", s.Project.ProjectName, tempFile);
             Directory.CreateDirectory(Path.GetDirectoryName(pPath));
@@ -114,7 +132,7 @@ namespace UnitTest.Core.Command
             }
 
             string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars,GLOBAL";
-            UnitTest_Engine.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.AddVariables, ErrorCheck.Success);
 
             Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "A").Equals("1", StringComparison.Ordinal));
             Assert.IsTrue(s.Variables.GetValue(VarsType.Global, "B").Equals("2", StringComparison.Ordinal));
@@ -127,7 +145,7 @@ namespace UnitTest.Core.Command
         #region Exit
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_Exit()
+        public void Control_Exit()
         {
             Exit_1();
             Exit_2();
@@ -136,7 +154,7 @@ namespace UnitTest.Core.Command
         public void Exit_1()
         { 
             string rawCode = $"Exit,UnitTest";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Exit, ErrorCheck.Warning);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Warning);
 
             Assert.IsTrue(s.PassCurrentPluginFlag);
         }
@@ -144,7 +162,7 @@ namespace UnitTest.Core.Command
         public void Exit_2()
         {
             string rawCode = $"Exit,UnitTest,NOWARN";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Exit, ErrorCheck.Success);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Success);
 
             Assert.IsTrue(s.PassCurrentPluginFlag);
         }
@@ -153,7 +171,7 @@ namespace UnitTest.Core.Command
         #region Halt
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_Halt()
+        public void Control_Halt()
         {
             Halt_1();
         }
@@ -161,7 +179,7 @@ namespace UnitTest.Core.Command
         public void Halt_1()
         {
             string rawCode = $"Halt,UnitTest";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Halt, ErrorCheck.Warning);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Halt, ErrorCheck.Warning);
 
             Assert.IsTrue(s.CmdHaltFlag);
         }
@@ -170,7 +188,7 @@ namespace UnitTest.Core.Command
         #region Wait
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_Wait()
+        public void Control_Wait()
         {
             Wait_1();
         }
@@ -180,7 +198,7 @@ namespace UnitTest.Core.Command
             Stopwatch w = Stopwatch.StartNew();
             
             string rawCode = $"Wait,1";
-            EngineState s = UnitTest_Engine.Eval(rawCode, CodeType.Wait, ErrorCheck.Success);
+            EngineState s = EngineTests.Eval(rawCode, CodeType.Wait, ErrorCheck.Success);
 
             long elapsed = w.ElapsedMilliseconds;
             Assert.IsTrue(1000 <= elapsed);
@@ -190,7 +208,7 @@ namespace UnitTest.Core.Command
         #region Beep
         [TestMethod]
         [TestCategory("CommandControl")]
-        public void CommandControl_Beep()
+        public void Control_Beep()
         {
             Beep_1();
             Beep_2();
@@ -200,8 +218,8 @@ namespace UnitTest.Core.Command
 
         public void Beep_1()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
+            EngineState s = EngineTests.CreateEngineState();
+            SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,OK";
             CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
 
@@ -213,8 +231,8 @@ namespace UnitTest.Core.Command
 
         public void Beep_2()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
+            EngineState s = EngineTests.CreateEngineState();
+            SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Error";
             CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
 
@@ -226,8 +244,8 @@ namespace UnitTest.Core.Command
 
         public void Beep_3()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
+            EngineState s = EngineTests.CreateEngineState();
+            SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Asterisk";
             CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
 
@@ -239,8 +257,8 @@ namespace UnitTest.Core.Command
 
         public void Beep_4()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
+            EngineState s = EngineTests.CreateEngineState();
+            SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Confirmation";
             CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
 

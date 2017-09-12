@@ -24,8 +24,10 @@ NoWarning=False
 %_ML_RegAddBootMethod%=NMcfg
 %_ML_RF_TYPE%=2
 %TestSuite%=%BaseDir%\TestSuite
+%TestBench%=%BaseDir%\WorkBench\TestSuite
 %TestSrc%=%BaseDir%\WorkBench\TestSuite\Src
 %TestDest%=%BaseDir%\WorkBench\TestSuite\Dest
+
 
 [IniVariables]
 _ML_Exit_Plugin=

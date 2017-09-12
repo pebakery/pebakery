@@ -415,19 +415,28 @@ namespace PEBakery.Core
         /// <returns></returns>
         public Plugin RefreshPlugin(Plugin plugin)
         {
-            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, plugin.FullPath, StringComparison.OrdinalIgnoreCase));
-            if (idx == -1)
-                return null;
-
-            Node<Plugin> node = allPlugins.SearchNode(plugin);
             string pPath = plugin.FullPath;
-            Plugin p = LoadPlugin(pPath);
+            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+            if (idx == -1)
+            {
+                // Even if idx is not found in Projects directory, just proceed.
+                // If not, cannot deal with monkey-patched plugins.
+                return LoadPlugin(pPath, true);
+            }
+            else
+            {
+                Node<Plugin> node = allPlugins.SearchNode(plugin);
 
-            if (p != null)
-                allPluginList[idx] = p;
-            node.Data = p;
+                // This one is in legit Project list, so [Main] cannot be ignored
+                Plugin p = LoadPlugin(pPath, false);
 
-            return p;
+                if (p != null)
+                    allPluginList[idx] = p;
+                node.Data = p;
+
+                return p;
+            }
+            
         }
 
         /// <summary>

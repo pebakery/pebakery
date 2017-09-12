@@ -534,6 +534,10 @@ namespace PEBakery.Lib
 
                                 if (processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)) == false)
                                 {
+                                    if (thisLineWritten == false)
+                                        writer.WriteLine(rawLine);
+                                    thisLineWritten = true;
+
                                     processedSections.Add(iniKeys[i].Section);
                                     writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }
@@ -543,7 +547,7 @@ namespace PEBakery.Lib
                             }
                         }
 
-                        if (!thisLineWritten)
+                        if (thisLineWritten == false)
                             writer.WriteLine(rawLine);
                     }
                     reader.Close();
@@ -808,6 +812,10 @@ namespace PEBakery.Lib
 
                                 if (processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)) == false)
                                 {
+                                    if (thisLineWritten == false)
+                                        writer.WriteLine(rawLine);
+                                    thisLineWritten = true;
+
                                     processedSections.Add(iniKeys[i].Section);
                                     writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }

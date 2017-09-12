@@ -161,11 +161,11 @@ namespace PEBakery.Exceptions
         public EncodeFileFailException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public class ExtractFileFailException : Exception
+    public class EncodedFileFailException : Exception
     {
-        public ExtractFileFailException() { }
-        public ExtractFileFailException(string message) : base(message) { }
-        public ExtractFileFailException(string message, Exception inner) : base(message, inner) { }
+        public EncodedFileFailException() { }
+        public EncodedFileFailException(string message) : base(message) { }
+        public EncodedFileFailException(string message, Exception inner) : base(message, inner) { }
     }
 
     public class ExtractFileNotFoundException : Exception
