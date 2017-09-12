@@ -12,6 +12,7 @@ namespace UnitTest.Libs
     public class UnitTest_IniLib
     {
         #region GetKey
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_GetKey()
         {
@@ -84,6 +85,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region GetKeys
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_GetKeys()
         {
@@ -140,6 +142,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region SetKey
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_SetKey()
         {
@@ -203,6 +206,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region SetKeys
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_SetKeys()
         {
@@ -309,6 +313,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region WriteRawLine
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_WriteRawLine()
         {
@@ -406,6 +411,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region WriteRawLines
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_WriteRawLines()
         {
@@ -535,6 +541,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region DeleteKey
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_DeleteKey()
         {
@@ -655,6 +662,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region DeleteKeys
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_DeleteKeys()
         {
@@ -715,6 +723,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region AddSection
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLIb_AddSection()
         {
@@ -835,6 +844,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region AddSections
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_AddSections()
         {
@@ -938,6 +948,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region DeleteSection
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_DeleteSection()
         {
@@ -1043,6 +1054,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region DeleteSections
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_DeleteSections()
         {
@@ -1156,6 +1168,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region Merge2
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_Merge2()
         {
@@ -1356,6 +1369,7 @@ namespace UnitTest.Libs
         #endregion
 
         #region Merge3
+        [TestCategory("IniLib")]
         [TestMethod]
         public void IniLib_Merge3()
         {

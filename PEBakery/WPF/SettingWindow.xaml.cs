@@ -453,7 +453,7 @@ namespace PEBakery.WPF
         private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
         {
             DebugLevel.Production.ToString(),
-            DebugLevel.PrintExceptionType.ToString(),
+            DebugLevel.PrintException.ToString(),
             DebugLevel.PrintExceptionStackTrace.ToString()
         };
         public ObservableCollection<string> Log_DebugLevelList
@@ -486,7 +486,7 @@ namespace PEBakery.WPF
                     case 0:
                         return DebugLevel.Production;
                     case 1:
-                        return DebugLevel.PrintExceptionType;
+                        return DebugLevel.PrintException;
                     default:
                         return DebugLevel.PrintExceptionStackTrace;
                 }
@@ -498,7 +498,7 @@ namespace PEBakery.WPF
                     case DebugLevel.Production:
                         log_DebugLevelIndex = 0;
                         break;
-                    case DebugLevel.PrintExceptionType:
+                    case DebugLevel.PrintException:
                         log_DebugLevelIndex = 1;
                         break;
                     default:

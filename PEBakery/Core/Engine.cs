@@ -51,7 +51,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Ready, Finish RunPlugin
+        #region Ready, Finish Plugin
         /// <summary>
         /// Ready to run an plugin
         /// </summary>
@@ -61,6 +61,9 @@ namespace PEBakery.Core
             s.Logger.ErrorOffCount = 0;
             // Turn off System,Log,Off
             s.Logger.SuspendLog = false;
+
+            // Assert s.CurDepth == 1
+            Debug.Assert(s.CurDepth == 1);
 
             // Set CurrentPlugin
             // Note: s.CurrentPluginIdx is not touched here
@@ -88,19 +91,8 @@ namespace PEBakery.Core
             // Load Per-Plugin Macro
             s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
 
-            // Current Section Parameter - empty
-            s.CurSectionParams = new Dictionary<int, string>()
-            { // This value follows WB082 Behavior (Can't figure out why developer set init values like this)
-                { 1, "#1" },
-                { 2, "#2" },
-                { 3, "#3" },
-                { 4, "#4" },
-                { 5, "#5" },
-                { 6, "#6" },
-                { 7, "#7" },
-                { 8, "#8" },
-                { 9, "#9" },
-            };
+            // Reset Current Section Parameter
+            s.CurSectionParams = new Dictionary<int, string>();
 
             // Clear Processed Section Hashes
             s.ProcessedSectionHashes.Clear();
@@ -236,6 +228,9 @@ namespace PEBakery.Core
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
+            // Set CurrentSection
+            s.CurrentSection = addr.Section;
+
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, sectionParams[i]);
@@ -251,6 +246,9 @@ namespace PEBakery.Core
         {
             List<CodeCommand> codes = addr.Section.GetCodes(true);
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
+
+            // Set CurrentSection
+            s.CurrentSection = addr.Section;
 
             // Must copy ParamDict by value, not reference
             RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
@@ -549,12 +547,6 @@ namespace PEBakery.Core
                     case CodeType.AddVariables:
                         logs.AddRange(CommandControl.AddVariables(s, cmd));
                         break;
-                    case CodeType.GetParam:
-                        logs.AddRange(CommandControl.GetParam(s, cmd));
-                        break;
-                    case CodeType.PackParam:
-                        logs.AddRange(CommandControl.PackParam(s, cmd));
-                        break;
                     case CodeType.Exit:
                         logs.AddRange(CommandControl.Exit(s, cmd));
                         break;
@@ -720,8 +712,9 @@ namespace PEBakery.Core
         // Fields : Engine's state
         public Plugin CurrentPlugin;
         public int CurrentPluginIdx;
+        public PluginSection CurrentSection;
         public Dictionary<int, string> CurSectionParams = new Dictionary<int, string>();
-        public int CurDepth;
+        public int CurDepth = 1;
         public bool ElseFlag = false;
         public bool LoopRunning = false;
         public long LoopCounter;
@@ -777,6 +770,7 @@ namespace PEBakery.Core
                 RunOnePlugin = true;
             }
 
+            CurrentSection = null;
             EntrySection = entrySection;
 
             CurSectionParams = new Dictionary<int, string>();

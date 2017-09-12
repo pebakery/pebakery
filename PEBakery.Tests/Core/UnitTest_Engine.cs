@@ -46,8 +46,9 @@ namespace UnitTest.Core
         }
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = false, Plugin p = null)
+        public static EngineState CreateEngineState(bool doClone = true, Plugin p = null)
         {
+            // Clone is needed for parallel test execution
             if (doClone)
             {
                 Project project = UnitTest_Engine.Project.Clone() as Project;

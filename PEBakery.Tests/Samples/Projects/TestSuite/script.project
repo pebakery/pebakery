@@ -1,6 +1,6 @@
 [Main]
 Title=TestSuite
-Type=plugin
+Type=Plugin
 Author=ied206
 Description=PEBakery's Test Suite
 Credits=
@@ -13,6 +13,7 @@ NoWarning=False
 
 [Variables]
 %ProjectName%=TestSuite
+%ProjectTemp%=%BaseDir%\Temp\%ProjectName%
 %API%=%ProjectDir%\Build\Macro_Library.script
 %APIVAR%=ApiVar
 %APIDEF%=MacroLibrary
@@ -32,12 +33,9 @@ _ML_RF_Plugin=
 _ML_RF_Method=
 _ML_UnMount=Yes
 
-
-
-
 [Process]
 If,ExistFile,%API%,AddVariables,%API%,ApiVar,GLOBAL
 DirDelete,%TestDest%
 
 [TestSuite-ONBUILDEXIT]
-If,ExistFile,%Api%,Exec,%Api%,Clean,#1
+// If,ExistFile,%Api%,Exec,%Api%,Clean,#1

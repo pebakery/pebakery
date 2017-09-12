@@ -252,9 +252,9 @@ namespace PEBakery.Core.Commands
 
                         s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-                        LogExportType logFormat = LogExportType.HTML;
+                        LogExportType logFormat = LogExportType.Html;
                         if (logFormatStr.Equals("HTML", StringComparison.OrdinalIgnoreCase))
-                            logFormat = LogExportType.HTML;
+                            logFormat = LogExportType.Html;
                         else if (logFormatStr.Equals("Text", StringComparison.OrdinalIgnoreCase))
                             logFormat = LogExportType.Text;
 

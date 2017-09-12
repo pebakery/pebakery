@@ -13,6 +13,8 @@ namespace UnitTest.Core.Command
     public class UnitTest_CommandString
     {
         #region IntToBytes
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_IntToBytes()
         {
@@ -100,6 +102,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region BytesToInt
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_BytesToInt()
         {
@@ -177,6 +181,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Ceil
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Ceil()
         {
@@ -285,6 +291,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Floor
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Floor()
         {
@@ -393,6 +401,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Round
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Round()
         {
@@ -504,6 +514,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Date
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Date()
         {
@@ -512,6 +524,7 @@ namespace UnitTest.Core.Command
             StrFormat_Date_1();
             StrFormat_Date_2();
             StrFormat_Date_3();
+            StrFormat_Date_4();
         }
 
         public void StrFormat_Date_1()
@@ -531,6 +544,21 @@ namespace UnitTest.Core.Command
 
         public void StrFormat_Date_2()
         {
+            string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
+            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
+            CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
+            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
+
+            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
+            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+
+            Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddHHmmssfff", StringComparison.Ordinal));
+        }
+
+        public void StrFormat_Date_3()
+        {
             string rawCode = "StrFormat,Date,%Dest%,yyy-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = UnitTest_Engine.DummySectionAddress();
             try
@@ -545,7 +573,7 @@ namespace UnitTest.Core.Command
             Assert.Fail();
         }
 
-        public void StrFormat_Date_3()
+        public void StrFormat_Date_4()
         {
             string rawCode = "StrFormat,Date,%Dest%,yyymdd_hhnnss.zzz";
             SectionAddress addr = UnitTest_Engine.DummySectionAddress();
@@ -563,6 +591,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region FileName
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_FileName()
         {
@@ -610,6 +640,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region DirPath
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_DirPath()
         {
@@ -664,6 +696,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Path
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Path()
         {
@@ -718,6 +752,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Ext
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Ext()
         {
@@ -775,6 +811,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Inc
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Inc()
         {
@@ -851,6 +889,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Dec
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Dec()
         {
@@ -927,6 +967,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Mult
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Mult()
         {
@@ -1003,6 +1045,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Div
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Div()
         {
@@ -1079,6 +1123,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Left
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Left()
         {
@@ -1113,6 +1159,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Right
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Right()
         {
@@ -1147,6 +1195,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region SubStr
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_SubStr()
         { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<DestVar>
@@ -1204,6 +1254,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Len
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Len()
         {
@@ -1231,6 +1283,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region LTrim
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_LTrim()
         {
@@ -1255,6 +1309,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region RTrim
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_RTrim()
         {
@@ -1279,6 +1335,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region CTrim
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_CTrim()
         {
@@ -1313,6 +1371,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region NTrim
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_NTrim()
         {
@@ -1341,6 +1401,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Pos
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Pos()
         {
@@ -1388,6 +1450,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region PosX
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_PosX()
         {
@@ -1435,6 +1499,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Replace
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Replace()
         {
@@ -1482,6 +1548,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region ReplaceX
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_ReplaceX()
         {
@@ -1529,6 +1597,8 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Split
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
         [TestMethod]
         public void StrFormat_Split()
         {

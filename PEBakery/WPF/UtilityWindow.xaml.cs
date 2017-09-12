@@ -133,12 +133,16 @@ namespace PEBakery.WPF
                     mainModel = w.Model;
                 });
 
+                mainModel.SwitchNormalBuildInterface = false;
+
                 EngineState s = new EngineState(p.Project, logger, mainModel, p);
                 s.SetLogOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
+
+                mainModel.SwitchNormalBuildInterface = true;
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);

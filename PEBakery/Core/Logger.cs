@@ -238,7 +238,7 @@ namespace PEBakery.Core
     #region Logger Class
     public enum LogExportType
     {
-        Text, HTML
+        Text, Html, Xlsx
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ namespace PEBakery.Core
     public enum DebugLevel
     {
         Production = 0, // Only Exception message
-        PrintExceptionType = 1, // Print Exception message with Exception type
+        PrintException = 1, // Print Exception message with Exception type
         PrintExceptionStackTrace = 2, // Print Exception message, type, and stack trace
     }
 
@@ -708,7 +708,7 @@ namespace PEBakery.Core
                         writer.Close();
                     }
                     break;
-                case LogExportType.HTML:
+                case LogExportType.Html:
                     break;
             }
         }
@@ -776,7 +776,7 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case LogExportType.HTML:
+                case LogExportType.Html:
                     {
                         // TODO
                         Console.WriteLine("TODO: Not Implemented");
@@ -806,7 +806,7 @@ namespace PEBakery.Core
                     }
                     else
                         return StringHelper.RemoveLastNewLine(e.Message);
-                case DebugLevel.PrintExceptionType:
+                case DebugLevel.PrintException:
                     if (e.GetType() == typeof(AggregateException))
                     {
                         StringBuilder builder = new StringBuilder();
@@ -1019,7 +1019,7 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case LogExportType.HTML:
+                case LogExportType.Html:
                     {
 
                     }
