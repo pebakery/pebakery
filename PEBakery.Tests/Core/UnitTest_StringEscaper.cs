@@ -14,7 +14,7 @@ namespace UnitTest.Core
         #region Escape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void Escape()
+        public void StringEscaper_Escape()
         {
             Escape_1();
             Escape_2();
@@ -74,7 +74,7 @@ namespace UnitTest.Core
         #region QuoteEscape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void QuoteEscape()
+        public void StringEscaper_QuoteEscape()
         {
             QuoteEscape_1();
             QuoteEscape_2();
@@ -107,7 +107,7 @@ namespace UnitTest.Core
         #region Unescape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void Unescape()
+        public void StringEscaper_Unescape()
         {
             Unescape_1();
             Unescape_2();
@@ -172,7 +172,7 @@ namespace UnitTest.Core
         #region QuoteUnescape
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void QuoteUnescape()
+        public void StringEscaper_QuoteUnescape()
         {
             QuoteUnescape_1();
             QuoteUnescape_2();
@@ -210,7 +210,7 @@ namespace UnitTest.Core
         #region ExpandSectionParams
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void ExpandSectionParams()
+        public void StringEscaper_ExpandSectionParams()
         {
             ExpandSectionParams_1();
             ExpandSectionParams_2();
@@ -319,7 +319,7 @@ namespace UnitTest.Core
         #region ExpandVariables
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void ExpandVariables()
+        public void StringEscaper_ExpandVariables()
         {
             ExpandVariables_1();
             ExpandVariables_2();
@@ -429,7 +429,7 @@ namespace UnitTest.Core
         #region Preprocess
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void Preprocess()
+        public void StringEscaper_Preprocess()
         {
             Preprocess_1();
             Preprocess_2();
@@ -568,7 +568,7 @@ namespace UnitTest.Core
         #region PathSecurityCheck
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void PathSecurityCheck()
+        public void StringEscaper_PathSecurityCheck()
         {
             PathSecurityCheck_1();
             PathSecurityCheck_2();
@@ -610,7 +610,7 @@ namespace UnitTest.Core
         #region PackRegBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void PackRegBinary()
+        public void StringEscaper_PackRegBinary()
         {
             PackRegBinary_1();
             PackRegBinary_2();
@@ -636,7 +636,7 @@ namespace UnitTest.Core
         #region UnpackRegBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void UnpackRegBinary()
+        public void StringEscaper_UnpackRegBinary()
         {
             UnpackRegBinary_1();
         }
@@ -654,7 +654,7 @@ namespace UnitTest.Core
         #region PackRegMultiBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void PackRegMultiBinary()
+        public void StringEscaper_PackRegMultiBinary()
         {
             PackRegMultiBinary_1();
         }
@@ -676,7 +676,7 @@ namespace UnitTest.Core
         #region PackRegMultiString
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void PackRegMultiString()
+        public void StringEscaper_PackRegMultiString()
         {
             PackRegMultiString_1();
         }
@@ -698,7 +698,7 @@ namespace UnitTest.Core
         #region UnpackRegMultiString
         [TestMethod]
         [TestCategory("StringEscaper")]
-        public void UnpackRegMultiString()
+        public void StringEscaper_UnpackRegMultiString()
         {
             UnpackRegMultiString_1();
         }

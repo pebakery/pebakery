@@ -69,7 +69,7 @@ namespace PEBakery.Core
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
-        Set = 1400, AddVariables, GetParam, PackParam, Exit, Halt, Wait, Beep, 
+        Set = 1400, AddVariables, Exit, Halt, Wait, Beep, 
         // 15 External Macro
         Macro = 1500,
     }
@@ -145,8 +145,6 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
-            CodeType.GetParam, // PEBakery can have infinite number of section params.
-            CodeType.PackParam, // PEBakery can have infinite number of section params.
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
@@ -3191,13 +3189,13 @@ namespace PEBakery.Core
     public class CodeInfo_PackParam : CodeInfo
     { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
         public int StartIndex;
-        public string VarName;
+        public string DestVar;
         public string VarNum; // optional
 
         public CodeInfo_PackParam(int startIndex, string varName, string varNum)
         {
             StartIndex = startIndex;
-            VarName = varName;
+            DestVar = varName;
             VarNum = varNum;
         }
 
@@ -3206,7 +3204,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(StartIndex);
             b.Append(",");
-            b.Append(VarName);
+            b.Append(DestVar);
             if (VarNum != null)
             {
                 b.Append(",");
@@ -3257,27 +3255,11 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Beep : CodeInfo
     { // Beep,<Type>
-        public string Type;
+        public BeepType Type;
 
-        public CodeInfo_Beep(string type)
+        public CodeInfo_Beep(BeepType type)
         {
             Type = type;
-        }
-
-        public BeepType TypeStringToEnum(EngineState s)
-        {
-            string typeStr = StringEscaper.Preprocess(s, Type);
-
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out BeepType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(BeepType), type) == false)
-                invalid = true;
-
-            if (invalid)
-                throw new InvalidCommandException($"Invalid BeepType [{typeStr}]");
-
-            return type;
         }
     }
     #endregion

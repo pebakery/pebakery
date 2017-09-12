@@ -291,86 +291,6 @@ namespace PEBakery.Core
 
             return type;
         }
-
-        /*
-        private enum ParseState { Normal, Merge }
-        public static List<string> ParseArguments(List<string> slices, int start)
-        {
-            List<string> argList = new List<string>();
-            ParseState state = ParseState.Normal;
-            StringBuilder builder = new StringBuilder();
-
-            for (int i = start; i < slices.Count; i++)
-            {
-                // Check if operand is doublequoted
-                int idx = slices[i].IndexOf("\"");
-                if (idx == -1) // Do not have doublequote
-                {
-                    switch (state)
-                    {
-                        case ParseState.Normal: // Add to operand
-                            argList.Add(slices[i].Trim()); // Add after removing whitespace
-                            break;
-                        case ParseState.Merge:
-                            builder.Append(",");
-                            builder.Append(slices[i]);
-                            break;
-                        default:
-                            throw new InternalParserException("Internal parser error");
-                    }
-                }
-                else if (idx == 0) // Startes with doublequote
-                { // Merge this operand with next operand
-                    switch (state)
-                    {
-                        case ParseState.Normal: // Add to operand
-                            if (slices[i].IndexOf("\"", idx + 1) != -1) // This operand starts and end with doublequote
-                            { // Ex) FileCopy,"1 2.dll",34.dll
-                                argList.Add(slices[i].Substring(1, slices[i].Length - 2)); // Remove doublequote
-                            }
-                            else
-                            {
-                                state = ParseState.Merge;
-                                builder.Clear();
-                                builder.Append(slices[i].Substring(1)); // Remove doublequote
-                            }
-                            break;
-                        default:
-                            throw new InternalParserException("Internal parser error");
-                    }
-                }
-                else if (idx == slices[i].Length - 1) // Endes with doublequote
-                {
-                    switch (state)
-                    {
-                        case ParseState.Merge:
-                            state = ParseState.Normal;
-                            builder.Append(",");
-                            builder.Append(slices[i], 0, slices[i].Length - 1); // Remove doublequote
-                            argList.Add(builder.ToString());
-                            builder.Clear();
-                            break;
-                        default:
-                            throw new InternalParserException("Internal parser error");
-                    }
-                }
-                else // doublequote is in the middle - Error
-                {
-                    throw new InternalParserException("Wrong doublequote usage");
-                }
-            }
-
-            // doublequote is not matched by two!
-            if (state == ParseState.Merge)
-                throw new InternalParserException("Internal parser error");
-
-            // Remove whitespace
-            for (int i = 0; i < argList.Count; i++)
-                argList[i] = argList[i].Trim();
-
-            return argList;
-        }
-        */
         #endregion
 
         #region ParseCodeInfo, CheckInfoArgumentCount
@@ -1387,46 +1307,6 @@ namespace PEBakery.Core
 
                         return new CodeInfo_AddVariables(varName, varValue, global);
                     }
-                case CodeType.GetParam:
-                    { // GetParam,<Index>,<VarName>
-                        const int minArgCount = 2;
-                        const int maxArgCount = 2;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        if (NumberHelper.ParseInt32(args[0], out int index) == false)
-                            throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
-
-                        string varName = args[1];
-                        if (varName == null)
-                            throw new InvalidCommandException($"Variable name [{args[1]}] must start and end with %", rawCode);
-
-                        return new CodeInfo_GetParam(index, varName);
-                    }
-                case CodeType.PackParam:
-                    { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
-                        const int minArgCount = 2;
-                        const int maxArgCount = 3;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        if (NumberHelper.ParseInt32(args[0], out int startIdx) == false)
-                            throw new InvalidCommandException($"Argument [{args[2]}] is not valid number", rawCode);
-
-                        string varName = args[1];
-                        if (varName == null)
-                            throw new InvalidCommandException($"Variable name [{args[1]}] must start and end with %", rawCode);
-
-                        string varNum = null;
-                        if (2 < args.Count)
-                        {
-                            varNum = args[2];
-                            if (varNum == null)
-                                throw new InvalidCommandException($"Variable name [{args[2]}] must start and end with %", rawCode);
-                        }
-
-                        return new CodeInfo_PackParam(startIdx, varName, varNum);
-                    }
                 case CodeType.Exit:
                     { // Exit,<Message>[,NOWARN]
                         const int minArgCount = 1;
@@ -1445,30 +1325,33 @@ namespace PEBakery.Core
                     }
                 case CodeType.Halt:
                     { // Halt,<Message>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_Halt(args[0]);
                     }
                 case CodeType.Wait:
                     { // Wait,<Second
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_Wait(args[0]);
                     }
                 case CodeType.Beep:
                     { // Beep,<Type>
-                        const int minArgCount = 1;
-                        const int maxArgCount = 1;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        return new CodeInfo_Beep(args[0]);
+                        string beepTypeStr = args[0];
+                        if (!Enum.TryParse(beepTypeStr, true, out BeepType beepType))
+                            throw new InvalidCommandException($"Invalid BeepType [{beepTypeStr}]");
+                        if (Enum.IsDefined(typeof(BeepType), beepType) == false)
+                            throw new InvalidCommandException($"Invalid BeepType [{beepTypeStr}]");
+
+                        return new CodeInfo_Beep(beepType);
                     }
                 #endregion
                 #region 15 External Macro

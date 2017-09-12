@@ -547,12 +547,6 @@ namespace PEBakery.Core
                     case CodeType.AddVariables:
                         logs.AddRange(CommandControl.AddVariables(s, cmd));
                         break;
-                    case CodeType.GetParam:
-                        logs.AddRange(CommandControl.GetParam(s, cmd));
-                        break;
-                    case CodeType.PackParam:
-                        logs.AddRange(CommandControl.PackParam(s, cmd));
-                        break;
                     case CodeType.Exit:
                         logs.AddRange(CommandControl.Exit(s, cmd));
                         break;

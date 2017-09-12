@@ -66,49 +66,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> GetParam(EngineState s, CodeCommand cmd)
-        {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam));
-            CodeInfo_GetParam info = cmd.Info as CodeInfo_GetParam;
-
-            logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, s.CurSectionParams[info.Index]));
-
-            return logs;
-        }
-
-        public static List<LogInfo> PackParam(EngineState s, CodeCommand cmd)
-        { // TODO : Not fully understand WB082's internal mechanism
-            List<LogInfo> logs = new List<LogInfo>();
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam));
-            CodeInfo_PackParam info = cmd.Info as CodeInfo_PackParam;
-
-            logs.Add(new LogInfo(LogState.Ignore,
-                "DEVELOPER NOTE : Not sure how it works.\nIf you know its exact internal mechanism, please report at [https://github.com/ied206/PEBakery/issues]", cmd));
-
-            StringBuilder b = new StringBuilder();
-            for (int i = info.StartIndex; i < s.CurSectionParams.Keys.Max(); i++)
-            {
-                try
-                {
-                    string value = s.CurSectionParams[i];
-                    b.Append("\"");
-                    b.Append(value);
-                    b.Append("\"");
-                }
-                catch (KeyNotFoundException) { }
-
-                if (i + 1 < s.CurSectionParams.Count)
-                    b.Append(",");
-            }
-
-            logs.Add(s.Variables.SetValue(VarsType.Local, info.VarName, b.ToString()));
-
-            return logs;
-        }
-
         public static List<LogInfo> Exit(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -132,7 +89,7 @@ namespace PEBakery.Core.Commands
 
             s.CmdHaltFlag = true;
 
-            logs.Add(new LogInfo(LogState.Error, info.Message, cmd));
+            logs.Add(new LogInfo(LogState.Warning, info.Message, cmd));
 
             return logs;
         }
@@ -147,7 +104,6 @@ namespace PEBakery.Core.Commands
             if (NumberHelper.ParseInt32(info.Second, out int second) == false)
                 throw new InvalidCodeCommandException($"Argument [{info.Second}] is not valid number", cmd);
 
-            // Task.Run(() => Thread.Sleep(second * 1000)).Wait();
             Task.Delay(second * 1000).Wait();
 
             logs.Add(new LogInfo(LogState.Success, $"Slept [{info.Second}] seconds", cmd));
@@ -162,25 +118,23 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
 
-            BeepType type = info.TypeStringToEnum(s);
-
-            switch (type)
+            switch (info.Type)
             {
                 case BeepType.OK:
                     SystemSounds.Beep.Play();
                     break;
                 case BeepType.Error:
-                    SystemSounds.Exclamation.Play();
-                    break;
-                case BeepType.Confirmation:
-                    SystemSounds.Question.Play();
+                    SystemSounds.Hand.Play();
                     break;
                 case BeepType.Asterisk:
                     SystemSounds.Asterisk.Play();
                     break;
+                case BeepType.Confirmation:
+                    SystemSounds.Question.Play();
+                    break;
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Played sound [{type}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Played sound [{info.Type}]", cmd));
 
             return logs;
         }

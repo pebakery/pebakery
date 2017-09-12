@@ -8,6 +8,7 @@ namespace UnitTest
     [TestClass]
     public class UnitTest_CodeParser
     {
+        #region GetNextArgument
         [TestMethod]
         [TestCategory("CodeParser")]
         public void CodeParser_GetNextArgument()
@@ -99,5 +100,6 @@ namespace UnitTest
 
             CodeParser_GetNextArgument_Test(code, testcases);
         }
+        #endregion
     }
 }

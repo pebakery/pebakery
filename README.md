@@ -25,6 +25,18 @@ PEBakery is mainly licensed under GPL Version 3.
 Part of PEBakery is licensed under MIT License and others.
 
 
+# Build
+To compile PEBakery from source, Visual Studio and .Net Framework is required.
+
+## Recommended
+- Visual Studio 2017
+- .Net Framework 4.7 Developer Pack
+
+## Requirement
+- C# 7 Compiler
+- .Net Framework 4.7
+
+
 # Current State
 PEBakery can load Projects, and able to run simple plugin correctly.  
 However, building whole project is quite buggy and needs to be improved.
@@ -58,8 +70,8 @@ However, building whole project is quite buggy and needs to be improved.
 | Math      | 19  | 19          | 0      |
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
-| Control   | 8   | 8           | 0      |
-| All       | 152 | 152         | 27     |
+| Control   | 6   | 6           | 6      |
+| All       | 152 | 152         | 33     |
 
 
 # Help Needed
