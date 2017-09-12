@@ -39,13 +39,10 @@ However, building whole project is quite buggy and needs to be improved.
 
 ## Working
 - GUI
-- Automated Unit Tests
-- Fix bugs, bugs and bugs
+- Unit Tests
+- Fixing bugs, bugs and bugs
 
 ## Command Status
-Prototype implementation of commands is done.  
-17.5% of commands are tested to work properly.
-
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
 | File      | 11  | 11          | 0      |

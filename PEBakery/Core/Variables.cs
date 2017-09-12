@@ -28,16 +28,10 @@ namespace PEBakery.Core
          */
 
         #region Variables
-        // Fields
         private Project project;
         private Dictionary<string, string> fixedVars; // Once constructed, it must be read-only.
         private Dictionary<string, string> globalVars;
         private Dictionary<string, string> localVars;
-
-        // Properties
-        public Dictionary<string, string> FixedVars { get => fixedVars; }
-        public Dictionary<string, string> GlobalVars { get => globalVars; }
-        public Dictionary<string, string> LocalVars { get => localVars; }
 
         public string this[string key]
         {
@@ -504,40 +498,72 @@ namespace PEBakery.Core
 
         public string Expand(string str)
         {
+#if _DEBUG // These codes are for Debug Assertion
+            List<string> processed = new List<string>();
+#endif
+
             while (2 <= FileHelper.CountStringOccurrences(str, @"%"))
             {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
-                StringBuilder builder = new StringBuilder();
+                StringBuilder b = new StringBuilder();
 
                 for (int x = 0; x < matches.Count; x++)
                 {
-                    string varName = matches[x].Groups[1].ToString();
+                    string varName = matches[x].Groups[1].Value;
+#if _DEBUG // These codes are for Debug Assertion
+                    if (processed.Contains(varName, StringComparer.OrdinalIgnoreCase))
+                        throw new VariableCircularReferenceException($"%{varName}% is circular referenced");
+#endif
+
                     if (x == 0)
-                        builder.Append(str.Substring(0, matches[0].Index));
+                        b.Append(str.Substring(0, matches[0].Index));
                     else
                     {
                         int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
                         int endOffset = matches[x].Index - startOffset;
-                        builder.Append(str.Substring(startOffset, endOffset));
+                        b.Append(str.Substring(startOffset, endOffset));
                     }
 
                     if (localVars.ContainsKey(varName))
-                        builder.Append(localVars[varName]);
+                    {
+                        string varValue = localVars[varName];
+                        b.Append(varValue);
+
+#if _DEBUG // These codes are for Debug Assertion
+                        processed.Add(varName);
+#endif
+                    }
                     else if (globalVars.ContainsKey(varName))
-                        builder.Append(globalVars[varName]);
+                    {
+                        string varValue = globalVars[varName];
+                        b.Append(varValue);
+
+#if _DEBUG // These codes are for Debug Assertion
+                        processed.Add(varName);
+#endif
+                    }
                     else if (fixedVars.ContainsKey(varName))
-                        builder.Append(fixedVars[varName]);
+                    {
+                        string varValue = fixedVars[varName];
+                        b.Append(varValue);
+
+#if _DEBUG // These codes are for Debug Assertion
+                        processed.Add(varName);
+#endif
+                    }
                     else // variable not found
-                        builder.Append("#$p").Append(varName).Append("#$p");
+                    {
+                        b.Append("#$p").Append(varName).Append("#$p");
+                    }
 
                     if (x + 1 == matches.Count) // Last iteration
-                        builder.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
                 if (0 < matches.Count) // Only copy it if variable exists
                 {
-                    str = builder.ToString();
+                    str = b.ToString();
                 }
             }
 
@@ -619,7 +645,7 @@ namespace PEBakery.Core
             }
         }
 
-        #region Utility Static Methods
+#region Utility Static Methods
         public static string TrimPercentMark(string varName)
         {
             if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
@@ -746,7 +772,8 @@ namespace PEBakery.Core
             }
             else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
             {
-                logs.Add(Variables.SetSectionParam(s, varKey, varValue));
+                string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in section parameter
+                logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
             }
             else
             {
@@ -755,9 +782,9 @@ namespace PEBakery.Core
 
             return logs;
         }
-        #endregion
+#endregion
 
-        #region Clone
+#region Clone
         public object Clone()
         {
             Variables variables = new Variables(project)
@@ -768,6 +795,6 @@ namespace PEBakery.Core
             };
             return variables;
         }
-        #endregion
+#endregion
     }
 }

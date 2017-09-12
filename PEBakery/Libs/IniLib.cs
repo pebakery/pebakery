@@ -109,6 +109,7 @@ namespace PEBakery.Lib
     }
     #endregion
 
+    #region Ini Class
     public static class Ini
     {
         #region Lock
@@ -189,7 +190,7 @@ namespace PEBakery.Lib
             rwLock.EnterReadLock();
             try
             {
-                List<int> processedKeyIdxs = new List<int>();
+                List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
                 Encoding encoding = FileHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
@@ -350,7 +351,7 @@ namespace PEBakery.Lib
                     return true;
                 }
 
-                List<int> processedKeys = new List<int>();
+                List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = FileHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
@@ -360,7 +361,7 @@ namespace PEBakery.Lib
                     string line = string.Empty;
                     bool inTargetSection = false;
                     string currentSection = null;
-                    List<string> processedSections = new List<string>();
+                    List<string> processedSections = new List<string>(iniKeys.Count);
 
                     // Is Original File Empty?
                     if (reader.Peek() == -1)
@@ -625,7 +626,7 @@ namespace PEBakery.Lib
                     return true;
                 }
 
-                List<int> processedKeys = new List<int>();
+                List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = FileHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
@@ -635,7 +636,7 @@ namespace PEBakery.Lib
                     string line = string.Empty;
                     bool inTargetSection = false;
                     string currentSection = null;
-                    List<string> processedSections = new List<string>();
+                    List<string> processedSections = new List<string>(iniKeys.Count);
 
                     // Is Original File Empty?
                     if (reader.Peek() == -1)
@@ -984,7 +985,7 @@ namespace PEBakery.Lib
         }
         public static bool AddSections(string file, IniKey[] iniKeys)
         {
-            List<string> sections = new List<string>();
+            List<string> sections = new List<string>(iniKeys.Length);
             foreach (IniKey key in iniKeys)
                 sections.Add(key.Section);
             return InternalDeleteSection(file, sections);
@@ -1065,7 +1066,7 @@ namespace PEBakery.Lib
 
                     string rawLine = string.Empty;
                     string line = string.Empty;
-                    List<string> processedSections = new List<string>();
+                    List<string> processedSections = new List<string>(sections.Count);
 
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
@@ -1099,7 +1100,7 @@ namespace PEBakery.Lib
                         // End of file
                         if (reader.Peek() == -1)
                         { // If there are sections not added, add it now
-                            List<int> processedIdxs = new List<int>();
+                            List<int> processedIdxs = new List<int>(sections.Count);
                             for (int i = 0; i < sections.Count; i++)
                             { // At this time, only unfound section remains in iniKeys
                                 if (processedSections.Any(s => s.Equals(sections[i], StringComparison.OrdinalIgnoreCase)) == false)
@@ -1286,8 +1287,6 @@ namespace PEBakery.Lib
 
             return result;
         }
-
-        
         #endregion
 
         #region Utility
@@ -1672,6 +1671,7 @@ namespace PEBakery.Lib
         }
         #endregion
     }
+    #endregion
 
     #region 
     public class IniFile

@@ -1919,7 +1919,7 @@ namespace PEBakery.Core
                 matched[kv.Key] = false;
 
             Dictionary<string, string>[] partialMaps = new Dictionary<string, string>[4];
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i <= 3; i++)
                 partialMaps[i] = FormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
 
             int idx = 0;
@@ -1927,23 +1927,20 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             while (idx < wbFormatStr.Length)
             {
-                for (int i = 4; 0 < i; i--)
+                for (int i = 4; 1 <= i; i--)
                 {
                     processed = false;
                     if (idx + i <= wbFormatStr.Length)
                     {
                         string token = wbFormatStr.Substring(idx, i);
-                        foreach (var kv in partialMaps[i - 1])
+                        foreach (var kv in partialMaps[i - 1].Where(x => matched[x.Key] == false))
                         {
                             if (token.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (matched[kv.Key]) // Already matched -> Error
-                                    return null;
-
                                 b.Append(kv.Value);
                                 processed = true;
 
-                                // Ex) yyyy matched -> log yy with yyyy
+                                // Ex) yyyy matched -> set matched["yy"] to true along with matched["yyyy"]
                                 string[] keys = matched.Where(x => x.Key[0] == kv.Key[0]).Select(x => x.Key).ToArray();
                                 foreach (var key in keys)
                                     matched[key] = true;
@@ -1952,6 +1949,9 @@ namespace PEBakery.Core
                             }
                         }
                     }
+
+                    if (processed)
+                        break;
                 }
 
                 if (processed == false && idx < wbFormatStr.Length)

@@ -9,6 +9,7 @@ namespace UnitTest
     public class UnitTest_CodeParser
     {
         [TestMethod]
+        [TestCategory("CodeParser")]
         public void CodeParser_GetNextArgument()
         {
             CodeParser_GetNextArgument_1();
