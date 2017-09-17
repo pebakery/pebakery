@@ -76,23 +76,24 @@ namespace PEBakery.Core
 
             // Find key of interface control
             string key = string.Empty;
+            string rawValue = string.Empty;
             int equalIdx = rawLine.IndexOf('=');
             if (equalIdx != -1)
             {
                 key = rawLine.Substring(0, equalIdx);
-                rawLine = rawLine.Substring(equalIdx + 1);
+                rawValue = rawLine.Substring(equalIdx + 1);
             }
             else
-                throw new InvalidCommandException($"Interface control [{rawLine}] does not have name", rawLine);
+                throw new InvalidCommandException($"Interface control [{rawValue}] does not have name", rawLine);
 
             // Split with spaces
-            List<string> slices = rawLine.Split(',').ToList();
+            // List<string> slices = rawLine.Split(',').ToList();
 
             // Parse Arguments
             List<string> args = new List<string>();
             try
             {
-                string remainder = rawLine;
+                string remainder = rawValue;
                 while (remainder != null)
                 {
                     Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
@@ -103,8 +104,8 @@ namespace PEBakery.Core
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Check doublequote's occurence - must be 2n
-            if (FileHelper.CountStringOccurrences(rawLine, "\"") % 2 == 1)
-                throw new InvalidCommandException($"Interface control [{rawLine}]'s doublequotes mismatch", rawLine);
+            if (FileHelper.CountStringOccurrences(rawValue, "\"") % 2 == 1)
+                throw new InvalidCommandException($"Interface control [{rawValue}]'s doublequotes mismatch", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
@@ -112,7 +113,7 @@ namespace PEBakery.Core
                 while (args.Last().Equals(@"\", StringComparison.OrdinalIgnoreCase))
                 { // Split next line and append to List<string> operands
                     if (rawLines.Count <= idx) // Section ended with \, invalid grammar!
-                        throw new InvalidCommandException($@"Last interface control [{rawLine}] cannot end with '\' ", rawLine);
+                        throw new InvalidCommandException($@"Last interface control [{rawValue}] cannot end with '\' ", rawLine);
                     idx++;
                     args.AddRange(rawLines[idx].Trim().Split(','));
                 }
@@ -121,7 +122,7 @@ namespace PEBakery.Core
             // UICommand should have at least 7 operands
             //    Text, Visibility, Type, X, Y, width, height, [Optional]
             if (args.Count < 7)
-                throw new InvalidCommandException($"Interface control [{rawLine}] must have at least 7 arguments", rawLine);
+                throw new InvalidCommandException($"Interface control [{rawValue}] must have at least 7 arguments", rawLine);
 
             // Parse opcode
             try { type = UIParser.ParseControlType(args[2]); }
@@ -297,7 +298,7 @@ namespace PEBakery.Core
                     }
                 case UIType.Button:
                     {
-                        // Still had not figured why SectionName and ProgressShow duplicate
+                        // TODO: Still had not figured why SectionName and ProgressShow duplicate
                         // It has 2 to 6 fixed operands. - Need more research.
                         // <SectionName>[Picture][ShowProgress] [Boolean(?)][SectionName(?)][ShowProgress(?)] [Tooltip]
                         // Ex)

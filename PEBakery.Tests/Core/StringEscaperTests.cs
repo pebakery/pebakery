@@ -242,7 +242,7 @@ namespace UnitTest.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
@@ -253,7 +253,7 @@ namespace UnitTest.Core
         public void ExpandSectionParams_2()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
@@ -289,7 +289,7 @@ namespace UnitTest.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
-            s.CurSectionParams[2] = "WPF";
+            Variables.SetVariable(s, "#2", "WPF");
 
             string[] srcs = new string[]
             {
@@ -312,25 +312,19 @@ namespace UnitTest.Core
         }
 
         public void ExpandSectionParams_6()
-        {
+        {   
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A% #1";
-            try
-            {
-                StringEscaper.ExpandSectionParams(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            { // Test Success
-                return;
-            }
+            string dest = StringEscaper.ExpandVariables(s, src);
+            string comp = "Hello ";
 
-            Assert.Fail();
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -462,7 +456,7 @@ namespace UnitTest.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
@@ -473,7 +467,7 @@ namespace UnitTest.Core
         public void Preprocess_2()
         {
             EngineState s = EngineTests.CreateEngineState();
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
@@ -509,7 +503,7 @@ namespace UnitTest.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
-            s.CurSectionParams[2] = "WPF";
+            Variables.SetVariable(s, "#2", "WPF");
 
             string[] srcs = new string[]
             {
@@ -536,25 +530,19 @@ namespace UnitTest.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
 
-            // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
+            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A% #1";
-            try
-            {
-                StringEscaper.ExpandVariables(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            { // Test Success
-                return;
-            }
+            string dest = StringEscaper.Preprocess(s, src);
+            string comp = "%C% ";
 
-            Assert.Fail();
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Preprocess_7()
@@ -562,24 +550,19 @@ namespace UnitTest.Core
             EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
 
-            // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
+            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A%";
-            string dest;
-            try
-            {
-                dest = StringEscaper.ExpandVariables(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            {
-                Assert.Fail();
-            }
+            string dest = StringEscaper.Preprocess(s, src);
+            string comp = "%C%";
+
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 

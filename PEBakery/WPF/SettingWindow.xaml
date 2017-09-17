@@ -277,6 +277,11 @@
                             Value="{Binding Interface_ScaleFactor}">
                         </Slider>
                     </DockPanel>
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Ignore InterfaceEncoded Image's Checksum"
+                        IsChecked="{Binding Interface_IgnoreEncodedFileChecksum}">
+                    </CheckBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Plugin">
@@ -309,7 +314,7 @@
                     <CheckBox
                         Name="CheckBox_ConvertToUTF8"
                         Margin="15, 15, 15, 0"
-                        Content="Convert Plugins to UTF-8 automatically"
+                        Content="Convert Plugins to UTF-8 Automatically"
                         ToolTip="Turning on will break compability with WinBuilder 082."
                         IsEnabled="False"
                         IsChecked="{Binding Plugin_ConvertToUTF8}">

@@ -19,6 +19,7 @@ using System.Windows.Shapes;
 using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
+using System.Drawing.Text;
 
 namespace PEBakery.WPF
 {
@@ -412,6 +413,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Interface_ScaleFactor");
             }
         }
+
+        private bool interface_IgnoreEncodedFileChecksum;
+        public bool Interface_IgnoreEncodedFileChecksum
+        {
+            get => interface_IgnoreEncodedFileChecksum;
+            set
+            {
+                interface_IgnoreEncodedFileChecksum = value;
+                OnPropertyUpdate("Interface_IgnoreEncodedFileChecksum");
+            }
+        }
         #endregion
 
         #region Plugin
@@ -551,10 +563,17 @@ namespace PEBakery.WPF
             // General
             General_EnableLongFilePath = false;
             General_OptimizeCode = true;
-            General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
-
+            using (InstalledFontCollection fonts = new InstalledFontCollection())
+            {
+                if (fonts.Families.FirstOrDefault(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)) == null)
+                    General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
+                else // Prefer D2Coding over Consolas
+                    General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
+            }
+                
             // Interface
             Interface_ScaleFactor = 100;
+            Interface_IgnoreEncodedFileChecksum = true;
 
             // Plugin
             Plugin_EnableCache = true;
@@ -586,6 +605,7 @@ namespace PEBakery.WPF
                 new IniKey("General", "MonospaceFontWeight"),
                 new IniKey("General", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
+                new IniKey("Interface", "IgnoreEncodedFileChecksum"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
                 new IniKey("Log", "DebugLevel"), // Integer
@@ -595,22 +615,23 @@ namespace PEBakery.WPF
             };
             keys = Ini.GetKeys(settingFile, keys);
 
-            Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
-            string str_General_EnableLongFilePath = dict["EnableLongFilePath"];
-            string str_General_OptimizeCode = dict["OptimizeCode"];
-            string str_Gereal_MonospaceFontFamiliy = dict["MonospaceFontFamily"];
-            string str_Gereal_MonospaceFontWeight = dict["MonospaceFontWeight"];
-            string str_Gereal_MonospaceFontSize = dict["MonospaceFontSize"];
-            string str_Interface_ScaleFactor = dict["ScaleFactor"];
-            string str_Plugin_EnableCache = dict["EnableCache"];
-            string str_Plugin_AutoConvertToUTF8 = dict["AutoConvertToUTF8"];
-            string str_Log_DebugLevelIndex = dict["DebugLevel"];
-            string str_Log_Macro = dict["Macro"];
-            string str_Log_Comment = dict["Comment"];
+            Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
+            string str_General_EnableLongFilePath = dict["General_EnableLongFilePath"];
+            string str_General_OptimizeCode = dict["General_OptimizeCode"];
+            string str_Gereal_MonospaceFontFamiliy = dict["General_MonospaceFontFamily"];
+            string str_Gereal_MonospaceFontWeight = dict["General_MonospaceFontWeight"];
+            string str_Gereal_MonospaceFontSize = dict["General_MonospaceFontSize"];
+            string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
+            string str_Interface_IgnoreEncodedFileChecksum = dict["Interface_IgnoreEncodedFileChecksum"];
+            string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
+            string str_Plugin_AutoConvertToUTF8 = dict["Plugin_AutoConvertToUTF8"];
+            string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
+            string str_Log_Macro = dict["Log_Macro"];
+            string str_Log_Comment = dict["Log_Comment"];
 
             // Project
-            if (dict["DefaultProject"] != null)
-                Project_DefaultStr = dict["DefaultProject"];
+            if (dict["Project_DefaultProject"] != null)
+                Project_DefaultStr = dict["Project_DefaultProject"];
 
             // General - EnableLongFilePath (Default = False)
             if (str_General_EnableLongFilePath != null)
@@ -652,6 +673,13 @@ namespace PEBakery.WPF
                     if (100 <= scaleFactor && scaleFactor <= 200)
                         Interface_ScaleFactor = scaleFactor;
                 }
+            }
+
+            // str_Interface_IgnoreEncodedFileChecksum (Default = True)
+            if (str_Interface_IgnoreEncodedFileChecksum != null)
+            {
+                if (str_Interface_IgnoreEncodedFileChecksum.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Interface_IgnoreEncodedFileChecksum = false;
             }
 
             // Plugin - EnableCache (Default = True)
@@ -703,6 +731,7 @@ namespace PEBakery.WPF
                 new IniKey("General", "MonospaceFontWeight", General_MonospaceFont.FontWeight.ToString()),
                 new IniKey("General", "MonospaceFontSize", General_MonospaceFont.FontSizeInPoint.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
+                new IniKey("Interface", "IgnoreEncodedFileChecksum", Interface_IgnoreEncodedFileChecksum.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
@@ -711,7 +740,6 @@ namespace PEBakery.WPF
                 new IniKey("Project", "DefaultProject", Project_Default),
             };
             Ini.SetKeys(settingFile, keys);
-
         }
 
         public void ClearLogDB()

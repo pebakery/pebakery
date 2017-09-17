@@ -56,10 +56,9 @@ namespace PEBakery.Core
         1B : [Length of FileName]
         511B : [FileName]
     0x200 - 0x207 : 8B -> Length of Raw File
-    0x208 - 0x20F : 8B -> Length of Zlib-Compressed File
-        Note : In Type 2, 0x208 entry is null-padded
+    0x208 - 0x20F : 8B -> (Type 1) Length of Zlib-Compressed File, (Type 2) Null-padded
     0x210 - 0x21F : 16B -> Null-padded
-    0x220 - 0x223 : 4B -> CRC32 of raw file
+    0x220 - 0x223 : 4B -> CRC32 of Raw File
     0x224 - 0x225 : 2B -> (Type 1) 00 02, (Type 2) 01 00
 
     [FinalFooter]
@@ -74,14 +73,11 @@ namespace PEBakery.Core
     
     Note) Which purpose do Unknown entries have?
     0x04 : When changed, WB082 cannot recognize filename. Maybe related to filename encoding?
+    0x08 : When changed to higher value than 2, WB082 refuses to decompress with error message
+        Error Message = $"The archive was created with a different version of ZLBArchive v{value}"
     0x18 : Decompress by WB082 is unaffected by this value
     0x1C : When changed, WB082 think the encoded file is corrupted
     
-    [Note]
-    "The archive was created with a different version of ZLBArchive (vXXXXXX)" error message appear if final footer is malformed.
-    From this message, we can suspect WB082 writes its ZLBArchive version in some places.
-    The version can be v1.2 or v1.0
-
     [How to improve?]
     - Use LZMA instead of zlib, for better compression rate.
     - Design more robust plugin format.
@@ -114,75 +110,46 @@ namespace PEBakery.Core
             return Encode(p, dirName, fileName, input, type);
         }
 
-        /// <summary>
-        /// Return true if failed
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="dirName"></param>
-        /// <param name="fileName"></param>
-        /// <param name="mem"></param>
-        /// <returns></returns>
-        public static MemoryStream ExtractFile(Plugin plugin, string dirName, string fileName)
+        public static MemoryStream ExtractFile(Plugin p, string dirName, string fileName)
         {
-            List<string> encoded = plugin.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
+            string section = $"EncodedFile-{dirName}-{fileName}";
+            if (p.Sections.ContainsKey(section) == false)
+                throw new EncodedFileFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+
+            List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
         }
 
-        /// <summary>
-        /// Return true if failed
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <param name="mem"></param>
-        /// <returns></returns>
         public static MemoryStream ExtractLogo(Plugin plugin, out ImageHelper.ImageType type)
         {
-            type = ImageHelper.ImageType.Bmp; // Dummy
             if (plugin.Sections.ContainsKey("AuthorEncoded") == false)
-                throw new ExtractFileNotFoundException($"There is no encoded file by author");
+                throw new ExtractFileNotFoundException($"There is no AuthorEncoded files");
+
             Dictionary<string, string> fileDict = plugin.Sections["AuthorEncoded"].GetIniDict();
+
             if (fileDict.ContainsKey("Logo") == false)
                 throw new ExtractFileNotFoundException($"There is no logo in \'{plugin.Title}\'");
+
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
-                throw new ExtractFileNotFoundException("Unsupported image type");
+                throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
+
             List<string> encoded = plugin.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
             return Decode(encoded);
         }
 
-        /// <summary>
-        /// Return true if failed
-        /// </summary>
-        /// <param name="p"></param>
-        /// <param name="mem"></param>
-        /// <returns></returns>
         public static MemoryStream ExtractInterfaceEncoded(Plugin p, string fileName)
         {
-            List<string> encoded = p.Sections[$"EncodedFile-InterfaceEncoded-{fileName}"].GetLinesOnce();
+            string section = $"EncodedFile-InterfaceEncoded-{fileName}";
+            if (p.Sections.ContainsKey(section) == false)
+                throw new EncodedFileFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.FullPath}]");
+
+            List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
         }
         #endregion
 
         #region Encode, Decode
-        private static byte[,] zlibHeader = new byte[4, 2]
-        { // https://groups.google.com/forum/#!msg/comp.compression/_y2Wwn_Vq_E/EymIVcQ52cEJ
-            { 0x78, 0x01 },
-            { 0x78, 0x5e },
-            { 0x78, 0x9c },
-            { 0x78, 0xda },
-        };
-
-        private static bool IsZlibHeader(byte[] bin, int idx)
-        {
-            bool result = false;
-            for (int i = 0; i < zlibHeader.GetLength(0); i++)
-            {
-                if (bin[idx] == zlibHeader[i, 0] &&
-                    bin[idx + 1] == zlibHeader[i, 1])
-                    result = true;
-            }
-            return result;
-        }
-
         private static Plugin Encode(Plugin p, string dirName, string fileName, byte[] input, EncodeMode mode)
         {
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
@@ -418,7 +385,7 @@ namespace PEBakery.Core
             using (MemoryStream rawFooterStream = new MemoryStream())
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default, false, Encoding.UTF8))
+                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
                     rawFooter = rawFooterStream.ToArray();
@@ -454,18 +421,17 @@ namespace PEBakery.Core
             // [Stage 7] Decompress body
             MemoryStream rawBodyStream; // This stream should be alive even after this method returns
             if (compMode == (ushort) EncodeMode.Compress)
-            {
+            { // Temporary Measure : SharpCompress 0.18.1 has bug in its Adler32 checksum routine
                 rawBodyStream = new MemoryStream();
-
-                using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default, false, Encoding.UTF8))
+                // using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                using (MemoryStream ms = new MemoryStream(decoded, 2, compressedBodyLen - 6)) // First 2B is zlib header, Last 4B is Adler32
+                using (System.IO.Compression.DeflateStream zs = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
                     zs.Close();
 
                     rawBodyStream.Position = 0;
                 }
-  
             }
             else if (compMode == (ushort)EncodeMode.Raw)
             {
@@ -486,41 +452,65 @@ namespace PEBakery.Core
             return rawBodyStream;
         }
         #endregion
+    }
 
-        #region Will-be-deprecated
-        private static MemoryStream Decode_Type1_DotNetDeflate(List<string> encodedList)
+    #region EncodedFileInfo
+    /// <summary>
+    /// Class to handle malformed WB082-attached files
+    /// </summary>
+    public class EncodedFileInfo : IDisposable
+    {
+        public EncodedFile.EncodeMode? Mode;
+        public bool? RawBodyValid = null; // null -> unknown
+        public bool? CompressedBodyValid = null; // Adler32 Checksum
+        public bool? FirstFooterValid = null;
+        public bool? FinalFooterValid = null;
+        public MemoryStream RawBodyStream = null;
+
+        public void Dispose()
         {
-            // [이 메소드를 아직 못 지우는 이유]
-            //
-            // 특정 파일들은 시공의 폭풍에라도 빨려 들어갔는지 확률적으로 FinalFooter가 깨진다.
-            //   Ex) Korean IME의 업로드 버튼 - 다른 스크립트와 같은 Base64 string이지만 여기서만 FinalFooter가 깨진다.
-            // 특정 파일들은 WB082에서 업로드한 상태 그대로 압축 해제를 시도할 때 SharpCompress에서 Exception이 터진다.
-            //   Ex) PEBakeryAlphaMemory.jpg
-            // 
-            // 원인이 대체 뭐지?
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (RawBodyStream != null)
+                    RawBodyStream.Close();
+            }
+        }
+
+        public EncodedFileInfo(Plugin p, string dirName, string fileName)
+        {
+            string section = $"EncodedFile-{dirName}-{fileName}";
+            if (p.Sections.ContainsKey(section) == false)
+                throw new EncodedFileFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+
+            List<string> encodedList = p.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
                 throw new EncodedFileFailException("Encoded lines are malformed");
 
-            int.TryParse(value, out int blockCount);
-            encodedList.RemoveAt(0); // Remove "lines=n"
-
-            // Each line is 64KB block
-            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                throw new EncodedFileFailException("Encoded lines are malformed");
-            keys = null; // Please GC this
-
+            // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
             {
+                int.TryParse(value, out int blockCount);
+                encodedList.RemoveAt(0); // Remove "lines=n"
+
+                // Each line is 64KB block
+                if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
+                    throw new EncodedFileFailException("Encoded lines are malformed");
+
                 StringBuilder b = new StringBuilder();
                 foreach (string block in base64Blocks)
                     b.Append(block);
-
                 switch (b.Length % 4)
                 {
                     case 0:
-                    case 1:
                         break;
+                    case 1:
+                        throw new EncodedFileFailException("Encoded lines are malformed");
                     case 2:
                         b.Append("==");
                         break;
@@ -529,103 +519,142 @@ namespace PEBakery.Core
                         break;
                 }
 
-                string encoded = b.ToString();
-                decoded = Convert.FromBase64String(encoded);
+                decoded = Convert.FromBase64String(b.ToString());
             }
 
-            // Type 1, encoded with Zlib. 
-            MemoryStream rawBodyStream = new MemoryStream();
-            using (MemoryStream ms = new MemoryStream(decoded, 2, decoded.Length))
-            using (DeflateStream zs = new DeflateStream(ms, CompressionMode.Decompress))
+            // [Stage 2] Read final footer
+            const int finalFooterLen = 0x24;
+            int finalFooterIdx = decoded.Length - finalFooterLen;
+            // 0x00 - 0x04 : 4B -> CRC32
+            uint full_crc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
+            // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+            int compressedFooterLen = (int)BitConverter.ToUInt32(decoded, finalFooterIdx + 0x0C);
+            int compressedFooterIdx = decoded.Length - (finalFooterLen + compressedFooterLen);
+            // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
+            int compressedBodyLen = (int)BitConverter.ToUInt64(decoded, finalFooterIdx + 0x10);
+
+            // [Stage 3] Validate final footer
+            this.FinalFooterValid = true;
+            if (compressedBodyLen != compressedFooterIdx)
+                this.FinalFooterValid = false;
+            uint calcFull_crc32 = Force.Crc32.Crc32Algorithm.Compute(decoded, 0, finalFooterIdx);
+            if (full_crc32 != calcFull_crc32)
+                this.FinalFooterValid = false;
+
+            if (this.FinalFooterValid == false)
+                return;
+
+
+            // [Stage 4] Decompress first footer
+            byte[] rawFooter;
+            using (MemoryStream rawFooterStream = new MemoryStream())
             {
-                zs.CopyTo(rawBodyStream);
-                zs.Close();
-            }
-
-            rawBodyStream.Position = 0;
-            return rawBodyStream;
-        }
-
-        private static MemoryStream Decode_OldMethod(List<string> encodedList)
-        {
-            if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new EncodedFileFailException("Encoded lines are malformed");
-
-            int.TryParse(value, out int blockCount);
-            encodedList.RemoveAt(0); // Remove "lines=n"
-
-            // Each line is 64KB block
-            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                throw new EncodedFileFailException("Encoded lines are malformed");
-            keys = null; // Please GC this
-
-            StringBuilder builder = new StringBuilder();
-            foreach (string block in base64Blocks)
-                builder.Append(block);
-
-            switch (builder.Length % 4)
-            {
-                case 0:
-                case 1:
-                    break;
-                case 2:
-                    builder.Append("==");
-                    break;
-                case 3:
-                    builder.Append("=");
-                    break;
-            }
-
-            MemoryStream mem = null;
-            string encoded = builder.ToString();
-            builder = null; // Please GC this
-            byte[] decoded = Convert.FromBase64String(encoded);
-            encoded = null; // Please GC this
-            if (decoded[0] == 0x78 && decoded[1] == 0x01 || // No compression
-                decoded[0] == 0x78 && decoded[1] == 0x9C || // Default compression
-                decoded[0] == 0x78 && decoded[1] == 0xDA) // Best compression
-            { // Type 1, encoded with Zlib. 
-                using (MemoryStream zlibMem = new MemoryStream(decoded))
+                using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
+                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
-                    decoded = null;
-                    // Remove zlib magic number, converting to deflate data stream
-                    zlibMem.ReadByte(); // 0x78
-                    zlibMem.ReadByte(); // 0x9c
+                    zs.CopyTo(rawFooterStream);
+                    rawFooter = rawFooterStream.ToArray();
+                    zs.Close();
+                }
+            }
 
-                    mem = new MemoryStream();
-                    // DeflateStream internally use zlib library, starting from .Net 4.5
-                    using (DeflateStream zlibStream = new DeflateStream(zlibMem, CompressionMode.Decompress))
+            // [Stage 5] Read first footer
+            this.FirstFooterValid = true;
+            // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
+            int rawBodyLen = (int)BitConverter.ToUInt32(rawFooter, 0x200);
+            // 0x208 - 0x20F : 8B -> Length of zlib-compressed file, in little endian
+            //     Note: In Type 2, 0x208 entry is null - padded
+            int compressedBodyLen2 = (int)BitConverter.ToUInt32(rawFooter, 0x208);
+            // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
+            uint compressedBody_crc32 = BitConverter.ToUInt32(rawFooter, 0x220);
+            // 0x224 - 0x225 : 2B -> (Type 1) 01 00, (Type 2) 00 02
+            ushort compMode = BitConverter.ToUInt16(rawFooter, 0x224);
+
+            // [Stage 6] Validate first footer
+            if (compMode == (ushort)EncodedFile.EncodeMode.Compress)
+            {
+                this.Mode = EncodedFile.EncodeMode.Compress;
+                if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
+                    this.FirstFooterValid = false;
+            }
+            else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
+            {
+                this.Mode = EncodedFile.EncodeMode.Raw;
+                if (compressedBodyLen2 != 0)
+                    this.FirstFooterValid = false;
+            }
+            else // Wrong compMode
+                this.FirstFooterValid = false;
+
+            if (this.FirstFooterValid == false)
+                return;
+
+            // [Stage 7] Decompress body
+            if (compMode == (ushort)EncodedFile.EncodeMode.Compress)
+            {
+                this.RawBodyStream = new MemoryStream();
+
+                try
+                { // Standard zlib stream
+                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                    using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                     {
-                        mem.Position = 0;
-                        zlibStream.CopyTo(mem);
-                        zlibStream.Close();
+                        zs.CopyTo(this.RawBodyStream);
+                        zs.Close();
+
+                        this.RawBodyStream.Position = 0;
+                        this.CompressedBodyValid = true;
                     }
                 }
+                catch (ZlibException)
+                { // Corrupt Adler32 Checksum!
+                    // Treat body as pure deflate stream, without alder32 checksum
+                    using (MemoryStream ms = new MemoryStream(decoded, 2, compressedBodyLen - 6)) // 2 for Zlib Header, 4 for adler32 checksum
+                    using (System.IO.Compression.DeflateStream ds = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Decompress, false))
+                    {
+                        //------------
+                        using (FileStream fs = new FileStream("DebugExtractRaw.bin", FileMode.Create))
+                        {
+                            ms.CopyTo(fs);
+                            ms.Position = 0;
+                        }
+                        //------------
+
+                        ds.CopyTo(this.RawBodyStream);
+                        ds.Close();
+
+                        //------------
+                        using (FileStream fs = new FileStream("DebugExtractRaw.bin", FileMode.Create))
+                        {
+                            this.RawBodyStream.CopyTo(fs);
+                            this.RawBodyStream.Position = 0;
+                        }
+                        //------------
+
+                        this.RawBodyStream.Position = 0;
+                        this.CompressedBodyValid = false;
+                    }
+                }
+            }
+            else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
+            {
+                this.CompressedBodyValid = true;
+                this.RawBodyStream = new MemoryStream(decoded, 0, rawBodyLen);
             }
             else
-            { // Type 2, for already compressed file
-                // Main file : encoded without zlib
-                // Metadata at footer : zlib compressed -> do not used. Maybe for integrity purpose?
-                bool failure = true;
-                for (int i = decoded.Length - 1; 0 < i; i--)
-                {
-                    if (decoded[i - 1] == 0x78 && decoded[i] == 0x01 || // No compression
-                        decoded[i - 1] == 0x78 && decoded[i] == 0x9C || // Default compression
-                        decoded[i - 1] == 0x78 && decoded[i] == 0xDA) // Best compression
-                    { // Found footer zlib stream
-                        int idx = i - 1;
-                        byte[] body = decoded.Take(idx).ToArray();
-                        mem = new MemoryStream(body);
-                        failure = false;
-                        break;
-                    }
-                }
-                if (failure)
-                    throw new EncodedFileFailException("Extract failed");
+            {
+                throw new InternalException($"Wrong EncodeMode [{compMode}]");
             }
 
-            return mem;
+            // [Stage 8] Validate decompressed body
+            this.RawBodyValid = true;
+            uint calcCompBody_crc32 = Force.Crc32.Crc32Algorithm.Compute(this.RawBodyStream.ToArray());
+            if (compressedBody_crc32 != calcCompBody_crc32)
+                this.RawBodyValid = false;
+
+            // [Stage 9] Return decompressed body stream
+            this.RawBodyStream.Position = 0;
         }
-        #endregion
     }
+    #endregion
 }

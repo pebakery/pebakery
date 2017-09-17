@@ -37,12 +37,14 @@ namespace UnitTest.Core
         [TestCategory("EncodedFile")]
         public void AttachFile()
         {
-            AttachFile_1(); // Type 1
-            AttachFile_2(); // Type 2
+            AttachFile_Template("Type1.jpg"); // Type 1
+            AttachFile_Template("Type2.7z"); // Type 2
+            // For testing SharpCompress 0.18.1 Adler32 checksum bug
+            AttachFile_Template("PEBakeryAlphaMemory.jpg"); // -> Seems SharpCompress Adler32 is not faulty when compressing
         }
 
-        public void AttachFile_1()
-        { // Type 1
+        public void AttachFile_Template( string fileName)
+        {
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
             string blankPath = Path.Combine(dirPath, "EncodeFileTests_Blank.script");
@@ -51,8 +53,8 @@ namespace UnitTest.Core
 
             Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
 
-            string originFile = Path.Combine(dirPath, "Type1.jpg");
-            p = EncodedFile.AttachFile(p, "FolderExample", "Type1.jpg", originFile, EncodedFile.EncodeMode.Compress);
+            string originFile = Path.Combine(dirPath, fileName);
+            p = EncodedFile.AttachFile(p, "FolderExample", fileName, originFile, EncodedFile.EncodeMode.Compress);
 
             try
             {
@@ -66,73 +68,17 @@ namespace UnitTest.Core
                 Assert.IsTrue(p.Sections.ContainsKey("FolderExample"));
                 List<string> fileInfos = p.Sections["FolderExample"].GetLinesOnce();
                 fileInfos = fileInfos.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                Assert.IsTrue(fileInfos[0].StartsWith("Type1.jpg=", StringComparison.Ordinal));
+                Assert.IsTrue(fileInfos[0].StartsWith($"{fileName}=", StringComparison.Ordinal));
 
-                Assert.IsTrue(p.Sections.ContainsKey("EncodedFile-FolderExample-Type1.jpg"));
-                List<string> encodedFile = p.Sections["EncodedFile-FolderExample-Type1.jpg"].GetLinesOnce();
+                Assert.IsTrue(p.Sections.ContainsKey($"EncodedFile-FolderExample-{fileName}"));
+                List<string> encodedFile = p.Sections[$"EncodedFile-FolderExample-{fileName}"].GetLinesOnce();
                 encodedFile = encodedFile.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
                 Assert.IsTrue(1 < encodedFile.Count);
                 Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
 
                 // Check whether file can be successfully extracted
                 byte[] extractDigest;
-                using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", "Type1.jpg"))
-                {
-                    extractDigest = HashHelper.CalcHash(HashType.SHA256, ms);
-                    ms.Close();
-                }
-
-                byte[] originDigest;
-                using (FileStream fs = new FileStream(originFile, FileMode.Open))
-                {
-                    originDigest = HashHelper.CalcHash(HashType.SHA256, fs);
-                    fs.Close();
-                }
-
-                Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
-            }
-            finally
-            {
-                File.Delete(pPath);
-            }            
-        }
-
-        public void AttachFile_2()
-        { // Type 1
-            EngineState s = EngineTests.CreateEngineState();
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
-            string blankPath = Path.Combine(dirPath, "EncodeFileTests_Blank.script");
-            string pPath = Path.Combine(dirPath, "EncodeFileTests.script");
-            File.Copy(blankPath, pPath, true);
-
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
-
-            string originFile = Path.Combine(dirPath, "Type2.7z");
-            p = EncodedFile.AttachFile(p, "FolderExample", "Type2.7z", originFile, EncodedFile.EncodeMode.Raw);
-
-            try
-            {
-                // Check whether file was successfully encoded
-                Assert.IsTrue(p.Sections.ContainsKey("EncodedFolders"));
-                List<string> folders = p.Sections["EncodedFolders"].GetLines();
-                folders = folders.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                Assert.IsTrue(folders.Count == 1);
-                Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
-
-                Assert.IsTrue(p.Sections.ContainsKey("FolderExample"));
-                List<string> fileInfos = p.Sections["FolderExample"].GetLinesOnce();
-                fileInfos = fileInfos.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                Assert.IsTrue(fileInfos[0].StartsWith("Type2.7z=", StringComparison.Ordinal));
-
-                Assert.IsTrue(p.Sections.ContainsKey("EncodedFile-FolderExample-Type2.7z"));
-                List<string> encodedFile = p.Sections["EncodedFile-FolderExample-Type2.7z"].GetLinesOnce();
-                encodedFile = encodedFile.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                Assert.IsTrue(1 < encodedFile.Count);
-                Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
-
-                // Check whether file can be successfully extracted
-                byte[] extractDigest;
-                using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", "Type2.7z"))
+                using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", fileName))
                 {
                     extractDigest = HashHelper.CalcHash(HashType.SHA256, ms);
                     ms.Close();
@@ -261,7 +207,7 @@ namespace UnitTest.Core
         public void ExtractInterfaceEncoded()
         {
             // Uncomment this line to test SharpCompress' ZlibStream failure
-            //ExtractInterfaceEncoded_1();
+            ExtractInterfaceEncoded_1();
         }
 
         public void ExtractInterfaceEncoded_1()
