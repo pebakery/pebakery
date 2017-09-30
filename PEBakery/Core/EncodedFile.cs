@@ -1,4 +1,6 @@
-﻿/*
+﻿#define NATIVE_ZLIB
+
+/*
     Copyright (C) 2016-2017 Hajin Jang
     Licensed under GPL 3.0
  
@@ -177,6 +179,15 @@ namespace PEBakery.Core
                 {
                     case EncodeMode.Compress:
                         {
+#if NATIVE_ZLIB
+                            using (ZLibWrapper.ZLibStream zs = new ZLibWrapper.ZLibStream(bodyStream, ZLibWrapper.CompressionMode.Compress, ZLibWrapper.CompressionLevel.Default, true))
+                            {
+                                zs.Write(input, 0, input.Length);
+                                zs.Close();
+
+                                bodyStream.Position = 0;
+                            }
+#else
                             using (ZlibStream zs = new ZlibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Default, true, Encoding.UTF8))
                             {
                                 zs.Write(input, 0, input.Length);
@@ -184,6 +195,7 @@ namespace PEBakery.Core
 
                                 bodyStream.Position = 0;
                             }
+#endif
                         }
                         break;
                     case EncodeMode.Raw:
@@ -423,15 +435,26 @@ namespace PEBakery.Core
             if (compMode == (ushort) EncodeMode.Compress)
             { // Temporary Measure : SharpCompress 0.18.1 has bug in its Adler32 checksum routine
                 rawBodyStream = new MemoryStream();
-                // using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                using (MemoryStream ms = new MemoryStream(decoded, 2, compressedBodyLen - 6)) // First 2B is zlib header, Last 4B is Adler32
-                using (System.IO.Compression.DeflateStream zs = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Decompress, false))
+
+#if NATIVE_ZLIB
+                using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                using (ZLibWrapper.ZLibStream zs = new ZLibWrapper.ZLibStream(ms, ZLibWrapper.CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
                     zs.Close();
 
                     rawBodyStream.Position = 0;
                 }
+#else
+                using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, false))
+                {
+                    zs.CopyTo(rawBodyStream);
+                    zs.Close();
+
+                    rawBodyStream.Position = 0;
+                }
+#endif
             }
             else if (compMode == (ushort)EncodeMode.Raw)
             {
@@ -451,10 +474,10 @@ namespace PEBakery.Core
             rawBodyStream.Position = 0;
             return rawBodyStream;
         }
-        #endregion
+#endregion
     }
 
-    #region EncodedFileInfo
+#region EncodedFileInfo
     /// <summary>
     /// Class to handle malformed WB082-attached files
     /// </summary>
@@ -656,5 +679,5 @@ namespace PEBakery.Core
             this.RawBodyStream.Position = 0;
         }
     }
-    #endregion
+#endregion
 }

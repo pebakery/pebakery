@@ -206,7 +206,6 @@ namespace UnitTest.Core
         [TestCategory("EncodedFile")]
         public void ExtractInterfaceEncoded()
         {
-            // Uncomment this line to test SharpCompress' ZlibStream failure
             ExtractInterfaceEncoded_1();
         }
 

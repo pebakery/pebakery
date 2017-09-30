@@ -17,16 +17,10 @@ namespace PEBakery.Core
         #region Static Variables and Constructor
         private static readonly List<string> forbiddenPaths = new List<string>
         {
-            Environment.GetEnvironmentVariable("WinDir"),
-            Environment.GetEnvironmentVariable("ProgramFiles"),
-            // Will be deleted by static constructor when running in 32bit 
-            Environment.GetEnvironmentVariable("ProgramFiles(x86)")
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), 
         };
-
-        static StringEscaper()
-        {
-            forbiddenPaths = forbiddenPaths.Where(x => x != null).ToList();
-        }
         #endregion
 
         #region PathSecurityCheck
@@ -44,6 +38,8 @@ namespace PEBakery.Core
                 if (path.IndexOf(ch) != -1)
                     containsInvalidChars = true;
             }
+
+            
 
             string fullPath;
             if (containsInvalidChars)

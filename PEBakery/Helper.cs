@@ -42,6 +42,7 @@ using System.Drawing.Imaging;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using SevenZipExtractor;
 
 // Hash
 using System.Security.Cryptography;
@@ -57,7 +58,6 @@ using MahApps.Metro.IconPacks;
 using System.Windows.Interop;
 
 // SharpCompress
-
 using SharpCompress.Common;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Zip;
@@ -66,7 +66,7 @@ using SharpCompress.Writers;
 using SharpCompress.Readers;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
-using System.Threading;
+using System.IO.Compression;
 
 namespace PEBakery.Helper
 {
@@ -1330,6 +1330,20 @@ namespace PEBakery.Helper
     #region ArchiveHelper
     public static class ArchiveHelper
     {
+        public static readonly string SevenZipDllPath;
+
+        static ArchiveHelper()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string arch;
+            if (IntPtr.Size == 8)
+                arch = "x64";
+            else
+                arch = "x86";
+
+            SevenZipDllPath = Path.Combine(baseDir, arch, "7z.dll");
+        }
+
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
@@ -1380,33 +1394,72 @@ namespace PEBakery.Helper
             Best = 9,
         }
 
-        private static bool CompressLevel_HelperToLibDeflate(ArchiveHelper.CompressLevel helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel libLevel)
+        public static bool CompressNativeZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
-            
+            CompressionLevel level;
             switch (helperLevel)
             {
                 case ArchiveHelper.CompressLevel.Store:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
-                    return true;
+                    level = CompressionLevel.NoCompression;
+                    break;
                 case ArchiveHelper.CompressLevel.Fastest:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
-                    return true;
+                    level = CompressionLevel.Fastest;
+                    break;
                 case ArchiveHelper.CompressLevel.Normal:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
-                    return true;
+                    level = CompressionLevel.Optimal;
+                    break;
                 case ArchiveHelper.CompressLevel.Best:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
-                    return true;
+                    level = CompressionLevel.Optimal;
+                    break;
                 default:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Level6;
-                    return false;
+                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
             }
+
+            if (File.Exists(destArchive))
+                File.Delete(destArchive);
+
+            if (File.Exists(srcPath))
+            {
+                using (FileStream fs = new FileStream(destArchive, FileMode.Create))
+                using (System.IO.Compression.ZipArchive arch = new System.IO.Compression.ZipArchive(fs, ZipArchiveMode.Create))
+                {
+                    arch.CreateEntryFromFile(srcPath, Path.GetFileName(srcPath));
+                }
+            }
+            else if (Directory.Exists(srcPath))
+            {
+                ZipFile.CreateFromDirectory(srcPath, destArchive, level, false, encoding);
+                
+            }
+            else
+                throw new ArgumentException($"Path [{helperLevel}] does not exist");
+
+            if (File.Exists(destArchive))
+                return true;
+            else
+                return false;
         }
 
-        public static void CompressZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
+        public static bool CompressManagedZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
-            if (!CompressLevel_HelperToLibDeflate(helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel compLevel))
-                throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
+            SharpCompress.Compressors.Deflate.CompressionLevel compLevel;
+            switch (helperLevel)
+            {
+                case ArchiveHelper.CompressLevel.Store:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
+                    break;
+                case ArchiveHelper.CompressLevel.Fastest:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
+                    break;
+                case ArchiveHelper.CompressLevel.Normal:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
+                    break;
+                case ArchiveHelper.CompressLevel.Best:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
+            }
 
             ArchiveEncoding arcEnc = new ArchiveEncoding() { Default = encoding };
             ZipWriterOptions options = new ZipWriterOptions(CompressionType.Deflate)
@@ -1416,6 +1469,9 @@ namespace PEBakery.Helper
                 DeflateCompressionLevel = compLevel,
                 UseZip64 = false,
             };
+
+            if (File.Exists(destArchive))
+                File.Delete(destArchive);
 
             using (FileStream stream = new FileStream(destArchive, FileMode.Create, FileAccess.Write))
             {
@@ -1436,9 +1492,22 @@ namespace PEBakery.Helper
 
                 stream.Close();
             }
+
+            if (File.Exists(destArchive))
+                return true;
+            else
+                return false;
         }
 
-        public static void DecompressAuto(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        public static void DecompressNative(string srcArchive, string destDir, bool overwrite)
+        {
+            using (ArchiveFile archiveFile = new ArchiveFile(srcArchive, SevenZipDllPath))
+            {
+                archiveFile.Extract(destDir, overwrite);
+            }
+        }
+
+        public static void DecompressManaged(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
         {
             ExtractionOptions exOptions = new ExtractionOptions()
             {
@@ -1458,63 +1527,6 @@ namespace PEBakery.Helper
                     if (!reader.Entry.IsDirectory)
                         reader.WriteEntryToDirectory(destDir, exOptions);
                 }
-            }
-        }
-
-        public static void DecompressZip(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = ZipArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
-            }
-        }
-
-        public static void DecompressRar(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = RarArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
-            }
-        }
-
-        public static void Decompress7z(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = SevenZipArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
             }
         }
     }

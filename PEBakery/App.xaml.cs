@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -28,8 +29,25 @@ namespace PEBakery
             else if (e.Args.Length > 0)
                 Args = e.Args;
 
+            // Initialize ZLibWrapper
+            ZLibAssemblyInit();
+
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.IntegerVersion;
         }
+
+        void ZLibAssemblyInit()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string arch;
+            if (IntPtr.Size == 8)
+                arch = "x64";
+            else
+                arch = "x86";
+
+            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+        }
+
     }
 }

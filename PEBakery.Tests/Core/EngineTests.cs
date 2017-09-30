@@ -53,9 +53,25 @@ namespace UnitTest.Core
             // Should be only one project named TestSuite
             Project = projects.Projects[0];
 
+            // Init ZLibAssembly
+            ZLibAssemblyInit();
+
             string logDBFile = Path.Combine(BaseDir, "PEBakery.Tests.db");
             Logger = new Logger(logDBFile);
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
+        }
+
+        private static void ZLibAssemblyInit()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string arch;
+            if (IntPtr.Size == 8)
+                arch = "x64";
+            else
+                arch = "x86";
+
+            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
         }
 
         [AssemblyCleanup]
@@ -91,9 +107,14 @@ namespace UnitTest.Core
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
+            return Eval(s, rawCode, type, check, out CodeCommand dummy);
+        }
+
+        public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = null;
+            cmd = null;
             try
             {
                 cmd = CodeParser.ParseOneRawLine(rawCode, addr);
@@ -120,6 +141,12 @@ namespace UnitTest.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             return EngineTests.Eval(s, rawCode, type, check);
+        }
+
+        public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            return EngineTests.Eval(s, rawCode, type, check, out cmd);
         }
 
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)

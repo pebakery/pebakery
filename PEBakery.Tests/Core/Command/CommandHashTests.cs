@@ -116,7 +116,7 @@ namespace UnitTest.Core.Command
         #endregion
 
         #region Utility
-        public static string SampleText()
+        private static string SampleText()
         {
             string tempFile = Path.GetTempFileName();
             FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);

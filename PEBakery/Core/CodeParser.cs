@@ -24,9 +24,7 @@ using System.Text.RegularExpressions;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Globalization;
-using PEBakery.Core.Commands;
 using System.Windows;
-using PEBakery.WPF;
 using System.Diagnostics;
 using Microsoft.Win32;
 
@@ -831,22 +829,11 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
                     }
                 case CodeType.Decompress:
-                    {  // Decompress,<Format>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 4;
+                    { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        ArchiveDecompressFormat format;
-                        string formatStr = args[0];
-                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.Zip;
-                        else if (formatStr.Equals("Rar", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.Rar;
-                        else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.SevenZip;
-                        else
-                            throw new InvalidCommandException($"[{formatStr}] is not valid ArchiveDecompressType", rawCode);
 
                         Encoding encoding = null;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -888,7 +875,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_Decompress(format, args[1], args[2], encoding);
+                        return new CodeInfo_Decompress(args[0], args[1], encoding);
                     }
                 case CodeType.Expand:
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
