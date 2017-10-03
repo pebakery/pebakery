@@ -66,6 +66,9 @@
     <Reference Include="System.Data.SQLite, Version=1.0.105.2, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.105.2\lib\net46\System.Data.SQLite.dll</HintPath>
     </Reference>
+    <Reference Include="ZLibWrapper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Joveler.ZLibWrapper.1.0.0\lib\net45\ZLibWrapper.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Command\CommandArchiveTests.cs" />
@@ -83,10 +86,6 @@
     <ProjectReference Include="..\PEBakery\PEBakery.csproj">
       <Project>{d6224dce-02d5-4005-88fb-00a8e00cace1}</Project>
       <Name>PEBakery</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\ZlibWrapper\ZLibWrapper.csproj">
-      <Project>{3db2119c-1d72-48e8-8ff9-d6a4657b65f5}</Project>
-      <Name>ZLibWrapper</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +105,6 @@
   <Import Project="..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets" Condition="Exists('..\packages\MSTest.TestAdapter.1.1.18\build\net45\MSTest.TestAdapter.targets')" />
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>XCOPY /S /I /Y "$(SolutionDir)Precompiled\Native\*" "$(TargetDir)"</PostBuildEvent>
+    <PostBuildEvent>REM XCOPY /S /I /Y "$(SolutionDir)Precompiled\Native\*" "$(TargetDir)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

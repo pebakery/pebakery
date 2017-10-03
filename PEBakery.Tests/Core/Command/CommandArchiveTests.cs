@@ -190,6 +190,7 @@ namespace UnitTest.Core.Command
             }
             finally
             {
+                Console.WriteLine($"{archiveFile} Success");
                 File.Delete(destPath);
             }
         }
@@ -217,17 +218,23 @@ namespace UnitTest.Core.Command
 
                 for (int i = 0; i < srcFiles.Length; i++)
                 {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open))
+                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read))
+                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read))
                     {
                         byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
-                        Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
+                        if (srcDigest.SequenceEqual(destDigest) == false)
+                        {
+                            Console.WriteLine($"[{srcFiles[i]}] = {BitConverter.ToString(srcDigest)}");
+                            Console.WriteLine($"[{destFiles[i]}] = {BitConverter.ToString(destDigest)}");
+                            Assert.Fail();
+                        }
                     }
                 }
             }
             finally
             {
+                Console.WriteLine($"{archiveFile} Success");
                 Directory.Delete(Path.Combine(destRootDir, archiveName), true);
             }
         }

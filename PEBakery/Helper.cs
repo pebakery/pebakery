@@ -28,15 +28,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.IO.Compression;
+using System.IO.MemoryMappedFiles;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
-using System.IO.MemoryMappedFiles;
 using System.Threading.Tasks;
-using System.Net.Http;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows;
@@ -59,14 +59,9 @@ using System.Windows.Interop;
 
 // SharpCompress
 using SharpCompress.Common;
-using SharpCompress.Archives;
-using SharpCompress.Archives.Zip;
 using SharpCompress.Writers.Zip;
 using SharpCompress.Writers;
 using SharpCompress.Readers;
-using SharpCompress.Archives.Rar;
-using SharpCompress.Archives.SevenZip;
-using System.IO.Compression;
 
 namespace PEBakery.Helper
 {
@@ -515,8 +510,7 @@ namespace PEBakery.Helper
 
         public static byte[] CalcHash(HashType type, string hex)
         {
-            byte[] data;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             return InternalCalcHash(type, data);
         }
@@ -537,8 +531,7 @@ namespace PEBakery.Helper
 
         public static string CalcHashString(HashType type, string hex)
         {
-            byte[] data;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
@@ -615,10 +608,9 @@ namespace PEBakery.Helper
 
         public static HashType DetectHashType(string hex)
         {
-            byte[] hashByte;
             if (StringHelper.IsHex(hex))
                 return HashType.None;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out hashByte))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] hashByte))
                 return HashType.None;
 
             return InternalDetectHashType(hashByte.Length);
@@ -1592,8 +1584,10 @@ namespace PEBakery.Helper
         public static ImageBrush ImageToImageBrush(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
-            ImageBrush brush = new ImageBrush();
-            brush.ImageSource = bitmap;
+            ImageBrush brush = new ImageBrush
+            {
+                ImageSource = bitmap
+            };
             return brush;
         }
 
