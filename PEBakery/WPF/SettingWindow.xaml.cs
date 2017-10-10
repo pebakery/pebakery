@@ -1,4 +1,4 @@
-﻿using PEBakery.Lib;
+﻿using PEBakery.IniLib;
 using PEBakery.Core;
 using System;
 using System.Collections.Generic;

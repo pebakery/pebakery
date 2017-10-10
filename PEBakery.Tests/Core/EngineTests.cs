@@ -24,7 +24,7 @@ using PEBakery.Core;
 using PEBakery.WPF;
 using PEBakery.Exceptions;
 
-namespace UnitTest.Core
+namespace PEBakery.Tests.Core
 {
     public enum ErrorCheck
     {
@@ -70,7 +70,7 @@ namespace UnitTest.Core
             else
                 arch = "x86";
             string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
         }
 
         [AssemblyCleanup]

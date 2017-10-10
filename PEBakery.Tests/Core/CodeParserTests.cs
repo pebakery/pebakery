@@ -21,7 +21,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using System.Collections.Generic;
 
-namespace UnitTest
+namespace PEBakery.Tests
 {
     [TestClass]
     public class CodeParserTests

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PEBakery.Lib;
-using PEBakery.Helper;
 using System.Text;
 using System.Collections.Generic;
+using PEBakery.IniLib;
+using PEBakery.Helper;
 
-namespace UnitTest.Libs
+namespace PEBakery.IniLib.Tests
 {
     [TestClass]
     public class IniLibTests
@@ -20,7 +20,7 @@ namespace UnitTest.Libs
             IniLib_GetKey_2();
             IniLib_GetKey_3();
         }
-        
+
         public void IniLib_GetKey_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -49,7 +49,7 @@ namespace UnitTest.Libs
 
             File.Delete(tempFile);
         }
-        
+
         public void IniLib_GetKey_3()
         {
             string tempFile = Path.GetTempFileName();
@@ -406,7 +406,7 @@ namespace UnitTest.Libs
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();  
+                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -833,7 +833,7 @@ namespace UnitTest.Libs
             keys[0] = new IniKey("Section1", "00");
             keys[1] = new IniKey("Section3", "20");
             keys[2] = new IniKey("Section2", "11");
-        
+
             bool result = Ini.DeleteKeys(tempFile, keys);
 
             string read;
@@ -1317,7 +1317,7 @@ namespace UnitTest.Libs
             IniLib_Merge2_3();
             IniLib_Merge2_4();
         }
-        
+
         public void IniLib_Merge2_1()
         {
             string tempFile = Path.GetTempFileName();
@@ -1395,7 +1395,7 @@ namespace UnitTest.Libs
             b.AppendLine();
             b.AppendLine("[Section1]");
             b.AppendLine("01=A");
-            b.AppendLine("02=B");           
+            b.AppendLine("02=B");
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));

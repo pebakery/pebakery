@@ -19,12 +19,12 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
 
-namespace UnitTest.Core.Command
+namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
     public class CommandControlTests

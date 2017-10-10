@@ -31,11 +31,10 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 using System.Text.RegularExpressions;
-using PEBakery.Helper;
 using System.Threading;
 using System.Collections.Concurrent;
 
-namespace PEBakery.Lib
+namespace PEBakery.IniLib
 {
     using StringDictionary = Dictionary<string, string>;
 
@@ -186,13 +185,13 @@ namespace PEBakery.Lib
                 rwLock = new ReaderWriterLockSlim();
                 lockDict[file] = rwLock;
             }
-                
+
             rwLock.EnterReadLock();
             try
             {
                 List<int> processedKeyIdxs = new List<int>(iniKeys.Length);
 
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
@@ -309,7 +308,7 @@ namespace PEBakery.Lib
             return InternalSetKeys(file, iniKeys.ToList());
         }
 
-        private static bool InternalSetKeys(string file, List<IniKey> iniKeys) 
+        private static bool InternalSetKeys(string file, List<IniKey> iniKeys)
         {
             ReaderWriterLockSlim rwLock;
             if (lockDict.ContainsKey(file))
@@ -353,7 +352,7 @@ namespace PEBakery.Lib
 
                 List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -378,13 +377,13 @@ namespace PEBakery.Lib
                                     writer.WriteLine();
                                 writer.WriteLine($"[{iniKeys[i].Section}]");
                             }
-                            
+
                             writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
 
                             beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
-                        FileHelper.FileReplaceEx(tempPath, file);
+                        IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -556,7 +555,7 @@ namespace PEBakery.Lib
 
                 if (processedKeys.Count == iniKeys.Count)
                 {
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    IniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -567,7 +566,7 @@ namespace PEBakery.Lib
             finally
             {
                 rwLock.ExitWriteLock();
-            }            
+            }
         }
         #endregion
 
@@ -632,7 +631,7 @@ namespace PEBakery.Lib
 
                 List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -664,7 +663,7 @@ namespace PEBakery.Lib
                             beforeSection = iniKeys[i].Section;
                         }
                         writer.Close();
-                        FileHelper.FileReplaceEx(tempPath, file);
+                        IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -835,7 +834,7 @@ namespace PEBakery.Lib
 
                 if (processedKeys.Count == iniKeys.Count)
                 {
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    IniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -887,7 +886,7 @@ namespace PEBakery.Lib
                     return false;
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -967,7 +966,7 @@ namespace PEBakery.Lib
 
                 if (iniKeys.Count == 0)
                 {
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    IniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1050,7 +1049,7 @@ namespace PEBakery.Lib
                 }
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1068,7 +1067,7 @@ namespace PEBakery.Lib
                         }
 
                         writer.Close();
-                        FileHelper.FileReplaceEx(tempPath, file);
+                        IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
@@ -1128,7 +1127,7 @@ namespace PEBakery.Lib
 
                 if (sections.Count == 0)
                 {
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    IniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1184,7 +1183,7 @@ namespace PEBakery.Lib
                     return false;
 
                 string tempPath = Path.GetTempFileName();
-                Encoding encoding = FileHelper.DetectTextEncoding(file);
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
@@ -1233,7 +1232,7 @@ namespace PEBakery.Lib
 
                 if (sections.Count == 0)
                 {
-                    FileHelper.FileReplaceEx(tempPath, file);
+                    IniHelper.FileReplaceEx(tempPath, file);
                     return true;
                 }
                 else
@@ -1289,7 +1288,7 @@ namespace PEBakery.Lib
                     foreach (var kvKey in kvSec.Value)
                         keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                    result = result & InternalSetKeys(destFile, keys); 
+                    result = result & InternalSetKeys(destFile, keys);
                 }
             }
 
@@ -1361,7 +1360,7 @@ namespace PEBakery.Lib
         {
             List<string> lines = new List<string>();
 
-            Encoding encoding = FileHelper.DetectTextEncoding(file);
+            Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line = string.Empty;
@@ -1375,7 +1374,7 @@ namespace PEBakery.Lib
                     { // Start of section
                         if (appendState)
                             break;
-                        
+
                         string foundSection = line.Substring(1, line.Length - 2);
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
@@ -1408,7 +1407,7 @@ namespace PEBakery.Lib
             List<string>[] lines = ParseIniSections(file, sections);
             StringDictionary[] dicts = new StringDictionary[lines.Length];
             for (int i = 0; i < lines.Length; i++)
-                 dicts[i] = ParseIniLinesIniStyle(lines[i]);
+                dicts[i] = ParseIniLinesIniStyle(lines[i]);
             return dicts;
         }
         /// <summary>
@@ -1425,7 +1424,7 @@ namespace PEBakery.Lib
             for (int i = 0; i < sections.Length; i++)
                 lines[i] = new List<string>();
 
-            Encoding encoding = FileHelper.DetectTextEncoding(file);
+            Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line = string.Empty;
@@ -1513,7 +1512,7 @@ namespace PEBakery.Lib
                 if (!File.Exists(srcFile))
                     return dict; // Return Empty dict if srcFile does not exist
 
-                Encoding encoding = FileHelper.DetectTextEncoding(srcFile);
+                Encoding encoding = IniHelper.DetectTextEncoding(srcFile);
                 using (StreamReader reader = new StreamReader(srcFile, encoding))
                 {
                     // Is Original File Empty?
@@ -1579,7 +1578,7 @@ namespace PEBakery.Lib
         {
             List<string> sections = new List<string>();
 
-            Encoding encoding = FileHelper.DetectTextEncoding(file);
+            Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line = string.Empty;
@@ -1607,7 +1606,7 @@ namespace PEBakery.Lib
         {
             bool result = false;
 
-            Encoding encoding = FileHelper.DetectTextEncoding(file);
+            Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
                 string line;
@@ -1627,7 +1626,7 @@ namespace PEBakery.Lib
 
                 reader.Close();
             }
-                
+
             return result;
         }
 
@@ -1686,7 +1685,7 @@ namespace PEBakery.Lib
     {
         public string FilePath { get; set; }
         public Dictionary<string, StringDictionary> Sections { get; set; }
-        
+
         public IniFile(string filePath)
         {
             FilePath = filePath;

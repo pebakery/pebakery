@@ -19,7 +19,7 @@
 using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;

@@ -1,10 +1,11 @@
 ﻿/*
     Pinvoke of cabinet.dll
 
-    Obtained from https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
-    Created by singhal, Modified by Hajin Jang
+    Based on https://code.msdn.microsoft.com/vstudio/Programmatically-generate-9f08bf6a/sourcecode?fileId=123713&pathId=1073809333
+    Original work by singhal
 
     Copyright (c) 2014 singhal
+    Copyright (c) 2016-2017 Hajin Jang
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,12 +22,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace PEBakery.Helper
+namespace PEBakery.CabLib
 {
     [StructLayout(LayoutKind.Sequential)]
     public class CabinetInfo //Cabinet API: "FDCABINETINFO"
@@ -92,17 +94,12 @@ namespace PEBakery.Helper
             {
                 string path = Path.Combine(destDir, Name);
                 string parentDir = Path.GetDirectoryName(path);
-                if (!Directory.Exists(parentDir) && !string.Equals(parentDir, string.Empty, StringComparison.Ordinal))
+                if (!Directory.Exists(parentDir) && !parentDir.Equals(string.Empty, StringComparison.Ordinal))
                     Directory.CreateDirectory(parentDir);
 
-                FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write);
-                try
+                using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     fs.Write(Data, 0, Length);
-                }
-                finally
-                {
-                    fs.Close();
                 }
             }
         }
@@ -117,14 +114,16 @@ namespace PEBakery.Helper
         private delegate IntPtr FdiFileOpenDelegate(string fileName, int oflag, int pmode);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate Int32 FdiFileReadDelegate(IntPtr hf,
-                                                  [In, Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2,
-                                                  ArraySubType = UnmanagedType.U1)] byte[] buffer, int cb);
+        private delegate Int32 FdiFileReadDelegate(
+            IntPtr hf,
+            [In, Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2, ArraySubType = UnmanagedType.U1)] byte[] buffer,
+            int cb);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate Int32 FdiFileWriteDelegate(IntPtr hf,
-                                                   [In] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2,
-                                                   ArraySubType = UnmanagedType.U1)] byte[] buffer, int cb);
+        private delegate Int32 FdiFileWriteDelegate(
+            IntPtr hf,
+            [In] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2, ArraySubType = UnmanagedType.U1)] byte[] buffer,
+            int cb);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate Int32 FdiFileCloseDelegate(IntPtr hf);
@@ -134,7 +133,8 @@ namespace PEBakery.Helper
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr FdiNotifyDelegate(
-            FdiNotificationType fdint, [In] [MarshalAs(UnmanagedType.LPStruct)] FdiNotification fdin);
+            FdiNotificationType fdint,
+            [In] [MarshalAs(UnmanagedType.LPStruct)] FdiNotification fdin);
 
         [DllImport("cabinet.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "FDICreate", CharSet = CharSet.Ansi)]
         private static extern IntPtr FdiCreate(
@@ -178,19 +178,42 @@ namespace PEBakery.Helper
         private readonly CabError _erf;
         private bool _decompressAll;
         private readonly List<DecompressFile> _decompressFiles;
+        // _inputData should be stream, but it is said that cabinet.dll traverse _inputData several times
         private readonly byte[] _inputData;
+
         private IntPtr _hfdi;
-        private bool _disposed;
+        private bool _disposed = false;
         private const int CpuTypeUnknown = -1;
 
         private const int TRUE = 1;
         private const int FALSE = 0;
 
         /// <summary>
-        /// Constructor recieves cab file's binary data as input
+        /// Constructor recieves cab file's binary data as stream
         /// </summary>
         /// <param name="inputData"></param>
-        public CabExtract(byte[] inputData)
+        public CabExtract(Stream stream, bool leaveOpen = false)
+        {
+            _fileReadDelegate = FileRead;
+            _fileOpenDelegate = InputFileOpen;
+            _femAllocDelegate = MemAlloc;
+            _fileSeekDelegate = FileSeek;
+            _memFreeDelegate = MemFree;
+            _fileWriteDelegate = FileWrite;
+            _fileCloseDelegate = InputFileClose;
+            
+            _decompressAll = false; // Default value
+            _decompressFiles = new List<DecompressFile>();
+            _erf = new CabError();
+            _hfdi = IntPtr.Zero;
+
+            _inputData = new byte[stream.Length];
+            stream.Read(_inputData, 0, _inputData.Length);
+            if (leaveOpen == false)
+                stream.Close();
+        }
+
+        public CabExtract(byte[] inputData, bool leaveOpen = false)
         {
             _fileReadDelegate = FileRead;
             _fileOpenDelegate = InputFileOpen;
@@ -204,42 +227,6 @@ namespace PEBakery.Helper
             _decompressFiles = new List<DecompressFile>();
             _erf = new CabError();
             _hfdi = IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Constructor recieves cab file's path
-        /// </summary>
-        /// <param name="inputData"></param>
-        public CabExtract(string cabPath)
-        {
-            _fileReadDelegate = FileRead;
-            _fileOpenDelegate = InputFileOpen;
-            _femAllocDelegate = MemAlloc;
-            _fileSeekDelegate = FileSeek;
-            _memFreeDelegate = MemFree;
-            _fileWriteDelegate = FileWrite;
-            _fileCloseDelegate = InputFileClose;
-            _inputData = ReadBinaryFile(cabPath);
-            _decompressAll = false; // Default value
-            _decompressFiles = new List<DecompressFile>();
-            _erf = new CabError();
-            _hfdi = IntPtr.Zero;
-        }
-
-        private static byte[] ReadBinaryFile(string cabPath)
-        {
-            byte[] cabData = null;
-            FileStream fs = new FileStream(cabPath, FileMode.Open, FileAccess.Read);
-            try
-            {
-                cabData = new byte[fs.Length];
-                fs.Read(cabData, 0, cabData.Length);
-            }
-            finally
-            {
-                fs.Close();
-            }
-            return cabData;
         }
 
         private static IntPtr FdiCreate(
@@ -260,7 +247,7 @@ namespace PEBakery.Helper
             IntPtr hfdi,
             FdiNotifyDelegate fnNotify)
         {
-            return FdiCopy(hfdi, "<notused>", "<notused>", 0, fnNotify, IntPtr.Zero, IntPtr.Zero);
+            return FdiCopy(hfdi, "NOT_USED", "NOT_USED", 0, fnNotify, IntPtr.Zero, IntPtr.Zero);
         }
 
         private IntPtr FdiContext
@@ -288,9 +275,11 @@ namespace PEBakery.Helper
             {
                 if (_hfdi != IntPtr.Zero)
                 {
+                    // _streamHandle will be destroyed in FdiDestroy()
                     FdiDestroy(_hfdi);
                     _hfdi = IntPtr.Zero;
                 }
+
                 _disposed = true;
             }
         }
@@ -317,8 +306,7 @@ namespace PEBakery.Helper
 
         private int InputFileClose(IntPtr hf)
         {
-            Stream stream = StreamFromHandle(hf);
-            stream.Close();
+            StreamFromHandle(hf).Close();
             ((GCHandle)(hf)).Free();
             return 0;
         }
@@ -333,7 +321,7 @@ namespace PEBakery.Helper
                 MemoryStream stream = new MemoryStream();
                 GCHandle gch = GCHandle.Alloc(stream);
                 extractFile.Name = fdin.psz1;
-                extractFile.Handle = (IntPtr)gch;
+                extractFile.Handle = (IntPtr) gch;
 
                 return extractFile.Handle;
             }
@@ -358,32 +346,32 @@ namespace PEBakery.Helper
         private IntPtr OutputFileClose(FdiNotification fdin)
         {
             DecompressFile extractFile = _decompressFiles.Where(ef => ef.Handle == fdin.hf).Single();
-            Stream stream = StreamFromHandle(fdin.hf);
 
-            extractFile.Found = true;
-            extractFile.Length = (int)stream.Length;
-
-            if (stream.Length > 0)
+            using (Stream stream = StreamFromHandle(fdin.hf))
             {
-                extractFile.Data = new byte[stream.Length];
-                stream.Position = 0;
-                stream.Read(extractFile.Data, 0, (int)stream.Length);
-            }
+                extractFile.Found = true;
+                extractFile.Length = (int)stream.Length;
 
-            stream.Close();
+                if (0 < stream.Length)
+                {
+                    extractFile.Data = new byte[stream.Length];
+                    stream.Position = 0;
+                    stream.Read(extractFile.Data, 0, (int)stream.Length);
+                }
+            }
 
             return (IntPtr)TRUE;
         }
 
         private int FileRead(IntPtr hf, byte[] buffer, int cb)
         {
-            var stream = StreamFromHandle(hf);
+            Stream stream = StreamFromHandle(hf);
             return stream.Read(buffer, 0, cb);
         }
 
         private int FileWrite(IntPtr hf, byte[] buffer, int cb)
         {
-            var stream = StreamFromHandle(hf);
+            Stream stream = StreamFromHandle(hf);
             stream.Write(buffer, 0, cb);
             return cb;
         }
@@ -403,10 +391,10 @@ namespace PEBakery.Helper
             Marshal.FreeHGlobal(mem);
         }
 
-        private int FileSeek(IntPtr hf, int dist, int seektype)
+        private int FileSeek(IntPtr hf, int dist, int seekType)
         {
-            var stream = StreamFromHandle(hf);
-            return (int)stream.Seek(dist, (SeekOrigin)seektype);
+            Stream stream = StreamFromHandle(hf);
+            return (int)stream.Seek(dist, (SeekOrigin)seekType);
         }
 
         /// <summary>
@@ -421,9 +409,11 @@ namespace PEBakery.Helper
             if (_disposed)
                 throw new ObjectDisposedException("CabExtract");
 
-            DecompressFile fileToDecompress = new DecompressFile();
-            fileToDecompress.Found = false;
-            fileToDecompress.Name = fileToExtract;
+            DecompressFile fileToDecompress = new DecompressFile
+            {
+                Found = false,
+                Name = fileToExtract
+            };
 
             _decompressAll = false;
             _decompressFiles.Add(fileToDecompress);
@@ -454,9 +444,11 @@ namespace PEBakery.Helper
             if (_disposed)
                 throw new ObjectDisposedException("CabExtract");
 
-            DecompressFile fileToDecompress = new DecompressFile();
-            fileToDecompress.Found = false;
-            fileToDecompress.Name = fileToExtract;
+            DecompressFile fileToDecompress = new DecompressFile
+            {
+                Found = false,
+                Name = fileToExtract
+            };
 
             _decompressAll = false;
             _decompressFiles.Add(fileToDecompress);
@@ -503,37 +495,47 @@ namespace PEBakery.Helper
             }
         }
 
-        public bool IsCabinetFile(out CabinetInfo cabinfo)
+        public bool IsCabinetFile()
+        {
+            GetCabinetInfo(out bool isCabinet);
+            return isCabinet;
+        }
+
+        public static bool IsCabinetFile(Stream stream)
+        {
+            using (CabExtract decomp = new CabExtract(stream))
+            {
+                return decomp.IsCabinetFile();
+            }
+        }
+
+        public CabinetInfo GetCabinetInfo(out bool isCabinet)
         {
             if (_disposed)
                 throw new ObjectDisposedException("CabExtract");
 
-            var stream = new MemoryStream(_inputData);
-            GCHandle gch = GCHandle.Alloc(stream);
+            MemoryStream ms = new MemoryStream(_inputData);
+            GCHandle gch = GCHandle.Alloc(ms);
 
             try
             {
-                var info = new CabinetInfo();
-                var ret = FdiIsCabinet(FdiContext, (IntPtr)gch, info);
-                cabinfo = info;
-                return ret;
+                CabinetInfo info = new CabinetInfo();
+                isCabinet = FdiIsCabinet(FdiContext, (IntPtr)gch, info);
+                return info;
             }
             finally
             {
-                stream.Close();
                 gch.Free();
+                ms.Close();
             }
         }
 
-        public static bool IsCabinetFile(byte[] inputData, out CabinetInfo cabinfo)
+        public static CabinetInfo GetCabinetInfo(Stream stream)
         {
-            using (var decomp = new CabExtract(inputData))
+            using (CabExtract decomp = new CabExtract(stream))
             {
-                return decomp.IsCabinetFile(out cabinfo);
+                return decomp.GetCabinetInfo(out bool isCabinet);
             }
         }
-
     }
 }
-
-

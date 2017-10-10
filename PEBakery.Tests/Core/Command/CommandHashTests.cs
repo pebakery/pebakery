@@ -23,7 +23,7 @@ using System.IO;
 using PEBakery.Helper;
 using System.Text;
 
-namespace UnitTest.Core.Command
+namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
     public class CommandHashTests

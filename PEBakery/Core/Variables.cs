@@ -1,6 +1,6 @@
 ﻿using PEBakery.Exceptions;
 using PEBakery.Helper;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

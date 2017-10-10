@@ -24,7 +24,7 @@ using System.Collections.Generic;
 using PEBakery.Exceptions;
 using System.IO;
 
-namespace UnitTest.Core
+namespace PEBakery.Tests.Core
 {
     [TestClass]
     public class StringEscaperTests

@@ -43,35 +43,21 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using SevenZipExtractor;
-
-// Hash
 using System.Security.Cryptography;
-
-// P/invoke
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using BetterWin32Errors;
-
-// Library
 using Svg;
 using MahApps.Metro.IconPacks;
 using System.Windows.Interop;
-
-// SharpCompress
 using SharpCompress.Common;
 using SharpCompress.Writers.Zip;
 using SharpCompress.Writers;
 using SharpCompress.Readers;
+using PEBakery.CabLib;
 
 namespace PEBakery.Helper
 {
-    public class UnsupportedEncodingException : Exception
-    {
-        public UnsupportedEncodingException() { }
-        public UnsupportedEncodingException(string message) : base(message) { }
-        public UnsupportedEncodingException(string message, Exception inner) : base(message, inner) { }
-    }
-
     #region FileHelper
     /// <summary>
     /// Contains static helper methods.
@@ -168,7 +154,7 @@ namespace PEBakery.Helper
                 }
                 else if (encoding != Encoding.Default)
                 { // Unsupported Encoding
-                    throw new UnsupportedEncodingException($"[{encoding}] is not supported");
+                    throw new ArgumentException($"[{encoding}] is not supported");
                 }
 
                 fs.Close();
@@ -200,7 +186,7 @@ namespace PEBakery.Helper
             }
             else if (encoding != Encoding.Default)
             { // Unsupported Encoding
-                throw new UnsupportedEncodingException($"[{encoding}] is not supported");
+                throw new ArgumentException($"[{encoding}] is not supported");
             }
 
             return fs;
@@ -1346,8 +1332,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractAll(destDir, out List<string> nop);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractAll(destDir, out List<string> nop);
+            }           
         }
 
         /// <summary>
@@ -1360,8 +1349,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractAll(destDir, out extractedList);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractAll(destDir, out extractedList);
+            }
         }
 
         /// <summary>
@@ -1374,8 +1366,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, string target)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractSingleFile(target, destDir);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractSingleFile(target, destDir);
+            }
         }
 
         public enum CompressLevel
@@ -1421,10 +1416,11 @@ namespace PEBakery.Helper
             else if (Directory.Exists(srcPath))
             {
                 ZipFile.CreateFromDirectory(srcPath, destArchive, level, false, encoding);
-                
             }
             else
+            {
                 throw new ArgumentException($"Path [{helperLevel}] does not exist");
+            }
 
             if (File.Exists(destArchive))
                 return true;

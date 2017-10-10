@@ -28,7 +28,7 @@ using System.Windows;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 
 namespace PEBakery.Core
 {

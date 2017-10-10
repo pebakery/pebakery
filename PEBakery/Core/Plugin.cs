@@ -27,7 +27,7 @@ using System.Text.RegularExpressions;
 using System.Collections;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using System.Diagnostics;
 using PEBakery.Core.Commands;
 

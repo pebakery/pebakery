@@ -25,7 +25,7 @@ using System.Text;
 using System.Linq;
 using System.Diagnostics;
 
-namespace UnitTest.Core.Command
+namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
     public class CommandArchiveTests

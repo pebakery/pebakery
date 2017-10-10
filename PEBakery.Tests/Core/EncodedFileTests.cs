@@ -27,7 +27,7 @@ using PEBakery.Exceptions;
 using PEBakery.Lib;
 using System.Text;
 
-namespace UnitTest.Core
+namespace PEBakery.Tests.Core
 {
     [TestClass]
     public class EncodedFileTests
@@ -35,7 +35,7 @@ namespace UnitTest.Core
         #region AttachFile
         [TestMethod]
         [TestCategory("EncodedFile")]
-        public void AttachFile()
+        public void EncodedFile_AttachFile()
         {
             AttachFile_Template("Type1.jpg"); // Type 1
             AttachFile_Template("Type2.7z"); // Type 2
@@ -103,7 +103,7 @@ namespace UnitTest.Core
         #region ExtractFile
         [TestMethod]
         [TestCategory("EncodedFile")]
-        public void ExtractFile()
+        public void EncodedFile_ExtractFile()
         {
             ExtractFile_1(); // Type 1
             ExtractFile_2(); // Type 2
@@ -167,7 +167,7 @@ namespace UnitTest.Core
         #region ExtractLogo
         [TestMethod]
         [TestCategory("EncodedFile")]
-        public void ExtractLogo()
+        public void EncodedFile_ExtractLogo()
         {
             ExtractLogo_1();
         }
@@ -204,7 +204,7 @@ namespace UnitTest.Core
         #region ExtractInterfaceEncoded
         [TestMethod]
         [TestCategory("EncodedFile")]
-        public void ExtractInterfaceEncoded()
+        public void EncodedFile_ExtractInterfaceEncoded()
         {
             ExtractInterfaceEncoded_1();
         }

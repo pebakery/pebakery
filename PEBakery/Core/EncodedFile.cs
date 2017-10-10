@@ -20,7 +20,7 @@
 
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
 using System;
@@ -180,7 +180,7 @@ namespace PEBakery.Core
                     case EncodeMode.Compress:
                         {
 #if NATIVE_ZLIB
-                            using (ZLibWrapper.ZLibStream zs = new ZLibWrapper.ZLibStream(bodyStream, ZLibWrapper.CompressionMode.Compress, ZLibWrapper.CompressionLevel.Default, true))
+                            using (Joveler.ZLibWrapper.ZLibStream zs = new Joveler.ZLibWrapper.ZLibStream(bodyStream, Joveler.ZLibWrapper.CompressionMode.Compress, Joveler.ZLibWrapper.CompressionLevel.Default, true))
                             {
                                 zs.Write(input, 0, input.Length);
                                 zs.Close();
@@ -438,7 +438,7 @@ namespace PEBakery.Core
 
 #if NATIVE_ZLIB
                 using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                using (ZLibWrapper.ZLibStream zs = new ZLibWrapper.ZLibStream(ms, ZLibWrapper.CompressionMode.Decompress, false))
+                using (Joveler.ZLibWrapper.ZLibStream zs = new Joveler.ZLibWrapper.ZLibStream(ms, Joveler.ZLibWrapper.CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
                     zs.Close();

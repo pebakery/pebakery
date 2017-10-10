@@ -46,7 +46,7 @@ namespace PEBakery
                 arch = "x86";
 
             string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
         }
 
     }
