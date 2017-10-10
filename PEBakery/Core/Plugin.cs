@@ -542,7 +542,7 @@ namespace PEBakery.Core
             List<string> rawPaths = rawLine.Split(',').ToList();
 
             // Check doublequote's occurence - must be 2n
-            if (FileHelper.CountStringOccurrences(rawLine, "\"") % 2 == 1)
+            if (StringHelper.CountOccurrences(rawLine, "\"") % 2 == 1)
                 throw new ExecuteException("Doublequote's number should be even number");
 
             // Parse Arguments

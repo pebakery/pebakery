@@ -335,7 +335,7 @@ namespace PEBakery.Core.Commands
                 string lineFromSrc;
                 while ((lineFromSrc = reader.ReadLine()) != null)
                 {
-                    int count = FileHelper.CountStringOccurrences(lineFromSrc, " ");
+                    int count = StringHelper.CountOccurrences(lineFromSrc, " ");
                     if (0 < count)
                     {
                         i++;

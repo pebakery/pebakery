@@ -178,7 +178,7 @@ namespace PEBakery.Core
             }
 
             // Check doublequote's occurence - must be 2n
-            if (FileHelper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
+            if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
             {
                 CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException("Doublequote's number should be even number", error);
@@ -625,8 +625,8 @@ namespace PEBakery.Core
                         string mode;
                         if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase) ||
                             args[2].Equals("Append", StringComparison.OrdinalIgnoreCase) ||
-                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < StringHelper.CountOccurrences(args[1], "#"))
                             mode = args[2];
                         else
                             throw new InvalidCommandException("Mode must be one of Prepend, Append, or variable.", rawCode);
@@ -1017,8 +1017,8 @@ namespace PEBakery.Core
                         string visibility;
                         if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
                             args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < StringHelper.CountOccurrences(args[1], "#"))
                             visibility = args[1];
                         else
                             throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
@@ -2236,7 +2236,7 @@ namespace PEBakery.Core
 
             BranchCondition cond;
             CodeCommand embCmd;
-            int occurence = FileHelper.CountStringOccurrences(args[cIdx], "%"); // %Joveler%
+            int occurence = StringHelper.CountOccurrences(args[cIdx], "%"); // %Joveler%
             bool match = Regex.IsMatch(args[cIdx], @"(#\d+)", RegexOptions.Compiled); // #1
             if ((occurence != 0 && occurence % 2 == 0) || match) // BranchCondition - Compare series
             {

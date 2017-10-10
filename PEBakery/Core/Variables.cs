@@ -502,7 +502,7 @@ namespace PEBakery.Core
             List<string> processed = new List<string>();
 #endif
 
-            while (2 <= FileHelper.CountStringOccurrences(str, @"%"))
+            while (2 <= StringHelper.CountOccurrences(str, @"%"))
             {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
@@ -666,7 +666,7 @@ namespace PEBakery.Core
         {
             if (varName.StartsWith("%") && varName.EndsWith("%"))
             {
-                if (FileHelper.CountStringOccurrences(varName, "%") == 2)
+                if (StringHelper.CountOccurrences(varName, "%") == 2)
                 {
                     string varKey = varName.Substring(1, varName.Length - 2);
                     return StringEscaper.ExpandSectionParams(s, varKey);

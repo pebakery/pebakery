@@ -104,7 +104,7 @@ namespace PEBakery.Core
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
             // Check doublequote's occurence - must be 2n
-            if (FileHelper.CountStringOccurrences(rawValue, "\"") % 2 == 1)
+            if (StringHelper.CountOccurrences(rawValue, "\"") % 2 == 1)
                 throw new InvalidCommandException($"Interface control [{rawValue}]'s doublequotes mismatch", rawLine);
 
             // Check if last operand is \ - MultiLine check - only if one or more operands exists

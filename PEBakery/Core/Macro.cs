@@ -48,7 +48,7 @@ namespace PEBakery.Core
             // Get macroPlugin 
             string rawPluginPath = varDict["API"];
             string macroPluginPath = variables.Expand(varDict["API"]); // Need Expansion
-            macroPlugin = project.AllPluginList.Find(x => string.Equals(x.FullPath, macroPluginPath, StringComparison.OrdinalIgnoreCase));
+            macroPlugin = project.AllPlugins.Find(x => string.Equals(x.FullPath, macroPluginPath, StringComparison.OrdinalIgnoreCase));
             if (macroPlugin == null)
             {
                 macroEnabled = false;

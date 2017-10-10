@@ -65,23 +65,6 @@ namespace PEBakery.Helper
     public static class FileHelper
     {
         /// <summary>
-        /// Count occurrences of strings.
-        /// http://www.dotnetperls.com/string-occurrence
-        /// </summary>
-        public static int CountStringOccurrences(string text, string pattern)
-        {
-            // Loop through all instances of the string 'text'.
-            int count = 0;
-            int i = 0;
-            while ((i = text.IndexOf(pattern, i, StringComparison.Ordinal)) != -1)
-            {
-                i += pattern.Length;
-                count++;
-            }
-            return count;
-        }
-
-        /// <summary>
         /// Detect text file's encoding with BOM
         /// </summary>
         /// <param name="filePath"></param>
@@ -661,6 +644,24 @@ namespace PEBakery.Helper
             else
                 return false;
         }
+
+        /// <summary>
+        /// Count occurrences of strings.
+        /// http://www.dotnetperls.com/string-occurrence
+        /// </summary>
+        public static int CountOccurrences(string text, string pattern)
+        {
+            // Loop through all instances of the string 'text'.
+            int count = 0;
+            int i = 0;
+            while ((i = text.IndexOf(pattern, i, StringComparison.Ordinal)) != -1)
+            {
+                i += pattern.Length;
+                count++;
+            }
+            return count;
+        }
+
     }
     #endregion
 
@@ -689,7 +690,7 @@ namespace PEBakery.Helper
 
         public static StringNumberType IsStringHexInteger(string str)
         {
-            int pCnt = FileHelper.CountStringOccurrences(str, ".");
+            int pCnt = StringHelper.CountOccurrences(str, ".");
             if (1 < pCnt)
                 return StringNumberType.NotNumber;
 
@@ -1666,7 +1667,7 @@ namespace PEBakery.Helper
             return new ImageBrush() { ImageSource = bitmap };
         }
 
-        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
+        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin = 0)
         {
             PackIconMaterial icon = new PackIconMaterial()
             {

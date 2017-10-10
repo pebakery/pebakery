@@ -37,7 +37,6 @@ using SQLite.Net;
 using System.Text;
 using PEBakery.Helper;
 using PEBakery.IniLib;
-using PEBakery.Lib;
 using PEBakery.Core;
 
 namespace PEBakery.WPF
@@ -221,8 +220,7 @@ namespace PEBakery.WPF
                 {
                     foreach (Project project in projects.Projects)
                     {
-                        List<Node<Plugin>> plugins = project.VisiblePlugins.Root;
-                        RecursivePopulateTreeView(plugins, Model.MainTree, Model.MainTree);
+                        PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
                     };
                     int pIdx = setting.Project_DefaultIndex;
                     curMainTree = Model.MainTree.Children[pIdx];
@@ -487,9 +485,8 @@ namespace PEBakery.WPF
                 // Determine current project
                 Project project = curMainTree.Plugin.Project;
 
-                Tree<Plugin> activeTree = project.GetActivePlugin();
                 Model.BuildTree.Children.Clear();
-                RecursivePopulateTreeView(activeTree.Root, Model.BuildTree, Model.BuildTree);
+                PluginListToTreeViewModel(project, project.ActivePlugins, Model.BuildTree);
                 curBuildTree = null;
 
                 EngineState s = new EngineState(project, logger, Model);
@@ -645,15 +642,100 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void RecursivePopulateTreeView(List<Node<Plugin>> plugins, TreeViewModel treeRoot, TreeViewModel treeParent)
+        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot)
         {
-            foreach (Node<Plugin> node in plugins)
-            {
-                TreeViewModel item = PopulateOneTreeView(node.Data, treeRoot, treeParent);
+            Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
 
-                if (0 < node.Child.Count)
-                    RecursivePopulateTreeView(node.Child, treeRoot, item);
+            // Populate MainPlugin
+            TreeViewModel projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
+
+            // foreach (Plugin p in pList.Where(p => !p.Equals(project.MainPlugin)))
+            foreach (Plugin p in pList)
+            {
+                Debug.Assert(p != null);
+
+                if (p.Equals(project.MainPlugin))
+                    continue;
+
+                // Current Parent
+                TreeViewModel treeParent = projectRoot;
+
+                string[] paths = p.ShortPath
+                    .Substring(project.ProjectName.Length + 1)
+                    .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+
+                // Ex) Apps\Network\Mozilla_Firefox_CR.script
+                for (int i = 0; i < paths.Length - 1; i++)
+                {
+                    string pathKey = Project.PathKeyGenerator(paths, i);
+                    string key = $"{p.Level}_{pathKey}";
+                    if (dirDict.ContainsKey(key))
+                    {
+                        treeParent = dirDict[key];
+                    }
+                    else
+                    {
+                        string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, p.Level, false);
+                        treeParent = PopulateOneTreeView(dirPlugin, treeRoot, treeParent);
+                        dirDict[key] = treeParent;
+                    }
+                }
+
+                PopulateOneTreeView(p, treeRoot, treeParent);
             }
+
+            // Sort - Plugin first, Directory last
+            // RecursiveTreeViewModelSort(projectRoot);
+
+            // Reflect Directory's Selected value
+            RecursiveDecideDirectorySelectedValue(treeRoot, 0);
+        }
+
+        private SelectedState RecursiveDecideDirectorySelectedValue(TreeViewModel parent, int depth)
+        {
+            SelectedState final = SelectedState.None;
+            foreach (TreeViewModel item in parent.Children)
+            {
+                if (0 < item.Children.Count)
+                { // Has child plugins
+                    SelectedState state = RecursiveDecideDirectorySelectedValue(item, depth + 1);
+                    if (depth != 0)
+                    {
+                        if (state == SelectedState.True)
+                            final = item.Plugin.Selected = SelectedState.True;
+                        else if (state == SelectedState.False)
+                        {
+                            if (final != SelectedState.True)
+                                final = SelectedState.False;
+                            if (item.Plugin.Selected != SelectedState.True)
+                                item.Plugin.Selected = SelectedState.False;
+                        }
+                    }
+                }
+                else // Does not have child plugin
+                {
+                    switch (item.Plugin.Selected)
+                    {
+                        case SelectedState.True:
+                            final = SelectedState.True;
+                            break;
+                        case SelectedState.False:
+                            if (final == SelectedState.None)
+                                final = SelectedState.False;
+                            break;
+                    }
+                }
+            }
+
+            return final;
+        }
+
+        private void RecursiveTreeViewModelSort(TreeViewModel item)
+        {
+            item.SortChildren();
+            foreach (TreeViewModel child in item.Children)
+                RecursiveTreeViewModelSort(child);
         }
 
         public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
@@ -1289,8 +1371,17 @@ namespace PEBakery.WPF
             }
         }
 
-        private ObservableCollection<TreeViewModel> child = new ObservableCollection<TreeViewModel>();
-        public ObservableCollection<TreeViewModel> Children { get => child; }
+        private ObservableCollection<TreeViewModel> children = new ObservableCollection<TreeViewModel>();
+        public ObservableCollection<TreeViewModel> Children { get => children; }
+
+        public void SortChildren()
+        {
+            IOrderedEnumerable<TreeViewModel> sorted = children
+                .OrderBy(x => x.Plugin.Level)
+                .ThenBy(x => x.Plugin.Type)
+                .ThenBy(x => x.Plugin.FullPath);
+            children = new ObservableCollection<TreeViewModel>(sorted);
+        }
 
         public void SetIcon(Control icon)
         {
@@ -1343,7 +1434,7 @@ namespace PEBakery.WPF
                 {
                     string fullPath = p.Project.Variables.Expand(path);
 
-                    Plugin pToDisable = p.Project.AllPluginList.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                    Plugin pToDisable = p.Project.AllPlugins.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
                     if (pToDisable != null)
                     {
                         Ini.SetKey(fullPath, "Main", "Selected", "False");

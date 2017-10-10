@@ -24,7 +24,6 @@ using System.Linq;
 using PEBakery.Helper;
 using System.Collections.Generic;
 using PEBakery.Exceptions;
-using PEBakery.Lib;
 using System.Text;
 
 namespace PEBakery.Tests.Core

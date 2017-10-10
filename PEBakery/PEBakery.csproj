@@ -200,7 +200,6 @@
     <Compile Include="Core\UICommand.cs" />
     <Compile Include="Core\UIParser.cs" />
     <Compile Include="WPF\UIRenderer.cs" />
-    <Compile Include="Libs\TreeLib.cs" />
     <Compile Include="Core\Variables.cs" />
     <Compile Include="WPF\UtilityWindow.xaml.cs">
       <DependentUpon>UtilityWindow.xaml</DependentUpon>

@@ -29,7 +29,6 @@ using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using PEBakery.WPF;
-using PEBakery.Lib;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 
@@ -743,25 +742,17 @@ namespace PEBakery.Core
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);
 
-            if (runSingle == null) // Run just plugin
+            if (runSingle == null)
             {
-                // Why List -> Tree -> List? To sort.
-                // TODO: Better way?
-                Plugins = new List<Plugin>();
-                Tree<Plugin> tree = project.GetActivePlugin();
-                foreach (Plugin p in tree)
-                {
-                    if (p.Type != PluginType.Directory)
-                        Plugins.Add(p);
-                }
+                Plugins = project.ActivePlugins;
 
-                CurrentPlugin = Plugins[0]; // Main Plugin
+                CurrentPlugin = Plugins[0]; // Main Plugin, since its internal level is -256
                 CurrentPluginIdx = 0;
 
                 RunOnePlugin = false;
             }
             else
-            {
+            {  // Run only one plugin
                 Plugins = new List<Plugin>() { runSingle };
 
                 CurrentPlugin = runSingle;

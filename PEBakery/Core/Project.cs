@@ -17,7 +17,6 @@
 */
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,16 +25,16 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using PEBakery.Lib;
 using PEBakery.Exceptions;
-using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite.Net;
 using System.Windows;
 using PEBakery.WPF;
+using PEBakery.Helper;
 
 namespace PEBakery.Core
 {
+    #region ProjectCollection
     public class ProjectCollection
     {
         // Fields
@@ -45,8 +44,8 @@ namespace PEBakery.Core
         private readonly PluginCache pluginCache;
 
         private readonly Dictionary<string, List<string>> pluginPathDict;
-        private readonly List<Plugin> allPluginList;
-        private readonly List<string> allPluginPathList;
+        private readonly List<Plugin> allPlugins;
+        private readonly List<string> allPluginPaths;
 
         public const int MainLevel = -256;  // Reserved level for script.project
 
@@ -64,8 +63,8 @@ namespace PEBakery.Core
             this.pluginCache = pluginCache;
 
             this.pluginPathDict = new Dictionary<string, List<string>>();
-            this.allPluginList = new List<Plugin>();
-            this.allPluginPathList = new List<string>();
+            this.allPlugins = new List<Plugin>();
+            this.allPluginPaths = new List<string>();
         }
 
         public int PrepareLoad(out int processCount)
@@ -76,7 +75,7 @@ namespace PEBakery.Core
             GetPluginPaths(projNameList, out processCount);
 
             // Return count of all plugins
-            return allPluginPathList.Count;
+            return allPluginPaths.Count;
         }
 
         /// <summary>
@@ -131,7 +130,7 @@ namespace PEBakery.Core
                 linkCount += links.Length; // links should be added twice since they are processed twice
 
                 pluginPathDict[projName] = pluginPathList;
-                allPluginPathList.AddRange(pluginPathList);
+                allPluginPaths.AddRange(pluginPathList);
             }
             return allCount;
         }
@@ -148,7 +147,7 @@ namespace PEBakery.Core
                     project.Load(kv.Value, pluginCache, worker);
 
                     // Add them to list
-                    allPluginList.AddRange(project.AllPluginList);
+                    allPlugins.AddRange(project.AllPlugins);
 
                     projectDict[kv.Key] = project;
                 }
@@ -177,7 +176,7 @@ namespace PEBakery.Core
             if (pluginCache != null)
                 cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
                     
-            var links = allPluginList.Where(x => x.Type == PluginType.Link);
+            var links = allPlugins.Where(x => x.Type == PluginType.Link);
             Task[] tasks = links.Select(p =>
             {
                 return Task.Run(() =>
@@ -250,7 +249,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        int idx = allPluginList.IndexOf(p);
+                        int idx = allPlugins.IndexOf(p);
                         removeIdxs.Add(idx);
                         if (worker != null)
                             worker.ReportProgress(cached);
@@ -262,10 +261,12 @@ namespace PEBakery.Core
             // Remove malformed link
             var idxs = removeIdxs.OrderByDescending(x => x);
             foreach (int idx in idxs)
-                allPluginList.RemoveAt(idx);
+                allPlugins.RemoveAt(idx);
         }
     }
+    #endregion
 
+    #region Project
     public class Project : ICloneable
     {
         // Fields
@@ -274,9 +275,7 @@ namespace PEBakery.Core
         private readonly string projectDir;
         private readonly string baseDir;
         private Plugin mainPlugin;
-        private List<Plugin> allPluginList;
-        private Tree<Plugin> allPlugins;
-        private Tree<Plugin> visiblePlugins;
+        private List<Plugin> allPlugins;
         private Variables variables;
         public const int MainLevel = -256;  // Reserved level for script.project
 
@@ -284,16 +283,17 @@ namespace PEBakery.Core
         private int allPluginCount;
 
         // Properties
-        public string ProjectName { get { return projectName; } }
-        public string ProjectDir { get { return projectDir; } }
-        public string BaseDir { get => baseDir; }
-        public Plugin MainPlugin { get { return mainPlugin; } }
-        public List<Plugin> AllPluginList { get { return allPluginList; } }
-        public Tree<Plugin> AllPlugins { get { return allPlugins; } }
-        public Tree<Plugin> VisiblePlugins { get => visiblePlugins; }
+        public string ProjectName => projectName;
+        public string ProjectRoot => projectRoot;
+        public string ProjectDir => projectDir; 
+        public string BaseDir => baseDir; 
+        public Plugin MainPlugin => mainPlugin;
+        public List<Plugin> AllPlugins => allPlugins;
+        public List<Plugin> ActivePlugins => CollectActivePlugins(allPlugins);
+        public List<Plugin> VisiblePlugins => CollectVisiblePlugins(allPlugins);
         public Variables Variables { get => variables; set => variables = value; }
-        public int LoadedPluginCount { get => loadedPluginCount; }
-        public int AllPluginCount { get => allPluginCount; }
+        public int LoadedPluginCount => loadedPluginCount; 
+        public int AllPluginCount => allPluginCount; 
 
         #region Constructor
         public Project(string baseDir, string projectName)
@@ -312,7 +312,7 @@ namespace PEBakery.Core
         {
             ReaderWriterLockSlim listLock = new ReaderWriterLockSlim();
             string mainPluginPath = Path.Combine(projectDir, "script.project");
-            allPluginList = new List<Plugin>();
+            allPlugins = new List<Plugin>();
 
             // Doing this will consume memory, but also greatly increase performance.
             DB_PluginCache[] cacheDB = null;
@@ -371,7 +371,7 @@ namespace PEBakery.Core
                         listLock.EnterWriteLock();
                         try
                         {
-                            allPluginList.Add(p);
+                            allPlugins.Add(p);
                         }
                         finally
                         {
@@ -395,16 +395,37 @@ namespace PEBakery.Core
             }).ToArray();
             Task.WaitAll(tasks);
 
-            allPluginList = allPluginList.OrderBy(x => x.DirectFullPath).ToList();
-            mainPlugin = allPluginList.Where(x => x.Level == MainLevel).FirstOrDefault();
+            mainPlugin = allPlugins.Where(x => x.Level == MainLevel).FirstOrDefault();
             Debug.Assert(mainPlugin != null);
         }
 
         public void PostLoad()
         {
-            this.allPlugins = PluginListToTree(allPluginList);
-            List<Plugin> visiblePluginList = CollectVisiblePlugins(allPluginList);
-            this.visiblePlugins = PluginListToTree(visiblePluginList);
+            // Sort - Plugin first, Directory last
+            allPlugins.Sort((x, y) =>
+            {
+                if (x.Level == y.Level)
+                {
+                    if (x.Type == y.Type)
+                    {
+                        int xDepth = StringHelper.CountOccurrences(x.FullPath, @"\");
+                        int yDepth = StringHelper.CountOccurrences(y.FullPath, @"\");
+                        if (xDepth == yDepth)
+                            return x.FullPath.CompareTo(y.FullPath);
+                        else
+                            return xDepth - yDepth;
+                    }
+                    else
+                    {
+                        return x.Type - y.Type;
+                    }
+                }
+                else
+                {
+                    return x.Level - y.Level;
+                }
+            });
+
             this.Variables = new Variables(this);
         }
 
@@ -416,7 +437,7 @@ namespace PEBakery.Core
         public Plugin RefreshPlugin(Plugin plugin)
         {
             string pPath = plugin.FullPath;
-            int idx = AllPluginList.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+            int idx = AllPlugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
             if (idx == -1)
             {
                 // Even if idx is not found in Projects directory, just proceed.
@@ -425,14 +446,11 @@ namespace PEBakery.Core
             }
             else
             {
-                Node<Plugin> node = allPlugins.SearchNode(plugin);
-
                 // This one is in legit Project list, so [Main] cannot be ignored
                 Plugin p = LoadPlugin(pPath, false);
 
                 if (p != null)
-                    allPluginList[idx] = p;
-                node.Data = p;
+                    allPlugins[idx] = p;
 
                 return p;
             }
@@ -454,7 +472,7 @@ namespace PEBakery.Core
             Plugin p = LoadPlugin(pPath, ignoreMain);
             if (addToList)
             {
-                allPluginList.Add(p);
+                allPlugins.Add(p);
                 allPluginCount += 1;
             }
 
@@ -512,15 +530,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Active, Visible Plugins
-        public Tree<Plugin> GetActivePlugin()
+        public List<Plugin> GetActivePlugins()
         {
-            List<Plugin> activePluginList = CollectActivePlugins(allPluginList);
-            return PluginListToTree(activePluginList);
-        }
-
-        public List<Plugin> GetActivePluginList()
-        {
-            return CollectActivePlugins(allPluginList);
+            return CollectActivePlugins(allPlugins);
         }
 
         private List<Plugin> CollectVisiblePlugins(List<Plugin> allPluginList)
@@ -566,127 +578,29 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Plugin Trees
-        private string PathKeyGenerator(string[] paths, int last)
+        #region PathKeyGenerator
+        internal static string PathKeyGenerator(string[] paths, int last)
         { // last - start entry is 0
-            StringBuilder builder = new StringBuilder();
-            builder.Append(paths[0]);
+            StringBuilder b = new StringBuilder();
+            b.Append(paths[0]);
             for (int i = 1; i <= last; i++)
             {
-                builder.Append(Path.DirectorySeparatorChar);
-                builder.Append(paths[i]);
+                b.Append(Path.DirectorySeparatorChar);
+                b.Append(paths[i]);
             }
-            return builder.ToString();
-        }
-
-        private Tree<Plugin> PluginListToTree(List<Plugin> pList)
-        {
-            Tree<Plugin> pTree = new Tree<Plugin>();
-            Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-            int rootId = pTree.AddNode(0, this.MainPlugin); // Root is script.project
-
-            foreach (Plugin p in pList)
-            {
-                Debug.Assert(p != null);
-
-                if (p == this.MainPlugin)
-                    continue;
-
-                int nodeId = rootId;
-                string[] paths = p.ShortPath
-                    .Substring(this.projectName.Length + 1)
-                    .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
-
-                // Ex) Apps\Network\Mozilla_Firefox_CR.script
-                for (int i = 0; i < paths.Length - 1; i++)
-                {
-                    string pathKey = PathKeyGenerator(paths, i);
-                    string key = p.Level.ToString() + pathKey;
-                    if (dirDict.ContainsKey(key))
-                    {
-                        nodeId = dirDict[key];
-                    }
-                    else
-                    {
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, Path.Combine(projectRoot, projectName, pathKey), this, projectRoot, p.Level, false);
-                        nodeId = pTree.AddNode(nodeId, dirPlugin);
-                        dirDict[key] = nodeId;
-                    }
-                }
-                Debug.Assert(p != null);
-                pTree.AddNode(nodeId, p);
-            }
-
-            // Sort - Plugin first, Directory last
-            pTree.Sort((x, y) => {
-                if (x.Data.Level == y.Data.Level)
-                {
-                    if (x.Data.Type == y.Data.Type)
-                        return x.Data.FullPath.CompareTo(y.Data.FullPath);
-                    else
-                        return x.Data.Type - y.Data.Type;
-                }
-                else
-                    return x.Data.Level - y.Data.Level;
-            });
-
-            // Reflect Directory's Selected value
-            RecursiveDecideDirectorySelectedValue(pTree.Root, 0);
-
-            return pTree;
-        }
-
-        // TODO: It violates Tree<T>'s abstraction...
-        private SelectedState RecursiveDecideDirectorySelectedValue(List<Node<Plugin>> list, int depth)
-        {
-            SelectedState final = SelectedState.None;
-            foreach (Node<Plugin> node in list)
-            {
-                if (0 < node.Child.Count)
-                { // Has child plugins
-                    SelectedState state = RecursiveDecideDirectorySelectedValue(node.Child, depth + 1);
-                    if (depth != 0)
-                    {
-                        if (state == SelectedState.True)
-                            final = node.Data.Selected = SelectedState.True;
-                        else if (state == SelectedState.False)
-                        {
-                            if (final != SelectedState.True)
-                                final = SelectedState.False;
-                            if (node.Data.Selected != SelectedState.True)
-                                node.Data.Selected = SelectedState.False;
-                        }
-                    }
-                }
-                else // Does not have child plugin
-                {
-                    switch (node.Data.Selected)
-                    {
-                        case SelectedState.True:
-                            final = SelectedState.True;
-                            break;
-                        case SelectedState.False:
-                            if (final == SelectedState.None)
-                                final = SelectedState.False;
-                            break;
-                    }
-                }
-            }
-
-            return final;
+            return b.ToString();
         }
         #endregion
 
         #region GetPluginByPath
         public Plugin GetPluginByFullPath(string fullPath)
         {
-            return AllPluginList.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
         }
 
         public Plugin GetPluginByShortPath(string shortPath)
         {
-            return AllPluginList.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
         }
         #endregion
 
@@ -696,7 +610,7 @@ namespace PEBakery.Core
             Project project = new Project(baseDir, projectName)
             {
                 mainPlugin = this.mainPlugin,
-                allPluginList = new List<Plugin>(this.allPluginList),
+                allPlugins = new List<Plugin>(this.allPlugins),
                 variables = this.variables.Clone() as Variables,
                 loadedPluginCount = this.loadedPluginCount,
                 allPluginCount = this.allPluginCount,
@@ -705,4 +619,5 @@ namespace PEBakery.Core
         }
         #endregion
     }
+    #endregion
 }
