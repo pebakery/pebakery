@@ -224,17 +224,27 @@ namespace PEBakery.Tests.Core.Command
                         byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
                         if (srcDigest.SequenceEqual(destDigest) == false)
-                        {
+                        { // Debugging AppVeyor CI test failure 
                             Console.WriteLine($"[{srcFiles[i]}] = {BitConverter.ToString(srcDigest)}");
+                            using (StreamReader sr = new StreamReader(srcFiles[i], Encoding.UTF8))
+                            {
+                                Console.WriteLine(sr.ReadToEnd());
+                            }
+                                
                             Console.WriteLine($"[{destFiles[i]}] = {BitConverter.ToString(destDigest)}");
+                            using (StreamReader sr = new StreamReader(destFiles[i], Encoding.UTF8))
+                            {
+                                Console.WriteLine(sr.ReadToEnd());
+                            }
+
                             Assert.Fail();
                         }
                     }
                 }
+                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
-                Console.WriteLine($"{archiveFile} Success");
                 Directory.Delete(Path.Combine(destRootDir, archiveName), true);
             }
         }
