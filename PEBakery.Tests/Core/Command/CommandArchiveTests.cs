@@ -230,12 +230,16 @@ namespace PEBakery.Tests.Core.Command
                             {
                                 Console.WriteLine(sr.ReadToEnd());
                             }
+                            FileInfo fi = new FileInfo(srcFiles[i]);
+                            Console.WriteLine(fi.Length);
                                 
                             Console.WriteLine($"[{destFiles[i]}] = {BitConverter.ToString(destDigest)}");
                             using (StreamReader sr = new StreamReader(destFiles[i], Encoding.UTF8))
                             {
                                 Console.WriteLine(sr.ReadToEnd());
                             }
+                            fi = new FileInfo(destFiles[i]);
+                            Console.WriteLine(fi.Length);
 
                             Assert.Fail();
                         }
