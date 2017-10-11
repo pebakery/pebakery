@@ -38,7 +38,7 @@ namespace PEBakery.Tests.Core.Command
         {
             Compress_DirTemplate("Zip", "France", "France_Store.zip", ArchiveHelper.CompressLevel.Store);
             Compress_DirTemplate("Zip", "Korea", "Korea_Best.zip", ArchiveHelper.CompressLevel.Best);
-            Compress_FileTemplate("Zip", Path.Combine("UDL", "UDL_PEBakery.xml"), "UDL_Normal.zip", ArchiveHelper.CompressLevel.Normal);
+            Compress_FileTemplate("Zip", Path.Combine("Korean_IME_Logo", "Korean_IME_Logo.jpg"), "Korean_IME_Logo_Normal.zip", ArchiveHelper.CompressLevel.Normal);
         }
 
         public void Compress_DirTemplate(string arcType, string srcDirPath, string destArc, ArchiveHelper.CompressLevel level, string encodingStr = null)
@@ -72,8 +72,8 @@ namespace PEBakery.Tests.Core.Command
 
                 for (int i = 0; i < srcFiles.Length; i++)
                 {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open))
+                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
@@ -114,30 +114,13 @@ namespace PEBakery.Tests.Core.Command
 
                 ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
 
-                using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open))
-                using (FileStream destStream = new FileStream(Path.Combine(compDir, srcFileName), FileMode.Open))
+                using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (FileStream destStream = new FileStream(Path.Combine(compDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                     byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
-
-                /*
-                string[] srcFiles = Directory.GetFiles(srcFilePath, "*", SearchOption.AllDirectories);
-                string[] destFiles = Directory.GetFiles(destDir, "*", SearchOption.AllDirectories);
-                Assert.IsTrue(srcFiles.Length == destFiles.Length);
-
-                for (int i = 0; i < srcFiles.Length; i++)
-                {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open))
-                    {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
-                        Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
-                    }
-                }
-                */
             }
             finally
             {
@@ -158,9 +141,9 @@ namespace PEBakery.Tests.Core.Command
             Decompress_DirTemplate("France.zip");
             Decompress_DirTemplate("France.7z");
             Decompress_DirTemplate("France.rar"); // RAR5
-            Decompress_FileTemplate("UDL.zip", "UDL_PEBakery.xml");
-            Decompress_FileTemplate("UDL.7z", "UDL_PEBakery.xml");
-            Decompress_FileTemplate("UDL.rar", "UDL_PEBakery.xml"); // Pre-RAR5
+            Decompress_FileTemplate("Korean_IME_Logo.zip", "Korean_IME_Logo.jpg");
+            Decompress_FileTemplate("Korean_IME_Logo.7z", "Korean_IME_Logo.jpg");
+            Decompress_FileTemplate("Korean_IME_Logo.rar", "Korean_IME_Logo.jpg"); // Pre-RAR5
         }
 
         public void Decompress_FileTemplate(string archiveFile, string compFile, string encodingStr = null)
@@ -180,17 +163,18 @@ namespace PEBakery.Tests.Core.Command
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Decompress, ErrorCheck.Success);
 
-                using (FileStream srcStream = new FileStream(srcPath, FileMode.Open))
-                using (FileStream destStream = new FileStream(destPath, FileMode.Open))
+                using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                     byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
+
+                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
-                Console.WriteLine($"{archiveFile} Success");
                 File.Delete(destPath);
             }
         }
@@ -218,8 +202,8 @@ namespace PEBakery.Tests.Core.Command
 
                 for (int i = 0; i < srcFiles.Length; i++)
                 {
-                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read))
-                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read))
+                    using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
                         byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
