@@ -226,30 +226,31 @@ namespace PEBakery.Tests.Core.Command
                         if (srcDigest.SequenceEqual(destDigest) == false)
                         { // Debugging AppVeyor CI test failure 
                             Console.WriteLine($"[{srcFiles[i]}] = {BitConverter.ToString(srcDigest)}");
-                            using (StreamReader sr = new StreamReader(srcFiles[i], Encoding.UTF8))
-                            { // Maybe \r\n is converted as \r in AppVeyor?
-                                Console.WriteLine(sr.ReadToEnd());
-                            }
-                            using (FileStream fs = new FileStream(srcFiles[i], FileMode.Open))
+                            using (FileStream fs = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read))
                             { // Maybe \r\n is converted as \r in AppVeyor?
                                 byte[] bin = new byte[fs.Length];
                                 fs.Read(bin, 0, bin.Length);
                                 Console.WriteLine(BitConverter.ToString(bin));
+                            }
+                            using (StreamReader sr = new StreamReader(srcFiles[i], Encoding.UTF8))
+                            { // Maybe \r\n is converted as \r in AppVeyor?
+                                Console.WriteLine(sr.ReadToEnd());
                             }
                             FileInfo fi = new FileInfo(srcFiles[i]);
                             Console.WriteLine(fi.Length);
                                 
                             Console.WriteLine($"[{destFiles[i]}] = {BitConverter.ToString(destDigest)}");
-                            using (StreamReader sr = new StreamReader(destFiles[i], Encoding.UTF8))
-                            {
-                                Console.WriteLine(sr.ReadToEnd());
-                            }
-                            using (FileStream fs = new FileStream(destFiles[i], FileMode.Open))
+                            using (FileStream fs = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read))
                             { // Maybe \r\n is converted as \r in AppVeyor?
                                 byte[] bin = new byte[fs.Length];
                                 fs.Read(bin, 0, bin.Length);
                                 Console.WriteLine(BitConverter.ToString(bin));
                             }
+                            using (StreamReader sr = new StreamReader(destFiles[i], Encoding.UTF8))
+                            {
+                                Console.WriteLine(sr.ReadToEnd());
+                            }
+                            
                             fi = new FileInfo(destFiles[i]);
                             Console.WriteLine(fi.Length);
 
