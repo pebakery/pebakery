@@ -107,11 +107,6 @@
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="LightBlue"/>
                 </Trigger>
-                <!--
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="Background" Value="LightBlue"></Setter>
-                </Trigger>
-                -->
             </Style.Triggers>
         </Style>
     </Window.Resources>

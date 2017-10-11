@@ -50,7 +50,7 @@ namespace PEBakery.Core
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate
-                    var pUniqueList = project.AllPluginList
+                    var pUniqueList = project.AllPlugins
                         .GroupBy(x => x.DirectFullPath)
                         .Select(x => x.First());
 

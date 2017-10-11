@@ -25,10 +25,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SharpCompress.Common;
-using SharpCompress.Writers;
-// using SharpCompress.Archives;
-// using SharpCompress.Archives.Zip;
 
 namespace PEBakery.Core.Commands
 {
@@ -75,16 +71,20 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
                 throw new ExecuteException($"Cannot find [{srcPath}]");
 
+            bool success;
             switch (arcType)
             {
                 case ArchiveCompressFormat.Zip:
-                    ArchiveHelper.CompressZip(srcPath, destArchive, compLevel, encoding);
+                    success = ArchiveHelper.CompressNativeZip(srcPath, destArchive, compLevel, encoding);
                     break;
                 default:
                     throw new ExecuteException($"Compressing to [{arcType}] format is not supported");
             }
-            logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
-            
+            if (success)
+                logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
+            else
+                logs.Add(new LogInfo(LogState.Error, $"Compressing [{srcPath}] failed"));
+
             return logs;
         }
 
@@ -95,7 +95,6 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Decompress));
             CodeInfo_Decompress info = cmd.Info as CodeInfo_Decompress;
 
-            ArchiveDecompressFormat arcType = info.Format;
             string srcArchive = StringEscaper.Preprocess(s, info.SrcArchive);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
@@ -118,23 +117,10 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
             }
 
-            switch (arcType)
-            {
-                case ArchiveDecompressFormat.Auto:
-                    ArchiveHelper.DecompressAuto(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
-                    break;
-                case ArchiveDecompressFormat.Zip: 
-                    ArchiveHelper.DecompressZip(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
-                    break;
-                case ArchiveDecompressFormat.Rar:
-                    ArchiveHelper.DecompressRar(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
-                    break;
-                case ArchiveDecompressFormat.SevenZip:
-                    ArchiveHelper.Decompress7z(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
-                    break;
-                default:
-                    throw new ExecuteException($"Decompressing from [{arcType}] format is not supported");
-            }
+            if (info.Encoding == null)
+                ArchiveHelper.DecompressNative(srcArchive, destDir, true);
+            else
+                ArchiveHelper.DecompressManaged(srcArchive, destDir, true, info.Encoding); // Can handle null value of Encoding 
 
             logs.Add(new LogInfo(LogState.Success, $"[{srcArchive}] compressed to [{destDir}]"));
 

@@ -28,7 +28,7 @@ using System.Windows;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 
 namespace PEBakery.Core
 {
@@ -1033,14 +1033,6 @@ namespace PEBakery.Core
         Zip = 1,
     }
 
-    public enum ArchiveDecompressFormat
-    {
-        Auto = 0,
-        Zip = 1,
-        Rar = 2,
-        SevenZip = 3,
-    }
-
     [Serializable]
     public class CodeInfo_Compress : CodeInfo
     { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
@@ -1094,15 +1086,13 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Decompress : CodeInfo
-    { // Decompress,<Format>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
-        public ArchiveDecompressFormat Format;
+    { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
         public string SrcArchive;
         public string DestDir;
         public Encoding Encoding;
 
-        public CodeInfo_Decompress(ArchiveDecompressFormat format, string srcArchive, string destArchive, Encoding encoding)
+        public CodeInfo_Decompress(string srcArchive, string destArchive, Encoding encoding)
         {
-            Format = format;
             SrcArchive = srcArchive;
             DestDir = destArchive;
             Encoding = encoding;
@@ -1111,19 +1101,6 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            switch (Format)
-            {
-                case ArchiveDecompressFormat.Zip:
-                    b.Append("Zip");
-                    break;
-                case ArchiveDecompressFormat.Rar:
-                    b.Append("Rar");
-                    break;
-                case ArchiveDecompressFormat.SevenZip:
-                    b.Append("7z");
-                    break;
-            }
-            b.Append(",");
             b.Append(SrcArchive);
             b.Append(",");
             b.Append(DestDir);

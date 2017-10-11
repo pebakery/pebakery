@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using System.IO;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -6,7 +24,7 @@ using PEBakery.Core;
 using PEBakery.WPF;
 using PEBakery.Exceptions;
 
-namespace UnitTest.Core
+namespace PEBakery.Tests.Core
 {
     public enum ErrorCheck
     {
@@ -17,26 +35,42 @@ namespace UnitTest.Core
     }
 
     [TestClass]
-    public class UnitTest_Engine
+    public class EngineTests
     {
         public static Project Project;
         public static Logger Logger;
+        public static string BaseDir;
         
         // [TestInitialize], [TestCleanup]
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
-            string baseDir = @"..\..\Samples";
-            ProjectCollection projects = new ProjectCollection(baseDir, null);
+            BaseDir = @"..\..\Samples";
+            ProjectCollection projects = new ProjectCollection(BaseDir, null);
             projects.PrepareLoad(out int nop);
             projects.Load(null);
 
             // Should be only one project named TestSuite
             Project = projects.Projects[0];
 
-            string logDBFile = Path.Combine(baseDir, "PEBakery.Tests.db");
+            // Init ZLibAssembly
+            ZLibAssemblyInit();
+
+            string logDBFile = Path.Combine(BaseDir, "PEBakery.Tests.db");
             Logger = new Logger(logDBFile);
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
+        }
+
+        private static void ZLibAssemblyInit()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string arch;
+            if (IntPtr.Size == 8)
+                arch = "x64";
+            else
+                arch = "x86";
+            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
         }
 
         [AssemblyCleanup]
@@ -51,8 +85,8 @@ namespace UnitTest.Core
             // Clone is needed for parallel test execution
             if (doClone)
             {
-                Project project = UnitTest_Engine.Project.Clone() as Project;
-                Logger logger = UnitTest_Engine.Logger;
+                Project project = EngineTests.Project.Clone() as Project;
+                Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
                 return new EngineState(project, logger, model, p);
             }
@@ -72,9 +106,14 @@ namespace UnitTest.Core
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
+            return Eval(s, rawCode, type, check, out CodeCommand dummy);
+        }
+
+        public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
             // Create CodeCommand
-            SectionAddress addr = UnitTest_Engine.DummySectionAddress();
-            CodeCommand cmd = null;
+            SectionAddress addr = EngineTests.DummySectionAddress();
+            cmd = null;
             try
             {
                 cmd = CodeParser.ParseOneRawLine(rawCode, addr);
@@ -91,7 +130,7 @@ namespace UnitTest.Core
             List<LogInfo> logs = Engine.ExecuteCommand(s, cmd);
 
             // Assert
-            UnitTest_Engine.CheckErrorLogs(logs, check);
+            EngineTests.CheckErrorLogs(logs, check);
 
             // Return EngineState
             return s;
@@ -99,8 +138,14 @@ namespace UnitTest.Core
 
         public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check)
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            return UnitTest_Engine.Eval(s, rawCode, type, check);
+            EngineState s = EngineTests.CreateEngineState();
+            return EngineTests.Eval(s, rawCode, type, check);
+        }
+
+        public static EngineState Eval(string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            return EngineTests.Eval(s, rawCode, type, check, out cmd);
         }
 
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)

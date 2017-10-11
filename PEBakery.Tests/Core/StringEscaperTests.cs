@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+    Copyright (C) 2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using System.Text;
@@ -6,10 +24,10 @@ using System.Collections.Generic;
 using PEBakery.Exceptions;
 using System.IO;
 
-namespace UnitTest.Core
+namespace PEBakery.Tests.Core
 {
     [TestClass]
-    public class UnitTest_StringEscaper
+    public class StringEscaperTests
     {
         #region Escape
         [TestMethod]
@@ -25,7 +43,7 @@ namespace UnitTest.Core
 
         public void Escape_1()
         {
-            string src = UnitTest_StringEscaper.SampleString;
+            string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, false, false);
             string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -33,7 +51,7 @@ namespace UnitTest.Core
 
         public void Escape_2()
         {
-            string src = UnitTest_StringEscaper.SampleString;
+            string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, false, true);
             string comp = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -41,7 +59,7 @@ namespace UnitTest.Core
 
         public void Escape_3()
         {
-            string src = UnitTest_StringEscaper.SampleString;
+            string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, true, false);
             string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -49,7 +67,7 @@ namespace UnitTest.Core
 
         public void Escape_4()
         {
-            string src = UnitTest_StringEscaper.SampleString;
+            string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, true, true);
             string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -82,7 +100,7 @@ namespace UnitTest.Core
 
         public void QuoteEscape_1()
         {
-            string src = UnitTest_StringEscaper.SampleString;
+            string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.QuoteEscape(src);
             string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]\"";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -120,7 +138,7 @@ namespace UnitTest.Core
         {
             string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, false);
-            string comp = UnitTest_StringEscaper.SampleString;
+            string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -128,7 +146,7 @@ namespace UnitTest.Core
         {
             string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, true);
-            string comp = UnitTest_StringEscaper.SampleString;
+            string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -136,7 +154,7 @@ namespace UnitTest.Core
         {
             string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, false);
-            string comp = UnitTest_StringEscaper.SampleString;
+            string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -144,7 +162,7 @@ namespace UnitTest.Core
         {
             string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, true);
-            string comp = UnitTest_StringEscaper.SampleString;
+            string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -182,7 +200,7 @@ namespace UnitTest.Core
         {
             string src = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]\"";
             string dest = StringEscaper.QuoteUnescape(src);
-            string comp = UnitTest_StringEscaper.SampleString;
+            string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -222,9 +240,9 @@ namespace UnitTest.Core
 
         public void ExpandSectionParams_1()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
@@ -234,8 +252,8 @@ namespace UnitTest.Core
 
         public void ExpandSectionParams_2()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            s.CurSectionParams[1] = "World";
+            EngineState s = EngineTests.CreateEngineState();
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
@@ -245,7 +263,7 @@ namespace UnitTest.Core
 
         public void ExpandSectionParams_3()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             string src = "%A% #1";
@@ -256,7 +274,7 @@ namespace UnitTest.Core
 
         public void ExpandSectionParams_4()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
@@ -268,10 +286,10 @@ namespace UnitTest.Core
 
         public void ExpandSectionParams_5()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
-            s.CurSectionParams[2] = "WPF";
+            Variables.SetVariable(s, "#2", "WPF");
 
             string[] srcs = new string[]
             {
@@ -294,25 +312,19 @@ namespace UnitTest.Core
         }
 
         public void ExpandSectionParams_6()
-        {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+        {   
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A% #1";
-            try
-            {
-                StringEscaper.ExpandSectionParams(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            { // Test Success
-                return;
-            }
+            string dest = StringEscaper.ExpandVariables(s, src);
+            string comp = "Hello ";
 
-            Assert.Fail();
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
@@ -331,7 +343,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_1()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             s.CurSectionParams[1] = "World";
 
@@ -343,7 +355,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_2()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurSectionParams[1] = "World";
 
             string src = "%A% #1";
@@ -354,7 +366,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_3()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             string src = "%A% #1";
@@ -365,7 +377,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_4()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
@@ -377,7 +389,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_5()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
             s.CurSectionParams[2] = "WPF";
@@ -404,7 +416,7 @@ namespace UnitTest.Core
 
         public void ExpandVariables_6()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
 
             // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
@@ -442,9 +454,9 @@ namespace UnitTest.Core
 
         public void Preprocess_1()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
-            s.CurSectionParams[1] = "World";
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
@@ -454,8 +466,8 @@ namespace UnitTest.Core
 
         public void Preprocess_2()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
-            s.CurSectionParams[1] = "World";
+            EngineState s = EngineTests.CreateEngineState();
+            Variables.SetVariable(s, "#1", "World");
 
             string src = "%A% #1";
             string dest = StringEscaper.Preprocess(s, src);
@@ -465,7 +477,7 @@ namespace UnitTest.Core
 
         public void Preprocess_3()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
             string src = "%A% #1";
@@ -476,7 +488,7 @@ namespace UnitTest.Core
 
         public void Preprocess_4()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
 
@@ -488,10 +500,10 @@ namespace UnitTest.Core
 
         public void Preprocess_5()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
             s.Variables.SetValue(VarsType.Local, "B", "C#");
-            s.CurSectionParams[2] = "WPF";
+            Variables.SetVariable(s, "#2", "WPF");
 
             string[] srcs = new string[]
             {
@@ -515,53 +527,42 @@ namespace UnitTest.Core
 
         public void Preprocess_6()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
 
-            // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
+            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A% #1";
-            try
-            {
-                StringEscaper.ExpandVariables(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            { // Test Success
-                return;
-            }
+            string dest = StringEscaper.Preprocess(s, src);
+            string comp = "%C% ";
 
-            Assert.Fail();
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Preprocess_7()
         {
-            EngineState s = UnitTest_Engine.CreateEngineState();
+            EngineState s = EngineTests.CreateEngineState();
             s.CurDepth = 2;
 
-            // In real world, a value must be set with SetValue, so circular reference of variables does not happen 
+            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
             s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            s.CurSectionParams[1] = "#2";
-            s.CurSectionParams[2] = "#3";
-            s.CurSectionParams[3] = "#1";
+            Variables.SetVariable(s, "#1", "#2");
+            Variables.SetVariable(s, "#2", "#3");
+            Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A%";
-            string dest;
-            try
-            {
-                dest = StringEscaper.ExpandVariables(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            {
-                Assert.Fail();
-            }
+            string dest = StringEscaper.Preprocess(s, src);
+            string comp = "%C%";
+
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 

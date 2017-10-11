@@ -28,78 +28,42 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.IO.Compression;
+using System.IO.MemoryMappedFiles;
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Security;
 using System.Runtime.ConstrainedExecution;
 using System.ComponentModel;
-using System.IO.MemoryMappedFiles;
 using System.Threading.Tasks;
-using System.Net.Http;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-
-// Hash
+using SevenZipExtractor;
 using System.Security.Cryptography;
-
-// P/invoke
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using BetterWin32Errors;
-
-// Library
 using Svg;
 using MahApps.Metro.IconPacks;
 using System.Windows.Interop;
-
-// SharpCompress
-
 using SharpCompress.Common;
-using SharpCompress.Archives;
-using SharpCompress.Archives.Zip;
 using SharpCompress.Writers.Zip;
 using SharpCompress.Writers;
 using SharpCompress.Readers;
-using SharpCompress.Archives.Rar;
-using SharpCompress.Archives.SevenZip;
-using System.Threading;
+using PEBakery.CabLib;
 
 namespace PEBakery.Helper
 {
-    public class UnsupportedEncodingException : Exception
-    {
-        public UnsupportedEncodingException() { }
-        public UnsupportedEncodingException(string message) : base(message) { }
-        public UnsupportedEncodingException(string message, Exception inner) : base(message, inner) { }
-    }
-
     #region FileHelper
     /// <summary>
     /// Contains static helper methods.
     /// </summary>
     public static class FileHelper
     {
-        /// <summary>
-        /// Count occurrences of strings.
-        /// http://www.dotnetperls.com/string-occurrence
-        /// </summary>
-        public static int CountStringOccurrences(string text, string pattern)
-        {
-            // Loop through all instances of the string 'text'.
-            int count = 0;
-            int i = 0;
-            while ((i = text.IndexOf(pattern, i, StringComparison.Ordinal)) != -1)
-            {
-                i += pattern.Length;
-                count++;
-            }
-            return count;
-        }
-
         /// <summary>
         /// Detect text file's encoding with BOM
         /// </summary>
@@ -173,7 +137,7 @@ namespace PEBakery.Helper
                 }
                 else if (encoding != Encoding.Default)
                 { // Unsupported Encoding
-                    throw new UnsupportedEncodingException($"[{encoding}] is not supported");
+                    throw new ArgumentException($"[{encoding}] is not supported");
                 }
 
                 fs.Close();
@@ -205,7 +169,7 @@ namespace PEBakery.Helper
             }
             else if (encoding != Encoding.Default)
             { // Unsupported Encoding
-                throw new UnsupportedEncodingException($"[{encoding}] is not supported");
+                throw new ArgumentException($"[{encoding}] is not supported");
             }
 
             return fs;
@@ -515,8 +479,7 @@ namespace PEBakery.Helper
 
         public static byte[] CalcHash(HashType type, string hex)
         {
-            byte[] data;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             return InternalCalcHash(type, data);
         }
@@ -537,8 +500,7 @@ namespace PEBakery.Helper
 
         public static string CalcHashString(HashType type, string hex)
         {
-            byte[] data;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out data))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] data))
                 throw new InvalidOperationException("Failed to parse string into hexadecimal bytes");
             byte[] h = InternalCalcHash(type, data);
             StringBuilder builder = new StringBuilder();
@@ -615,10 +577,9 @@ namespace PEBakery.Helper
 
         public static HashType DetectHashType(string hex)
         {
-            byte[] hashByte;
             if (StringHelper.IsHex(hex))
                 return HashType.None;
-            if (!NumberHelper.ParseHexStringToBytes(hex, out hashByte))
+            if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] hashByte))
                 return HashType.None;
 
             return InternalDetectHashType(hashByte.Length);
@@ -683,6 +644,24 @@ namespace PEBakery.Helper
             else
                 return false;
         }
+
+        /// <summary>
+        /// Count occurrences of strings.
+        /// http://www.dotnetperls.com/string-occurrence
+        /// </summary>
+        public static int CountOccurrences(string text, string pattern)
+        {
+            // Loop through all instances of the string 'text'.
+            int count = 0;
+            int i = 0;
+            while ((i = text.IndexOf(pattern, i, StringComparison.Ordinal)) != -1)
+            {
+                i += pattern.Length;
+                count++;
+            }
+            return count;
+        }
+
     }
     #endregion
 
@@ -711,7 +690,7 @@ namespace PEBakery.Helper
 
         public static StringNumberType IsStringHexInteger(string str)
         {
-            int pCnt = FileHelper.CountStringOccurrences(str, ".");
+            int pCnt = StringHelper.CountOccurrences(str, ".");
             if (1 < pCnt)
                 return StringNumberType.NotNumber;
 
@@ -1330,6 +1309,20 @@ namespace PEBakery.Helper
     #region ArchiveHelper
     public static class ArchiveHelper
     {
+        public static readonly string SevenZipDllPath;
+
+        static ArchiveHelper()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string arch;
+            if (IntPtr.Size == 8)
+                arch = "x64";
+            else
+                arch = "x86";
+
+            SevenZipDllPath = Path.Combine(baseDir, arch, "7z.dll");
+        }
+
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
@@ -1340,8 +1333,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractAll(destDir, out List<string> nop);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractAll(destDir, out List<string> nop);
+            }           
         }
 
         /// <summary>
@@ -1354,8 +1350,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractAll(destDir, out extractedList);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractAll(destDir, out extractedList);
+            }
         }
 
         /// <summary>
@@ -1368,8 +1367,11 @@ namespace PEBakery.Helper
         /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, string target)
         {
-            CabExtract cab = new CabExtract(srcCabFile);
-            return cab.ExtractSingleFile(target, destDir);
+            using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (CabExtract cab = new CabExtract(fs))
+            {
+                return cab.ExtractSingleFile(target, destDir);
+            }
         }
 
         public enum CompressLevel
@@ -1380,33 +1382,73 @@ namespace PEBakery.Helper
             Best = 9,
         }
 
-        private static bool CompressLevel_HelperToLibDeflate(ArchiveHelper.CompressLevel helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel libLevel)
+        public static bool CompressNativeZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
-            
+            CompressionLevel level;
             switch (helperLevel)
             {
                 case ArchiveHelper.CompressLevel.Store:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
-                    return true;
+                    level = CompressionLevel.NoCompression;
+                    break;
                 case ArchiveHelper.CompressLevel.Fastest:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
-                    return true;
+                    level = CompressionLevel.Fastest;
+                    break;
                 case ArchiveHelper.CompressLevel.Normal:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
-                    return true;
+                    level = CompressionLevel.Optimal;
+                    break;
                 case ArchiveHelper.CompressLevel.Best:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
-                    return true;
+                    level = CompressionLevel.Optimal;
+                    break;
                 default:
-                    libLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Level6;
-                    return false;
+                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
             }
+
+            if (File.Exists(destArchive))
+                File.Delete(destArchive);
+
+            if (File.Exists(srcPath))
+            {
+                using (FileStream fs = new FileStream(destArchive, FileMode.Create))
+                using (System.IO.Compression.ZipArchive arch = new System.IO.Compression.ZipArchive(fs, ZipArchiveMode.Create))
+                {
+                    arch.CreateEntryFromFile(srcPath, Path.GetFileName(srcPath));
+                }
+            }
+            else if (Directory.Exists(srcPath))
+            {
+                ZipFile.CreateFromDirectory(srcPath, destArchive, level, false, encoding);
+            }
+            else
+            {
+                throw new ArgumentException($"Path [{helperLevel}] does not exist");
+            }
+
+            if (File.Exists(destArchive))
+                return true;
+            else
+                return false;
         }
 
-        public static void CompressZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
+        public static bool CompressManagedZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
-            if (!CompressLevel_HelperToLibDeflate(helperLevel, out SharpCompress.Compressors.Deflate.CompressionLevel compLevel))
-                throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
+            SharpCompress.Compressors.Deflate.CompressionLevel compLevel;
+            switch (helperLevel)
+            {
+                case ArchiveHelper.CompressLevel.Store:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.None;
+                    break;
+                case ArchiveHelper.CompressLevel.Fastest:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestSpeed;
+                    break;
+                case ArchiveHelper.CompressLevel.Normal:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.Default;
+                    break;
+                case ArchiveHelper.CompressLevel.Best:
+                    compLevel = SharpCompress.Compressors.Deflate.CompressionLevel.BestCompression;
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid ArchiveHelper.CompressLevel [{helperLevel}]");
+            }
 
             ArchiveEncoding arcEnc = new ArchiveEncoding() { Default = encoding };
             ZipWriterOptions options = new ZipWriterOptions(CompressionType.Deflate)
@@ -1416,6 +1458,9 @@ namespace PEBakery.Helper
                 DeflateCompressionLevel = compLevel,
                 UseZip64 = false,
             };
+
+            if (File.Exists(destArchive))
+                File.Delete(destArchive);
 
             using (FileStream stream = new FileStream(destArchive, FileMode.Create, FileAccess.Write))
             {
@@ -1436,9 +1481,22 @@ namespace PEBakery.Helper
 
                 stream.Close();
             }
+
+            if (File.Exists(destArchive))
+                return true;
+            else
+                return false;
         }
 
-        public static void DecompressAuto(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
+        public static void DecompressNative(string srcArchive, string destDir, bool overwrite)
+        {
+            using (ArchiveFile archiveFile = new ArchiveFile(srcArchive, SevenZipDllPath))
+            {
+                archiveFile.Extract(destDir, overwrite);
+            }
+        }
+
+        public static void DecompressManaged(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
         {
             ExtractionOptions exOptions = new ExtractionOptions()
             {
@@ -1458,63 +1516,6 @@ namespace PEBakery.Helper
                     if (!reader.Entry.IsDirectory)
                         reader.WriteEntryToDirectory(destDir, exOptions);
                 }
-            }
-        }
-
-        public static void DecompressZip(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = ZipArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
-            }
-        }
-
-        public static void DecompressRar(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = RarArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
-            }
-        }
-
-        public static void Decompress7z(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
-        {
-            ExtractionOptions exOptions = new ExtractionOptions()
-            {
-                ExtractFullPath = true,
-                Overwrite = overwrite,
-            };
-
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
-            if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
-
-            using (var archive = SevenZipArchive.Open(srcArchive, rOptions))
-            {
-                foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory))
-                    entry.WriteToDirectory(destDir, exOptions);
             }
         }
     }
@@ -1580,8 +1581,10 @@ namespace PEBakery.Helper
         public static ImageBrush ImageToImageBrush(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
-            ImageBrush brush = new ImageBrush();
-            brush.ImageSource = bitmap;
+            ImageBrush brush = new ImageBrush
+            {
+                ImageSource = bitmap
+            };
             return brush;
         }
 
@@ -1664,7 +1667,7 @@ namespace PEBakery.Helper
             return new ImageBrush() { ImageSource = bitmap };
         }
 
-        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin)
+        public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin = 0)
         {
             PackIconMaterial icon = new PackIconMaterial()
             {

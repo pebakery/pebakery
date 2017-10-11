@@ -127,4 +127,7 @@
   <data name="IntegerVersion" xml:space="preserve">
     <value>90</value>
   </data>
+  <data name="StringVersion" xml:space="preserve">
+    <value>0.90</value>
+  </data>
 </root>

@@ -68,8 +68,14 @@
     <Reference Include="BetterWin32Errors, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\BetterWin32Errors.0.2.0\lib\net45\BetterWin32Errors.dll</HintPath>
     </Reference>
-    <Reference Include="MahApps.Metro.IconPacks, Version=1.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MahApps.Metro.IconPacks.1.9.0\lib\net46\MahApps.Metro.IconPacks.dll</HintPath>
+    <Reference Include="Crc32.NET, Version=1.0.0.0, Culture=neutral, PublicKeyToken=dc0b95cf99bf4e99, processorArchitecture=MSIL">
+      <HintPath>..\packages\Crc32.NET.1.1.0\lib\net20\Crc32.NET.dll</HintPath>
+    </Reference>
+    <Reference Include="Joveler.ZLibWrapper, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Joveler.ZLibWrapper.1.1.0\lib\net45\Joveler.ZLibWrapper.dll</HintPath>
+    </Reference>
+    <Reference Include="MahApps.Metro.IconPacks, Version=1.9.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MahApps.Metro.IconPacks.1.9.1\lib\net46\MahApps.Metro.IconPacks.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -95,8 +101,11 @@
     <Reference Include="regis3, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\regis3.dll.1.0.0\lib\net45\regis3.dll</HintPath>
     </Reference>
-    <Reference Include="SharpCompress, Version=0.18.1.0, Culture=neutral, PublicKeyToken=afb0a02973931d96, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpCompress.0.18.1\lib\net45\SharpCompress.dll</HintPath>
+    <Reference Include="SevenZipExtractor, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SevenZipExtractor.1.0.7\lib\net45\SevenZipExtractor.dll</HintPath>
+    </Reference>
+    <Reference Include="SharpCompress, Version=0.18.2.0, Culture=neutral, PublicKeyToken=afb0a02973931d96, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpCompress.0.18.2\lib\net45\SharpCompress.dll</HintPath>
     </Reference>
     <Reference Include="SQLite.Net, Version=3.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLite.Net.Core-PCL.3.1.1\lib\portable-win8+net45+wp8+wpa81+MonoAndroid1+MonoTouch1\SQLite.Net.dll</HintPath>
@@ -191,7 +200,6 @@
     <Compile Include="Core\UICommand.cs" />
     <Compile Include="Core\UIParser.cs" />
     <Compile Include="WPF\UIRenderer.cs" />
-    <Compile Include="Libs\TreeLib.cs" />
     <Compile Include="Core\Variables.cs" />
     <Compile Include="WPF\UtilityWindow.xaml.cs">
       <DependentUpon>UtilityWindow.xaml</DependentUpon>
@@ -224,9 +232,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Libs\CabLib.cs" />
     <Compile Include="Helper.cs" />
-    <Compile Include="Libs\IniLib.cs" />
     <Compile Include="WPF\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -310,14 +316,31 @@
   <ItemGroup>
     <None Include="Resources\DonutPng.png" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PEBakery.CabLib\PEBakery.CabLib.csproj">
+      <Project>{d3d90156-0a5c-467b-8dcc-a8a50bfd529c}</Project>
+      <Name>PEBakery.CabLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\PEBakery.IniLib\PEBakery.IniLib.csproj">
+      <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
+      <Name>PEBakery.IniLib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="x64\7z.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x86\7z.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>REM XCOPY /S /I /Y "$(SolutionDir)Precompiled\Native\*" "$(TargetDir)"</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets" Condition="Exists('..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
@@ -325,7 +348,9 @@
       <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\System.Data.SQLite.Core.1.0.105.2\build\net46\System.Data.SQLite.Core.targets'))" />
+    <Error Condition="!Exists('..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets'))" />
   </Target>
+  <Import Project="..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets" Condition="Exists('..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

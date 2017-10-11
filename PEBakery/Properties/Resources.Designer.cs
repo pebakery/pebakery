@@ -87,5 +87,14 @@ namespace PEBakery.Properties {
                 return ResourceManager.GetString("IntegerVersion", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   0.90과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string StringVersion {
+            get {
+                return ResourceManager.GetString("StringVersion", resourceCulture);
+            }
+        }
     }
 }

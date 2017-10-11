@@ -17,16 +17,10 @@ namespace PEBakery.Core
         #region Static Variables and Constructor
         private static readonly List<string> forbiddenPaths = new List<string>
         {
-            Environment.GetEnvironmentVariable("WinDir"),
-            Environment.GetEnvironmentVariable("ProgramFiles"),
-            // Will be deleted by static constructor when running in 32bit 
-            Environment.GetEnvironmentVariable("ProgramFiles(x86)")
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), 
         };
-
-        static StringEscaper()
-        {
-            forbiddenPaths = forbiddenPaths.Where(x => x != null).ToList();
-        }
         #endregion
 
         #region PathSecurityCheck
@@ -44,6 +38,8 @@ namespace PEBakery.Core
                 if (path.IndexOf(ch) != -1)
                     containsInvalidChars = true;
             }
+
+            
 
             string fullPath;
             if (containsInvalidChars)
@@ -379,8 +375,6 @@ namespace PEBakery.Core
             Regex regex = new Regex(@"(#\d+)", RegexOptions.Compiled);
             MatchCollection matches = regex.Matches(str);
 
-            List<int> processed = new List<int>();
-
             while (0 < matches.Count)
             {
                 StringBuilder b = new StringBuilder();
@@ -389,9 +383,6 @@ namespace PEBakery.Core
                     string pIdxStr = matches[x].Groups[1].ToString().Substring(1);
                     if (!int.TryParse(pIdxStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int pIdx))
                         throw new InternalException("ExpandVariables failure");
-
-                    if (processed.Contains(pIdx))
-                        throw new VariableCircularReferenceException($"#[{pIdx}] is circular referenced");
 
                     if (x == 0)
                     {
@@ -407,44 +398,16 @@ namespace PEBakery.Core
                     string param;
                     if (s.CurSectionParams.ContainsKey(pIdx))
                     {
-                        //if (s.CurSectionParams[pIdx].Equals($"#{pIdx}", StringComparison.Ordinal))
-                        //    param = string.Empty; // TODO: Really, this code should not be reached, but being reached (....)
-                        //else
-                        //    param = s.CurSectionParams[pIdx];
                         param = s.CurSectionParams[pIdx];
                     }
                     else
-                    {
-                        /*
-                        TODO: What is the internal logic of WB082?
-
-                        Test Result
-                            In [Process]
-                                Message,#3
-                            Printed "#3"
-
-                            In [Process2] 
-                                Run,%ScriptFile%,Process2,Test)
-                                [Process2]
-                                Message,#3
-                            Printed ""
-
-                            Process에서는 #1이 그대로 "#1"으로 초기화되고, 나머지에선 빈칸으로 처리되는 것 같다.
-                        */
-
-                        /*
-                        // param = matches[x].Value;
-                        param = string.Empty;
-                        */
-
+                    { 
                         if (s.CurDepth == 1) // Dirty Hack for WB082 compatibility
                             param = $"#$h{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
                         else
                             param = string.Empty; // Not in entry section -> return string.Empty;
                     }
                     b.Append(param);
-
-                    processed.Add(pIdx);
 
                     if (x + 1 == matches.Count) // Last iteration
                     {

@@ -24,9 +24,7 @@ using System.Text.RegularExpressions;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System.Globalization;
-using PEBakery.Core.Commands;
 using System.Windows;
-using PEBakery.WPF;
 using System.Diagnostics;
 using Microsoft.Win32;
 
@@ -180,7 +178,7 @@ namespace PEBakery.Core
             }
 
             // Check doublequote's occurence - must be 2n
-            if (FileHelper.CountStringOccurrences(rawCode, "\"") % 2 == 1)
+            if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
             {
                 CodeCommand error = new CodeCommand(rawCode, addr, CodeType.Error, new CodeInfo());
                 throw new InvalidCodeCommandException("Doublequote's number should be even number", error);
@@ -627,8 +625,8 @@ namespace PEBakery.Core
                         string mode;
                         if (args[2].Equals("Prepend", StringComparison.OrdinalIgnoreCase) ||
                             args[2].Equals("Append", StringComparison.OrdinalIgnoreCase) ||
-                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < StringHelper.CountOccurrences(args[1], "#"))
                             mode = args[2];
                         else
                             throw new InvalidCommandException("Mode must be one of Prepend, Append, or variable.", rawCode);
@@ -831,22 +829,11 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
                     }
                 case CodeType.Decompress:
-                    {  // Decompress,<Format>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 4;
+                    { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        ArchiveDecompressFormat format;
-                        string formatStr = args[0];
-                        if (formatStr.Equals("Zip", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.Zip;
-                        else if (formatStr.Equals("Rar", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.Rar;
-                        else if (formatStr.Equals("7z", StringComparison.OrdinalIgnoreCase))
-                            format = ArchiveDecompressFormat.SevenZip;
-                        else
-                            throw new InvalidCommandException($"[{formatStr}] is not valid ArchiveDecompressType", rawCode);
 
                         Encoding encoding = null;
                         for (int i = minArgCount; i < args.Count; i++)
@@ -888,7 +875,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_Decompress(format, args[1], args[2], encoding);
+                        return new CodeInfo_Decompress(args[0], args[1], encoding);
                     }
                 case CodeType.Expand:
                     { // Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
@@ -1030,8 +1017,8 @@ namespace PEBakery.Core
                         string visibility;
                         if (args[1].Equals("True", StringComparison.OrdinalIgnoreCase) ||
                             args[1].Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                            FileHelper.CountStringOccurrences(args[1], "%") % 2 == 0 ||
-                            0 < FileHelper.CountStringOccurrences(args[1], "#"))
+                            StringHelper.CountOccurrences(args[1], "%") % 2 == 0 ||
+                            0 < StringHelper.CountOccurrences(args[1], "#"))
                             visibility = args[1];
                         else
                             throw new InvalidCommandException("Visiblity must be one of True, False, or variable key.", rawCode);
@@ -2249,7 +2236,7 @@ namespace PEBakery.Core
 
             BranchCondition cond;
             CodeCommand embCmd;
-            int occurence = FileHelper.CountStringOccurrences(args[cIdx], "%"); // %Joveler%
+            int occurence = StringHelper.CountOccurrences(args[cIdx], "%"); // %Joveler%
             bool match = Regex.IsMatch(args[cIdx], @"(#\d+)", RegexOptions.Compiled); // #1
             if ((occurence != 0 && occurence % 2 == 0) || match) // BranchCondition - Compare series
             {

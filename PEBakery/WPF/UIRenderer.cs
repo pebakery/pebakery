@@ -19,7 +19,7 @@
 using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -61,7 +61,7 @@ namespace PEBakery.WPF
             if (plugin.MainInfo.ContainsKey("Interface")) 
                 interfaceSectionName = plugin.MainInfo["Interface"];
 
-            this.renderInfo = new RenderInfo(canvas, window, plugin, interfaceSectionName, scale);
+            this.renderInfo = new RenderInfo(canvas, window, logger, plugin, interfaceSectionName, scale);
 
             if (plugin.Sections.ContainsKey(interfaceSectionName))
             {
@@ -146,7 +146,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.System_Write(new LogInfo(LogState.Error, $"{e.Message} [{uiCmd.RawLine}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
                 }
             }
 
@@ -263,7 +263,8 @@ namespace PEBakery.WPF
                 Change = info.Interval,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            spinner.LostFocus += (object sender, RoutedEventArgs e) => {
+            spinner.LostFocus += (object sender, RoutedEventArgs e) =>
+            {
                 SpinnerControl spin = sender as SpinnerControl;
                 info.Value = (int) spin.Value;
                 UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
@@ -304,11 +305,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke((Action)(() =>
-                        {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                        }));
+                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
@@ -382,25 +379,30 @@ namespace PEBakery.WPF
                 UseLayoutRounding = true,
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-            MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
-            if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType type))
-                return;
+            Button button;
 
-            Button button = new Button()
+            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
             {
-                Style = (Style)r.Window.FindResource("ImageButton")
-            };
-            if (type == ImageHelper.ImageType.Svg)
-            {
-                double width = uiCmd.Rect.Width * r.MasterScale;
-                double height = uiCmd.Rect.Height * r.MasterScale;
-                button.Background = ImageHelper.SvgToImageBrush(mem, width, height);
+                if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType type))
+                    return;
+
+                button = new Button()
+                {
+                    Style = (Style)r.Window.FindResource("ImageButton")
+                };
+                if (type == ImageHelper.ImageType.Svg)
+                {
+                    double width = uiCmd.Rect.Width * r.MasterScale;
+                    double height = uiCmd.Rect.Height * r.MasterScale;
+                    button.Background = ImageHelper.SvgToImageBrush(ms, width, height);
+                }
+                else
+                {
+                    button.Background = ImageHelper.ImageToImageBrush(ms);
+                }
+                ms.Close();
             }
-            else
-            {
-                button.Background = ImageHelper.ImageToImageBrush(mem);
-            }
-            mem.Close();
+                
             bool hasUrl = false;
             if (info.URL != null && string.Equals(info.URL, string.Empty, StringComparison.Ordinal) == false)
             {
@@ -425,15 +427,19 @@ namespace PEBakery.WPF
             { // Open picture with external viewer
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    MemoryStream m = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
                     if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType t))
                         return;
                     string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
-                    FileStream file = new FileStream(path, FileMode.Create, FileAccess.Write);
-                    m.Position = 0;
-                    m.CopyTo(file);
-                    file.Close();
-                    m.Close();
+
+                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
+                    using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.Position = 0;
+                        ms.CopyTo(fs);
+                        fs.Close();
+                        ms.Close();
+                    }
+                        
                     ProcessStartInfo procInfo = new ProcessStartInfo()
                     {
                         Verb = "open",
@@ -460,18 +466,22 @@ namespace PEBakery.WPF
             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextFile));
             UIInfo_TextFile info = uiCmd.Info as UIInfo_TextFile;
 
-            MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text);
-
-            StreamReader reader = new StreamReader(mem, FileHelper.DetectTextEncoding(mem));
-            TextBox textBox = new TextBox()
+            TextBox textBox;
+            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
+            using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
             {
-                TextWrapping = TextWrapping.Wrap,
-                AcceptsReturn = true,
-                IsReadOnly = true,
-                Text = reader.ReadToEnd(),
-                FontSize = CalcFontPointScale(),
-            };
-            reader.Close();
+                textBox = new TextBox()
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    AcceptsReturn = true,
+                    IsReadOnly = true,
+                    Text = sr.ReadToEnd(),
+                    FontSize = CalcFontPointScale(),
+                };
+                sr.Close();
+                ms.Close();
+            }
+            
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetVerticalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
             ScrollViewer.SetCanContentScroll(textBox, true);
@@ -516,7 +526,7 @@ namespace PEBakery.WPF
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
-                MemoryStream mem = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture);
+
                 if (ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
 
@@ -527,41 +537,47 @@ namespace PEBakery.WPF
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
                 int margin = 5;
-                if (type == ImageHelper.ImageType.Svg)
+
+                using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture))
                 {
-                    ImageHelper.GetSvgSize(mem, out double width, out double height);
-                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                    if (type == ImageHelper.ImageType.Svg)
                     {
-                        width = (uiCmd.Rect.Width - margin);
-                        height = (uiCmd.Rect.Width - margin) * height / width;
+                        ImageHelper.GetSvgSize(ms, out double width, out double height);
+                        if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                        {
+                            width = (uiCmd.Rect.Width - margin);
+                            height = (uiCmd.Rect.Width - margin) * height / width;
+                        }
+                        else
+                        {
+                            width = (uiCmd.Rect.Height - margin) * width / height;
+                            height = (uiCmd.Rect.Height - margin);
+                        }
+                        BitmapImage bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
+                        image.Width = width;
+                        image.Height = height;
+                        image.Source = bitmap;
                     }
                     else
                     {
-                        width = (uiCmd.Rect.Height - margin) * width / height;
-                        height = (uiCmd.Rect.Height - margin);
+                        BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
+                        double width, height;
+                        if (uiCmd.Rect.Width < uiCmd.Rect.Height)
+                        {
+                            width = (uiCmd.Rect.Width - margin);
+                            height = (uiCmd.Rect.Width - margin) * bitmap.Height / bitmap.Width;
+                        }
+                        else
+                        {
+                            width = (uiCmd.Rect.Height - margin) * bitmap.Width / bitmap.Height;
+                            height = (uiCmd.Rect.Height - margin);
+                        }
+                        image.Width = width;
+                        image.Height = height;
+                        image.Source = bitmap;
                     }
-                    BitmapImage bitmap = ImageHelper.SvgToBitmapImage(mem, width, height);
-                    image.Width = width;
-                    image.Height = height;
-                    image.Source = bitmap;
-                }
-                else
-                {
-                    BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
-                    double width, height;
-                    if (uiCmd.Rect.Width < uiCmd.Rect.Height)
-                    {
-                        width = (uiCmd.Rect.Width - margin);
-                        height = (uiCmd.Rect.Width - margin) * bitmap.Height / bitmap.Width;
-                    }
-                    else
-                    {
-                        width = (uiCmd.Rect.Height - margin) * bitmap.Width / bitmap.Height;
-                        height = (uiCmd.Rect.Height - margin);
-                    }
-                    image.Width = width;
-                    image.Height = height;
-                    image.Source = bitmap;
+
+                    ms.Close();
                 }
 
                 if (uiCmd.Text.Equals(string.Empty, StringComparison.Ordinal))
@@ -899,16 +915,14 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                Logger logger = null;
+                Logger logger = App.Logger;
+                SettingViewModel setting = App.Setting;
                 MainViewModel mainModel = null;
-                SettingViewModel setting = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
 
-                    logger = w.Logger;
                     mainModel = w.Model;
-                    setting = w.Setting;
 
                     // Populate BuildTree
                     w.Model.BuildTree.Children.Clear();
@@ -961,11 +975,13 @@ namespace PEBakery.WPF
         public readonly MainWindow Window;
         public readonly Plugin Plugin;
         public readonly string InterfaceSectionName;
+        public readonly Logger Logger;
 
-        public RenderInfo(Canvas canvas, MainWindow window, Plugin plugin, string interfaceSectionName, double masterScale)
+        public RenderInfo(Canvas canvas, MainWindow window, Logger logger, Plugin plugin, string interfaceSectionName, double masterScale)
         {
             Canvas = canvas;
             Window = window;
+            Logger = logger;
             Plugin = plugin;
             InterfaceSectionName = interfaceSectionName;
             MasterScale = masterScale;

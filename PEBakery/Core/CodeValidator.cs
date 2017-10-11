@@ -8,5 +8,6 @@ namespace PEBakery.Core
 {
     public class CodeValidator
     {
+        // TODO:
     }
 }

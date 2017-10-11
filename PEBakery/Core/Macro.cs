@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using PEBakery.Lib;
+using PEBakery.IniLib;
 using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using System.Windows;
@@ -48,7 +48,7 @@ namespace PEBakery.Core
             // Get macroPlugin 
             string rawPluginPath = varDict["API"];
             string macroPluginPath = variables.Expand(varDict["API"]); // Need Expansion
-            macroPlugin = project.AllPluginList.Find(x => string.Equals(x.FullPath, macroPluginPath, StringComparison.OrdinalIgnoreCase));
+            macroPlugin = project.AllPlugins.Find(x => string.Equals(x.FullPath, macroPluginPath, StringComparison.OrdinalIgnoreCase));
             if (macroPlugin == null)
             {
                 macroEnabled = false;
