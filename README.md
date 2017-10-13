@@ -70,7 +70,7 @@ However, building whole project is quite buggy and needs to be improved.
 | Registry  | 8   | 8           | 0      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
-| Archive   | 4   | 4           | 2      |
+| Archive   | 4   | 4           | 4      |
 | Network   | 2   | 2           | 0      |
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
