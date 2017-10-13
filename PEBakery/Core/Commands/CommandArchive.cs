@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using PEBakery.CabLib;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
@@ -211,12 +212,12 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            // TODO: Wildcard support
             string srcFileName = Path.GetFileName(srcFile);
             bool destIsDir = Directory.Exists(destPath);
+            bool destIsFile = File.Exists(destPath);
             if (!destIsDir)
             {
-                if (File.Exists(destPath))
+                if (destIsFile)
                 {
                     if (info.Preserve)
                     {
@@ -232,29 +233,62 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
-            // Check srcFileName contains wildcard
-            if (srcFileName.IndexOfAny(new char[] { '*', '?' }) == -1)
-            { // No Wildcard
-                if (srcFile.EndsWith("_", StringComparison.Ordinal))
-                { // Extract Cabinet from _ (Ex) EXPLORER.EX_ -> EXPLORER.EXE
-                    string destDir = destPath;
-                    if (!destIsDir)
-                        destDir = Path.Combine(destPath, srcFileName);
+            if (File.Exists(srcFile))
+            { // SrcFile is uncompressed, just copy!  
+                File.Copy(srcFile, destPath, !info.Preserve);
+                logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));
+            }
+            else
+            { // Extract Cabinet from _ (Ex) EXPLORER.EX_ -> EXPLORER.EXE
+                string destDir;
+                if (destIsDir)
+                    destDir = destPath;
+                else
+                    destDir = Path.GetDirectoryName(destPath);
 
-                    string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
-                    if (File.Exists(srcCab))
+                string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
+                if (File.Exists(srcCab))
+                {
+                    string destFullPath = Path.Combine(destDir, Path.GetFileName(srcFile));
+
+                    // Get Temp Dir
+                    string tempDir;
                     {
-                        string destFullPath = Path.Combine(destDir, srcFileName);
-                        if (ArchiveHelper.ExtractCab(srcCab, destDir))
+                        string tempDirName = Path.GetTempFileName();
+                        File.Delete(tempDirName);
+                        tempDir = Path.Combine(Path.GetTempPath(), tempDirName);
+                    }
+                    Directory.CreateDirectory(tempDir);
+
+                    try
+                    {
+                        bool result;
+                        using (FileStream fs = new FileStream(srcCab, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (CabExtract cab = new CabExtract(fs))
+                        {
+                            result = cab.ExtractAll(tempDir, out List<string> fileList);
+                            if (2 < fileList.Count)
+                            { // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
+                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] contains multiple files"));
+                                return logs;
+                            }
+                        }
+
+                        if (result)
                         { // Extract Success
-                            if (File.Exists(destFullPath)) // destFileName == srcFileName?
-                            { // dest filename not specified
+                            string tempFullPath = Path.Combine(tempDir, srcFileName);
+                            if (File.Exists(tempFullPath))
+                            {
+                                if (destIsDir)
+                                    File.Move(tempFullPath, Path.Combine(destDir, srcFileName));
+                                else // Move to new name
+                                    File.Move(tempFullPath, Path.Combine(destDir, Path.GetFileName(destPath)));
+
                                 logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
                             }
-                            else // destFileName != srcFileName
-                            { // Dest filename specified
-                                File.Move(Path.Combine(destDir, srcFileName), destFullPath);
-                                logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
+                            else
+                            { // Unable to find srcFile
+                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] does not contains [{Path.GetFileName(destPath)}]"));
                             }
                         }
                         else
@@ -262,80 +296,17 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{srcCab}]"));
                         }
                     }
-                    else
-                    { // Error
-                        logs.Add(new LogInfo(LogState.Error, $"[{srcFile}] nor [{srcCab}] not found"));
-                    }
-                }
-                else
-                { // SrcFile is uncompressed, just copy!  
-                    string destFullPath = destPath;
-                    if (destIsDir)
-                        destFullPath = Path.Combine(destPath, srcFileName);
-                    File.Copy(srcFile, destFullPath, !info.Preserve);
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destFullPath}]"));
-                }
-
-                return logs;
-            }
-            else
-            { // Wildcard
-                string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
-                string[] files = Directory.GetFiles(srcDirToFind, srcFileName);
-
-                if (0 < files.Length)
-                { // One or more file will be copied
-                    foreach (string f in files)
+                    finally
                     {
-                        if (f.EndsWith("_", StringComparison.Ordinal))
-                        { // Extract Cabinet from _ (Ex) EXPLORER.EX_ -> EXPLORER.EXE
-                            string destDir = destPath;
-                            if (!destIsDir)
-                                destDir = Path.Combine(destPath, srcFileName);
-
-                            string cab = f.Substring(0, srcFile.Length - 1) + "_";
-                            if (File.Exists(cab))
-                            {
-                                string destFullPath = Path.Combine(destDir, srcFileName);
-                                if (ArchiveHelper.ExtractCab(cab, destDir))
-                                { // Extract Success
-                                    if (File.Exists(destFullPath)) // destFileName == srcFileName?
-                                    { // dest filename not specified
-                                        logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{cab}] extracted to [{destFullPath}]"));
-                                    }
-                                    else // destFileName != srcFileName
-                                    { // Dest filename specified
-                                        File.Move(Path.Combine(destDir, srcFileName), destFullPath);
-                                        logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{cab}] extracted to [{destFullPath}]"));
-                                    }
-                                }
-                                else
-                                { // Extract Fail
-                                    logs.Add(new LogInfo(LogState.Error, $"Failed to extract [{cab}]"));
-                                }
-                            }
-                            else
-                            { // Error
-                                logs.Add(new LogInfo(LogState.Error, $"[{f}] nor [{cab}] not found"));
-                            }
-                        }
-                        else
-                        { // SrcFile is uncompressed, just copy!  
-                            string destFullPath = destPath;
-                            if (destIsDir)
-                                destFullPath = Path.Combine(destPath, srcFileName);
-                            File.Copy(srcFile, destFullPath, !info.Preserve);
-                            logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]"));
-                        }
+                        Directory.Delete(tempDir, true);
                     }
-
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
                 }
                 else
-                { // No file will be deleted
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{srcFile}] not found"));
+                { // Error
+                    logs.Add(new LogInfo(LogState.Error, $"[{srcFile}] nor [{srcCab}] not found"));
                 }
             }
+
 
             return logs;
         }

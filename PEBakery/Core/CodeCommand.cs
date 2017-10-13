@@ -145,6 +145,8 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
+            CodeType.Expand, // NT6 does not have cabinet files such as .ex_, .dl_
+            CodeType.CopyOrExpand, // NT6 does not have cabinet files such as .ex_, .dl_
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
