@@ -23,8 +23,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
-using System.Globalization;
-using System.Windows;
 using System.Diagnostics;
 using Microsoft.Win32;
 
@@ -890,7 +888,7 @@ namespace PEBakery.Core
                         bool preserve = false;
                         bool noWarn = false;
 
-                        if (3 < args.Count)
+                        if (3 <= args.Count)
                             singleFile = args[2];
 
                         for (int i = 3; i < args.Count; i++)
