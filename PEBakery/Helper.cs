@@ -874,9 +874,15 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return double.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            {
+                bool result = ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
+                value = (double)intValue;
+                return result;
+            }
             else
+            {
                 return double.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+            }
         }
 
         /// <summary>
@@ -892,9 +898,15 @@ namespace PEBakery.Helper
             }
 
             if (str.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                return decimal.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out value);
+            {
+                bool result = ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong intValue);
+                value = (decimal)intValue;
+                return result;
+            }  
             else
+            {
                 return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+            }
         }
 
         /// <summary>
@@ -1103,12 +1115,12 @@ namespace PEBakery.Helper
             return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
         }
 
-        public static decimal DecimalPower(decimal val, int pow)
+        public static decimal DecimalPower(decimal val, uint pow)
         {
             decimal ret = 1;
-            for (int i = 0; i < pow; i++)
-                ret *= val;
-            return (long)ret;
+            for (uint i = 0; i < pow; i++)
+                ret *= val;  
+            return ret;
         }
     }
     #endregion

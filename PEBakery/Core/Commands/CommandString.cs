@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
 
                         string byteSizeStr = StringEscaper.Preprocess(s, subInfo.ByteSize);
                         if (!NumberHelper.ParseInt64(byteSizeStr, out long byteSize))
-                            throw new ExecuteException($"[{byteSizeStr}] is not valid integer");
+                            throw new ExecuteException($"[{byteSizeStr}] is not a valid integer");
 
                         if (byteSize < 0)
                             throw new ExecuteException($"[{byteSize}] must be positive integer");
@@ -102,7 +102,7 @@ namespace PEBakery.Core.Commands
                             else if (roundToStr.Equals("P", StringComparison.OrdinalIgnoreCase))
                                 roundTo = PB;
                             else
-                                throw new ExecuteException($"[{roundToStr}] is not valid integer");
+                                throw new ExecuteException($"[{roundToStr}] is not a valid integer");
                         }
 
                         if (roundTo < 0)
@@ -110,7 +110,7 @@ namespace PEBakery.Core.Commands
 
                         string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
                         if (!NumberHelper.ParseInt64(srcIntStr, out long srcInt))
-                            throw new ExecuteException($"[{srcIntStr}] is not valid integer");
+                            throw new ExecuteException($"[{srcIntStr}] is not a valid integer");
                         long destInt;
                         if (type == StrFormatType.Ceil)
                         {
@@ -241,11 +241,11 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
                         if (!NumberHelper.ParseInt64(srcStr, out long src))
-                            throw new ExecuteException($"[{srcStr}] is not valid integer");
+                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
 
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt64(operandStr, out long operand))
-                            throw new ExecuteException($"[{operandStr}] is not valid integer");
+                            throw new ExecuteException($"[{operandStr}] is not a valid integer");
                         if (operand < 0)
                             throw new ExecuteException($"[{operandStr}] is not positive integer");
 
@@ -273,7 +273,7 @@ namespace PEBakery.Core.Commands
                         string cutLenStr = StringEscaper.Preprocess(s, subInfo.CutLen);
 
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
-                            throw new ExecuteException($"[{cutLenStr}] is not valid integer");
+                            throw new ExecuteException($"[{cutLenStr}] is not a valid integer");
                         if (cutLen < 0)
                             throw new ExecuteException($"[{cutLen}] must be positive integer");
 
@@ -313,12 +313,12 @@ namespace PEBakery.Core.Commands
                         string startPosStr = StringEscaper.Preprocess(s, subInfo.StartPos);
 
                         if (!NumberHelper.ParseInt32(startPosStr, out int startPos))
-                            throw new ExecuteException($"[{startPosStr}] is not valid integer");
+                            throw new ExecuteException($"[{startPosStr}] is not a valid integer");
                         if (startPos <= 0)
                             throw new ExecuteException($"[{startPos}] must be positive integer");
                         string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
                         if (!NumberHelper.ParseInt32(lenStr, out int len))
-                            throw new ExecuteException($"[{lenStr}] is not valid integer");
+                            throw new ExecuteException($"[{lenStr}] is not a valid integer");
                         if (len <= 0)
                             throw new ExecuteException($"[{len}] must be positive integer");
 
@@ -361,7 +361,7 @@ namespace PEBakery.Core.Commands
                             if (type == StrFormatType.LTrim) // string.Substring
                             {
                                 if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
-                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
+                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not a valid integer"));
 
                                 // Error handling
                                 if (srcStr.Length < cutLen)
@@ -372,7 +372,7 @@ namespace PEBakery.Core.Commands
                             else if (type == StrFormatType.RTrim) // string.Substring
                             {
                                 if (!NumberHelper.ParseInt32(toTrim, out int cutLen))
-                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid integer"));
+                                    logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not a valid integer"));
 
                                 // Error handling
                                 if (srcStr.Length < cutLen)
@@ -526,7 +526,7 @@ namespace PEBakery.Core.Commands
                         string delimStr = StringEscaper.Preprocess(s, subInfo.Delimeter);
                         string idxStr = StringEscaper.Preprocess(s, subInfo.Index);
                         if (!NumberHelper.ParseInt32(idxStr, out int idx))
-                            throw new ExecuteException($"[{idxStr}] is not valid integer");
+                            throw new ExecuteException($"[{idxStr}] is not a valid integer");
 
                         char[] delim = delimStr.ToCharArray();
 

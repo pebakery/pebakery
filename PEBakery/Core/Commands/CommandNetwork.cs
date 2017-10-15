@@ -140,7 +140,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Success, $"Downloaded [{url}], but it was corrupted"));
+                    logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but it was corrupted"));
                 }
             }
             else

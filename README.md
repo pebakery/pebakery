@@ -71,16 +71,16 @@ However, building whole project is quite buggy and needs to be improved.
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
-| Network   | 2   | 2           | 0      |
+| Network   | 2   | 2           | 2      |
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
 | Hash      | 5   | 5           | 5      |
 | String    | 29  | 29          | 27     |
-| Math      | 19  | 19          | 0      |
+| Math      | 22  | 22          | 22     |
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 152 | 152         | 40     |
+| All       | 155 | 155         | 66     |
 
 ## Help Needed
 

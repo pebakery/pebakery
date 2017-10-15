@@ -74,6 +74,8 @@
     <Compile Include="Core\Command\CommandArchiveTests.cs" />
     <Compile Include="Core\Command\CommandHashTests.cs" />
     <Compile Include="Core\Command\CommandControlTests.cs" />
+    <Compile Include="Core\Command\CommandNetworkTests..cs" />
+    <Compile Include="Core\Command\CommandMathTests.cs" />
     <Compile Include="Core\Command\CommandStringTests.cs" />
     <Compile Include="Core\CodeParserTests.cs" />
     <Compile Include="Core\EncodedFileTests.cs" />

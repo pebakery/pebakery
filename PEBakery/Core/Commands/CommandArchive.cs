@@ -307,7 +307,6 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-
             return logs;
         }
     }

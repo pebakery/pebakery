@@ -430,7 +430,7 @@ namespace PEBakery.Core.Commands
                     case RegMultiType.Place:
                         { // Different from WB082, it will just overwrite
                             if (!NumberHelper.ParseInt32(arg1, out int idx))
-                                throw new ExecuteException($"[{arg1}] is not valid integer");
+                                throw new ExecuteException($"[{arg1}] is not a valid integer");
                             if (idx <= 0)
                                 throw new ExecuteException($"Index [{arg1}] must be positive integer");
 
