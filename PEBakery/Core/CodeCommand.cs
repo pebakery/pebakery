@@ -128,6 +128,13 @@ namespace PEBakery.Core
         public CodeType Type;
         public CodeInfo Info;
 
+        public CodeCommand(string rawCode, CodeType type, CodeInfo info)
+        {
+            RawCode = rawCode;
+            Type = type;
+            Info = info;
+        }
+
         public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
         {
             RawCode = rawCode;
@@ -337,7 +344,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirCopy : CodeInfo
-    { // Diropy,<SrcDir>,<DestPath>
+    { // DirCopy,<SrcDir>,<DestPath>
         public string SrcDir;
         public string DestPath;
 
@@ -355,7 +362,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirDelete : CodeInfo
-    { // FileDelete,<DirPath>
+    { // DirDelete,<DirPath>
         public string DirPath;
 
         public CodeInfo_DirDelete(string dirPath)
@@ -761,18 +768,18 @@ namespace PEBakery.Core
     #region CodeInfo 04 - INI
     [Serializable]
     public class CodeInfo_INIRead : CodeInfo
-    {
+    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
         public string FileName;
         public string SectionName;
         public string Key;
-        public string VarName;
+        public string DestVar;
 
-        public CodeInfo_INIRead(string fileName, string sectionName, string key, string varName)
+        public CodeInfo_INIRead(string fileName, string sectionName, string key, string destVar)
         {
             FileName = fileName;
             SectionName = sectionName;
             Key = key;
-            VarName = varName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -784,7 +791,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(Key);
             b.Append(",%");
-            b.Append(VarName);
+            b.Append(DestVar);
             b.Append("%");
             return b.ToString();
         }
@@ -792,7 +799,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIReadOp : CodeInfo
-    {   
+    {    
         public List<CodeCommand> Cmds;
         public List<CodeInfo_INIRead> Infos
         {
@@ -807,7 +814,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIWrite : CodeInfo
-    {
+    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
         public string FileName;
         public string SectionName;
         public string Key;
@@ -852,7 +859,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDelete : CodeInfo
-    {
+    { // INIDelete,<FileName>,<SectionName>,<Key>
         public string FileName;
         public string SectionName;
         public string Key;
@@ -893,7 +900,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIAddSection : CodeInfo
-    { 
+    { // INIAddSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
@@ -930,7 +937,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
-    {
+    { // INIDeleteSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
@@ -952,7 +959,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDeleteSectionOp : CodeInfo
-    {
+    { 
         public List<CodeCommand> Cmds;
         public List<CodeInfo_INIDeleteSection> Infos
         {
