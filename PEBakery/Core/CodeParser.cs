@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// TODO: Full Lexer / Parser and AST!
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,7 +33,7 @@ namespace PEBakery.Core
     public static class CodeParser
     {
         #region ParseOneRawLine, ParseRawLines
-        public static CodeCommand ParseOneRawLine(string rawCode, SectionAddress addr)
+        public static CodeCommand ParseRawLine(string rawCode, SectionAddress addr)
         {
             List<string> list = new List<string>();
             int idx = 0;
@@ -673,16 +675,8 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region 04 INI
-                case CodeType.INIWrite:
-                    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
-                        const int argCount = 4;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        return new CodeInfo_INIWrite(args[0], args[1], args[2], args[3]);
-                    }
                 case CodeType.INIRead:
-                    { // INIWrite,<FileName>,<SectionName>,<Key>,<VarName>
+                    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -692,6 +686,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
 
                         return new CodeInfo_INIRead(args[0], args[1], args[2], destVar);
+                    }
+                case CodeType.INIWrite:
+                    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_INIWrite(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.INIDelete:
                     { // INIDelete,<FileName>,<SectionName>,<Key>
@@ -718,7 +720,7 @@ namespace PEBakery.Core
                         return new CodeInfo_INIDeleteSection(args[0], args[1]);
                     }
                 case CodeType.INIWriteTextLine:
-                    { // INIDelete,<FileName>,<SectionName>,<Line>[,APPEND]
+                    {  // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
