@@ -33,7 +33,7 @@ namespace PEBakery.Core
     public static class CodeParser
     {
         #region ParseOneRawLine, ParseRawLines
-        public static CodeCommand ParseOneRawLine(string rawCode, SectionAddress addr)
+        public static CodeCommand ParseRawLine(string rawCode, SectionAddress addr)
         {
             List<string> list = new List<string>();
             int idx = 0;

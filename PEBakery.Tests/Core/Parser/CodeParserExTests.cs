@@ -27,14 +27,20 @@ namespace PEBakery.Tests.Core.Parser
         [TestCategory("CodeParserEx")]
         public void CodeParserEx_FileCopy()
         {
-            PEBakeryScriptParser parser = Setup("FileCopy,1,2");
+            StringBuilder b = new StringBuilder();
+            b.AppendLine("If,ExistDir,%BaseDir%,Begin");
+            b.AppendLine("  Set,%A%,True");
+            b.AppendLine("  Echo,Hello");
+            b.AppendLine("End");
+            b.AppendLine("Else,Echo,World");
+            b.AppendLine(@"FileCopy,1,2");
 
-            parser.Remove
-            PEBakeryScriptParser.CodesContext context = parser.codes();
+            PEBakeryScriptParser parser = Setup(b.ToString());
 
-            // PEBakeryScriptVisitor visitor = new PEBakeryScriptVisitor();
-            // List<CodeCommand> codes = visitor.Visit(context);
-            // Assert.IsTrue(codes != null);
+            CodesVisitor visitor = new CodesVisitor(new SectionAddress());
+            List<CodeCommand> cmds = visitor.Visit(parser.codes());
+
+            Assert.IsTrue(cmds != null);
         }
     }
 }

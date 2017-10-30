@@ -3107,6 +3107,15 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
+        public CodeInfo_If(BranchCondition cond, List<CodeCommand> link)
+        {
+            Condition = cond;
+            Embed = null;
+
+            LinkParsed = true;
+            Link = link;
+        }
+
         public override string ToString()
         { // TODO
             StringBuilder b = new StringBuilder();
@@ -3131,6 +3140,14 @@ namespace PEBakery.Core
 
             LinkParsed = false;
             Link = new List<CodeCommand>();
+        }
+
+        public CodeInfo_Else(List<CodeCommand> link)
+        {
+            Embed = null;
+
+            LinkParsed = true;
+            Link = link;
         }
 
         public override string ToString()

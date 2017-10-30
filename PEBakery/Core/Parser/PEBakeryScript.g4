@@ -2,17 +2,139 @@ grammar PEBakeryScript;
 
 // disable CS3021 warning 
 // https://github.com/tunnelvisionlabs/antlr4cs/issues/133
-// https://github.com/tunnelvisionlabs/antlr4cs
-// https://tomassetti.me/antlr-mega-tutorial/
-// https://tomassetti.me/getting-started-with-antlr-in-csharp/
 // https://github.com/antlr/grammars-v4/tree/master/csharp
-
+// https://github.com/antlr/antlr4/issues/862
 /*
  * Parser Rules
  */
- 
-codes : (cmd* EOF) ;
 
+codes : block EOF;
+
+block : stmt*;
+
+stmt : ifStmt | normalStmt;
+
+ifStmt : IF P_ ifCond P_ branchBlock elseStmt?;
+
+elseStmt : ELSE P_ branchBlock;
+
+// normalStmt : STRLINE NEWLINE;
+normalStmt : STR? (P_ STR)* NEWLINE;
+
+branchBlock : (BEGIN NEWLINE block END NEWLINE) | stmt;
+
+ifCond : (
+    ifCondComp | ifCondArg1 | ifCondArg2 | ifCondArg3
+);
+
+ifCondComp : (
+    (NOT P_)?
+    STR P_
+    (
+        EQUAL | SMALLER | SMALLEREQUAL | BIGGER | BIGGEREQUAL | EQUALX |
+        NOTEQUAL // Will-be-deprecated
+    ) P_
+    STR
+);
+
+ifCondArg1 : (
+    (NOT P_)?
+    (
+        EXISTFILE | EXISTDIR | EXISTVAR | EXISTMACRO | PING | QUESTION |
+        NOTEXISTFILE | NOTEXISTDIR | NOTEXISTVAR // Will-be-deprecated
+    ) P_
+    STR
+);
+
+ifCondArg2 : (
+    (NOT P_)?
+    (
+        EXISTSECTION | EXISTREGSECTION | EXISTREGSUBKEY | 
+        NOTEXISTSECTION | NOTEXISTREGSECTION // Will-be-deprecated
+    ) P_
+    STR P_
+    STR
+);
+
+ifCondArg3 : (
+    (NOT P_)?
+    (
+        EXISTREGKEY | EXISTREGVALUE | QUESTION |
+        NOTEXISTREGKEY // Will-be-deprecated
+    ) P_
+    STR P_
+    STR P_
+    STR
+);
+
+fragment A : ('a'|'A');
+fragment B : ('b'|'B');
+fragment C : ('c'|'C');
+fragment D : ('d'|'D');
+fragment E : ('e'|'E');
+fragment F : ('f'|'F');
+fragment G : ('g'|'G');
+fragment H : ('h'|'H');
+fragment I : ('i'|'I');
+fragment J : ('j'|'J');
+fragment K : ('k'|'K');
+fragment L : ('l'|'L');
+fragment M : ('m'|'M');
+fragment N : ('n'|'N');
+fragment O : ('o'|'O');
+fragment P : ('p'|'P');
+fragment Q : ('q'|'Q');
+fragment R : ('r'|'R');
+fragment S : ('s'|'S');
+fragment T : ('t'|'T');
+fragment U : ('u'|'U');
+fragment V : ('v'|'V');
+fragment W : ('w'|'W');
+fragment X : ('x'|'X');
+fragment Y : ('y'|'Y');
+fragment Z : ('z'|'Z');
+
+IF : I F;
+ELSE : E L S E;
+BEGIN : B E G I N;
+END : E N D;
+EXISTFILE : E X I S T F I L E;
+EXISTDIR : E X I S T D I R;
+EXISTSECTION : E X I S T S E C T I O N;
+EXISTREGSECTION : E X I S T R E G S E C T I O N;
+EXISTREGSUBKEY : E X I S T R E G S U B K E Y;
+EXISTREGKEY : E X I S T R E G K E Y;
+EXISTREGVALUE : E X I S  T R E G V A L U E;
+EXISTVAR : E X I S T V A R;
+EQUAL : ((E Q U A L) | '==');
+NOTEQUAL : ((N O T E Q U A L) | '!=');
+SMALLER : ((S M A L L E R) | '<');
+SMALLEREQUAL : ((S M A L L E R E Q U A L) | '<=');
+BIGGER : ((B I G G E R) | '>');
+BIGGEREQUAL : ((B I G G E R E Q U A L) | '>=');
+EQUALX : (E Q U A L X | '===');
+PING : P I N G;
+ONLINE : O N L I N E;
+NOT : N O T;
+QUESTION : Q U E S T I O N;
+EXISTMACRO : E X I S T M A C R O;
+NOTEXISTFILE : N O T E X I S T F I L E; // Compatbility
+NOTEXISTDIR : N O T E X I S T D I R; // Compatbility
+NOTEXISTSECTION : N O T E X I S T S E C T I O N; // Compatbility
+NOTEXISTREGSECTION : N O T E X I S T R E G S E C T I O N; // Compatbility
+NOTEXISTREGKEY : N O T E X I S T R E G K E Y; // Compatbility
+NOTEXISTVAR : N O T E X I S T V A R; // Compatbility
+
+// Variable Name %a%, #1
+// VARNAME : ('%' [a-zA-Z0-9_\-]+ '%' | '#' [0-9]+);
+// COMMENT : ('//'|';'|'#') ~(',')+;
+NEWLINE : ('\r\n')|('\n');
+P_ : ','; // PERIOD
+
+// STRLINE : (~[\r\n])+?;
+STR : (' '*? (~[,\r\n])+ ' '*?) | (' '*? '"' ()* '"' ' '*?);
+
+/*
 cmd : (
 // 01 CommandFile
     cmd_filecopy | cmd_filedelete | cmd_filemove | cmd_filecreateblank | cmd_filesize | cmd_fileversion |
@@ -105,40 +227,15 @@ cmd_addinterface : ADDINTERFACE P_ STR P_ STR P_ STR;
 cmd_userinput : cmd_userinput_dirpath | cmd_userinput_filepath;
 cmd_userinput_dirpath : USERINPUT P_ DIRPATH P_ STR P_ STR;
 cmd_userinput_filepath : USERINPUT P_ FILEPATH P_ STR P_ STR;
-
+ */
 /*
  * Lexer Rules
  */
 
 // fragments
-fragment A : ('a'|'A');
-fragment B : ('b'|'B');
-fragment C : ('c'|'C');
-fragment D : ('d'|'D');
-fragment E : ('e'|'E');
-fragment F : ('f'|'F');
-fragment G : ('g'|'G');
-fragment H : ('h'|'H');
-fragment I : ('i'|'I');
-fragment J : ('j'|'J');
-fragment K : ('k'|'K');
-fragment L : ('l'|'L');
-fragment M : ('m'|'M');
-fragment N : ('n'|'N');
-fragment O : ('o'|'O');
-fragment P : ('p'|'P');
-fragment Q : ('q'|'Q');
-fragment R : ('r'|'R');
-fragment S : ('s'|'S');
-fragment T : ('t'|'T');
-fragment U : ('u'|'U');
-fragment V : ('v'|'V');
-fragment W : ('w'|'W');
-fragment X : ('x'|'X');
-fragment Y : ('y'|'Y');
-fragment Z : ('z'|'Z');
-fragment DIGIT : [0-9];
 
+
+/*
 // cmds
 // 01 File - 11
 FILECOPY : F I L E C O P Y;
@@ -290,35 +387,10 @@ SHELLEXECUTEDELETE : S H E L L E X E C U T E D E L E T E;
 RUN : R U N;
 EXEC : E X E C;
 LOOP : L O O P;
-IF : I F;
-ELSE : E L S E;
-BEGIN : B E G I N;
-END : E N D;
-EXISTFILE : E X I S T F I L E;
-EXISTDIR : E X I S T D I R;
-EXISTSECTION : E X I S T S E C T I O N;
-EXISTREGSECTION : E X I S T R E G S E C T I O N;
-EXISTREGKEY : E X I S T R E G K E Y;
-EXISTVAR : E X I S T V A R;
-EQUAL : ((E Q U A L) | '==');
-NOTEQUAL : ((N O T E Q U A L) | '!=');
-SMALLER : ((S M A L L E R) | '<');
-SMALLEREQUAL : ((S M A L L E R E Q U A L) | '<=');
-BIGGER : ((B I G G E R) | '>');
-BIGGEREQUAL : ((B I G G E R E Q U A L) | '>=');
-EQUALX : E Q U A L X;
-PING : P I N G;
-ONLINE : O N L I N E;
-NOT : N O T;
-QUESTION : Q U E S T I O N;
-EXISTMACRO : E X I S T M A C R O;
-NOTEXISTFILE : N O T E X I S T F I L E; // Compatbility
-NOTEXISTDIR : N O T E X I S T D I R; // Compatbility
-NOTEXISTSECTION : N O T E X I S T S E C T I O N; // Compatbility
-NOTEXISTREGSECTION : N O T E X I S T R E G S E C T I O N; // Compatbility
-NOTEXISTREGKEY : N O T E X I S T R E G K E Y; // Compatbility
-NOTEXISTVAR : N O T E X I S T V A R; // Compatbility
+*/
 
+
+/*
 // 14 Control
 SET : S E T;
 ADDVARIABLES : A D D V A R I A B L E S;
@@ -326,11 +398,12 @@ EXIT : E X I T;
 HALT : H A L T;
 WAIT : W A I T;
 BEEP : B E E P;
+ */
 
-// Variable Name %a%, #1
-VARNAME : ('%' [a-zA-Z0-9_\-] '%' | '#' [0-9]+);
+
 
 // Reserved Keyword
+/*
 PRESERVE : P R E S E R V E;
 WARN : W A R N;
 NOWARN : N O W A R N;
@@ -347,10 +420,4 @@ INFORMATION : I N F O R M A T I O N;
 CONFIRMATION : C O N F I R M A T I O N;
 ERROR : E R R O R;
 WARNING : W A R N I N G;
-
-COMMENT : ('//'|';'|'#') ~(',')+;
-NEWLINE : ('\r\n'|'\n');
-P_ : ','; // PERIOD
-
-STR : (' '* (~[,\r\n])+ | ('"' ()*? '"' ~[,\r\n]));
-WHITESPACE : [ \r\n]+ -> skip;
+ */
