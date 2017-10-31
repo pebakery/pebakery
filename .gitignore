@@ -3,6 +3,7 @@
 
 # Joveler-specific Resoures
 res/
+PEBakery/Core/Parser/.antlr
 PEBakery.Tests/Samples/WorkBench/TestSuite/Dest/
 *.db
 

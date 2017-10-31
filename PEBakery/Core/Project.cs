@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using PEBakery.Exceptions;
 using System.Runtime.Serialization.Formatters.Binary;
-using SQLite.Net;
+using SQLite;
 using System.Windows;
 using PEBakery.WPF;
 using PEBakery.Helper;

@@ -105,10 +105,10 @@ namespace PEBakery.Core.Commands
             {
                 string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
                 if (NumberHelper.ParseInt64(startIdxStr, out long startIdx) == false)
-                    throw new ExecuteException($"Argument [{startIdxStr}] is not valid integer");
+                    throw new ExecuteException($"Argument [{startIdxStr}] is not a valid integer");
                 string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
                 if (NumberHelper.ParseInt64(endIdxStr, out long endIdx) == false)
-                    throw new ExecuteException($"Argument [{endIdxStr}] is not valid integer");
+                    throw new ExecuteException($"Argument [{endIdxStr}] is not a valid integer");
                 long loopCount = endIdx - startIdx + 1;
 
                 // Prepare Loop

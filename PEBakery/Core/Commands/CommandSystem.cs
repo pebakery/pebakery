@@ -76,7 +76,7 @@ namespace PEBakery.Core.Commands
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
-                            throw new ExecuteException($"[{linesStr}] is not valid integer");
+                            throw new ExecuteException($"[{linesStr}] is not a valid integer");
 
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
@@ -266,6 +266,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.FileRedirect: // Do nothing
+                    logs.Add(new LogInfo(LogState.Warning, $"[System,FileRediret] is deprecated"));
                     break;
                 default: // Error
                     throw new InvalidCodeCommandException($"Wrong SystemType [{type}]");
@@ -297,7 +298,7 @@ namespace PEBakery.Core.Commands
             using (Process proc = new Process())
             {
                 proc.StartInfo.FileName = filePath;
-                if (info.Params != null)
+                if (info.Params != null && info.Params.Equals(string.Empty, StringComparison.Ordinal) == false)
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
                     proc.StartInfo.Arguments = parameters;

@@ -116,7 +116,7 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region Utility
-        private static string SampleText()
+        internal static string SampleText()
         {
             string tempFile = Path.GetTempFileName();
             FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);

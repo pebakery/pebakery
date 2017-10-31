@@ -116,7 +116,7 @@ namespace PEBakery.Tests.Core
             cmd = null;
             try
             {
-                cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+                cmd = CodeParser.ParseRawLine(rawCode, addr);
             }
             catch (InvalidCodeCommandException e)
             {

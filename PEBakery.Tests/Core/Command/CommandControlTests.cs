@@ -221,7 +221,7 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
             SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,OK";
-            CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
@@ -234,7 +234,7 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
             SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Error";
-            CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
@@ -247,7 +247,7 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
             SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Asterisk";
-            CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
@@ -260,7 +260,7 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
             SectionAddress addr = EngineTests.DummySectionAddress();
             string rawCode = $"Beep,Confirmation";
-            CodeCommand cmd = CodeParser.ParseOneRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;

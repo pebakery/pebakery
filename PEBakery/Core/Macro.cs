@@ -80,7 +80,7 @@ namespace PEBakery.Core
                 {
                     if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
                         && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
-                        macroDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
+                        macroDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
                 }
                 catch (Exception e)
                 {
@@ -115,7 +115,7 @@ namespace PEBakery.Core
                     {
                         try
                         {
-                            localDict[kv.Key] = CodeParser.ParseOneRawLine(kv.Value, addr);
+                            localDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
                             logs.Add(new LogInfo(LogState.Success, $"Macro [{kv.Key}] set to [{kv.Value}]", 1));
                             count += 1;
                         }

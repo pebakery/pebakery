@@ -128,6 +128,13 @@ namespace PEBakery.Core
         public CodeType Type;
         public CodeInfo Info;
 
+        public CodeCommand(string rawCode, CodeType type, CodeInfo info)
+        {
+            RawCode = rawCode;
+            Type = type;
+            Info = info;
+        }
+
         public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
         {
             RawCode = rawCode;
@@ -337,7 +344,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirCopy : CodeInfo
-    { // Diropy,<SrcDir>,<DestPath>
+    { // DirCopy,<SrcDir>,<DestPath>
         public string SrcDir;
         public string DestPath;
 
@@ -355,7 +362,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirDelete : CodeInfo
-    { // FileDelete,<DirPath>
+    { // DirDelete,<DirPath>
         public string DirPath;
 
         public CodeInfo_DirDelete(string dirPath)
@@ -761,18 +768,18 @@ namespace PEBakery.Core
     #region CodeInfo 04 - INI
     [Serializable]
     public class CodeInfo_INIRead : CodeInfo
-    {
+    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
         public string FileName;
         public string SectionName;
         public string Key;
-        public string VarName;
+        public string DestVar;
 
-        public CodeInfo_INIRead(string fileName, string sectionName, string key, string varName)
+        public CodeInfo_INIRead(string fileName, string sectionName, string key, string destVar)
         {
             FileName = fileName;
             SectionName = sectionName;
             Key = key;
-            VarName = varName;
+            DestVar = destVar;
         }
 
         public override string ToString()
@@ -784,7 +791,7 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(Key);
             b.Append(",%");
-            b.Append(VarName);
+            b.Append(DestVar);
             b.Append("%");
             return b.ToString();
         }
@@ -792,7 +799,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIReadOp : CodeInfo
-    {   
+    {    
         public List<CodeCommand> Cmds;
         public List<CodeInfo_INIRead> Infos
         {
@@ -807,7 +814,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIWrite : CodeInfo
-    {
+    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
         public string FileName;
         public string SectionName;
         public string Key;
@@ -852,7 +859,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDelete : CodeInfo
-    {
+    { // INIDelete,<FileName>,<SectionName>,<Key>
         public string FileName;
         public string SectionName;
         public string Key;
@@ -893,7 +900,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIAddSection : CodeInfo
-    { 
+    { // INIAddSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
@@ -930,7 +937,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDeleteSection : CodeInfo
-    {
+    { // INIDeleteSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
@@ -952,7 +959,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_INIDeleteSectionOp : CodeInfo
-    {
+    { 
         public List<CodeCommand> Cmds;
         public List<CodeInfo_INIDeleteSection> Infos
         {
@@ -1922,6 +1929,8 @@ namespace PEBakery.Core
     { 
         Add, Sub, Mul, Div,
         IntDiv,
+        Neg,
+        ToSign, ToUnsign,
         BoolAnd, BoolOr, BoolXor,
         BoolNot,
         BitAnd, BitOr, BitXor,
@@ -1982,6 +1991,47 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class MathInfo_Neg : MathInfo
+    { // Math,Neg,<DestVar>,<Src>
+        public string DestVar;
+        public string Src;
+
+        public MathInfo_Neg(string destVar, string src)
+        {
+            DestVar = destVar;
+            Src = src;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_IntegerSignedness : MathInfo
+    {
+        // Math,ToSign,<DestVar>,<Src>,[8|16|32|64]
+        // Math,ToUnsign,<DestVar>,<Src>,[8|16|32|64]
+
+        public string DestVar;
+        public string Src;
+        public uint Size;
+
+        public MathInfo_IntegerSignedness(string destVar, string src, uint size)
+        {
+            DestVar = destVar;
+            Src = src;
+            Size = size;
+        }
+
+        public override string ToString()
+        {
+            return $"{DestVar},{Src},{Size}";
+        }
+    }
+
+    [Serializable]
     public class MathInfo_BoolLogicOper : MathInfo
     {
         // Math,BoolAnd,<DestVar>,<Src1>,<Src2>
@@ -2026,26 +2076,24 @@ namespace PEBakery.Core
     [Serializable]
     public class MathInfo_BitLogicOper : MathInfo
     {
-        // Math,BitAnd,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
-        // Math,BitOr,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
-        // Math,BitXor,<DestVar>,<Src1>,<Src2>,[8|16|32|64]
+        // Math,BitAnd,<DestVar>,<Src1>,<Src2>
+        // Math,BitOr,<DestVar>,<Src1>,<Src2>
+        // Math,BitXor,<DestVar>,<Src1>,<Src2>
 
         public string DestVar;
-        public string Src1;
-        public string Src2;
-        public uint Size;
+        public string Src1; // Should be unsigned
+        public string Src2; // Should be unsigned
 
-        public MathInfo_BitLogicOper(string destVar, string src1, string src2, uint size)
+        public MathInfo_BitLogicOper(string destVar, string src1, string src2)
         {
             DestVar = destVar;
             Src1 = src1;
             Src2 = src2;
-            Size = size;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src1},{Src2},{Size}";
+            return $"{DestVar},{Src1},{Src2}";
         }
     }
 
@@ -2053,7 +2101,7 @@ namespace PEBakery.Core
     public class MathInfo_BitNot : MathInfo
     { // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
         public string DestVar;
-        public string Src;
+        public string Src; // Should be unsigned
         public uint Size;
 
         public MathInfo_BitNot(string destVar, string src, uint size)
@@ -2071,27 +2119,27 @@ namespace PEBakery.Core
 
     [Serializable]
     public class MathInfo_BitShift : MathInfo
-    { // Math,BitShift,<DestVar>,<Src>,<Shift>,<LEFT|RIGHT>,[8|16|32|64],[UNSIGNED]
+    { // Math,BitShift,<DestVar>,<Src>,<LEFT|RIGHT>,<Shift>,[8|16|32|64],[UNSIGNED]
         public string DestVar;
         public string Src;
-        public string Shift;
         public string LeftRight;
+        public string Shift;
         public uint Size;
         public bool Unsigned;
 
-        public MathInfo_BitShift(string destVar, string src, string shift, string leftRight, uint size, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint size, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
-            Shift = shift;
             LeftRight = leftRight;
+            Shift = shift;
             Size = size;
             Unsigned = _unsigned;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{Shift},{LeftRight},{Size},{Unsigned}";
+            return $"{DestVar},{Src},{LeftRight},{Shift},{Size},{Unsigned}";
         }
     }
 
@@ -3059,6 +3107,15 @@ namespace PEBakery.Core
             Link = new List<CodeCommand>();
         }
 
+        public CodeInfo_If(BranchCondition cond, List<CodeCommand> link)
+        {
+            Condition = cond;
+            Embed = null;
+
+            LinkParsed = true;
+            Link = link;
+        }
+
         public override string ToString()
         { // TODO
             StringBuilder b = new StringBuilder();
@@ -3083,6 +3140,14 @@ namespace PEBakery.Core
 
             LinkParsed = false;
             Link = new List<CodeCommand>();
+        }
+
+        public CodeInfo_Else(List<CodeCommand> link)
+        {
+            Embed = null;
+
+            LinkParsed = true;
+            Link = link;
         }
 
         public override string ToString()
