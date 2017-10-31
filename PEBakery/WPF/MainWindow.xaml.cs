@@ -497,12 +497,17 @@ namespace PEBakery.WPF
                 // Build Start, Switch to Build View
                 Model.SwitchNormalBuildInterface = false;
 
+                // Turn on progress ring
+                Model.ProgressRingActive = true;
+
                 // Run
                 long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
                 logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
+                // Turn off progress ring
+                Model.ProgressRingActive = false;
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
@@ -1017,12 +1022,19 @@ namespace PEBakery.WPF
             {
                 switchNormalBuildInterface = value;
                 if (value)
-                {
+                { // To Normal View
                     NormalInterfaceVisibility = Visibility.Visible;
                     BuildInterfaceVisibility = Visibility.Collapsed;
                 }
                 else
-                {
+                { // To Build View
+                    BuildPosition = string.Empty;
+                    BuildEchoMessage = string.Empty;
+
+                    BuildCommandProgressBarValue = 0;
+                    BuildPluginProgressBarValue = 0;
+                    BuildFullProgressBarValue = 0;
+                    
                     NormalInterfaceVisibility = Visibility.Collapsed;
                     BuildInterfaceVisibility = Visibility.Visible;
                 }

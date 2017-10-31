@@ -134,6 +134,7 @@ namespace PEBakery.WPF
                 });
 
                 mainModel.SwitchNormalBuildInterface = false;
+                mainModel.ProgressRingActive = true;
 
                 EngineState s = new EngineState(p.Project, logger, mainModel, p);
                 s.SetLogOption(setting);
@@ -142,7 +143,9 @@ namespace PEBakery.WPF
 
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
+                mainModel.ProgressRingActive = false;
                 mainModel.SwitchNormalBuildInterface = true;
+                
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);

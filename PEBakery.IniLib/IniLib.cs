@@ -1379,10 +1379,8 @@ namespace PEBakery.IniLib
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
-                    else if ((idx = line.IndexOf('=')) != -1)
-                    { // valid ini key
-                        if (idx == 0) // key is empty
-                            throw new InvalidIniFormatException($"[{line}] has invalid format");
+                    else if ((idx = line.IndexOf('=')) != -1 && idx != 0)
+                    { // valid ini key, and not empty
                         if (appendState)
                             lines.Add(line);
                     }

@@ -208,7 +208,8 @@ namespace PEBakery.Core.Commands
 
                                 if (bsIdx != -1)
                                 { // Normal file path
-                                    destStr = Path.GetDirectoryName(srcStr) + '\\';
+                                    // destStr = Path.GetDirectoryName(srcStr) + '\\';
+                                    destStr = srcStr.Substring(0, bsIdx + 1);
                                 }
                                 else
                                 { // URL

@@ -36,86 +36,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_IntToBytes()
         {
-            StrFormat_IntToBytes_1();
-            StrFormat_IntToBytes_2();
-            StrFormat_IntToBytes_3();
-            StrFormat_IntToBytes_4();
-            StrFormat_IntToBytes_5();
-            StrFormat_IntToBytes_6();
-            StrFormat_IntToBytes_7();
-            StrFormat_IntToBytes_8();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_IntToBytes_1()
-        {
-            string rawCode = "StrFormat,IntToBytes,10240,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("10KB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_2()
-        {
-            string rawCode = "StrFormat,IntToBytes,4404020,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4.2MB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_3()
-        {
-            string rawCode = "StrFormat,IntToBytes,5561982650,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("5.18GB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_4()
-        {
-            string rawCode = "StrFormat,IntToBytes,2193525697413,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1.995TB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_5()
-        {
-            string rawCode = "StrFormat,IntToBytes,2270940112101573,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2.017PB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_6()
-        {
-            string rawCode = "StrFormat,IntToBytes,2229281815548396000,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1980PB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_7()
-        {
-            string rawCode = "StrFormat,IntToBytes,WrongInteger,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_IntToBytes_8()
-        {
-            string rawCode = "StrFormat,IntToBytes,%Wrong%,WrongDest";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.ParserError);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,10240,%Dest%", "10KB");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,4404020,%Dest%", "4.2MB");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,5561982650,%Dest%", "5.18GB");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,2193525697413,%Dest%", "1.995TB");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,2270940112101573,%Dest%", "2.017PB");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,2229281815548396000,%Dest%", "1980PB");
+            StrFormat_Dest_Template_Error(s, "StrFormat,IntToBytes,WrongInteger,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -125,76 +54,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_BytesToInt()
         {
-            StrFormat_BytesToInt_1();
-            StrFormat_BytesToInt_2();
-            StrFormat_BytesToInt_3();
-            StrFormat_BytesToInt_4();
-            StrFormat_BytesToInt_5();
-            StrFormat_BytesToInt_6();
-            StrFormat_BytesToInt_7();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_BytesToInt_1()
-        {
-            string rawCode = "StrFormat,BytesToInt,10KB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("10240", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_2()
-        {
-            string rawCode = "StrFormat,BytesToInt,4.2MB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4404020", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_3()
-        {
-            string rawCode = "StrFormat,BytesToInt,5.18GB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("5561982649", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_4()
-        {
-            string rawCode = "StrFormat,BytesToInt,1.995TB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2193525697414", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_5()
-        {
-            string rawCode = "StrFormat,BytesToInt,2.017PB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2270940112101573", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_6()
-        {
-            string rawCode = "StrFormat,BytesToInt,1980PB,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2229281815548395520", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_BytesToInt_7()
-        {
-            string rawCode = "StrFormat,BytesToInt,WrongBytes,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,10KB,%Dest%", "10240");
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,4.2MB,%Dest%", "4404020");
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,5.18GB,%Dest%", "5561982649");
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,1.995TB,%Dest%", "2193525697414");
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,2.017PB,%Dest%", "2270940112101573");
+            StrFormat_Dest_Template(s, "StrFormat,BytesToInt,1980PB,%Dest%", "2229281815548395520");
+            StrFormat_Dest_Template_Error(s, "StrFormat,BytesToInt,WrongBytes,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -204,107 +72,16 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Ceil()
         {
-            StrFormat_Ceil_1();
-            StrFormat_Ceil_2();
-            StrFormat_Ceil_3();
-            StrFormat_Ceil_4();
-            StrFormat_Ceil_5();
-            StrFormat_Ceil_6();
-            StrFormat_Ceil_7();
-            StrFormat_Ceil_8();
-        }
-
-        public void StrFormat_Ceil_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "4";
 
-            string rawCode = "StrFormat,Ceil,%Dest%,-10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Ceil_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "6";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("10", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_3()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "799";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("800", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "801";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1600", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1000";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1024", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1200";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2048", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_7()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1048570";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1048576", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ceil_8()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1048580";
-
-            string rawCode = "StrFormat,Ceil,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("2097152", StringComparison.Ordinal));
+            StrFormat_InitDest_Template_Error(s, "StrFormat,Ceil,%Dest%,-10", "4", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,10", "6", "10");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,800", "799", "800");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,800", "801", "1600");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,K", "1000", "1024");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,K", "1200", "2048");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,M", "1048570", "1048576");
+            StrFormat_InitDest_Template(s, "StrFormat,Ceil,%Dest%,M", "1048580", "2097152");
         }
         #endregion
 
@@ -314,107 +91,16 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Floor()
         {
-            StrFormat_Floor_1();
-            StrFormat_Floor_2();
-            StrFormat_Floor_3();
-            StrFormat_Floor_4();
-            StrFormat_Floor_5();
-            StrFormat_Floor_6();
-            StrFormat_Floor_7();
-            StrFormat_Floor_8();
-        }
-
-        public void StrFormat_Floor_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "4";
 
-            string rawCode = "StrFormat,Floor,%Dest%,-10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Floor_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "6";
-
-            string rawCode = "StrFormat,Floor,%Dest%,10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_3()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "799";
-
-            string rawCode = "StrFormat,Floor,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "801";
-
-            string rawCode = "StrFormat,Floor,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("800", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1000";
-
-            string rawCode = "StrFormat,Floor,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1200";
-
-            string rawCode = "StrFormat,Floor,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1024", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_7()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1048570";
-
-            string rawCode = "StrFormat,Floor,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Floor_8()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "1048580";
-
-            string rawCode = "StrFormat,Floor,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1048576", StringComparison.Ordinal));
+            StrFormat_InitDest_Template_Error(s, "StrFormat,Floor,%Dest%,-10", "4", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,10", "6", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,800", "799", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,800", "801", "800");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,K", "1000", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,K", "1200", "1024");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,M", "1048570", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Floor,%Dest%,M", "1048580", "1048576");
         }
         #endregion
 
@@ -424,110 +110,16 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Round()
         {
-            StrFormat_Round_1();
-            StrFormat_Round_2();
-            StrFormat_Round_3();
-            StrFormat_Round_4();
-            StrFormat_Round_5();
-            StrFormat_Round_6();
-            StrFormat_Round_7();
-            StrFormat_Round_8();
-        }
-
-        public void StrFormat_Round_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "4";
 
-            string rawCode = "StrFormat,Round,%Dest%,10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "6";
-
-            string rawCode = "StrFormat,Round,%Dest%,10";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("10", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_3()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "350";
-
-            string rawCode = "StrFormat,Round,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "450";
-
-            string rawCode = "StrFormat,Round,%Dest%,800";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("800", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "500";
-
-            string rawCode = "StrFormat,Round,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "600";
-
-            string rawCode = "StrFormat,Round,%Dest%,K";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1024", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_7()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "524286";
-
-            string rawCode = "StrFormat,Round,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Round_8()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "524290";
-
-            string rawCode = "StrFormat,Round,%Dest%,M";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1048576", StringComparison.Ordinal));
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,10", "4", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,10", "6", "10");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,800", "350", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,800", "450", "800");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,K", "500", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,K", "600", "1024");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,M", "524286", "0");
+            StrFormat_InitDest_Template(s, "StrFormat,Round,%Dest%,M", "524290", "1048576");
         }
         #endregion
 
@@ -614,46 +206,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_FileName()
         {
-            StrFormat_FileName_1();
-            StrFormat_FileName_2();
-            StrFormat_FileName_3();
-            StrFormat_FileName_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_FileName_1()
-        {
-            string rawCode = @"StrFormat,FileName,C:\Windows\System32\notepad.exe,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("notepad.exe", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_FileName_2()
-        {
-            string rawCode = @"StrFormat,FileName,C:\Windows\System32\,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_FileName_3()
-        {
-            string rawCode = @"StrFormat,FileName,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_FileName_4()
-        {
-            string rawCode = @"StrFormat,FileName,https://github.com/ied206/PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery.git", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,FileName,C:\Windows\System32\notepad.exe,%Dest%", "notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,FileName,C:\Windows\System32\,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,FileName,,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,FileName,https://github.com/ied206/PEBakery.git,%Dest%", "PEBakery.git");
         }
         #endregion
 
@@ -663,53 +221,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_DirPath()
         {
-            StrFormat_DirPath_1();
-            StrFormat_DirPath_2();
-            StrFormat_DirPath_3();
-            StrFormat_DirPath_4();
-            StrFormat_DirPath_5();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_DirPath_1()
-        {
-            string rawCode = @"StrFormat,DirPath,C:\Windows\System32\notepad.exe,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(@"C:\Windows\System32", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_DirPath_2()
-        {
-            string rawCode = @"StrFormat,DirPath,C:\Windows\System32,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(@"C:\Windows", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_DirPath_3()
-        {
-            string rawCode = @"StrFormat,DirPath,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_DirPath_4()
-        {
-            string rawCode = @"StrFormat,DirPath,https://github.com/ied206/PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("https://github.com/ied206", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_DirPath_5()
-        {
-            string rawCode = @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32");
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32,%Dest%", @"C:\Windows");
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206");
+            StrFormat_Dest_Template_Error(s, @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -719,53 +237,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Path()
         {
-            StrFormat_Path_1();
-            StrFormat_Path_2();
-            StrFormat_Path_3();
-            StrFormat_Path_4();
-            StrFormat_Path_5();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Path_1()
-        {
-            string rawCode = @"StrFormat,Path,C:\Windows\System32\notepad.exe,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(@"C:\Windows\System32\", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Path_2()
-        {
-            string rawCode = @"StrFormat,Path,C:\Windows\System32,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(@"C:\Windows\", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Path_3()
-        {
-            string rawCode = @"StrFormat,Path,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Path_4()
-        {
-            string rawCode = @"StrFormat,Path,https://github.com/ied206/PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("https://github.com/ied206/", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Path_5()
-        {
-            string rawCode = @"StrFormat,Path,https://github.com/ied206\PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,Path,C:\Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\");
+            StrFormat_Dest_Template(s, @"StrFormat,Path,C:\Windows\System32,%Dest%", @"C:\Windows\");
+            StrFormat_Dest_Template(s, @"StrFormat,Path,,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,Path,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206/");
+            StrFormat_Dest_Template_Error(s, @"StrFormat,Path,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -775,56 +253,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Ext()
         {
-            StrFormat_Ext_1();
-            StrFormat_Ext_2();
-            StrFormat_Ext_3();
-            StrFormat_Ext_4();
-            StrFormat_Ext_5();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Ext_1()
-        {
-            string rawCode = @"StrFormat,Ext,C:\Windows\System32\notepad.exe,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(".exe", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ext_2()
-        {
-            string rawCode = @"StrFormat,Ext,C:\Windows\System32\,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ext_3()
-        {
-            string rawCode = @"StrFormat,Ext,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ext_4()
-        {
-            string rawCode = @"StrFormat,Ext,https://github.com/ied206/PEBakery.git,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(".git", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Ext_5()
-        {
-            string rawCode = @"StrFormat,Ext,https://github.com/ied206/PEBakery,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Ext,C:\Windows\System32\notepad.exe,%Dest%", @".exe");
+            StrFormat_Dest_Template(s, @"StrFormat,Ext,C:\Windows\System32\,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,Ext,,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,Ext,https://github.com/ied206/PEBakery.git,%Dest%", ".git");
+            StrFormat_Dest_Template(s, @"StrFormat,Ext,https://github.com/ied206/PEBakery,%Dest%", string.Empty);
         }
         #endregion
 
@@ -834,75 +269,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Inc()
         {
-            StrFormat_Inc_1();
-            StrFormat_Inc_2();
-            StrFormat_Inc_3();
-            StrFormat_Inc_4();
-            StrFormat_Inc_5();
-            StrFormat_Inc_6();
-        }
-
-        public void StrFormat_Inc_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "15";
 
-            string rawCode = @"StrFormat,Inc,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("35", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Inc_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "0x0F";
-
-            string rawCode = @"StrFormat,Inc,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("35", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Inc_3()
-        { // TODO: WB082 returns 'u', does Win10PESE utliize this case?
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "a";
-
-            string rawCode = @"StrFormat,Inc,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Inc_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = string.Empty;
-
-            string rawCode = @"StrFormat,Inc,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Inc_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "-5";
-
-            string rawCode = @"StrFormat,Inc,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("15", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Inc_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Inc,%Dest%,-5";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "15", "35");
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "0x0F", "35");
+            // TODO: WB082 returns 'u', does Win10PESE utliize this case?
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "-5", "15");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,-5", "20", ErrorCheck.Error);
         }
         #endregion
 
@@ -912,75 +287,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Dec()
         {
-            StrFormat_Dec_1();
-            StrFormat_Dec_2();
-            StrFormat_Dec_3();
-            StrFormat_Dec_4();
-            StrFormat_Dec_5();
-            StrFormat_Dec_6();
-        }
-
-        public void StrFormat_Dec_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "15";
 
-            string rawCode = @"StrFormat,Dec,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("-5", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Dec_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Dec,%Dest%,0x0F";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("5", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Dec_3()
-        { // TODO: WB082 returns 'M', does Win10PESE utliize this case?
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "a";
-
-            string rawCode = @"StrFormat,Dec,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Dec_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = string.Empty;
-
-            string rawCode = @"StrFormat,Dec,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Dec_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "-5";
-
-            string rawCode = @"StrFormat,Dec,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("-25", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Dec_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Dec,%Dest%,-5";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "15", "-5");
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,0x0F", "20", "5");
+            // TODO: WB082 returns 'M', does Win10PESE utliize this case?
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "-5", "-25");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,-5", "20", ErrorCheck.Error);
         }
         #endregion
 
@@ -990,75 +305,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Mult()
         {
-            StrFormat_Mult_1();
-            StrFormat_Mult_2();
-            StrFormat_Mult_3();
-            StrFormat_Mult_4();
-            StrFormat_Mult_5();
-            StrFormat_Mult_6();
-        }
-
-        public void StrFormat_Mult_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "4";
 
-            string rawCode = @"StrFormat,Mult,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("80", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Mult_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Mult,%Dest%,0x0F";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("300", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Mult_3()
-        { // WB082 shows error in this case
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "a";
-
-            string rawCode = @"StrFormat,Mult,%Dest%,2";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Mult_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = string.Empty;
-
-            string rawCode = @"StrFormat,Mult,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Mult_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "-5";
-
-            string rawCode = @"StrFormat,Mult,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("-100", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Mult_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Mult,%Dest%,-5";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Mult,%Dest%,20", "4", "80");
+            StrFormat_InitDest_Template(s, @"StrFormat,Mult,%Dest%,0x0F", "20", "300");
+            // WB082 reports error
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,2", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,20", string.Empty, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Mult,%Dest%,20", "-5", "-100");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,-5", "20", ErrorCheck.Error);
         }
         #endregion
 
@@ -1068,75 +323,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Div()
         {
-            StrFormat_Div_1();
-            StrFormat_Div_2();
-            StrFormat_Div_3();
-            StrFormat_Div_4();
-            StrFormat_Div_5();
-            StrFormat_Div_6();
-        }
-
-        public void StrFormat_Div_1()
-        {
             EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "81";
 
-            string rawCode = @"StrFormat,Div,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Div_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Div,%Dest%,0x0F";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("1", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Div_3()
-        { // WB082 reports error
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "a";
-
-            string rawCode = @"StrFormat,Div,%Dest%,2";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Div_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = string.Empty;
-
-            string rawCode = @"StrFormat,Div,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_Div_5()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "-25";
-
-            string rawCode = @"StrFormat,Div,%Dest%,20";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("-1", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Div_6()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.Variables["Dest"] = "20";
-
-            string rawCode = @"StrFormat,Div,%Dest%,-5";
-            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Div,%Dest%,20", "81", "4");
+            StrFormat_InitDest_Template(s, @"StrFormat,Div,%Dest%,0x0F", "20", "1");
+            // WB082 reports error
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,2", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,20", string.Empty, ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Div,%Dest%,20", "-25", "-1");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,-5", "20", ErrorCheck.Error);
         }
         #endregion
 
@@ -1146,33 +341,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Left()
         {
-            StrFormat_Left_1();
-            StrFormat_Left_2();
-            StrFormat_Left_3();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Left_1()
-        {
-            string rawCode = "StrFormat,Left,PEBakery,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEB", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Left_2()
-        { // StrFormat,Left,%A%,1, -> Causes WB082 access violation
-            string rawCode = "StrFormat,Left,%Dest%,1,";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.ParserError);
-        }
-
-        public void StrFormat_Left_3()
-        {
-            string rawCode = "StrFormat,Left,PE,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PE", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Left,PEBakery,3,%Dest%", "PEB");
+            // StrFormat,Left,%A%,1, -> Causes WB082 access violation
+            StrFormat_Dest_Template_Error(s, @"StrFormat,Left,%Dest%,1,", ErrorCheck.ParserError);
+            StrFormat_Dest_Template(s, "StrFormat,Left,PE,3,%Dest%", "PE");
         }
         #endregion
 
@@ -1182,33 +356,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Right()
         {
-            StrFormat_Right_1();
-            StrFormat_Right_2();
-            StrFormat_Right_3();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Right_1()
-        {
-            string rawCode = "StrFormat,Right,PEBakery,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("ery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Right_2()
-        { // StrFormat,Left,%A%,1, -> Causes WB082 access violation
-            string rawCode = "StrFormat,Right,%Dest%,1,";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.ParserError);
-        }
-
-        public void StrFormat_Right_3()
-        {
-            string rawCode = "StrFormat,Right,PE,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PE", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Right,PEBakery,3,%Dest%", "ery");
+            // StrFormat,Right,%A%,1, -> Causes WB082 access violation
+            StrFormat_Dest_Template_Error(s, "StrFormat,Right,%Dest%,1,", ErrorCheck.ParserError);
+            StrFormat_Dest_Template(s, "StrFormat,Right,PE,3,%Dest%", "PE");
         }
         #endregion
 
@@ -1218,57 +371,15 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_SubStr()
         { // StrFormat,SubStr,<SrcStr>,<StartPos>,<Length>,<DestVar>
-            StrFormat_SubStr_1();
-            StrFormat_SubStr_2();
-            StrFormat_SubStr_3();
-            StrFormat_SubStr_4();
-            StrFormat_SubStr_5();
-            StrFormat_SubStr_6();
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, @"StrFormat,SubStr,PEBakery,3,2,%Dest%", "Ba");
+            StrFormat_Dest_Template(s, @"StrFormat,SubStr,PEBakery,4,3,%Dest%", "ake");
+            StrFormat_Dest_Template_Error(s, @"StrFormat,SubStr,PEBakery,0,2,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template_Error(s, @"StrFormat,SubStr,PEBakery,3,0,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template_Error(s, @"StrFormat,SubStr,Joveler,10,2,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template_Error(s, @"StrFormat,SubStr,Joveler,3,10,%Dest%", ErrorCheck.Error);
         }
-
-        public void StrFormat_SubStr_1()
-        {
-            string rawCode = "StrFormat,SubStr,PEBakery,3,2,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("Ba", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_SubStr_2()
-        {
-            string rawCode = "StrFormat,SubStr,PEBakery,4,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("ake", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_SubStr_3()
-        {
-            string rawCode = "StrFormat,SubStr,PEBakery,0,2,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_SubStr_4()
-        {
-            string rawCode = "StrFormat,SubStr,PEBakery,3,0,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_SubStr_5()
-        {
-            string rawCode = "StrFormat,SubStr,Joveler,10,2,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-        public void StrFormat_SubStr_6()
-        {
-            string rawCode = "StrFormat,SubStr,Joveler,3,10,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
-        }
-
-
         #endregion
 
         #region Len
@@ -1277,26 +388,10 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Len()
         {
-            StrFormat_Len_1();
-            StrFormat_Len_2();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Len_1()
-        {
-            string rawCode = "StrFormat,Len,PEBakery,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("8", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Len_2()
-        {
-            string rawCode = "StrFormat,Len,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Len,PEBakery,%Dest%", "8");
+            StrFormat_Dest_Template(s, @"StrFormat,Len,,%Dest%", "0");
         }
         #endregion
 
@@ -1306,23 +401,10 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_LTrim()
         {
-            StrFormat_LTrim_1();
-            StrFormat_LTrim_2();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_LTrim_1()
-        {
-            string rawCode = "StrFormat,LTrim,PEBakery,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("akery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_LTrim_2()
-        {
-            string rawCode = "StrFormat,LTrim,,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,LTrim,PEBakery,3,%Dest%", "akery");
+            StrFormat_Dest_Template_Error(s, @"StrFormat,LTrim,,3,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -1332,23 +414,10 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_RTrim()
         {
-            StrFormat_RTrim_1();
-            StrFormat_RTrim_2();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_RTrim_1()
-        {
-            string rawCode = "StrFormat,RTrim,PEBakery,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBak", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_RTrim_2()
-        {
-            string rawCode = "StrFormat,RTrim,,3,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,RTrim,PEBakery,3,%Dest%", "PEBak");
+            StrFormat_Dest_Template_Error(s, @"StrFormat,RTrim,,3,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -1358,33 +427,13 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_CTrim()
         {
-            StrFormat_CTrim_1();
-            StrFormat_CTrim_2();
-            StrFormat_CTrim_3();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_CTrim_1()
-        { // In WB082, it returns "-PEBakery-", because WB082 uses only first character
-            string rawCode = "StrFormat,CTrim,_-PEBakery-_,_-,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_CTrim_2()
-        {
-            string rawCode = "StrFormat,CTrim, PEBakery ,\" \",%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_CTrim_3()
-        { // Access violation in WB082
-            string rawCode = "StrFormat,CTrim,PEBakery,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Error);
+            // In WB082, it returns "-PEBakery-", because WB082 uses only first character
+            StrFormat_Dest_Template(s, @"StrFormat,CTrim,_-PEBakery-_,_-,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, "StrFormat,CTrim, PEBakery ,\" \",%Dest%", "PEBakery");
+            // Access violation in WB082
+            StrFormat_Dest_Template_Error(s, "StrFormat,CTrim,PEBakery,,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -1394,28 +443,11 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_NTrim()
         {
-            StrFormat_NTrim_1();
-            StrFormat_NTrim_2();
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, @"StrFormat,NTrim,PEBakery100,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,NTrim,PEBakery,%Dest%", "PEBakery");
         }
-
-        public void StrFormat_NTrim_1()
-        {
-            string rawCode = "StrFormat,NTrim,PEBakery100,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_NTrim_2()
-        {
-            string rawCode = "StrFormat,NTrim,PEBakery,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
         #endregion
 
         #region Pos
@@ -1424,46 +456,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Pos()
         {
-            StrFormat_Pos_1();
-            StrFormat_Pos_2();
-            StrFormat_Pos_3();
-            StrFormat_Pos_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Pos_1()
-        {
-            string rawCode = "StrFormat,Pos,SouthKorea,thK,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Pos_2()
-        {
-            string rawCode = "StrFormat,Pos,SouthKorea,thk,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Pos_3()
-        {
-            string rawCode = "StrFormat,Pos,SouthKorea,abc,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Pos_4()
-        {
-            string rawCode = "StrFormat,Pos,SouthKorea,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Pos,SouthKorea,thK,%Dest%", "4");
+            StrFormat_Dest_Template(s, @"StrFormat,Pos,SouthKorea,hk,%Dest%", "5");
+            StrFormat_Dest_Template(s, @"StrFormat,Pos,SouthKorea,abc,%Dest%", "0");
+            StrFormat_Dest_Template(s, @"StrFormat,Pos,SouthKorea,,%Dest%", "0");
         }
         #endregion
 
@@ -1473,46 +471,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_PosX()
         {
-            StrFormat_PosX_1();
-            StrFormat_PosX_2();
-            StrFormat_PosX_3();
-            StrFormat_PosX_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_PosX_1()
-        {
-            string rawCode = "StrFormat,PosX,SouthKorea,thK,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("4", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_PosX_2()
-        {
-            string rawCode = "StrFormat,PosX,SouthKorea,thk,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_PosX_3()
-        {
-            string rawCode = "StrFormat,PosX,SouthKorea,abc,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_PosX_4()
-        {
-            string rawCode = "StrFormat,PosX,SouthKorea,,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("0", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,PosX,SouthKorea,thK,%Dest%", "4");
+            StrFormat_Dest_Template(s, @"StrFormat,PosX,SouthKorea,thk,%Dest%", "0");
+            StrFormat_Dest_Template(s, @"StrFormat,PosX,SouthKorea,abc,%Dest%", "0");
+            StrFormat_Dest_Template(s, @"StrFormat,PosX,SouthKorea,,%Dest%", "0");
         }
         #endregion
 
@@ -1522,46 +486,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Replace()
         {
-            StrFormat_Replace_1();
-            StrFormat_Replace_2();
-            StrFormat_Replace_3();
-            StrFormat_Replace_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Replace_1()
-        {
-            string rawCode = "StrFormat,Replace,PEBakery,Bake,Pake,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEPakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Replace_2()
-        {
-            string rawCode = "StrFormat,Replace,PEBakery,bake,Pake,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEPakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Replace_3()
-        {
-            string rawCode = "StrFormat,Replace,PEBakery,_,__,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_Replace_4()
-        {
-            string rawCode = "StrFormat,Replace,SouthKorea,,_,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("SouthKorea", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,Replace,PEBakery,Bake,Pake,%Dest%", "PEPakery");
+            StrFormat_Dest_Template(s, @"StrFormat,Replace,PEBakery,bake,Pake,%Dest%", "PEPakery");
+            StrFormat_Dest_Template(s, @"StrFormat,Replace,PEBakery,_,__,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,Replace,SouthKorea,,_,%Dest%", "SouthKorea");
         }
         #endregion
 
@@ -1571,46 +501,12 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_ReplaceX()
         {
-            StrFormat_ReplaceX_1();
-            StrFormat_ReplaceX_2();
-            StrFormat_ReplaceX_3();
-            StrFormat_ReplaceX_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_ReplaceX_1()
-        {
-            string rawCode = "StrFormat,ReplaceX,PEBakery,Bake,Pake,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEPakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_ReplaceX_2()
-        {
-            string rawCode = "StrFormat,ReplaceX,PEBakery,bake,Pake,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_ReplaceX_3()
-        {
-            string rawCode = "StrFormat,ReplaceX,PEBakery,_,__,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("PEBakery", StringComparison.Ordinal));
-        }
-
-        public void StrFormat_ReplaceX_4()
-        {
-            string rawCode = "StrFormat,ReplaceX,SouthKorea,,_,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("SouthKorea", StringComparison.Ordinal));
+            StrFormat_Dest_Template(s, @"StrFormat,ReplaceX,PEBakery,Bake,Pake,%Dest%", "PEPakery");
+            StrFormat_Dest_Template(s, @"StrFormat,ReplaceX,PEBakery,bake,Pake,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,ReplaceX,PEBakery,_,__,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,ReplaceX,SouthKorea,,_,%Dest%", "SouthKorea");
         }
         #endregion
 
@@ -1620,46 +516,45 @@ namespace PEBakery.Tests.Core.Command
         [TestMethod]
         public void StrFormat_Split()
         {
-            StrFormat_Split_1();
-            StrFormat_Split_2();
-            StrFormat_Split_3();
-            StrFormat_Split_4();
-        }
+            EngineState s = EngineTests.CreateEngineState();
 
-        public void StrFormat_Split_1()
+            StrFormat_Dest_Template(s, @"StrFormat,Split,A/B/C/D/E/F,/,0,%Dest%", "6");
+            StrFormat_Dest_Template(s, @"StrFormat,Split,A/B/C/D/E/F,/,2,%Dest%", "B");
+            StrFormat_Dest_Template(s, @"StrFormat,Split,A/B/C/D/E/F,/,5,%Dest%", "E");
+            StrFormat_InitDest_Template(s, @"StrFormat,Split,A/B/C/D/E/F,/,7,%Dest%", string.Empty, string.Empty);
+        }
+        #endregion
+
+        #region Utility
+        public void StrFormat_InitDest_Template(EngineState s, string rawCode, string initStr, string destStr)
         {
-            string rawCode = "StrFormat,Split,A/B/C/D/E/F,/,0,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
+            s.Variables["Dest"] = initStr;
+            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
 
             string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("6", StringComparison.Ordinal));
+            Assert.IsTrue(dest.Equals(destStr, StringComparison.Ordinal));
         }
 
-        public void StrFormat_Split_2()
+        public void StrFormat_InitDest_Template_Error(EngineState s, string rawCode, string initStr, ErrorCheck check)
         {
-            string rawCode = "StrFormat,Split,A/B/C/D/E/F,/,2,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("B", StringComparison.Ordinal));
+            s.Variables["Dest"] = initStr;
+            EngineTests.Eval(s, rawCode, CodeType.StrFormat, check);
         }
 
-        public void StrFormat_Split_3()
+        public void StrFormat_Dest_Template(EngineState s, string rawCode, string destStr)
         {
-            string rawCode = "StrFormat,Split,A/B/C/D/E/F,/,5,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.StrFormat, ErrorCheck.Success);
 
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals("E", StringComparison.Ordinal));
+            if (destStr != null)
+            {
+                string dest = s.Variables["Dest"];
+                Assert.IsTrue(dest.Equals(destStr, StringComparison.Ordinal));
+            }
         }
 
-        public void StrFormat_Split_4()
+        public void StrFormat_Dest_Template_Error(EngineState s, string rawCode, ErrorCheck check)
         {
-            string rawCode = "StrFormat,Split,A/B/C/D/E/F,/,7,%Dest%";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.StrFormat, ErrorCheck.Success);
-
-            string dest = s.Variables["Dest"];
-            Assert.IsTrue(dest.Equals(string.Empty, StringComparison.Ordinal));
+            EngineTests.Eval(s, rawCode, CodeType.StrFormat, check);
         }
         #endregion
     }
