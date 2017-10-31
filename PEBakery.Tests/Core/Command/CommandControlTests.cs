@@ -210,62 +210,23 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandControl")]
         public void Control_Beep()
         {
-            Beep_1();
-            Beep_2();
-            Beep_3();
-            Beep_4();
+            EngineState s = EngineTests.CreateEngineState();
+
+            Beep_Template(s, "Beep,OK", BeepType.OK);
+            Beep_Template(s, "Beep,Error", BeepType.Error);
+            Beep_Template(s, "Beep,Asterisk", BeepType.Asterisk);
+            Beep_Template(s, "Beep,Confirmation", BeepType.Confirmation);
         }
 
-        public void Beep_1()
+        public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
         {
-            EngineState s = EngineTests.CreateEngineState();
             SectionAddress addr = EngineTests.DummySectionAddress();
-            string rawCode = $"Beep,OK";
             CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
 
-            Assert.IsTrue(info.Type == BeepType.OK);
-        }
-
-        public void Beep_2()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            string rawCode = $"Beep,Error";
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
-            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
-
-            Assert.IsTrue(info.Type == BeepType.Error);
-        }
-
-        public void Beep_3()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            string rawCode = $"Beep,Asterisk";
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
-            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
-
-            Assert.IsTrue(info.Type == BeepType.Asterisk);
-        }
-
-        public void Beep_4()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            SectionAddress addr = EngineTests.DummySectionAddress();
-            string rawCode = $"Beep,Confirmation";
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
-            CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
-
-            Assert.IsTrue(info.Type == BeepType.Confirmation);
+            Assert.IsTrue(info.Type == beepType);
         }
         #endregion
     }

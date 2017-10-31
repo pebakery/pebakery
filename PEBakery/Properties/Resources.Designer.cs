@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20171031과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20171101과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -89,21 +89,24 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   -------------------------------------------------------------------------------
+        ///   -----------------------------------------------------------
         ///PEBakery is mainly licensed under GPL Version 3.
         ///    GNU General Public License Version 3
         ///    https://www.gnu.org/licenses/gpl.txt
         ///
-        ///-------------------------------------------------------------------------------
+        ///-----------------------------------------------------------
         ///Part of PEBakery is licensed under various license.
         ///
         ///PEBakery.CabLib
-        ///	Apache License, Version 2.0
-        ///	http://www.apache.org/licenses/LICENSE-2.0
+        ///    Apache License, Version 2.0
+        ///    http://www.apache.org/licenses/LICENSE-2.0
         ///
         ///PEBakery.IniLib
-        ///	MIT License
-        ///	https://opensource.org/licenses/M[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///    MIT License
+        ///    https://opensource.org/licenses/MIT
+        ///
+        ///PEBakery/Helper.cs 
+        /// [나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string LicenseSimple {
             get {

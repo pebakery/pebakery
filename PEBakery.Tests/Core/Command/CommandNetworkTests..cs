@@ -36,21 +36,23 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandNetwork")]
         public void Network_WebGet()
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+            EngineState s = EngineTests.CreateEngineState();
+
             if (NetworkInterface.GetIsNetworkAvailable())
             { // This test will be skipped if the computer is disconnected
-                WebGet_1();
+                WebGet_1(s);
             }
 
             // files: test
-            WebGet_MD5();
-            WebGet_SHA1();
-            WebGet_SHA256();
-            WebGet_SHA384();
-            WebGet_SHA512();
-            WebGet_HashError();
+            WebGet_MD5(s);
+            WebGet_SHA1(s);
+            WebGet_SHA256(s);
+            WebGet_SHA384(s);
+            WebGet_SHA512(s);
+            WebGet_HashError(s);
         }
 
-        public void WebGet_1()
+        public void WebGet_1(EngineState s)
         {
             string tempFile = Path.GetTempFileName();
             File.Delete(tempFile);
@@ -58,7 +60,7 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 string rawCode = $"WebGet,\"https://github.com\",\"{tempFile}\"";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempFile));
             }
@@ -69,7 +71,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_MD5()
+        public void WebGet_MD5(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -79,7 +81,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5,1179cf94187d2d2f94010a8d39099543";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempSrc));
             }
@@ -92,7 +94,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_SHA1()
+        public void WebGet_SHA1(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -102,7 +104,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA1,0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
             }
@@ -115,7 +117,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_SHA256()
+        public void WebGet_SHA256(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -125,7 +127,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA256,3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
             }
@@ -138,7 +140,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_SHA384()
+        public void WebGet_SHA384(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -148,7 +150,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA384,e068a3ac0b4ab4b37306dc354af6b8a4c89ef3fbbf1db969ec6d6a4281f1ab1f472fcd7bc2f16c0cf41c1991056846a6";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
             }
@@ -161,7 +163,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_SHA512()
+        public void WebGet_SHA512(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -171,7 +173,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA512,f5829cb5e052ab5ef6820630fd992acabb798512d21b5c5295fb81b88b74f3812863c0804e730f26e166b51d77eb5f1de200fd75913278522da78fbb269600cc";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
             }
@@ -184,7 +186,7 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void WebGet_HashError()
+        public void WebGet_HashError(EngineState s)
         {
             string tempSrc = CommandHashTests.SampleText();
             string tempDest = Path.GetTempFileName();
@@ -194,7 +196,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5,00000000000000000000000000000000";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGet, ErrorCheck.Error);
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
             }
             finally
             {
