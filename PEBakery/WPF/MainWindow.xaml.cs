@@ -33,7 +33,7 @@ using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using SQLite.Net;
+using SQLite;
 using System.Text;
 using PEBakery.Helper;
 using PEBakery.IniLib;
@@ -575,7 +575,8 @@ namespace PEBakery.WPF
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
+            AboutWindow dialog = new AboutWindow(setting.General_MonospaceFont);
+            dialog.ShowDialog();
         }
         #endregion
 

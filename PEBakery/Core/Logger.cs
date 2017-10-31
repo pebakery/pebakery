@@ -17,10 +17,6 @@
 */
 
 using PEBakery.Helper;
-using SQLite.Net;
-using SQLite.Net.Attributes;
-using SQLite.Net.Platform.Win32;
-using SQLiteNetExtensions.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,6 +28,7 @@ using System.Text;
 using System.Threading.Tasks;
 using PEBakery.Core.Commands;
 using System.Collections.Concurrent;
+using SQLite;
 
 namespace PEBakery.Core
 {
@@ -895,12 +892,14 @@ namespace PEBakery.Core
         [MaxLength(256)]
         public string Name { get; set; }
 
+        /*
         [OneToMany(CascadeOperations = CascadeOperation.All)] 
         public List<DB_Plugin> Plugins { get; set; }
         [OneToMany(CascadeOperations = CascadeOperation.All)] 
         public List<DB_Variable> Variables { get; set; }
         [OneToMany(CascadeOperations = CascadeOperation.All)]
         public List<DB_BuildLog> Logs { get; set; }
+        */
 
         public override string ToString()
         {
@@ -912,7 +911,8 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        [ForeignKey(typeof(DB_BuildInfo))]
+        // [ForeignKey(typeof(DB_BuildInfo))]
+        [Indexed]
         public long BuildId { get; set; }
         public int Order { get; set; } // Starts from 1
         public int Level { get; set; }
@@ -923,8 +923,10 @@ namespace PEBakery.Core
         public int Version { get; set; }
         public long ElapsedMilliSec { get; set; }
 
+        /*
         [ManyToOne]
         public DB_BuildInfo Build { get; set; }
+        */
 
         public override string ToString()
         {
@@ -936,7 +938,8 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        [ForeignKey(typeof(DB_BuildInfo))]
+        // [ForeignKey(typeof(DB_BuildInfo))]
+        [Indexed]
         public long BuildId { get; set; }
         public VarsType Type { get; set; }
         [MaxLength(256)]
@@ -944,8 +947,10 @@ namespace PEBakery.Core
         [MaxLength(65535)]
         public string Value { get; set; }
 
+        /*
         [ManyToOne]
         public DB_BuildInfo Build { get; set; }
+        */
 
         public override string ToString()
         {
@@ -958,9 +963,11 @@ namespace PEBakery.Core
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
         public DateTime Time { get; set; }
-        [ForeignKey(typeof(DB_BuildInfo))]
+        // [ForeignKey(typeof(DB_BuildInfo))]
+        [Indexed]
         public long BuildId { get; set; }
-        [ForeignKey(typeof(DB_Plugin))]
+        // [ForeignKey(typeof(DB_Plugin))]
+        [Indexed]
         public long PluginId { get; set; }
         public int Depth { get; set; }
         public LogState State { get; set; }
@@ -969,10 +976,12 @@ namespace PEBakery.Core
         [MaxLength(65535)]
         public string RawCode { get; set; }
 
+        /*
         [ManyToOne] 
         public DB_BuildInfo BuildInfo { get; set; }
         [ManyToOne]
         public DB_Plugin Plugin { get; set; }
+        */
 
         // Used in LogWindow
         [Ignore]
@@ -1039,7 +1048,8 @@ namespace PEBakery.Core
     #region LogDB
     public class LogDB : SQLiteConnection
     {
-        public LogDB(string path) : base(new SQLitePlatformWin32(), path)
+        // public LogDB(string path) : base(new SQLitePlatformWin32(), path)
+        public LogDB(string path) : base(path)
         {
             CreateTable<DB_SystemLog>();
             CreateTable<DB_BuildInfo>();

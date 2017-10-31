@@ -298,7 +298,7 @@ namespace PEBakery.Core.Commands
             using (Process proc = new Process())
             {
                 proc.StartInfo.FileName = filePath;
-                if (info.Params != null)
+                if (info.Params != null && info.Params.Equals(string.Empty, StringComparison.Ordinal) == false)
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
                     proc.StartInfo.Arguments = parameters;

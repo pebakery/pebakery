@@ -1,8 +1,5 @@
 ﻿using PEBakery.Helper;
-using SQLite.Net;
-using SQLite.Net.Attributes;
-using SQLite.Net.Platform.Win32;
-using SQLiteNetExtensions.Attributes;
+using SQLite;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,7 +20,7 @@ namespace PEBakery.Core
         public static int dbLock = 0;
         private ReaderWriterLockSlim listLock;
 
-        public PluginCache(string path) : base(new SQLitePlatformWin32(), path)
+        public PluginCache(string path) : base(path)
         {
             dbLock = 0;
             CreateTable<DB_ExecutableInfo>();
@@ -55,6 +52,7 @@ namespace PEBakery.Core
                         .Select(x => x.First());
 
                     listLock = new ReaderWriterLockSlim();
+
                     List<DB_PluginCache> inMemDB = Table<DB_PluginCache>().ToList();
                     var tasks = pUniqueList.Select(p =>
                     {
@@ -65,8 +63,9 @@ namespace PEBakery.Core
                         });
                     }).ToArray();
                     Task.WaitAll(tasks);
-
+                    
                     InsertOrReplaceAll(inMemDB);
+
                 }
             }
             catch (SQLiteException e)
@@ -193,7 +192,21 @@ namespace PEBakery.Core
             return updated;
         }
 
-    }
+        #region
+        public int InsertOrReplaceAll(System.Collections.IEnumerable objects)
+        {
+            var c = 0;
+            RunInTransaction(() =>
+            {
+                foreach (var r in objects)
+                {
+                    c += InsertOrReplace(r);
+                }
+            });
+            return c;
+        }
+    #endregion
+}
 
     #endregion
 

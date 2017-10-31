@@ -1,0 +1,147 @@
+﻿-----------------------------------------------------------
+PEBakery is mainly licensed under GPL Version 3.
+    GNU General Public License Version 3
+    https://www.gnu.org/licenses/gpl.txt
+
+-----------------------------------------------------------
+Part of PEBakery is licensed under various license.
+
+PEBakery.CabLib
+    Apache License, Version 2.0
+    http://www.apache.org/licenses/LICENSE-2.0
+
+PEBakery.IniLib
+    MIT License
+    https://opensource.org/licenses/MIT
+
+PEBakery/Helper.cs 
+    MIT License
+    https://opensource.org/licenses/MIT
+
+PEBakery/Resources/Donut.ico
+    CC BY-NC 3.0
+    https://creativecommons.org/licenses/by-nc/3.0/
+
+    Copyright (c) PixelKit
+    http://www.pixelkit.com/
+    https://www.iconfinder.com/icons/208267/desert_donut_icon
+
+PEBakery/WPF/Controls/AutoSizedGridView
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Derived from http://stackoverflow.com/a/15745082
+
+PEBakery/WPF/Controls/CustomMessageBox
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) 2013 Evan Wondrasek / Apricity Software LLC
+    Derived from https://github.com/evanwon/WPFCustomMessageBox
+
+PEBakery/WPF/Controls/MahApps 
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) 2016 MahApps
+    Derived from https://github.com/MahApps/MahApps.Metro
+
+PEBakery/WPF/Controls/Spinner
+    The Code Project Open License (CPOL) 1.02
+    https://www.codeproject.com/info/cpol10.aspx
+
+    Copyright (c) 2012 Barry Lapthorn
+    https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control
+
+PEBakery/WPF/Controls/Svg/Donut.xaml
+    CC BY 3.0 US
+    https://creativecommons.org/licenses/by/3.0/us/
+
+    Copyright (c) Numero Uno
+    https://thenounproject.com/numerouno/
+
+-----------------------------------------------------------
+PEBakery uses Open Source Software (OSS).
+This is the list of open source projects and licenses.
+
+Antlr4
+    The 3-Clause BSD License
+    https://opensource.org/licenses/BSD-3-Clause
+
+    Copyright (c) Terence Parr and Sam Harwell
+    http://www.antlr.org/
+
+BetterWin32Errors
+    MIT License
+    https://opensource.org/licenses/MIT
+    
+    Copyright (c) Michael Kropat
+    https://github.com/mkropat/BetterWin32Errors
+
+Crc32.NET
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) force
+    https://github.com/force-net/Crc32.NET
+
+ZLibWrapper
+    zlib license
+    https://opensource.org/licenses/Zlib
+
+    Copyright (C) Hajin Jang
+    https://github.com/ied206/ZLibWrapper
+
+MahApps.Metro.IconPacks
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) MahApps
+    https://github.com/MahApps/MahApps.Metro.IconPacks
+
+Newtonsoft.Json
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) James Newton-King
+    https://github.com/JamesNK/Newtonsoft.Json
+
+Pinvoke.Win32
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) Andrew Arnott, Mathias Lykkegaard Lorenzen, Julien Roncaglia
+    https://github.com/AArnott/pinvoke
+
+SevenZipExtractor
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    https://github.com/adoconnection/SevenZipExtractor
+
+SharpCompress
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) Adam Hathcock
+    https://github.com/adamhathcock/sharpcompress
+
+sqlite-net
+    MIT License
+    https://opensource.org/licenses/MIT
+
+    Copyright (c) Krueger Systems, Inc.
+    https://github.com/praeclarum/sqlite-net
+
+Svg.Net
+    Microsoft Public License (MS-PL)
+    https://opensource.org/licenses/MS-PL
+
+    https://github.com/vvvv/SVG
+
+Validation
+    Microsoft Public License (MS-PL)
+    https://opensource.org/licenses/MS-PL
+
+    https://github.com/aarnott/Validation
+-----------------------------------------------------------
