@@ -682,7 +682,7 @@ namespace PEBakery.WPF
                     else
                     {
                         string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, p.Level, false);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, false, p.Level, false);
                         treeParent = PopulateOneTreeView(dirPlugin, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -756,7 +756,7 @@ namespace PEBakery.WPF
             }
             else if (p.Type == PluginType.Plugin)
             {
-                if (p.Level == Project.MainLevel)
+                if (p.IsMainPlugin)
                     item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
                 else if (p.Mandatory)
                     item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
@@ -1293,7 +1293,7 @@ namespace PEBakery.WPF
                         }
 
 
-                        if (plugin.Level != Project.MainLevel)
+                        if (plugin.IsMainPlugin == false)
                         {
                             if (0 < this.Children.Count)
                             { // Set child plugins, too -> Top-down propagation

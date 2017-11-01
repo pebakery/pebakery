@@ -114,11 +114,11 @@ namespace PEBakery.Core
             }
 
             string targetDir = dict["TargetDir"];
-            if (targetDir == null)
+            if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
 
             string isoFile = dict["ISOFile"];
-            if (isoFile == null)
+            if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
                 isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
 
             // ProjectDir

@@ -222,7 +222,7 @@ namespace PEBakery.Core
                             PluginType type = PluginType.Plugin;
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
-                            link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null, false);
+                            link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, false, null, false);
 
                             Debug.Assert(p != null);
                         }
@@ -278,7 +278,6 @@ namespace PEBakery.Core
         private Plugin mainPlugin;
         private List<Plugin> allPlugins;
         private Variables variables;
-        public const int MainLevel = -256;  // Reserved level for script.project
 
         private int loadedPluginCount;
         private int allPluginCount;
@@ -356,16 +355,16 @@ namespace PEBakery.Core
 
                         if (p == null)
                         { // Cache Miss
-                            int? level = null;
+                            bool isMainPlugin = false;
                             if (pPath.Equals(mainPluginPath, StringComparison.Ordinal))
-                                level = MainLevel;
+                                isMainPlugin = true;
 
                             // TODO : Lazy loading of link, takes too much time at start
                             string ext = Path.GetExtension(pPath);
                             PluginType type = PluginType.Plugin;
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                 type = PluginType.Link;
-                            p = new Plugin(type, pPath, this, projectRoot, level, false);
+                            p = new Plugin(type, pPath, this, projectRoot, isMainPlugin, null, false);
 
                             Debug.Assert(p != null);
                         }
@@ -397,7 +396,7 @@ namespace PEBakery.Core
             }).ToArray();
             Task.WaitAll(tasks);
 
-            mainPlugin = allPlugins.Where(x => x.Level == MainLevel).FirstOrDefault();
+            mainPlugin = allPlugins.Where(x => x.IsMainPlugin).FirstOrDefault();
             Debug.Assert(mainPlugin != null);
         }
 
@@ -406,6 +405,11 @@ namespace PEBakery.Core
             // Sort - Plugin first, Directory last
             allPlugins.Sort((x, y) =>
             {
+                if (x.IsMainPlugin)
+                    return -1;
+                else if (y.IsMainPlugin)
+                    return 1;
+
                 if (x.Level == y.Level)
                 {
                     if (x.Type == y.Type)
@@ -433,11 +437,6 @@ namespace PEBakery.Core
             this.Variables = new Variables(this);
         }
 
-        /// <summary>
-        /// Return true if error
-        /// </summary>
-        /// <param name="plugin"></param>
-        /// <returns></returns>
         public Plugin RefreshPlugin(Plugin plugin)
         {
             string pPath = plugin.FullPath;
@@ -489,14 +488,14 @@ namespace PEBakery.Core
             try
             {
                 if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
-                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, MainLevel, ignoreMain);
+                    p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, true, 0, ignoreMain);
                 else
                 {
                     string ext = Path.GetExtension(pPath);
                     if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, null, false);
+                        p = new Plugin(PluginType.Link, pPath, this, projectRoot, false, null, false);
                     else
-                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, null, ignoreMain);
+                        p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, false, null, ignoreMain);
                 }
 
                 // Check Plugin Link's validity
@@ -534,32 +533,17 @@ namespace PEBakery.Core
         #endregion
 
         #region Active, Visible Plugins
-        public List<Plugin> GetActivePlugins()
-        {
-            return CollectActivePlugins(allPlugins);
-        }
-
         private List<Plugin> CollectVisiblePlugins(List<Plugin> allPluginList)
         {
             List<Plugin> visiblePluginList = new List<Plugin>();
             foreach (Plugin p in allPluginList)
             {
-                if (p.Level != 0)
+                if (0 <= p.Level)
                     visiblePluginList.Add(p);
             }
             return visiblePluginList;
         }
 
-        /// <summary>
-        /// Filter active plugins from allPlugins dict
-        /// Active Plugins : Will-be-processed plugins
-        /// </summary>
-        /// <remarks>
-        /// Took 1ms, Tested on i5-6200U, 151 plugins (Win10PESE 2016-09-01 default)
-        /// Time elapsed: 00:00:14.0766582 -> 00:00:14.0767675
-        /// 
-        /// All Plugins : 155
-        /// </remarks>
         private List<Plugin> CollectActivePlugins(List<Plugin> allPluginList)
         {
             List<Plugin> activePluginList = new List<Plugin>();
@@ -568,7 +552,11 @@ namespace PEBakery.Core
                 bool active = false;
                 if (p.Type == PluginType.Plugin)
                 {
-                    if (p.Selected != SelectedState.None)
+                    if (p.IsMainPlugin)
+                    {
+                        active = true;
+                    }
+                    else if (p.Selected != SelectedState.None)
                     {
                         if (p.Mandatory || p.Selected == SelectedState.True)
                             active = true;

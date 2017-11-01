@@ -2257,6 +2257,7 @@ namespace PEBakery.Core
         GetEnv,
         GetFreeDrive,
         GetFreeSpace,
+        HasUAC, // Deprecated, WB082 Compability Shim
         IsAdmin,
         Log,
         OnBuildExit,
@@ -2351,6 +2352,22 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"GetFreeDrive,{Path},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_HasUAC : SystemInfo
+    { // System,HasUAC,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_HasUAC(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"HasUAC,{DestVar}";
         }
     }
 

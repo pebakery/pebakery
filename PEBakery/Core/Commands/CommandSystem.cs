@@ -29,6 +29,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace PEBakery.Core.Commands
 {
@@ -152,6 +153,18 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case SystemType.HasUAC:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
+                        SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
+
+                        logs.Add(new LogInfo(LogState.Warning, $"[System,HasUAC] is deprecated"));
+
+                        // Deprecated, WB082 Compability Shim
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 case SystemType.IsAdmin:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_IsAdmin));
@@ -212,17 +225,16 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
-                        // Re-render Plugin
+
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                                w.DrawPlugin(cmd.Addr.Plugin);
+
+                            if (w.CurMainTree.Plugin.Equals(cmd.Addr.Plugin))
+                                w.StartReloadPluginWorker();
                         });
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
-                        logs.Add(new LogInfo(LogState.Success, $"Rerender plugin [{cmd.Addr.Plugin.Title}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Rerendered plugin [{cmd.Addr.Plugin.Title}]"));
                     }
                     break;
                 case SystemType.RescanScripts:

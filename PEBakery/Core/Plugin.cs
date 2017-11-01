@@ -44,6 +44,7 @@ namespace PEBakery.Core
         private string fullPath;
         private string shortPath;
         private bool fullyParsed;
+        private bool isMainPlugin;
 
         private SectionDictionary sections;
         private PluginType type;
@@ -72,8 +73,8 @@ namespace PEBakery.Core
                     return fullPath;
             }
         }
-        public string DirectFullPath { get => fullPath; }
-        public string ShortPath { get => shortPath; }
+        public string DirectFullPath => fullPath;
+        public string ShortPath => shortPath;
         public SectionDictionary Sections
         {
             get
@@ -95,7 +96,9 @@ namespace PEBakery.Core
             }
         }
 
-        public PluginType Type { get => type; }
+        public bool IsMainPlugin => isMainPlugin;
+
+        public PluginType Type => type;
         public Plugin Link { get => link; set => link = value; }
         public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
         public Project Project
@@ -204,12 +207,13 @@ namespace PEBakery.Core
             }
         }
 
-        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level, bool ignoreMain)
+        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, bool isMainPlugin, int? level, bool ignoreMain)
         {
-            this.fullPath = fullPath;
             this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
+            this.fullPath = fullPath;
             this.type = type;
             this.project = project;
+            this.isMainPlugin = isMainPlugin;
             this.linkLoaded = false;
 
             switch (type)
@@ -523,7 +527,7 @@ namespace PEBakery.Core
 
         public static List<string> GetDisablePluginPaths(Plugin p)
         {
-            if (p.Type == PluginType.Directory || p.Level == Project.MainLevel)
+            if (p.Type == PluginType.Directory || p.isMainPlugin)
                 return null;
 
             if (p.MainInfo.ContainsKey("Disable") == false)
