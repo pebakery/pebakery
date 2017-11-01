@@ -31,6 +31,7 @@ namespace PEBakery.Tests.Core.Command
     {
         #region Set
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_Set()
         {
@@ -82,6 +83,7 @@ namespace PEBakery.Tests.Core.Command
 
         #region AddVariables
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_AddVariables()
         {
@@ -144,6 +146,7 @@ namespace PEBakery.Tests.Core.Command
 
         #region Exit
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_Exit()
         {
@@ -170,6 +173,7 @@ namespace PEBakery.Tests.Core.Command
 
         #region Halt
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_Halt()
         {
@@ -187,6 +191,7 @@ namespace PEBakery.Tests.Core.Command
 
         #region Wait
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_Wait()
         {
@@ -207,6 +212,7 @@ namespace PEBakery.Tests.Core.Command
 
         #region Beep
         [TestMethod]
+        [TestCategory("Command")]
         [TestCategory("CommandControl")]
         public void Control_Beep()
         {

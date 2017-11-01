@@ -44,7 +44,8 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Current State
 
-PEBakery can load Projects, and able to run simple plugin correctly.  
+PEBakery can load Projects, and able to run simple plugin correctly.
+
 However, building whole project is quite buggy and needs to be improved.
 
 ### Implemented
@@ -66,7 +67,7 @@ However, building whole project is quite buggy and needs to be improved.
 
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
-| File      | 11  | 11          | 0      |
+| File      | 11  | 11          | 2      |
 | Registry  | 8   | 8           | 0      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
@@ -80,7 +81,7 @@ However, building whole project is quite buggy and needs to be improved.
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 155 | 155         | 66     |
+| All       | 155 | 155         | 68     |
 
 ## Help Needed
 
@@ -90,7 +91,7 @@ PEBakery is waiting your contributions!
 
 PEBakery now have its skeleton finished, but has lots of bugs.
 
-- Try to build [Win10PESE](http://win10se.cwcodes.net/) with PEBakery and report bugs.
+- Try to build [Win10PESE](http://win10se.cwcodes.net/), with PEBakery and report bugs.
 - If you are developer, you can contribute by writing unit tests.
 
 ### Undocumented WB082 behaviors

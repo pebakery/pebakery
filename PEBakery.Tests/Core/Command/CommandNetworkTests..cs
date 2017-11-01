@@ -226,7 +226,7 @@ namespace PEBakery.Tests.Core.Command
             {
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGetIfNotExist,\"{fileUri.AbsoluteUri}\",\"{tempDest}\"";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGetIfNotExist, ErrorCheck.Warning); // Wari
+                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGetIfNotExist, ErrorCheck.Warning);
 
                 // WebGet should have been ignored
                 FileInfo info = new FileInfo(tempDest);

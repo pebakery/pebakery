@@ -31,9 +31,9 @@ namespace PEBakery.Tests.Core.Command
     public class CommandArchiveTests
     {
         #region Compress
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandArchive")]
-        [TestMethod]
         public void Archive_Compress()
         {
             Compress_DirTemplate("Zip", "France", "France_Store.zip", ArchiveHelper.CompressLevel.Store);
