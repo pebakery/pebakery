@@ -84,8 +84,8 @@ namespace PEBakery.Core
         /// <returns>Return true if cache is updated</returns>
         public bool CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
         {
-            // Is cache exist?
-            DateTime lastWriteTime = File.GetLastWriteTimeUtc(p.DirectFullPath);
+            // Does cache exist?
+            FileInfo f = new FileInfo(p.DirectFullPath);
             string sPath = p.DirectFullPath.Remove(0, p.Project.BaseDir.Length + 1);
 
             bool updated = false;
@@ -114,7 +114,6 @@ namespace PEBakery.Core
                 {
                     listLock.ExitReadLock();
                 }
-                
             }
 
             if (pCache == null) // Cache not exists
@@ -123,7 +122,8 @@ namespace PEBakery.Core
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
-                    LastWriteTime = lastWriteTime,
+                    LastWriteTimeUtc = f.LastWriteTimeUtc,
+                    FileSize = f.Length,
                 };
 
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -153,14 +153,16 @@ namespace PEBakery.Core
                 }
             }
             else if (pCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                DateTime.Equals(pCache.LastWriteTime, lastWriteTime) == false) // Cache is outdated
+                (DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTime) == false ||
+                pCache.FileSize != f.Length)) // Cache is outdated
             {
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream mem = new MemoryStream())
                 {
                     formatter.Serialize(mem, p);
                     pCache.Serialized = mem.ToArray();
-                    pCache.LastWriteTime = lastWriteTime;
+                    pCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
+                    pCache.FileSize = f.Length;
                 }
 
                 if (inMemDB == null)
@@ -214,11 +216,12 @@ namespace PEBakery.Core
     public class DB_ExecutableInfo
     {
         [PrimaryKey] // Will have only one value
+        public byte[] IntegerVersion { get; set; }
         public byte[] SHA256 { get; set; }
 
         public override string ToString()
         {
-            return $"[{SHA256}] Exe Info";
+            return $"[{IntegerVersion}] Exe Info";
         }
     }
 
@@ -228,7 +231,8 @@ namespace PEBakery.Core
         public int Hash { get; set; }
         [MaxLength(32768)]
         public string Path { get; set; } // Without BaseDir
-        public DateTime LastWriteTime { get; set; }
+        public DateTime LastWriteTimeUtc { get; set; }
+        public long FileSize { get; set; }
         public byte[] Serialized { get; set; }
 
         public override string ToString()

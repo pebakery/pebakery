@@ -58,16 +58,6 @@ namespace PEBakery.IniLib
         public SectionNotFoundException(string message) : base(message) { }
         public SectionNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
-
-    /// <summary>
-    /// INI file is invalid
-    /// </summary>
-    public class InvalidIniFormatException : Exception
-    {
-        public InvalidIniFormatException() { }
-        public InvalidIniFormatException(string message) : base(message) { }
-        public InvalidIniFormatException(string message, Exception inner) : base(message, inner) { }
-    }
     #endregion
 
     #region IniKey
@@ -1457,11 +1447,9 @@ namespace PEBakery.IniLib
                         if (!isSectionFound)
                             currentSection = -1;
                     }
-                    else if ((idx = line.IndexOf('=')) != -1)
+                    else if ((idx = line.IndexOf('=')) != -1 && idx != 0)
                     { // valid ini key
-                        if (idx == 0) // current section is target, and key is empty
-                            throw new InvalidIniFormatException($"[{line}] has invalid format");
-                        if (currentSection != -1)
+                        if (currentSection != -1) // current section is target, and key is empty
                             lines[currentSection].Add(line);
                     }
                 }

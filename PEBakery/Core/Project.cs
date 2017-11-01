@@ -194,11 +194,12 @@ namespace PEBakery.Core
 
                         if (pluginCache != null)
                         { // Case of PluginCache enabled
-                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(linkFullPath);
+                            FileInfo f = new FileInfo(linkFullPath);
                             DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
                             if (pCache != null && 
                                 pCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
-                                DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
+                                DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                                pCache.FileSize == f.Length)
                             {
                                 try
                                 {
@@ -330,12 +331,13 @@ namespace PEBakery.Core
                     {
                         if (pluginCache != null)
                         { // PluginCache enabled
-                            DateTime lastWriteTime = File.GetLastWriteTimeUtc(pPath);
+                            FileInfo f = new FileInfo(pPath);
                             string sPath = pPath.Remove(0, baseDir.Length + 1); // 1 for \
                             DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
                             if (pCache != null &&
                                 pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
-                                DateTime.Equals(pCache.LastWriteTime, lastWriteTime))
+                                DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                                pCache.FileSize == f.Length)
                             { // Cache Hit
                                 try
                                 {
@@ -408,6 +410,8 @@ namespace PEBakery.Core
                 {
                     if (x.Type == y.Type)
                     {
+                        // return x.FullPath.CompareTo(y.FullPath);
+                        
                         int xDepth = StringHelper.CountOccurrences(x.FullPath, @"\");
                         int yDepth = StringHelper.CountOccurrences(y.FullPath, @"\");
                         if (xDepth == yDepth)
