@@ -264,7 +264,8 @@ namespace PEBakery.Core.Commands
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
             // Default Encoding - UTF8
-            Encoding encoding = Encoding.UTF8;
+            // Encoding encoding = Encoding.UTF8;
+            Encoding encoding = Encoding.Default;
             if (info.Encoding != null)
                 encoding = info.Encoding;
 
