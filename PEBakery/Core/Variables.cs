@@ -114,11 +114,11 @@ namespace PEBakery.Core
             }
 
             string targetDir = dict["TargetDir"];
-            if (targetDir == null)
+            if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
 
             string isoFile = dict["ISOFile"];
-            if (isoFile == null)
+            if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
                 isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
 
             // ProjectDir
@@ -469,9 +469,7 @@ namespace PEBakery.Core
             StringBuilder str = new StringBuilder();
             str.AppendLine("[Local Variables]");
             foreach (var local in localVars)
-            {
                 str.AppendLine($"[{local.Key}, {local.Value}, {Expand(local.Value)}]");
-            }
             str.AppendLine("[Global Variables]");
             foreach (var global in globalVars)
                 str.AppendLine($"[{global.Key}, {global.Value}, {Expand(global.Value)}]");
@@ -484,12 +482,12 @@ namespace PEBakery.Core
             bool globalResult = globalVars.TryGetValue(key, out string globalValue);
             bool localResult = localVars.TryGetValue(key, out string localValue);
 
-            if (localResult)
+            if (fixedResult)
+                value = Expand(fixedValue);
+            else if (localResult)
                 value = Expand(localValue);
             else if (globalResult)
                 value = Expand(globalValue);
-            else if (fixedResult)
-                value = Expand(fixedValue);
             else
                 value = string.Empty;
 
@@ -740,12 +738,23 @@ namespace PEBakery.Core
                 // Logs are written in variables.SetValue method
                 if (global)
                 {
-                    string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
-                    logs.Add(s.Variables.SetValue(VarsType.Global, varKey, finalValue));
+                    // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
+                    string finalValue = StringEscaper.Preprocess(s, varValue);
+                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue);
+                    logs.Add(log);
+
+                    // Remove local variable if exist
+                    if (log.State == LogState.Success)
+                    {
+                        if (s.Variables.localVars.ContainsKey(varKey))
+                            s.Variables.localVars.Remove(varKey);
+                    } 
+                        
                 }
                 else if (permanent)
                 {
-                    string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in GLOBAL / PERMANENT
+                    // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
+                    string finalValue = StringEscaper.Preprocess(s, varValue); 
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
 
                     if (log.State == LogState.Success)
@@ -754,6 +763,10 @@ namespace PEBakery.Core
                             logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{finalValue}]"));
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{finalValue}] into script.project"));
+
+                        // Remove local variable if exist
+                        if (s.Variables.localVars.ContainsKey(varKey))
+                            s.Variables.localVars.Remove(varKey);
                     }
                     else
                     { // SetValue failed

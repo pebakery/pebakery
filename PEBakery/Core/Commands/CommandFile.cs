@@ -264,7 +264,8 @@ namespace PEBakery.Core.Commands
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
             // Default Encoding - UTF8
-            Encoding encoding = Encoding.UTF8;
+            // Encoding encoding = Encoding.UTF8;
+            Encoding encoding = Encoding.Default;
             if (info.Encoding != null)
                 encoding = info.Encoding;
 
@@ -386,8 +387,9 @@ namespace PEBakery.Core.Commands
             }
             else
             { // With Wildcard
+                string srcParentDir = Path.GetDirectoryName(srcDir);
                 string wildcard = Path.GetFileName(srcDir);
-                FileHelper.DirectoryCopy(srcDir, destPath, true, wildcard);
+                FileHelper.DirectoryCopy(srcParentDir, destPath, true, wildcard);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
             }
 

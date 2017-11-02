@@ -56,8 +56,9 @@ namespace PEBakery.Tests.Core
             // Init ZLibAssembly
             ZLibAssemblyInit();
 
-            string logDBFile = Path.Combine(BaseDir, "PEBakery.Tests.db");
-            Logger = new Logger(logDBFile);
+            // string logDBFile = Path.Combine(BaseDir, "PEBakery.Tests.db");
+            // Logger = new Logger(logDBFile);
+            Logger = new Logger(":memory:");
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
         }
 
@@ -80,7 +81,7 @@ namespace PEBakery.Tests.Core
         }
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = true, Plugin p = null)
+        public static EngineState CreateEngineState(bool doClone = false, Plugin p = null)
         {
             // Clone is needed for parallel test execution
             if (doClone)

@@ -60,11 +60,12 @@ namespace PEBakery.Core.Commands
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            Encoding encoding = Encoding.UTF8;
+            // Encoding encoding = Encoding.UTF8;
+            Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
                 encoding = FileHelper.DetectTextEncoding(fileName);
-            else
-                FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
+            //else
+            //    FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
 
             if (mode == TXTAddLineMode.Prepend)
             {
@@ -127,11 +128,12 @@ namespace PEBakery.Core.Commands
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            Encoding encoding = Encoding.UTF8;
+            // Encoding encoding = Encoding.UTF8;
+            Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
                 encoding = FileHelper.DetectTextEncoding(fileName);
-            else
-                FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
+            // else
+            //    FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 

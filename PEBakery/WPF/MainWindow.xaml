@@ -207,6 +207,7 @@
                 <RowDefinition Height="20" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="60"/>
                 <ColumnDefinition Width="60"/>
@@ -223,6 +224,7 @@
                 </Image>
                 <TextBlock
                     Text="PEBakery"
+                    Margin="0, 0, 15, 0"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center"
                     FontSize="40" 
@@ -231,25 +233,32 @@
                 </TextBlock>
             </StackPanel>
 
-            <Button Grid.Row="0" Grid.Column="1" Margin="4" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
+            <custom:ProgressRing
+                Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                Margin="10"
+                HorizontalAlignment="Left"
+                IsActive="{Binding ProgressRingActive}">
+            </custom:ProgressRing>
+
+            <Button Grid.Row="0" Grid.Column="2" Margin="4" Style="{StaticResource BackgroundButton}" Click="BuildButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="StopCircle" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Grid.Row="0" Grid.Column="2" Margin="4" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
+            <Button Grid.Row="0" Grid.Column="3" Margin="4" Style="{StaticResource BackgroundButton}" Click="LogButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="CommentCheck" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
-            <Button Grid.Row="0" Grid.Column="3" Margin="4" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
+            <Button Grid.Row="0" Grid.Column="4" Margin="4" Style="{StaticResource BackgroundButton}" Click="AboutButton_Click">
                 <Button.Content>
                     <iconPacks:PackIconMaterial Kind="Help" Width="Auto" Height="Auto" Margin="4" />
                 </Button.Content>
             </Button>
 
-            <TextBlock Text="Stop" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="Log" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
-            <TextBlock Text="About" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="Stop" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="Log" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
+            <TextBlock Text="About" Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0" />
         </Grid>
         <Grid DockPanel.Dock="Bottom" Height="20" x:Name="bottomDock" Panel.ZIndex="100">
             <ProgressBar
@@ -559,6 +568,7 @@
                     HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
                     Visibility="{Binding NormalInterfaceVisibility}">
+                    <!-- Name="MainCanvas" -->
                     <Canvas 
                         Name="MainCanvas"
                         Grid.Row="0" Grid.Column="0"
@@ -566,6 +576,7 @@
                         VerticalAlignment="Top"
                         Margin="10, 10, 10, 10"
                         Panel.ZIndex="-1">
+                        <!-- <ContentPresenter Content="{Binding MainCanvas}" /> -->
                     </Canvas>
                 </ScrollViewer>
 
