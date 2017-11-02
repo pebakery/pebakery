@@ -386,8 +386,9 @@ namespace PEBakery.Core.Commands
             }
             else
             { // With Wildcard
+                string srcParentDir = Path.GetDirectoryName(srcDir);
                 string wildcard = Path.GetFileName(srcDir);
-                FileHelper.DirectoryCopy(srcDir, destPath, true, wildcard);
+                FileHelper.DirectoryCopy(srcParentDir, destPath, true, wildcard);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
             }
 

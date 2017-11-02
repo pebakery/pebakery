@@ -1757,6 +1757,7 @@ namespace PEBakery.Core
             [@"yyyy"] = @"yyyy",
             [@"yy"] = @"yy",
             // Month
+            [@"mmm"] = @"MM",
             [@"mm"] = @"MM",
             [@"m"] = @"M",
             // Date
@@ -1776,10 +1777,13 @@ namespace PEBakery.Core
         };
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond
-        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', }; 
-
+        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', };
+        
         private static string StrFormat_Date_FormatString(string str)
         {
+            // dd-mmm-yyyy-hh.nn
+            // 02-11-2017-13.49
+
             // Check if there are only characters which are allowed
             string wbFormatStr = str.ToLower();
             foreach (char ch in wbFormatStr)
@@ -2265,9 +2269,6 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
-
                         if (args.Count == 1)
                             info = new SystemInfo_SaveLog(args[0]);
                         else
@@ -2510,13 +2511,15 @@ namespace PEBakery.Core
                     if (info == null)
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
-                    if (info.LinkParsed == false)
+                    if (info.LinkParsed)
+                        compiledList.Add(cmd); 
+                    else
                         i = ParseNestedIf(cmd, codeList, i, compiledList);
+
                     elseFlag = true;
 
                     CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);
                     info.Link = newLinkList;
-                    
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
                 { // Compile to ElseCompact
@@ -2526,7 +2529,9 @@ namespace PEBakery.Core
 
                     if (elseFlag)
                     {
-                        if (info.LinkParsed == false)
+                        if (info.LinkParsed)
+                            compiledList.Add(cmd); 
+                        else
                             i = ParseNestedElse(cmd, codeList, i, compiledList, out elseFlag);
 
                         CompileBranchCodeBlock(info.Link, out List<CodeCommand> newLinkList);

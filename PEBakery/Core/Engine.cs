@@ -438,8 +438,9 @@ namespace PEBakery.Core
                     case CodeType.INIWriteTextLineOp:
                         logs.AddRange(CommandINI.INIWriteTextLineOp(s, cmd));
                         break;
-                    //case CodeType.INIMerge:
-                    //    break;
+                    case CodeType.INIMerge:
+                        logs.AddRange(CommandINI.INIMerge(s, cmd));
+                        break;
                     #endregion
                     #region 05 Archive
                     case CodeType.Compress:

@@ -242,7 +242,7 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             string valueData;
-            using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, true))
+            using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
             {
                 switch (info.ValueType)
                 {
