@@ -68,21 +68,36 @@ namespace PEBakery.Core.Commands
             SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
-            // Exec utilizes [Variables] section of the plugin
-            if (cmd.Type == CodeType.Exec && p.Sections.ContainsKey("Variables"))
+            Dictionary<string, string> localVars = null;
+            Dictionary<string, string> globalVars = null;
+            if (cmd.Type == CodeType.Exec)
             {
-                List<LogInfo> varLogs = s.Variables.AddVariables(VarsType.Local, p.Sections["Variables"]);
-                LogInfo.AddDepth(varLogs, s.CurDepth + 1);
-                s.Logger.Build_Write(s, varLogs);
+                // Backup Varaibles
+                // varBackup = s.Variables.Clone() as Variables;
+                localVars = s.Variables.GetVars(VarsType.Local);
+                globalVars = s.Variables.GetVars(VarsType.Global);
+
+                // Load Per-Plugin Variables
+                s.Variables.ResetVariables(VarsType.Local);
+                s.Variables.ResetVariables(VarsType.Global);
+                s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(p));
+                s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
             }
 
             // Run Section
             int depthBackup = s.CurDepth;
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
+            if (cmd.Type == CodeType.Exec)
+            { // Restore Variables
+                s.Variables.SetVars(VarsType.Local, localVars);
+                s.Variables.SetVars(VarsType.Global, globalVars);
+            }
+
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
         }
+            
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {

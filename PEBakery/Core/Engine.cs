@@ -54,8 +54,10 @@ namespace PEBakery.Core
         /// <summary>
         /// Ready to run an plugin
         /// </summary>
-        private void ReadyRunPlugin(long buildId, Plugin p = null)
+        internal static void ReadyRunPlugin(EngineState s, Plugin p = null)
         {
+            long buildId = s.BuildId;
+
             // Turn off System,ErrorOff
             s.Logger.ErrorOffCount = 0;
             // Turn off System,Log,Off
@@ -145,7 +147,7 @@ namespace PEBakery.Core
 
                 while (true)
                 {
-                    ReadyRunPlugin(s.BuildId);
+                    ReadyRunPlugin(s);
 
                     // Run Main Section
                     PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
@@ -263,7 +265,8 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                // s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"No codes", s.CurDepth));
                 return;
             }
 
@@ -699,15 +702,15 @@ namespace PEBakery.Core
         // Fields used globally
         public Project Project;
         public List<Plugin> Plugins;
-        public Variables Variables { get => Project.Variables; }
+        public Variables Variables => Project.Variables;
         public Macro Macro;
         public Logger Logger;
         public bool RunOnePlugin;
         public MainViewModel MainViewModel;
 
         // Properties
-        public string BaseDir { get => Project.BaseDir; }
-        public Plugin MainPlugin { get => Project.MainPlugin; }
+        public string BaseDir => Project.BaseDir;
+        public Plugin MainPlugin => Project.MainPlugin;
 
         // Fields : Engine's state
         public Plugin CurrentPlugin;

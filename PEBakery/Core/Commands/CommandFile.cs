@@ -113,9 +113,11 @@ namespace PEBakery.Core.Commands
 
                 string[] files;
                 if (info.NoRec)
-                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile));
+                    // files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile));
+                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile), SearchOption.TopDirectoryOnly);
                 else
-                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
+                    // files = Directory.GetFiles(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
+                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
 
                 if (0 < files.Length)
                 { // One or more file will be copied
@@ -186,6 +188,7 @@ namespace PEBakery.Core.Commands
             { // No Wildcard
                 if (File.Exists(filePath))
                 { // Delete File
+                    File.SetAttributes(filePath, FileAttributes.Normal);
                     File.Delete(filePath);
 
                     logs.Add(new LogInfo(LogState.Success, $"Deleted file [{filePath}]"));
@@ -200,6 +203,11 @@ namespace PEBakery.Core.Commands
             { // With Wildcard
                 // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
                 string srcDirToFind = FileHelper.GetDirNameEx(filePath);
+                if (Directory.Exists(srcDirToFind) == false)
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot find path [{srcDirToFind}]"));
+                    return logs;
+                }
 
                 string[] files;
                 if (info.NoRec)
@@ -209,8 +217,9 @@ namespace PEBakery.Core.Commands
 
                 if (0 < files.Length)
                 { // One or more file will be deleted
-                    foreach(string f in files)
+                    foreach (string f in files)
                     {
+                        File.SetAttributes(filePath, FileAttributes.Normal);
                         File.Delete(f);
                         logs.Add(new LogInfo(LogState.Success, $"File [{f}] deleted"));
                     }
@@ -245,6 +254,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
+            File.SetAttributes(srcPath, FileAttributes.Normal);
             File.Move(srcPath, destPath);
             if (cmd.Type == CodeType.FileRename)
                 logs.Add(new LogInfo(LogState.Success, $"File [{srcPath}] renamed to [{destPath}]"));
@@ -262,6 +272,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
+            File.SetAttributes(filePath, FileAttributes.Normal);
 
             // Default Encoding - UTF8
             // Encoding encoding = Encoding.UTF8;
@@ -382,14 +393,14 @@ namespace PEBakery.Core.Commands
             // Check srcDir contains wildcard
             if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                FileHelper.DirectoryCopy(srcDir, destPath, true, null);
+                FileHelper.DirectoryCopy(srcDir, destPath, true, true, null);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
             }
             else
             { // With Wildcard
                 string srcParentDir = Path.GetDirectoryName(srcDir);
                 string wildcard = Path.GetFileName(srcDir);
-                FileHelper.DirectoryCopy(srcParentDir, destPath, true, wildcard);
+                FileHelper.DirectoryCopy(srcParentDir, destPath, true, true, wildcard);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
             }
 
@@ -415,7 +426,8 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             // Delete Directory
-            Directory.Delete(dirPath, true);
+            try { Directory.Delete(dirPath, true); }
+            catch (UnauthorizedAccessException) { FileHelper.DirectoryDeleteEx(dirPath); }
 
             logs.Add(new LogInfo(LogState.Success, $"Deleted directory [{dirPath}]"));
 
@@ -452,8 +464,8 @@ namespace PEBakery.Core.Commands
             { // Cannot use Directory.Move, should copy and delete directory.
                 logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
 
-                FileHelper.DirectoryCopy(srcDir, destPath, true, null);
-                Directory.Delete(srcDir, true);
+                FileHelper.DirectoryCopy(srcDir, destPath, true, true, null);
+                FileHelper.DirectoryDeleteEx(srcDir);
 
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));
             }

@@ -234,8 +234,12 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             if (File.Exists(srcFile))
-            { // SrcFile is uncompressed, just copy!  
-                File.Copy(srcFile, destPath, !info.Preserve);
+            { // SrcFile is uncompressed, just copy!
+                string destFullPath = destPath;
+                if (destIsDir)
+                    destFullPath = Path.Combine(destPath, srcFileName);
+
+                File.Copy(srcFile, destFullPath, !info.Preserve);
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));
             }
             else

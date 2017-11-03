@@ -317,7 +317,7 @@ namespace PEBakery.Core
                                 picture = args[1];
                         }
 
-                        bool showProgress = true;
+                        bool showProgress = false;
                         if (2 < args.Count)
                         {
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))

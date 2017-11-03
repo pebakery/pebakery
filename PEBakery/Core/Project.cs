@@ -175,7 +175,7 @@ namespace PEBakery.Core
             DB_PluginCache[] cacheDB = null;
             if (pluginCache != null)
                 cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
-                    
+
             var links = allPlugins.Where(x => x.Type == PluginType.Link);
             Task[] tasks = links.Select(p =>
             {
@@ -190,7 +190,7 @@ namespace PEBakery.Core
                         string linkPath = p.Sections["Main"].IniDict["Link"];
                         string linkFullPath = Path.Combine(baseDir, linkPath);
                         if (File.Exists(linkFullPath) == false) // Invalid link
-                            throw new PluginParseException($"Invalid link path in plugin {p.FullPath}");
+                            break;
 
                         if (pluginCache != null)
                         { // Case of PluginCache enabled
@@ -538,7 +538,7 @@ namespace PEBakery.Core
             List<Plugin> visiblePluginList = new List<Plugin>();
             foreach (Plugin p in allPluginList)
             {
-                if (0 <= p.Level)
+                if (0 < p.Level)
                     visiblePluginList.Add(p);
             }
             return visiblePluginList;

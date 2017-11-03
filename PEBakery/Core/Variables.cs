@@ -81,7 +81,9 @@ namespace PEBakery.Core
             // Tools
             logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
             // Version
-            logs.Add(SetFixedValue("Version", App.Version.ToString()));
+            logs.Add(SetFixedValue("Version", "082")); // WB082 Compatibility Shim
+            logs.Add(SetFixedValue("EngineVersion", App.Version.ToString()));
+            logs.Add(SetFixedValue("PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
             #region Project Variables
@@ -184,8 +186,6 @@ namespace PEBakery.Core
             // ScriptFile, PluginFile
             SetFixedValue("ScriptFile", p.FullPath);
             SetFixedValue("PluginFile", p.FullPath);
-            // SetValue(VarsType.Local, "PluginFile", p.FullPath);
-            // SetValue(VarsType.Local, "ScriptFile", p.FullPath);
 
             // ScriptDir, PluginDir
             SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
@@ -312,31 +312,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        
-        private Dictionary<string, string> GetVarsMatchesType(VarsType type)
-        {
-            switch (type)
-            {
-                case VarsType.Local:
-                    return localVars;
-                case VarsType.Global:
-                    return globalVars;
-                case VarsType.Fixed:
-                    return fixedVars;
-                default:
-                    return null;
-            }
-        }
-
-        public ReadOnlyDictionary<string, string> GetVars(VarsType type)
-        {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            ReadOnlyDictionary<string, string> readOnlyDictionary = 
-                new ReadOnlyDictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
-            return readOnlyDictionary;
-        }
-
-
+        #region CircularReference
         /// <summary>
         /// Check variables' circular reference.
         /// </summary>
@@ -380,6 +356,39 @@ namespace PEBakery.Core
             }
 
             return false;
+        }
+        #endregion
+
+        #region Get, Set, Expand Value
+        private Dictionary<string, string> GetVarsMatchesType(VarsType type)
+        {
+            switch (type)
+            {
+                case VarsType.Local:
+                    return localVars;
+                case VarsType.Global:
+                    return globalVars;
+                case VarsType.Fixed:
+                    return fixedVars;
+                default:
+                    return null;
+            }
+        }
+
+        public Dictionary<string, string> GetVars(VarsType type)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            // Dictionary<string, string> newDict = new Dictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
+            return vars.ToDictionary(k => k.Key, v => v.Value);
+        }
+
+        public void SetVars(VarsType type, Dictionary<string, string> varDict)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            vars.Clear();
+            
+            foreach (var kv in varDict)
+                vars.Add(kv.Key, kv.Value);
         }
 
         public LogInfo SetFixedValue(string key, string rawValue)
@@ -484,16 +493,18 @@ namespace PEBakery.Core
 
             if (fixedResult)
                 value = Expand(fixedValue);
-            else if (localResult)
-                value = Expand(localValue);
             else if (globalResult)
                 value = Expand(globalValue);
+            else if (localResult)
+                value = Expand(localValue);
             else
                 value = string.Empty;
 
             return fixedResult || localResult || globalResult;
         }
+        #endregion
 
+        #region Expand
         public string Expand(string str)
         {
 #if _DEBUG // These codes are for Debug Assertion
@@ -567,7 +578,9 @@ namespace PEBakery.Core
 
             return str;
         }
+        #endregion
 
+        #region AddVariables
         public List<LogInfo> AddVariables(VarsType type, PluginSection section)
         {
             Dictionary<string, string> dict = null;
@@ -629,7 +642,9 @@ namespace PEBakery.Core
             }
             return list;
         }
+        #endregion
 
+        #region ResetVariables
         public void ResetVariables(VarsType type)
         {
             switch (type)
@@ -642,8 +657,9 @@ namespace PEBakery.Core
                     break;
             }
         }
+        #endregion
 
-#region Utility Static Methods
+        #region Utility Static Methods
         public static string TrimPercentMark(string varName)
         {
             if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
@@ -797,7 +813,7 @@ namespace PEBakery.Core
         }
 #endregion
 
-#region Clone
+        #region Clone
         public object Clone()
         {
             Variables variables = new Variables(project)
@@ -808,6 +824,6 @@ namespace PEBakery.Core
             };
             return variables;
         }
-#endregion
+        #endregion
     }
 }

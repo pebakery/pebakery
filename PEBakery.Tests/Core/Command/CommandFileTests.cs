@@ -172,7 +172,7 @@ namespace PEBakery.Tests.Core.Command
 
             if (Directory.Exists(destDir))
                 Directory.Delete(destDir, true);
-            FileHelper.DirectoryCopy(srcDir, destDir, true);
+            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
             try
             {
                 EngineTests.Eval(s, rawCode, CodeType.FileDelete, check);
@@ -199,7 +199,7 @@ namespace PEBakery.Tests.Core.Command
 
             if (Directory.Exists(destDir))
                 Directory.Delete(destDir, true);
-            FileHelper.DirectoryCopy(srcDir, destDir, true);
+            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
             try
             {
                 string[] destFiles;
