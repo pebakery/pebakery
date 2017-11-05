@@ -118,6 +118,15 @@ namespace PEBakery.Core
             string targetDir = dict["TargetDir"];
             if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            /*
+        { 
+            // Fix for MistyPE
+            string varTargetDir = Ini.GetKey(fullPath, "Variables", "%TargetDir%");
+            if (varTargetDir == null)
+                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            else
+                targetDir = varTargetDir;
+        }*/
 
             string isoFile = dict["ISOFile"];
             if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
@@ -491,12 +500,12 @@ namespace PEBakery.Core
             bool globalResult = globalVars.TryGetValue(key, out string globalValue);
             bool localResult = localVars.TryGetValue(key, out string localValue);
 
-            if (fixedResult)
-                value = Expand(fixedValue);
-            else if (globalResult)
-                value = Expand(globalValue);
-            else if (localResult)
+            if (localResult)
                 value = Expand(localValue);
+            else if(globalResult)
+                value = Expand(globalValue);
+            else if (fixedResult)
+                value = Expand(fixedValue);
             else
                 value = string.Empty;
 
@@ -507,27 +516,22 @@ namespace PEBakery.Core
         #region Expand
         public string Expand(string str)
         {
-#if _DEBUG // These codes are for Debug Assertion
-            List<string> processed = new List<string>();
-#endif
-
-            while (2 <= StringHelper.CountOccurrences(str, @"%"))
+            MatchCollection matches;
+            do
             {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
-                MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
+                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
                 StringBuilder b = new StringBuilder();
 
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
-#if _DEBUG // These codes are for Debug Assertion
-                    if (processed.Contains(varName, StringComparer.OrdinalIgnoreCase))
-                        throw new VariableCircularReferenceException($"%{varName}% is circular referenced");
-#endif
 
                     if (x == 0)
+                    {
                         b.Append(str.Substring(0, matches[0].Index));
+                    }
                     else
                     {
                         int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
@@ -535,46 +539,19 @@ namespace PEBakery.Core
                         b.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (localVars.ContainsKey(varName))
-                    {
-                        string varValue = localVars[varName];
+                    if (TryGetValue(varName, out string varValue))
                         b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
-                    else if (globalVars.ContainsKey(varName))
-                    {
-                        string varValue = globalVars[varName];
-                        b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
-                    else if (fixedVars.ContainsKey(varName))
-                    {
-                        string varValue = fixedVars[varName];
-                        b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
                     else // variable not found
-                    {
                         b.Append("#$p").Append(varName).Append("#$p");
-                    }
 
                     if (x + 1 == matches.Count) // Last iteration
                         b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
-                if (0 < matches.Count) // Only copy it if variable exists
-                {
+
+                if (0 < matches.Count) // Copy it if variable exists
                     str = b.ToString();
-                }
             }
+            while (0 < matches.Count);
 
             return str;
         }

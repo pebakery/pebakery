@@ -381,7 +381,7 @@ namespace PEBakery.Helper
             }
         }
 
-        public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption)
+        public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException("dirPath");
 

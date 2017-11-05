@@ -208,18 +208,18 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Error, $"Cannot find path [{srcDirToFind}]"));
                     return logs;
                 }
-
+                
                 string[] files;
                 if (info.NoRec)
-                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
+                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(filePath));
                 else
-                    files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
+                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
 
                 if (0 < files.Length)
                 { // One or more file will be deleted
                     foreach (string f in files)
                     {
-                        File.SetAttributes(filePath, FileAttributes.Normal);
+                        File.SetAttributes(f, FileAttributes.Normal);
                         File.Delete(f);
                         logs.Add(new LogInfo(LogState.Success, $"File [{f}] deleted"));
                     }
@@ -272,10 +272,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_FileCreateBlank info = cmd.Info as CodeInfo_FileCreateBlank;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
-            File.SetAttributes(filePath, FileAttributes.Normal);
 
-            // Default Encoding - UTF8
-            // Encoding encoding = Encoding.UTF8;
             Encoding encoding = Encoding.Default;
             if (info.Encoding != null)
                 encoding = info.Encoding;

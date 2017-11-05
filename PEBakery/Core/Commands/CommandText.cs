@@ -60,12 +60,9 @@ namespace PEBakery.Core.Commands
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            // Encoding encoding = Encoding.UTF8;
             Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
                 encoding = FileHelper.DetectTextEncoding(fileName);
-            //else
-            //    FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
 
             if (mode == TXTAddLineMode.Prepend)
             {
@@ -86,7 +83,26 @@ namespace PEBakery.Core.Commands
             }
             else if (mode == TXTAddLineMode.Append)
             {
-                File.AppendAllText(fileName, line + "\r\n", encoding);
+                bool newLineExist = true;
+                if (File.Exists(fileName))
+                {
+                    using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        byte[] lastChar = new byte[2];
+                        if (2 <= fs.Length)
+                        {
+                            fs.Position = fs.Length - 2;
+                            fs.Read(lastChar, 0, 2);
+                            if (lastChar[0] != '\r' || lastChar[1] != '\n')
+                                newLineExist = false;
+                        }
+                    }
+                }
+
+                if (newLineExist)
+                    File.AppendAllText(fileName, line + "\r\n", encoding);
+                else
+                    File.AppendAllText(fileName, "\r\n" + line + "\r\n", encoding);
                 logs.Add(new LogInfo(LogState.Success, $"Appended [{line}] to [{fileName}]", cmd));
             }
 
@@ -156,7 +172,26 @@ namespace PEBakery.Core.Commands
             }
             else if (mode == TXTAddLineMode.Append)
             {
-                File.AppendAllText(fileName, linesToWrite, encoding);
+                bool newLineExist = true;
+                if (File.Exists(fileName))
+                {
+                    using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        byte[] lastChar = new byte[2];
+                        if (2 <= fs.Length)
+                        {
+                            fs.Position = fs.Length - 2;
+                            fs.Read(lastChar, 0, 2);
+                            if (lastChar[0] != '\r' || lastChar[1] != '\n')
+                                newLineExist = false;
+                        }
+                    }
+                }
+
+                if (newLineExist)
+                    File.AppendAllText(fileName, linesToWrite, encoding);
+                else
+                    File.AppendAllText(fileName, "\r\n" + linesToWrite, encoding);
 
                 logs.Add(new LogInfo(LogState.Success, $"Lines appended to [{fileName}] : \r\n{linesToWrite}", cmd));
             }

@@ -17,6 +17,7 @@
 */
 
 // TODO: Full Lexer / Parser and AST!
+//       -> Experimental Parser in CodeParserEx.cs
 
 using System;
 using System.Collections.Generic;
@@ -86,7 +87,6 @@ namespace PEBakery.Core
             {
                 return compiledList;
             }
-
         }
         #endregion
 
@@ -2588,6 +2588,8 @@ namespace PEBakery.Core
                     info = ifCmd.Info as CodeInfo_If;
                     if (info == null)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+                    info.LinkParsed = true;
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -2645,7 +2647,6 @@ namespace PEBakery.Core
                 if (ifInfo == null)
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
-
                 ifInfo.LinkParsed = true;
 
                 while (true)
@@ -2660,6 +2661,8 @@ namespace PEBakery.Core
                         ifInfo = ifCmd.Info as CodeInfo_If;
                         if (ifInfo == null)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+                        ifInfo.LinkParsed = true;
                     }
                     else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {

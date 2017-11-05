@@ -160,6 +160,10 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
 
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
+
             bool result = Ini.SetKey(fileName, sectionName, key, value);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] written to [{fileName}]", cmd));
@@ -204,6 +208,10 @@ namespace PEBakery.Core.Commands
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
 
             bool result = Ini.SetKeys(fileName, keys);
 
@@ -348,6 +356,10 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
+
             bool result = Ini.AddSection(fileName, sectionName);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
@@ -390,6 +402,10 @@ namespace PEBakery.Core.Commands
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
 
             bool result = Ini.AddSections(fileName, sections);
 
@@ -517,6 +533,10 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
+
             bool result = Ini.WriteRawLine(fileName, sectionName, line, info.Append);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
@@ -560,6 +580,10 @@ namespace PEBakery.Core.Commands
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
+
+            string dirPath = Path.GetDirectoryName(fileName);
+            if (Directory.Exists(dirPath) == false)
+                Directory.CreateDirectory(dirPath);
 
             bool result = Ini.WriteRawLines(fileName, keys, append);
 
