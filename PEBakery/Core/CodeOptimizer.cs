@@ -56,7 +56,35 @@ namespace PEBakery.Core
         };
 
         #region OptimizeCommands
-        public static List<CodeCommand> OptimizeCommands(List<CodeCommand> cmdList)
+        public static List<CodeCommand> Optimize(List<CodeCommand> codes)
+        {
+            List<CodeCommand> opCodes = InternalOptimize(codes);
+            foreach (CodeCommand cmd in opCodes)
+            {
+                switch (cmd.Type)
+                {
+                    case CodeType.If:
+                        {
+                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
+                            CodeInfo_If info = cmd.Info as CodeInfo_If;
+
+                            info.Link = Optimize(info.Link);
+                        }
+                        break;
+                    case CodeType.Else:
+                        {
+                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
+                            CodeInfo_Else info = cmd.Info as CodeInfo_Else;
+
+                            info.Link = Optimize(info.Link);
+                        }
+                        break;
+                }
+            }
+            return opCodes;
+        }
+
+        private static List<CodeCommand> InternalOptimize(List<CodeCommand> codes)
         {
             List<CodeCommand> optimized = new List<CodeCommand>();
             
@@ -65,9 +93,9 @@ namespace PEBakery.Core
                 opDict[type] = new List<CodeCommand>();
 
             CodeType state = CodeType.None;
-            for (int i = 0; i < cmdList.Count; i++)
+            for (int i = 0; i < codes.Count; i++)
             {
-                CodeCommand cmd = cmdList[i];
+                CodeCommand cmd = codes[i];
                 
                 switch (state)
                 {

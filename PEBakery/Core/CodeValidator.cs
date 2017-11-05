@@ -15,7 +15,6 @@ namespace PEBakery.Core
         private List<PluginSection> visitedSections = new List<PluginSection>();
 
         public int CodeSectionCount => p.Sections.Where(x => x.Value.Type == SectionType.Code).Count();
-        // public int VisitedSectionCount { get; private set; }
         public int VisitedSectionCount => visitedSections.Count;
         public double Coverage
         {
@@ -44,7 +43,6 @@ namespace PEBakery.Core
         public CodeValidator(Plugin p)
         {
             this.p = p ?? throw new ArgumentNullException("p");
-            // VisitedSectionCount = 0;
         }
         #endregion
 
@@ -56,22 +54,30 @@ namespace PEBakery.Core
                 logInfos.AddRange(ValidateCodeSection(p.Sections["Process"]));
 
             // UICodes
-            string ifaceSection = "Interface";
-            if (p.MainInfo.ContainsKey("Interface"))
-                ifaceSection = p.MainInfo["Interface"];
+            if (p.Sections.ContainsKey("Interface"))
+                logInfos.AddRange(ValidateUISection(p.Sections["Interface"]));
 
-            if (p.Sections.ContainsKey(ifaceSection))
-                logInfos.AddRange(ValidateUISection(p.Sections[ifaceSection]));
+            if (p.MainInfo.ContainsKey("Interface"))
+            {
+                string ifaceSection = p.MainInfo["Interface"];
+                if (p.Sections.ContainsKey(ifaceSection))
+                    logInfos.AddRange(ValidateUISection(p.Sections[ifaceSection]));
+            }
         }
 
         #region ValidateCodeSection
         private List<LogInfo> ValidateCodeSection(PluginSection section)
         {
-            List<CodeCommand> codes = section.GetCodes(true);
-            List<LogInfo> logs = section.LogInfos;
+            // Already processed, so skip
+            if (visitedSections.Contains(section))
+                return new List<LogInfo>();
 
-            if (visitedSections.Contains(section) == false)
-                visitedSections.Add(section);
+            // Force parsing of code, bypassing caching by section.GetCodes()
+            List<string> lines = section.GetLines();
+            SectionAddress addr = new SectionAddress(p, section);
+            List<CodeCommand> codes = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
+
+            visitedSections.Add(section);
             InternalValidateCodes(codes, logs);
 
             return logs;
@@ -154,8 +160,10 @@ namespace PEBakery.Core
         #region ValidateUISection
         private List<LogInfo> ValidateUISection(PluginSection section)
         {
-            List<UICommand> uiCodes = section.GetUICodes(true);
-            List<LogInfo> logs = section.LogInfos;
+            // Force parsing of code, bypassing caching by section.GetUICodes()
+            List<string> lines = section.GetLines();
+            SectionAddress addr = new SectionAddress(p, section);
+            List<UICommand> uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
 
             foreach (UICommand uiCmd in uiCodes)
             {

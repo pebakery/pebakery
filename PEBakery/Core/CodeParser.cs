@@ -80,7 +80,7 @@ namespace PEBakery.Core
 
             if (App.Setting.General_OptimizeCode)
             {
-                return CodeOptimizer.OptimizeCommands(compiledList);
+                return CodeOptimizer.Optimize(compiledList);
             }
             else
             {
@@ -637,11 +637,6 @@ namespace PEBakery.Core
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        if (args[1].Contains("#$x"))
-                            throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
-                        if (args[2].Contains("#$x"))
-                            throw new InvalidCommandException($"String to be replaced or replace with cannot include line feed", rawCode);
 
                         return new CodeInfo_TXTReplace(args[0], args[1], args[2]);
                     }

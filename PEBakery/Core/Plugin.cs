@@ -959,6 +959,24 @@ namespace PEBakery.Core
             }
         }
 
+        public List<CodeCommand> GetCodesForce(bool convert)
+        {
+            if (dataType == SectionDataType.Lines &&
+                convDataType == SectionDataConverted.Codes)
+            {
+                return Codes; // this.Codes for Load()
+            }
+            else if (dataType == SectionDataType.Lines)
+            {
+                ConvertLineToCodeSection(Lines); // this.Lines for Load()
+                return codes;
+            }
+            else
+            {
+                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
+            }
+        }
+
         public List<UICommand> GetUICodes()
         {
             if (dataType == SectionDataType.Lines &&

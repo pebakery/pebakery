@@ -48,6 +48,8 @@ namespace PEBakery.WPF
     public partial class MainWindow : Window
     {
         #region Variables
+        private bool fullLoaded = false;
+
         private ProjectCollection projects;
         public ProjectCollection Projects => projects;
 
@@ -166,6 +168,7 @@ namespace PEBakery.WPF
         private void StartLoadWorker()
         {
             Stopwatch watch = Stopwatch.StartNew();
+            fullLoaded = false;
 
             // Set PEBakery Logo
             Image image = new Image()
@@ -312,6 +315,8 @@ namespace PEBakery.WPF
                 // If plugin cache is enabled, generate cache.
                 if (setting.Plugin_EnableCache)
                     StartCacheWorker();
+
+                fullLoaded = true;
             };
             loadWorker.RunWorkerAsync(baseDir);
         }
@@ -558,10 +563,13 @@ namespace PEBakery.WPF
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (UtilityWindow.Count == 0)
+            if (fullLoaded)
             {
-                utilityDialog = new UtilityWindow(setting.General_MonospaceFont);
-                utilityDialog.Show();
+                if (UtilityWindow.Count == 0)
+                {
+                    utilityDialog = new UtilityWindow(setting.General_MonospaceFont);
+                    utilityDialog.Show();
+                }
             }
         }
 
@@ -649,6 +657,8 @@ namespace PEBakery.WPF
 
         private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
         {
+            Model.ProgressRingActive = true;
+
             CodeValidator v = new CodeValidator(curMainTree.Plugin);
             v.Validate();
 
@@ -714,6 +724,8 @@ namespace PEBakery.WPF
                     proc.Start();
                 }
             }
+
+            Model.ProgressRingActive = false;
         }
         #endregion
 
