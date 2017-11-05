@@ -232,7 +232,9 @@ namespace PEBakery.Core.Commands
             CodeInfo_RegWrite info = cmd.Info as CodeInfo_RegWrite;
 
             string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
-            string valueName = StringEscaper.Preprocess(s, info.ValueName);
+            string valueName = null;
+            if (info.ValueName != null)
+                valueName = StringEscaper.Preprocess(s, info.ValueName);
             
             string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
             if (hKeyStr == null)
@@ -247,8 +249,7 @@ namespace PEBakery.Core.Commands
                 switch (info.ValueType)
                 {
                     case RegistryValueKind.None:
-                        subKey.SetValue(valueName, null, RegistryValueKind.None);
-                        logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}]\\{valueName}] set to none"));
+                        logs.Add(new LogInfo(LogState.Success, $"Registry subkey [{fullKeyPath}] created"));
                         return logs;
                     case RegistryValueKind.String:
                         valueData = StringEscaper.Preprocess(s, info.ValueData);

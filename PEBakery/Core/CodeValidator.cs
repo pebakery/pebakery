@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core
@@ -11,9 +12,11 @@ namespace PEBakery.Core
     {
         #region Field and Property
         private Plugin p;
+        private List<PluginSection> visitedSections = new List<PluginSection>();
 
         public int CodeSectionCount => p.Sections.Where(x => x.Value.Type == SectionType.Code).Count();
-        public int VisitedSectionCount { get; private set; }
+        // public int VisitedSectionCount { get; private set; }
+        public int VisitedSectionCount => visitedSections.Count;
         public double Coverage
         {
             get
@@ -41,7 +44,7 @@ namespace PEBakery.Core
         public CodeValidator(Plugin p)
         {
             this.p = p ?? throw new ArgumentNullException("p");
-            VisitedSectionCount = 0;
+            // VisitedSectionCount = 0;
         }
         #endregion
 
@@ -67,7 +70,8 @@ namespace PEBakery.Core
             List<CodeCommand> codes = section.GetCodes(true);
             List<LogInfo> logs = section.LogInfos;
 
-            VisitedSectionCount += 1;
+            if (visitedSections.Contains(section) == false)
+                visitedSections.Add(section);
             InternalValidateCodes(codes, logs);
 
             return logs;
@@ -106,9 +110,15 @@ namespace PEBakery.Core
                                 info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
+                                {
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
+                                }
                                 else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
+                                {
+                                    MatchCollection matches = Regex.Matches(info.SectionName, @"%([^ %]+)%", RegexOptions.Compiled);
+                                    if (matches.Count == 0)
+                                        logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
+                                }
                             }
                         }
                         break;
@@ -122,9 +132,15 @@ namespace PEBakery.Core
                                 info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
+                                {
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
+                                }
                                 else
-                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
+                                {
+                                    MatchCollection matches = Regex.Matches(info.SectionName, @"%([^ %]+)%", RegexOptions.Compiled);
+                                    if (matches.Count == 0)
+                                        logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
+                                }
                             }
                         }
                         break;
