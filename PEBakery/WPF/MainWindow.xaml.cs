@@ -49,30 +49,30 @@ namespace PEBakery.WPF
     {
         #region Variables
         private ProjectCollection projects;
-        public ProjectCollection Projects { get => projects; }
+        public ProjectCollection Projects => projects;
 
         private string baseDir;
-        public string BaseDir { get => baseDir; }
+        public string BaseDir => baseDir;
 
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
         private BackgroundWorker cacheWorker = new BackgroundWorker();
 
         private TreeViewModel curMainTree;
-        public TreeViewModel CurMainTree { get => curMainTree; }
+        public TreeViewModel CurMainTree => curMainTree;
 
         private TreeViewModel curBuildTree;
         public TreeViewModel CurBuildTree { get => curBuildTree; set => curBuildTree = value; }
 
         private Logger logger;
-        public Logger Logger { get => logger; }
+        public Logger Logger => logger;
         private PluginCache pluginCache;
 
         const int MaxDpiScale = 4;
         private int allPluginCount = 0;
         private readonly string settingFile;
         private SettingViewModel setting;
-        public SettingViewModel Setting { get => setting; }
+        public SettingViewModel Setting => setting;
         public MainViewModel Model { get; private set; }
 
         public LogWindow logDialog = null;
@@ -86,7 +86,7 @@ namespace PEBakery.WPF
             Model = this.DataContext as MainViewModel;
 
             string[] args = App.Args;
-            if (int.TryParse(Properties.Resources.IntegerVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
+            if (int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
             {
                 Console.WriteLine("Cannot determine version");
                 Application.Current.Shutdown(1);
@@ -202,8 +202,10 @@ namespace PEBakery.WPF
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
+                bool globalCacheValid = pluginCache.IsGlobalCacheValid(baseDir);
+
                 // Init ProjectCollection
-                if (setting.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
+                if (setting.Plugin_EnableCache && globalCacheValid) // Use PluginCache - Fast speed, more memory
                     projects = new ProjectCollection(baseDir, pluginCache);
                 else  // Do not use PluginCache - Slow speed, less memory
                     projects = new ProjectCollection(baseDir, null);
@@ -219,9 +221,8 @@ namespace PEBakery.WPF
                 Dispatcher.Invoke(() =>
                 {
                     foreach (Project project in projects.Projects)
-                    {
                         PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
-                    };
+                    
                     int pIdx = setting.Project_DefaultIndex;
                     curMainTree = Model.MainTree.Children[pIdx];
                     curMainTree.IsExpanded = true;
@@ -334,7 +335,7 @@ namespace PEBakery.WPF
                         BackgroundWorker worker = sender as BackgroundWorker;
 
                         watch = Stopwatch.StartNew();
-                        pluginCache.CachePlugins(projects, worker);
+                        pluginCache.CachePlugins(projects, baseDir, worker);
                     };
 
                     cacheWorker.WorkerReportsProgress = true;

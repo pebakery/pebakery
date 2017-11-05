@@ -33,7 +33,7 @@ namespace PEBakery
             ZLibAssemblyInit();
 
             // Why Properties.Resources is not available in App_Startup?
-            // Version = Properties.Resources.IntegerVersion;
+            // Version = Properties.Resources.EngineVersion;
         }
 
         void ZLibAssemblyInit()

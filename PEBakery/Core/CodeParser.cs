@@ -17,7 +17,7 @@
 */
 
 // TODO: Full Lexer / Parser and AST!
-//       -> Experimental Parser in CodeParserEx.cs
+//       -> Experimental Parser in PEBakery.Core.Parser
 
 using System;
 using System.Collections.Generic;

@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20171101과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20171105과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -82,9 +82,9 @@ namespace PEBakery.Properties {
         /// <summary>
         ///   90과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
-        internal static string IntegerVersion {
+        internal static string EngineVersion {
             get {
-                return ResourceManager.GetString("IntegerVersion", resourceCulture);
+                return ResourceManager.GetString("EngineVersion", resourceCulture);
             }
         }
         

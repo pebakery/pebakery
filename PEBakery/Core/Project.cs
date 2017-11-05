@@ -50,10 +50,10 @@ namespace PEBakery.Core
         public const int MainLevel = -256;  // Reserved level for script.project
 
         // Properties
-        public List<Project> Projects { get => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); }
-        public List<string> ProjectNames { get => projectDict.Keys.OrderBy(x => x).ToList(); }
-        public Project this[int i] { get => Projects[i]; }
-        public int Count { get => projectDict.Count; }
+        public List<Project> Projects => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
+        public List<string> ProjectNames => projectDict.Keys.OrderBy(x => x).ToList(); 
+        public Project this[int i] => Projects[i]; 
+        public int Count => projectDict.Count; 
 
         public ProjectCollection(string baseDir, PluginCache pluginCache)
         {
@@ -159,9 +159,9 @@ namespace PEBakery.Core
                 foreach (var kv in projectDict)
                     kv.Value.PostLoad();
             }
-            catch (SQLiteException except)
+            catch (SQLiteException e)
             { // Update failure
-                string msg = $"SQLite Error : {except.Message}\n\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
+                string msg = $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
