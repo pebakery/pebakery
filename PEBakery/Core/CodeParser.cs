@@ -80,7 +80,6 @@ namespace PEBakery.Core
 
             if (App.Setting.General_OptimizeCode)
             {
-                List<CodeCommand> optimizedList = new List<CodeCommand>();
                 return CodeOptimizer.OptimizeCommands(compiledList);
             }
             else
@@ -121,7 +120,7 @@ namespace PEBakery.Core
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
                     if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
-                        throw new InvalidCommandException("Syntax erro");
+                        throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
                     string next = preNext.Substring(1, preNext.Length - 2);
@@ -538,8 +537,8 @@ namespace PEBakery.Core
                         return new CodeInfo_RegRead(hKey, args[1], args[2], destVar);
                     }
                 case CodeType.RegWrite:
-                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
-                        const int minArgCount = 5;
+                    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Empty | ValueData | ValueDatas>
+                        const int minArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
@@ -547,28 +546,29 @@ namespace PEBakery.Core
 
                         string valTypeStr = args[1];
                         RegistryValueKind valType;
-                        try
-                        {
-                            valType = CodeParser.ParseRegistryValueKind(valTypeStr);
-                        }
+                        try { valType = CodeParser.ParseRegistryValueKind(valTypeStr); }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
-                        RegistryValueKind[] allowTypes = new RegistryValueKind[]
-                        {
-                            RegistryValueKind.None,
-                            RegistryValueKind.String,
-                            RegistryValueKind.ExpandString,
-                            RegistryValueKind.Binary,
-                            RegistryValueKind.DWord,
-                            RegistryValueKind.MultiString,
-                            RegistryValueKind.QWord,
-                        };
-                        if (allowTypes.Contains(valType) == false) // Not allowed
-                            throw new InvalidCommandException($"Not allowed ValueType {valTypeStr}");
-
                         string[] valueDatas = null;
-                        if (valType == RegistryValueKind.Binary || valType == RegistryValueKind.MultiString)
-                            valueDatas = args.Skip(4).Take(args.Count - 4).ToArray();
+                        switch (valType)
+                        {
+                            case RegistryValueKind.None:
+                                if (args.Count < 3)
+                                    throw new InvalidCommandException($"[RegWrite,<HKey>,0x0,<KeyPath>,<ValueName>] must have [{minArgCount}] arguments", rawCode);
+                                return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, valueDatas);
+                            case RegistryValueKind.String:
+                                if (args.Count == 3) // TODO: For WB080 Compability, remove this later
+                                    return new CodeInfo_RegWrite(hKey, valType, args[2], null, null, valueDatas);
+                                break;
+                            case RegistryValueKind.Binary:
+                            case RegistryValueKind.MultiString:
+                                valueDatas = args.Skip(4).Take(args.Count - 4).ToArray();
+                                break;
+                            default:
+                                if (args.Count < 5)
+                                    throw new InvalidCommandException($"[RegWrite,<HKey>,{valTypeStr},<KeyPath>,<ValueName>,<ValueData>] must have at least [5] arguments", rawCode);
+                                break;
+                        }
 
                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], valueDatas);
                     }
@@ -600,10 +600,7 @@ namespace PEBakery.Core
 
                         string valTypeStr = args[3];
                         RegMultiType valType;
-                        try
-                        {
-                            valType = CodeParser.ParseRegMultiType(valTypeStr);
-                        }
+                        try { valType = CodeParser.ParseRegMultiType(valTypeStr); }
                         catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawCode); }
 
                         string arg1 = args[4];
@@ -1297,11 +1294,15 @@ namespace PEBakery.Core
                         return new CodeInfo_AddVariables(varName, varValue, global);
                     }
                 case CodeType.Exit:
-                    { // Exit,<Message>[,NOWARN]
-                        const int minArgCount = 1;
+                    { // Exit,[Message],[NOWARN]
+                        const int minArgCount = 0;
                         const int maxArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string msg = string.Empty;
+                        if (0 < args.Count)
+                            msg = args[0];
 
                         bool noWarn = false;
                         if (1 < args.Count)
@@ -1310,7 +1311,7 @@ namespace PEBakery.Core
                                 noWarn = true;
                         }
 
-                        return new CodeInfo_Exit(args[0], noWarn);
+                        return new CodeInfo_Exit(msg, noWarn);
                     }
                 case CodeType.Halt:
                     { // Halt,<Message>
@@ -1392,17 +1393,25 @@ namespace PEBakery.Core
             if (NumberHelper.ParseInt32(typeStr, out int typeInt) == false)
                 throw new InvalidCommandException($"[{typeStr}] is not valid number");
 
-            // Convert typeStr to base 10 integer string
-            bool failure = false;
-            if (Enum.TryParse(typeInt.ToString(), false, out RegistryValueKind type) == false)
-                failure = true;
-            if (Enum.IsDefined(typeof(RegistryValueKind), type) == false)
-                failure = true;
-
-            if (failure)
-                throw new InvalidCommandException("Invalid UICommand type");
-
-            return type;
+            switch (typeInt)
+            {
+                case 0:
+                    return RegistryValueKind.None;
+                case 1:
+                    return RegistryValueKind.String;
+                case 2:
+                    return RegistryValueKind.ExpandString;
+                case 3:
+                    return RegistryValueKind.Binary;
+                case 4:
+                    return RegistryValueKind.DWord;
+                case 7:
+                    return RegistryValueKind.MultiString;
+                case 11:
+                    return RegistryValueKind.QWord;
+                default:
+                    throw new InvalidCommandException("Invalid UICommand type");
+            }
         }
 
         public static RegMultiType ParseRegMultiType(string typeStr)
@@ -2570,7 +2579,6 @@ namespace PEBakery.Core
                 throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
             newList.Add(cmd);
-            info.LinkParsed = true;
             CodeCommand ifCmd = cmd;
 
             // <Raw>
@@ -2580,15 +2588,15 @@ namespace PEBakery.Core
                 if (info.Embed.Type == CodeType.If) // Nested If
                 {
                     info.Link.Add(info.Embed);
+                    info.LinkParsed = true;
 
-                    ifCmd = info.Embed;
-                    newList = info.Link;
+                    // ifCmd = info.Embed;
+                    // newList = info.Link;
 
-                    info = ifCmd.Info as CodeInfo_If;
+                    // info = ifCmd.Info as CodeInfo_If;
+                    info = info.Embed.Info as CodeInfo_If;
                     if (info == null)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                    info.LinkParsed = true;
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -2609,6 +2617,7 @@ namespace PEBakery.Core
                 else // Singleline If
                 {
                     info.Link.Add(info.Embed);
+                    info.LinkParsed = true;
 
                     return codeListIdx;
                 }
@@ -2632,55 +2641,61 @@ namespace PEBakery.Core
                 throw new InternalParserException("Invalid CodeInfo_Else while processing nested [Else]");
 
             newList.Add(cmd);
-            info.LinkParsed = true;
 
             CodeCommand elseEmbCmd = info.Embed;
             if (elseEmbCmd.Type == CodeType.If) // Nested If
             {
                 info.Link.Add(elseEmbCmd);
+                info.LinkParsed = true;
 
-                CodeCommand ifCmd = elseEmbCmd;
-                List<CodeCommand> nestList = info.Link;
+                // CodeCommand ifCmd = elseEmbCmd;
+                // List<CodeCommand> nestList = info.Link;
 
-                CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
+                // CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
+                // CodeCommand ifCmd = info.Embed;
+                CodeInfo_If ifInfo = info.Embed.Info as CodeInfo_If;
                 if (ifInfo == null)
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
-
-                ifInfo.LinkParsed = true;
 
                 while (true)
                 {
                     if (ifInfo.Embed.Type == CodeType.If) // Nested If
                     {
-                        ifInfo.Link.Add(info.Embed);
+                        ifInfo.Link.Add(ifInfo.Embed);
+                        ifInfo.LinkParsed = true;
 
-                        ifCmd = ifInfo.Embed;
-                        nestList = ifInfo.Link;
-
-                        ifInfo = ifCmd.Info as CodeInfo_If;
+                        // ifCmd = ifInfo.Embed;
+                        // nestList = ifInfo.Link;
+                        // ifInfo = ifCmd.Info as CodeInfo_If;
+                        ifInfo = ifInfo.Embed.Info as CodeInfo_If;
                         if (ifInfo == null)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
                         ifInfo.LinkParsed = true;
                     }
-                    else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
+                    else if (ifInfo.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {
                         // Find proper End
                         int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                         if (endIdx == -1)
-                            throw new InvalidCodeCommandException("Begin must be matched with End", ifCmd);
+                            throw new InvalidCodeCommandException("Begin must be matched with End", ifInfo.Embed);
+
                         ifInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
+                        ifInfo.LinkParsed = true;
+
                         elseFlag = true;
                         return endIdx;
                     }
-                    else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
+                    else if (ifInfo.Embed.Type == CodeType.Else || ifInfo.Embed.Type == CodeType.End) // Cannot come here!
                     {
-                        ifInfo.Link.Add(info.Embed);
+                        ifInfo.Link.Add(ifInfo.Embed);
                         throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with If", cmd);
                     }
                     else // Singleline If
                     {
-                        info.Link.Add(info.Embed);
+                        ifInfo.Link.Add(ifInfo.Embed);
+                        ifInfo.LinkParsed = true;
+
                         elseFlag = true;
                         return codeListIdx;
                     }
@@ -2692,7 +2707,10 @@ namespace PEBakery.Core
                 int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                 if (endIdx == -1)
                     throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
+
                 info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1)); // Remove Begin and End
+                info.LinkParsed = true;
+
                 elseFlag = true;
                 return endIdx;
             }
@@ -2704,6 +2722,8 @@ namespace PEBakery.Core
             else // Normal codes
             {
                 info.Link.Add(info.Embed);
+                info.LinkParsed = true;
+
                 elseFlag = false;
                 return codeListIdx;
             }
