@@ -50,10 +50,10 @@ namespace PEBakery.Core
         public const int MainLevel = -256;  // Reserved level for script.project
 
         // Properties
-        public List<Project> Projects { get => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); }
-        public List<string> ProjectNames { get => projectDict.Keys.OrderBy(x => x).ToList(); }
-        public Project this[int i] { get => Projects[i]; }
-        public int Count { get => projectDict.Count; }
+        public List<Project> Projects => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
+        public List<string> ProjectNames => projectDict.Keys.OrderBy(x => x).ToList(); 
+        public Project this[int i] => Projects[i]; 
+        public int Count => projectDict.Count; 
 
         public ProjectCollection(string baseDir, PluginCache pluginCache)
         {
@@ -159,9 +159,9 @@ namespace PEBakery.Core
                 foreach (var kv in projectDict)
                     kv.Value.PostLoad();
             }
-            catch (SQLiteException except)
+            catch (SQLiteException e)
             { // Update failure
-                string msg = $"SQLite Error : {except.Message}\n\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
+                string msg = $"SQLite Error : {e.Message}\r\nCache Database is corrupted. Please delete PEBakeryCache.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
@@ -175,7 +175,7 @@ namespace PEBakery.Core
             DB_PluginCache[] cacheDB = null;
             if (pluginCache != null)
                 cacheDB = pluginCache.Table<DB_PluginCache>().Where(x => true).ToArray();
-                    
+
             var links = allPlugins.Where(x => x.Type == PluginType.Link);
             Task[] tasks = links.Select(p =>
             {
@@ -190,7 +190,7 @@ namespace PEBakery.Core
                         string linkPath = p.Sections["Main"].IniDict["Link"];
                         string linkFullPath = Path.Combine(baseDir, linkPath);
                         if (File.Exists(linkFullPath) == false) // Invalid link
-                            throw new PluginParseException($"Invalid link path in plugin {p.FullPath}");
+                            break;
 
                         if (pluginCache != null)
                         { // Case of PluginCache enabled
@@ -538,7 +538,7 @@ namespace PEBakery.Core
             List<Plugin> visiblePluginList = new List<Plugin>();
             foreach (Plugin p in allPluginList)
             {
-                if (0 <= p.Level)
+                if (0 < p.Level)
                     visiblePluginList.Add(p);
             }
             return visiblePluginList;

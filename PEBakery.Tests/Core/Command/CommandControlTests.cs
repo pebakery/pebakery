@@ -58,6 +58,8 @@ namespace PEBakery.Tests.Core.Command
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Dest");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+
+            s.Variables.GetVars(VarsType.Global).Remove("PEBakery");
         }
 
         public void Set_3()

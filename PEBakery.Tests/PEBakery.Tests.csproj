@@ -87,6 +87,7 @@
     <Compile Include="Core\EngineTests.cs" />
     <Compile Include="Core\Parser\CodeParserExTests.cs" />
     <Compile Include="Core\StringEscaperTests.cs" />
+    <Compile Include="HelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -81,7 +81,7 @@ namespace PEBakery.Tests.Core
         }
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = false, Plugin p = null)
+        public static EngineState CreateEngineState(bool doClone = true, Plugin p = null)
         {
             // Clone is needed for parallel test execution
             if (doClone)

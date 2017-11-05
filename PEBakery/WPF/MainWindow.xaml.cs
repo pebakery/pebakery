@@ -49,30 +49,30 @@ namespace PEBakery.WPF
     {
         #region Variables
         private ProjectCollection projects;
-        public ProjectCollection Projects { get => projects; }
+        public ProjectCollection Projects => projects;
 
         private string baseDir;
-        public string BaseDir { get => baseDir; }
+        public string BaseDir => baseDir;
 
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
         private BackgroundWorker cacheWorker = new BackgroundWorker();
 
         private TreeViewModel curMainTree;
-        public TreeViewModel CurMainTree { get => curMainTree; }
+        public TreeViewModel CurMainTree => curMainTree;
 
         private TreeViewModel curBuildTree;
         public TreeViewModel CurBuildTree { get => curBuildTree; set => curBuildTree = value; }
 
         private Logger logger;
-        public Logger Logger { get => logger; }
+        public Logger Logger => logger;
         private PluginCache pluginCache;
 
         const int MaxDpiScale = 4;
         private int allPluginCount = 0;
         private readonly string settingFile;
         private SettingViewModel setting;
-        public SettingViewModel Setting { get => setting; }
+        public SettingViewModel Setting => setting;
         public MainViewModel Model { get; private set; }
 
         public LogWindow logDialog = null;
@@ -86,7 +86,7 @@ namespace PEBakery.WPF
             Model = this.DataContext as MainViewModel;
 
             string[] args = App.Args;
-            if (int.TryParse(Properties.Resources.IntegerVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
+            if (int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
             {
                 Console.WriteLine("Cannot determine version");
                 Application.Current.Shutdown(1);
@@ -202,8 +202,10 @@ namespace PEBakery.WPF
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
+                bool globalCacheValid = pluginCache.IsGlobalCacheValid(baseDir);
+
                 // Init ProjectCollection
-                if (setting.Plugin_EnableCache) // Use PluginCache - Fast speed, more memory
+                if (setting.Plugin_EnableCache && globalCacheValid) // Use PluginCache - Fast speed, more memory
                     projects = new ProjectCollection(baseDir, pluginCache);
                 else  // Do not use PluginCache - Slow speed, less memory
                     projects = new ProjectCollection(baseDir, null);
@@ -219,9 +221,8 @@ namespace PEBakery.WPF
                 Dispatcher.Invoke(() =>
                 {
                     foreach (Project project in projects.Projects)
-                    {
                         PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
-                    };
+                    
                     int pIdx = setting.Project_DefaultIndex;
                     curMainTree = Model.MainTree.Children[pIdx];
                     curMainTree.IsExpanded = true;
@@ -334,7 +335,7 @@ namespace PEBakery.WPF
                         BackgroundWorker worker = sender as BackgroundWorker;
 
                         watch = Stopwatch.StartNew();
-                        pluginCache.CachePlugins(projects, worker);
+                        pluginCache.CachePlugins(projects, baseDir, worker);
                     };
 
                     cacheWorker.WorkerReportsProgress = true;
@@ -644,6 +645,75 @@ namespace PEBakery.WPF
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
         {
             StartReloadPluginWorker();
+        }
+
+        private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
+        {
+            CodeValidator v = new CodeValidator(curMainTree.Plugin);
+            v.Validate();
+
+            LogInfo[] logs = v.LogInfos;
+            LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+            LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+
+            int errorWarns = 0;
+            StringBuilder b = new StringBuilder();
+            if (0 < errorLogs.Length)
+            {
+                errorWarns += errorLogs.Length;
+
+                b.AppendLine($"{errorLogs.Length} syntax error detected");
+                b.AppendLine();
+                for (int i = 0; i < errorLogs.Length; i++)
+                {
+                    LogInfo log = errorLogs[i];
+                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                }
+                b.AppendLine();
+            }
+
+            if (0 < warnLogs.Length)
+            {
+                errorWarns += warnLogs.Length;
+
+                b.AppendLine($"{errorLogs.Length} syntax warning detected");
+                b.AppendLine();
+                for (int i = 0; i < warnLogs.Length; i++)
+                {
+                    LogInfo log = warnLogs[i];
+                    b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                }
+                b.AppendLine();
+            }
+
+            if (errorWarns == 0)
+            {
+                b.AppendLine("No syntax error detected");
+                b.AppendLine();
+                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                if (result == MessageBoxResult.OK)
+                {
+                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                    string tempFile = Path.GetTempFileName();
+                    File.Delete(tempFile);
+                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                        sw.Write(b.ToString());
+
+                    Process proc = new Process();
+                    proc.StartInfo.UseShellExecute = true;
+                    proc.StartInfo.Verb = "Open";
+                    proc.StartInfo.FileName = tempFile;
+                    proc.Start();
+                }
+            }
         }
         #endregion
 

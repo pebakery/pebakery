@@ -81,7 +81,9 @@ namespace PEBakery.Core
             // Tools
             logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
             // Version
-            logs.Add(SetFixedValue("Version", App.Version.ToString()));
+            logs.Add(SetFixedValue("Version", "082")); // WB082 Compatibility Shim
+            logs.Add(SetFixedValue("EngineVersion", App.Version.ToString()));
+            logs.Add(SetFixedValue("PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
             #region Project Variables
@@ -116,6 +118,15 @@ namespace PEBakery.Core
             string targetDir = dict["TargetDir"];
             if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            /*
+        { 
+            // Fix for MistyPE
+            string varTargetDir = Ini.GetKey(fullPath, "Variables", "%TargetDir%");
+            if (varTargetDir == null)
+                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            else
+                targetDir = varTargetDir;
+        }*/
 
             string isoFile = dict["ISOFile"];
             if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
@@ -184,8 +195,6 @@ namespace PEBakery.Core
             // ScriptFile, PluginFile
             SetFixedValue("ScriptFile", p.FullPath);
             SetFixedValue("PluginFile", p.FullPath);
-            // SetValue(VarsType.Local, "PluginFile", p.FullPath);
-            // SetValue(VarsType.Local, "ScriptFile", p.FullPath);
 
             // ScriptDir, PluginDir
             SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
@@ -312,31 +321,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        
-        private Dictionary<string, string> GetVarsMatchesType(VarsType type)
-        {
-            switch (type)
-            {
-                case VarsType.Local:
-                    return localVars;
-                case VarsType.Global:
-                    return globalVars;
-                case VarsType.Fixed:
-                    return fixedVars;
-                default:
-                    return null;
-            }
-        }
-
-        public ReadOnlyDictionary<string, string> GetVars(VarsType type)
-        {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            ReadOnlyDictionary<string, string> readOnlyDictionary = 
-                new ReadOnlyDictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
-            return readOnlyDictionary;
-        }
-
-
+        #region CircularReference
         /// <summary>
         /// Check variables' circular reference.
         /// </summary>
@@ -380,6 +365,39 @@ namespace PEBakery.Core
             }
 
             return false;
+        }
+        #endregion
+
+        #region Get, Set, Expand Value
+        private Dictionary<string, string> GetVarsMatchesType(VarsType type)
+        {
+            switch (type)
+            {
+                case VarsType.Local:
+                    return localVars;
+                case VarsType.Global:
+                    return globalVars;
+                case VarsType.Fixed:
+                    return fixedVars;
+                default:
+                    return null;
+            }
+        }
+
+        public Dictionary<string, string> GetVars(VarsType type)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            // Dictionary<string, string> newDict = new Dictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
+            return vars.ToDictionary(k => k.Key, v => v.Value);
+        }
+
+        public void SetVars(VarsType type, Dictionary<string, string> varDict)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            vars.Clear();
+            
+            foreach (var kv in varDict)
+                vars.Add(kv.Key, kv.Value);
         }
 
         public LogInfo SetFixedValue(string key, string rawValue)
@@ -482,41 +500,38 @@ namespace PEBakery.Core
             bool globalResult = globalVars.TryGetValue(key, out string globalValue);
             bool localResult = localVars.TryGetValue(key, out string localValue);
 
-            if (fixedResult)
-                value = Expand(fixedValue);
-            else if (localResult)
+            if (localResult)
                 value = Expand(localValue);
-            else if (globalResult)
+            else if(globalResult)
                 value = Expand(globalValue);
+            else if (fixedResult)
+                value = Expand(fixedValue);
             else
                 value = string.Empty;
 
             return fixedResult || localResult || globalResult;
         }
+        #endregion
 
+        #region Expand
         public string Expand(string str)
         {
-#if _DEBUG // These codes are for Debug Assertion
-            List<string> processed = new List<string>();
-#endif
-
-            while (2 <= StringHelper.CountOccurrences(str, @"%"))
+            MatchCollection matches;
+            do
             {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
-                MatchCollection matches = Regex.Matches(str, @"%([^%]+)%", RegexOptions.Compiled);
+                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
                 StringBuilder b = new StringBuilder();
 
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
-#if _DEBUG // These codes are for Debug Assertion
-                    if (processed.Contains(varName, StringComparer.OrdinalIgnoreCase))
-                        throw new VariableCircularReferenceException($"%{varName}% is circular referenced");
-#endif
 
                     if (x == 0)
+                    {
                         b.Append(str.Substring(0, matches[0].Index));
+                    }
                     else
                     {
                         int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
@@ -524,50 +539,25 @@ namespace PEBakery.Core
                         b.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (localVars.ContainsKey(varName))
-                    {
-                        string varValue = localVars[varName];
+                    if (TryGetValue(varName, out string varValue))
                         b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
-                    else if (globalVars.ContainsKey(varName))
-                    {
-                        string varValue = globalVars[varName];
-                        b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
-                    else if (fixedVars.ContainsKey(varName))
-                    {
-                        string varValue = fixedVars[varName];
-                        b.Append(varValue);
-
-#if _DEBUG // These codes are for Debug Assertion
-                        processed.Add(varName);
-#endif
-                    }
                     else // variable not found
-                    {
                         b.Append("#$p").Append(varName).Append("#$p");
-                    }
 
                     if (x + 1 == matches.Count) // Last iteration
                         b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
-                if (0 < matches.Count) // Only copy it if variable exists
-                {
+
+                if (0 < matches.Count) // Copy it if variable exists
                     str = b.ToString();
-                }
             }
+            while (0 < matches.Count);
 
             return str;
         }
+        #endregion
 
+        #region AddVariables
         public List<LogInfo> AddVariables(VarsType type, PluginSection section)
         {
             Dictionary<string, string> dict = null;
@@ -629,7 +619,9 @@ namespace PEBakery.Core
             }
             return list;
         }
+        #endregion
 
+        #region ResetVariables
         public void ResetVariables(VarsType type)
         {
             switch (type)
@@ -642,8 +634,9 @@ namespace PEBakery.Core
                     break;
             }
         }
+        #endregion
 
-#region Utility Static Methods
+        #region Utility Static Methods
         public static string TrimPercentMark(string varName)
         {
             if (!(varName.StartsWith("%", StringComparison.Ordinal) && varName.EndsWith("%", StringComparison.Ordinal)))
@@ -797,7 +790,7 @@ namespace PEBakery.Core
         }
 #endregion
 
-#region Clone
+        #region Clone
         public object Clone()
         {
             Variables variables = new Variables(project)
@@ -808,6 +801,6 @@ namespace PEBakery.Core
             };
             return variables;
         }
-#endregion
+        #endregion
     }
 }

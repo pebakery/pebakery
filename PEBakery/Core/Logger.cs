@@ -284,7 +284,7 @@ namespace PEBakery.Core
             // Build Id
             DB_BuildInfo dbBuild = new DB_BuildInfo()
             {
-                StartTime = DateTime.Now,
+                StartTime = DateTime.UtcNow,
                 Name = name,
             };
             DB.Insert(dbBuild);
@@ -297,7 +297,7 @@ namespace PEBakery.Core
             // Variables - Fixed, Global, Local
             foreach (VarsType type in Enum.GetValues(typeof(VarsType)))
             {
-                ReadOnlyDictionary<string, string> dict = s.Variables.GetVars(type);
+                Dictionary<string, string> dict = s.Variables.GetVars(type);
                 foreach (var kv in dict)
                 {
                     DB_Variable dbVar = new DB_Variable()
@@ -325,7 +325,7 @@ namespace PEBakery.Core
             if (dbBuild == null)
                 throw new KeyNotFoundException($"Unable to find DB_BuildInfo Instance, id = {id}");
 
-            dbBuild.EndTime = DateTime.Now;
+            dbBuild.EndTime = DateTime.UtcNow;
             DB.Update(dbBuild);
 
             System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
@@ -397,7 +397,7 @@ namespace PEBakery.Core
             {
                 DB_BuildLog dbCode = new DB_BuildLog()
                 {
-                    Time = DateTime.Now,
+                    Time = DateTime.UtcNow,
                     BuildId = buildId,
                     PluginId = pluginId,
                     Message = message,
@@ -432,7 +432,7 @@ namespace PEBakery.Core
             {
                 DB_BuildLog dbCode = new DB_BuildLog()
                 {
-                    Time = DateTime.Now,
+                    Time = DateTime.UtcNow,
                     BuildId = buildId,
                     PluginId = pluginId,
                     Depth = log.Depth,
@@ -494,7 +494,7 @@ namespace PEBakery.Core
         {
             DB_SystemLog dbLog = new DB_SystemLog()
             {
-                Time = DateTime.Now,
+                Time = DateTime.UtcNow,
                 State = LogState.None,
                 Message = message,
             };
@@ -509,7 +509,7 @@ namespace PEBakery.Core
         {
             DB_SystemLog dbLog = new DB_SystemLog()
             {
-                Time = DateTime.Now,
+                Time = DateTime.UtcNow,
                 State = log.State,
                 Message = log.Message,
             };

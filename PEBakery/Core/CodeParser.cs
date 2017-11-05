@@ -17,6 +17,7 @@
 */
 
 // TODO: Full Lexer / Parser and AST!
+//       -> Experimental Parser in PEBakery.Core.Parser
 
 using System;
 using System.Collections.Generic;
@@ -86,7 +87,6 @@ namespace PEBakery.Core
             {
                 return compiledList;
             }
-
         }
         #endregion
 
@@ -111,8 +111,7 @@ namespace PEBakery.Core
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
                     if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
-                        throw new InvalidCommandException("Syntax error, try checking period");
-                    // Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
+                        throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
                     string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
@@ -122,7 +121,7 @@ namespace PEBakery.Core
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
                     if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
-                        throw new InvalidCommandException("Syntax error, try checking period");
+                        throw new InvalidCommandException("Syntax erro");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
                     string next = preNext.Substring(1, preNext.Length - 2);
@@ -2588,6 +2587,8 @@ namespace PEBakery.Core
                     info = ifCmd.Info as CodeInfo_If;
                     if (info == null)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+                    info.LinkParsed = true;
                 }
                 else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                 {
@@ -2645,7 +2646,6 @@ namespace PEBakery.Core
                 if (ifInfo == null)
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
-
                 ifInfo.LinkParsed = true;
 
                 while (true)
@@ -2660,6 +2660,8 @@ namespace PEBakery.Core
                         ifInfo = ifCmd.Info as CodeInfo_If;
                         if (ifInfo == null)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
+
+                        ifInfo.LinkParsed = true;
                     }
                     else if (info.Embed.Type == CodeType.Begin) // Multiline If (Begin-End)
                     {

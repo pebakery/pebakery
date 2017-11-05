@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
@@ -23,7 +24,7 @@ namespace PEBakery.Core
         public PluginCache(string path) : base(path)
         {
             dbLock = 0;
-            CreateTable<DB_ExecutableInfo>();
+            CreateTable<DB_CacheInfo>();
             CreateTable<DB_PluginCache>();
         }
 
@@ -40,10 +41,20 @@ namespace PEBakery.Core
             }
         }
 
-        public void CachePlugins(ProjectCollection projects, BackgroundWorker worker)
+        #region Cache Plugin or Plugins
+        public void CachePlugins(ProjectCollection projects, string baseDir, BackgroundWorker worker)
         {
             try
-            { 
+            {
+                DateTime buildDate = new FileInfo(Assembly.GetExecutingAssembly().Location).LastWriteTimeUtc;
+                DB_CacheInfo[] infos = new DB_CacheInfo[]
+                {
+                    new DB_CacheInfo() { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
+                    new DB_CacheInfo() { Key = "BuildDate", Value = Properties.Resources.BuildDate },
+                    new DB_CacheInfo() { Key = "BaseDir", Value = baseDir },
+                };
+                InsertOrReplaceAll(infos);
+
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate
@@ -65,12 +76,11 @@ namespace PEBakery.Core
                     Task.WaitAll(tasks);
                     
                     InsertOrReplaceAll(inMemDB);
-
                 }
             }
             catch (SQLiteException e)
             { // Update failure
-                string msg = $"SQLite Error : {e.Message}\n\nCache database is corrupted. Please delete PEBakeryCache.db and restart.";
+                string msg = $"SQLite Error : {e.Message}\r\nCache database is corrupted. Please delete PEBakeryCache.db and restart.";
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
@@ -82,7 +92,7 @@ namespace PEBakery.Core
         /// <param name="p"></param>
         /// <param name="inMemDB">Use NULL to put direct into .db file</param>
         /// <returns>Return true if cache is updated</returns>
-        public bool CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
+        private bool CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
         {
             // Does cache exist?
             FileInfo f = new FileInfo(p.DirectFullPath);
@@ -193,8 +203,34 @@ namespace PEBakery.Core
 
             return updated;
         }
+        #endregion
+        
+        #region IsGlobalCacheValid
+        public bool IsGlobalCacheValid(string baseDir)
+        {
+            Dictionary<string, string> infoDict = Table<DB_CacheInfo>().ToDictionary(x => x.Key, x => x.Value);
 
-        #region
+            // Does key exist?
+            if (infoDict.ContainsKey("EngineVersion") == false)
+                return false;
+            if (infoDict.ContainsKey("BuildDate") == false)
+                return false;
+            if (infoDict.ContainsKey("BaseDir") == false)
+                return false;
+
+            // Does value match?
+            if (infoDict["EngineVersion"].Equals(Properties.Resources.EngineVersion, StringComparison.Ordinal) == false)
+                return false;
+            if (infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal) == false)
+                return false;
+            if (infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal) == false)
+                return false;
+
+            return true;
+        }
+        #endregion
+
+        #region InsertOrReplaceAll
         public int InsertOrReplaceAll(System.Collections.IEnumerable objects)
         {
             var c = 0;
@@ -207,21 +243,20 @@ namespace PEBakery.Core
             });
             return c;
         }
-    #endregion
-}
-
+        #endregion
+    }
     #endregion
 
     #region Model
-    public class DB_ExecutableInfo
+    public class DB_CacheInfo
     {
-        [PrimaryKey] // Will have only one value
-        public byte[] IntegerVersion { get; set; }
-        public byte[] SHA256 { get; set; }
-
+        [PrimaryKey]
+        public string Key { get; set; }
+        public string Value { get; set; }
+        
         public override string ToString()
         {
-            return $"[{IntegerVersion}] Exe Info";
+            return $"Key [{Key}] = {Value}";
         }
     }
 

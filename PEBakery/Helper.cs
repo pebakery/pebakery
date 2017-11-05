@@ -338,45 +338,120 @@ namespace PEBakery.Helper
         /// <param name="srcDir"></param>
         /// <param name="destDir"></param>
         /// <param name="copySubDirs"></param>
-        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, string wildcard = null)
+        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string wildcard = null)
         {
             // Get the subdirectories for the specified directory.
-            DirectoryInfo dir = new DirectoryInfo(srcDir);
+            DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
 
-            if (!dir.Exists)
+            if (!dirInfo.Exists)
                 throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {srcDir}");
-
-            DirectoryInfo[] dirs;
-            if (wildcard == null) // No wildcard
-                dirs = dir.GetDirectories();
-            else // With wildcard
-                dirs = dir.GetDirectories(wildcard);
 
             // If the destination directory doesn't exist, create it.
             if (!Directory.Exists(destDir))
                 Directory.CreateDirectory(destDir);
 
             // Get the files in the directory and copy them to the new location.
-            FileInfo[] files;
-            if (wildcard == null) // No wildcard
-                files = dir.GetFiles();
-            else // With wildcard
-                files = dir.GetFiles(wildcard);
-            foreach (FileInfo file in files)
+            try
             {
-                string temppath = Path.Combine(destDir, file.Name);
-                file.CopyTo(temppath, false);
+                FileInfo[] files;
+                if (wildcard == null) // No wildcard
+                    files = dirInfo.GetFiles();
+                else // With wildcard
+                    files = dirInfo.GetFiles(wildcard);
+                foreach (FileInfo file in files)
+                {
+                    string temppath = Path.Combine(destDir, file.Name);
+                    file.CopyTo(temppath, overwrite);
+                }
             }
+            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
+
+            DirectoryInfo[] dirs;
+            try { dirs = dirInfo.GetDirectories(); }
+            catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
 
             // If copying subdirectories, copy them and their contents to new location.
             if (copySubDirs)
             {
                 foreach (DirectoryInfo subdir in dirs)
                 {
-                    string temppath = Path.Combine(destDir, subdir.Name);
-                    DirectoryCopy(subdir.FullName, temppath, copySubDirs);
+                    string tempPath = Path.Combine(destDir, subdir.Name);
+                    DirectoryCopy(subdir.FullName, tempPath, copySubDirs, overwrite);
                 }
             }
+        }
+
+        public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        {
+            if (dirPath == null) throw new ArgumentNullException("dirPath");
+
+            DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
+            if (!dirInfo.Exists)
+                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {dirPath}");
+
+            List<string> foundFiles = new List<string>();
+            return InternalGetFilesEx(dirInfo, searchPattern, searchOption, foundFiles).ToArray();
+        }
+
+        private static List<string> InternalGetFilesEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundFiles)
+        {
+            if (dirInfo == null) throw new ArgumentNullException("dirInfo");
+            if (searchPattern == null) throw new ArgumentNullException("searchPattern");
+
+            // Get the files in the directory and copy them to the new location.
+            try
+            {
+                FileInfo[] files = dirInfo.GetFiles(searchPattern);
+                foreach (FileInfo file in files)
+                {
+                    foundFiles.Add(file.FullName);
+                }
+            }
+            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
+
+            DirectoryInfo[] dirs;
+            try { dirs = dirInfo.GetDirectories(); }
+            catch (UnauthorizedAccessException) { return foundFiles; } // Ignore UnauthorizedAccessException
+
+            // If copying subdirectories, copy them and their contents to new location.
+            if (searchOption == SearchOption.AllDirectories)
+            {
+                List<string> subFoundFiles = new List<string>();
+                foreach (DirectoryInfo subDirInfo in dirs)
+                {
+                    InternalGetFilesEx(subDirInfo, searchPattern, searchOption, foundFiles);
+                    // var tempFoundFiles = InternalGetFilesEx(subDir.FullName, searchPattern, searchOption, foundFiles);
+                    // subFoundFiles.AddRange(tempFoundFiles);
+                }
+                // foundFiles.AddRange(subFoundFiles);
+            }
+
+            return foundFiles;
+        }
+
+        public static void DirectoryDeleteEx(string path)
+        {
+            DirectoryInfo root;
+            Stack<DirectoryInfo> fols;
+            DirectoryInfo fol;
+            fols = new Stack<DirectoryInfo>();
+            root = new DirectoryInfo(path);
+            fols.Push(root);
+            while (fols.Count > 0)
+            {
+                fol = fols.Pop();
+                fol.Attributes = fol.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                foreach (DirectoryInfo d in fol.GetDirectories())
+                {
+                    fols.Push(d);
+                }
+                foreach (FileInfo f in fol.GetFiles())
+                {
+                    f.Attributes = f.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
+                    f.Delete();
+                }
+            }
+            root.Delete(true);
         }
 
         private const int MAX_LONG_PATH = 32767;

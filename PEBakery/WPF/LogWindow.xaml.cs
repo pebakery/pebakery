@@ -259,7 +259,11 @@ namespace PEBakery.WPF
         {
             SystemLogListModel list = new SystemLogListModel();
             foreach (DB_SystemLog log in LogDB.Table<DB_SystemLog>())
+            {
+                log.Time = log.Time.ToLocalTime();
                 list.Add(log);
+            }
+                
             SystemLogListModel = list;
 
             SystemLogListSelectedIndex = SystemLogListModel.Count - 1;
@@ -273,7 +277,7 @@ namespace PEBakery.WPF
                 SelectBuildEntries.Clear();
                 foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
                 {
-                    string timeStr = b.StartTime.ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
+                    string timeStr = b.StartTime.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
                     SelectBuildEntries.Add(new Tuple<string, long>($"[{timeStr}] {b.Name} ({b.Id})", b.Id));
                 }
                 SelectBuildIndex = 0;

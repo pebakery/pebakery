@@ -55,7 +55,7 @@
                         HorizontalAlignment="Center" 
                         Margin="0, 0, 0, 20"
                         FontSize="18"
-                        Text="The builder for customizing Windows Preinstalled Environment"/>
+                        Text="The Builder for Windows Preinstalled Environment"/>
                     <TextBlock
                         HorizontalAlignment="Center" 
                         Margin="0, 0, 0, 20"
