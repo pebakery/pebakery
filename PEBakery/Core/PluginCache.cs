@@ -223,7 +223,7 @@ namespace PEBakery.Core
                 return false;
             if (infoDict["BuildDate"].Equals(Properties.Resources.BuildDate, StringComparison.Ordinal) == false)
                 return false;
-            if (infoDict["BaseDir"].Equals(baseDir, StringComparison.OrdinalIgnoreCase) == false)
+            if (infoDict["BaseDir"].Equals(baseDir, StringComparison.Ordinal) == false)
                 return false;
 
             return true;

@@ -111,8 +111,7 @@ namespace PEBakery.Core
                 {
                     string whitespace = str.Substring(nextIdx + 1).Trim();
                     if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
-                        throw new InvalidCommandException("Syntax error, try checking period");
-                    // Debug.Assert(whitespace.Equals(string.Empty, StringComparison.Ordinal));
+                        throw new InvalidCommandException("Syntax error");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();  // ["   Return SetError(@error,0,0)"]
                     string next = preNext.Substring(1, preNext.Length - 2); // [   Return SetError(@error,0,0)]
@@ -122,7 +121,7 @@ namespace PEBakery.Core
                 {
                     string whitespace = str.Substring(nextIdx + 1, pIdx - (nextIdx + 1)).Trim();
                     if (whitespace.Equals(string.Empty, StringComparison.Ordinal) == false)
-                        throw new InvalidCommandException("Syntax error, try checking period");
+                        throw new InvalidCommandException("Syntax erro");
 
                     string preNext = str.Substring(0, nextIdx + 1).Trim();
                     string next = preNext.Substring(1, preNext.Length - 2);

@@ -646,6 +646,75 @@ namespace PEBakery.WPF
         {
             StartReloadPluginWorker();
         }
+
+        private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
+        {
+            CodeValidator v = new CodeValidator(curMainTree.Plugin);
+            v.Validate();
+
+            LogInfo[] logs = v.LogInfos;
+            LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+            LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+
+            int errorWarns = 0;
+            StringBuilder b = new StringBuilder();
+            if (0 < errorLogs.Length)
+            {
+                errorWarns += errorLogs.Length;
+
+                b.AppendLine($"{errorLogs.Length} syntax error detected");
+                b.AppendLine();
+                for (int i = 0; i < errorLogs.Length; i++)
+                {
+                    LogInfo log = errorLogs[i];
+                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                }
+                b.AppendLine();
+            }
+
+            if (0 < warnLogs.Length)
+            {
+                errorWarns += warnLogs.Length;
+
+                b.AppendLine($"{errorLogs.Length} syntax warning detected");
+                b.AppendLine();
+                for (int i = 0; i < warnLogs.Length; i++)
+                {
+                    LogInfo log = warnLogs[i];
+                    b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                }
+                b.AppendLine();
+            }
+
+            if (errorWarns == 0)
+            {
+                b.AppendLine("No syntax error detected");
+                b.AppendLine();
+                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                if (result == MessageBoxResult.OK)
+                {
+                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                    string tempFile = Path.GetTempFileName();
+                    File.Delete(tempFile);
+                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                        sw.Write(b.ToString());
+
+                    Process proc = new Process();
+                    proc.StartInfo.UseShellExecute = true;
+                    proc.StartInfo.Verb = "Open";
+                    proc.StartInfo.FileName = tempFile;
+                    proc.Start();
+                }
+            }
+        }
         #endregion
 
         #region TreeView Methods

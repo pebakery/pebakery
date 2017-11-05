@@ -656,12 +656,12 @@ namespace PEBakery.Core
         private SectionDataConverted convDataType = SectionDataConverted.None;
         private bool loaded;
 
-        public Plugin Plugin { get => plugin; }
-        public string SectionName { get => sectionName; }
+        public Plugin Plugin => plugin;
+        public string SectionName => sectionName;
         public SectionType Type { get => type; set => type = value; }
         public SectionDataType DataType { get => dataType; set => dataType = value; }
-        public SectionDataConverted ConvertedType { get => convDataType; }
-        public bool Loaded { get => loaded; }
+        public SectionDataConverted ConvertedType => convDataType; 
+        public bool Loaded => loaded;
 
         // Logs
         private List<LogInfo> logInfos = new List<LogInfo>();
