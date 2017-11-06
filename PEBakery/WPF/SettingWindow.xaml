@@ -314,10 +314,17 @@
                     <CheckBox
                         Name="CheckBox_ConvertToUTF8"
                         Margin="15, 15, 15, 0"
-                        Content="Convert Plugins to UTF-8 Automatically"
+                        Content="Auto Convert Plugins to UTF-8"
                         ToolTip="Turning on will break compability with WinBuilder 082."
                         IsEnabled="False"
-                        IsChecked="{Binding Plugin_ConvertToUTF8}">
+                        IsChecked="{Binding Plugin_AutoConvertToUTF8}">
+                    </CheckBox>
+                    <CheckBox
+                        Name="CheckBox_AutoSyntaxCheck"
+                        Margin="15, 15, 15, 0"
+                        Content="Auto Check Syntax Error"
+                        ToolTip="Useful for developers."
+                        IsChecked="{Binding Plugin_AutoSyntaxCheck}">
                     </CheckBox>
                 </StackPanel>
             </TabItem>

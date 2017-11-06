@@ -525,7 +525,7 @@ namespace PEBakery.Core
                 throw new PluginParseException($"[{fullPath}] is invalid, check [Main] Section");
         }
 
-        public static List<string> GetDisablePluginPaths(Plugin p)
+        public static string[] GetDisablePluginPaths(Plugin p)
         {
             if (p.Type == PluginType.Directory || p.isMainPlugin)
                 return null;
@@ -539,11 +539,8 @@ namespace PEBakery.Core
             string rawLine = p.MainInfo["Disable"];
 
             // Check if rawCode is Empty
-            if (rawLine.Equals(string.Empty))
+            if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
                 return null;
-
-            // Splice with spaces
-            List<string> rawPaths = rawLine.Split(',').ToList();
 
             // Check doublequote's occurence - must be 2n
             if (StringHelper.CountOccurrences(rawLine, "\"") % 2 == 1)
@@ -563,9 +560,14 @@ namespace PEBakery.Core
             }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
-            for (int i = 0; i < paths.Count; i++)
-                paths[i] = p.Project.Variables.Expand(paths[i]);
-            return paths;
+           // for (int i = 0; i < paths.Count; i++)
+           //     paths[i] = p.Project.Variables.Expand(paths[i]);
+            //return paths;
+
+            return paths
+                .Select(x => p.Project.Variables.Expand(x))
+                .Where(x => x.Equals(p.DirectFullPath, StringComparison.Ordinal) == false)
+                .ToArray();
         }
 
         public override string ToString()

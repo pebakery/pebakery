@@ -304,7 +304,7 @@
                 Visibility="{Binding BottomProgressBarVisibility}">
             </ProgressBar>
             <TextBlock
-                Background="Yellow" 
+                Background="#dfdfdf" 
                 Text="{Binding StatusBarText}"
                 Visibility="{Binding BottomStatusBarVisibility}">
             </TextBlock>
@@ -513,6 +513,7 @@
                         <Button
                             Grid.Row="3" Grid.Column="0"
                             Click="PluginCheckButton_Click"
+                            Background="{Binding PluginCheckButtonColor}"
                             ToolTip="Syntax Check">
                             <iconPacks:PackIconMaterial Kind="Check" Width="Auto" Height="Auto" Margin="5"/>
                         </Button>

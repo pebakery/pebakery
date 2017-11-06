@@ -330,17 +330,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         public static string ExpandVariables(EngineState s, string str)
         {
-            /*
-            do
-            { // TODO: Prevent Infinite loop
-                str = s.Variables.Expand(ExpandSectionParams(s, str));
-            }
-            while (Variables.DetermineType(str) != Variables.VarKeyType.None);
-            */
-
-            str = s.Variables.Expand(ExpandSectionParams(s, str));
-
-            return str;
+            return s.Variables.Expand(ExpandSectionParams(s, str));
         }
 
         public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
@@ -445,24 +435,24 @@ namespace PEBakery.Core
         #endregion
 
         #region Preprocess
-        public static string Preprocess(EngineState s, string str)
+        public static string Preprocess(EngineState s, string str, bool escapePercent = true)
         {
-            return Unescape(ExpandVariables(s, str));
+            return Unescape(ExpandVariables(s, str), escapePercent);
         }
 
-        public static List<string> Preprocess(EngineState s, IEnumerable<string> strs)
+        public static List<string> Preprocess(EngineState s, IEnumerable<string> strs, bool escapePercent = true)
         {
-            return Unescape(ExpandVariables(s, strs));
+            return Unescape(ExpandVariables(s, strs), escapePercent);
         }
 
-        public static string Preprocess(Variables vars, string str)
+        public static string Preprocess(Variables vars, string str, bool escapePercent = true)
         {
-            return Unescape(ExpandVariables(vars, str));
+            return Unescape(ExpandVariables(vars, str), escapePercent);
         }
 
-        public static List<string> Preprocess(Variables vars, IEnumerable<string> strs)
+        public static List<string> Preprocess(Variables vars, IEnumerable<string> strs, bool escapePercent = true)
         {
-            return Unescape(ExpandVariables(vars, strs));
+            return Unescape(ExpandVariables(vars, strs), escapePercent);
         }
         #endregion
 

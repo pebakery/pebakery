@@ -59,6 +59,7 @@ namespace PEBakery.WPF
         private BackgroundWorker loadWorker = new BackgroundWorker();
         private BackgroundWorker refreshWorker = new BackgroundWorker();
         private BackgroundWorker cacheWorker = new BackgroundWorker();
+        private BackgroundWorker syntaxCheckWorker = new BackgroundWorker();
 
         private TreeViewModel curMainTree;
         public TreeViewModel CurMainTree => curMainTree;
@@ -165,9 +166,10 @@ namespace PEBakery.WPF
         #endregion
 
         #region Background Workers
-        private void StartLoadWorker()
+        public BackgroundWorker StartLoadWorker(bool quiet = false)
         {
             Stopwatch watch = Stopwatch.StartNew();
+
             fullLoaded = false;
 
             // Set PEBakery Logo
@@ -182,10 +184,14 @@ namespace PEBakery.WPF
             PluginLogo.Content = image;
 
             // Prepare PEBakery Loading Information
-            Model.PluginTitleText = "Welcome to PEBakery!";
-            Model.PluginDescriptionText = "PEBakery loading...";
+            if (quiet == false)
+            {
+                Model.PluginTitleText = "Welcome to PEBakery!";
+                Model.PluginDescriptionText = "PEBakery loading...";
+            }
             logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{baseDir}]"));
             MainCanvas.Children.Clear();
+            (MainTreeView.DataContext as TreeViewModel).Children.Clear();
 
             int stage2LinksCount = 0;
             int loadedPluginCount = 0;
@@ -196,7 +202,8 @@ namespace PEBakery.WPF
             Model.BottomProgressBarMinimum = 0;
             Model.BottomProgressBarMaximum = 100;
             Model.BottomProgressBarValue = 0;
-            Model.ProgressRingActive = true;
+            if (quiet == false)
+                Model.ProgressRingActive = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
             loadWorker = new BackgroundWorker();
 
@@ -225,7 +232,7 @@ namespace PEBakery.WPF
                 {
                     foreach (Project project in projects.Projects)
                         PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
-                    
+
                     int pIdx = setting.Project_DefaultIndex;
                     curMainTree = Model.MainTree.Children[pIdx];
                     curMainTree.IsExpanded = true;
@@ -255,7 +262,7 @@ namespace PEBakery.WPF
                             msg = $"Cached - {e.UserState}";
                         break;
                     case 2:  // Stage 2
-                        Interlocked.Increment(ref stage2LoadedCount); 
+                        Interlocked.Increment(ref stage2LoadedCount);
                         if (e.UserState == null)
                             msg = $"Error";
                         else
@@ -276,7 +283,7 @@ namespace PEBakery.WPF
                 else
                     msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
 
-                Model.PluginDescriptionText = $"PEBakery loading...\r\n{msg}";
+                Model.PluginDescriptionText = $"PEBakery loading...\r\n{msg}";               
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -298,15 +305,16 @@ namespace PEBakery.WPF
                 if (setting.Plugin_EnableCache)
                 {
                     double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    msg = $"{allPluginCount} plugins loaded ({cachePercent:0.#}% cached), took {t:0.###}sec";
+                    msg = $"{allPluginCount} plugins loaded ({t:0.###}sec) - {cachePercent:0.#}% cached";
                     Model.StatusBarText = msg;
                 }
                 else
                 {
-                    msg = $"{allPluginCount} plugins loaded, took {t:hh\\:mm\\:ss}";
+                    msg = $"{allPluginCount} plugins loaded ({t:0.###}sec)";
                     Model.StatusBarText = msg;
                 }
-                Model.ProgressRingActive = false;
+                if (quiet == false)
+                    Model.ProgressRingActive = false;
                 Model.SwitchStatusProgressBar = true; // Show Status Bar
                 
                 logger.System_Write(new LogInfo(LogState.Info, msg));
@@ -318,12 +326,13 @@ namespace PEBakery.WPF
 
                 fullLoaded = true;
             };
+
             loadWorker.RunWorkerAsync(baseDir);
+            return loadWorker;
         }
 
         private void StartCacheWorker()
         {
-            // TODO: Prevent DB Corruption due to sudden exit
             if (PluginCache.dbLock == 0)
             {
                 Interlocked.Increment(ref PluginCache.dbLock);
@@ -357,7 +366,7 @@ namespace PEBakery.WPF
                         double cachePercent = (double)updatedCount * 100 / allPluginCount;
 
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                        string msg = $"{allPluginCount} plugins cached ({cachePercent:0.#}% updated), took {t:0.###}sec";
+                        string msg = $"{allPluginCount} plugins cached ({t:0.###}sec), {cachePercent:0.#}% updated";
                         logger.System_Write(new LogInfo(LogState.Info, msg));
                         logger.System_Write(Logger.LogSeperator);
 
@@ -403,9 +412,120 @@ namespace PEBakery.WPF
                 Model.ProgressRingActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. Took {sec:0.000}sec";
+                Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
             };
             refreshWorker.RunWorkerAsync();
+        }
+
+        private void StartSyntaxCheckWorker(bool quiet)
+        {
+            if (curMainTree == null)
+                return;
+
+            if (curMainTree.Plugin == null)
+                return;
+
+            if (syntaxCheckWorker.IsBusy)
+                return;
+
+            if (quiet == false)
+                Model.ProgressRingActive = true;
+
+            syntaxCheckWorker = new BackgroundWorker();
+            syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                CodeValidator v = new CodeValidator(curMainTree.Plugin);
+                v.Validate();
+
+                e.Result = v;
+            };
+            syntaxCheckWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
+            {
+                CodeValidator v = (CodeValidator) e.Result;
+
+                LogInfo[] logs = v.LogInfos;
+                LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
+                LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
+
+                int errorWarns = 0;
+                StringBuilder b = new StringBuilder();
+                if (0 < errorLogs.Length)
+                {
+                    errorWarns += errorLogs.Length;
+
+                    if (quiet == false)
+                    {
+                        b.AppendLine($"{errorLogs.Length} syntax error detected");
+                        b.AppendLine();
+                        for (int i = 0; i < errorLogs.Length; i++)
+                        {
+                            LogInfo log = errorLogs[i];
+                            b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                        }
+                        b.AppendLine();
+                    }
+                }
+
+                if (0 < warnLogs.Length)
+                {
+                    errorWarns += warnLogs.Length;
+
+                    if (quiet == false)
+                    {
+                        b.AppendLine($"{errorLogs.Length} syntax warning detected");
+                        b.AppendLine();
+                        for (int i = 0; i < warnLogs.Length; i++)
+                        {
+                            LogInfo log = warnLogs[i];
+                            b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
+                        }
+                        b.AppendLine();
+                    }
+                }
+
+                if (errorWarns == 0)
+                {
+                    Model.PluginCheckButtonColor = new SolidColorBrush(Colors.LightGreen);                   
+
+                    if (quiet == false)
+                    {
+                        b.AppendLine("No syntax error detected");
+                        b.AppendLine();
+                        b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                        MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
+                    } 
+                }
+                else
+                {
+                    Model.PluginCheckButtonColor = new SolidColorBrush(Colors.Orange);
+
+                    if (quiet == false)
+                    {
+                        MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
+                        if (result == MessageBoxResult.OK)
+                        {
+                            b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
+
+                            string tempFile = Path.GetTempFileName();
+                            File.Delete(tempFile);
+                            tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
+                            using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
+                                sw.Write(b.ToString());
+
+                            Process proc = new Process();
+                            proc.StartInfo.UseShellExecute = true;
+                            proc.StartInfo.Verb = "Open";
+                            proc.StartInfo.FileName = tempFile;
+                            proc.Start();
+                        }
+                    }
+                }
+
+                if (quiet == false)
+                    Model.ProgressRingActive = false;
+            };
+            syntaxCheckWorker.RunWorkerAsync();
         }
         #endregion
 
@@ -456,6 +576,8 @@ namespace PEBakery.WPF
                 }
             }
 
+            Model.PluginCheckButtonColor = new SolidColorBrush(Colors.LightGray);
+
             MainCanvas.Children.Clear();
             if (p.Type == PluginType.Directory)
             {
@@ -476,6 +598,9 @@ namespace PEBakery.WPF
                 UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
+                
+                if (setting.Plugin_AutoSyntaxCheck)
+                    StartSyntaxCheckWorker(true);
             }
         }
         #endregion
@@ -657,75 +782,7 @@ namespace PEBakery.WPF
 
         private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            Model.ProgressRingActive = true;
-
-            CodeValidator v = new CodeValidator(curMainTree.Plugin);
-            v.Validate();
-
-            LogInfo[] logs = v.LogInfos;
-            LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
-            LogInfo[] warnLogs = logs.Where(x => x.State == LogState.Warning).ToArray();
-
-            int errorWarns = 0;
-            StringBuilder b = new StringBuilder();
-            if (0 < errorLogs.Length)
-            {
-                errorWarns += errorLogs.Length;
-
-                b.AppendLine($"{errorLogs.Length} syntax error detected");
-                b.AppendLine();
-                for (int i = 0; i < errorLogs.Length; i++)
-                {
-                    LogInfo log = errorLogs[i];
-                    b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
-                }
-                b.AppendLine();
-            }
-
-            if (0 < warnLogs.Length)
-            {
-                errorWarns += warnLogs.Length;
-
-                b.AppendLine($"{errorLogs.Length} syntax warning detected");
-                b.AppendLine();
-                for (int i = 0; i < warnLogs.Length; i++)
-                {
-                    LogInfo log = warnLogs[i];
-                    b.AppendLine($"[{i + 1}/{warnLogs.Length}] {log.Message} ({log.Command})");
-                }
-                b.AppendLine();
-            }
-
-            if (errorWarns == 0)
-            {
-                b.AppendLine("No syntax error detected");
-                b.AppendLine();
-                b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-
-                MessageBox.Show(b.ToString(), "Syntax Check", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
-                if (result == MessageBoxResult.OK)
-                {
-                    b.AppendLine($"Section Coverage : {v.Coverage * 100:0.#}% ({v.VisitedSectionCount}/{v.CodeSectionCount})");
-
-                    string tempFile = Path.GetTempFileName();
-                    File.Delete(tempFile);
-                    tempFile = Path.GetTempFileName().Replace(".tmp", ".txt");
-                    using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
-                        sw.Write(b.ToString());
-
-                    Process proc = new Process();
-                    proc.StartInfo.UseShellExecute = true;
-                    proc.StartInfo.Verb = "Open";
-                    proc.StartInfo.FileName = tempFile;
-                    proc.Start();
-                }
-            }
-
-            Model.ProgressRingActive = false;
+            StartSyntaxCheckWorker(false);
         }
         #endregion
 
@@ -772,9 +829,6 @@ namespace PEBakery.WPF
 
                 PopulateOneTreeView(p, treeRoot, treeParent);
             }
-
-            // Sort - Plugin first, Directory last
-            // RecursiveTreeViewModelSort(projectRoot);
 
             // Reflect Directory's Selected value
             RecursiveDecideDirectorySelectedValue(treeRoot, 0);
@@ -901,7 +955,7 @@ namespace PEBakery.WPF
                     watch.Stop();
                     double sec = watch.Elapsed.TotalSeconds;
                     string filename = Path.GetFileName(curMainTree.Plugin.ShortPath);
-                    Model.StatusBarText = $"{filename} rendered. Took {sec:0.000}sec";
+                    Model.StatusBarText = $"{filename} rendered ({sec:0.000}sec)";
                 });
             }
         }
@@ -1005,6 +1059,17 @@ namespace PEBakery.WPF
             {
                 pluginDescriptionText = value;
                 OnPropertyUpdate("PluginDescriptionText");
+            }
+        }
+
+        private Brush pluginCheckButtonColor = new SolidColorBrush(Colors.LightGray);
+        public Brush PluginCheckButtonColor
+        {
+            get => pluginCheckButtonColor;
+            set
+            {
+                pluginCheckButtonColor = value;
+                OnPropertyUpdate("PluginCheckButtonColor");
             }
         }
 
@@ -1521,29 +1586,23 @@ namespace PEBakery.WPF
             if (root == null || p == null)
                 return;
 
-            List<string> paths = Plugin.GetDisablePluginPaths(p);
-
-            if (paths != null)
+            string[] paths = Plugin.GetDisablePluginPaths(p);
+            foreach (string path in paths)
             {
-                foreach (string path in paths)
+                Plugin pToDisable = p.Project.AllPlugins.FirstOrDefault(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
+                if (pToDisable != null)
                 {
-                    string fullPath = p.Project.Variables.Expand(path);
-
-                    Plugin pToDisable = p.Project.AllPlugins.FirstOrDefault(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
-                    if (pToDisable != null)
+                    Ini.SetKey(path, "Main", "Selected", "False");
+                    TreeViewModel found = FindPluginByFullPath(path);
+                    if (found != null)
                     {
-                        Ini.SetKey(fullPath, "Main", "Selected", "False");
-                        TreeViewModel found = FindPluginByFullPath(fullPath);
-                        if (found != null)
+                        if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
                         {
-                            if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
-                            {
-                                found.Checked = false;
-                            }
+                            found.Checked = false;
                         }
                     }
                 }
-            }            
+            }    
         }
     }
     #endregion

@@ -21,12 +21,14 @@ using PEBakery.Helper;
 using PEBakery.WPF;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -243,11 +245,18 @@ namespace PEBakery.Core.Commands
                         SystemInfo_RescanScripts subInfo = info.SubInfo as SystemInfo_RescanScripts;
 
                         // Reload Project
+                        BackgroundWorker worker = null;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            w.StartReloadPluginWorker();
+                            worker = w.StartLoadWorker(true);                
                         });
+
+                        Task.Run(() =>
+                        {
+                            while (worker.IsBusy)
+                                Thread.Sleep(200);
+                        }).Wait();
 
                         s.MainViewModel.BuildCommandProgressBarValue = 500;
 

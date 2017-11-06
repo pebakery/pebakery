@@ -516,6 +516,8 @@ namespace PEBakery.Core
         #region Expand
         public string Expand(string str)
         {
+            int iter = 0;
+
             MatchCollection matches;
             do
             {
@@ -539,10 +541,25 @@ namespace PEBakery.Core
                         b.Append(str.Substring(startOffset, endOffset));
                     }
 
-                    if (TryGetValue(varName, out string varValue))
+                    if (localVars.ContainsKey(varName))
+                    {
+                        string varValue = localVars[varName];
                         b.Append(varValue);
+                    }
+                    else if (globalVars.ContainsKey(varName))
+                    {
+                        string varValue = globalVars[varName];
+                        b.Append(varValue);
+                    }
+                    else if (fixedVars.ContainsKey(varName))
+                    {
+                        string varValue = fixedVars[varName];
+                        b.Append(varValue);
+                    }
                     else // variable not found
+                    {
                         b.Append("#$p").Append(varName).Append("#$p");
+                    }
 
                     if (x + 1 == matches.Count) // Last iteration
                         b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
@@ -550,6 +567,10 @@ namespace PEBakery.Core
 
                 if (0 < matches.Count) // Copy it if variable exists
                     str = b.ToString();
+
+                iter++;
+                if (32 < iter)
+                    throw new InternalException("Circular Reference");
             }
             while (0 < matches.Count);
 
@@ -732,7 +753,8 @@ namespace PEBakery.Core
                 if (global)
                 {
                     // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
-                    string finalValue = StringEscaper.Preprocess(s, varValue);
+                    //                  Note that $#p will not be unescaped to %.
+                    string finalValue = StringEscaper.Preprocess(s, varValue, false);
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue);
                     logs.Add(log);
 
@@ -742,12 +764,12 @@ namespace PEBakery.Core
                         if (s.Variables.localVars.ContainsKey(varKey))
                             s.Variables.localVars.Remove(varKey);
                     } 
-                        
                 }
                 else if (permanent)
                 {
                     // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
-                    string finalValue = StringEscaper.Preprocess(s, varValue); 
+                    //                  Note that $#p will not be unescaped to %.
+                    string finalValue = StringEscaper.Preprocess(s, varValue, false); 
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
 
                     if (log.State == LogState.Success)

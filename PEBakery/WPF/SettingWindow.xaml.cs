@@ -459,6 +459,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Plugin_AutoConvertToUTF8");
             }
         }
+
+        private bool plugin_AutoSyntaxCheck;
+        public bool Plugin_AutoSyntaxCheck
+        {
+            get => plugin_AutoSyntaxCheck;
+            set
+            {
+                plugin_AutoSyntaxCheck = value;
+                OnPropertyUpdate("Plugin_AutoSyntaxCheck");
+            }
+        }
         #endregion
 
         #region Log
@@ -578,7 +589,11 @@ namespace PEBakery.WPF
             // Plugin
             Plugin_EnableCache = true;
             Plugin_AutoConvertToUTF8 = false;
-
+#if DEBUG
+            Plugin_AutoSyntaxCheck = true;
+#else
+            Plugin_AutoSyntaxCheck = false;
+#endif
             // Log
 #if DEBUG
             Log_DebugLevelIndex = 2; 
@@ -608,6 +623,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "IgnoreEncodedFileChecksum"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
+                new IniKey("Plugin", "AutoSyntaxCheck"), // Boolean
                 new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
@@ -625,6 +641,7 @@ namespace PEBakery.WPF
             string str_Interface_IgnoreEncodedFileChecksum = dict["Interface_IgnoreEncodedFileChecksum"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
             string str_Plugin_AutoConvertToUTF8 = dict["Plugin_AutoConvertToUTF8"];
+            string str_Plugin_AutoSyntaxCheck = dict["Plugin_AutoSyntaxCheck"];
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
             string str_Log_Macro = dict["Log_Macro"];
             string str_Log_Comment = dict["Log_Comment"];
@@ -696,6 +713,13 @@ namespace PEBakery.WPF
                     Plugin_AutoConvertToUTF8 = true;
             }
 
+            // Plugin - AutoSyntaxCheck (Default = False)
+            if (str_Plugin_AutoSyntaxCheck != null)
+            {
+                if (str_Plugin_AutoSyntaxCheck.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Plugin_AutoSyntaxCheck = true;
+            }
+
             // Log - DebugLevel (Default = 0)
             if (str_Log_DebugLevelIndex != null)
             {
@@ -734,6 +758,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "IgnoreEncodedFileChecksum", Interface_IgnoreEncodedFileChecksum.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
+                new IniKey("Plugin", "AutoSyntaxCheck", Plugin_AutoSyntaxCheck.ToString()),
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
@@ -812,7 +837,7 @@ namespace PEBakery.WPF
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        #endregion
+#endregion
     }
-    #endregion
+#endregion
 }

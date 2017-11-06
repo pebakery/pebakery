@@ -45,51 +45,6 @@ namespace PEBakery.WPF.Controls
             DefaultStyleKeyProperty.OverrideMetadata(typeof(SpinnerControl), new FrameworkPropertyMetadata(typeof(SpinnerControl)));
         }
 
-        #region FormattedValue property
-
-        /// <summary>
-        /// Dependency property identifier for the formatted value with limited 
-        /// write access to the underlying read-only dependency property:  we
-        /// can only use SetValue on this, not on the property itself.
-        /// </summary>
-        private static readonly DependencyPropertyKey FormattedValuePropertyKey =
-            DependencyProperty.RegisterAttachedReadOnly("FormattedValue", typeof(string), typeof(SpinnerControl),
-            new PropertyMetadata(DefaultValue.ToString()));
-
-        /// <summary>
-        /// The dependency property for the formatted value.
-        /// </summary>
-        private static readonly DependencyProperty FormattedValueProperty = FormattedValuePropertyKey.DependencyProperty;
-
-        /// <summary>
-        /// Returns the formatted version of the value, with the specified
-        /// number of DecimalPlaces.
-        /// </summary>
-        public string FormattedValue
-        {
-            get
-            {
-                return (string)GetValue(FormattedValueProperty);
-            }
-        }
-
-        /// <summary>
-        /// Update the formatted value.
-        /// </summary>
-        /// <param name="newValue"></param>
-        protected void UpdateFormattedValue(decimal newValue)
-        {
-            NumberFormatInfo numberFormatInfo = new NumberFormatInfo() { NumberDecimalDigits = DecimalPlaces };
-            //  use fixed point, and the built-in NumberFormatInfo
-            //  implementation of IFormatProvider
-            var formattedValue = newValue.ToString("f", numberFormatInfo);
-
-            //  Set the value of the FormattedValue property via its property key
-            SetValue(FormattedValuePropertyKey, formattedValue);
-        }
-        #endregion
-
-
         #region Value property
         /// <summary>
         /// This is the Control property that we expose to the user.
@@ -123,8 +78,6 @@ namespace PEBakery.WPF.Controls
                 var newValue = (decimal)args.NewValue;
                 var oldValue = (decimal)args.OldValue;
 
-                control.UpdateFormattedValue(newValue);
-
                 RoutedPropertyChangedEventArgs<decimal> e = 
                     new RoutedPropertyChangedEventArgs<decimal>(oldValue, newValue, ValueChangedEvent);
 
@@ -152,9 +105,8 @@ namespace PEBakery.WPF.Controls
         private static object CoerceValue(DependencyObject obj, object value)
         {
             decimal newValue = (decimal)value;
-            SpinnerControl control = obj as SpinnerControl;
 
-            if (control != null)
+            if (obj is SpinnerControl control)
             {
                 //  ensure that the value stays within the bounds of the minimum and
                 //  maximum values that we define.
@@ -222,7 +174,7 @@ namespace PEBakery.WPF.Controls
         [Category("SpinnerControl")]
         public double ArrowBrushWidth
         {
-            get => Height * 0.7;
+            get => Height * 0.6;
         }
 
         [Category("SpinnerControl")]

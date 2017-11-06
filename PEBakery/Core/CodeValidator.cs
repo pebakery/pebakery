@@ -133,6 +133,9 @@ namespace PEBakery.Core
                             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
                             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
 
+                            if (info.Break)
+                                continue;
+
                             // CodeValidator does not have Variable information, so just check with predefined literal
                             if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
                                 info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
