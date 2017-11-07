@@ -393,6 +393,9 @@ namespace PEBakery.Core
                 case VarsType.Global:
                     globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
                     break;
+                case VarsType.Fixed:
+                    fixedVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    break;
             }
         }
 
@@ -625,7 +628,8 @@ namespace PEBakery.Core
             List<LogInfo> list = new List<LogInfo>();
             foreach (var kv in dict)
             {
-                list.Add(InternalSetValue(type, kv.Key, kv.Value, false));
+                string value = kv.Value.Trim().Trim('\"');
+                list.Add(InternalSetValue(type, kv.Key, value, false));
 
                 /*
                 if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)

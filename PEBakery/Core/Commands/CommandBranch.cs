@@ -69,11 +69,14 @@ namespace PEBakery.Core.Commands
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
+            Dictionary<string, string> globalVars = null;
+            Dictionary<string, string> fixedVars = null;
             if (cmd.Type == CodeType.Exec)
             {
                 // Backup Varaibles
-                // varBackup = s.Variables.Clone() as Variables;
                 localVars = s.Variables.GetVarDict(VarsType.Local);
+                globalVars = s.Variables.GetVarDict(VarsType.Global);
+                fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
 
                 // Load Per-Plugin Variables
                 s.Variables.ResetVariables(VarsType.Local);
@@ -92,6 +95,8 @@ namespace PEBakery.Core.Commands
             if (cmd.Type == CodeType.Exec)
             { // Restore Variables
                 s.Variables.SetVarDict(VarsType.Local, localVars);
+                s.Variables.SetVarDict(VarsType.Local, globalVars);
+                s.Variables.SetVarDict(VarsType.Local, fixedVars);
             }
 
             s.CurDepth = depthBackup;
@@ -104,16 +109,16 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
 
-            // TODO
             if (info.Break)
             {
                 if (s.LoopRunning)
                 {
                     s.LoopRunning = false;
+                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking Loop", cmd, s.CurDepth));
                 }
                 else
                 {
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Loop is not running", cmd));
+                    s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
                 }
             }
             else
@@ -150,9 +155,14 @@ namespace PEBakery.Core.Commands
                 { // Counter Variable is [#c]
                     s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
                     int depthBackup = s.CurDepth;
+
                     s.LoopRunning = true;
                     Engine.RunSection(s, nextAddr, info.Parameters, s.CurDepth + 1, true);
+
+                    if (s.LoopRunning == false)
+                        break;
                     s.LoopRunning = false;
+
                     s.CurDepth = depthBackup;
                     s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
                 }
