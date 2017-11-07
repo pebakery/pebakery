@@ -431,10 +431,12 @@ namespace PEBakery.WPF
             if (quiet == false)
                 Model.ProgressRingActive = true;
 
+            Plugin p = curMainTree.Plugin;
+
             syntaxCheckWorker = new BackgroundWorker();
             syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
-                CodeValidator v = new CodeValidator(curMainTree.Plugin);
+                CodeValidator v = new CodeValidator(p);
                 v.Validate();
 
                 e.Result = v;
@@ -455,7 +457,7 @@ namespace PEBakery.WPF
 
                     if (quiet == false)
                     {
-                        b.AppendLine($"{errorLogs.Length} syntax error detected");
+                        b.AppendLine($"{errorLogs.Length} syntax error detected at [{p.ShortPath}]");
                         b.AppendLine();
                         for (int i = 0; i < errorLogs.Length; i++)
                         {
@@ -533,48 +535,7 @@ namespace PEBakery.WPF
         public void DrawPlugin(Plugin p)
         {
             Stopwatch watch = new Stopwatch();
-            double size = PluginLogo.ActualWidth * MaxDpiScale;
-            if (p.Type == PluginType.Directory)
-            {
-                PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
-            }
-            else
-            {
-                try
-                {
-                    MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type);
-                    if (type == ImageHelper.ImageType.Svg)
-                    {
-                        Image image = new Image()
-                        {
-                            Source = ImageHelper.SvgToBitmapImage(mem, size, size),
-                            Stretch = Stretch.Uniform
-                        };
-                        PluginLogo.Content = image;
-                    }
-                    else
-                    {
-                        Image image = new Image();
-                        BitmapImage bitmap = ImageHelper.ImageToBitmapImage(mem);
-                        image.StretchDirection = StretchDirection.DownOnly;
-                        image.Stretch = Stretch.Uniform;
-                        image.UseLayoutRounding = true; // Must to prevent blurry image rendering
-                        image.Source = bitmap;
-
-                        Grid grid = new Grid();
-                        grid.Children.Add(image);
-
-                        PluginLogo.Content = grid;
-                    }
-                }
-                catch
-                { // No logo file - use default
-                    if (p.Type == PluginType.Plugin)
-                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
-                    else if (p.Type == PluginType.Link)
-                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
-                }
-            }
+            DrawPluginLogo(p);
 
             Model.PluginCheckButtonColor = new SolidColorBrush(Colors.LightGray);
 
@@ -601,6 +562,52 @@ namespace PEBakery.WPF
                 
                 if (setting.Plugin_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
+            }
+        }
+
+        public void DrawPluginLogo(Plugin p)
+        {
+            double size = PluginLogo.ActualWidth * MaxDpiScale;
+            if (p.Type == PluginType.Directory)
+            {
+                PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+            }
+            else
+            {
+                try
+                {
+                    ImageSource imageSource;
+
+                    using (MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type))
+                    {
+                        mem.Position = 0;
+                        
+                        if (type == ImageHelper.ImageType.Svg)
+                            imageSource = ImageHelper.SvgToBitmapImage(mem, size, size);
+                        else
+                            imageSource = ImageHelper.ImageToBitmapImage(mem);
+                    }
+
+                    Image image = new Image
+                    {
+                        StretchDirection = StretchDirection.DownOnly,
+                        Stretch = Stretch.Uniform,
+                        UseLayoutRounding = true, // To prevent blurry image rendering
+                        Source = imageSource,
+                    };
+
+                    Grid grid = new Grid();
+                    grid.Children.Add(image);
+
+                    PluginLogo.Content = grid;
+                }
+                catch
+                { // No logo file - use default
+                    if (p.Type == PluginType.Plugin)
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                    else if (p.Type == PluginType.Link)
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                }
             }
         }
         #endregion

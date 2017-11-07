@@ -100,7 +100,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    Application.Current.Dispatcher.BeginInvoke((Action)(() => { s.MainViewModel.BuildCommandProgressBarValue = 500; }));
+                    Engine.UpdateCommandProgressBar(s, 500);
 
                     File.Copy(srcFile, destPath, true);
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]", cmd));

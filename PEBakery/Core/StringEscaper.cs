@@ -298,16 +298,15 @@ namespace PEBakery.Core
 
         public static string QuoteEscape(string str)
         {
-            bool needQoute = false;
+            bool needQuote = false;
 
             // Check if str need doublequote escaping
-            // if (str.Contains(' ') || str.Contains('%') || str.Contains(','))
             if (str.Contains(' ') || str.Contains(','))
-                needQoute = true;
+                needQuote = true;
 
-            // Let's escape characters
+            // Escape characters
             str = Escape(str, false); // WB082 escape sequence
-            if (needQoute)
+            if (needQuote)
                 str = Doublequote(str); // Doublequote escape
             return str;
         }

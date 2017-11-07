@@ -453,9 +453,10 @@ namespace PEBakery.Core
                     }
                 case CodeType.DirDelete:
                     { // DirDelete,<DirPath>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2; // For deprecated [FAST] argument
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         return new CodeInfo_DirDelete(args[0]);
                     }
@@ -1487,9 +1488,8 @@ namespace PEBakery.Core
         #region ParseCodeInfoStrFormat, ParseStrFormatType
         public static CodeInfo_StrFormat ParseCodeInfoStrFormat(string rawCode, List<string> args)
         {
-            const int minArgCount = 3;
-            if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
-                throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
+            if (CodeParser.CheckInfoArgumentCount(args, 2, -1))
+                throw new InvalidCommandException("Command [StrFormat] must have at least [2] arguments", rawCode);
 
             StrFormatType type = ParseStrFormatType(args[0]);
             StrFormatInfo info;
@@ -1499,17 +1499,25 @@ namespace PEBakery.Core
 
             switch (type)
             {
-                case StrFormatType.IntToBytes:
                 case StrFormatType.Bytes:
-                    { // StrFormat,IntToBytes,<Integer>,<DestVar>
-                        const int argCount = 2;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                case StrFormatType.IntToBytes:
+                    {
+                        // StrFormat,IntToBytes,<Integer>,<DestVar>
+                        // StrFormat,IntToBytes,<SrcDestVar>
 
-                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
-                        else
-                            info = new StrFormatInfo_IntToBytes(args[0], args[1]);
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string destVar = args[0];
+                        if (args.Count == 2)
+                            destVar = args[1];
+
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        info = new StrFormatInfo_IntToBytes(args[0], destVar);
                     }
                     break;
                 case StrFormatType.BytesToInt:
@@ -1522,6 +1530,18 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
                         else
                             info = new StrFormatInfo_BytesToInt(args[0], args[1]);
+                    }
+                    break;
+                case StrFormatType.Hex:
+                    { // StrFormat,Hex,<Integer>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        info = new StrFormatInfo_Hex(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Ceil:
@@ -1660,7 +1680,6 @@ namespace PEBakery.Core
                     break;
                 case StrFormatType.NTrim:
                     { // StrFormat,NTrim,<SrcString>,<DestVar>
-
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
@@ -1669,6 +1688,22 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
 
                         info = new StrFormatInfo_NTrim(args[0], args[1]);
+                    }
+                    break;
+                case StrFormatType.UCase:
+                case StrFormatType.LCase:
+                    {
+                        // StrFormat,UCase,<SrcString>,<DestVar>
+                        // StrFormat,LCase,<SrcString>,<DestVar>
+
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
+
+                        info = new StrFormatInfo_ULCase(args[0], args[1]);
                     }
                     break;
                 case StrFormatType.Pos:
@@ -1754,7 +1789,7 @@ namespace PEBakery.Core
             return type;
         }
 
-        private static readonly Dictionary<string, string> FormatStringMap = new Dictionary<string, string>(StringComparer.Ordinal)
+        private static readonly Dictionary<string, string> DateFormatStringMap = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             // Year
             [@"yyyy"] = @"yyyy",
@@ -1799,12 +1834,12 @@ namespace PEBakery.Core
             }
 
             Dictionary<string, bool> matched = new Dictionary<string, bool>(StringComparer.Ordinal);
-            foreach (var kv in FormatStringMap)
+            foreach (var kv in DateFormatStringMap)
                 matched[kv.Key] = false;
 
             Dictionary<string, string>[] partialMaps = new Dictionary<string, string>[4];
             for (int i = 0; i <= 3; i++)
-                partialMaps[i] = FormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
+                partialMaps[i] = DateFormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
 
             int idx = 0;
             bool processed = false;
@@ -2200,18 +2235,6 @@ namespace PEBakery.Core
                             info = new SystemInfo_GetFreeSpace(args[0], args[1]);
                     }
                     break;
-                case SystemType.HasUAC:
-                    { // System,HasUAC,<Command>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
-
-                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
-                        else
-                            info = new SystemInfo_HasUAC(args[0]);
-                    }
-                    break;
                 case SystemType.IsAdmin:
                     { // System,IsAdmin,<DestVar>
                         const int argCount = 1;
@@ -2278,8 +2301,26 @@ namespace PEBakery.Core
                             info = new SystemInfo_SaveLog(args[0], args[1]);
                     }
                     break;
-                    // Compability Shim
+                // Compability Shim
+                case SystemType.HasUAC:
+                    { // System,HasUAC,<Command>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{args[0]}] is not valid variable name", rawCode);
+                        else
+                            info = new SystemInfo_HasUAC(args[0]);
+                    }
+                    break;
                 case SystemType.FileRedirect:
+                    info = new SystemInfo();
+                    break;
+                case SystemType.RegRedirect:
+                    info = new SystemInfo();
+                    break;
+                case SystemType.RebuildVars:
                     info = new SystemInfo();
                     break;
                 default: // Error
@@ -2325,8 +2366,9 @@ namespace PEBakery.Core
             BranchCondition cond;
             CodeCommand embCmd;
             int occurence = StringHelper.CountOccurrences(args[cIdx], "%"); // %Joveler%
-            bool match = Regex.IsMatch(args[cIdx], @"(#\d+)", RegexOptions.Compiled); // #1
-            if ((occurence != 0 && occurence % 2 == 0) || match) // BranchCondition - Compare series
+            bool sectionParamMatch = Regex.IsMatch(args[cIdx], @"(#\d+)", RegexOptions.Compiled); // #1
+            bool sectionLoopMatch = (args[cIdx].IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1);
+            if ((occurence != 0 && occurence % 2 == 0) || sectionParamMatch || sectionLoopMatch) // BranchCondition - Compare series
             {
                 string condStr = args[cIdx + 1];
                 BranchConditionType condType;

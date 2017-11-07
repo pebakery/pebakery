@@ -18,11 +18,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using Joveler.ZLibWrapper;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
-using SharpCompress.Compressors;
-using SharpCompress.Compressors.Deflate;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -30,6 +29,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace PEBakery.Core
 {
@@ -61,7 +61,8 @@ namespace PEBakery.Core
     0x208 - 0x20F : 8B -> (Type 1) Length of Zlib-Compressed File, (Type 2) Null-padded
     0x210 - 0x21F : 16B -> Null-padded
     0x220 - 0x223 : 4B -> CRC32 of Raw File
-    0x224 - 0x225 : 2B -> (Type 1) 00 02, (Type 2) 01 00
+    0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+    0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
 
     [FinalFooter]
     Not compressed, 36Byte (0x24)
@@ -88,14 +89,16 @@ namespace PEBakery.Core
     public class EncodedFile
     {
         #region Wrapper Methods
-        public enum EncodeMode : ushort
+        public enum EncodeMode : byte
         {
-            Compress = 0x0200, // Type 1
-            Raw = 0x0001, // Type 2
+            Compress = 0x00, // Type 1 
+            Raw = 0x01, // Type 2
         }
 
         public static Plugin AttachFile(Plugin p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.Compress)
         {
+            if (p == null) throw new ArgumentNullException("p");
+
             byte[] input;
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
             {
@@ -107,6 +110,8 @@ namespace PEBakery.Core
 
         public static Plugin AttachFile(Plugin p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.Compress)
         {
+            if (p == null) throw new ArgumentNullException("p");
+
             byte[] input = new byte[srcStream.Length];
             srcStream.Read(input, 0, input.Length);
             return Encode(p, dirName, fileName, input, type);
@@ -114,6 +119,8 @@ namespace PEBakery.Core
 
         public static MemoryStream ExtractFile(Plugin p, string dirName, string fileName)
         {
+            if (p == null) throw new ArgumentNullException("p");
+
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
                 throw new EncodedFileFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
@@ -122,21 +129,23 @@ namespace PEBakery.Core
             return Decode(encoded);
         }
 
-        public static MemoryStream ExtractLogo(Plugin plugin, out ImageHelper.ImageType type)
+        public static MemoryStream ExtractLogo(Plugin p, out ImageHelper.ImageType type)
         {
-            if (plugin.Sections.ContainsKey("AuthorEncoded") == false)
+            if (p == null) throw new ArgumentNullException("p");
+
+            if (p.Sections.ContainsKey("AuthorEncoded") == false)
                 throw new ExtractFileNotFoundException($"There is no AuthorEncoded files");
 
-            Dictionary<string, string> fileDict = plugin.Sections["AuthorEncoded"].GetIniDict();
+            Dictionary<string, string> fileDict = p.Sections["AuthorEncoded"].GetIniDict();
 
             if (fileDict.ContainsKey("Logo") == false)
-                throw new ExtractFileNotFoundException($"There is no logo in \'{plugin.Title}\'");
+                throw new ExtractFileNotFoundException($"There is no logo in \'{p.Title}\'");
 
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
                 throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
 
-            List<string> encoded = plugin.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
+            List<string> encoded = p.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
             return Decode(encoded);
         }
 
@@ -179,23 +188,13 @@ namespace PEBakery.Core
                 {
                     case EncodeMode.Compress:
                         {
-#if NATIVE_ZLIB
-                            using (Joveler.ZLibWrapper.ZLibStream zs = new Joveler.ZLibWrapper.ZLibStream(bodyStream, Joveler.ZLibWrapper.CompressionMode.Compress, Joveler.ZLibWrapper.CompressionLevel.Default, true))
+                            using (ZLibStream zs = new ZLibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
                                 zs.Write(input, 0, input.Length);
                                 zs.Close();
 
                                 bodyStream.Position = 0;
                             }
-#else
-                            using (ZlibStream zs = new ZlibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Default, true, Encoding.UTF8))
-                            {
-                                zs.Write(input, 0, input.Length);
-                                zs.Close();
-
-                                bodyStream.Position = 0;
-                            }
-#endif
                         }
                         break;
                     case EncodeMode.Raw:
@@ -236,14 +235,26 @@ namespace PEBakery.Core
                             throw new InternalException($"Wrong EncodeMode [{mode}]");
                     }
                     // 0x220 - 0x223 : CRC32 of raw file
-                    uint crc32c = Force.Crc32.Crc32Algorithm.Compute(input);
-                    BitConverter.GetBytes(crc32c).CopyTo(rawFooter, 0x220);
-                    // 0x224 - 0x225 : Footer Type 
-                    BitConverter.GetBytes((ushort)mode).CopyTo(rawFooter, 0x224);
+                    uint crc32 = Crc32Checksum.Crc32(input);
+                    BitConverter.GetBytes(crc32).CopyTo(rawFooter, 0x220);
+                    // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+                    rawFooter[0x224] = (byte) mode;
+                    // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
+                    switch (mode)
+                    {
+                        case EncodeMode.Compress: // Type 1
+                            rawFooter[0x225] = (byte)CompressionLevel.Level6;
+                            break;
+                        case EncodeMode.Raw: // Type 2
+                            rawFooter[0x225] = 0;
+                            break;
+                        default:
+                            throw new InternalException($"Wrong EncodeMode [{mode}]");
+                    }
                 }
 
                 // [Stage 3] Compress first footer
-                using (ZlibStream zs = new ZlibStream(footerStream, CompressionMode.Compress, CompressionLevel.Default, true, Encoding.UTF8))
+                using (ZLibStream zs = new ZLibStream(footerStream, CompressionMode.Compress, CompressionLevel.Default, true))
                 {
                     zs.Write(rawFooter, 0, rawFooter.Length);
                     zs.Close();
@@ -262,7 +273,7 @@ namespace PEBakery.Core
                     byte[] finalFooter = new byte[0x24];
 
                     // 0x00 - 0x04 : 4B -> CRC32 of compressed body and compressed footer
-                    uint crc32 = Force.Crc32.Crc32Algorithm.Compute(concatStream.ToArray());
+                    uint crc32 = Crc32Checksum.Crc32(concatStream.ToArray());
                     BitConverter.GetBytes(crc32).CopyTo(finalFooter, 0x00);
                     // 0x04 - 0x08 : 4B -> Unknown - Always 1
                     BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x04);
@@ -335,7 +346,6 @@ namespace PEBakery.Core
             }
 
             // [Stage 10] Refresh Plugin
-            // TODO: How to update CurMainTree of MainWindows?
             return p.Project.RefreshPlugin(p);
         }
 
@@ -388,7 +398,7 @@ namespace PEBakery.Core
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
                 throw new EncodedFileFailException($"Encoded file is corrupted");
-            uint calcFull_crc32 = Force.Crc32.Crc32Algorithm.Compute(decoded, 0, finalFooterIdx);
+            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
             if (full_crc32 != calcFull_crc32)
                 throw new EncodedFileFailException($"Encoded file is corrupted");
 
@@ -397,7 +407,7 @@ namespace PEBakery.Core
             using (MemoryStream rawFooterStream = new MemoryStream())
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
                     rawFooter = rawFooterStream.ToArray();
@@ -413,50 +423,47 @@ namespace PEBakery.Core
             int compressedBodyLen2 = (int)BitConverter.ToUInt32(rawFooter, 0x208);
             // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
             uint compressedBody_crc32 = BitConverter.ToUInt32(rawFooter, 0x220);
-            // 0x224 - 0x225 : 2B -> (Type 1) 01 00, (Type 2) 00 02
-            ushort compMode = BitConverter.ToUInt16(rawFooter, 0x224);
+            // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+            byte compMode = rawFooter[0x224];
+            // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+            byte compLevel = rawFooter[0x225];
 
             // [Stage 6] Validate first footer
-            if (compMode == (ushort)EncodeMode.Compress)
+            if (compMode == 0) // Type 1, zlib
             {
                 if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                    throw new EncodedFileFailException($"Encoded file is corrupted");
+                    throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+                if (compLevel < 1 || 9 < compLevel)
+                    throw new EncodedFileFailException($"Encoded file is corrupted: compLevel");
             }
-            else if (compMode == (ushort)EncodeMode.Raw)
+            else if (compMode == 1) // Type 2, Raw
             {
                 if (compressedBodyLen2 != 0)
-                    throw new EncodedFileFailException($"Encoded file is corrupted");
+                    throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+                if (compLevel != 0)
+                    throw new EncodedFileFailException($"Encoded file is corrupted: compLevel");
             }
             else // Wrong compMode
-                throw new EncodedFileFailException($"Encoded file is corrupted");
+            {
+                throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+            }
 
             // [Stage 7] Decompress body
             MemoryStream rawBodyStream; // This stream should be alive even after this method returns
-            if (compMode == (ushort) EncodeMode.Compress)
-            { // Temporary Measure : SharpCompress 0.18.1 has bug in its Adler32 checksum routine
+            if (compMode == 0) // Type 1, zlib
+            {
                 rawBodyStream = new MemoryStream();
 
-#if NATIVE_ZLIB
                 using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                using (Joveler.ZLibWrapper.ZLibStream zs = new Joveler.ZLibWrapper.ZLibStream(ms, Joveler.ZLibWrapper.CompressionMode.Decompress, false))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
                     zs.Close();
 
                     rawBodyStream.Position = 0;
                 }
-#else
-                using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, false))
-                {
-                    zs.CopyTo(rawBodyStream);
-                    zs.Close();
-
-                    rawBodyStream.Position = 0;
-                }
-#endif
             }
-            else if (compMode == (ushort)EncodeMode.Raw)
+            else if (compMode == 1)  // Type 2, raw
             {
                 rawBodyStream = new MemoryStream(decoded, 0, rawBodyLen);
             }
@@ -466,7 +473,7 @@ namespace PEBakery.Core
             }
 
             // [Stage 8] Validate decompressed body
-            uint calcCompBody_crc32 = Force.Crc32.Crc32Algorithm.Compute(rawBodyStream.ToArray());
+            uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
             if (compressedBody_crc32 != calcCompBody_crc32)
                 throw new EncodedFileFailException($"Encoded file is corrupted");
 
@@ -474,10 +481,10 @@ namespace PEBakery.Core
             rawBodyStream.Position = 0;
             return rawBodyStream;
         }
-#endregion
+        #endregion
     }
 
-#region EncodedFileInfo
+    #region EncodedFileInfo
     /// <summary>
     /// Class to handle malformed WB082-attached files
     /// </summary>
@@ -560,7 +567,7 @@ namespace PEBakery.Core
             this.FinalFooterValid = true;
             if (compressedBodyLen != compressedFooterIdx)
                 this.FinalFooterValid = false;
-            uint calcFull_crc32 = Force.Crc32.Crc32Algorithm.Compute(decoded, 0, finalFooterIdx);
+            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
             if (full_crc32 != calcFull_crc32)
                 this.FinalFooterValid = false;
 
@@ -573,7 +580,7 @@ namespace PEBakery.Core
             using (MemoryStream rawFooterStream = new MemoryStream())
             {
                 using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
                     rawFooter = rawFooterStream.ToArray();
@@ -590,24 +597,33 @@ namespace PEBakery.Core
             int compressedBodyLen2 = (int)BitConverter.ToUInt32(rawFooter, 0x208);
             // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
             uint compressedBody_crc32 = BitConverter.ToUInt32(rawFooter, 0x220);
-            // 0x224 - 0x225 : 2B -> (Type 1) 01 00, (Type 2) 00 02
-            ushort compMode = BitConverter.ToUInt16(rawFooter, 0x224);
+            // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+            byte compMode = rawFooter[0x224];
+            // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+            byte compLevel = rawFooter[0x225];
 
             // [Stage 6] Validate first footer
-            if (compMode == (ushort)EncodedFile.EncodeMode.Compress)
+            if (compMode == 0)
             {
                 this.Mode = EncodedFile.EncodeMode.Compress;
+                if (compLevel < 1 || 9 < compLevel)
+                    this.FirstFooterValid = false;
                 if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
                     this.FirstFooterValid = false;
+                
             }
-            else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
+            else if (compMode == 1)
             {
                 this.Mode = EncodedFile.EncodeMode.Raw;
+                if (compLevel != 0)
+                    this.FirstFooterValid = false;
                 if (compressedBodyLen2 != 0)
                     this.FirstFooterValid = false;
             }
             else // Wrong compMode
+            {
                 this.FirstFooterValid = false;
+            }
 
             if (this.FirstFooterValid == false)
                 return;
@@ -617,46 +633,14 @@ namespace PEBakery.Core
             {
                 this.RawBodyStream = new MemoryStream();
 
-                try
-                { // Standard zlib stream
-                    using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                    using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
-                    {
-                        zs.CopyTo(this.RawBodyStream);
-                        zs.Close();
+                using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                {
+                    zs.CopyTo(this.RawBodyStream);
+                    zs.Close();
 
-                        this.RawBodyStream.Position = 0;
-                        this.CompressedBodyValid = true;
-                    }
-                }
-                catch (ZlibException)
-                { // Corrupt Adler32 Checksum!
-                    // Treat body as pure deflate stream, without alder32 checksum
-                    using (MemoryStream ms = new MemoryStream(decoded, 2, compressedBodyLen - 6)) // 2 for Zlib Header, 4 for adler32 checksum
-                    using (System.IO.Compression.DeflateStream ds = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionMode.Decompress, false))
-                    {
-                        //------------
-                        using (FileStream fs = new FileStream("DebugExtractRaw.bin", FileMode.Create))
-                        {
-                            ms.CopyTo(fs);
-                            ms.Position = 0;
-                        }
-                        //------------
-
-                        ds.CopyTo(this.RawBodyStream);
-                        ds.Close();
-
-                        //------------
-                        using (FileStream fs = new FileStream("DebugExtractRaw.bin", FileMode.Create))
-                        {
-                            this.RawBodyStream.CopyTo(fs);
-                            this.RawBodyStream.Position = 0;
-                        }
-                        //------------
-
-                        this.RawBodyStream.Position = 0;
-                        this.CompressedBodyValid = false;
-                    }
+                    this.RawBodyStream.Position = 0;
+                    this.CompressedBodyValid = true;
                 }
             }
             else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
@@ -671,7 +655,7 @@ namespace PEBakery.Core
 
             // [Stage 8] Validate decompressed body
             this.RawBodyValid = true;
-            uint calcCompBody_crc32 = Force.Crc32.Crc32Algorithm.Compute(this.RawBodyStream.ToArray());
+            uint calcCompBody_crc32 = Crc32Checksum.Crc32(RawBodyStream.ToArray());
             if (compressedBody_crc32 != calcCompBody_crc32)
                 this.RawBodyValid = false;
 

@@ -76,12 +76,12 @@ However, building whole project is quite buggy and needs to be improved.
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
 | Hash      | 5   | 5           | 5      |
-| String    | 29  | 29          | 27     |
+| String    | 32  | 32          | 30     |
 | Math      | 22  | 22          | 22     |
 | System    | 15  | 15          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 155 | 155         | 68     |
+| All       | 158 | 158         | 71     |
 
 ## Help Needed
 

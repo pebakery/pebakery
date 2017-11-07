@@ -116,15 +116,23 @@ namespace PEBakery.Core
             s.MainViewModel.BuildPluginProgressBarValue = 0;
             s.MainViewModel.BuildFullProgressBarValue = s.CurrentPluginIdx;
 
-            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            if (Application.Current != null)
             {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                if (w.CurBuildTree != null)
-                    w.CurBuildTree.BuildFocus = false;
-                w.CurBuildTree = s.MainViewModel.BuildTree.FindPluginByFullPath(s.CurrentPlugin.FullPath);
-                if (w.CurBuildTree != null)
-                    w.CurBuildTree.BuildFocus = true;
-            }));
+                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+
+                    w.DrawPluginLogo(p);
+
+                    if (w.CurBuildTree != null)
+                        w.CurBuildTree.BuildFocus = false;
+
+                    w.CurBuildTree = s.MainViewModel.BuildTree.FindPluginByFullPath(s.CurrentPlugin.FullPath);
+
+                    if (w.CurBuildTree != null)
+                        w.CurBuildTree.BuildFocus = true;
+                }));
+            }
         }
 
         private void FinishRunPlugin(long pluginId)
@@ -265,7 +273,7 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"[{addr.Plugin.ShortPath}]::[{addr.Section.SectionName}] does not have codes", s.CurDepth));
                 return;
             }
 
@@ -695,10 +703,14 @@ namespace PEBakery.Core
 
         internal static void UpdateCommandProgressBar(EngineState s, double val)
         {
-            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            if (Application.Current != null) // for Unit Test
             {
-                s.MainViewModel.BuildCommandProgressBarValue = val;
-            }));
+                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    s.MainViewModel.BuildCommandProgressBarValue = val;
+                }));
+            }
+            
         }
         #endregion
     }

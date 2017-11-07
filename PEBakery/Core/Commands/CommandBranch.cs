@@ -69,12 +69,11 @@ namespace PEBakery.Core.Commands
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
-            Dictionary<string, string> globalVars = null;
             if (cmd.Type == CodeType.Exec)
             {
                 // Backup Varaibles
                 // varBackup = s.Variables.Clone() as Variables;
-                localVars = s.Variables.GetVars(VarsType.Local);
+                localVars = s.Variables.GetVarDict(VarsType.Local);
 
                 // Load Per-Plugin Variables
                 s.Variables.ResetVariables(VarsType.Local);
@@ -92,9 +91,7 @@ namespace PEBakery.Core.Commands
 
             if (cmd.Type == CodeType.Exec)
             { // Restore Variables
-                s.Variables.ResetVariables(VarsType.Local);
-
-                s.Variables.SetVars(VarsType.Local, localVars);
+                s.Variables.SetVarDict(VarsType.Local, localVars);
             }
 
             s.CurDepth = depthBackup;

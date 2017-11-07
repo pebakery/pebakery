@@ -1504,6 +1504,7 @@ namespace PEBakery.Core
     { // 아니 왜 사칙연산이 StrFormat에 있지...
         IntToBytes, Bytes, // IntToBytes == Bytes
         BytesToInt,
+        Hex,
         Ceil, Floor, Round, // Round added in PEBakery 
         Date,
         FileName, DirPath, Path, Ext, // DirPath == Path
@@ -1512,6 +1513,7 @@ namespace PEBakery.Core
         SubStr, // Added in PEBakery
         Len,
         LTrim, RTrim, CTrim, NTrim,
+        UCase, LCase,
         Pos, PosX,
         Replace, ReplaceX,
         ShortPath, LongPath,
@@ -1553,6 +1555,28 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{HumanReadableByteSize},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_Hex : StrFormatInfo
+    { // StrFormat,Hex,<Integer>,<DestVar>
+        public string Integer;
+        public string DestVar;
+
+        public StrFormatInfo_Hex(string integer, string destVar)
+        {
+            Integer = integer;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Integer);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
         }
     }
 
@@ -1772,6 +1796,31 @@ namespace PEBakery.Core
         public StrFormatInfo_NTrim(string srcString,  string destVar)
         {
             SrcStr = srcString;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcStr);
+            b.Append(",");
+            b.Append(DestVar);
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_ULCase : StrFormatInfo
+    {
+        // StrFormat,UCase,<SrcString>,<DestVar>
+        // StrFormat,LCase,<SrcString>,<DestVar>
+
+        public string SrcStr;
+        public string DestVar;
+
+        public StrFormatInfo_ULCase(string srcStr, string destVar)
+        {
+            SrcStr = srcStr;
             DestVar = destVar;
         }
 
@@ -2257,7 +2306,6 @@ namespace PEBakery.Core
         GetEnv,
         GetFreeDrive,
         GetFreeSpace,
-        HasUAC, // Deprecated, WB082 Compability Shim
         IsAdmin,
         Log,
         OnBuildExit,
@@ -2265,7 +2313,12 @@ namespace PEBakery.Core
         RefreshInterface,
         RescanScripts,
         SaveLog,
-        FileRedirect, // Deprecated, WB082 Compability Shim
+
+        // Deprecated, WB082 Compability Shim
+        HasUAC, 
+        FileRedirect, 
+        RegRedirect,
+        RebuildVars,
     }
 
     [Serializable]

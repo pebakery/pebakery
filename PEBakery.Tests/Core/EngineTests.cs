@@ -56,10 +56,10 @@ namespace PEBakery.Tests.Core
             // Init ZLibAssembly
             ZLibAssemblyInit();
 
-            // string logDBFile = Path.Combine(BaseDir, "PEBakery.Tests.db");
-            // Logger = new Logger(logDBFile);
+            Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
+            
         }
 
         private static void ZLibAssemblyInit()

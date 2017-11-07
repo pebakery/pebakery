@@ -118,15 +118,6 @@ namespace PEBakery.Core
             string targetDir = dict["TargetDir"];
             if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
-            /*
-        { 
-            // Fix for MistyPE
-            string varTargetDir = Ini.GetKey(fullPath, "Variables", "%TargetDir%");
-            if (varTargetDir == null)
-                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
-            else
-                targetDir = varTargetDir;
-        }*/
 
             string isoFile = dict["ISOFile"];
             if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
@@ -208,7 +199,7 @@ namespace PEBakery.Core
             if (p.Sections.ContainsKey("Variables"))
             {
                 VarsType type = VarsType.Local;
-                if (p.FullPath.Equals(project.MainPlugin.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (p.IsMainPlugin)
                     type = VarsType.Global;
 
                 List<LogInfo> subLogs = AddVariables(type, p.Sections["Variables"]);
@@ -387,18 +378,22 @@ namespace PEBakery.Core
             }
         }
 
-        public Dictionary<string, string> GetVars(VarsType type)
-        {
-            return GetVarsMatchesType(type).ToDictionary(k => k.Key, v => v.Value);
+        public Dictionary<string, string> GetVarDict(VarsType type)
+        { // Return a copy of varDict
+            return new Dictionary<string, string>(GetVarsMatchesType(type), StringComparer.OrdinalIgnoreCase);
         }
 
-        public void SetVars(VarsType type, Dictionary<string, string> varDict)
+        public void SetVarDict(VarsType type, Dictionary<string, string> varDict)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            vars.Clear();
-            
-            foreach (var kv in varDict)
-                vars.Add(kv.Key, kv.Value);
+            switch (type)
+            {
+                case VarsType.Local:
+                    localVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+                case VarsType.Global:
+                    globalVars = new Dictionary<string, string>(varDict, StringComparer.OrdinalIgnoreCase);
+                    break;
+            }
         }
 
         public LogInfo SetFixedValue(string key, string rawValue)
@@ -571,7 +566,7 @@ namespace PEBakery.Core
 
                 iter++;
                 if (32 < iter)
-                    throw new InternalException("Circular Reference");
+                    throw new InternalException($"Circular Reference by [{str}]");
             }
             while (0 < matches.Count);
 
@@ -588,6 +583,8 @@ namespace PEBakery.Core
                 dict = section.GetIniDict();
             else if (section.DataType == SectionDataType.Lines)
                 dict = Ini.ParseIniLinesVarStyle(section.GetLines());
+            else
+                throw new ExecuteException($"Section [{section.SectionName}] is not IniDict or Lines");
 
             if (dict.Keys.Count != 0)
                 return InternalAddDictionary(type, dict);
@@ -628,16 +625,22 @@ namespace PEBakery.Core
             List<LogInfo> list = new List<LogInfo>();
             foreach (var kv in dict)
             {
+                list.Add(InternalSetValue(type, kv.Key, kv.Value, false));
+
+                /*
                 if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)
                 { // Ex) %TargetImage%=%TargetImage%
-                    vars[kv.Key] = StringEscaper.QuoteUnescape(kv.Value);
-                    
+                    // vars[kv.Key] = StringEscaper.QuoteUnescape(kv.Value);
+                    // vars[kv.Key] = kv.Value.Trim('\"');
+                    vars[kv.Key] = kv.Value;
+
                     list.Add(new LogInfo(LogState.Success, $"{type} variable [%{kv.Key}%] set to [{kv.Value}]"));
                 }
                 else
                 {
                     list.Add(new LogInfo(LogState.Error, $"Variable [%{kv.Key}%] has circular reference in [{kv.Value}]"));
                 }
+                */
             }
             return list;
         }

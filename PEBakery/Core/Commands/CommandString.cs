@@ -79,6 +79,19 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case StrFormatType.Hex:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Hex));
+                        StrFormatInfo_Hex subInfo = info.SubInfo as StrFormatInfo_Hex;
+
+                        string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        if (!NumberHelper.ParseInt32(intStr, out int intVal))
+                            throw new ExecuteException($"[{intStr}] is not a valid integer");
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, intVal.ToString("X8"));
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 case StrFormatType.Ceil:
                 case StrFormatType.Floor:
                 case StrFormatType.Round:
@@ -389,6 +402,10 @@ namespace PEBakery.Core.Commands
                                 char[] chArr = toTrim.ToCharArray();
                                 destStr = srcStr.Trim(chArr);
                             }
+                            else
+                            {
+                                throw new InternalException("Internal Logic Error at StrFormat,Trim");
+                            }
 
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVarName, destStr);
                             logs.AddRange(varLogs);
@@ -412,6 +429,26 @@ namespace PEBakery.Core.Commands
                             destStr = srcStr.Substring(0, match.Index);
                         else
                             destStr = srcStr;
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
+                case StrFormatType.UCase:
+                case StrFormatType.LCase:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_ULCase));
+                        StrFormatInfo_ULCase subInfo = info.SubInfo as StrFormatInfo_ULCase;
+
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
+
+                        string destStr;
+                        if (type == StrFormatType.UCase)
+                            destStr = srcStr.ToUpper(CultureInfo.InvariantCulture);
+                        else if (type == StrFormatType.LCase)
+                            destStr = srcStr.ToLower(CultureInfo.InvariantCulture);
+                        else
+                            throw new InternalException("Internal Logic Error at StrFormat,ULCase");
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);

@@ -155,18 +155,6 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
-                case SystemType.HasUAC:
-                    {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
-                        SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
-
-                        logs.Add(new LogInfo(LogState.Warning, $"[System,HasUAC] is deprecated"));
-
-                        // Deprecated, WB082 Compability Shim
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
-                        logs.AddRange(varLogs);
-                    }
-                    break;
                 case SystemType.IsAdmin:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_IsAdmin));
@@ -286,8 +274,27 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"Exported Build Log into [{destPath}]"));
                     }
                     break;
+                    // WB082 Compability Shim
+                case SystemType.HasUAC:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
+                        SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
+
+                        logs.Add(new LogInfo(LogState.Warning, $"[System,HasUAC] is deprecated"));
+
+                        // Deprecated, WB082 Compability Shim
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 case SystemType.FileRedirect: // Do nothing
                     logs.Add(new LogInfo(LogState.Warning, $"[System,FileRediret] is deprecated"));
+                    break;
+                case SystemType.RegRedirect: // Do nothing
+                    logs.Add(new LogInfo(LogState.Warning, $"[System,RegRediret] is deprecated"));
+                    break;
+                case SystemType.RebuildVars: // Do nothing
+                    logs.Add(new LogInfo(LogState.Warning, $"[System,RebuildVars] is deprecated"));
                     break;
                 default: // Error
                     throw new InvalidCodeCommandException($"Wrong SystemType [{type}]");

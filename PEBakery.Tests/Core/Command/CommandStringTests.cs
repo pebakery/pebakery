@@ -31,13 +31,18 @@ namespace PEBakery.Tests.Core.Command
     public class CommandStringTests
     {
         #region IntToBytes
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandString")]
-        [TestMethod]
         public void StrFormat_IntToBytes()
         {
             EngineState s = EngineTests.CreateEngineState();
 
+            // 2 argument
+            s.Variables.SetValue(VarsType.Local, "Dest", "2000");
+            StrFormat_Dest_Template(s, "StrFormat,IntToBytes,%Dest%", "1.953KB");
+
+            // 3 argument
             StrFormat_Dest_Template(s, "StrFormat,IntToBytes,10240,%Dest%", "10KB");
             StrFormat_Dest_Template(s, "StrFormat,IntToBytes,4404020,%Dest%", "4.2MB");
             StrFormat_Dest_Template(s, "StrFormat,IntToBytes,5561982650,%Dest%", "5.18GB");
@@ -49,9 +54,9 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region BytesToInt
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandString")]
-        [TestMethod]
         public void StrFormat_BytesToInt()
         {
             EngineState s = EngineTests.CreateEngineState();
@@ -63,6 +68,20 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_Dest_Template(s, "StrFormat,BytesToInt,2.017PB,%Dest%", "2270940112101573");
             StrFormat_Dest_Template(s, "StrFormat,BytesToInt,1980PB,%Dest%", "2229281815548395520");
             StrFormat_Dest_Template_Error(s, "StrFormat,BytesToInt,WrongBytes,%Dest%", ErrorCheck.Error);
+        }
+        #endregion
+
+        #region Hex
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        public void StrFormat_Hex()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, "StrFormat,Hex,1234,%Dest%", "000004D2");
+            StrFormat_Dest_Template(s, "StrFormat,Hex,-1234,%Dest%", "FFFFFB2E");
+            StrFormat_Dest_Template_Error(s, "StrFormat,Hex,ABCD,%Dest%", ErrorCheck.Error);
         }
         #endregion
 
@@ -447,6 +466,34 @@ namespace PEBakery.Tests.Core.Command
 
             StrFormat_Dest_Template(s, @"StrFormat,NTrim,PEBakery100,%Dest%", "PEBakery");
             StrFormat_Dest_Template(s, @"StrFormat,NTrim,PEBakery,%Dest%", "PEBakery");
+        }
+        #endregion
+
+        #region UCase
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        public void StrFormat_UCase()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, "StrFormat,UCase,abcDEF,%Dest%", "ABCDEF");
+            StrFormat_Dest_Template(s, "StrFormat,UCase,가나다라,%Dest%", "가나다라");
+            StrFormat_Dest_Template(s, "StrFormat,UCase,abcDEF가나다라,%Dest%", "ABCDEF가나다라");
+        }
+        #endregion
+
+        #region LCase
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        public void StrFormat_LCase()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, "StrFormat,LCase,abcDEF,%Dest%", "abcdef");
+            StrFormat_Dest_Template(s, "StrFormat,LCase,가나다라,%Dest%", "가나다라");
+            StrFormat_Dest_Template(s, "StrFormat,LCase,abcDEF가나다라,%Dest%", "abcdef가나다라");
         }
         #endregion
 

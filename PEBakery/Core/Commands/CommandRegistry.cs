@@ -252,6 +252,8 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"Registry subkey [{fullKeyPath}] created"));
                         return logs;
                     case RegistryValueKind.String:
+                        if (info.ValueData == null) // For WB082 Compatibility
+                            goto case RegistryValueKind.None;
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
                         subKey.SetValue(valueName, valueData, RegistryValueKind.String);
                         break;
@@ -267,9 +269,12 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.DWord:
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
-                        if (!NumberHelper.ParseUInt32(valueData, out uint valUInt32))
+                        if (NumberHelper.ParseInt32(valueData, out int valInt32))
+                            subKey.SetValue(valueName, valInt32, RegistryValueKind.DWord);
+                        else if (NumberHelper.ParseUInt32(valueData, out uint valUInt32))
+                            subKey.SetValue(valueName, (int)valUInt32, RegistryValueKind.DWord);
+                        else
                             throw new ExecuteException($"[{valueData}] is not valid DWORD");
-                        subKey.SetValue(valueName, valUInt32, RegistryValueKind.DWord);
                         break;
                     case RegistryValueKind.MultiString:
                         string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
@@ -278,9 +283,12 @@ namespace PEBakery.Core.Commands
                         break;
                     case RegistryValueKind.QWord:
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
-                        if (!NumberHelper.ParseUInt64(valueData, out ulong valUInt64))
-                            throw new ExecuteException($"[{valueData}] is not valid DWORD");
-                        subKey.SetValue(valueName, valUInt64, RegistryValueKind.DWord);
+                        if (NumberHelper.ParseInt64(valueData, out long valInt64))
+                            subKey.SetValue(valueName, valInt64, RegistryValueKind.QWord);
+                        else if (NumberHelper.ParseUInt64(valueData, out ulong valUInt64))
+                            subKey.SetValue(valueName, (long)valUInt64, RegistryValueKind.QWord);
+                        else
+                            throw new ExecuteException($"[{valueData}] is not valid QWORD");
                         break;
                     default:
                         throw new InternalException("Internal CodeParser Error");

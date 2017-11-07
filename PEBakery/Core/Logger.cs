@@ -297,7 +297,7 @@ namespace PEBakery.Core
             // Variables - Fixed, Global, Local
             foreach (VarsType type in Enum.GetValues(typeof(VarsType)))
             {
-                Dictionary<string, string> dict = s.Variables.GetVars(type);
+                Dictionary<string, string> dict = s.Variables.GetVarDict(type);
                 foreach (var kv in dict)
                 {
                     DB_Variable dbVar = new DB_Variable()
