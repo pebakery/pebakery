@@ -614,7 +614,6 @@
                     HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
                     Visibility="{Binding NormalInterfaceVisibility}">
-                    <!-- Name="MainCanvas" -->
                     <Canvas 
                         Name="MainCanvas"
                         Grid.Row="0" Grid.Column="0"
@@ -622,7 +621,6 @@
                         VerticalAlignment="Top"
                         Margin="10, 10, 10, 10"
                         Panel.ZIndex="-1">
-                        <!-- <ContentPresenter Content="{Binding MainCanvas}" /> -->
                     </Canvas>
                 </ScrollViewer>
 

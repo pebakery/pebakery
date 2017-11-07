@@ -265,8 +265,7 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                // s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
-                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"No codes", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.SectionName}] does not have codes", s.CurDepth));
                 return;
             }
 
@@ -679,7 +678,8 @@ namespace PEBakery.Core
                 loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
 
-            string fullPath = StringEscaper.ExpandVariables(s, loadPluginPath);
+            // string fullPath = StringEscaper.ExpandVariables(s, loadPluginPath);
+            string fullPath = loadPluginPath;
             Plugin p = s.Project.GetPluginByFullPath(fullPath);
             if (p == null)
             { // Cannot Find Plugin in Project
@@ -691,6 +691,14 @@ namespace PEBakery.Core
             }
 
             return p;
+        }
+
+        internal static void UpdateCommandProgressBar(EngineState s, double val)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                s.MainViewModel.BuildCommandProgressBarValue = val;
+            }));
         }
         #endregion
     }

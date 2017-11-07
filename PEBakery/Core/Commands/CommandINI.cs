@@ -38,8 +38,8 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIRead info = cmd.Info as CodeInfo_INIRead;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
-            string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+            string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+            string key = StringEscaper.Preprocess(s, info.Key);
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new ExecuteException("Section name cannot be empty");
@@ -61,7 +61,10 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                logs.Add(new LogInfo(LogState.Error, $"Could not read key [{key}]'s value from [{fileName}]"));
+                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] does not exist in [{fileName}]"));
+
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false);
+                logs.AddRange(varLogs);
             }
 
             return logs;

@@ -314,7 +314,10 @@ namespace PEBakery.Core
                 }
 
                 if (value != null)
+                {
+                    value = StringEscaper.Escape(value, false, true);
                     logs.Add(SetValue(VarsType.Local, destVar, value));
+                }
             }
 
             return logs;
@@ -386,9 +389,7 @@ namespace PEBakery.Core
 
         public Dictionary<string, string> GetVars(VarsType type)
         {
-            Dictionary<string, string> vars = GetVarsMatchesType(type);
-            // Dictionary<string, string> newDict = new Dictionary<string, string>(vars.ToDictionary(k => k.Key, v => v.Value));
-            return vars.ToDictionary(k => k.Key, v => v.Value);
+            return GetVarsMatchesType(type).ToDictionary(k => k.Key, v => v.Value);
         }
 
         public void SetVars(VarsType type, Dictionary<string, string> varDict)

@@ -18,6 +18,7 @@
 
 using PEBakery.Exceptions;
 using PEBakery.Helper;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -173,7 +174,7 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 
-            List<string> dirs = cmd.Addr.Plugin.Sections["EncodedFolders"].Lines;
+            List<string> dirs = p.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
                 throw new ExecuteException($"Directory [{dirName}] not exists in [{pluginFile}]");
@@ -193,7 +194,8 @@ namespace PEBakery.Core.Commands
             }
 
             int i = 0;
-            Dictionary<string, string> fileDict = cmd.Addr.Plugin.Sections[dirName].IniDict;
+            List<string> lines = p.Sections[dirName].Lines;
+            Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {
                 using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, file))

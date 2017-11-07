@@ -75,13 +75,15 @@ namespace PEBakery.Core.Commands
                 // Backup Varaibles
                 // varBackup = s.Variables.Clone() as Variables;
                 localVars = s.Variables.GetVars(VarsType.Local);
-                globalVars = s.Variables.GetVars(VarsType.Global);
 
                 // Load Per-Plugin Variables
                 s.Variables.ResetVariables(VarsType.Local);
-                s.Variables.ResetVariables(VarsType.Global);
-                s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(p));
-                s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
+
+                List<LogInfo> varLogs = s.Variables.LoadDefaultPluginVariables(p);
+                s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+
+                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p);
+                s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 
             // Run Section
@@ -90,8 +92,9 @@ namespace PEBakery.Core.Commands
 
             if (cmd.Type == CodeType.Exec)
             { // Restore Variables
+                s.Variables.ResetVariables(VarsType.Local);
+
                 s.Variables.SetVars(VarsType.Local, localVars);
-                s.Variables.SetVars(VarsType.Global, globalVars);
             }
 
             s.CurDepth = depthBackup;

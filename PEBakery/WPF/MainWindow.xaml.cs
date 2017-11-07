@@ -737,6 +737,8 @@ namespace PEBakery.WPF
                     EngineState s = new EngineState(p.Project, logger, Model, p);
                     s.SetLogOption(setting);
 
+                    Engine.WorkingEngine = new Engine(s);
+
                     // Run
                     long buildId = await Engine.WorkingEngine.Run($"{p.Title} - Run");
 

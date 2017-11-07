@@ -360,8 +360,8 @@ namespace PEBakery.Helper
                     files = dirInfo.GetFiles(wildcard);
                 foreach (FileInfo file in files)
                 {
-                    string temppath = Path.Combine(destDir, file.Name);
-                    file.CopyTo(temppath, overwrite);
+                    string tempPath = Path.Combine(destDir, file.Name);
+                    file.CopyTo(tempPath, overwrite);
                 }
             }
             catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
@@ -376,7 +376,7 @@ namespace PEBakery.Helper
                 foreach (DirectoryInfo subdir in dirs)
                 {
                     string tempPath = Path.Combine(destDir, subdir.Name);
-                    DirectoryCopy(subdir.FullName, tempPath, copySubDirs, overwrite);
+                    DirectoryCopy(subdir.FullName, tempPath, copySubDirs, overwrite, wildcard);
                 }
             }
         }
