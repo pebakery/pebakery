@@ -211,8 +211,6 @@ namespace PEBakery.WPF
             }
         }
         #endregion
-
-        
     }
 
     #region UtiltiyViewModel

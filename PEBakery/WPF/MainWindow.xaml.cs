@@ -396,19 +396,17 @@ namespace PEBakery.WPF
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 watch.Start();
-                Plugin p = curMainTree.Plugin.Project.RefreshPlugin(curMainTree.Plugin);
-                if (p != null)
-                {
-                    curMainTree.Plugin = p;
-                    Dispatcher.Invoke(() => 
-                    {
-                        curMainTree.Plugin = p;
-                        DrawPlugin(curMainTree.Plugin);
-                    });
-                }
+                e.Result = curMainTree.Plugin.Project.RefreshPlugin(curMainTree.Plugin);
+                
             };
             refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
+                if (e.Result is Plugin p)
+                {
+                    curMainTree.Plugin = p;
+                    DrawPlugin(curMainTree.Plugin);
+                }
+
                 Model.ProgressRingActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
@@ -745,6 +743,9 @@ namespace PEBakery.WPF
                     s.SetLogOption(setting);
 
                     Engine.WorkingEngine = new Engine(s);
+
+                    // Switch to Build View
+                    Model.SwitchNormalBuildInterface = false;
 
                     // Run
                     long buildId = await Engine.WorkingEngine.Run($"{p.Title} - Run");

@@ -429,8 +429,7 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             // Delete Directory
-            try { Directory.Delete(dirPath, true); }
-            catch (UnauthorizedAccessException) { FileHelper.DirectoryDeleteEx(dirPath); }
+            FileHelper.DirectoryDeleteEx(dirPath);
 
             logs.Add(new LogInfo(LogState.Success, $"Deleted directory [{dirPath}]"));
 

@@ -498,17 +498,17 @@
                         </Button>
                         <Button
                             Grid.Row="1" Grid.Column="0"
+                            Click="PluginRefreshButton_Click"
+                            ToolTip="Refresh Plugin">
+                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
+                        </Button>
+                        <Button
+                            Grid.Row="2" Grid.Column="0"
                             Click="PluginEditButton_Click"
                             ToolTip="Edit Plugin">
                             <Button.Content>
                                 <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="5"/>
                             </Button.Content>
-                        </Button>
-                        <Button
-                            Grid.Row="2" Grid.Column="0"
-                            Click="PluginRefreshButton_Click"
-                            ToolTip="Refresh Plugin">
-                            <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
                         </Button>
                         <Button
                             Grid.Row="3" Grid.Column="0"

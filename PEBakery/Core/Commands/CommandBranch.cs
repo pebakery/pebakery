@@ -95,8 +95,8 @@ namespace PEBakery.Core.Commands
             if (cmd.Type == CodeType.Exec)
             { // Restore Variables
                 s.Variables.SetVarDict(VarsType.Local, localVars);
-                s.Variables.SetVarDict(VarsType.Local, globalVars);
-                s.Variables.SetVarDict(VarsType.Local, fixedVars);
+                s.Variables.SetVarDict(VarsType.Global, globalVars);
+                s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
             }
 
             s.CurDepth = depthBackup;
@@ -159,7 +159,7 @@ namespace PEBakery.Core.Commands
                     s.LoopRunning = true;
                     Engine.RunSection(s, nextAddr, info.Parameters, s.CurDepth + 1, true);
 
-                    if (s.LoopRunning == false)
+                    if (s.LoopRunning == false) // Loop,Break
                         break;
                     s.LoopRunning = false;
 

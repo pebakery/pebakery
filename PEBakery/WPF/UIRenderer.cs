@@ -263,10 +263,17 @@ namespace PEBakery.WPF
                 Change = info.Interval,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
+            /*
             spinner.LostFocus += (object sender, RoutedEventArgs e) =>
             {
                 SpinnerControl spin = sender as SpinnerControl;
                 info.Value = (int) spin.Value;
+                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+            };
+            */
+            spinner.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
+            {
+                info.Value = (int)e.NewValue;
                 UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
             };
 

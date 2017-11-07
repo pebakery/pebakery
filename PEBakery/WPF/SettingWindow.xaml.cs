@@ -589,11 +589,8 @@ namespace PEBakery.WPF
             // Plugin
             Plugin_EnableCache = true;
             Plugin_AutoConvertToUTF8 = false;
-#if DEBUG
             Plugin_AutoSyntaxCheck = true;
-#else
-            Plugin_AutoSyntaxCheck = false;
-#endif
+
             // Log
 #if DEBUG
             Log_DebugLevelIndex = 2; 

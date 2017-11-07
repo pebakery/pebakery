@@ -72,13 +72,12 @@ namespace PEBakery.WPF.Controls
         /// <param name="args"></param>
         private static void OnValueChanged(DependencyObject obj, DependencyPropertyChangedEventArgs args)
         {
-            SpinnerControl control = obj as SpinnerControl;
-            if (control != null)
+            if (obj is SpinnerControl control)
             {
                 var newValue = (decimal)args.NewValue;
                 var oldValue = (decimal)args.OldValue;
 
-                RoutedPropertyChangedEventArgs<decimal> e = 
+                RoutedPropertyChangedEventArgs<decimal> e =
                     new RoutedPropertyChangedEventArgs<decimal>(oldValue, newValue, ValueChangedEvent);
 
                 control.OnValueChanged(e);
@@ -229,7 +228,7 @@ namespace PEBakery.WPF.Controls
         /// as dependency properties.
         /// </summary>
         private const Decimal DefaultMinimumValue = 0,
-            DefaultMaximumValue = 100,
+            DefaultMaximumValue = int.MaxValue,
             DefaultValue = DefaultMinimumValue,
             DefaultChange = 1;
 
@@ -246,9 +245,7 @@ namespace PEBakery.WPF.Controls
 
         protected static void OnIncreaseCommand(Object sender, ExecutedRoutedEventArgs e)
         {
-            SpinnerControl control = sender as SpinnerControl;
-
-            if (control != null)
+            if (sender is SpinnerControl control)
             {
                 control.OnIncrease();
             }
@@ -265,9 +262,7 @@ namespace PEBakery.WPF.Controls
 
         protected static void OnDecreaseCommand(Object sender, ExecutedRoutedEventArgs e)
         {
-            SpinnerControl control = sender as SpinnerControl;
-
-            if (control != null)
+            if (sender is SpinnerControl control)
             {
                 control.OnDecrease();
             }
