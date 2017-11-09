@@ -274,7 +274,7 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"[{addr.Plugin.ShortPath}]::[{addr.Section.SectionName}] does not have codes", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"No code in [{addr.Plugin.ShortPath}]::[{addr.Section.SectionName}]", s.CurDepth + 1));
                 return;
             }
 

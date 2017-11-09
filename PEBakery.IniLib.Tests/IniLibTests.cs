@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections.Generic;
 using PEBakery.IniLib;
 using PEBakery.Helper;
+using System.Linq;
 
 namespace PEBakery.IniLib.Tests
 {
@@ -829,12 +830,15 @@ namespace PEBakery.IniLib.Tests
                 w.Close();
             }
 
-            IniKey[] keys = new IniKey[3];
-            keys[0] = new IniKey("Section1", "00");
-            keys[1] = new IniKey("Section3", "20");
-            keys[2] = new IniKey("Section2", "11");
+            IniKey[] keys = new IniKey[3]
+            {
+                new IniKey("Section1", "00"),
+                new IniKey("Section3", "20"),
+                new IniKey("Section2", "11"),
+            };
 
-            bool result = Ini.DeleteKeys(tempFile, keys);
+            bool[] result = Ini.DeleteKeys(tempFile, keys);
+            Assert.IsTrue(result.All(x => x == true));
 
             string read;
             Encoding encoding = FileHelper.DetectTextEncoding(tempFile);

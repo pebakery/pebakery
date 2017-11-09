@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
             }
             else
             {
-                logs.Add(new LogInfo(LogState.Success, $"Key [{key}] does not exist in [{fileName}]"));
+                logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]"));
 
                 List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false);
                 logs.AddRange(varLogs);
@@ -128,7 +128,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Could not read key [{kv.Key}]'s value", subCmd));
+                    logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist", subCmd));
                 }
             }
             logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from [{fileName}]", cmd));
@@ -272,7 +272,7 @@ namespace PEBakery.Core.Commands
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] deleted from [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete key [{key}] from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Ignore, $"Could not delete key [{key}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -312,28 +312,29 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
-            bool result = Ini.DeleteKeys(fileName, keys);
+            bool[] result = Ini.DeleteKeys(fileName, keys);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
 
-            if (result)
+            int successCount = 0;
+            for (int i = 0; i < keys.Length; i++)
             {
-                for (int i = 0; i < keys.Length; i++)
+                IniKey kv = keys[i];
+                if (result[i])
                 {
-                    IniKey kv = keys[i];
+                    successCount += 1;
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] deleted", infoOp.Cmds[i]));
                 }
-                logs.Add(new LogInfo(LogState.Success, $"Deleted [{keys.Length}] values from [{fileName}]", cmd));
-            }
-            else
-            {
-                for (int i = 0; i < keys.Length; i++)
+                else
                 {
-                    IniKey kv = keys[i];
-                    logs.Add(new LogInfo(LogState.Error, $"Could not delete key", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Ignore, $"Could not delete key", infoOp.Cmds[i]));
                 }
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete [{keys.Length}] values from [{fileName}]", cmd));
             }
+
+            if (0 < successCount)
+                logs.Add(new LogInfo(LogState.Success, $"Deleted [{keys.Length}] values from [{fileName}]", cmd));
+            if (0 < keys.Length - successCount)
+                logs.Add(new LogInfo(LogState.Ignore, $"Could not delete [{keys.Length}] values from [{fileName}]", cmd));
 
             return logs;
         }

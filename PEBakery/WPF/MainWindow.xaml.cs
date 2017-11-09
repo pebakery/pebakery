@@ -636,6 +636,8 @@ namespace PEBakery.WPF
                 // Turn on progress ring
                 Model.ProgressRingActive = true;
 
+                Stopwatch watch = Stopwatch.StartNew();
+
                 // Run
                 long buildId = await Engine.WorkingEngine.Run($"Project {project.ProjectName}");
 
@@ -648,6 +650,10 @@ namespace PEBakery.WPF
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
                 DrawPlugin(curMainTree.Plugin);
+
+                watch.Stop();
+                double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                Model.StatusBarText = $"{project.ProjectName} build done ({t:0.###}sec)";
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);

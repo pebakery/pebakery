@@ -842,22 +842,23 @@ namespace PEBakery.IniLib
         #region DeleteKey
         public static bool DeleteKey(string file, IniKey iniKey)
         {
-            return InternalDeleteKeys(file, new List<IniKey> { iniKey });
+            return InternalDeleteKeys(file, new List<IniKey> { iniKey })[0];
         }
         public static bool DeleteKey(string file, string section, string key)
         {
-            return InternalDeleteKeys(file, new List<IniKey> { new IniKey(section, key) });
+            return InternalDeleteKeys(file, new List<IniKey> { new IniKey(section, key) })[0];
         }
-        public static bool DeleteKeys(string file, IniKey[] iniKeys)
+        public static bool[] DeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalDeleteKeys(file, iniKeys.ToList());
         }
-        public static bool DeleteKeys(string file, List<IniKey> iniKeys)
+        private static bool[] InternalDeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteKeys(file, iniKeys);
-        }
-        private static bool InternalDeleteKeys(string file, List<IniKey> iniKeys)
-        {
+            IniKey[] keys = iniKeys.ToArray();
+            bool[] processed = new bool[keys.Length];
+            for (int i = 0; i < processed.Length; i++)
+                processed[i] = false;
+
             ReaderWriterLockSlim rwLock;
             if (lockDict.ContainsKey(file))
             {
@@ -873,7 +874,7 @@ namespace PEBakery.IniLib
             try
             {
                 if (File.Exists(file) == false)
-                    return false;
+                    return processed; // All False
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = IniHelper.DetectTextEncoding(file);
@@ -883,7 +884,7 @@ namespace PEBakery.IniLib
                     if (reader.Peek() == -1)
                     {
                         reader.Close();
-                        return false;
+                        return processed; // All False
                     }
 
                     string rawLine = string.Empty;
@@ -897,7 +898,7 @@ namespace PEBakery.IniLib
                         line = rawLine.Trim(); // Remove whitespace
 
                         // Ignore comments. If you deleted all keys successfully, also skip.
-                        if (iniKeys.Count == 0
+                        if (processed.Where(x => x == false).Count() == 0
                             || line.StartsWith("#", StringComparison.Ordinal)
                             || line.StartsWith(";", StringComparison.Ordinal)
                             || line.StartsWith("//", StringComparison.Ordinal))
@@ -915,9 +916,12 @@ namespace PEBakery.IniLib
                             // Start of the section
                             inTargetSection = false;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < iniKeys.Count; i++)
+                            for (int i = 0; i < keys.Length; i++)
                             {
-                                if (foundSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
+                                if (processed[i])
+                                    continue;
+
+                                if (foundSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase))
                                 {
                                     inTargetSection = true;
                                     currentSection = foundSection;
@@ -935,13 +939,16 @@ namespace PEBakery.IniLib
                             if (inTargetSection) // process here only if we are in target section
                             {
                                 string keyOfLine = line.Substring(0, idx);
-                                for (int i = 0; i < iniKeys.Count; i++)
+                                for (int i = 0; i < keys.Length; i++)
                                 {
-                                    if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)
-                                        && keyOfLine.Equals(iniKeys[i].Key, StringComparison.OrdinalIgnoreCase))
+                                    if (processed[i])
+                                        continue;
+
+                                    if (currentSection.Equals(keys[i].Section, StringComparison.OrdinalIgnoreCase)
+                                        && keyOfLine.Equals(keys[i].Key, StringComparison.OrdinalIgnoreCase))
                                     { // key exists, so do not write this line, which lead to 'deletion'
-                                        iniKeys.RemoveAt(i);
                                         thisLineProcessed = true;
+                                        processed[i] = true;
                                     }
                                 }
                             }
@@ -954,15 +961,10 @@ namespace PEBakery.IniLib
                     writer.Close();
                 }
 
-                if (iniKeys.Count == 0)
-                {
+                if (0 < processed.Where(x => x).Count())
                     IniHelper.FileReplaceEx(tempPath, file);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+
+                return processed;
             }
             finally
             {

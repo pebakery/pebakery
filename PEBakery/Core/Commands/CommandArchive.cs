@@ -212,6 +212,46 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            s.MainViewModel.BuildCommandProgressBarValue = 500;
+
+               
+
+            // Check srcFile contains wildcard
+            if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
+            { // No Wildcard
+                InternalCopyOrExpand(s, logs, info, srcFile, destPath);
+            }
+            else
+            { // With Wildcard
+                string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
+
+                string[] files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile));
+
+                if (0 < files.Length)
+                { // One or more file will be copied
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]", cmd));
+
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        string f = files[i];
+                        Engine.UpdateCommandProgressBar(s, (1000 * i) / files.Length);
+
+                        InternalCopyOrExpand(s, logs, info, f, destPath);
+                    }
+
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
+                }
+                else
+                { // No file will be copied
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{srcFile}] not found", cmd));
+                }
+            }
+
+            return logs;
+        }
+
+        private static void InternalCopyOrExpand(EngineState s, List<LogInfo> logs, CodeInfo_CopyOrExpand info, string srcFile, string destPath)
+        {
             string srcFileName = Path.GetFileName(srcFile);
             bool destIsDir = Directory.Exists(destPath);
             bool destIsFile = File.Exists(destPath);
@@ -222,7 +262,7 @@ namespace PEBakery.Core.Commands
                     if (info.Preserve)
                     {
                         logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destPath}]"));
-                        return logs;
+                        return;
                     }
                     else
                     {
@@ -230,8 +270,6 @@ namespace PEBakery.Core.Commands
                     }
                 }
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             if (File.Exists(srcFile))
             { // SrcFile is uncompressed, just copy!
@@ -274,7 +312,7 @@ namespace PEBakery.Core.Commands
                             if (2 < fileList.Count)
                             { // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
                                 logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] contains multiple files"));
-                                return logs;
+                                return;
                             }
                         }
 
@@ -310,8 +348,6 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(LogState.Error, $"[{srcFile}] nor [{srcCab}] not found"));
                 }
             }
-
-            return logs;
         }
     }
 }

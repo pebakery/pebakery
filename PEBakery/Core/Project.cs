@@ -486,7 +486,9 @@ namespace PEBakery.Core
             try
             {
                 if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
+                {
                     p = new Plugin(PluginType.Plugin, pPath, this, projectRoot, true, 0, ignoreMain);
+                }
                 else
                 {
                     string ext = Path.GetExtension(pPath);

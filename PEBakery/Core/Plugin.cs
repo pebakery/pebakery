@@ -209,8 +209,11 @@ namespace PEBakery.Core
 
         public Plugin(PluginType type, string fullPath, Project project, string projectRoot, bool isMainPlugin, int? level, bool ignoreMain)
         {
-            this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
             this.fullPath = fullPath;
+            if (fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+                this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
+            else
+                this.shortPath = fullPath;
             this.type = type;
             this.project = project;
             this.isMainPlugin = isMainPlugin;

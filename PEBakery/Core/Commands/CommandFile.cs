@@ -131,7 +131,8 @@ namespace PEBakery.Core.Commands
                             string f = files[i];
                             Engine.UpdateCommandProgressBar(s, (1000 * i) / files.Length);
 
-                            string destFullPath = Path.Combine(destPath, Path.GetFileName(f));
+                            string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
+                            
                             if (File.Exists(destFullPath))
                             {
                                 if (info.Preserve)
@@ -145,6 +146,7 @@ namespace PEBakery.Core.Commands
                                 }
                             }
 
+                            Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
                             File.Copy(f, destFullPath, true);
 
                             logs.Add(new LogInfo(LogState.Success, $"[{f}] copied to [{destFullPath}]", cmd));
