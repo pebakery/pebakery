@@ -20,11 +20,15 @@ namespace PEBakery.Core
         private Dictionary<string, CodeCommand> macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Macro Library - [ApiVar]
         private Dictionary<string, CodeCommand> localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Local Macro from [Variables]
 
-        public bool MacroEnabled { get => macroEnabled; }
-        public Plugin MacroPlugin { get => macroPlugin; }
-        public PluginSection MacroSection { get => macroSection; }
-        public Dictionary<string, CodeCommand> MacroDict { get => macroDict; } // Macro Library - [ApiVar]
-        public Dictionary<string, CodeCommand> LocalDict { get => localDict; } // Local Macro from [Variables]
+        public bool MacroEnabled => macroEnabled;
+        public Plugin MacroPlugin => macroPlugin;
+        public PluginSection MacroSection => macroSection;
+        public Dictionary<string, CodeCommand> MacroDict => macroDict; // Macro Library - [ApiVar]
+        public Dictionary<string, CodeCommand> LocalDict
+        { // Local Macro from [Variables]
+            get => new Dictionary<string, CodeCommand>(localDict, StringComparer.OrdinalIgnoreCase); 
+            set => localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
+        }
 
         public Macro(Project project, Variables variables, out List<LogInfo> logs)
         { 
@@ -130,6 +134,11 @@ namespace PEBakery.Core
             }
 
             return logs;
+        }
+
+        public void ResetLocalMacros()
+        {
+            localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase);
         }
     }
 

@@ -2350,6 +2350,29 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
+        public static bool IsStringContainsVariable(string str)
+        {
+            /*
+            int occurence = StringHelper.CountOccurrences(str, "%"); // %Joveler%
+            bool sectionParamMatch = Regex.IsMatch(str, @"(#\d+)", RegexOptions.Compiled); // #1
+            bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1);
+
+            if ((occurence != 0 && occurence % 2 == 0) || sectionParamMatch || sectionLoopMatch)
+                return true;
+            else
+                return false;
+                */
+
+            MatchCollection matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled); // ABC%Joveler%
+            bool sectionParamMatch = Regex.IsMatch(str, @"(#\d+)", RegexOptions.Compiled); // #1
+            bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
+
+            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch)
+                return true;
+            else
+                return false;
+        }
+
         public static CodeInfo_If ParseCodeInfoIf(string rawCode, List<string> args, SectionAddress addr)
         {
             if (args.Count < 2)
@@ -2365,10 +2388,7 @@ namespace PEBakery.Core
 
             BranchCondition cond;
             CodeCommand embCmd;
-            int occurence = StringHelper.CountOccurrences(args[cIdx], "%"); // %Joveler%
-            bool sectionParamMatch = Regex.IsMatch(args[cIdx], @"(#\d+)", RegexOptions.Compiled); // #1
-            bool sectionLoopMatch = (args[cIdx].IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1);
-            if ((occurence != 0 && occurence % 2 == 0) || sectionParamMatch || sectionLoopMatch) // BranchCondition - Compare series
+            if (IsStringContainsVariable(args[cIdx])) // BranchCondition - Compare series
             {
                 string condStr = args[cIdx + 1];
                 BranchConditionType condType;
@@ -2627,10 +2647,6 @@ namespace PEBakery.Core
                     info.Link.Add(info.Embed);
                     info.LinkParsed = true;
 
-                    // ifCmd = info.Embed;
-                    // newList = info.Link;
-
-                    // info = ifCmd.Info as CodeInfo_If;
                     info = info.Embed.Info as CodeInfo_If;
                     if (info == null)
                         throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
@@ -2685,11 +2701,6 @@ namespace PEBakery.Core
                 info.Link.Add(elseEmbCmd);
                 info.LinkParsed = true;
 
-                // CodeCommand ifCmd = elseEmbCmd;
-                // List<CodeCommand> nestList = info.Link;
-
-                // CodeInfo_If ifInfo = ifCmd.Info as CodeInfo_If;
-                // CodeCommand ifCmd = info.Embed;
                 CodeInfo_If ifInfo = info.Embed.Info as CodeInfo_If;
                 if (ifInfo == null)
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
@@ -2701,9 +2712,6 @@ namespace PEBakery.Core
                         ifInfo.Link.Add(ifInfo.Embed);
                         ifInfo.LinkParsed = true;
 
-                        // ifCmd = ifInfo.Embed;
-                        // nestList = ifInfo.Link;
-                        // ifInfo = ifCmd.Info as CodeInfo_If;
                         ifInfo = ifInfo.Embed.Info as CodeInfo_If;
                         if (ifInfo == null)
                             throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");

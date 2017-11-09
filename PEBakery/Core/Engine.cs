@@ -90,6 +90,7 @@ namespace PEBakery.Core
             s.Logger.Build_Write(s, s.Variables.LoadDefaultPluginVariables(p));
 
             // Load Per-Plugin Macro
+            s.Macro.ResetLocalMacros();
             s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
 
             // Reset Current Section Parameter

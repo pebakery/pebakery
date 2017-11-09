@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PEBakery.Helper;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -46,7 +47,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region 
+        #region Validate
         public void Validate()
         {
             // Codes
@@ -94,6 +95,28 @@ namespace PEBakery.Core
                             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
                             CodeInfo_If info = cmd.Info as CodeInfo_If;
 
+                            if (info.Condition.Type == BranchConditionType.ExistSection)
+                            { 
+                                // Exception Handling for 1-files.script
+                                // If,ExistSection,%ScriptFile%,Cache_Delete_B,Run,%ScriptFile%,Cache_Delete_B
+                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
+                                    info.Condition.Arg1.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
+                                    {
+                                        Debug.Assert(info.Embed.Info.GetType() == typeof(CodeInfo_RunExec));
+                                        CodeInfo_RunExec subInfo = info.Embed.Info as CodeInfo_RunExec;
+
+                                        if (subInfo.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
+                                            subInfo.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
+                                                continue;
+                                        }
+                                    }
+                                }
+                            }
+
                             InternalValidateCodes(info.Link, logs);
                         }
                         break;
@@ -116,15 +139,9 @@ namespace PEBakery.Core
                                 info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
-                                {
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
-                                }
-                                else
-                                {
-                                    MatchCollection matches = Regex.Matches(info.SectionName, @"%([^ %]+)%", RegexOptions.Compiled);
-                                    if (matches.Count == 0)
-                                        logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
-                                }
+                                else if (CodeParser.IsStringContainsVariable(info.SectionName) == false)
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
                         }
                         break;
@@ -141,15 +158,9 @@ namespace PEBakery.Core
                                 info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
-                                {
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
-                                }
-                                else
-                                {
-                                    MatchCollection matches = Regex.Matches(info.SectionName, @"%([^ %]+)%", RegexOptions.Compiled);
-                                    if (matches.Count == 0)
-                                        logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
-                                }
+                                else if (CodeParser.IsStringContainsVariable(info.SectionName) == false)
+                                    logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
                         }
                         break;

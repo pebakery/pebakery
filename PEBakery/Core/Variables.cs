@@ -76,10 +76,10 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             #region Builder Variables
+            // PEBakery
+            logs.Add(SetFixedValue("PEBakery", "True"));
             // BaseDir
             logs.Add(SetFixedValue("BaseDir", project.BaseDir));
-            // Tools
-            logs.Add(SetFixedValue("Tools", Path.Combine("%BaseDir%", "Projects", "Tools")));
             // Version
             logs.Add(SetFixedValue("Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetFixedValue("EngineVersion", App.Version.ToString()));
@@ -522,9 +522,8 @@ namespace PEBakery.Core
             {
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
-                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
                 StringBuilder b = new StringBuilder();
-
+                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
@@ -564,7 +563,7 @@ namespace PEBakery.Core
                         b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
                 }
 
-                if (0 < matches.Count) // Copy it if variable exists
+                if (0 < matches.Count) // Copy it only if variable exists
                     str = b.ToString();
 
                 iter++;

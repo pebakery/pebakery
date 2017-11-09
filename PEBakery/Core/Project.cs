@@ -413,9 +413,7 @@ namespace PEBakery.Core
                 if (x.Level == y.Level)
                 {
                     if (x.Type == y.Type)
-                    {
-                        // return x.FullPath.CompareTo(y.FullPath);
-                        
+                    {                        
                         int xDepth = StringHelper.CountOccurrences(x.FullPath, @"\");
                         int yDepth = StringHelper.CountOccurrences(y.FullPath, @"\");
                         if (xDepth == yDepth)

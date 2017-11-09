@@ -71,19 +71,22 @@ namespace PEBakery.Core.Commands
             Dictionary<string, string> localVars = null;
             Dictionary<string, string> globalVars = null;
             Dictionary<string, string> fixedVars = null;
+            Dictionary<string, CodeCommand> localMacros = null;
             if (cmd.Type == CodeType.Exec)
             {
-                // Backup Varaibles
+                // Backup Varaibles and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
                 globalVars = s.Variables.GetVarDict(VarsType.Global);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
+                localMacros = s.Macro.LocalDict;
 
                 // Load Per-Plugin Variables
                 s.Variables.ResetVariables(VarsType.Local);
-
                 List<LogInfo> varLogs = s.Variables.LoadDefaultPluginVariables(p);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
+                // Load Per-Plugin Macro
+                s.Macro.ResetLocalMacros();
                 List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
@@ -93,10 +96,14 @@ namespace PEBakery.Core.Commands
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             if (cmd.Type == CodeType.Exec)
-            { // Restore Variables
+            {
+                // Restore Variables
                 s.Variables.SetVarDict(VarsType.Local, localVars);
                 s.Variables.SetVarDict(VarsType.Global, globalVars);
                 s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
+
+                // Restore Local Macros
+                s.Macro.LocalDict = localMacros;
             }
 
             s.CurDepth = depthBackup;

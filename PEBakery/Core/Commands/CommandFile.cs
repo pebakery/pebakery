@@ -226,7 +226,7 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"File [{f}] deleted"));
                     }
 
-                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied"));
+                    logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files deleted"));
                 }
                 else
                 { // No file will be deleted
