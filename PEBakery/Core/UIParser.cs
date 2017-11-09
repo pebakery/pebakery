@@ -46,11 +46,11 @@ namespace PEBakery.Core
                 catch (EmptyLineException) { } // Do nothing
                 catch (InvalidUICommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{e.UICmd.RawLine}]"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICmd.RawLine})"));
                 }
                 catch (InvalidCommandException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{e.RawLine}]"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.RawLine})"));
                 }
                 catch (Exception e)
                 {
@@ -171,6 +171,7 @@ namespace PEBakery.Core
 
             switch (type)
             {
+                #region TextBox
                 case UIType.TextBox:
                     {
                         const int minOpCount = 1;
@@ -180,6 +181,8 @@ namespace PEBakery.Core
 
                         return new UIInfo_TextBox(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
                     }
+                #endregion
+                #region TextLabel
                 case UIType.TextLabel:
                     {
                         const int minOpCount = 1;
@@ -200,6 +203,8 @@ namespace PEBakery.Core
 
                         return new UIInfo_TextLabel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
+                #endregion
+                #region NumberBox
                 case UIType.NumberBox:
                     {
                         const int minOpCount = 4;
@@ -214,41 +219,43 @@ namespace PEBakery.Core
 
                         return new UIInfo_NumberBox(GetInfoTooltip(args, maxOpCount), value, min, max, interval);
                     }
+                #endregion
+                #region CheckBox
                 case UIType.CheckBox:
                     {
                         const int minOpCount = 1;
-                        const int maxOpCount = 3; // [SectionToRun],[ShowProgress] - 여태까지 CheckBox에 Section 달린 건 못 봤는데?
+                        const int maxOpCount = 3; // +2 for [RunOptional]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         bool _checked = false;
-                        if (string.Equals(args[0], "True", StringComparison.OrdinalIgnoreCase))
+                        if (args[0].Equals("True", StringComparison.OrdinalIgnoreCase))
                             _checked = true;
-                        else if (string.Equals(args[0], "False", StringComparison.OrdinalIgnoreCase) == false)
+                        else if (args[0].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                             throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
 
-                        string sectionName = null;
-                        string tooltip = GetInfoTooltip(args, maxOpCount);
-                        if (1 < args.Count)
-                        {
-                            // If last args start with __, read that as ToolTip, not SectionName.
-                            if (args.Count == 2 && args[1].StartsWith("__", StringComparison.Ordinal))
-                                tooltip = args[1].Substring(2);
-                            else
-                                sectionName = args[1];
-                        }
+                        string tooltip = null;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                            tooltip = GetInfoTooltip(args, args.Count - 1);
 
-                        bool showProgress = false;
-                        if (2 < args.Count)
-                        {
+                        string sectionName = null;
+                        bool hideProgress = false;
+                        if (3 <= args.Count &&
+                            (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                            (args[1].StartsWith("_", StringComparison.Ordinal) && args[1].EndsWith("_", StringComparison.Ordinal)))
+                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                showProgress = true;
+                                hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
+
+                            sectionName = args[1].Substring(1, args[1].Length - 2);
                         }
 
-                        return new UIInfo_CheckBox(tooltip, _checked, sectionName, showProgress);
+                        return new UIInfo_CheckBox(tooltip, _checked, sectionName, hideProgress);
                     }
+                #endregion
+                #region ComboBox
                 case UIType.ComboBox:
                     { // Variable Length
                         List<string> items = new List<string>();
@@ -274,6 +281,8 @@ namespace PEBakery.Core
 
                         return new UIInfo_ComboBox(toolTip, items, idx);
                     }
+                #endregion
+                #region Image
                 case UIType.Image:
                     {
                         const int minOpCount = 0;
@@ -287,6 +296,8 @@ namespace PEBakery.Core
 
                         return new UIInfo_Image(GetInfoTooltip(args, maxOpCount), url);
                     }
+                #endregion
+                #region TextFile
                 case UIType.TextFile:
                     {
                         const int minOpCount = 0;
@@ -296,38 +307,58 @@ namespace PEBakery.Core
 
                         return new UIInfo_TextFile(GetInfoTooltip(args, maxOpCount));
                     }
+                #endregion
+                #region Button
                 case UIType.Button:
-                    {
-                        // TODO: Still had not figured why SectionName and ProgressShow duplicate
-                        // It has 2 to 6 fixed operands. - Need more research.
-                        // <SectionName>[Picture][ShowProgress] [Boolean(?)][SectionName(?)][ShowProgress(?)] [Tooltip]
+                    { // <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean] +[RunOptional]
                         // Ex)
-                        //   pButton1 =,1,8,382,47,24,24,Process-OpenDriver_x86,opendir.bmp,False,_Process-OpenDriver_x86,False,_Process-OpenDriver_x86_,False
-                        //   Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Plugin"
+                        // pButton1 =,1,8,382,47,24,24,Process-OpenDriver_x86,opendir.bmp,False,_Process-OpenDriver_x86,False,_Process-OpenDriver_x86_,False
+                        // Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Plugin"
+                        // OpendirSMFilesButton=,1,8,475,204,24,24,Opendir_SMFiles,opendir.bmp,"__Open Custom .ini Folder"
+                        // Button_HiveUnload_Target="HiveUnload: Target + ProjectTemp + MountFolders",1,8,15,17,293,46,HiveUnload_Launch_B,HiveUnload3232.bmp,0,"__UnLoad hives"
+                        // Button_Tools_Folder="Open Tools Folder",1,8,98,256,134,25,Open_Tools_Folder
                         const int minOpCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, -1))
                             throw new InvalidCommandException($"[{type}] must have at least [{minOpCount}] arguments");
 
+                        int cnt = args.Count;
+                        string tooltip = null;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                        {
+                            tooltip = GetInfoTooltip(args, cnt - 1);
+                            cnt -= 1;
+                        }
+
                         string sectionName = args[0];
 
                         string picture = null;
-                        if (1 < args.Count)
+                        if (2 <= cnt)
                         {
                             if (args[1].Equals("0", StringComparison.OrdinalIgnoreCase) == false)
                                 picture = args[1];
                         }
 
-                        bool showProgress = false;
-                        if (2 < args.Count)
+                        bool hideProgress = false;
+                        if (3 <= cnt)
                         {
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                showProgress = true;
+                                hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
-                                throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
+                            {
+                                // WB082 Compability Shim
+                                if (args[2].Equals("1", StringComparison.Ordinal))
+                                    hideProgress = true;
+                                else if (args[2].Equals("0", StringComparison.Ordinal) == false)
+                                    throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
+                            }
                         }
 
-                        return new UIInfo_Button(GetInfoTooltip(args, args.Count - 1), sectionName, picture, showProgress);
+                        // Ignore [UnknownBoolean] and [RunOptional]
+
+                        return new UIInfo_Button(tooltip, args[0], picture, hideProgress);
                     }
+                #endregion
+                #region WebLabel
                 case UIType.WebLabel:
                     {
                         const int minOpCount = 1;
@@ -337,10 +368,12 @@ namespace PEBakery.Core
 
                         return new UIInfo_WebLabel(GetInfoTooltip(args, maxOpCount), StringEscaper.Unescape(args[0]));
                     }
+                #endregion
+                #region RadioButton
                 case UIType.RadioButton:
                     {
                         const int minOpCount = 1;
-                        const int maxOpCount = 2; // [SectionToRun],[ShowProgress] 
+                        const int maxOpCount = 3; // +2 for [RunOptional]
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
@@ -348,30 +381,30 @@ namespace PEBakery.Core
                         if (args[0].Equals("True", StringComparison.OrdinalIgnoreCase))
                             selected = true;
                         else if (args[0].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
-                            throw new InvalidCommandException($"Invalid argument [{args[0]}], must have [True] or [False]");
+                            throw new InvalidCommandException($"Invalid argument [{args[0]}], must be [True] or [False]");
+
+                        string tooltip = null;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                            tooltip = GetInfoTooltip(args, args.Count - 1);
 
                         string sectionName = null;
-                        string tooltip = GetInfoTooltip(args, maxOpCount);
-                        if (1 < args.Count)
-                        {
-                            // If last args start with __, read that as ToolTip, not SectionName.
-                            if (args.Count == 2 && args[1].StartsWith("__", StringComparison.Ordinal))
-                                tooltip = args[1].Substring(2);
-                            else
-                                sectionName = args[1];
-                        }
-
-                        bool showProgress = false;
-                        if (2 < args.Count)
-                        {
+                        bool hideProgress = false;
+                        if (3 <= args.Count &&
+                            (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                            (args[1].StartsWith("_", StringComparison.Ordinal) && args[1].EndsWith("_", StringComparison.Ordinal)))
+                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                showProgress = true;
+                                hideProgress = true;
                             else if (args[2].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                                 throw new InvalidCommandException($"Invalid argument [{args[2]}], must be [True] or [False]");
+
+                            sectionName = args[1].Substring(1, args[1].Length - 2);
                         }
 
-                        return new UIInfo_RadioButton(tooltip, selected, sectionName, showProgress);
+                        return new UIInfo_RadioButton(tooltip, selected, sectionName, hideProgress);
                     }
+                #endregion
+                #region Bevel
                 case UIType.Bevel:
                     {
                         const int minOpCount = 0;
@@ -381,6 +414,8 @@ namespace PEBakery.Core
 
                         return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount));
                     }
+                #endregion
+                #region FileBox
                 case UIType.FileBox:
                     {
                         const int minOpCount = 0;
@@ -400,33 +435,46 @@ namespace PEBakery.Core
 
                         return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);
                     }
+                #endregion
+                #region RadioGroup
                 case UIType.RadioGroup:
                     { // Variable Length
                         List<string> items = new List<string>();
-                        string last = args.Last();
-                        string toolTip = null;
-                        int count = 0;
-                        if (last.StartsWith("__", StringComparison.Ordinal))
-                        {
-                            toolTip = last;
-                            count = args.Count - 2;
-                        }
-                        else
-                        {
-                            count = args.Count - 1;
+
+                        string sectionName = null;
+                        bool showProgress = false;
+
+                        int cnt = args.Count - 1;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
+                            cnt -= 1;
+
+                        if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                                (args[cnt - 1].StartsWith("_", StringComparison.Ordinal) && args[cnt - 1].EndsWith("_", StringComparison.Ordinal)))
+                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                            if (args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase))
+                                showProgress = true;
+                            else if (args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                                throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be [True] or [False]");
+
+                            sectionName = args[cnt - 1].Substring(1, args[cnt - 1].Length - 2);
+
+                            cnt -= 2;
                         }
 
-                        for (int i = 0; i < count; i++)
+                        for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
                         
-                        if (NumberHelper.ParseInt32(args[count], out int idx) == false)
-                            throw new InvalidCommandException($"Invalid argument [{args[count]}], must be integer");
+                        if (NumberHelper.ParseInt32(args[cnt], out int idx) == false)
+                            throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be integer");
 
-                        return new UIInfo_RadioGroup(toolTip, items, idx);
+                        return new UIInfo_RadioGroup(GetInfoTooltip(args, args.Count), items, idx, sectionName, showProgress);
                     }
+                #endregion
+                #region default
                 default:
                     Debug.Assert(false);
                     break;
+                #endregion
             }
 
             throw new InvalidCommandException($"Invalid UICommand [{type}]");

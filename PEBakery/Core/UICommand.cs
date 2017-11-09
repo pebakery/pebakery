@@ -50,7 +50,7 @@ namespace PEBakery.Core
 
     #region Interface Representation Format
     /*
-    <Name>=<Text>,Visibility,Type,X,Y,Width,Height,<Variable>,[ButtonOptional],[Tooltip]
+    <Name>=<Text>,Visibility,Type,X,Y,Width,Height,<Variable>,[Tooltip]
     Visibility : 1 or 0
     Type : PluginInterfaceControlType 0 ~ 14
 
@@ -75,25 +75,28 @@ namespace PEBakery.Core
     <Variable>
     TextBox     = <StringValue>
     TextLabel   = <FontSize>,<Style>
-                  <Style> : Normal, Bold (in 082)
+                  <Style> : Normal, Bold (in WB082)
                             Italic, Underline, Strike (Added in PEBakery)
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
-    CheckBox    = <BooleanValue>,[SectionToRun]   +[OptionalInteger]
+    CheckBox    = <BooleanValue>,[SectionToRun]  +[ButtonOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
-    Button      = <SectionToRun>,[Picture]   +[OptionalInteger]
+    Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean] +[RunOptional]
                   [Picture] - 0 if no picture. or its value is Embedded File name.
     WebLabel    = <StringValue> // URL
-    RadioButton = <BooleanValue>,[SectionToRun]   +[OptionalInteger]
+    RadioButton = <BooleanValue> +[RunOptional]
     FileBox     = [FILE] // If file, FILE. If dir, nothing.
-    RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerValue> // selected index, starting from 0
+    RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
+                  // IntegerIndex : selected index, starting from 0
 
-    [ButtonOptional]
-    For CheckBox, RadioButton, Button
-    <BooleanValue> : While running, show progress window or not?
-    Need more research
+    [RunOptional]
+    For CheckBox, Button, RadioButton, RadioGroup
+    <SectionToRun>,<HideProgress>
+    
+    SectionToRun : (String) SectionName with _ at start and end
+    HideProgress : (Bool)   
 
     [Tooltip]
-    <StringValue> : Tooltip to show when mousehover event
+    <StringValue> : Tooltip to show when mousehover event, always start with __
 
     */
     #endregion
@@ -305,37 +308,35 @@ namespace PEBakery.Core
     {
         public bool Value;
         public string SectionName; // Optional
-        public bool ShowProgress; // Optional
+        public bool HideProgress; // Optional
 
-        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool showProgress = false)
+        public UIInfo_CheckBox(string tooltip, bool value, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             this.Value = value;
             this.SectionName = sectionName;
-            this.ShowProgress = showProgress;
+            this.HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder b = new StringBuilder();
             if (Value)
-                builder.Append("True");
+                b.Append("True");
             else
-                builder.Append("False");
+                b.Append("False");
             if (SectionName != null)
             {
-                builder.Append(",");
-                builder.Append("_");
-                builder.Append(SectionName);
-                builder.Append("_");
-                builder.Append(",");
-                if (ShowProgress)
-                    builder.Append("True");
+                b.Append(",_");
+                b.Append(SectionName);
+                b.Append("_,");
+                if (HideProgress)
+                    b.Append("True");
                 else
-                    builder.Append("False");
+                    b.Append("False");
             }
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()
@@ -429,12 +430,12 @@ namespace PEBakery.Core
         public string Picture; // Optional
         public bool ShowProgress; // Optional
 
-        public UIInfo_Button(string tooltip, string sectionName, string picture, bool showProgress)
+        public UIInfo_Button(string tooltip, string sectionName, string picture, bool hideProgress)
             : base(tooltip)
         {
             this.SectionName = sectionName;
             this.Picture = picture;
-            this.ShowProgress = showProgress;
+            this.ShowProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
@@ -532,37 +533,35 @@ namespace PEBakery.Core
 
     [Serializable]
     public class UIInfo_RadioButton : UIInfo
-    { // TODO: [ButtonOptional]
+    {
         public bool Selected;
-        public string SectionName; // optional
-        public bool ShowProgress; // Optional
+        public string SectionName; // Optional
+        public bool HideProgress; // Optional
 
-        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool showProgress = false) 
+        public UIInfo_RadioButton(string tooltip, bool selected, string sectionName = null, bool hideProgress = false) 
             : base(tooltip)
         {
             this.Selected = selected;
             this.SectionName = sectionName;
-            this.ShowProgress = showProgress;
+            this.HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(Selected);
+            StringBuilder b = new StringBuilder();
+            b.Append(Selected);
             if (SectionName != null)
             {
-                builder.Append(",");
-                builder.Append("_");
-                builder.Append(SectionName);
-                builder.Append("_");
-                builder.Append(",");
-                if (ShowProgress)
-                    builder.Append("True");
+                b.Append(",_");
+                b.Append(SectionName);
+                b.Append("_,");
+                if (HideProgress)
+                    b.Append("True");
                 else
-                    builder.Append("False");
+                    b.Append("False");
             }
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()
@@ -622,25 +621,39 @@ namespace PEBakery.Core
     {
         public List<string> Items;
         public int Selected;
+        public string SectionName; // Optional
+        public bool HideProgress; // Optional
 
-        public UIInfo_RadioGroup(string tooltip,  List<string> items, int selected)
+        public UIInfo_RadioGroup(string tooltip,  List<string> items, int selected, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             this.Items = items;
             this.Selected = selected;
+            this.SectionName = sectionName;
+            this.HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder b = new StringBuilder();
             for (int i = 0; i < Items.Count; i++)
             {
-                builder.Append(StringEscaper.QuoteEscape(Items[i]));
-                builder.Append(",");
+                b.Append(StringEscaper.QuoteEscape(Items[i]));
+                b.Append(",");
             }
-            builder.Append(Selected);
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            b.Append(Selected);
+            if (SectionName != null)
+            {
+                b.Append(",_");
+                b.Append(SectionName);
+                b.Append("_,");
+                if (HideProgress)
+                    b.Append("True");
+                else
+                    b.Append("False");
+            }
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()

@@ -460,7 +460,10 @@ namespace PEBakery.WPF
                         for (int i = 0; i < errorLogs.Length; i++)
                         {
                             LogInfo log = errorLogs[i];
-                            b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                            if (log.Command != null)
+                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                            else
+                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
                         }
                         b.AppendLine();
                     }

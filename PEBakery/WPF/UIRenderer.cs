@@ -308,7 +308,7 @@ namespace PEBakery.WPF
                     if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
                         SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -710,7 +710,7 @@ namespace PEBakery.WPF
                     if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
                         SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.ShowProgress);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - RadioButton [{uiCmd.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -860,6 +860,26 @@ namespace PEBakery.WPF
                     UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
                 };
 
+                if (info.SectionName != null)
+                {
+                    radio.Click += (object sender, RoutedEventArgs e) =>
+                    {
+                        if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                        {
+                            SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                            UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - RadioGroup [{uiCmd.Key}]", info.HideProgress);
+                        }
+                        else
+                        {
+                            Application.Current.Dispatcher.Invoke((Action)(() =>
+                            {
+                                MainWindow w = Application.Current.MainWindow as MainWindow;
+                                w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                            }));
+                        }
+                    };
+                }
+
                 SetToolTip(radio, info.ToolTip);
 
                 panel.Children.Add(radio);
@@ -916,7 +936,7 @@ namespace PEBakery.WPF
             Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
 
-        private static async void RunOneSection(SectionAddress addr, string logMsg, bool showProgress)
+        private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)
         {
             if (Engine.WorkingLock == 0)
             {
@@ -925,6 +945,7 @@ namespace PEBakery.WPF
                 Logger logger = App.Logger;
                 SettingViewModel setting = App.Setting;
                 MainViewModel mainModel = null;
+
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
@@ -932,9 +953,12 @@ namespace PEBakery.WPF
                     mainModel = w.Model;
 
                     // Populate BuildTree
-                    w.Model.BuildTree.Children.Clear();
-                    w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
-                    w.CurBuildTree = null;
+                    if (!hideProgress)
+                    {
+                        w.Model.BuildTree.Children.Clear();
+                        w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
+                        w.CurBuildTree = null;
+                    }
                 });
 
                 mainModel.ProgressRingActive = true;
@@ -945,14 +969,14 @@ namespace PEBakery.WPF
                 Engine.WorkingEngine = new Engine(s);
 
                 // Build Start, Switch to Build View
-                if (showProgress)
+                if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = false;
 
                 // Run
                 long buildId = await Engine.WorkingEngine.Run(logMsg);
 
                 // Build Ended, Switch to Normal View
-                if (showProgress)
+                if (!hideProgress)
                     mainModel.SwitchNormalBuildInterface = true;
 
                 // Turn off ProgressRing
@@ -961,7 +985,7 @@ namespace PEBakery.WPF
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
 
-                if (showProgress)
+                if (!hideProgress)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {

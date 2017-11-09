@@ -109,7 +109,7 @@ namespace PEBakery.Core.Commands
             else
             { // With Wildcard
                 // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
-                string srcDirToFind = FileHelper.GetDirNameEx(srcFile);
+                string srcDirToFind = Path.GetFullPath(FileHelper.GetDirNameEx(srcFile));
 
                 string[] files;
                 if (info.NoRec)
@@ -123,9 +123,6 @@ namespace PEBakery.Core.Commands
 
                     if (destPathIsDir || !destPathExists)
                     {
-                        if (destPathExists == false)
-                            Directory.CreateDirectory(destPath);
-
                         for (int i = 0; i < files.Length; i++)
                         {
                             string f = files[i];
