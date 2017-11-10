@@ -29,7 +29,7 @@ namespace PEBakery.Core
 
         #region Variables
         private Project project;
-        private Dictionary<string, string> fixedVars; // Once constructed, it must be read-only.
+        private Dictionary<string, string> fixedVars;
         private Dictionary<string, string> globalVars;
         private Dictionary<string, string> localVars;
 
@@ -77,13 +77,13 @@ namespace PEBakery.Core
 
             #region Builder Variables
             // PEBakery
-            logs.Add(SetFixedValue("PEBakery", "True"));
+            logs.Add(SetValue(VarsType.Fixed, "PEBakery", "True"));
             // BaseDir
-            logs.Add(SetFixedValue("BaseDir", project.BaseDir));
+            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir));
             // Version
-            logs.Add(SetFixedValue("Version", "082")); // WB082 Compatibility Shim
-            logs.Add(SetFixedValue("EngineVersion", App.Version.ToString()));
-            logs.Add(SetFixedValue("PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
+            logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
+            logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString()));
+            logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
             #region Project Variables
@@ -91,6 +91,7 @@ namespace PEBakery.Core
             string fullPath = project.MainPlugin.FullPath;
             IniKey[] keys = new IniKey[]
             {
+                new IniKey("Main", "Title"),
                 new IniKey("Main", "SourceDir"),
                 new IniKey("Main", "TargetDir"),
                 new IniKey("Main", "ISOFile"),
@@ -115,6 +116,10 @@ namespace PEBakery.Core
                 }
             }
 
+            string projectTitle = dict["Title"];
+            if (projectTitle == null || projectTitle.Equals(string.Empty, StringComparison.Ordinal))
+                projectTitle = project.ProjectName;
+
             string targetDir = dict["TargetDir"];
             if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
                 targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
@@ -123,16 +128,18 @@ namespace PEBakery.Core
             if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
                 isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
 
+            // ProjectTitle
+            logs.Add(SetValue(VarsType.Fixed, "ProjectTitle", projectTitle));
             // ProjectDir
-            logs.Add(SetFixedValue("ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
+            logs.Add(SetValue(VarsType.Fixed, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
             // SourceDir
-            logs.Add(SetFixedValue("SourceDir", sourceDir));
+            logs.Add(SetValue(VarsType.Fixed, "SourceDir", sourceDir));
             // TargetDir
-            logs.Add(SetFixedValue("TargetDir", targetDir));
+            logs.Add(SetValue(VarsType.Fixed, "TargetDir", targetDir));
             // ISOFile
-            logs.Add(SetFixedValue("ISOFile", isoFile));
+            logs.Add(SetValue(VarsType.Fixed, "ISOFile", isoFile));
             // ISODir
-            logs.Add(SetFixedValue("ISODir", Path.GetDirectoryName(isoFile)));
+            logs.Add(SetValue(VarsType.Fixed, "ISODir", Path.GetDirectoryName(isoFile)));
             #endregion
 
             #region Envrionment Variables
@@ -154,12 +161,12 @@ namespace PEBakery.Core
                 if (envValue == null)
                     logs.Add(new LogInfo(LogState.Error, $"Cannot get [%{tuple.Item1}%] from Windows"));
                 else
-                    logs.Add(SetFixedValue(tuple.Item2, envValue));
+                    logs.Add(SetValue(VarsType.Fixed, tuple.Item2, envValue));
             }
 
             // WindowsVersion
             OperatingSystem sysVer = Environment.OSVersion;
-            logs.Add(SetFixedValue("WindowsVersion", sysVer.Version.ToString()));
+            logs.Add(SetValue(VarsType.Fixed, "WindowsVersion", sysVer.Version.ToString()));
             #endregion
 
             return logs;
@@ -184,16 +191,16 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             // ScriptFile, PluginFile
-            SetFixedValue("ScriptFile", p.FullPath);
-            SetFixedValue("PluginFile", p.FullPath);
+            SetValue(VarsType.Fixed, "ScriptFile", p.FullPath);
+            SetValue(VarsType.Fixed, "PluginFile", p.FullPath);
 
             // ScriptDir, PluginDir
-            SetFixedValue("ScriptDir", Path.GetDirectoryName(p.FullPath));
-            SetFixedValue("PluginDir", Path.GetDirectoryName(p.FullPath));
+            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.FullPath));
+            SetValue(VarsType.Fixed, "PluginDir", Path.GetDirectoryName(p.FullPath));
 
             // ScriptTitle, PluginTitle
-            SetFixedValue("ScriptTitle", p.Title);
-            SetFixedValue("PluginTitle", p.Title);
+            SetValue(VarsType.Fixed, "ScriptTitle", p.Title);
+            SetValue(VarsType.Fixed, "PluginTitle", p.Title);
 
             // [Variables]
             if (p.Sections.ContainsKey("Variables"))
@@ -399,30 +406,17 @@ namespace PEBakery.Core
             }
         }
 
-        public LogInfo SetFixedValue(string key, string rawValue)
+        public LogInfo SetValue(VarsType type, string key, string _value, bool expand = false)
         {
-            return InternalSetValue(VarsType.Fixed, key, rawValue, true);
-        }
-
-        public LogInfo SetValue(VarsType type, string key, string rawValue)
-        {
-            return InternalSetValue(type, key, rawValue, false);
-        }
-
-        /// <summary>
-        /// Return true if success
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="key"></param>
-        /// <param name="rawValue"></param>
-        /// <param name="privFixed">Privilege for write info fixed variables</param>
-        /// <returns></returns>
-        public LogInfo InternalSetValue(VarsType type, string key, string rawValue, bool privFixed)
-        {
-            if (!privFixed && type == VarsType.Fixed)
-                throw new InternalException("Fixed variables cannot be written without privilege!");
-
             Dictionary<string, string> vars = GetVarsMatchesType(type);
+
+            if (expand)
+                vars[key] = Expand(_value);
+            else
+                vars[key] = _value;
+            return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
+
+            /*
             // Check circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
@@ -438,6 +432,7 @@ namespace PEBakery.Core
                 vars[key] = rawValue;
                 return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{rawValue}]");
             }
+            */
         }
 
         public string GetValue(string key)
@@ -628,22 +623,7 @@ namespace PEBakery.Core
             foreach (var kv in dict)
             {
                 string value = kv.Value.Trim().Trim('\"');
-                list.Add(InternalSetValue(type, kv.Key, value, false));
-
-                /*
-                if (kv.Value.IndexOf($"%{kv.Key}%", StringComparison.OrdinalIgnoreCase) == -1)
-                { // Ex) %TargetImage%=%TargetImage%
-                    // vars[kv.Key] = StringEscaper.QuoteUnescape(kv.Value);
-                    // vars[kv.Key] = kv.Value.Trim('\"');
-                    vars[kv.Key] = kv.Value;
-
-                    list.Add(new LogInfo(LogState.Success, $"{type} variable [%{kv.Key}%] set to [{kv.Value}]"));
-                }
-                else
-                {
-                    list.Add(new LogInfo(LogState.Error, $"Variable [%{kv.Key}%] has circular reference in [{kv.Value}]"));
-                }
-                */
+                list.Add(SetValue(type, kv.Key, value));
             }
             return list;
         }
@@ -747,9 +727,12 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>();
 
+            // WB082 Behavior : Final form (expanded string) is written to varaibles.
+            //                  Note that $#p will not be unescaped to %.
+            string finalValue = StringEscaper.Preprocess(s, varValue, false);
+
             // Determine varKey's type - %A% vs #1
             Variables.VarKeyType type = Variables.DetermineType(varKey);
-
             if (type == Variables.VarKeyType.Variable) // %A%
             {
                 varKey = Variables.GetVariableName(s, varKey);
@@ -759,9 +742,6 @@ namespace PEBakery.Core
                 // Logs are written in variables.SetValue method
                 if (global)
                 {
-                    // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
-                    //                  Note that $#p will not be unescaped to %.
-                    string finalValue = StringEscaper.Preprocess(s, varValue, false);
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue);
                     logs.Add(log);
 
@@ -774,9 +754,6 @@ namespace PEBakery.Core
                 }
                 else if (permanent)
                 {
-                    // WB082 Behavior : final form (expanded string) is written in GLOBAL / PERMANENT
-                    //                  Note that $#p will not be unescaped to %.
-                    string finalValue = StringEscaper.Preprocess(s, varValue, false); 
                     LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
 
                     if (log.State == LogState.Success)
@@ -797,17 +774,11 @@ namespace PEBakery.Core
                 }
                 else // Local
                 {
-                    string finalValue = varValue;
-                    Variables.VarKeyType valType = Variables.DetermineType(varValue);
-                    if (valType == VarKeyType.SectionParams)
-                        finalValue = StringEscaper.ExpandSectionParams(s, varValue); // #1 -> Expand now (Seems to be WB082 behavior)
-
                     logs.Add(s.Variables.SetValue(VarsType.Local, varKey, finalValue));
                 }
             }
             else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
             {
-                string finalValue = StringEscaper.Preprocess(s, varValue); // WB082 Behavior : final form is written in section parameter
                 logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
             }
             else

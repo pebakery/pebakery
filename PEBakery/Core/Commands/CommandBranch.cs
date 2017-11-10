@@ -61,7 +61,7 @@ namespace PEBakery.Core.Commands
             else
             {
                 for (int i = 0; i < paramList.Count; i++)
-                    paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, paramList[i]);
+                    paramDict[i + 1] = paramList[i];
             }
 
             // Branch to new section
@@ -141,7 +141,7 @@ namespace PEBakery.Core.Commands
                 // Prepare Loop
                 string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
-                List<string> parameters = StringEscaper.Preprocess(s, info.Parameters);
+                List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
                 Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
@@ -156,21 +156,26 @@ namespace PEBakery.Core.Commands
                     logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
+                // Section Parameter
+                Dictionary<int, string> paramDict = new Dictionary<int, string>();
+                for (int i = 0; i < paramList.Count; i++)
+                    paramDict[i + 1] = paramList[i];
+
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
                 for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                 { // Counter Variable is [#c]
                     s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
+                    s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
+
                     int depthBackup = s.CurDepth;
-
                     s.LoopRunning = true;
-                    Engine.RunSection(s, nextAddr, info.Parameters, s.CurDepth + 1, true);
-
+                    Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
                     if (s.LoopRunning == false) // Loop,Break
                         break;
                     s.LoopRunning = false;
-
                     s.CurDepth = depthBackup;
+
                     s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
                 }
             }

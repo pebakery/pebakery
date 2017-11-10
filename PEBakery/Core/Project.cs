@@ -31,6 +31,7 @@ using SQLite;
 using System.Windows;
 using PEBakery.WPF;
 using PEBakery.Helper;
+using PEBakery.TreeLib;
 
 namespace PEBakery.Core
 {
@@ -157,7 +158,9 @@ namespace PEBakery.Core
 
                 // PostLoad plugins
                 foreach (var kv in projectDict)
+                {
                     kv.Value.PostLoad();
+                }
             }
             catch (SQLiteException e)
             { // Update failure
@@ -400,40 +403,90 @@ namespace PEBakery.Core
             Debug.Assert(mainPlugin != null);
         }
 
+        #region Sort
         public void PostLoad()
         {
-            // Sort - Plugin first, Directory last
-            allPlugins.Sort((x, y) =>
-            {
-                if (x.IsMainPlugin)
-                    return -1;
-                else if (y.IsMainPlugin)
-                    return 1;
+            allPlugins = InternalSortPlugin(allPlugins);
 
-                if (x.Level == y.Level)
+            this.Variables = new Variables(this);
+        }
+
+        private List<Plugin> InternalSortPlugin(List<Plugin> pList)
+        {
+            Tree<Plugin> pTree = new Tree<Plugin>();
+            Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            int rootId = pTree.AddNode(0, this.MainPlugin); // Root is script.project
+
+            foreach (Plugin p in pList)
+            {
+                Debug.Assert(p != null);
+
+                if (p == this.MainPlugin)
+                    continue;
+
+                int nodeId = rootId;
+                string[] paths = p.ShortPath
+                    .Substring(this.projectName.Length + 1)
+                    .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+
+                // Ex) Apps\Network\Mozilla_Firefox_CR.script
+                for (int i = 0; i < paths.Length - 1; i++)
                 {
-                    if (x.Type == y.Type)
-                    {                        
-                        int xDepth = StringHelper.CountOccurrences(x.FullPath, @"\");
-                        int yDepth = StringHelper.CountOccurrences(y.FullPath, @"\");
-                        if (xDepth == yDepth)
-                            return x.FullPath.CompareTo(y.FullPath);
-                        else
-                            return xDepth - yDepth;
+                    string pathKey = PathKeyGenerator(paths, i);
+                    string key = p.Level.ToString() + pathKey;
+                    if (dirDict.ContainsKey(key))
+                    {
+                        nodeId = dirDict[key];
                     }
                     else
                     {
-                        return x.Type - y.Type;
+                        string fullPath = Path.Combine(projectRoot, projectName, pathKey);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, this, projectRoot, false, p.Level, false);
+                        nodeId = pTree.AddNode(nodeId, dirPlugin);
+                        dirDict[key] = nodeId;
+                    }
+                }
+                Debug.Assert(p != null);
+                pTree.AddNode(nodeId, p);
+            }
+
+            // Sort - Plugin first, Directory last
+            pTree.Sort((x, y) =>
+            {
+                if (x.Data.Level == y.Data.Level)
+                {
+                    if (x.Data.Type == PluginType.Directory)
+                    {
+                        if (y.Data.Type == PluginType.Directory)
+                            return x.Data.FullPath.CompareTo(y.Data.FullPath);
+                        else
+                            return 1;
+                    }
+                    else
+                    {
+                        if (y.Data.Type == PluginType.Directory)
+                            return -1;
+                        else
+                            return x.Data.FullPath.CompareTo(y.Data.FullPath);
                     }
                 }
                 else
                 {
-                    return x.Level - y.Level;
+                    return x.Data.Level - y.Data.Level;
                 }
             });
 
-            this.Variables = new Variables(this);
+            List<Plugin> newList = new List<Plugin>();
+            foreach (Plugin p in pTree)
+            {
+                if (p.Type != PluginType.Directory)
+                    newList.Add(p);
+            }
+
+            return newList;
         }
+        #endregion
 
         public Plugin RefreshPlugin(Plugin plugin)
         {

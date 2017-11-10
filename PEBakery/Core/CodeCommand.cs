@@ -522,14 +522,17 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
-        public RegistryKey HKey;
-        public RegistryValueKind ValueType;
+        // public RegistryKey HKey;
+        // public RegistryValueKind ValueType;
+        public string HKey;
+        public string ValueType; 
         public string KeyPath;
         public string ValueName;
         public string ValueData;
         public string[] ValueDatas;
 
-        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
+        // public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
+        public CodeInfo_RegWrite(string hKey, string valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
         {
             HKey = hKey;
             ValueType = valueType;
@@ -542,9 +545,12 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(RegistryHelper.RegKeyToString(HKey));
-            b.Append(",0x");
-            b.Append(((byte)ValueType).ToString("X"));
+            // b.Append(RegistryHelper.RegKeyToString(HKey));
+            b.Append(HKey);
+            b.Append(",");
+            b.Append(ValueType);
+            // b.Append(",0x");
+            // b.Append(((byte)ValueType).ToString("X"));
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");

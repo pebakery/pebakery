@@ -577,8 +577,8 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_INIWriteTextLine info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
-                string line = StringEscaper.Preprocess(s, info.Line); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+                string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+                string line = StringEscaper.Preprocess(s, info.Line); 
 
                 keys[i] = new IniKey(sectionName, line);
             }

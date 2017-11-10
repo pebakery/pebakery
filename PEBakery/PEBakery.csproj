@@ -332,6 +332,10 @@
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.IniLib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PEBakery.TreeLib\PEBakery.TreeLib.csproj">
+      <Project>{ad7c9990-ef47-4064-9332-e2f410e50ccc}</Project>
+      <Name>PEBakery.TreeLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\LicenseSimple.txt" />

@@ -587,26 +587,7 @@ namespace PEBakery.Core
             else
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            // Write Section Parameters
-            if (paramDict != null && 0 < paramDict.Count)
-            {
-                int cnt = 0;
-                StringBuilder b = new StringBuilder();
-                b.Append("Params = { ");
-                foreach (var kv in paramDict)
-                {
-                    b.Append($"#{kv.Key}:[{kv.Value}]");
-                    if (cnt + 1 < paramDict.Count)
-                        b.Append(", ");
-                    cnt++;
-                }
-                b.Append(" }");
-
-                if (cmd == null)
-                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), depth + 1));
-                else
-                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
-            }
+            LogSectionParameter(buildId, pluginId, depth, paramDict, cmd);
         }
 
         public void LogStartOfSection(long buildId, long pluginId, string pluginName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
@@ -617,26 +598,7 @@ namespace PEBakery.Core
             else
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
 
-            // Write Section Parameters
-            if (paramDict != null && 0 < paramDict.Count)
-            {
-                int cnt = 0;
-                StringBuilder b = new StringBuilder();
-                b.Append("Params = { ");
-                foreach (var kv in paramDict)
-                {
-                    b.Append($"#{kv.Key}:[{kv.Value}]");
-                    if (cnt + 1 < paramDict.Count)
-                        b.Append(", ");
-                    cnt++;
-                }
-                b.Append(" }");
-
-                if (cmd == null)
-                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), depth + 1));
-                else
-                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
-            }
+            
         }
 
         public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
@@ -682,6 +644,37 @@ namespace PEBakery.Core
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, depth));
             else
                 Build_Write(buildId, pluginId, new LogInfo(LogState.Info, msg, cmd, depth));
+        }
+        #endregion
+
+        #region LogSectionParameter
+        public void LogSectionParameter(EngineState s, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        {
+            LogSectionParameter(s.BuildId, s.PluginId, depth, paramDict, cmd);
+        }
+
+        public void LogSectionParameter(long buildId, long pluginId, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        {
+            // Write Section Parameters
+            if (paramDict != null && 0 < paramDict.Count)
+            {
+                int cnt = 0;
+                StringBuilder b = new StringBuilder();
+                b.Append("Params = { ");
+                foreach (var kv in paramDict)
+                {
+                    b.Append($"#{kv.Key}:[{kv.Value}]");
+                    if (cnt + 1 < paramDict.Count)
+                        b.Append(", ");
+                    cnt++;
+                }
+                b.Append(" }");
+
+                if (cmd == null)
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                else
+                    Build_Write(buildId, pluginId, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+            }
         }
         #endregion
 

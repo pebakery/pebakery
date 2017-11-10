@@ -78,10 +78,10 @@ However, building whole project is quite buggy and needs to be improved.
 | Hash      | 5   | 5           | 5      |
 | String    | 32  | 32          | 30     |
 | Math      | 22  | 22          | 22     |
-| System    | 15  | 15          | 0      |
+| System    | 17  | 17          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 158 | 158         | 71     |
+| All       | 160 | 160         | 71     |
 
 ## Help Needed
 

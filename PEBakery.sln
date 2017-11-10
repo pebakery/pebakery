@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+VisualStudioVersion = 15.0.27004.2008
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery", "PEBakery\PEBakery.csproj", "{D6224DCE-02D5-4005-88FB-00A8E00CACE1}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.IniLib.Tests", "PEBakery.IniLib.Tests\PEBakery.IniLib.Tests.csproj", "{18F8E497-F76A-48DF-A7E2-F4FA958F99F7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.IniLib", "PEBakery.IniLib\PEBakery.IniLib.csproj", "{03434187-ACFC-497D-A86A-8DBEDA80C21C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery.TreeLib", "PEBakery.TreeLib\PEBakery.TreeLib.csproj", "{AD7C9990-EF47-4064-9332-E2F410E50CCC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +113,18 @@ Global
 		{03434187-ACFC-497D-A86A-8DBEDA80C21C}.Release|x64.Build.0 = Release|Any CPU
 		{03434187-ACFC-497D-A86A-8DBEDA80C21C}.Release|x86.ActiveCfg = Release|Any CPU
 		{03434187-ACFC-497D-A86A-8DBEDA80C21C}.Release|x86.Build.0 = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|x64.Build.0 = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Debug|x86.Build.0 = Debug|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|x64.ActiveCfg = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|x64.Build.0 = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|x86.ActiveCfg = Release|Any CPU
+		{AD7C9990-EF47-4064-9332-E2F410E50CCC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

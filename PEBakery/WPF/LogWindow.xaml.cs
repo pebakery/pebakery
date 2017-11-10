@@ -96,7 +96,7 @@ namespace PEBakery.WPF
 
         public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
         {
-            m.RefreshPlugin(e.Log.BuildId);
+            m.RefreshPlugin(e.Log.BuildId, true);
         }
 
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
@@ -284,7 +284,7 @@ namespace PEBakery.WPF
             });
         }
 
-        public void RefreshPlugin(long? buildId)
+        public void RefreshPlugin(long? buildId, bool showLastPlugin)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -300,7 +300,11 @@ namespace PEBakery.WPF
                     var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
                     foreach (DB_Plugin p in plugins)
                         SelectPluginEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
-                    SelectPluginIndex = 0;
+
+                    if (showLastPlugin)
+                        SelectPluginIndex = SelectPluginEntries.Count - 1; // Last Plugin, which is jjust added
+                    else
+                        SelectPluginIndex = 0;
                 }
             });
         }
@@ -356,7 +360,7 @@ namespace PEBakery.WPF
                 {
                     long buildId = selectBuildEntries[value].Item2;
 
-                    RefreshPlugin(SelectBuildEntries[value].Item2);
+                    RefreshPlugin(SelectBuildEntries[value].Item2, false);
 
                     VariableListModel variableListModel = new VariableListModel();
                     var vars = LogDB.Table<DB_Variable>()
@@ -369,7 +373,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    RefreshPlugin(null);
+                    RefreshPlugin(null, false);
                     VariableListModel = new VariableListModel();
                 }
 
