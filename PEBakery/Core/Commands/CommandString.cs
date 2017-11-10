@@ -378,6 +378,8 @@ namespace PEBakery.Core.Commands
                                 // Error handling
                                 if (srcStr.Length < cutLen)
                                     cutLen = srcStr.Length;
+                                else if (cutLen < 0)
+                                    cutLen = 0;
 
                                 destStr = srcStr.Substring(cutLen);
                             }
@@ -389,6 +391,8 @@ namespace PEBakery.Core.Commands
                                 // Error handling
                                 if (srcStr.Length < cutLen)
                                     cutLen = srcStr.Length;
+                                else if (cutLen < 0)
+                                    cutLen = 0;
 
                                 destStr = srcStr.Substring(0, srcStr.Length - cutLen);
                             }
