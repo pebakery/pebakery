@@ -260,8 +260,6 @@ namespace PEBakery.Core.Commands
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt64(operandStr, out long operand))
                             throw new ExecuteException($"[{operandStr}] is not a valid integer");
-                        if (operand < 0)
-                            throw new ExecuteException($"[{operandStr}] is not positive integer");
 
                         long dest = src;
                         if (type == StrFormatType.Inc) // +
@@ -379,7 +377,9 @@ namespace PEBakery.Core.Commands
 
                                 // Error handling
                                 if (srcStr.Length < cutLen)
-                                    throw new ExecuteException($"Length [{cutLen}] cannot be bigger than source string's length");
+                                    cutLen = srcStr.Length;
+                                else if (cutLen < 0)
+                                    cutLen = 0;
 
                                 destStr = srcStr.Substring(cutLen);
                             }
@@ -390,7 +390,9 @@ namespace PEBakery.Core.Commands
 
                                 // Error handling
                                 if (srcStr.Length < cutLen)
-                                    throw new ExecuteException($"Length [{cutLen}] cannot be bigger than source string's length");
+                                    cutLen = srcStr.Length;
+                                else if (cutLen < 0)
+                                    cutLen = 0;
 
                                 destStr = srcStr.Substring(0, srcStr.Length - cutLen);
                             }

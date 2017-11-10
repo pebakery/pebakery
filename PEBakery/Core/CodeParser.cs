@@ -543,6 +543,9 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
+                        // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
+                        // Because of this code, valType cannot be parsed in CodeParser
+                        /*
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
 
                         string valTypeStr = args[1];
@@ -572,6 +575,21 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], args[4], valueDatas);
+                        */
+
+                        string valueName = null;
+                        if (4 <= args.Count)
+                            valueName = args[3];
+
+                        string valueData = null;
+                        string[] valueDatas = null; 
+                        if (5 <= args.Count)
+                        {
+                            valueData = args[4];
+                            valueDatas = args.Skip(4).Take(args.Count - 4).ToArray();
+                        }                            
+
+                        return new CodeInfo_RegWrite(args[0], args[1], args[2], valueName, valueData, valueDatas);
                     }
                 case CodeType.RegDelete:
                     { // RegDelete,<HKey>,<KeyPath>,[ValueName]

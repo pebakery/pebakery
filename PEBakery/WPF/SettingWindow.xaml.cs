@@ -281,7 +281,7 @@ namespace PEBakery.WPF
                 Project project = Projects[Project_SelectedIndex];
                 if (0 <= value && value < Project_SourceDirectoryList.Count)
                 {
-                    project.Variables.SetFixedValue("SourceDir", Project_SourceDirectoryList[value]);
+                    project.Variables.SetValue(VarsType.Fixed, "SourceDir", Project_SourceDirectoryList[value]);
 
                     StringBuilder b = new StringBuilder(Project_SourceDirectoryList[value]);
                     for (int x = 0; x < Project_SourceDirectoryList.Count; x++)
@@ -310,7 +310,7 @@ namespace PEBakery.WPF
                     Project project = projects[project_SelectedIndex];
                     string fullPath = project.MainPlugin.FullPath;
                     Ini.SetKey(fullPath, "Main", "TargetDir", value);
-                    project.Variables.SetFixedValue("TargetDir", value);
+                    project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
 
                 project_TargetDirectory = value;
@@ -330,7 +330,7 @@ namespace PEBakery.WPF
                     Project project = projects[project_SelectedIndex];
                     string fullPath = project.MainPlugin.FullPath;
                     Ini.SetKey(fullPath, "Main", "ISOFile", value);
-                    project.Variables.SetFixedValue("ISOFile", value);
+                    project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
 
                 project_ISOFile = value;

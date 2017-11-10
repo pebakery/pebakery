@@ -235,18 +235,22 @@ namespace PEBakery.Core.Commands
             string valueName = null;
             if (info.ValueName != null)
                 valueName = StringEscaper.Preprocess(s, info.ValueName);
-            
-            string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
+
+            string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
+            RegistryValueKind valType = CodeParser.ParseRegistryValueKind(valTypeStr);
+
+            string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
+            RegistryKey hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
+            if (hKey == null)
                 throw new InternalException("Internal Logic Error");
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             string valueData;
-            using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
+            using (RegistryKey subKey = hKey.CreateSubKey(keyPath, true))
             {
-                switch (info.ValueType)
+                switch (valType)
                 {
                     case RegistryValueKind.None:
                         logs.Add(new LogInfo(LogState.Success, $"Registry subkey [{fullKeyPath}] created"));
@@ -258,16 +262,22 @@ namespace PEBakery.Core.Commands
                         subKey.SetValue(valueName, valueData, RegistryValueKind.String);
                         break;
                     case RegistryValueKind.ExpandString:
-                        valueData = info.ValueData; // Need Test
+                        if (info.ValueData == null)
+                            throw new ExecuteException("Invalid ValueData");
+                        valueData = StringEscaper.Preprocess(s, info.ValueData);
                         subKey.SetValue(valueName, valueData, RegistryValueKind.ExpandString);
                         break;
                     case RegistryValueKind.Binary:
+                        if (info.ValueData == null)
+                            throw new ExecuteException("Invalid ValueData");
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
                         if (!StringEscaper.UnpackRegBinary(valueData, out byte[] bin))
                             throw new ExecuteException($"[{valueData}] is not valid binary representation");
                         subKey.SetValue(valueName, bin, RegistryValueKind.Binary);
                         break;
                     case RegistryValueKind.DWord:
+                        if (info.ValueData == null)
+                            throw new ExecuteException("Invalid ValueData");
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
                         if (NumberHelper.ParseInt32(valueData, out int valInt32))
                             subKey.SetValue(valueName, valInt32, RegistryValueKind.DWord);
@@ -277,11 +287,15 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{valueData}] is not valid DWORD");
                         break;
                     case RegistryValueKind.MultiString:
+                        if (info.ValueDatas == null)
+                            throw new ExecuteException("Invalid ValueDatas");
                         string[] multiStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
                         subKey.SetValue(valueName, multiStrs, RegistryValueKind.MultiString);
                         valueData = StringEscaper.PackRegMultiString(multiStrs);
                         break;
                     case RegistryValueKind.QWord:
+                        if (info.ValueData == null)
+                            throw new ExecuteException("Invalid ValueData");
                         valueData = StringEscaper.Preprocess(s, info.ValueData);
                         if (NumberHelper.ParseInt64(valueData, out long valInt64))
                             subKey.SetValue(valueName, valInt64, RegistryValueKind.QWord);

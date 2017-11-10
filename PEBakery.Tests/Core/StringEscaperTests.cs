@@ -427,14 +427,10 @@ namespace PEBakery.Tests.Core
 
             string src = "%A% #1";
             string dest;
-            try
-            {
-                dest = StringEscaper.ExpandVariables(s, src);
-            }
-            catch (VariableCircularReferenceException)
-            {
-                Assert.Fail();
-            }
+            try { dest = StringEscaper.ExpandVariables(s, src); }
+            catch (VariableCircularReferenceException) { return; }
+
+            Assert.Fail();
         }
         #endregion
 
@@ -449,7 +445,6 @@ namespace PEBakery.Tests.Core
             Preprocess_4();
             Preprocess_5();
             Preprocess_6();
-            Preprocess_7();
         }
 
         public void Preprocess_1()
@@ -533,36 +528,16 @@ namespace PEBakery.Tests.Core
             // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
             s.Variables.SetValue(VarsType.Local, "A", "%B%");
             s.Variables.SetValue(VarsType.Local, "B", "%C%");
-            s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
+            s.Variables.SetValue(VarsType.Local, "C", "%A%"); 
             Variables.SetVariable(s, "#1", "#2");
             Variables.SetVariable(s, "#2", "#3");
             Variables.SetVariable(s, "#3", "#1");
 
             string src = "%A% #1";
-            string dest = StringEscaper.Preprocess(s, src);
-            string comp = "%C% ";
+            try { string dest = StringEscaper.Preprocess(s, src); }
+            catch (VariableCircularReferenceException) { return; }
 
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public void Preprocess_7()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-            s.CurDepth = 2;
-
-            // In real world, a value must be set with SetVariables, so circular reference of variables does not happen 
-            s.Variables.SetValue(VarsType.Local, "A", "%B%");
-            s.Variables.SetValue(VarsType.Local, "B", "%C%");
-            s.Variables.SetValue(VarsType.Local, "C", "%A%"); // Set to [#$pC#4p], preventing circular reference
-            Variables.SetVariable(s, "#1", "#2");
-            Variables.SetVariable(s, "#2", "#3");
-            Variables.SetVariable(s, "#3", "#1");
-
-            string src = "%A%";
-            string dest = StringEscaper.Preprocess(s, src);
-            string comp = "%C%";
-
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            Assert.Fail();
         }
         #endregion
 

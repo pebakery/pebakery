@@ -293,8 +293,28 @@ namespace PEBakery.Core.Commands
                 case SystemType.RegRedirect: // Do nothing
                     logs.Add(new LogInfo(LogState.Warning, $"[System,RegRediret] is deprecated"));
                     break;
-                case SystemType.RebuildVars: // Do nothing
-                    logs.Add(new LogInfo(LogState.Warning, $"[System,RebuildVars] is deprecated"));
+                case SystemType.RebuildVars: 
+                    { // Reset Variables to clean state
+                        s.Variables.ResetVariables(VarsType.Fixed);
+                        s.Variables.ResetVariables(VarsType.Global);
+                        s.Variables.ResetVariables(VarsType.Local);
+                        s.Macro.ResetLocalMacros();
+
+                        // Load Global Variables
+                        List<LogInfo> varLogs;
+                        varLogs = s.Variables.LoadDefaultGlobalVariables();
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+
+                        // Load Per-Plugin Variables
+                        varLogs = s.Variables.LoadDefaultPluginVariables(cmd.Addr.Plugin);
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+
+                        // Load Per-Plugin Macro
+                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin);
+                        logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+
+                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to default state"));
+                    }
                     break;
                 default: // Error
                     throw new InvalidCodeCommandException($"Wrong SystemType [{type}]");

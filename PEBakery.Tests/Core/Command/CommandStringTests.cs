@@ -296,7 +296,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "-5", "15");
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,-5", "20", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,-5", "20", "15");
         }
         #endregion
 
@@ -314,7 +314,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "-5", "-25");
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,-5", "20", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,-5", "20", "25");
         }
         #endregion
 
@@ -332,7 +332,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,2", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Mult,%Dest%,20", "-5", "-100");
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Mult,%Dest%,-5", "20", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Mult,%Dest%,-5", "20", "-100");
         }
         #endregion
 
@@ -350,7 +350,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,2", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Div,%Dest%,20", "-25", "-1");
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Div,%Dest%,-5", "20", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Div,%Dest%,-5", "20", "-4");
         }
         #endregion
 
@@ -423,7 +423,9 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             StrFormat_Dest_Template(s, @"StrFormat,LTrim,PEBakery,3,%Dest%", "akery");
-            StrFormat_Dest_Template_Error(s, @"StrFormat,LTrim,,3,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,LTrim,PEBakery,10,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,LTrim,PEBakery,-1,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,LTrim,,3,%Dest%", string.Empty);
         }
         #endregion
 
@@ -436,7 +438,9 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             StrFormat_Dest_Template(s, @"StrFormat,RTrim,PEBakery,3,%Dest%", "PEBak");
-            StrFormat_Dest_Template_Error(s, @"StrFormat,RTrim,,3,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template(s, @"StrFormat,RTrim,PEBakery,10,%Dest%", string.Empty);
+            StrFormat_Dest_Template(s, @"StrFormat,RTrim,PEBakery,-1,%Dest%", "PEBakery");
+            StrFormat_Dest_Template(s, @"StrFormat,RTrim,,3,%Dest%", string.Empty);
         }
         #endregion
 

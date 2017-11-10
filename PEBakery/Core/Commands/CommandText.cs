@@ -134,37 +134,30 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
-            StringBuilder b = new StringBuilder();
-            foreach (CodeInfo_TXTAddLine info in infoOp.InfoList)
-                b.AppendLine(StringEscaper.Preprocess(s, info.Line));
-            string linesToWrite = b.ToString();
-
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             // Detect encoding of text
             // If text does not exists, create blank file
-            // Encoding encoding = Encoding.UTF8;
             Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
                 encoding = FileHelper.DetectTextEncoding(fileName);
-            // else
-            //    FileHelper.WriteTextBOM(fileName, Encoding.UTF8);
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
+            string linesToWrite;
             if (mode == TXTAddLineMode.Prepend)
             {
                 string tempPath = Path.GetTempFileName();
                 using (StreamReader reader = new StreamReader(fileName, encoding))
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
+                    StringBuilder b = new StringBuilder();
+                    for (int i = infoOp.InfoList.Count - 1; 0 <= i; i--)
+                        b.AppendLine(StringEscaper.Preprocess(s, infoOp.InfoList[i].Line));
+                    linesToWrite = b.ToString();
+
                     writer.Write(linesToWrite);
-                    string lineFromSrc;
-                    while ((lineFromSrc = reader.ReadLine()) != null)
-                        writer.WriteLine(lineFromSrc);
-                    reader.Close();
-                    writer.Close();
+                    writer.Write(reader.ReadToEnd());
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -172,6 +165,11 @@ namespace PEBakery.Core.Commands
             }
             else if (mode == TXTAddLineMode.Append)
             {
+                StringBuilder b = new StringBuilder();
+                for (int i = 0; i < infoOp.InfoList.Count; i++)
+                    b.AppendLine(StringEscaper.Preprocess(s, infoOp.InfoList[i].Line));
+                linesToWrite = b.ToString();
+
                 bool newLineExist = true;
                 if (File.Exists(fileName))
                 {
