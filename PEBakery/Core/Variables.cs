@@ -82,7 +82,7 @@ namespace PEBakery.Core
             logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir));
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
-            logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString()));
+            logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString("000")));
             logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
@@ -410,10 +410,29 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
+            /*
+            // Check circular reference
+            if (CheckCircularReference(key, _value))
+            { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
+                // This code cannot handle this case : [Set,%PluginPathShort%,\%PluginPathShort%]
+                // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
+
+                // To Handle [Set,%PluginPathShort%,\%PluginPathShort%], if curcular reference detected, bake into final form
+                vars[key] = StringEscaper.UnescapePercent(Expand(_value));
+            }
+            else
+            { // Ex) %Joveler%=Variel\ied206.txt -> Success
+                vars[key] = _value;
+            }
+
+            return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
+            */
+
             if (expand)
                 vars[key] = Expand(_value);
             else
                 vars[key] = _value;
+
             return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
 
             /*

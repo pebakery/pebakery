@@ -141,7 +141,7 @@ namespace PEBakery.Core
             // Finish Per-Plugin Log
             s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
             s.Logger.Build_Write(s, Logger.LogSeperator);
-            s.Logger.Build_Plugin_Finish(pluginId);
+            s.Logger.Build_Plugin_Finish(s.BuildId, pluginId, s.Variables.GetVarDict(VarsType.Local));
         }
         #endregion
 
@@ -384,6 +384,9 @@ namespace PEBakery.Core
                         break;
                     case CodeType.RegWrite:
                         logs.AddRange(CommandRegistry.RegWrite(s, cmd));
+                        break;
+                    case CodeType.RegWriteLegacy: // WB082 Compatibility Shim
+                        logs.AddRange(CommandRegistry.RegWriteLegacy(s, cmd));
                         break;
                     case CodeType.RegDelete:
                         logs.AddRange(CommandRegistry.RegDelete(s, cmd));

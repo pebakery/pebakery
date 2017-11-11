@@ -363,7 +363,7 @@ namespace PEBakery.Tests.Core.Command
                 Directory.CreateDirectory(destDir);
 
                 string rawCode = "CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"%TestBench%\\CommandArchive\\CopyOrExpand_1\"";
-                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Warning);
 
                 Assert.IsTrue(Directory.Exists(destDir));
                 Assert.IsTrue(File.Exists(destFile));
@@ -395,7 +395,7 @@ namespace PEBakery.Tests.Core.Command
                 Directory.CreateDirectory(destDir);
 
                 string rawCode = "CopyOrExpand,\"%TestBench%\\CommandArchive\\ex3.jpg\",\"%TestBench%\\CommandArchive\\CopyOrExpand_2\\change.jpg\"";
-                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Success);
+                EngineTests.Eval(s, rawCode, CodeType.CopyOrExpand, ErrorCheck.Warning);
 
                 Assert.IsTrue(Directory.Exists(destDir));
                 Assert.IsTrue(File.Exists(destFile));

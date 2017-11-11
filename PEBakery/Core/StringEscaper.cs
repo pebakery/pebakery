@@ -39,8 +39,6 @@ namespace PEBakery.Core
                     containsInvalidChars = true;
             }
 
-            
-
             string fullPath;
             if (containsInvalidChars)
                 fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
@@ -456,15 +454,35 @@ namespace PEBakery.Core
         #endregion
 
         #region Registry
-        public static string PackRegBinary(byte[] bin)
+        public static string PackRegBinary(byte[] bin, bool escape = false)
         { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
-            StringBuilder b = new StringBuilder();
+            string seperator =  ",";
+            if (escape)
+                seperator = "#$c";
 
+            StringBuilder b = new StringBuilder();
             for (int i = 0; i < bin.Length; i++)
             {
                 b.Append(bin[i].ToString("X2"));
                 if (i + 1 < bin.Length)
-                    b.Append(",");
+                    b.Append(seperator);
+            }
+
+            return b.ToString();
+        }
+
+        public static string PackRegBinary(string[] strs, bool escape = false)
+        { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
+            string seperator = ",";
+            if (escape)
+                seperator = "#$c";
+
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < strs.Length; i++)
+            {
+                b.Append(strs[i]);
+                if (i + 1 < strs.Length)
+                    b.Append(seperator);
             }
 
             return b.ToString();
@@ -477,9 +495,21 @@ namespace PEBakery.Core
 
             for (int i = 0; i < count; i++)
             {
-                if (!byte.TryParse(packStr.Substring(i * 3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte b))
+                if (!byte.TryParse(packStr.Substring(i * 3, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bin[i]))
                     return false;
-                bin[i] = b;
+            }
+
+            return true;
+        }
+
+        public static bool UnpackRegBinary(string[] packStrs, out byte[] bin)
+        { // Ex) 43,00,3A,00,5C,00,55,00,73,00,65,00,72,00,73,00,5C,00,4A,00,6F,00,76,00,65,00,6C,00,65,00,72,00,5C,00,4F,00,6E,00,65,00,44,00,72,00,69,00,76,00,65,00,00,00
+            bin = new byte[packStrs.Length];
+
+            for (int i = 0; i < packStrs.Length; i++)
+            {
+                if (!byte.TryParse(packStrs[i], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out bin[i]))
+                    return false;
             }
 
             return true;

@@ -39,9 +39,10 @@ namespace PEBakery.Core
         None = 0, Comment, Error, Unknown,
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
-        DirCopy, DirDelete, DirMove, DirMake, DirSize,
+        DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         // 02 Registry
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
+        RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTDelLineOp,
@@ -152,7 +153,6 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
-            CodeType.Expand, // NT6 does not have cabinet files such as .ex_, .dl_
             CodeType.CopyOrExpand, // NT6 does not have cabinet files such as .ex_, .dl_
         };
 
@@ -521,18 +521,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
-    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
-        // public RegistryKey HKey;
-        // public RegistryValueKind ValueType;
-        public string HKey;
-        public string ValueType; 
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
+        public RegistryKey HKey;
+        public RegistryValueKind ValueType;
         public string KeyPath;
         public string ValueName;
         public string ValueData;
         public string[] ValueDatas;
+        public bool NoWarn;
 
-        // public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
-        public CodeInfo_RegWrite(string hKey, string valueType, string keyPath, string valueName, string valueData, string[] valueDatas)
+        public CodeInfo_RegWrite(RegistryKey hKey, RegistryValueKind valueType, string keyPath, string valueName, string valueData, string[] valueDatas, bool noWarn)
         {
             HKey = hKey;
             ValueType = valueType;
@@ -540,17 +538,15 @@ namespace PEBakery.Core
             ValueName = valueName;
             ValueData = valueData;
             ValueDatas = valueDatas;
+            NoWarn = noWarn;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            // b.Append(RegistryHelper.RegKeyToString(HKey));
-            b.Append(HKey);
-            b.Append(",");
-            b.Append(ValueType);
-            // b.Append(",0x");
-            // b.Append(((byte)ValueType).ToString("X"));
+            b.Append(RegistryHelper.RegKeyToString(HKey));
+            b.Append(",0x");
+            b.Append(((byte)ValueType).ToString("X"));
             b.Append(",");
             b.Append(KeyPath);
             b.Append(",");
@@ -568,6 +564,47 @@ namespace PEBakery.Core
                         b.Append(",");
                 }
             }
+            if (NoWarn)
+                b.Append(",NOWARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegWriteLegacy : CodeInfo
+    { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
+        public string HKey;
+        public string ValueType;
+        public string KeyPath;
+        public string ValueName;
+        public string[] ValueDatas;
+        public bool NoWarn;
+
+        public CodeInfo_RegWriteLegacy(string hKey, string valueType, string keyPath, string valueName, string[] valueDatas, bool noWarn)
+        {
+            HKey = hKey;
+            ValueType = valueType;
+            KeyPath = keyPath;
+            ValueName = valueName;
+            ValueDatas = valueDatas;
+            NoWarn = noWarn;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(HKey);
+            b.Append(",");
+            b.Append(ValueType);
+            b.Append(",");
+            b.Append(KeyPath);
+            for (int i = 0; i < ValueDatas.Length; i++)
+            {
+                b.Append(",");
+                b.Append(ValueDatas[i]);
+            }
+            if (NoWarn)
+                b.Append(",NOWARN");
             return b.ToString();
         }
     }

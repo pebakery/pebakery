@@ -282,15 +282,12 @@ namespace PEBakery.Core.Commands
             {
                 if (info.Preserve)
                 {
-                    logs.Add(new LogInfo(LogState.Success, $"Cannot overwrite [{filePath}]", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{filePath}]", cmd));
                     return logs;
                 }
                 else
                 {
-                    LogState state = LogState.Warning;
-                    if (info.NoWarn)
-                        state = LogState.Ignore;
-                    logs.Add(new LogInfo(state, $"[{filePath}] will be overwritten", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{filePath}] will be overwritten", cmd));
                 }
             }
 

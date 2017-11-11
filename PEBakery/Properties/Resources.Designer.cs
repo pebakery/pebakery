@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20171108과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20171111과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -105,8 +105,8 @@ namespace PEBakery.Properties {
         ///    MIT License
         ///    https://opensource.org/licenses/MIT
         ///
-        ///PEBakery/Helper.cs 
-        /// [나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///PEBakery.TreeLib
+        ///    [나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string LicenseSimple {
             get {

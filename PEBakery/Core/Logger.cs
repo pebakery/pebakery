@@ -351,18 +351,37 @@ namespace PEBakery.Core
             return dbPlugin.Id;
         }
 
-        public void Build_Plugin_Finish(long id)
+        public void Build_Plugin_Finish(long buildId, long pluginId, Dictionary<string, string> localVars)
         {
             // Plugins 
-            // Plugins 
-            pluginDict.TryRemove(id, out Tuple<DB_Plugin, Stopwatch> tuple);
+            pluginDict.TryRemove(pluginId, out Tuple<DB_Plugin, Stopwatch> tuple);
             if (tuple == null)
-                throw new KeyNotFoundException($"Unable to find DB_Plugin Instance, id = {id}");
+                throw new KeyNotFoundException($"Unable to find DB_Plugin Instance, id = {pluginId}");
 
             DB_Plugin dbPlugin = tuple.Item1;
             Stopwatch watch = tuple.Item2;
             watch.Stop();
+
             dbPlugin.ElapsedMilliSec = watch.ElapsedMilliseconds;
+            if (localVars != null)
+            {
+                foreach (var kv in localVars)
+                {
+                    DB_Variable dbVar = new DB_Variable()
+                    {
+                        BuildId = buildId,
+                        PluginId = pluginId,
+                        Type = VarsType.Local,
+                        Key = kv.Key,
+                        Value = kv.Value,
+                    };
+                    DB.Insert(dbVar);
+
+                    // Fire Event
+                    VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
+                }
+            }
+
             DB.Update(dbPlugin);
         }
 
@@ -703,7 +722,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void ExportBuildLog(LogExportType type, string exportFile, long buildId)
+        public void ExportBuildLog(LogExportType type, string exportFile, long buildId, bool exportLocalVars = false)
         {
             switch (type)
             {
@@ -720,12 +739,12 @@ namespace PEBakery.Core
                             writer.WriteLine();
                             writer.WriteLine();
 
+                            var plugins = DB.Table<DB_Plugin>()
+                                .Where(x => x.BuildId == buildId)
+                                .OrderBy(x => x.Order);
+
                             writer.WriteLine("<Plugins>");
                             {
-                                var plugins = DB.Table<DB_Plugin>()
-                                    .Where(x => x.BuildId == buildId)
-                                    .OrderBy(x => x.Order);
-
                                 int count = plugins.Count();
                                 int idx = 1;
                                 foreach (DB_Plugin p in plugins)
@@ -755,6 +774,37 @@ namespace PEBakery.Core
 
                             writer.WriteLine("<Code Logs>");
                             {
+                                foreach (DB_Plugin pLog in plugins)
+                                {
+                                    // Log codes
+                                    var codeLogs = DB.Table<DB_BuildLog>()
+                                        .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id)
+                                        .OrderBy(x => x.Id);
+                                    foreach (DB_BuildLog log in codeLogs)
+                                        writer.WriteLine(log.Export(type));
+
+                                    // Log local variables
+                                    if (exportLocalVars)
+                                    {
+                                        var varLogs = DB.Table<DB_Variable>()
+                                        .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id && x.Type == VarsType.Local)
+                                        .OrderBy(x => x.Key);
+                                        if (0 < varLogs.Count())
+                                        {
+                                            writer.WriteLine("[Local Variables]");
+                                            foreach (DB_Variable vLog in varLogs)
+                                                writer.WriteLine($"%{vLog.Key}% = {vLog.Value}");
+                                            writer.WriteLine(Logger.LogSeperator);
+                                        }
+                                    }
+
+                                    writer.WriteLine();
+                                }
+                            }
+
+                            /*
+                            writer.WriteLine("<Code Logs>");
+                            {
                                 var codeLogs = DB.Table<DB_BuildLog>()
                                     .Where(x => x.BuildId == buildId)
                                     .OrderBy(x => x.Id);
@@ -762,6 +812,7 @@ namespace PEBakery.Core
                                     writer.WriteLine(log.Export(type));
                                 writer.WriteLine();
                             }
+                            */
                             writer.Close();
                         }
                     }
@@ -904,7 +955,6 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        // [ForeignKey(typeof(DB_BuildInfo))]
         [Indexed]
         public long BuildId { get; set; }
         public int Order { get; set; } // Starts from 1
@@ -916,11 +966,6 @@ namespace PEBakery.Core
         public int Version { get; set; }
         public long ElapsedMilliSec { get; set; }
 
-        /*
-        [ManyToOne]
-        public DB_BuildInfo Build { get; set; }
-        */
-
         public override string ToString()
         {
             return $"{BuildId},{Id} = {Level} {Name} {Version}";
@@ -931,19 +976,15 @@ namespace PEBakery.Core
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
-        // [ForeignKey(typeof(DB_BuildInfo))]
         [Indexed]
         public long BuildId { get; set; }
+        [Indexed]
+        public long PluginId { get; set; }
         public VarsType Type { get; set; }
         [MaxLength(256)]
         public string Key { get; set; }
         [MaxLength(65535)]
         public string Value { get; set; }
-
-        /*
-        [ManyToOne]
-        public DB_BuildInfo Build { get; set; }
-        */
 
         public override string ToString()
         {
@@ -956,10 +997,8 @@ namespace PEBakery.Core
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
         public DateTime Time { get; set; }
-        // [ForeignKey(typeof(DB_BuildInfo))]
         [Indexed]
         public long BuildId { get; set; }
-        // [ForeignKey(typeof(DB_Plugin))]
         [Indexed]
         public long PluginId { get; set; }
         public int Depth { get; set; }
@@ -968,13 +1007,6 @@ namespace PEBakery.Core
         public string Message { get; set; }
         [MaxLength(65535)]
         public string RawCode { get; set; }
-
-        /*
-        [ManyToOne] 
-        public DB_BuildInfo BuildInfo { get; set; }
-        [ManyToOne]
-        public DB_Plugin Plugin { get; set; }
-        */
 
         // Used in LogWindow
         [Ignore]
