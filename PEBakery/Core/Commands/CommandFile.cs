@@ -387,7 +387,7 @@ namespace PEBakery.Core.Commands
                 else
                     Directory.CreateDirectory(destFullPath);
 
-                FileHelper.DirectoryCopy(srcDir, destFullPath, true, true, null);
+                FileHelper.WBDirCopy(srcDir, destFullPath, true, true, null);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destFullPath}]", cmd));
             }
             else
@@ -399,7 +399,7 @@ namespace PEBakery.Core.Commands
 
                 string srcParentDir = Path.GetDirectoryName(srcDir);
                 string wildcard = Path.GetFileName(srcDir);
-                FileHelper.DirectoryCopy(srcParentDir, destPath, true, true, wildcard);
+                FileHelper.WBDirCopy(srcParentDir, destPath, true, true, wildcard);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
             }
 
@@ -462,7 +462,7 @@ namespace PEBakery.Core.Commands
             { // Cannot use Directory.Move, should copy and delete directory.
                 logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
 
-                FileHelper.DirectoryCopy(srcDir, destPath, true, true, null);
+                FileHelper.WBDirCopy(srcDir, destPath, true, true, null);
                 FileHelper.DirectoryDeleteEx(srcDir);
 
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));

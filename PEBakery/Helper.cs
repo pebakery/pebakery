@@ -362,7 +362,9 @@ namespace PEBakery.Helper
         /// <param name="srcDir"></param>
         /// <param name="destDir"></param>
         /// <param name="copySubDirs"></param>
-        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string wildcard = null)
+        /// <param name="overwrite"></param>
+        /// <param name="wildcard">Wildcard only for first-sublevel directories</param>
+        public static void WBDirCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string dirWildcard = null)
         {
             // Get the subdirectories for the specified directory.
             DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
@@ -390,10 +392,10 @@ namespace PEBakery.Helper
             DirectoryInfo[] dirs;
             try
             {
-                if (wildcard == null)
+                if (dirWildcard == null)
                     dirs = dirInfo.GetDirectories();
                 else
-                    dirs = dirInfo.GetDirectories(wildcard);
+                    dirs = dirInfo.GetDirectories(dirWildcard);
             }
             catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
 
@@ -406,7 +408,54 @@ namespace PEBakery.Helper
                 foreach (DirectoryInfo subDir in dirs)
                 { // Starting from second call, wildcard will be disabled, to maintain compatibility with WB082.
                     string tempPath = Path.Combine(destDir, subDir.Name);
-                    DirectoryCopy(subDir.FullName, tempPath, copySubDirs, overwrite, null);
+                    WBDirCopy(subDir.FullName, tempPath, copySubDirs, overwrite, null);
+                }
+            }
+        }
+
+        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string fileWildcard = null)
+        {
+            // Get the subdirectories for the specified directory.
+            DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
+
+            if (!dirInfo.Exists)
+                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {srcDir}");
+
+            // Get the files in the directory and copy them to the new location.
+            try
+            {
+                FileInfo[] files;
+                if (fileWildcard == null)
+                    files = dirInfo.GetFiles();
+                else
+                    files = dirInfo.GetFiles(fileWildcard);
+
+                // If the destination directory doesn't exist, create it.
+                if (0 < files.Length && Directory.Exists(destDir) == false)
+                    Directory.CreateDirectory(destDir);
+
+                foreach (FileInfo file in files)
+                {
+                    string tempPath = Path.Combine(destDir, file.Name);
+                    file.CopyTo(tempPath, overwrite);
+                }
+            }
+            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
+
+            DirectoryInfo[] dirs;
+            try { dirs = dirInfo.GetDirectories(); }
+            catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
+
+            // If copying subdirectories, copy them and their contents to new location.
+            if (copySubDirs)
+            {
+                if (0 < dirs.Length && Directory.Exists(destDir) == false)
+                    Directory.CreateDirectory(destDir);
+
+                foreach (DirectoryInfo subDir in dirs)
+                { // Starting from second call, wildcard will be disabled, to maintain compatibility with WB082.
+                    string tempPath = Path.Combine(destDir, subDir.Name);
+                    WBDirCopy(subDir.FullName, tempPath, copySubDirs, overwrite, null);
                 }
             }
         }
