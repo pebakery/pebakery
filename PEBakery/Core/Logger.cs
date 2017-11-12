@@ -732,10 +732,26 @@ namespace PEBakery.Core
                         {
                             DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
                             writer.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
-                            writer.WriteLine($"Started at  {dbBuild.StartTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
-                            writer.WriteLine($"Finished at {dbBuild.EndTime.ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            writer.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            writer.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                             TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
                             writer.WriteLine($"Took {t:h\\:mm\\:ss}");
+                            writer.WriteLine();
+                            writer.WriteLine();
+
+                            writer.WriteLine($"<Log Statistics>");
+                            foreach (LogState state in Enum.GetValues(typeof(LogState)))
+                            {
+                                if (state == LogState.None || state == LogState.CriticalError)
+                                    continue;
+
+                                int count = DB.Table<DB_BuildLog>()
+                                    .Where(x => x.BuildId == buildId)
+                                    .Where(x => x.State == state)
+                                    .Count();
+
+                                writer.WriteLine($"{state.ToString().PadRight(8)} : {count}");
+                            }
                             writer.WriteLine();
                             writer.WriteLine();
 

@@ -672,7 +672,7 @@ namespace PEBakery.Core
             for (int i = 0; i < logs.Count; i++)
             {
                 LogInfo log = logs[i];
-                if (log.State == LogState.Error)
+                if (log.State == LogState.Error || log.State == LogState.Warning)
                 {
                     log.State = LogState.Muted;
                     logs[i] = log;
@@ -681,7 +681,7 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Get Plugin Instance from path string.
+        /// Get plugin instance from path string.
         /// </summary>
         public static Plugin GetPluginInstance(EngineState s, CodeCommand cmd, string currentPluginPath, string loadPluginPath, out bool inCurrentPlugin)
         {

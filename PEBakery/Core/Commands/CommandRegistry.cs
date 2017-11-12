@@ -252,7 +252,7 @@ namespace PEBakery.Core.Commands
                     return logs;
                 }
 
-                object checkData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                object checkData = subKey.GetValue(valueName);
                 if (checkData != null)
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Registry value [{fullValuePath}] already exists"));
 
@@ -362,8 +362,8 @@ namespace PEBakery.Core.Commands
             if (info.NoWarn)
                 args.Add("NOWARN");
 
-            cmd.Type = CodeType.RegWrite;
-            CodeInfo newInfo = CodeParser.ParseCodeInfo(cmd.RawCode, ref cmd.Type, null, args, cmd.Addr);
+            CodeType newType = CodeType.RegWrite;
+            CodeInfo newInfo = CodeParser.ParseCodeInfo(cmd.RawCode, ref newType, null, args, cmd.Addr);
             CodeCommand newCmd = new CodeCommand(cmd.RawCode, CodeType.RegWrite, newInfo);
             return CommandRegistry.RegWrite(s, newCmd);
         }

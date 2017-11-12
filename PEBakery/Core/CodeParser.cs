@@ -543,14 +543,12 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-
                         // ML's Code : RegWrite,#5,#6,#7,#8,%_ML_T8_RegWriteBinaryBit%
                         // It will be done in RegWriteLegacy
                         RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
                         if (hKey == null)
                         {
                             type = CodeType.RegWriteLegacy;
-                            // return ParseCodeInfo(rawCode, ref type, macroType, args, addr);
                             goto case CodeType.RegWriteLegacy;
                         }
 
@@ -595,7 +593,10 @@ namespace PEBakery.Core
                                     if (5 <= cnt)
                                     {
                                         string[] valueDatas = args.Skip(4).Take(cnt - 4).ToArray();
-                                        return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
+                                        if (valueDatas.Length == 1 && valueDatas[0].Equals(string.Empty, StringComparison.Ordinal))
+                                            return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, new string[0], noWarn);
+                                        else
+                                            return new CodeInfo_RegWrite(hKey, valType, args[2], args[3], null, valueDatas, noWarn);
                                     }
                                 }
                                 break;

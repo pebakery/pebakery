@@ -13,6 +13,19 @@ namespace PEBakery.Tests.Core.Command
     [TestClass]
     public class CommandRegistryTests
     {
+        #region Const String
+        private const string Dest_RegWrite = @"Software\PEBakery\RegWrite";
+        private const string Dest_Root = @"Software\PEBakery";
+        #endregion
+
+        #region ClassCleanup
+        [ClassCleanup]
+        public static void ClassCleanup()
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(Dest_Root, false);
+        }
+        #endregion
+
         #region RegRead
         [TestMethod]
         [TestCategory("Command")]
@@ -46,42 +59,43 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandRegistry")]
         public void Reg_RegWrite()
-        { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>
+        { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
             EngineState s = EngineTests.CreateEngineState();
 
-            Registry.CurrentUser.DeleteSubKeyTree(@"Software\PEBakery", false);
+            string subKey = Dest_RegWrite;
+            Registry.CurrentUser.DeleteSubKeyTree(subKey, false);
 
-            RegWrite_Template(s, @"RegWrite,HKCU,0x0,Software\PEBakery,None",
-                Registry.CurrentUser, RegistryValueKind.None, @"Software\PEBakery", "None", null);
-            RegWrite_Template(s, @"RegWrite,HKCU,0x1,Software\PEBakery,String,SZ",
-                Registry.CurrentUser, RegistryValueKind.String, @"Software\PEBakery", "String", "SZ");
-            RegWrite_Template(s, @"RegWrite,HKCU,0x2,Software\PEBakery,ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
-                Registry.CurrentUser, RegistryValueKind.ExpandString, @"Software\PEBakery", "ExpandString", @"%SystemRoot%\System32\notepad.exe");
-            RegWrite_Template(s, @"RegWrite,HKCU,0x7,Software\PEBakery,MultiString,1,2,3",
-                Registry.CurrentUser, RegistryValueKind.MultiString, @"Software\PEBakery", "MultiString", new string[] { "1", "2", "3" });
-            RegWrite_Template(s, @"RegWrite,HKCU,0x3,Software\PEBakery,Binary,00,01,02",
-                Registry.CurrentUser, RegistryValueKind.Binary, @"Software\PEBakery", "Binary", new byte[] { 00, 01, 02 });
-            RegWrite_Template(s, @"RegWrite,HKCU,0x3,Software\PEBakery,Binary,""03,04""",
-                Registry.CurrentUser, RegistryValueKind.Binary, @"Software\PEBakery", "Binary", new byte[] { 03, 04 },
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x0,{subKey},None",
+                Registry.CurrentUser, RegistryValueKind.None, subKey, "None", null);
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x1,{subKey},String,SZ",
+                Registry.CurrentUser, RegistryValueKind.String, subKey, "String", "SZ");
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x2,{subKey},ExpandString,#$pSystemRoot#$p\System32\notepad.exe",
+                Registry.CurrentUser, RegistryValueKind.ExpandString, subKey, "ExpandString", @"%SystemRoot%\System32\notepad.exe");
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x7,{subKey},MultiString,1,2,3",
+                Registry.CurrentUser, RegistryValueKind.MultiString, subKey, "MultiString", new string[] { "1", "2", "3" });
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,00,01,02",
+                Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 00, 01, 02 });
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,""03,04""",
+                Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 03, 04 },
                 ErrorCheck.Warning);
-            RegWrite_Template(s, @"RegWrite,HKCU,0x3,Software\PEBakery,Binary,05,06,07,NOWARN",
-                Registry.CurrentUser, RegistryValueKind.Binary, @"Software\PEBakery", "Binary", new byte[] { 05, 06, 07 });
-            RegWrite_Template(s, @"RegWrite,HKCU,0x3,Software\PEBakery,Binary,""08,09"",NOWARN",
-                Registry.CurrentUser, RegistryValueKind.Binary, @"Software\PEBakery", "Binary", new byte[] { 08, 09 });
-            RegWrite_Template(s, @"RegWrite,HKCU,0x4,Software\PEBakery,DWORD,1234",
-                Registry.CurrentUser, RegistryValueKind.DWord, @"Software\PEBakery", "DWORD", (uint)1234);
-            RegWrite_Template(s, @"RegWrite,HKCU,0x4,Software\PEBakery,DWORD,-1",
-                Registry.CurrentUser, RegistryValueKind.DWord, @"Software\PEBakery", "DWORD", (uint)4294967295,
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,05,06,07,NOWARN",
+                Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 05, 06, 07 });
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,""08,09"",NOWARN",
+                Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 08, 09 });
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,1234",
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)1234);
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,-1",
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
                 ErrorCheck.Warning);
-            RegWrite_Template(s, @"RegWrite,HKCU,0x4,Software\PEBakery,DWORD,4294967295",
-                Registry.CurrentUser, RegistryValueKind.DWord, @"Software\PEBakery", "DWORD", (uint)4294967295,
+            RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,4294967295",
+                Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
                 ErrorCheck.Warning);
-            RegWrite_Template(s, @"RegWrite,HKCU,0xB,Software\PEBakery,QWORD,4294967296",
-                Registry.CurrentUser, RegistryValueKind.QWord, @"Software\PEBakery", "QWORD", (ulong)4294967296);
+            RegWrite_Template(s, $@"RegWrite,HKCU,0xB,{subKey},QWORD,4294967296",
+                Registry.CurrentUser, RegistryValueKind.QWord, subKey, "QWORD", (ulong)4294967296);
 
-            RegWrite_Template_Error(s, @"RegWrite,HKCU,0x4,Software\PEBakery", ErrorCheck.ParserError);
+            RegWrite_Template_Error(s, $@"RegWrite,HKCU,0x4,{subKey}", ErrorCheck.ParserError);
 
-            Registry.CurrentUser.DeleteSubKeyTree(@"Software\PEBakery", false);
+            Registry.CurrentUser.DeleteSubKeyTree(subKey, false);
         }
 
         private void RegWrite_Template(EngineState s, string rawCode,

@@ -2915,7 +2915,7 @@ namespace PEBakery.Core
                                 match = false;
                             else
                             {
-                                object value = regSubKey.GetValue(valueName, null);
+                                object value = regSubKey.GetValue(valueName);
                                 if (value == null)
                                     match = false;
                             }
