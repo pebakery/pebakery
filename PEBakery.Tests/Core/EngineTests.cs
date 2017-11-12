@@ -158,6 +158,7 @@ namespace PEBakery.Tests.Core
                     {
                         Assert.IsTrue(log.State != LogState.Error);
                         Assert.IsTrue(log.State != LogState.CriticalError);
+                        Assert.IsTrue(log.State != LogState.Warning);
                     }
                     break;
                 case ErrorCheck.Warning:
@@ -165,6 +166,8 @@ namespace PEBakery.Tests.Core
                         bool result = false;
                         foreach (LogInfo log in logs)
                         {
+                            Assert.IsTrue(log.State != LogState.Error);
+                            Assert.IsTrue(log.State != LogState.CriticalError);
                             if (log.State == LogState.Warning)
                                 result = true;
                         }
@@ -176,6 +179,7 @@ namespace PEBakery.Tests.Core
                         bool result = false;
                         foreach (LogInfo log in logs)
                         {
+                            Assert.IsTrue(log.State != LogState.CriticalError);
                             if (log.State == LogState.Error)
                                 result = true;
                         }

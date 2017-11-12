@@ -630,11 +630,15 @@ Portions of PEBakery is licensed under various license.
 
 PEBakery.CabLib
     Apache License, Version 2.0
-	  http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 PEBakery.IniLib
-	  MIT License
-  	https://opensource.org/licenses/MIT
+    MIT License
+    https://opensource.org/licenses/MIT
+
+PEBakery.TreeLib
+    MIT License
+    https://opensource.org/licenses/MIT
 
 PEBakery/Helper.cs 
     MIT License

@@ -14,6 +14,10 @@ PEBakery.IniLib
     MIT License
     https://opensource.org/licenses/MIT
 
+PEBakery.TreeLib
+    MIT License
+    https://opensource.org/licenses/MIT
+
 PEBakery/Helper.cs 
     MIT License
     https://opensource.org/licenses/MIT

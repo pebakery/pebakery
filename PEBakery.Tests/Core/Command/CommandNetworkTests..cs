@@ -38,12 +38,8 @@ namespace PEBakery.Tests.Core.Command
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
             EngineState s = EngineTests.CreateEngineState();
 
-            if (NetworkInterface.GetIsNetworkAvailable())
-            { // This test will be skipped if the computer is disconnected
-                WebGet_1(s);
-            }
-
             // files: test
+            WebGet_1(s);
             WebGet_MD5(s);
             WebGet_SHA1(s);
             WebGet_SHA256(s);
@@ -54,20 +50,24 @@ namespace PEBakery.Tests.Core.Command
 
         public void WebGet_1(EngineState s)
         {
-            string tempFile = Path.GetTempFileName();
-            File.Delete(tempFile);
+            string tempSrc = CommandHashTests.SampleText();
+            string tempDest = Path.GetTempFileName();
+            File.Delete(tempDest);
 
             try
             {
-                string rawCode = $"WebGet,\"https://github.com\",\"{tempFile}\"";
+                Uri fileUri = new Uri(tempSrc);
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\"";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
-                Assert.IsTrue(File.Exists(tempFile));
+                Assert.IsTrue(File.Exists(tempSrc));
             }
             finally
             {
-                if (File.Exists(tempFile))
-                    File.Delete(tempFile);
+                if (File.Exists(tempSrc))
+                    File.Delete(tempSrc);
+                if (File.Exists(tempDest))
+                    File.Delete(tempDest);
             }
         }
 

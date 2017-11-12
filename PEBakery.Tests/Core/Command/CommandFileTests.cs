@@ -18,6 +18,8 @@ namespace PEBakery.Tests.Core.Command
         private const string SrcDir = "Src";
         private const string DestDir_FileCopy = "Dest_FileCopy";
         private const string DestDir_FileDelete = "Dest_FileDelete";
+        private const string DestDir_FileRename = "Dest_FileRename";
+        private const string DestDir_FileCreateBlank = "Dest_FileCreateBlank";
         #endregion
 
         #region FileCopy
@@ -220,6 +222,168 @@ namespace PEBakery.Tests.Core.Command
             {
                 Directory.Delete(destDir, true);
             }
+        }
+        #endregion
+
+        #region FileRename
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandFile")]
+        public void File_FileRename()
+        { // FileRename,<SrcPath>,<DestPath>
+            EngineState s = EngineTests.CreateEngineState();
+
+            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir);
+            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileRename);
+
+            FileRename_Template(s, $@"FileRename,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
+            FileRename_Template(s, $@"FileRename,{scriptDestDir}\A.txt,{scriptDestDir}\B.txt", "A.txt", "B.txt", ErrorCheck.Error);
+            FileRename_Template(s, $@"FileRename,{scriptDestDir}\R.txt,{scriptDestDir}\S.txt", "R.txt", "S.txt", ErrorCheck.Error);
+            FileRename_Template(s, $@"FileMove,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
+        }
+
+        private void FileRename_Template(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
+
+            string srcDir = Path.Combine(dirPath, SrcDir);
+            string destDir = Path.Combine(dirPath, DestDir_FileRename);
+
+            string srcFullPath = Path.Combine(destDir, srcFileName);
+            string destFullPath = Path.Combine(destDir, destFileName);
+
+            if (Directory.Exists(destDir))
+                Directory.Delete(destDir, true);
+            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+            try
+            {
+                if (rawCode.StartsWith("FileRename", StringComparison.OrdinalIgnoreCase))
+                    EngineTests.Eval(s, rawCode, CodeType.FileRename, check);
+                else
+                    EngineTests.Eval(s, rawCode, CodeType.FileMove, check);
+
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.IsFalse(File.Exists(srcFullPath));
+                    Assert.IsTrue(File.Exists(destFullPath));
+                }
+            }
+            finally
+            {
+                Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region FileCreateBlank
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandFile")]
+        public void File_FileCreateBlank()
+        { // FileCreateBlank,<FilePath>[,PRESERVE][,NOWARN][,UTF8|UTF16|UTF16BE|ANSI]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileCreateBlank);
+
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Warning);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Warning);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, true);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, false);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, true);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE,NOWARN", "A.txt", Encoding.Default, false);
+        }
+
+        private void FileCreateBlank_Template(EngineState s, string rawCode, string fileName, Encoding encoding, bool createDummy,  ErrorCheck check = ErrorCheck.Success)
+        {
+            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
+
+            string destDir = Path.Combine(dirPath, DestDir_FileCreateBlank);
+
+            string destFullPath = Path.Combine(destDir, fileName);
+
+            if (Directory.Exists(destDir))
+                Directory.Delete(destDir, true);
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                if (createDummy)
+                    File.Create(destFullPath).Close();
+
+                EngineTests.Eval(s, rawCode, CodeType.FileCreateBlank, check);
+
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.IsTrue(File.Exists(destFullPath));
+                    Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath) == encoding);
+                }
+            }
+            finally
+            {
+                Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region FileSize
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandFile")]
+        public void File_FileSize()
+        { // FileSize,<FileName>,<DestVar>
+            EngineState s = EngineTests.CreateEngineState();
+
+            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir);
+
+            FileSize_Template(s, $@"FileSize,{scriptSrcDir}\A.txt,%Dest%", "1");
+            FileSize_Template(s, $@"FileSize,{scriptSrcDir}\B.txt,%Dest%", "2");
+            FileSize_Template(s, $@"FileSize,{scriptSrcDir}\C.txt,%Dest%", "3");
+            FileSize_Template(s, $@"Retrieve,FileSize,{scriptSrcDir}\C.txt,%Dest%", "3");
+        }
+
+        private void FileSize_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.FileSize, check);
+
+            if (check == ErrorCheck.Success)
+            {
+                Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
+            }
+        }
+        #endregion
+
+        #region FileVersion
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandFile")]
+        public void File_FileVersion()
+        { // FileVersion,<FilePath>,<DestVar>
+            EngineState s = EngineTests.CreateEngineState();
+
+            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir);
+
+            // bt11_exe and bt20_exe BatteryLine's binary (https://github.com/ied206/BatteryLine)
+            FileVersion_Template(s, $@"FileVersion,{scriptSrcDir}\bt11_exe,%Dest%", "0.0.0.0");
+            FileVersion_Template(s, $@"FileVersion,{scriptSrcDir}\bt20_exe,%Dest%", "2.0.0.0");
+            FileVersion_Template(s, $@"Retrieve,FileVersion,{scriptSrcDir}\bt20_exe,%Dest%", "2.0.0.0");
+        }
+
+        private void FileVersion_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.FileVersion, check);
+
+            if (check == ErrorCheck.Success)
+            {
+                Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
+            }   
         }
         #endregion
     }

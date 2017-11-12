@@ -55,7 +55,7 @@
             Grid.Row="1"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            FontSize="13"
+            FontSize="11"
             Margin="0, 8, 0, 8"
             FontWeight="SemiBold">
         </TextBlock>

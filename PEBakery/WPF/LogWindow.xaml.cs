@@ -299,12 +299,24 @@ namespace PEBakery.WPF
                     SelectPluginEntries.Clear();
                     var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
                     foreach (DB_Plugin p in plugins)
+                    {
                         SelectPluginEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
+                        
+                        /*
+                        var vars = LogDB.Table<DB_Variable>()
+                            .Where(x => x.BuildId == buildId && x.PluginId == p.Id && x.Type == VarsType.Local)
+                            .OrderBy(x => x.Key);
+                        foreach (DB_Variable var in vars)
+                            variableListModel.Add(var);
+                            */
+                    }
 
                     if (showLastPlugin)
                         SelectPluginIndex = SelectPluginEntries.Count - 1; // Last Plugin, which is jjust added
                     else
                         SelectPluginIndex = 0;
+
+                    
                 }
             });
         }
@@ -365,10 +377,12 @@ namespace PEBakery.WPF
                     VariableListModel variableListModel = new VariableListModel();
                     var vars = LogDB.Table<DB_Variable>()
                         .Where(x => x.BuildId == buildId)
+                        .Where(x => x.Type != VarsType.Local)
                         .OrderBy(x => x.Type)
                         .ThenBy(x => x.Key);
                     foreach (DB_Variable v in vars)
                         variableListModel.Add(v);
+                    
                     VariableListModel = variableListModel;
                 }
                 else

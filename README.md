@@ -67,8 +67,8 @@ However, building whole project is quite buggy and needs to be improved.
 
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
-| File      | 11  | 11          | 2      |
-| Registry  | 8   | 8           | 0      |
+| File      | 11  | 11          | 6      |
+| Registry  | 8   | 8           | 2      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
@@ -78,10 +78,10 @@ However, building whole project is quite buggy and needs to be improved.
 | Hash      | 5   | 5           | 5      |
 | String    | 32  | 32          | 30     |
 | Math      | 22  | 22          | 22     |
-| System    | 15  | 15          | 0      |
+| System    | 17  | 17          | 0      |
 | Branch    | 31  | 31          | 0      |
 | Control   | 6   | 6           | 6      |
-| All       | 158 | 158         | 71     |
+| All       | 160 | 160         | 77     |
 
 ## Help Needed
 
