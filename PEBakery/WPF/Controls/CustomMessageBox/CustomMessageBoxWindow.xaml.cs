@@ -283,7 +283,7 @@ namespace PEBakery.WPF.Controls
         {
             if (0 < Timeout)
             { // Timeout set
-                TextBlock_Timeout.Text = $"Will be closed after {Timeout}sec";
+                TextBlock_Timeout.Text = Timeout.ToString();
                 ProgressBar_Timeout.SetPercent(100.0 / Timeout, TimeSpan.FromSeconds(1));
 
                 DispatcherTimer Timer = new DispatcherTimer();
@@ -293,7 +293,7 @@ namespace PEBakery.WPF.Controls
                 Timer.Tick += (object tickSender, EventArgs tickArgs) =>
                 {
                     elapsed += 1;
-                    TextBlock_Timeout.Text = $"Will be closed after {Timeout - elapsed}sec";
+                    TextBlock_Timeout.Text = (Timeout - elapsed).ToString();
                     ProgressBar_Timeout.SetPercent((elapsed + 1) * 100.0 / Timeout, TimeSpan.FromSeconds(1));
 
                     if (elapsed == Timeout)

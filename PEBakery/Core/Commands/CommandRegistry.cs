@@ -394,7 +394,7 @@ namespace PEBakery.Core.Commands
                 }
                 catch (ArgumentException)
                 {
-                    logs.Add(new LogInfo(LogState.Ignore, $"Registry key [{fullKeyPath}] does not exist"));
+                    logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
                 }
             }
             else
@@ -403,6 +403,12 @@ namespace PEBakery.Core.Commands
 
                 using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, true))
                 {
+                    if (subKey == null)
+                    {
+                        logs.Add(new LogInfo(LogState.Warning, $"Registry key [{fullKeyPath}] does not exist"));
+                        return logs;
+                    }
+
                     try
                     {
                         subKey.DeleteValue(valueName, true);
@@ -410,7 +416,7 @@ namespace PEBakery.Core.Commands
                     }
                     catch (ArgumentException)
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
+                        logs.Add(new LogInfo(LogState.Warning, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
                     }
                 }
             }

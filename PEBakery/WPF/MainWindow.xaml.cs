@@ -1059,7 +1059,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string pluginVersionText = "v0.90";
+        private string pluginVersionText = Properties.Resources.StringVersion;
         public string PluginVersionText
         {
             get => pluginVersionText;

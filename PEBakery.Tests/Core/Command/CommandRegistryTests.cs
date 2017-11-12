@@ -14,8 +14,9 @@ namespace PEBakery.Tests.Core.Command
     public class CommandRegistryTests
     {
         #region Const String
-        private const string Dest_RegWrite = @"Software\PEBakery\RegWrite";
         private const string Dest_Root = @"Software\PEBakery";
+        private const string Dest_RegWrite = @"Software\PEBakery\RegWrite";
+        private const string Dest_RegDelete = @"Software\PEBakery\RegDelete";
         #endregion
 
         #region ClassCleanup
@@ -104,7 +105,7 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
 
-            if (check == ErrorCheck.Success || check == ErrorCheck.Success)
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
             {
                 string valueDataStr;
                 using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
@@ -172,6 +173,71 @@ namespace PEBakery.Tests.Core.Command
         private void RegWrite_Template_Error(EngineState s, string rawCode, ErrorCheck check)
         {
             EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
+        }
+        #endregion
+
+        #region RegDelete
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandRegistry")]
+        public void Reg_RegDelete()
+        { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+            EngineState s = EngineTests.CreateEngineState();
+
+            Registry.CurrentUser.DeleteSubKeyTree(Dest_RegDelete, false);
+
+            // Success
+            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete},ValueName", Registry.CurrentUser, Dest_RegDelete, "ValueName");
+            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete}", Registry.CurrentUser, Dest_RegDelete, null);
+
+            // Warning
+            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete},ValueName", Registry.CurrentUser, Dest_RegDelete, "ValueName", false, ErrorCheck.Warning);
+            RegDelete_Template(s, $@"RegDelete,HKCU,{Dest_RegDelete}", Registry.CurrentUser, Dest_RegDelete, null, false, ErrorCheck.Warning);
+
+            Registry.CurrentUser.DeleteSubKeyTree(Dest_RegDelete, false);
+        }
+
+        private void RegDelete_Template(EngineState s, string rawCode, RegistryKey hKey, string keyPath, string valueName, bool createDummy = true, ErrorCheck check = ErrorCheck.Success)
+        { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+            if (createDummy)
+            {
+                using (RegistryKey subKey = hKey.CreateSubKey(keyPath, true))
+                {
+                    Assert.IsNotNull(subKey);
+
+                    subKey.SetValue(valueName, 0, RegistryValueKind.DWord);
+                }
+            }
+
+            EngineTests.Eval(s, rawCode, CodeType.RegDelete, check);
+
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+            {
+                if (valueName == null)
+                {
+                    using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
+                    {
+                        Assert.IsNull(subKey);
+                    }
+                }
+                else
+                {
+                    using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
+                    {
+                        if (createDummy)
+                        {
+                            Assert.IsNotNull(subKey);
+
+                            object valueData = subKey.GetValue(valueName);
+                            Assert.IsNull(valueData);
+                        }
+                        else
+                        {
+                            Assert.IsNull(subKey);
+                        }
+                    }
+                }
+            }
         }
         #endregion
 

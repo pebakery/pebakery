@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\Command\CommandArchiveTests.cs" />
+    <Compile Include="Core\Command\CommandBranchTests.cs" />
     <Compile Include="Core\Command\CommandFileTests.cs" />
     <Compile Include="Core\Command\CommandHashTests.cs" />
     <Compile Include="Core\Command\CommandControlTests.cs" />

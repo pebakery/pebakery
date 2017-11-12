@@ -288,17 +288,16 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.FileRedirect: // Do nothing
-                    logs.Add(new LogInfo(LogState.Warning, $"[System,FileRediret] is deprecated"));
+                    logs.Add(new LogInfo(LogState.Ignore, $"[System,FileRedirect] is not necessary in PEBakery"));
                     break;
                 case SystemType.RegRedirect: // Do nothing
-                    logs.Add(new LogInfo(LogState.Warning, $"[System,RegRediret] is deprecated"));
+                    logs.Add(new LogInfo(LogState.Ignore, $"[System,RegRedirect] is not necessary in PEBakery"));
                     break;
                 case SystemType.RebuildVars: 
                     { // Reset Variables to clean state
                         s.Variables.ResetVariables(VarsType.Fixed);
                         s.Variables.ResetVariables(VarsType.Global);
                         s.Variables.ResetVariables(VarsType.Local);
-                        s.Macro.ResetLocalMacros();
 
                         // Load Global Variables
                         List<LogInfo> varLogs;
@@ -310,6 +309,7 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         // Load Per-Plugin Macro
+                        s.Macro.ResetLocalMacros();
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
