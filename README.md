@@ -1,26 +1,25 @@
 # PEBakery
 
-WinBuilder drop-in replacement.
+PEBakery is WinBuilder-compatible builder for specialized in customizing Windows Preinstalled Envrionment.
 
-Master Build Status  
-[![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master)
+| Branch    | Build Status                                                                                                                                                                              |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master)    |
+| Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
 
-Develop Build Status  
-[![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop)
- 
 PEBakery is new, improved implementation of WinBuilder 082.
 
 PEBakery aims to resolve WinBuilder 082's abandoned bugs, and to be more plugin developer friendly builder.
 
 ## Main Goal
 
-PEBakery's main goal is being able to build [Win10PESE](http://win10se.cwcodes.net/) without error.
+PEBakery's main goal is being able to build [Win10PESE](http://win10se.cwcodes.net/) perfectly.
 
 ## Disclaimer
 
 - All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
-- PEBakery is not mature software, it can corrupt your system. I do not provide any warranty, use at your own risk.
-- Please backup your files before running PEBakery, or consider isolating with VM.
+- PEBakery is not a mature software, it can corrupt your system. I do not provide any warranty, use at your own risk.
+- Even though I did not experienced data corruption while developing, it is highly recommended to backup your files.
 
 ## License
 
@@ -28,47 +27,26 @@ PEBakery is mainly licensed under GPL Version 3.
 
 Part of PEBakery is licensed under MIT License and others.
 
-## Build
+## Current Status
 
-To compile PEBakery from source, Visual Studio and .Net Framework is required.
+### Test of Win10PESE
 
-## Recommended
+- Win10PESE x86 can be built without any errors.
+- x86 ISO is bootable, but pinned shortcuts does not appear.
+- Build of Win10PESE x64 will be cond with a few error.
+- x64 ISO is not bootable.
 
-- Visual Studio 2017
-- .Net Framework 4.7 Developer Pack
+### Test of MistyPE
 
-## Requirement
-
-- C# 7 Compiler
-- .Net Framework 4.7
-
-## Current State
-
-PEBakery can load Projects, and able to run simple plugin correctly.
-
-However, building whole project is quite buggy and needs to be improved.
-
-### Implemented
-
-- Plugin Interface Parser/Renderer
-- Code Parser
-- Variables System
-- Logger System
-- Macro System
-- Commands System
-
-### Working
-
-- GUI
-- Unit Tests
-- Fixing bugs, bugs and bugs
+- Build is near perfect.
+- Built ISO is bootable.
 
 ### Command Status
 
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
-| File      | 11  | 11          | 6      |
-| Registry  | 8   | 8           | 2      |
+| File      | 11  | 11          | 11     |
+| Registry  | 8   | 8           | 3      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
@@ -79,9 +57,9 @@ However, building whole project is quite buggy and needs to be improved.
 | String    | 32  | 32          | 30     |
 | Math      | 22  | 22          | 22     |
 | System    | 17  | 17          | 0      |
-| Branch    | 31  | 31          | 0      |
+| Branch    | 31  | 31          | 14     |
 | Control   | 6   | 6           | 6      |
-| All       | 160 | 160         | 77     |
+| All       | 160 | 160         | 97     |
 
 ## Help Needed
 
@@ -89,9 +67,9 @@ PEBakery is waiting your contributions!
 
 ### Testing
 
-PEBakery now have its skeleton finished, but has lots of bugs.
+PEBakery is in alpha stage, it needs a lot of testing.
 
-- Try to build [Win10PESE](http://win10se.cwcodes.net/), with PEBakery and report bugs.
+- Try to build [Win10PESE](http://win10se.cwcodes.net/) with PEBakery and report bugs.
 - If you are developer, you can contribute by writing unit tests.
 
 ### Undocumented WB082 behaviors
@@ -121,12 +99,26 @@ Plan PEBakery's future with your own hands!
 - New Plugin Format
 - New Language and Grammar
 
+## Build
+
+To compile PEBakery from source, Visual Studio and .Net Framework is required.
+
+### Recommended
+
+- Visual Studio 2017
+- .Net Framework 4.7 Developer Pack
+
+### Requirement
+
+- C# 7 Compiler
+- .Net Framework 4.7
+
 ## Screenshots
 
-### 20170530 Build
+### 20171114 Build
 
-![Win10PESE by PEBakery 20170530](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
-![Korean IME by PEBakery 20170530](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
+![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
+![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
 
 In WB082, same plugins are rendered like this:  
 ![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)

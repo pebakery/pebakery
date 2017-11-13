@@ -137,7 +137,7 @@ namespace PEBakery.WPF
                 mainModel.ProgressRingActive = true;
 
                 EngineState s = new EngineState(p.Project, logger, mainModel, p);
-                s.SetLogOption(setting);
+                s.SetOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 

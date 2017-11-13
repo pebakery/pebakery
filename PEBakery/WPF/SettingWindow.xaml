@@ -244,7 +244,6 @@
                             </Button>
                         </Grid>
                     </GroupBox>
-                    
                 </StackPanel>
             </TabItem>
             <TabItem Header="Interface">
@@ -378,6 +377,18 @@
                         Content="Log Comment"
                         IsChecked="{Binding Log_Comment}">
                     </CheckBox>
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Compatibility">
+                <StackPanel>
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Simulate WinBuilder's DirCopy Asterisk Bug"
+                        IsChecked="{Binding Compat_DirCopyBug}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Allow Deprecated Legacy Branch Condition"
+                        IsChecked="{Binding Compat_LegacyBranchCondition}" />
                 </StackPanel>
             </TabItem>
         </TabControl>

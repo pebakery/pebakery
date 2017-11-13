@@ -23,6 +23,7 @@ using System.Drawing.Text;
 
 namespace PEBakery.WPF
 {
+    #region SettingWindow
     public partial class SettingWindow : Window
     {
         public SettingViewModel Model;
@@ -114,8 +115,10 @@ namespace PEBakery.WPF
                 Project project = Model.Projects[Model.Project_SelectedIndex];
                 if (exist == false) // Add to list
                 {
-                    ObservableCollection<string> newSourceDirList = new ObservableCollection<string>();
-                    newSourceDirList.Add(dialog.SelectedPath);
+                    ObservableCollection<string> newSourceDirList = new ObservableCollection<string>
+                    {
+                        dialog.SelectedPath
+                    };
                     foreach (string dir in Model.Project_SourceDirectoryList)
                         newSourceDirList.Add(dir);
                     Model.Project_SourceDirectoryList = newSourceDirList;
@@ -165,10 +168,12 @@ namespace PEBakery.WPF
             Model.General_MonospaceFont = FontHelper.ChooseFontDialog(Model.General_MonospaceFont, this, false, true);
         }
     }
+    #endregion
 
     #region SettingViewModel
     public class SettingViewModel : INotifyPropertyChanged
     {
+        #region Field and Constructor
         private readonly string settingFile;
 
         private LogDB logDB;
@@ -178,13 +183,18 @@ namespace PEBakery.WPF
         public PluginCache CacheDB { set => cacheDB = value; }
 
         private ProjectCollection projects;
-        public ProjectCollection Projects { get => projects; }
+        public ProjectCollection Projects => projects;
 
         public SettingViewModel(string settingFile)
         {
             this.settingFile = settingFile;
             ReadFromFile();
+
+            Logger.DebugLevel = Log_DebugLevel;
+            CodeParser.OptimizeCode = General_OptimizeCode;
+            CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
         }
+        #endregion
 
         #region Project
         private string Project_DefaultStr;
@@ -565,6 +575,32 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Compatibility
+        private bool compat_DirCopyBug;
+        public bool Compat_DirCopyBug
+        {
+            get => compat_DirCopyBug;
+            set
+            {
+                compat_DirCopyBug = value;
+                OnPropertyUpdate("Compat_DirCopyBug");
+            }
+        }
+
+        private bool compat_LegacyBranchCondition;
+        public bool Compat_LegacyBranchCondition
+        {
+            get => compat_LegacyBranchCondition;
+            set
+            {
+                compat_LegacyBranchCondition = value;
+                OnPropertyUpdate("Compat_LegacyBranchCondition");
+            }
+        }
+
+        // 
+        #endregion
+
         #region Utility
         public void SetToDefault()
         {
@@ -581,7 +617,7 @@ namespace PEBakery.WPF
                 else // Prefer D2Coding over Consolas
                     General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
             }
-                
+
             // Interface
             Interface_ScaleFactor = 100;
             Interface_IgnoreEncodedFileChecksum = true;
@@ -593,12 +629,16 @@ namespace PEBakery.WPF
 
             // Log
 #if DEBUG
-            Log_DebugLevelIndex = 2; 
+            Log_DebugLevelIndex = 2;
 #else
             Log_DebugLevelIndex = 0;
 #endif
             Log_Macro = true;
             Log_Comment = true;
+
+            // Compatibility
+            Compat_DirCopyBug = true;
+            Compat_LegacyBranchCondition = true;
         }
 
         public void ReadFromFile()
@@ -625,6 +665,8 @@ namespace PEBakery.WPF
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
+                new IniKey("Compat", "DirCopyBug"), // Boolean
+                new IniKey("Compat", "LegacyBranchCondition"), // Boolean
             };
             keys = Ini.GetKeys(settingFile, keys);
 
@@ -642,6 +684,8 @@ namespace PEBakery.WPF
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
             string str_Log_Macro = dict["Log_Macro"];
             string str_Log_Comment = dict["Log_Comment"];
+            string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
+            string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -740,6 +784,20 @@ namespace PEBakery.WPF
                 if (str_Log_Comment.Equals("False", StringComparison.OrdinalIgnoreCase))
                     Log_Comment = false;
             }
+
+            // Compatibility - DirCopyBug (Default = True)
+            if (str_Compat_DirCopyBug != null)
+            {
+                if (str_Compat_DirCopyBug.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_DirCopyBug = false;
+            }
+
+            // Compatibility - LegacyBranchCondition (Default = True)
+            if (str_Compat_LegacyBranchCondition != null)
+            {
+                if (str_Compat_LegacyBranchCondition.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_LegacyBranchCondition = false;
+            }
         }
 
         public void WriteToFile()
@@ -760,6 +818,8 @@ namespace PEBakery.WPF
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
                 new IniKey("Project", "DefaultProject", Project_Default),
+                new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
+                new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
         }
@@ -834,7 +894,7 @@ namespace PEBakery.WPF
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-#endregion
+        #endregion
     }
-#endregion
+    #endregion
 }

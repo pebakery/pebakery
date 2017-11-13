@@ -741,6 +741,7 @@ namespace PEBakery.Core
         public int CurrentPluginIdx;
         public PluginSection CurrentSection;
         public Dictionary<int, string> CurSectionParams = new Dictionary<int, string>();
+        public List<int> ProcessedSectionHashes = new List<int>();
         public int CurDepth = 1;
         public bool ElseFlag = false;
         public bool LoopRunning = false;
@@ -751,9 +752,11 @@ namespace PEBakery.Core
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
+
+        // Options
         public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
-        public List<int> ProcessedSectionHashes = new List<int>();
+        public bool CompatDirCopyBug = false; // Compatibility
 
         // Fields : System Commands
         public CodeCommand OnBuildExit = null;
@@ -797,17 +800,14 @@ namespace PEBakery.Core
             MainViewModel = mainModel;
         }
 
-        public void SetLogOption(SettingViewModel m)
+        #region SetOption
+        public void SetOption(SettingViewModel m)
         {
             LogComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
+            CompatDirCopyBug = m.Compat_DirCopyBug;
         }
-
-        public void SetLogOption(bool logComment, bool logMacro)
-        {
-            LogComment = logComment;
-            LogMacro = logMacro;
-        }
+        #endregion
     }
     #endregion
 }

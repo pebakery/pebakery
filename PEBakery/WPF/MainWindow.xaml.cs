@@ -122,7 +122,6 @@ namespace PEBakery.WPF
 
             this.settingFile = System.IO.Path.Combine(argBaseDir, "PEBakery.ini");
             App.Setting = this.setting = new SettingViewModel(settingFile);
-            Logger.DebugLevel = setting.Log_DebugLevel;
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
@@ -629,7 +628,7 @@ namespace PEBakery.WPF
                 curBuildTree = null;
 
                 EngineState s = new EngineState(project, logger, Model);
-                s.SetLogOption(setting);
+                s.SetOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
 
@@ -697,6 +696,10 @@ namespace PEBakery.WPF
 
                 // DebugLevel
                 Logger.DebugLevel = setting.Log_DebugLevel;
+
+                // CodeParser
+                CodeParser.OptimizeCode = setting.General_OptimizeCode;
+                CodeParser.AllowLegacyBranchCondition = setting.Compat_LegacyBranchCondition;
             }
         }
 
@@ -749,7 +752,7 @@ namespace PEBakery.WPF
                     curBuildTree = null;
 
                     EngineState s = new EngineState(p.Project, logger, Model, p);
-                    s.SetLogOption(setting);
+                    s.SetOption(setting);
 
                     Engine.WorkingEngine = new Engine(s);
 

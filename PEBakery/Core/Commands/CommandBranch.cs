@@ -103,7 +103,7 @@ namespace PEBakery.Core.Commands
                 s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
 
                 // Restore Local Macros
-                s.Macro.LocalDict = localMacros;
+                s.Macro.SetLocalMacros(localMacros);
             }
 
             s.CurDepth = depthBackup;
