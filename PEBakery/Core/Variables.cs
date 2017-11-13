@@ -475,7 +475,7 @@ namespace PEBakery.Core
 
         public bool ContainsKey(string key)
         {
-            return localVars.ContainsKey(key) || globalVars.ContainsKey(key);
+            return localVars.ContainsKey(key) || globalVars.ContainsKey(key) || fixedVars.ContainsKey(key); 
         }
 
         public bool ContainsKey(VarsType type, string key)
@@ -484,15 +484,15 @@ namespace PEBakery.Core
             return vars.ContainsKey(key);
         }
 
-        public bool ContainsValue(string key)
+        public bool ContainsValue(string _val)
         {
-            return localVars.ContainsValue(key) || globalVars.ContainsValue(key);
+            return localVars.ContainsValue(_val) || globalVars.ContainsValue(_val) || fixedVars.ContainsValue(_val);
         }
 
-        public bool ContainsValue(VarsType type, string key)
+        public bool ContainsValue(VarsType type, string _val)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
-            return vars.ContainsValue(key);
+            return vars.ContainsValue(_val);
         }
 
         public override string ToString()

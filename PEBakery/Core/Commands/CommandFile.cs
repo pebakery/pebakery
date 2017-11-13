@@ -317,6 +317,13 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
+
+            if (File.Exists(filePath) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{filePath}] does not exist"));
+                return logs;
+            }
+
             FileInfo fileInfo = new FileInfo(filePath);
 
             s.MainViewModel.BuildCommandProgressBarValue = 700;
@@ -360,19 +367,19 @@ namespace PEBakery.Core.Commands
             CodeInfo_DirCopy info = cmd.Info as CodeInfo_DirCopy;
 
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
-            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
 
             // DestPath must be directory 
-            if (File.Exists(destPath))
+            if (File.Exists(destDir))
             {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot overwrite file [{destPath}] with directory [{srcDir}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Cannot overwrite file [{destDir}] with directory [{srcDir}]"));
                 return logs;
             }
 
@@ -381,26 +388,41 @@ namespace PEBakery.Core.Commands
             // Check srcDir contains wildcard
             if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                string destFullPath = Path.Combine(destPath, Path.GetFileName(srcDir));
+                string destFullPath = Path.Combine(destDir, Path.GetFileName(srcDir));
                 if (Directory.Exists(destFullPath))
                     logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destFullPath}] will be overwritten with [{srcDir}]"));
                 else
                     Directory.CreateDirectory(destFullPath);
 
-                FileHelper.WBDirCopy(srcDir, destFullPath, true, true, null);
+                FileHelper.DirectoryCopy(srcDir, destFullPath, true, true, null);
                 logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destFullPath}]", cmd));
             }
             else
             { // With Wildcard
-                if (Directory.Exists(destPath))
-                    logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
+                if (Directory.Exists(destDir))
+                    logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destDir}] will be overwritten with [{srcDir}]"));
                 else
-                    Directory.CreateDirectory(destPath);
+                    Directory.CreateDirectory(destDir);
 
-                string srcParentDir = Path.GetDirectoryName(srcDir);
                 string wildcard = Path.GetFileName(srcDir);
-                FileHelper.WBDirCopy(srcParentDir, destPath, true, true, wildcard);
-                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destPath}]", cmd));
+                string srcParentDir = Path.GetDirectoryName(srcDir);
+
+                DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
+                if (!dirInfo.Exists)
+                    throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
+
+                if (s.CompatDirCopyBug && wildcard.Equals("*", StringComparison.Ordinal))
+                { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
+                    foreach (FileInfo f in dirInfo.GetFiles("*"))
+                        File.Copy(f.FullName, Path.Combine(destDir, f.Name));
+                }
+
+                // Copy first sublevel directory with wildcard
+                // Note that wildcard will not be applied to subdirectory copy
+                foreach (DirectoryInfo subDir in dirInfo.GetDirectories(wildcard))
+                    FileHelper.DirectoryCopy(subDir.FullName, Path.Combine(destDir, subDir.Name), true, true, null);
+
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] copied to [{destDir}]", cmd));
             }
 
             return logs;
@@ -451,6 +473,14 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildCommandProgressBarValue = 500;
 
+            // SrcPath must be directory 
+            // WB082 does not check this, so file can be moved with DirMove
+            if (File.Exists(srcDir))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"[{srcDir}] is a file, not a directory"));
+                return logs;
+            }
+
             // DestPath must be directory 
             if (File.Exists(destPath))
             {
@@ -459,13 +489,12 @@ namespace PEBakery.Core.Commands
             }
 
             if (Directory.Exists(destPath))
-            { // Cannot use Directory.Move, should copy and delete directory.
-                logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destPath}] will be overwritten with [{srcDir}]"));
+            {
+                string destFullPath = Path.Combine(destPath, Path.GetFileName(srcDir));
 
-                FileHelper.WBDirCopy(srcDir, destPath, true, true, null);
-                FileHelper.DirectoryDeleteEx(srcDir);
+                Directory.Move(srcDir, destFullPath);
 
-                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destPath}]"));
+                logs.Add(new LogInfo(LogState.Success, $"Directory [{srcDir}] moved to [{destFullPath}]"));
             }
             else
             { 
@@ -495,16 +524,22 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            // DestPath cannot be file
+            if (File.Exists(destDir))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] already exists"));
+                return logs;
+            }
+
             if (Directory.Exists(destDir))
             {
-                logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destDir}] already exists", cmd));
+                logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destDir}] already exists"));
             }
             else
             {
                 Directory.CreateDirectory(destDir);
-                logs.Add(new LogInfo(LogState.Success, $"Created Directory [{destDir}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Created Directory [{destDir}]"));
             }
-            
 
             return logs;
         }
@@ -519,6 +554,12 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             string path = StringEscaper.Preprocess(s, info.Path);
+
+            if (Directory.Exists(path) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Directory [{path}] does not exist"));
+                return logs;
+            }
 
             string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
             long dirSize = 0;

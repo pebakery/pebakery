@@ -61,6 +61,7 @@ namespace PEBakery.Core
         private int level;
         private SelectedState selected;
         private bool mandatory;
+        private List<string> interfaceList = new List<string>();
 
         // Properties
         public string FullPath
@@ -263,21 +264,22 @@ namespace PEBakery.Core
                         if (!ignoreMain)
                         {
                             CheckMainSection(PluginType.Plugin);
+                            PluginSection mainSection = sections["Main"];
+
                             // Mandatory Entry
-                            this.title = sections["Main"].IniDict["Title"];
-                            this.description = sections["Main"].IniDict["Description"];
+                            this.title = mainSection.IniDict["Title"];
+                            this.description = mainSection.IniDict["Description"];
                             if (level == null)
                             {
-                                if (sections["Main"].IniDict.ContainsKey("Level"))
+                                if (mainSection.IniDict.ContainsKey("Level"))
                                 {
-                                    if (!int.TryParse(sections["Main"].IniDict["Level"], out this.level))
+                                    if (!int.TryParse(mainSection.IniDict["Level"], out this.level))
                                         this.level = 0;
                                 }
                                 else
                                 {
                                     this.level = 0;
                                 }
-
                             }
                             else
                             {
@@ -285,27 +287,45 @@ namespace PEBakery.Core
                             }
 
                             // Optional Entry
-                            if (sections["Main"].IniDict.ContainsKey("Author"))
-                                this.author = sections["Main"].IniDict["Author"];
-                            if (sections["Main"].IniDict.ContainsKey("Version"))
-                                this.version = int.Parse(sections["Main"].IniDict["Version"]);
-                            if (sections["Main"].IniDict.ContainsKey("Selected"))
+                            if (mainSection.IniDict.ContainsKey("Author"))
+                                this.author = mainSection.IniDict["Author"];
+                            if (mainSection.IniDict.ContainsKey("Version"))
+                                this.version = int.Parse(mainSection.IniDict["Version"]);
+                            if (mainSection.IniDict.ContainsKey("Selected"))
                             {
-                                string src = sections["Main"].IniDict["Selected"];
-                                if (string.Equals(src, "True", StringComparison.OrdinalIgnoreCase))
+                                string src = mainSection.IniDict["Selected"];
+                                if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
                                     this.selected = SelectedState.True;
-                                else if (string.Equals(src, "None", StringComparison.OrdinalIgnoreCase))
+                                else if (src.Equals("None", StringComparison.OrdinalIgnoreCase))
                                     this.selected = SelectedState.None;
                                 else
                                     this.selected = SelectedState.False;
                             }
-                            if (sections["Main"].IniDict.ContainsKey("Mandatory"))
+                            if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {
-                                if (string.Equals(sections["Main"].IniDict["Mandatory"], "True", StringComparison.OrdinalIgnoreCase))
+                                if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
                                     this.mandatory = true;
                                 else
                                     this.mandatory = false;
                             }
+                            if (mainSection.IniDict.ContainsKey("InterfaceList"))
+                            {
+                                string rawList = mainSection.IniDict["InterfaceList"];
+                                if (rawList.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    try
+                                    {
+                                        string remainder = rawList;
+                                        while (remainder != null)
+                                        {
+                                            Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
+                                            this.interfaceList.Add(tuple.Item1);
+                                            remainder = tuple.Item2;
+                                        }
+                                    }
+                                    catch (InvalidCommandException) { } // Just Ignore
+                                }
+                            } // InterfaceList
                             this.link = null;
                         }
                         else
@@ -401,7 +421,7 @@ namespace PEBakery.Core
 
             foreach (string folder in encodedFolders)
             {
-                if (string.Equals(folder, sectionName, StringComparison.OrdinalIgnoreCase))
+                if (folder.Equals(sectionName, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             return false;
@@ -449,6 +469,8 @@ namespace PEBakery.Core
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
                 type = SectionType.AttachFileList;
+            else if (interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
+                type = SectionType.Interface;
             else // Load it!
                 type = SectionType.Code;
             return type;
@@ -602,7 +624,6 @@ namespace PEBakery.Core
         }
     }
     #endregion
-
 
     #region Enums
     public enum PluginType

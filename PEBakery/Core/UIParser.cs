@@ -84,10 +84,9 @@ namespace PEBakery.Core
                 rawValue = rawLine.Substring(equalIdx + 1);
             }
             else
+            {
                 throw new InvalidCommandException($"Interface control [{rawValue}] does not have name", rawLine);
-
-            // Split with spaces
-            // List<string> slices = rawLine.Split(',').ToList();
+            }
 
             // Parse Arguments
             List<string> args = new List<string>();

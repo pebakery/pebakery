@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using PEBakery.WPF;
 using PEBakery.Exceptions;
+using System.Linq;
 
 namespace PEBakery.Tests.Core
 {
@@ -147,6 +148,33 @@ namespace PEBakery.Tests.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             return EngineTests.Eval(s, rawCode, type, check, out cmd);
+        }
+
+        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check)
+        {
+            return EvalLines(s, rawCodes, type, check, out List<CodeCommand> dummy);
+        }
+
+        public static EngineState EvalLines(EngineState s, List<string> rawCodes, CodeType type, ErrorCheck check, out List<CodeCommand> cmds)
+        {
+            // Create CodeCommand
+            SectionAddress addr = EngineTests.DummySectionAddress();
+            cmds = CodeParser.ParseRawLines(rawCodes, addr, out List<LogInfo> errorLogs);
+            if (0 < errorLogs.Where(x => x.State == LogState.Error).Count())
+            { 
+                Assert.IsTrue(check == ErrorCheck.ParserError);
+                return s;
+            }
+            Assert.IsTrue(cmds[0].Type == type);
+
+            // Run CodeCommand
+            List<LogInfo> logs = Engine.ExecuteCommand(s, cmds[0]);
+
+            // Assert
+            EngineTests.CheckErrorLogs(logs, check);
+
+            // Return EngineState
+            return s;
         }
 
         public static void CheckErrorLogs(List<LogInfo> logs, ErrorCheck check)

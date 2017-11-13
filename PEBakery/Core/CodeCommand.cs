@@ -346,17 +346,17 @@ namespace PEBakery.Core
     public class CodeInfo_DirCopy : CodeInfo
     { // DirCopy,<SrcDir>,<DestPath>
         public string SrcDir;
-        public string DestPath;
+        public string DestDir;
 
         public CodeInfo_DirCopy(string srcDir, string destPath)
         {
             SrcDir = srcDir;
-            DestPath = destPath;
+            DestDir = destPath;
         }
 
         public override string ToString()
         {
-            return $"{SrcDir},{DestPath}";
+            return $"{SrcDir},{DestDir}";
         }
     }
 
@@ -2680,6 +2680,7 @@ namespace PEBakery.Core
                 case BranchConditionType.Bigger:
                 case BranchConditionType.SmallerEqual:
                 case BranchConditionType.BiggerEqual:
+                case BranchConditionType.EqualX:
                 case BranchConditionType.ExistSection:
                 case BranchConditionType.ExistRegSection:
                 case BranchConditionType.ExistRegSubKey:
@@ -2725,53 +2726,57 @@ namespace PEBakery.Core
                 case BranchConditionType.Bigger:
                 case BranchConditionType.SmallerEqual:
                 case BranchConditionType.BiggerEqual:
+                case BranchConditionType.EqualX:
                     {
                         string compArg1 = StringEscaper.Preprocess(s, Arg1);
                         string compArg2 = StringEscaper.Preprocess(s, Arg2);
 
-                        NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2);
+                        bool ignoreCase = true;
+                        if (Type == BranchConditionType.EqualX) ignoreCase = false;
+
+                        NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2, ignoreCase);
                         switch (comp)
                         {
                             case NumberHelper.CompareStringNumberResult.Equal: // For String and Number
                                 {
-                                    if (Type == BranchConditionType.Equal && !NotFlag
-                                        || Type == BranchConditionType.SmallerEqual && !NotFlag
-                                        || Type == BranchConditionType.BiggerEqual && !NotFlag
-                                        || Type == BranchConditionType.Smaller && NotFlag
-                                        || Type == BranchConditionType.Bigger && NotFlag)
+                                    if (Type == BranchConditionType.Equal && !NotFlag ||
+                                        Type == BranchConditionType.SmallerEqual && !NotFlag ||
+                                        Type == BranchConditionType.BiggerEqual && !NotFlag ||
+                                        Type == BranchConditionType.Smaller && NotFlag ||
+                                        Type == BranchConditionType.Bigger && NotFlag ||
+                                        Type == BranchConditionType.EqualX && !NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is equal to [{compArg2}]";
                                 }
                                 break;
                             case NumberHelper.CompareStringNumberResult.Smaller: // For Number
                                 {
-                                    if (Type == BranchConditionType.Smaller && !NotFlag
-                                        || Type == BranchConditionType.SmallerEqual && !NotFlag
-                                        || Type == BranchConditionType.Bigger && NotFlag
-                                        || Type == BranchConditionType.BiggerEqual && NotFlag
-                                        || Type == BranchConditionType.Equal && NotFlag)
+                                    if (Type == BranchConditionType.Smaller && !NotFlag ||
+                                        Type == BranchConditionType.SmallerEqual && !NotFlag ||
+                                        Type == BranchConditionType.Bigger && NotFlag ||
+                                        Type == BranchConditionType.BiggerEqual && NotFlag || 
+                                        Type == BranchConditionType.Equal && NotFlag ||
+                                        Type == BranchConditionType.EqualX && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
                                 }
                                 break;
                             case NumberHelper.CompareStringNumberResult.Bigger: // For Number
                                 {
-                                    if (Type == BranchConditionType.Bigger && !NotFlag
-                                        || Type == BranchConditionType.BiggerEqual && !NotFlag
-                                        || Type == BranchConditionType.Smaller && NotFlag
-                                        || Type == BranchConditionType.SmallerEqual && NotFlag
-                                        || Type == BranchConditionType.Equal && NotFlag)
+                                    if (Type == BranchConditionType.Bigger && !NotFlag ||
+                                        Type == BranchConditionType.BiggerEqual && !NotFlag ||
+                                        Type == BranchConditionType.Smaller && NotFlag ||
+                                        Type == BranchConditionType.SmallerEqual && NotFlag ||
+                                        Type == BranchConditionType.Equal && NotFlag ||
+                                        Type == BranchConditionType.EqualX && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
                                 }
                                 break;
                             case NumberHelper.CompareStringNumberResult.NotEqual: // For String
                                 {
-                                    if (Type == BranchConditionType.Equal && NotFlag
-                                        || Type == BranchConditionType.Smaller && !NotFlag
-                                        || Type == BranchConditionType.SmallerEqual && NotFlag
-                                        || Type == BranchConditionType.Bigger && !NotFlag
-                                        || Type == BranchConditionType.BiggerEqual && NotFlag)
+                                    if (Type == BranchConditionType.Equal && NotFlag ||
+                                        Type == BranchConditionType.EqualX && NotFlag)
                                         match = true;
                                     logMessage = $"[{compArg1}] is not equal to [{compArg2}]";
                                 }
@@ -2912,18 +2917,56 @@ namespace PEBakery.Core
                         using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                         {
                             if (regSubKey == null)
+                            {
                                 match = false;
+                            }
                             else
                             {
                                 object value = regSubKey.GetValue(valueName);
                                 if (value == null)
                                     match = false;
                             }
+
                             if (match)
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
                             else
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
                         }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistVar:
+                    {
+                        Variables.VarKeyType type = Variables.DetermineType(Arg1);
+                        if (type == Variables.VarKeyType.Variable)
+                        {
+                            match = s.Variables.ContainsKey(Variables.TrimPercentMark(Arg1));
+                            if (match)
+                                logMessage = $"Variable [{Arg1}] exists";
+                            else
+                                logMessage = $"Variable [{Arg1}] does not exists";
+                        }
+                        else
+                        {
+                            match = false;
+                            logMessage = $"[{Arg1}] is not a variable";
+                        }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistMacro:
+                    {
+                        string macroName = StringEscaper.Preprocess(s, Arg1);
+                        match = s.Macro.MacroDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
+
+                        if (match)
+                            logMessage = $"Macro [{macroName}] exists";
+                        else
+                            logMessage = $"Macro [{macroName}] does not exists";
 
                         if (NotFlag)
                             match = !match;
@@ -2936,11 +2979,18 @@ namespace PEBakery.Core
                         Ping pinger = new Ping();
                         try
                         {
-                            PingReply reply = pinger.Send(host);
-                            if (reply.Status == IPStatus.Success)
-                                match = true;
-                            else
+                            try
+                            {
+                                PingReply reply = pinger.Send(host);
+                                if (reply.Status == IPStatus.Success)
+                                    match = true;
+                                else
+                                    match = false;
+                            }
+                            catch
+                            {
                                 match = false;
+                            }
 
                             if (match)
                                 logMessage = $"Ping to [{host}] successed";
@@ -2959,12 +3009,13 @@ namespace PEBakery.Core
                     break;
                 case BranchConditionType.Online:
                     {
+                        // Note that system connected only to local network also returns true
                         match = NetworkInterface.GetIsNetworkAvailable();
 
                         if (match)
-                            logMessage = "System is connected to internet";
+                            logMessage = "System is online";
                         else
-                            logMessage = "System is not connected to internet";
+                            logMessage = "System is offline";
 
                         if (NotFlag)
                             match = !match;
@@ -2985,6 +3036,8 @@ namespace PEBakery.Core
                         {
                             string timeoutStr = StringEscaper.Preprocess(s, Arg2);
                             if (NumberHelper.ParseInt32(timeoutStr, out timeout) == false)
+                                autoTimeout = false;
+                            if (timeout <= 0)
                                 autoTimeout = false;
 
                             string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
@@ -3010,15 +3063,19 @@ namespace PEBakery.Core
                                 else
                                     logMessage = "[No] was automatically chosen";
                             }
-                            if (result == MessageBoxResult.Yes)
+                            else if (result == MessageBoxResult.Yes)
                             {
                                 match = true;
                                 logMessage = "[Yes] was chosen";
                             }
-                            else
+                            else if (result == MessageBoxResult.No)
                             {
                                 match = false;
                                 logMessage = "[No] was chosen";
+                            }
+                            else
+                            {
+                                throw new InternalException("Internal Error at Check() of If,Question");
                             }
                         }
                         else
@@ -3029,40 +3086,16 @@ namespace PEBakery.Core
                                 match = true;
                                 logMessage = "[Yes] was chosen";
                             }
-                            else
+                            else if (result == MessageBoxResult.No)
                             {
                                 match = false;
                                 logMessage = "[No] was chosen";
                             }
+                            else
+                            {
+                                throw new InternalException("Internal Error at Check() of If,Question");
+                            }
                         }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistMacro:
-                    {
-                        string macroName = StringEscaper.Preprocess(s, Arg1);
-                        match = s.Macro.MacroDict.ContainsKey(macroName);
-
-                        if (match)
-                            logMessage = $"Macro [{macroName}] exists";
-                        else
-                            logMessage = $"Macro [{macroName}] does not exists";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistVar:
-                    {
-                        string varName = Variables.TrimPercentMark(Arg1);
-                        match = s.Variables.ContainsKey(varName);
-
-                        if (match)
-                            logMessage = $"Variable [{varName}] exists";
-                        else
-                            logMessage = $"Variable [{varName}] does not exists";
 
                         if (NotFlag)
                             match = !match;

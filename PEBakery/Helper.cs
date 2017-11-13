@@ -352,6 +352,7 @@ namespace PEBakery.Helper
         }
         */
 
+        /*
         /// <summary>
         /// Copy directory.
         /// </summary>
@@ -412,14 +413,26 @@ namespace PEBakery.Helper
                 }
             }
         }
-
+        */
+        /// <summary>
+        /// Copy directory.
+        /// </summary>
+        /// <remarks>
+        /// Based on Official MSDN Code
+        /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
+        /// </remarks>
+        /// <param name="srcDir"></param>
+        /// <param name="destDir"></param>
+        /// <param name="copySubDirs"></param>
+        /// <param name="overwrite"></param>
+        /// <param name="wildcard">Wildcard only for first-sublevel directories</param>
         public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string fileWildcard = null)
         {
             // Get the subdirectories for the specified directory.
             DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
 
             if (!dirInfo.Exists)
-                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {srcDir}");
+                throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
 
             // Get the files in the directory and copy them to the new location.
             try
@@ -453,9 +466,9 @@ namespace PEBakery.Helper
                     Directory.CreateDirectory(destDir);
 
                 foreach (DirectoryInfo subDir in dirs)
-                { // Starting from second call, wildcard will be disabled, to maintain compatibility with WB082.
+                {
                     string tempPath = Path.Combine(destDir, subDir.Name);
-                    WBDirCopy(subDir.FullName, tempPath, copySubDirs, overwrite, null);
+                    DirectoryCopy(subDir.FullName, tempPath, copySubDirs, overwrite, fileWildcard);
                 }
             }
         }
@@ -1116,7 +1129,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // base 16 integer - Z
-            if (Regex.IsMatch(str, @"^0x\d+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled))
             {
                 if (long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1142,7 +1155,7 @@ namespace PEBakery.Helper
         /// </summary>
         /// <param name="str1"></param>
         /// <param name="str2"></param>
-        public static CompareStringNumberResult CompareStringNumber(string str1, string str2)
+        public static CompareStringNumberResult CompareStringNumber(string str1, string str2, bool ignoreCase = true)
         {
             try
             { // Try Version class compare
@@ -1185,7 +1198,11 @@ namespace PEBakery.Helper
             }
             else // if (type1 == ParseStringToNumberType.String || type2 == ParseStringToNumberType.String)
             { // One of arg is string, so just compare
-                if (string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase))
+                StringComparison compOpt = StringComparison.Ordinal;
+                if (ignoreCase)
+                    compOpt = StringComparison.OrdinalIgnoreCase;
+
+                if (str1.Equals(str2, compOpt))
                     return CompareStringNumberResult.Equal;
                 else
                     return CompareStringNumberResult.NotEqual;
