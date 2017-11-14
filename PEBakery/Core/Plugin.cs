@@ -54,9 +54,9 @@ namespace PEBakery.Core
         private Plugin link;
         [NonSerialized]
         private bool linkLoaded;
-        private string title;
-        private string author;
-        private string description;
+        private string title = string.Empty;
+        private string author = string.Empty;
+        private string description = string.Empty;
         private int version;
         private int level;
         private SelectedState selected;
@@ -286,7 +286,6 @@ namespace PEBakery.Core
                                 this.level = (int)level;
                             }
 
-                            // Optional Entry
                             if (mainSection.IniDict.ContainsKey("Author"))
                                 this.author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))

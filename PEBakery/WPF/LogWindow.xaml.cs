@@ -29,13 +29,14 @@ namespace PEBakery.WPF
 
         private LogViewModel m = new LogViewModel();
 
-        public LogWindow()
+        public LogWindow(int selectedTabIndex = 0)
         {
             Interlocked.Increment(ref LogWindow.Count);
 
             InitializeComponent();
             DataContext = m;
 
+            m.SelectedTabIndex = selectedTabIndex;
             m.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
             m.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
             m.Logger.PluginUpdated += PluginUpdateEventHandler;

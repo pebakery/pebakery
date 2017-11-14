@@ -56,11 +56,11 @@ namespace PEBakery.Core.Commands
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
-                throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
+                throw new ExecuteException($"Plugin [{pluginFile}] does not have section [{sectionName}]");
 
-            SectionAddress addr = new SectionAddress(p, p.Sections[sectionName]);
-
-            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, addr.Section);
+            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, p.Sections[sectionName]);
+            if (logs.Count == 0) // No variables
+                logs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
 
             return logs;
         }

@@ -33,8 +33,9 @@ namespace PEBakery.Core
     public static class CodeParser
     {
         #region Field
-        public static bool AllowLegacyBranchCondition = true;
         public static bool OptimizeCode = true;
+        public static bool AllowLegacyBranchCondition = true;
+        public static bool AllowRegWriteLegacy = true;
         #endregion
 
         #region ParseOneRawLine, ParseRawLines

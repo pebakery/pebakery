@@ -942,15 +942,17 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                Logger logger = App.Logger;
-                SettingViewModel setting = App.Setting;
+                Logger logger = null;
+                SettingViewModel setting = null;
                 MainViewModel mainModel = null;
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
 
+                    logger = w.Logger;
                     mainModel = w.Model;
+                    setting = w.Setting;
 
                     // Populate BuildTree
                     if (!hideProgress)

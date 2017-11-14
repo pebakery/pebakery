@@ -205,11 +205,7 @@ namespace PEBakery.Core
             // [Variables]
             if (p.Sections.ContainsKey("Variables"))
             {
-                VarsType type = VarsType.Local;
-                if (p.IsMainPlugin)
-                    type = VarsType.Global;
-
-                List<LogInfo> subLogs = AddVariables(type, p.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(p.IsMainPlugin ? VarsType.Global : VarsType.Local, p.Sections["Variables"]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
@@ -471,6 +467,13 @@ namespace PEBakery.Core
             else
                 value = string.Empty;
             return value;
+        }
+
+        public void Delete(VarsType type, string key)
+        {
+            Dictionary<string, string> vars = GetVarsMatchesType(type);
+            if (vars.ContainsKey(key))
+                vars.Remove(key);
         }
 
         public bool ContainsKey(string key)
@@ -766,10 +769,7 @@ namespace PEBakery.Core
 
                     // Remove local variable if exist
                     if (log.State == LogState.Success)
-                    {
-                        if (s.Variables.localVars.ContainsKey(varKey))
-                            s.Variables.localVars.Remove(varKey);
-                    } 
+                        s.Variables.Delete(VarsType.Local, varKey);
                 }
                 else if (permanent)
                 {
@@ -783,12 +783,11 @@ namespace PEBakery.Core
                             logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{finalValue}] into script.project"));
 
                         // Remove local variable if exist
-                        if (s.Variables.localVars.ContainsKey(varKey))
-                            s.Variables.localVars.Remove(varKey);
+                        s.Variables.Delete(VarsType.Local, varKey);
                     }
                     else
                     { // SetValue failed
-                        logs.Add(new LogInfo(LogState.Error, $"Variable [%{varKey}%] contains itself in [{varValue}]"));
+                        logs.Add(log);
                     }
                 }
                 else // Local
@@ -807,7 +806,7 @@ namespace PEBakery.Core
 
             return logs;
         }
-#endregion
+        #endregion
 
         #region Clone
         public object Clone()

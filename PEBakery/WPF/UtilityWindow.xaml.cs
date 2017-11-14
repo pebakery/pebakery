@@ -27,6 +27,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class UtilityWindow : Window
     {
+        #region Field and Constructor
         public static int Count = 0;
 
         UtilityViewModel m;
@@ -55,11 +56,14 @@ namespace PEBakery.WPF
                 }
             });
         }
+        #endregion
 
+        #region Window Event
         private void Window_Closed(object sender, EventArgs e)
         {
             Interlocked.Decrement(ref UtilityWindow.Count);
         }
+        #endregion
 
         #region Button Event
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -69,17 +73,13 @@ namespace PEBakery.WPF
 
         private void EscapeButton_Click(object sender, RoutedEventArgs e)
         {
-            string str = StringEscaper.QuoteEscape(m.Escaper_StringToConvert);
-            if (m.EscapePercentChecked)
-                m.Escaper_ConvertedString = StringEscaper.EscapePercent(str);
-            else
-                m.Escaper_ConvertedString = str;
+            m.Escaper_ConvertedString = StringEscaper.QuoteEscape(m.Escaper_StringToConvert, false, m.Escaper_EscapePercent, m.Escaper_EscapeSharpDollar);
         }
 
         private void UnescapeButton_Click(object sender, RoutedEventArgs e)
         {
             string str = StringEscaper.QuoteUnescape(m.Escaper_StringToConvert);
-            if (m.EscapePercentChecked)
+            if (m.Escaper_EscapePercent)
                 m.Escaper_ConvertedString = StringEscaper.UnescapePercent(str);
             else
                 m.Escaper_ConvertedString = str;
@@ -145,7 +145,19 @@ namespace PEBakery.WPF
 
                 mainModel.ProgressRingActive = false;
                 mainModel.SwitchNormalBuildInterface = true;
-                
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+
+                    w.DrawPlugin(w.CurMainTree.Plugin);
+
+                    if (w.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    { // Open BuildLogWindow
+                        w.LogDialog = new LogWindow(1);
+                        w.LogDialog.Show();
+                    }
+                });
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
@@ -223,44 +235,8 @@ namespace PEBakery.WPF
 
         public UtilityViewModel(FontHelper.WPFFont monoFont)
         {
-            // MainWindow w = Application.Current.MainWindow as MainWindow;
             MonoFont = monoFont;
         }
-
-        #region String Escaper
-        private string escaper_StringToConvert = string.Empty;
-        public string Escaper_StringToConvert
-        {
-            get => escaper_StringToConvert;
-            set
-            {
-                escaper_StringToConvert = value;
-                OnPropertyUpdate("Escaper_StringToConvert");
-            }
-        }
-
-        private string escaper_ConvertedString = string.Empty;
-        public string Escaper_ConvertedString
-        {
-            get => escaper_ConvertedString;
-            set
-            {
-                escaper_ConvertedString = value;
-                OnPropertyUpdate("Escaper_ConvertedString");
-            }
-        }
-
-        private bool escapePercentChecked = false;
-        public bool EscapePercentChecked
-        {
-            get => escapePercentChecked;
-            set
-            {
-                escapePercentChecked = value;
-                OnPropertyUpdate("EscapePercentChecked");
-            }
-        }
-        #endregion
 
         #region CodeBox
         private string codeFile;
@@ -337,6 +313,52 @@ Description=Test Commands
             {
                 codeBox_Input = value;
                 OnPropertyUpdate("CodeBox_Input");
+            }
+        }
+        #endregion
+
+        #region String Escaper
+        private string escaper_StringToConvert = string.Empty;
+        public string Escaper_StringToConvert
+        {
+            get => escaper_StringToConvert;
+            set
+            {
+                escaper_StringToConvert = value;
+                OnPropertyUpdate("Escaper_StringToConvert");
+            }
+        }
+
+        private string escaper_ConvertedString = string.Empty;
+        public string Escaper_ConvertedString
+        {
+            get => escaper_ConvertedString;
+            set
+            {
+                escaper_ConvertedString = value;
+                OnPropertyUpdate("Escaper_ConvertedString");
+            }
+        }
+
+        private bool escaper_EscapePercent = false;
+        public bool Escaper_EscapePercent
+        {
+            get => escaper_EscapePercent;
+            set
+            {
+                escaper_EscapePercent = value;
+                OnPropertyUpdate("Escaper_EscapePercent");
+            }
+        }
+
+        private bool escaper_EscapeSharpDollar = false;
+        public bool Escaper_EscapeSharpDollar
+        {
+            get => escaper_EscapeSharpDollar;
+            set
+            {
+                escaper_EscapeSharpDollar = value;
+                OnPropertyUpdate("Escaper_EscapeSharpDollar");
             }
         }
         #endregion

@@ -448,8 +448,9 @@
                                 DockPanel.Dock="Right"
                                 Name="PluginAuthor"
                                 Text="{Binding PluginAuthorText}" 
-                                Margin="0, 0, 10, 0"
-                                VerticalAlignment="Center"
+                                Margin="0, 0, 5, 6"
+                                FontSize="12"
+                                VerticalAlignment="Bottom"
                                 HorizontalAlignment="Right"
                                 FontStretch="Condensed"
                                 TextWrapping="Wrap" />
@@ -472,7 +473,6 @@
                             TextWrapping="Wrap">
                         </TextBlock>
                     </Grid>
-
                     <Grid
                         Grid.Row="0"
                         Grid.RowSpan="2" Grid.Column="3"

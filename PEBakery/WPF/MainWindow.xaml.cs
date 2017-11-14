@@ -47,6 +47,10 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
+        #region Consants
+        internal const int PluginAuthorLenLimit = 35;
+        #endregion
+
         #region Variables
         private bool fullLoaded = false;
 
@@ -78,8 +82,8 @@ namespace PEBakery.WPF
         public SettingViewModel Setting => setting;
         public MainViewModel Model { get; private set; }
 
-        public LogWindow logDialog = null;
-        public UtilityWindow utilityDialog = null;
+        public LogWindow LogDialog = null;
+        public UtilityWindow UtilityDialog = null;
         #endregion
 
         #region Constructor
@@ -121,7 +125,7 @@ namespace PEBakery.WPF
             this.baseDir = argBaseDir;
 
             this.settingFile = System.IO.Path.Combine(argBaseDir, "PEBakery.ini");
-            App.Setting = this.setting = new SettingViewModel(settingFile);
+            this.setting = new SettingViewModel(settingFile);
 
             string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
             try
@@ -304,12 +308,12 @@ namespace PEBakery.WPF
                 if (setting.Plugin_EnableCache)
                 {
                     double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    msg = $"{allPluginCount} plugins loaded ({t:0.###}sec) - {cachePercent:0.#}% cached";
+                    msg = $"{allPluginCount} plugins loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                     Model.StatusBarText = msg;
                 }
                 else
                 {
-                    msg = $"{allPluginCount} plugins loaded ({t:0.###}sec)";
+                    msg = $"{allPluginCount} plugins loaded ({t:0.#}s)";
                     Model.StatusBarText = msg;
                 }
                 if (quiet == false)
@@ -365,7 +369,7 @@ namespace PEBakery.WPF
                         double cachePercent = (double)updatedCount * 100 / allPluginCount;
 
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                        string msg = $"{allPluginCount} plugins cached ({t:0.###}sec), {cachePercent:0.#}% updated";
+                        string msg = $"{allPluginCount} plugins cached ({t:0.###}s), {cachePercent:0.#}% updated";
                         logger.System_Write(new LogInfo(LogState.Info, msg));
                         logger.System_Write(Logger.LogSeperator);
 
@@ -551,8 +555,11 @@ namespace PEBakery.WPF
             {
                 Model.PluginTitleText = StringEscaper.Unescape(p.Title);
                 Model.PluginDescriptionText = StringEscaper.Unescape(p.Description);
-                Model.PluginVersionText = $"v{p.Version}";
-                Model.PluginAuthorText = p.Author;
+                Model.PluginVersionText = "v" + p.Version;
+                if (PluginAuthorLenLimit < p.Author.Length)
+                    Model.PluginAuthorText = p.Author.Substring(0, PluginAuthorLenLimit) + "...";
+                else
+                    Model.PluginAuthorText = p.Author;
 
                 double scaleFactor = setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
@@ -654,8 +661,14 @@ namespace PEBakery.WPF
                 DrawPlugin(curMainTree.Plugin);
 
                 watch.Stop();
-                double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                Model.StatusBarText = $"{project.ProjectName} build done ({t:0.###}sec)";
+                TimeSpan t = watch.Elapsed;
+                Model.StatusBarText = $"{project.ProjectName} build done ({t:h\\:mm\\:ss})";
+
+                if (setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                { // Open BuildLogWindow
+                    LogDialog = new LogWindow(1);
+                    LogDialog.Show();
+                }
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
@@ -700,6 +713,7 @@ namespace PEBakery.WPF
                 // CodeParser
                 CodeParser.OptimizeCode = setting.General_OptimizeCode;
                 CodeParser.AllowLegacyBranchCondition = setting.Compat_LegacyBranchCondition;
+                CodeParser.AllowRegWriteLegacy = setting.Compat_RegWriteLegacy;
             }
         }
 
@@ -709,8 +723,8 @@ namespace PEBakery.WPF
             {
                 if (UtilityWindow.Count == 0)
                 {
-                    utilityDialog = new UtilityWindow(setting.General_MonospaceFont);
-                    utilityDialog.Show();
+                    UtilityDialog = new UtilityWindow(setting.Interface_MonospaceFont);
+                    UtilityDialog.Show();
                 }
             }
         }
@@ -719,8 +733,8 @@ namespace PEBakery.WPF
         {
             if (LogWindow.Count == 0)
             {
-                logDialog = new LogWindow();
-                logDialog.Show();
+                LogDialog = new LogWindow();
+                LogDialog.Show();
             }
         }
 
@@ -731,7 +745,7 @@ namespace PEBakery.WPF
 
         private void AboutButton_Click(object sender, RoutedEventArgs e)
         {
-            AboutWindow dialog = new AboutWindow(setting.General_MonospaceFont);
+            AboutWindow dialog = new AboutWindow(setting.Interface_MonospaceFont);
             dialog.ShowDialog();
         }
         #endregion
@@ -769,6 +783,12 @@ namespace PEBakery.WPF
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
                     DrawPlugin(curMainTree.Plugin);
+
+                    if (setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
+                    { // Open BuildLogWindow
+                        LogDialog = new LogWindow(1);
+                        LogDialog.Show();
+                    }
 
                     Engine.WorkingEngine = null;
                     Interlocked.Decrement(ref Engine.WorkingLock);
@@ -975,9 +995,9 @@ namespace PEBakery.WPF
                     watch.Start();
                     DrawPlugin(item.Plugin);
                     watch.Stop();
-                    double sec = watch.Elapsed.TotalSeconds;
+                    double msec = watch.Elapsed.TotalMilliseconds;
                     string filename = Path.GetFileName(curMainTree.Plugin.ShortPath);
-                    Model.StatusBarText = $"{filename} rendered ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
         }
@@ -991,14 +1011,14 @@ namespace PEBakery.WPF
 
             if (0 < LogWindow.Count)
             {
-                logDialog.Close();
-                logDialog = null;
+                LogDialog.Close();
+                LogDialog = null;
             }
 
             if (0 < UtilityWindow.Count)
             {
-                utilityDialog.Close();
-                utilityDialog = null;
+                UtilityDialog.Close();
+                UtilityDialog = null;
             }
 
             // TODO: Do this in more clean way

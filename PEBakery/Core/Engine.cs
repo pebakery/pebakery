@@ -39,7 +39,7 @@ namespace PEBakery.Core
     {
         #region Variables and Constructor
         public static Engine WorkingEngine; // Only 1 Instance can run at one time
-        public static int WorkingLock;
+        public static int WorkingLock = 0;
 
         public EngineState s;
         private Task<long> task;
@@ -105,8 +105,11 @@ namespace PEBakery.Core
             else
                 s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
-            s.MainViewModel.PluginVersionText = $"v{p.Version}";
-            s.MainViewModel.PluginAuthorText = p.Author;
+            s.MainViewModel.PluginVersionText = "v" + p.Version;
+            if (MainWindow.PluginAuthorLenLimit < p.Author.Length)
+                s.MainViewModel.PluginAuthorText = p.Author.Substring(0, MainWindow.PluginAuthorLenLimit) + "...";
+            else
+                s.MainViewModel.PluginAuthorText = p.Author;
             s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySection}]...";
 
             long allLineCount = 0;
@@ -247,7 +250,7 @@ namespace PEBakery.Core
 
             RunCommands(s, addr, codes, paramDict, depth, callback);
 
-            // Increase only if cmd resides is CurrentPlugin
+            // Increase only if cmd resides in CurrentPlugin
             if (s.CurrentPlugin.Equals(addr.Plugin))
                 s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
