@@ -59,8 +59,8 @@ namespace PEBakery.Core
         private string description = string.Empty;
         private int version;
         private int level;
-        private SelectedState selected;
-        private bool mandatory;
+        private SelectedState selected = SelectedState.None;
+        private bool mandatory = false;
         private List<string> interfaceList = new List<string>();
 
         // Properties
@@ -178,31 +178,17 @@ namespace PEBakery.Core
         }
         public SelectedState Selected
         {
-            get
-            {
-                if (type == PluginType.Link && linkLoaded)
-                    return link.Selected;
-                else
-                    return selected;
-            }
+            get => selected;
             set
             {
                 if (selected != value)
                 {
                     selected = value;
-                    string str = value.ToString();
-                    if (type == PluginType.Plugin)
+                    string valStr = value.ToString();
+                    if (type != PluginType.Directory)
                     {
-                        sections["Main"].IniDict["Selected"] = str;
-                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
-                    }
-                    else if (type == PluginType.Link && linkLoaded)
-                    {
-                        sections["Main"].IniDict["Selected"] = str;
-                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", str));
-                        link.sections["Main"].IniDict["Selected"] = str;
-                        Ini.SetKey(link.FullPath, new IniKey("Main", "Selected", str));
-                        link.selected = value;
+                        sections["Main"].IniDict["Selected"] = valStr;
+                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", valStr));
                     }
                 }
             }
@@ -250,10 +236,22 @@ namespace PEBakery.Core
                     { // Parse only [Main] Section
                         sections = ParsePlugin();
                         CheckMainSection(PluginType.Link);
+                        PluginSection mainSection = sections["Main"];
 
-                        if (sections["Main"].IniDict.ContainsKey("Link") == false)
+                        if (mainSection.IniDict.ContainsKey("Link") == false)
                         {
                             throw new PluginParseException($"Invalid link path in plugin {fullPath}");
+                        }
+
+                        if (mainSection.IniDict.ContainsKey("Selected"))
+                        {
+                            string _value = mainSection.IniDict["Selected"];
+                            if (_value.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                this.selected = SelectedState.True;
+                            else if (_value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                this.selected = SelectedState.False;
+                            else
+                                this.selected = SelectedState.None;
                         }
                     }
                     break;
@@ -295,10 +293,10 @@ namespace PEBakery.Core
                                 string src = mainSection.IniDict["Selected"];
                                 if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
                                     this.selected = SelectedState.True;
-                                else if (src.Equals("None", StringComparison.OrdinalIgnoreCase))
-                                    this.selected = SelectedState.None;
-                                else
+                                else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
                                     this.selected = SelectedState.False;
+                                else
+                                    this.selected = SelectedState.None;
                             }
                             if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {

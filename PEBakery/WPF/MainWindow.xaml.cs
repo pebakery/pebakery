@@ -1071,7 +1071,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string pluginAuthorText = "Hajin Jang";
+        private string pluginAuthorText = string.Empty;
         public string PluginAuthorText
         {
             get => pluginAuthorText;
@@ -1480,7 +1480,6 @@ namespace PEBakery.WPF
                         {
                             plugin.Selected = SelectedState.False;
                         }
-
 
                         if (plugin.IsMainPlugin == false)
                         {

@@ -444,7 +444,7 @@ namespace PEBakery.Helper
                     files = dirInfo.GetFiles(fileWildcard);
 
                 // If the destination directory doesn't exist, create it.
-                if (0 < files.Length && Directory.Exists(destDir) == false)
+                if (Directory.Exists(destDir) == false)
                     Directory.CreateDirectory(destDir);
 
                 foreach (FileInfo file in files)
@@ -455,15 +455,12 @@ namespace PEBakery.Helper
             }
             catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
-            DirectoryInfo[] dirs;
-            try { dirs = dirInfo.GetDirectories(); }
-            catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
-
             // If copying subdirectories, copy them and their contents to new location.
             if (copySubDirs)
             {
-                if (0 < dirs.Length && Directory.Exists(destDir) == false)
-                    Directory.CreateDirectory(destDir);
+                DirectoryInfo[] dirs;
+                try { dirs = dirInfo.GetDirectories(); }
+                catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
 
                 foreach (DirectoryInfo subDir in dirs)
                 {

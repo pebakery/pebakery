@@ -215,7 +215,6 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
-
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
