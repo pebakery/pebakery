@@ -250,11 +250,6 @@ namespace PEBakery.WPF
             RefreshBuildLog();
         }
 
-        ~LogViewModel()
-        {
-            
-        }
-
         #region Refresh 
         public void RefreshSystemLog()
         {

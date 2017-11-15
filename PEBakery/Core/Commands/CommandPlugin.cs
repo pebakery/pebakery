@@ -90,8 +90,6 @@ namespace PEBakery.Core.Commands
             {
                 ms.Position = 0;
                 ms.CopyTo(fs);
-                ms.Close();
-                fs.Close();
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 900;
@@ -132,8 +130,6 @@ namespace PEBakery.Core.Commands
             {
                 ms.Position = 0;
                 ms.CopyTo(fs);
-                ms.Close();
-                fs.Close();
             }
 
             s.MainViewModel.BuildCommandProgressBarValue = 600;
@@ -203,8 +199,6 @@ namespace PEBakery.Core.Commands
                 {
                     ms.Position = 0;
                     ms.CopyTo(fs);
-                    ms.Close();
-                    fs.Close();
                 }
 
                 s.MainViewModel.BuildCommandProgressBarValue = 200 + ((fileDict.Count * i / fileDict.Count) * 800);

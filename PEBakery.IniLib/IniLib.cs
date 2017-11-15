@@ -42,6 +42,7 @@ namespace PEBakery.IniLib
     /// <summary>
     /// When parsing ini file, specified key not found.
     /// </summary>
+    [Serializable]
     public class IniKeyNotFoundException : Exception
     {
         public IniKeyNotFoundException() { }
@@ -1545,9 +1546,7 @@ namespace PEBakery.IniLib
                             }
                         }
                     }
-                    reader.Close();
                 }
-
             }
             finally
             {

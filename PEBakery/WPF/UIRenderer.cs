@@ -407,7 +407,6 @@ namespace PEBakery.WPF
                 {
                     button.Background = ImageHelper.ImageToImageBrush(ms);
                 }
-                ms.Close();
             }
                 
             bool hasUrl = false;
@@ -443,8 +442,6 @@ namespace PEBakery.WPF
                     {
                         ms.Position = 0;
                         ms.CopyTo(fs);
-                        fs.Close();
-                        ms.Close();
                     }
                         
                     ProcessStartInfo procInfo = new ProcessStartInfo()
@@ -485,8 +482,6 @@ namespace PEBakery.WPF
                     Text = sr.ReadToEnd(),
                     FontSize = CalcFontPointScale(),
                 };
-                sr.Close();
-                ms.Close();
             }
             
             ScrollViewer.SetHorizontalScrollBarVisibility(textBox, ScrollBarVisibility.Auto);
@@ -583,8 +578,6 @@ namespace PEBakery.WPF
                         image.Height = height;
                         image.Source = bitmap;
                     }
-
-                    ms.Close();
                 }
 
                 if (uiCmd.Text.Equals(string.Empty, StringComparison.Ordinal))

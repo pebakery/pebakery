@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
                 privilegesEnabled = true;
             }
 
-            int result = RegistryHelper.RegLoadKey(RegistryHelper.HKLM, keyPath, hiveFile);
+            int result = RegistryHelper.RegLoadKey(Registry.LocalMachine.Handle, keyPath, hiveFile);
             if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
                 logs.Add(new LogInfo(LogState.Success, $"Loaded [{hiveFile}] into [HKLM\\{keyPath}]"));
             else
@@ -77,7 +77,7 @@ namespace PEBakery.Core.Commands
                 privilegesEnabled = true;
             }
 
-            int result = RegistryHelper.RegUnLoadKey(RegistryHelper.HKLM, keyPath);
+            int result = RegistryHelper.RegUnLoadKey(Registry.LocalMachine.Handle, keyPath);
             if (result == (int)BetterWin32Errors.Win32Error.ERROR_SUCCESS)
                 logs.Add(new LogInfo(LogState.Success, $"[HKLM\\{keyPath}] Unloaded"));
             else

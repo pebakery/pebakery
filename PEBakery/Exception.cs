@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading.Tasks;
 using PEBakery.Core;
 using PEBakery.Core.Commands;
+using System.Runtime.Serialization;
 
 namespace PEBakery.Exceptions
 {
@@ -51,6 +52,7 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region CodeParser, UIParser, Commands
+    [Serializable]
     public class EmptyLineException : Exception
     {
         public EmptyLineException() { }
@@ -67,6 +69,7 @@ namespace PEBakery.Exceptions
         public InvalidCommandException(string message, string rawLine) : base(message) { this.rawLine = rawLine; }
         public InvalidCommandException(string message, Exception inner) : base(message, inner) { }
     }
+
 
     public class InvalidUICommandException : UICommandException
     {
@@ -89,6 +92,7 @@ namespace PEBakery.Exceptions
     /// <summary>
     /// Internal error which unable to continue parsing
     /// </summary>
+    [Serializable]
     public class InternalParserException : Exception
     {
         public InternalParserException() { }
@@ -98,6 +102,7 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region Command Execution
+    [Serializable]
     public class ExecuteException : Exception
     {
         public ExecuteException() { }
@@ -110,6 +115,7 @@ namespace PEBakery.Exceptions
     /// <summary>
     /// Cannot found plugin
     /// </summary>
+    [Serializable]
     public class PluginNotFoundException : Exception
     {
         public PluginNotFoundException() { }
@@ -117,6 +123,7 @@ namespace PEBakery.Exceptions
         public PluginNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class PluginSectionNotFoundException : Exception
     {
         public PluginSectionNotFoundException() { }
@@ -124,6 +131,7 @@ namespace PEBakery.Exceptions
         public PluginSectionNotFoundException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class PluginParseException : Exception
     {
         public PluginParseException() { }
@@ -134,8 +142,9 @@ namespace PEBakery.Exceptions
 
     #region Engine / EngineState
     /// <summary>
-    /// So Critical error that build must be halt
+    /// Such a critical error that build must be halt
     /// </summary>
+    [Serializable]
     public class CriticalErrorException : CodeCommandException
     {
         public CriticalErrorException() { }
@@ -145,6 +154,7 @@ namespace PEBakery.Exceptions
         public CriticalErrorException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class InternalException : Exception
     {
         public InternalException() { }
@@ -154,6 +164,7 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region EncodedFile
+    [Serializable]
     public class EncodeFileFailException : Exception
     {
         public EncodeFileFailException() { }
@@ -161,6 +172,7 @@ namespace PEBakery.Exceptions
         public EncodeFileFailException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class EncodedFileFailException : Exception
     {
         public EncodedFileFailException() { }
@@ -168,6 +180,7 @@ namespace PEBakery.Exceptions
         public EncodedFileFailException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class ExtractFileNotFoundException : Exception
     {
         public ExtractFileNotFoundException() { }
@@ -177,6 +190,7 @@ namespace PEBakery.Exceptions
     #endregion
 
     #region Variables
+    [Serializable]
     public class VariableCircularReferenceException : Exception
     {
         public VariableCircularReferenceException() { }
@@ -184,6 +198,7 @@ namespace PEBakery.Exceptions
         public VariableCircularReferenceException(string message, Exception inner) : base(message, inner) { }
     }
 
+    [Serializable]
     public class VariableInvalidFormatException : Exception
     {
         public VariableInvalidFormatException() { }

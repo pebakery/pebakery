@@ -106,7 +106,6 @@ namespace PEBakery.Tests.Core.Command
                 w.WriteLine("%A%=1");
                 w.WriteLine("%B%=2");
                 w.WriteLine("%C%=3");
-                w.Close();
             }
 
             string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars";
@@ -132,7 +131,6 @@ namespace PEBakery.Tests.Core.Command
                 w.WriteLine("%A%=1");
                 w.WriteLine("%B%=2");
                 w.WriteLine("%C%=3");
-                w.Close();
             }
 
             string rawCode = $"AddVariables,%ProjectTemp%\\{tempFile},TestVars,GLOBAL";

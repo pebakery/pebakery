@@ -478,6 +478,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegExport : CodeInfo
     { // RegExport,<Key>,<RegFile>
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string RegFile;
@@ -499,6 +500,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegRead : CodeInfo
     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -522,6 +524,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
+        [NonSerialized]
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
         public string KeyPath;
@@ -612,6 +615,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegDelete : CodeInfo
     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -646,6 +650,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegMulti : CodeInfo
     { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -1563,6 +1568,7 @@ namespace PEBakery.Core
         Split,
     }
 
+    [Serializable]
     public class StrFormatInfo { }
 
     [Serializable]
@@ -2033,6 +2039,7 @@ namespace PEBakery.Core
         Pow,
     }
 
+    [Serializable]
     public class MathInfo { }
 
     [Serializable]

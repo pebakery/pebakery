@@ -31,10 +31,8 @@ Part of PEBakery is licensed under MIT License and others.
 
 ### Test of Win10PESE
 
-- Win10PESE x86 can be built without any errors.
-- x86 ISO is bootable, but pinned shortcuts does not appear.
-- Build of Win10PESE x64 will be cond with a few error.
-- x64 ISO is not bootable.
+- Build is near perfect.
+- Built ISO is bootable.
 
 ### Test of MistyPE
 
@@ -115,7 +113,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Screenshots
 
-### 20171114 Build
+### Build 20171114
 
 ![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
 ![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)

@@ -74,8 +74,6 @@ namespace PEBakery.Core.Commands
                     string lineFromSrc;
                     while ((lineFromSrc = reader.ReadLine()) != null)
                         writer.WriteLine(lineFromSrc);
-                    reader.Close();
-                    writer.Close();
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -230,8 +228,6 @@ namespace PEBakery.Core.Commands
                     writer.WriteLine(lineFromSrc);
                     i++;
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -275,8 +271,6 @@ namespace PEBakery.Core.Commands
                     }                        
                     writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -334,8 +328,6 @@ namespace PEBakery.Core.Commands
                     if (writeLine)
                         writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -378,8 +370,6 @@ namespace PEBakery.Core.Commands
                     }
                     writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -419,8 +409,6 @@ namespace PEBakery.Core.Commands
                     else
                         writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 

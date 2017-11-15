@@ -191,10 +191,9 @@ namespace PEBakery.Core
                             using (ZLibStream zs = new ZLibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
                                 zs.Write(input, 0, input.Length);
-                                zs.Close();
-
-                                bodyStream.Position = 0;
                             }
+
+                            bodyStream.Position = 0;
                         }
                         break;
                     case EncodeMode.Raw:
@@ -257,10 +256,8 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(footerStream, CompressionMode.Compress, CompressionLevel.Default, true))
                 {
                     zs.Write(rawFooter, 0, rawFooter.Length);
-                    zs.Close();
-
-                    footerStream.Position = 0;
                 }
+                footerStream.Position = 0;
 
                 // [Stage 4] Concat body and footer
                 bodyStream.CopyTo(concatStream);
@@ -410,9 +407,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
-                    rawFooter = rawFooterStream.ToArray();
-                    zs.Close();
                 }
+
+                rawFooter = rawFooterStream.ToArray();
             }
 
             // [Stage 5] Read first footer
@@ -458,10 +455,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
-                    zs.Close();
-
-                    rawBodyStream.Position = 0;
                 }
+
+                rawBodyStream.Position = 0;
             }
             else if (compMode == 1)  // Type 2, raw
             {
@@ -583,9 +579,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
-                    rawFooter = rawFooterStream.ToArray();
-                    zs.Close();
                 }
+
+                rawFooter = rawFooterStream.ToArray();
             }
 
             // [Stage 5] Read first footer
@@ -637,11 +633,10 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(this.RawBodyStream);
-                    zs.Close();
-
-                    this.RawBodyStream.Position = 0;
-                    this.CompressedBodyValid = true;
                 }
+
+                this.RawBodyStream.Position = 0;
+                this.CompressedBodyValid = true;
             }
             else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
             {

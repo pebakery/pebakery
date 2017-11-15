@@ -55,6 +55,7 @@ using SharpCompress.Writers.Zip;
 using SharpCompress.Writers;
 using SharpCompress.Readers;
 using PEBakery.CabLib;
+using Microsoft.Win32.SafeHandles;
 
 namespace PEBakery.Helper
 {
@@ -76,7 +77,6 @@ namespace PEBakery.Helper
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 fs.Read(bom, 0, bom.Length);
-                fs.Close();
             }
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
@@ -139,8 +139,6 @@ namespace PEBakery.Helper
                 { // Unsupported Encoding
                     throw new ArgumentException($"[{encoding}] is not supported");
                 }
-
-                fs.Close();
             }
         }
 
@@ -321,10 +319,6 @@ namespace PEBakery.Helper
                         stream.Write(buffer, 0, block);
                     }
                 }
-
-                stream.Close();
-                accessor.Dispose();
-                mmap.Dispose();
             }
         }
 
@@ -1346,9 +1340,9 @@ namespace PEBakery.Helper
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
         static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern Int32 RegLoadKey(UInt32 hKey, string lpSubKey, string lpFile);
+        public static extern Int32 RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern Int32 RegUnLoadKey(UInt32 hKey, string lpSubKey);
+        public static extern Int32 RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]
@@ -1380,12 +1374,14 @@ namespace PEBakery.Helper
         private const UInt32 TOKEN_ADJUST_PRIVILEGES = 0x0020;
         private const UInt32 TOKEN_QUERY = 0x0008;
 
+        /*
         public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
         public const UInt32 HKCU = 0x80000001; // HKEY_CURRENT_USER
         public const UInt32 HKLM = 0x80000002; // HKEY_LOCAL_MACHINE
         public const UInt32 HKU = 0x80000003; // HKEY_USERS
         public const UInt32 HKPD = 0x80000004; // HKEY_PERFORMANCE_DATA
         public const UInt32 HKCC = 0x80000005; // HKEY_CURRENT_CONFIG
+        */
 
         public static void GetAdminPrivileges()
         {
@@ -1488,30 +1484,30 @@ namespace PEBakery.Helper
             return rootKey;
         }
 
-        public static UInt32 ParseStringToUInt32(string rootKey)
+        public static SafeRegistryHandle ParseStringToHandle(string rootKey)
         {
-            UInt32 hKey;
+            SafeRegistryHandle hKey;
             if (rootKey.Equals("HKCR", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCR; // HKEY_CLASSES_ROOT
+                hKey = Registry.ClassesRoot.Handle; // HKEY_CLASSES_ROOT
             else if (rootKey.Equals("HKCU", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCU; // HKEY_CURRENT_USER
+                hKey = Registry.CurrentUser.Handle; // HKEY_CURRENT_USER
             else if (rootKey.Equals("HKLM", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
-                hKey = HKLM; // HKEY_LOCAL_MACHINE
+                hKey = Registry.LocalMachine.Handle; // HKEY_LOCAL_MACHINE
             else if (rootKey.Equals("HKU", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
-                hKey = HKU; // HKEY_USERS
+                hKey = Registry.Users.Handle; // HKEY_USERS
             else if (rootKey.Equals("HKCC", StringComparison.OrdinalIgnoreCase) ||
                 rootKey.Equals("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
-                hKey = HKCC; // HKEY_CURRENT_CONFIG
+                hKey = Registry.CurrentConfig.Handle; // HKEY_CURRENT_CONFIG
             else
-                hKey = 0;
+                hKey = new SafeRegistryHandle(IntPtr.Zero, true);
             return hKey;
         }
 
-        
+
     }
     #endregion
 
