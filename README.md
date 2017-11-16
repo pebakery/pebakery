@@ -1,5 +1,7 @@
 # PEBakery
 
+![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
+
 PEBakery is WinBuilder-compatible builder for specialized in customizing Windows Preinstalled Envrionment.
 
 | Branch    | Build Status                                                                                                                                                                              |

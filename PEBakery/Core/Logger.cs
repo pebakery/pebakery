@@ -235,7 +235,7 @@ namespace PEBakery.Core
     #region Logger Class
     public enum LogExportType
     {
-        Text, Html, Xlsx
+        Text, Html
     }
 
     /// <summary>
@@ -249,7 +249,8 @@ namespace PEBakery.Core
     }
 
     public class Logger
-    {    
+    {
+        #region Fields, Constructor, Destructor
         public LogDB DB;
         public int ErrorOffCount = 0;
         public bool SuspendLog = false;
@@ -277,6 +278,7 @@ namespace PEBakery.Core
         {
             DB.Close();
         }
+        #endregion
 
         #region DB Write
         public long Build_Init(string name, EngineState s)
@@ -697,13 +699,24 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ExportSystemLog, ExportBuildLog
+        #region ExportSystemLog, ExportBuildLog, ParseLogExportType
+        public static LogExportType ParseLogExportType(string str)
+        {
+            LogExportType logFormat = LogExportType.Html;
+            if (str.Equals("HTML", StringComparison.OrdinalIgnoreCase))
+                logFormat = LogExportType.Html; 
+            else if (str.Equals("Text", StringComparison.OrdinalIgnoreCase))
+                logFormat = LogExportType.Text;
+
+            return logFormat;
+        }
+
         public void ExportSystemLog(LogExportType type, string exportFile)
         {
             switch (type)
             {
                 case LogExportType.Text:
-                    using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
+                    using (StreamWriter writer = new StreamWriter(exportFile, false, System.Text.Encoding.UTF8))
                     {
                         writer.WriteLine($"- PEBakery System Log -");
                         var logs = DB.Table<DB_SystemLog>().OrderBy(x => x.Time);
@@ -718,6 +731,14 @@ namespace PEBakery.Core
                     }
                     break;
                 case LogExportType.Html:
+                    {
+                        LogHtmlExporter exporter = new LogHtmlExporter(DB);
+                        string result = exporter.ExportSystemLog();
+                        using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                        {
+                            w.WriteLine(result);
+                        }
+                    }
                     break;
             }
         }
@@ -726,20 +747,21 @@ namespace PEBakery.Core
         {
             switch (type)
             {
+                #region Text
                 case LogExportType.Text:
                     {
-                        using (StreamWriter writer = new StreamWriter(exportFile, false, Encoding.UTF8))
+                        using (StreamWriter w = new StreamWriter(exportFile, false, System.Text.Encoding.UTF8))
                         {
                             DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
-                            writer.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
-                            writer.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
-                            writer.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
+                            w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                            w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                             TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
-                            writer.WriteLine($"Took {t:h\\:mm\\:ss}");
-                            writer.WriteLine();
-                            writer.WriteLine();
+                            w.WriteLine($"Took {t:h\\:mm\\:ss}");
+                            w.WriteLine();
+                            w.WriteLine();
 
-                            writer.WriteLine($"<Log Statistics>");
+                            w.WriteLine($"<Log Statistics>");
                             foreach (LogState state in Enum.GetValues(typeof(LogState)))
                             {
                                 if (state == LogState.None || state == LogState.CriticalError)
@@ -750,45 +772,45 @@ namespace PEBakery.Core
                                     .Where(x => x.State == state)
                                     .Count();
 
-                                writer.WriteLine($"{state.ToString().PadRight(8)} : {count}");
+                                w.WriteLine($"{state.ToString().PadRight(8)} : {count}");
                             }
-                            writer.WriteLine();
-                            writer.WriteLine();
+                            w.WriteLine();
+                            w.WriteLine();
 
                             var plugins = DB.Table<DB_Plugin>()
                                 .Where(x => x.BuildId == buildId)
                                 .OrderBy(x => x.Order);
 
-                            writer.WriteLine("<Plugins>");
+                            w.WriteLine("<Plugins>");
                             {
                                 int count = plugins.Count();
                                 int idx = 1;
                                 foreach (DB_Plugin p in plugins)
                                 {
-                                    writer.WriteLine($"[{idx}/{count}] {p.Name} v{p.Version} ({p.ElapsedMilliSec / 1000.0:0.000}sec)");
+                                    w.WriteLine($"[{idx}/{count}] {p.Name} v{p.Version} ({p.ElapsedMilliSec / 1000.0:0.000}sec)");
                                     idx++;
                                 }
 
-                                writer.WriteLine($"Total {count} Plugins");
-                                writer.WriteLine();
-                                writer.WriteLine();
+                                w.WriteLine($"Total {count} Plugins");
+                                w.WriteLine();
+                                w.WriteLine();
                             }
 
-                            writer.WriteLine("<Variables>");
+                            w.WriteLine("<Variables>");
                             VarsType[] typeList = new VarsType[] { VarsType.Fixed, VarsType.Global };
                             foreach (VarsType varsType in typeList)
                             {
-                                writer.WriteLine($"- {varsType} Variables");
+                                w.WriteLine($"- {varsType} Variables");
                                 var vars = DB.Table<DB_Variable>()
                                     .Where(x => x.BuildId == buildId && x.Type == varsType)
                                     .OrderBy(x => x.Key);
                                 foreach (DB_Variable log in vars)
-                                    writer.WriteLine($"%{log.Key}% = {log.Value}");
-                                writer.WriteLine();
+                                    w.WriteLine($"%{log.Key}% = {log.Value}");
+                                w.WriteLine();
                             }
-                            writer.WriteLine();
+                            w.WriteLine();
 
-                            writer.WriteLine("<Code Logs>");
+                            w.WriteLine("<Code Logs>");
                             {
                                 foreach (DB_Plugin pLog in plugins)
                                 {
@@ -797,7 +819,7 @@ namespace PEBakery.Core
                                         .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id)
                                         .OrderBy(x => x.Id);
                                     foreach (DB_BuildLog log in codeLogs)
-                                        writer.WriteLine(log.Export(type));
+                                        w.WriteLine(log.Export(type));
 
                                     // Log local variables
                                     if (exportLocalVars)
@@ -807,14 +829,14 @@ namespace PEBakery.Core
                                         .OrderBy(x => x.Key);
                                         if (0 < varLogs.Count())
                                         {
-                                            writer.WriteLine("[Local Variables]");
+                                            w.WriteLine("[Local Variables]");
                                             foreach (DB_Variable vLog in varLogs)
-                                                writer.WriteLine($"%{vLog.Key}% = {vLog.Value}");
-                                            writer.WriteLine(Logger.LogSeperator);
+                                                w.WriteLine($"%{vLog.Key}% = {vLog.Value}");
+                                            w.WriteLine(Logger.LogSeperator);
                                         }
                                     }
 
-                                    writer.WriteLine();
+                                    w.WriteLine();
                                 }
                             }
 
@@ -829,16 +851,23 @@ namespace PEBakery.Core
                                 writer.WriteLine();
                             }
                             */
-                            writer.Close();
+                            w.Close();
                         }
                     }
                     break;
+                #endregion
+                #region HTML
                 case LogExportType.Html:
                     {
-                        // TODO
-                        Console.WriteLine("TODO: Not Implemented");
+                        LogHtmlExporter exporter = new LogHtmlExporter(DB);
+                        string result = exporter.ExportBuildLog(buildId);
+                        using (StreamWriter w = new StreamWriter(exportFile, false, Encoding.UTF8))
+                        {
+                            w.WriteLine(result);
+                        }
                     }
                     break;
+                #endregion 
             }
         }
         #endregion
@@ -1044,12 +1073,14 @@ namespace PEBakery.Core
 
         public string Export(LogExportType type)
         {
-            StringBuilder b = new StringBuilder();
-
+            string str = string.Empty;
             switch (type)
             {
+                #region Text
                 case LogExportType.Text:
                     {
+                        StringBuilder b = new StringBuilder();
+
                         for (int i = 0; i < Depth; i++)
                             b.Append("  ");
 
@@ -1067,16 +1098,31 @@ namespace PEBakery.Core
                             else
                                 b.Append($"[{State}] {Message} ({RawCode})");
                         }
+
+                        str = b.ToString();
                     }
                     break;
+                #endregion
+                #region HTML
                 case LogExportType.Html:
                     {
+                        StringBuilder b = new StringBuilder();
 
+                        for (int i = 0; i < Depth; i++)
+                            b.Append("  ");
+
+                        if (RawCode == null)
+                            b.Append(Message);
+                        else
+                            b.Append($"{Message} ({RawCode})");
+
+                        str = b.ToString();
                     }
                     break;
+                #endregion
             }
 
-            return b.ToString();
+            return str;
         }
 
         public override string ToString()

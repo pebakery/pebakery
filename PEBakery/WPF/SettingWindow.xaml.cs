@@ -670,6 +670,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Plugin", "EnableCache"), // Boolean
+                new IniKey("Plugin", "SpeedupLoading"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
                 new IniKey("Plugin", "AutoSyntaxCheck"), // Boolean
                 new IniKey("Log", "DebugLevel"), // Integer
@@ -691,6 +692,7 @@ namespace PEBakery.WPF
             string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
+            string str_Plugin_SpeedupLoading = dict["Plugin_SpeedupLoading"];
             string str_Plugin_AutoConvertToUTF8 = dict["Plugin_AutoConvertToUTF8"];
             string str_Plugin_AutoSyntaxCheck = dict["Plugin_AutoSyntaxCheck"];
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];

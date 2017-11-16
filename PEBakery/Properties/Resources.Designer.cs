@@ -61,11 +61,33 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20171115과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20171117과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
                 return ResourceManager.GetString("BuildDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   @using System.Collections.Generic;
+        ///@using PEBakery.Core;
+        ///&lt;!DOCTYPE html&gt;
+        ///&lt;html lang=&quot;ko&quot;&gt;
+        ///	&lt;head&gt;
+        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
+        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///
+        ///		&lt;title&gt;@Model.BuildName&lt;/title&gt;
+        ///
+        ///		&lt;!-- Bootstrap CSS --&gt;
+        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstrapcdn.com/boot[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string BuildLogHtmlTemplate {
+            get {
+                return ResourceManager.GetString("BuildLogHtmlTemplate", resourceCulture);
             }
         }
         
@@ -120,6 +142,28 @@ namespace PEBakery.Properties {
         internal static string StringVersion {
             get {
                 return ResourceManager.GetString("StringVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   @using System.Collections.Generic;
+        ///@using PEBakery.Core;
+        ///&lt;!DOCTYPE html&gt;
+        ///&lt;html lang=&quot;ko&quot;&gt;
+        ///	&lt;head&gt;
+        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
+        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///
+        ///		&lt;title&gt;@Model.BuildName&lt;/title&gt;
+        ///
+        ///		&lt;!-- Bootstrap CSS --&gt;
+        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstrapcdn.com/boot[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string SystemLogHtmlTemplate {
+            get {
+                return ResourceManager.GetString("SystemLogHtmlTemplate", resourceCulture);
             }
         }
     }

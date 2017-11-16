@@ -148,18 +148,6 @@ namespace PEBakery.IniLib
         /// <returns>
         /// Found values are stroed in returned IniKey.
         /// </returns>
-        public static IniKey[] GetKeys(string file, IniKey[] iniKeys)
-        {
-            return InternalGetKeys(file, iniKeys);
-        }
-        /// <summary>
-        /// Get key's value from ini file.
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="iniKeys"></param>
-        /// <returns>
-        /// Found values are stroed in returned IniKey.
-        /// </returns>
         public static IniKey[] GetKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalGetKeys(file, iniKeys.ToArray());
@@ -206,7 +194,7 @@ namespace PEBakery.IniLib
                             int idx = line.IndexOf('=');
                             if (idx != -1 && idx != 0) // there is key, and key name is not empty
                             {
-                                string keyName = line.Substring(0, idx);
+                                string keyName = line.Substring(0, idx).Trim();
                                 for (int i = 0; i < iniKeys.Length; i++)
                                 {
                                     if (processedKeyIdxs.Contains(i))
@@ -217,7 +205,7 @@ namespace PEBakery.IniLib
                                     if (currentSection.Equals(iniKey.Section, StringComparison.OrdinalIgnoreCase) &&
                                         keyName.Equals(iniKey.Key, StringComparison.OrdinalIgnoreCase))
                                     {
-                                        iniKey.Value = line.Substring(idx + 1);
+                                        iniKey.Value = line.Substring(idx + 1).Trim();
                                         iniKeys[i] = iniKey;
                                         processedKeyIdxs.Add(i);
                                     }
@@ -271,7 +259,6 @@ namespace PEBakery.IniLib
                             }
                         }
                     }
-                    reader.Close();
                 }
             }
             finally
@@ -373,7 +360,9 @@ namespace PEBakery.IniLib
 
                             beforeSection = iniKeys[i].Section;
                         }
+
                         writer.Close();
+
                         IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
@@ -442,7 +431,7 @@ namespace PEBakery.IniLib
                         {
                             if (inTargetSection) // process here only if we are in target section
                             {
-                                string keyOfLine = line.Substring(0, idx);
+                                string keyOfLine = line.Substring(0, idx).Trim();
                                 for (int i = 0; i < iniKeys.Count; i++)
                                 {
                                     if (processedKeys.Contains(i))
@@ -540,8 +529,6 @@ namespace PEBakery.IniLib
                         if (thisLineWritten == false)
                             writer.WriteLine(rawLine);
                     }
-                    reader.Close();
-                    writer.Close();
                 }
 
                 if (processedKeys.Count == iniKeys.Count)
@@ -843,15 +830,15 @@ namespace PEBakery.IniLib
         #region DeleteKey
         public static bool DeleteKey(string file, IniKey iniKey)
         {
-            return InternalDeleteKeys(file, new List<IniKey> { iniKey })[0];
+            return InternalDeleteKeys(file, new IniKey[] { iniKey })[0];
         }
         public static bool DeleteKey(string file, string section, string key)
         {
-            return InternalDeleteKeys(file, new List<IniKey> { new IniKey(section, key) })[0];
+            return InternalDeleteKeys(file, new IniKey[] { new IniKey(section, key) })[0];
         }
         public static bool[] DeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteKeys(file, iniKeys.ToList());
+            return InternalDeleteKeys(file, iniKeys);
         }
         private static bool[] InternalDeleteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
@@ -939,7 +926,7 @@ namespace PEBakery.IniLib
                         {
                             if (inTargetSection) // process here only if we are in target section
                             {
-                                string keyOfLine = line.Substring(0, idx);
+                                string keyOfLine = line.Substring(0, idx).Trim();
                                 for (int i = 0; i < keys.Length; i++)
                                 {
                                     if (processed[i])
@@ -983,22 +970,11 @@ namespace PEBakery.IniLib
         {
             return InternalAddSection(file, new List<string> { section });
         }
-        public static bool AddSections(string file, IniKey[] iniKeys)
-        {
-            List<string> sections = new List<string>(iniKeys.Length);
-            foreach (IniKey key in iniKeys)
-                sections.Add(key.Section);
-            return InternalDeleteSection(file, sections);
-        }
-        public static bool AddSections(string file, List<IniKey> iniKeys)
+        public static bool AddSections(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalAddSection(file, iniKeys.Select(x => x.Section).ToList());
         }
-        public static bool AddSections(string file, string[] sections)
-        {
-            return InternalAddSection(file, sections.ToList());
-        }
-        public static bool AddSections(string file, List<string> sections)
+        public static bool AddSections(string file, IEnumerable<string> sections)
         {
             return InternalAddSection(file, sections);
         }
@@ -1006,10 +982,11 @@ namespace PEBakery.IniLib
         /// Return true if success
         /// </summary>
         /// <param name="file"></param>
-        /// <param name="sections"></param>
+        /// <param name="sectionList"></param>
         /// <returns></returns>
-        private static bool InternalAddSection(string file, List<string> sections)
+        private static bool InternalAddSection(string file, IEnumerable<string> sections)
         {
+            List<string> sectionList = sections.ToList();
             ReaderWriterLockSlim rwLock;
             if (lockDict.ContainsKey(file))
             {
@@ -1029,11 +1006,11 @@ namespace PEBakery.IniLib
                 {
                     using (StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8))
                     {
-                        for (int i = 0; i < sections.Count; i++)
+                        for (int i = 0; i < sectionList.Count; i++)
                         {
                             if (0 < i)
                                 writer.WriteLine();
-                            writer.WriteLine($"[{sections[i]}]");
+                            writer.WriteLine($"[{sectionList[i]}]");
                         }
 
                         writer.Close();
@@ -1052,11 +1029,11 @@ namespace PEBakery.IniLib
                         reader.Close();
 
                         // Write all and exit
-                        for (int i = 0; i < sections.Count; i++)
+                        for (int i = 0; i < sectionList.Count; i++)
                         {
                             if (0 < i)
                                 writer.WriteLine();
-                            writer.WriteLine($"[{sections[i]}]");
+                            writer.WriteLine($"[{sectionList[i]}]");
                         }
 
                         writer.Close();
@@ -1066,7 +1043,7 @@ namespace PEBakery.IniLib
 
                     string rawLine = string.Empty;
                     string line = string.Empty;
-                    List<string> processedSections = new List<string>(sections.Count);
+                    List<string> processedSections = new List<string>(sectionList.Count);
 
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
@@ -1081,12 +1058,12 @@ namespace PEBakery.IniLib
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < sections.Count; i++)
+                            for (int i = 0; i < sectionList.Count; i++)
                             {
-                                if (foundSection.Equals(sections[i], StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
                                 { // Delete this section!
                                     processedSections.Add(foundSection);
-                                    sections.RemoveAt(i);
+                                    sectionList.RemoveAt(i);
                                     break; // for shorter O(n)
                                 }
                             }
@@ -1100,25 +1077,25 @@ namespace PEBakery.IniLib
                         // End of file
                         if (reader.Peek() == -1)
                         { // If there are sections not added, add it now
-                            List<int> processedIdxs = new List<int>(sections.Count);
-                            for (int i = 0; i < sections.Count; i++)
+                            List<int> processedIdxs = new List<int>(sectionList.Count);
+                            for (int i = 0; i < sectionList.Count; i++)
                             { // At this time, only unfound section remains in iniKeys
-                                if (processedSections.Any(s => s.Equals(sections[i], StringComparison.OrdinalIgnoreCase)) == false)
+                                if (processedSections.Any(s => s.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
-                                    processedSections.Add(sections[i]);
-                                    writer.WriteLine($"\r\n[{sections[i]}]");
+                                    processedSections.Add(sectionList[i]);
+                                    writer.WriteLine($"\r\n[{sectionList[i]}]");
                                 }
                                 processedIdxs.Add(i);
                             }
                             foreach (int i in processedIdxs.OrderByDescending(x => x))
-                                sections.RemoveAt(i);
+                                sectionList.RemoveAt(i);
                         }
                     }
                     reader.Close();
                     writer.Close();
                 }
 
-                if (sections.Count == 0)
+                if (sectionList.Count == 0)
                 {
                     IniHelper.FileReplaceEx(tempPath, file);
                     return true;
@@ -1138,26 +1115,24 @@ namespace PEBakery.IniLib
         #region DeleteSection
         public static bool DeleteSection(string file, IniKey iniKey)
         {
-            return InternalDeleteSection(file, new List<string> { iniKey.Section });
+            return InternalDeleteSection(file, new string[] { iniKey.Section });
         }
         public static bool DeleteSection(string file, string section)
         {
-            return InternalDeleteSection(file, new List<string> { section });
+            return InternalDeleteSection(file, new string[] { section });
         }
         public static bool DeleteSections(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalDeleteSection(file, iniKeys.Select(x => x.Section).ToList());
-        }
-        public static bool DeleteSections(string file, string[] sections)
-        {
-            return InternalDeleteSection(file, sections.ToList());
+            return InternalDeleteSection(file, iniKeys.Select(x => x.Section));
         }
         public static bool DeleteSections(string file, IEnumerable<string> sections)
         {
-            return InternalDeleteSection(file, sections.ToList());
+            return InternalDeleteSection(file, sections);
         }
-        private static bool InternalDeleteSection(string file, List<string> sections)
+        private static bool InternalDeleteSection(string file, IEnumerable<string> sections)
         {
+            List<string> sectionList = sections.ToList();
+
             ReaderWriterLockSlim rwLock;
             if (lockDict.ContainsKey(file))
             {
@@ -1205,12 +1180,12 @@ namespace PEBakery.IniLib
 
                             // Start of the section;
                             // Only sections contained in iniKeys will be targeted
-                            for (int i = 0; i < sections.Count; i++)
+                            for (int i = 0; i < sectionList.Count; i++)
                             {
-                                if (foundSection.Equals(sections[i], StringComparison.OrdinalIgnoreCase))
+                                if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
                                 { // Delete this section!
                                     ignoreCurrentSection = true;
-                                    sections.RemoveAt(i);
+                                    sectionList.RemoveAt(i);
                                     break; // for shorter O(n)
                                 }
                             }
@@ -1223,7 +1198,7 @@ namespace PEBakery.IniLib
                     writer.Close();
                 }
 
-                if (sections.Count == 0)
+                if (sectionList.Count == 0)
                 {
                     IniHelper.FileReplaceEx(tempPath, file);
                     return true;
@@ -1375,6 +1350,43 @@ namespace PEBakery.IniLib
                     else if ((idx = line.IndexOf('=')) != -1 && idx != 0)
                     { // valid ini key, and not empty
                         if (appendState)
+                            lines.Add(line);
+                    }
+                }
+
+                if (appendState == false) // Section not found
+                    throw new SectionNotFoundException($"Section [{section}] not found");
+
+                reader.Close();
+            }
+            return lines;
+        }
+
+        public static List<string> ParseRawSection(string file, string section)
+        {
+            List<string> lines = new List<string>();
+
+            Encoding encoding = IniHelper.DetectTextEncoding(file);
+            using (StreamReader reader = new StreamReader(file, encoding, true))
+            {
+                string line = string.Empty;
+                bool appendState = false;
+                while ((line = reader.ReadLine()) != null)
+                { // Read text line by line
+                    line = line.Trim();
+                    if (line.StartsWith("[", StringComparison.Ordinal) &&
+                        line.EndsWith("]", StringComparison.Ordinal))
+                    { // Start of section
+                        if (appendState)
+                            break;
+
+                        string foundSection = line.Substring(1, line.Length - 2);
+                        if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
+                            appendState = true;
+                    }
+                    else if (appendState)
+                    {
+                        if (line.Equals(string.Empty, StringComparison.Ordinal) == false)
                             lines.Add(line);
                     }
                 }

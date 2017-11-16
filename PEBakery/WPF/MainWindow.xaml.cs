@@ -52,8 +52,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region Variables
-        private bool fullLoaded = false;
-
         private ProjectCollection projects;
         public ProjectCollection Projects => projects;
 
@@ -173,8 +171,6 @@ namespace PEBakery.WPF
         {
             Stopwatch watch = Stopwatch.StartNew();
 
-            fullLoaded = false;
-
             // Set PEBakery Logo
             Image image = new Image()
             {
@@ -215,13 +211,18 @@ namespace PEBakery.WPF
                 string baseDir = (string)e.Argument;
                 BackgroundWorker worker = sender as BackgroundWorker;
 
-                bool globalCacheValid = pluginCache.IsGlobalCacheValid(baseDir);
-
                 // Init ProjectCollection
-                if (setting.Plugin_EnableCache && globalCacheValid) // Use PluginCache - Fast speed, more memory
-                    projects = new ProjectCollection(baseDir, pluginCache);
+                if (setting.Plugin_EnableCache && pluginCache != null) // Use PluginCache - Fast speed, more memory
+                {
+                    if (pluginCache.IsGlobalCacheValid(baseDir))
+                        projects = new ProjectCollection(baseDir, pluginCache);
+                    else // Cache is invalid
+                        projects = new ProjectCollection(baseDir, null);
+                }
                 else  // Do not use PluginCache - Slow speed, less memory
+                {
                     projects = new ProjectCollection(baseDir, null);
+                }
 
                 allPluginCount = projects.PrepareLoad(out stage2LinksCount);
                 Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
@@ -326,8 +327,6 @@ namespace PEBakery.WPF
                 // If plugin cache is enabled, generate cache.
                 if (setting.Plugin_EnableCache)
                     StartCacheWorker();
-
-                fullLoaded = true;
             };
 
             loadWorker.RunWorkerAsync(baseDir);
@@ -577,7 +576,10 @@ namespace PEBakery.WPF
             double size = PluginLogo.ActualWidth * MaxDpiScale;
             if (p.Type == PluginType.Directory)
             {
-                PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                if (p.IsDirLink)
+                    PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
+                else
+                    PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
             else
             {
@@ -611,9 +613,16 @@ namespace PEBakery.WPF
                 catch
                 { // No logo file - use default
                     if (p.Type == PluginType.Plugin)
-                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                    {
+                        if (p.IsDirLink)
+                            PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                        else
+                            PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                    }
                     else if (p.Type == PluginType.Link)
-                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+                    {
+                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                    }
                 }
             }
         }
@@ -691,35 +700,39 @@ namespace PEBakery.WPF
 
         private void SettingButton_Click(object sender, RoutedEventArgs e)
         {
-            double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
-            bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
-
-            SettingWindow dialog = new SettingWindow(setting);
-            bool? result = dialog.ShowDialog();
-            if (result == true)
+            if (loadWorker.IsBusy == false)
             {
-                // Scale Factor
-                double newScaleFactor = setting.Interface_ScaleFactor;
-                if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                    DrawPlugin(curMainTree.Plugin);
+                double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
+                bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
 
-                // PluginCache
-                if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
-                    StartCacheWorker();
+                SettingWindow dialog = new SettingWindow(setting);
+                bool? result = dialog.ShowDialog();
+                if (result == true)
+                {
+                    // Scale Factor
+                    double newScaleFactor = setting.Interface_ScaleFactor;
+                    if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
+                        DrawPlugin(curMainTree.Plugin);
 
-                // DebugLevel
-                Logger.DebugLevel = setting.Log_DebugLevel;
+                    // Plugin
+                    if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
+                        StartCacheWorker();
 
-                // CodeParser
-                CodeParser.OptimizeCode = setting.General_OptimizeCode;
-                CodeParser.AllowLegacyBranchCondition = setting.Compat_LegacyBranchCondition;
-                CodeParser.AllowRegWriteLegacy = setting.Compat_RegWriteLegacy;
+                    // LogDebugLevel
+                    Logger.DebugLevel = setting.Log_DebugLevel;
+
+                    // CodeParser
+                    CodeParser.OptimizeCode = setting.General_OptimizeCode;
+                    CodeParser.AllowLegacyBranchCondition = setting.Compat_LegacyBranchCondition;
+                    CodeParser.AllowRegWriteLegacy = setting.Compat_RegWriteLegacy;
+                }
             }
+
         }
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
         {
-            if (fullLoaded)
+            if (loadWorker.IsBusy == false)
             {
                 if (UtilityWindow.Count == 0)
                 {
@@ -847,8 +860,11 @@ namespace PEBakery.WPF
                 // Current Parent
                 TreeViewModel treeParent = projectRoot;
 
+                int idx = p.ShortPath.IndexOf('\\');
+                if (idx == -1)
+                    continue;
                 string[] paths = p.ShortPath
-                    .Substring(project.ProjectName.Length + 1)
+                    .Substring(idx + 1)
                     .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
@@ -863,7 +879,7 @@ namespace PEBakery.WPF
                     else
                     {
                         string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, false, p.Level, false);
+                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
                         treeParent = PopulateOneTreeView(dirPlugin, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -930,16 +946,34 @@ namespace PEBakery.WPF
 
             if (p.Type == PluginType.Directory)
             {
-                item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+                if (p.IsDirLink)
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0));
+                else
+                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
             }
             else if (p.Type == PluginType.Plugin)
             {
                 if (p.IsMainPlugin)
                     item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
-                else if (p.Mandatory)
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
                 else
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
+                {
+                    if (p.IsDirLink)
+                    {
+                        if (p.Mandatory)
+                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                        else
+                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                    }
+                    else
+                    {
+                        if (p.Mandatory)
+                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                        else
+                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
+                    }
+                        
+                }
+                
             }
             else if (p.Type == PluginType.Link)
             {

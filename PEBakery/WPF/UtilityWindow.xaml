@@ -298,9 +298,10 @@
             </Grid.ColumnDefinitions>
 
             <Button
-                    Grid.Row="0" Grid.Column="1"
-                    Content="Close"
-                    Click="CloseButton_Click">
+                Grid.Row="0" Grid.Column="1"
+                IsCancel="True"
+                Content="Close"
+                Click="CloseButton_Click">
             </Button>
         </Grid>
     </Grid>

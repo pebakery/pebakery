@@ -48,7 +48,6 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IniLibTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

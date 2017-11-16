@@ -258,19 +258,12 @@ namespace PEBakery.Core.Commands
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 300;
+                        LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
 
-                        LogExportType logFormat = LogExportType.Html;
-                        if (logFormatStr.Equals("HTML", StringComparison.OrdinalIgnoreCase))
-                            logFormat = LogExportType.Html;
-                        else if (logFormatStr.Equals("Text", StringComparison.OrdinalIgnoreCase))
-                            logFormat = LogExportType.Text;
+                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 600;
-
+                        s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                         s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
-
-                        logs.Add(new LogInfo(LogState.Success, $"Exported Build Log into [{destPath}]"));
                     }
                     break;
                     // WB082 Compability Shim

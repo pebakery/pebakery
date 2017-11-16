@@ -156,6 +156,9 @@ namespace PEBakery.Core
                 s.BuildId = s.Logger.Build_Init(runName, s);
 
                 s.MainViewModel.BuildFullProgressBarMax = s.Plugins.Count;
+                
+                // Update project variables
+                s.Project.UpdateProjectVariables();
 
                 while (true)
                 {

@@ -469,11 +469,18 @@ namespace PEBakery.Core
             return value;
         }
 
-        public void Delete(VarsType type, string key)
+        public bool Delete(VarsType type, string key)
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
             if (vars.ContainsKey(key))
+            {
                 vars.Remove(key);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public bool ContainsKey(string key)
@@ -745,63 +752,122 @@ namespace PEBakery.Core
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }
 
-        public static List<LogInfo> SetVariable(EngineState s, string varKey, string varValue, bool global = false, bool permanent = false)
+        public static List<LogInfo> SetVariable(EngineState s, string key, string _value, bool global = false, bool permanent = false)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
             // WB082 Behavior : Final form (expanded string) is written to varaibles.
             //                  Note that $#p will not be unescaped to %.
-            string finalValue = StringEscaper.Preprocess(s, varValue, false);
+            // When preprocessed value is nil, it will be removed from dict.
 
-            // Determine varKey's type - %A% vs #1
-            Variables.VarKeyType type = Variables.DetermineType(varKey);
-            if (type == Variables.VarKeyType.Variable) // %A%
-            {
-                varKey = Variables.GetVariableName(s, varKey);
-                if (varKey == null)
-                    logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{varKey}], must start and end with %"));
-
-                // Logs are written in variables.SetValue method
-                if (global)
+            string finalValue = StringEscaper.Preprocess(s, _value, false);
+            Variables.VarKeyType type = Variables.DetermineType(key);
+            if (finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+            { // Remove variable
+                // Determine varKey's type - %A% vs #1
+                if (type == Variables.VarKeyType.Variable) // %A%
                 {
-                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue);
-                    logs.Add(log);
+                    key = Variables.GetVariableName(s, key);
+                    if (key == null)
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{key}], must start and end with %"));
 
-                    // Remove local variable if exist
-                    if (log.State == LogState.Success)
-                        s.Variables.Delete(VarsType.Local, varKey);
-                }
-                else if (permanent)
-                {
-                    LogInfo log = s.Variables.SetValue(VarsType.Global, varKey, finalValue); 
-
-                    if (log.State == LogState.Success)
-                    { // SetValue success, write to IniFile
-                        if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", $"%{varKey}%", finalValue)) // To ensure final form being written
-                            logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{varKey}%] set to [{finalValue}]"));
+                    if (permanent)
+                    {
+                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
+                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        if (globalResult || localResult)
+                        {
+                            if (Ini.DeleteKey(s.Project.MainPlugin.FullPath, "Variables", $"%{key}%")) // Delete var line
+                            {
+                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] deleted"));
+                            }
+                            else
+                            {
+                                if (globalResult)
+                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                                else if (localResult)
+                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                                else
+                                    throw new InternalException("Internal Error at Variables.SetVariable");
+                            }
+                        }
                         else
-                            logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{varKey}%] and its value [{finalValue}] into script.project"));
-
-                        // Remove local variable if exist
-                        s.Variables.Delete(VarsType.Local, varKey);
+                        {
+                            logs.Add(new LogInfo(LogState.Ignore, $"Permanent variable [%{key}%] does not exist"));
+                        }
                     }
-                    else
-                    { // SetValue failed
-                        logs.Add(log);
+                    else // Global, Local
+                    {
+                        bool globalResult = s.Variables.Delete(VarsType.Global, key);
+                        bool localResult = s.Variables.Delete(VarsType.Local, key);
+                        if (globalResult)
+                            logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                        else if (localResult)
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                        else
+                            logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }
                 }
-                else // Local
+                else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
+                { // WB082 does not remove section parameter, just set to string "NIL"
+                    logs.Add(Variables.SetSectionParam(s, key, finalValue));
+                }
+                else
                 {
-                    logs.Add(s.Variables.SetValue(VarsType.Local, varKey, finalValue));
+                    throw new InvalidCodeCommandException($"Invalid variable name [{key}]");
                 }
-            }
-            else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
-            {
-                logs.Add(Variables.SetSectionParam(s, varKey, finalValue));
             }
             else
             {
-                throw new InvalidCodeCommandException($"Invalid variable name [{varKey}]");
+                // Determine varKey's type - %A% vs #1
+                if (type == Variables.VarKeyType.Variable) // %A%
+                {
+                    key = Variables.GetVariableName(s, key);
+                    if (key == null)
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{key}], must start and end with %"));
+
+                    // Logs are written in variables.SetValue method
+                    if (global)
+                    {
+                        LogInfo log = s.Variables.SetValue(VarsType.Global, key, finalValue);
+                        logs.Add(log);
+
+                        // Remove local variable if exist
+                        if (log.State == LogState.Success)
+                            s.Variables.Delete(VarsType.Local, key);
+                    }
+                    else if (permanent)
+                    {
+                        LogInfo log = s.Variables.SetValue(VarsType.Global, key, finalValue);
+
+                        if (log.State == LogState.Success)
+                        { // SetValue success, write to IniFile
+                            if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
+                            else
+                                logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));
+
+                            // Remove local variable if exist
+                            s.Variables.Delete(VarsType.Local, key);
+                        }
+                        else
+                        { // SetValue failed
+                            logs.Add(log);
+                        }
+                    }
+                    else // Local
+                    {
+                        logs.Add(s.Variables.SetValue(VarsType.Local, key, finalValue));
+                    }
+                }
+                else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
+                {
+                    logs.Add(Variables.SetSectionParam(s, key, finalValue));
+                }
+                else
+                {
+                    throw new InvalidCodeCommandException($"Invalid variable name [{key}]");
+                }
             }
 
             return logs;

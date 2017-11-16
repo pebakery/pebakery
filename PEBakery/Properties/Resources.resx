@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BuildDate" xml:space="preserve">
-    <value>20171115</value>
+    <value>20171117</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DonutPng" type="System.Resources.ResXFileRef, System.Windows.Forms">
@@ -129,6 +129,12 @@
   </data>
   <data name="LicenseSimple" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\LicenseSimple.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;ks_c_5601-1987</value>
+  </data>
+  <data name="BuildLogHtmlTemplate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\BuildLogHtmlTemplate.cshtml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
+  </data>
+  <data name="SystemLogHtmlTemplate" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SystemLogHtmlTemplate.cshtml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="StringVersion" xml:space="preserve">
     <value>0.9.1 alpha</value>

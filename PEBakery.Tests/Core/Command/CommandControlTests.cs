@@ -35,25 +35,28 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandControl")]
         public void Control_Set()
         {
-            Set_1();
-            Set_2();
-            Set_3();
+            EngineState s = EngineTests.CreateEngineState();
+
+            Set_1(s);
+            Set_2(s);
+            Set_3(s);
+            Set_4(s);
         }
 
-        public void Set_1()
+        public void Set_1(EngineState s)
         {
             string rawCode = "Set,%Dest%,PEBakery";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Local, "Dest");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
-        public void Set_2()
+        public void Set_2(EngineState s)
         {
             string rawCode = "Set,%Dest%,PEBakery,GLOBAL";
-            EngineState s = EngineTests.Eval(rawCode, CodeType.Set, ErrorCheck.Success);
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
 
             string comp = "PEBakery";
             string dest = s.Variables.GetValue(VarsType.Global, "Dest");
@@ -62,10 +65,8 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.GetVarDict(VarsType.Global).Remove("PEBakery");
         }
 
-        public void Set_3()
+        public void Set_3(EngineState s)
         {
-            EngineState s = EngineTests.CreateEngineState();
-
             string pPath = s.Project.MainPlugin.FullPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
@@ -80,6 +81,18 @@ namespace PEBakery.Tests.Core.Command
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
+        }
+
+        public void Set_4(EngineState s)
+        {
+            s.Variables["Dest"] = "PEBakery";
+
+            string rawCode = "Set,%Dest%,NIL";
+            EngineTests.Eval(s, rawCode, CodeType.Set, ErrorCheck.Success);
+
+            string comp = string.Empty;
+            string dest = s.Variables.GetValue(VarsType.Local, "Dest");
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion
 
