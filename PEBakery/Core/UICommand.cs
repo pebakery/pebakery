@@ -604,10 +604,11 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(IsFile);
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            StringBuilder b = new StringBuilder();
+            if (IsFile)
+                b.Append("FILE");
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()

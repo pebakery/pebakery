@@ -112,45 +112,43 @@
                                     Click="Button_SourceDirectory_Click">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial
-                                    Kind="FolderUpload"
-                                    Width="Auto"
-                                    Height="Auto"
-                                    Margin="2"/>
+                                            Kind="FolderUpload"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="2"/>
                                     </Button.Content>
                                 </Button>
                                 <Button
-                            Grid.Column="3"
-                            Name="Button_ResetSourceDirectory"
-                            Click="Button_ResetSourceDirectory_Click">
+                                    Grid.Column="3"
+                                    Name="Button_ResetSourceDirectory"
+                                    Click="Button_ResetSourceDirectory_Click">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial
-                                    Kind="Close"
-                                    Width="Auto"
-                                    Height="Auto"
-                                    Margin="4"/>
+                                            Kind="Close"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="4"/>
                                     </Button.Content>
                                 </Button>
                             </Grid>
                             <Grid
-                        Height="25"
-                        Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center">
+                                Height="25"
+                                Margin="15, 15, 15, 0"
+                                VerticalAlignment="Center"> 
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    Text="Target Directory">
-                                </TextBlock>
+                                    Text="Target Directory"/>
                                 <TextBox
                                     Grid.Column="1"
                                     Margin="0, 0, 5, 0"
                                     VerticalContentAlignment="Center"
-                                    Text="{Binding Project_TargetDirectory}">
-                                </TextBox>
+                                    Text="{Binding Project_TargetDirectory}"/>
                                 <Button
                                     Grid.Column="2"
                                     Name="Button_TargetDirectory"
@@ -169,21 +167,19 @@
                                 Margin="15, 15, 15, 15"
                                 VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    Text="ISO File">
-                                </TextBlock>
+                                    Text="ISO File"/>
                                 <TextBox
                                     Grid.Column="1"
                                     Margin="0, 0, 5, 0"
                                     VerticalContentAlignment="Center"
-                                    Text="{Binding Project_ISOFile}">
-                                </TextBox>
+                                    Text="{Binding Project_ISOFile}"/>
                                 <Button
                                     Grid.Column="2"
                                     Name="Button_ISOFile"
@@ -227,8 +223,8 @@
                         BorderBrush="Gray">
                         <Grid Margin="5, 5, 5, 5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition></ColumnDefinition>
-                                <ColumnDefinition Width="100"></ColumnDefinition>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 Grid.Row="0" Grid.Column="0"
@@ -311,7 +307,7 @@
                         IsChecked="{Binding Plugin_AutoSyntaxCheck}" />
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Log">
+            <TabItem Header="Logging">
                 <StackPanel>
                     <Grid
                         Margin="15, 15, 15, 0"
@@ -330,20 +326,25 @@
                             ItemsSource="{Binding Log_DebugLevelList}"
                             SelectedIndex="{Binding Log_DebugLevelIndex}"/>
                     </Grid>
-                    <DockPanel
-                        Height="25"
+                    <GroupBox
+                        Header="Log Database"
                         Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center">
-                        <Button
-                            DockPanel.Dock="Right"
-                            Content="Clear Log Database"
-                            Width="150"
-                            Click="Button_ClearLog_Click" />
-                        <TextBlock
-                            Name="TextBlock_LogDBState"
-                            VerticalAlignment="Center"
-                            Text="{Binding Log_DBState}" />
-                    </DockPanel>
+                        BorderBrush="Gray">
+                        <DockPanel
+                            Height="25"
+                            Margin="5, 5, 5, 5"
+                            VerticalAlignment="Center">
+                            <Button
+                                DockPanel.Dock="Right"
+                                Content="Clear Log Database"
+                                Width="150"
+                                Click="Button_ClearLog_Click" />
+                            <TextBlock
+                                Name="TextBlock_LogDBState"
+                                VerticalAlignment="Center"
+                                Text="{Binding Log_DBState}" />
+                        </DockPanel>
+                    </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
                         Content="Log Macro"
@@ -352,6 +353,15 @@
                         Margin="15, 15, 15, 0"
                         Content="Log Comment"
                         IsChecked="{Binding Log_Comment}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Disable Logging in Interface"
+                        IsChecked="{Binding Log_DisableInInterface}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Disable Delayed Logging (for Debug)"
+                        ToolTip="Use for only debug purpose, slows down performance!"
+                        IsChecked="{Binding Log_DisableDelayedLogging}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compatibility">
@@ -376,31 +386,28 @@
                 <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
-                <ColumnDefinition Width="20"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
             <Button
                 Grid.Row="0" Grid.Column="0"
                 Name="DefaultButton"
                 Click="DefaultButton_Click"
-                Content="Default">
-            </Button>
+                Content="Default"/>
             <Button
                 Grid.Row="0" Grid.Column="2"
                 IsDefault="True"
                 Name="SaveButton"
                 Click="SaveButton_Click"
-                Content="Save">
-            </Button>
+                Content="Save"/>
             <Button
                 Grid.Row="0" Grid.Column="4"
                 IsCancel="True"
-                Content="Cancel">
-            </Button>
+                Content="Cancel"/>
         </Grid>
     </Grid>
 </Window>

@@ -1254,7 +1254,6 @@ namespace PEBakery.WPF
                     BuildPosition = string.Empty;
                     BuildEchoMessage = string.Empty;
 
-                    BuildCommandProgressBarValue = 0;
                     BuildPluginProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
                     
@@ -1329,19 +1328,6 @@ namespace PEBakery.WPF
             {
                 buildEchoMessage = value;
                 OnPropertyUpdate("BuildEchoMessage");
-            }
-        }
-
-        public const double BuildCommandProgressBarMax = 1000;
-
-        private double buildCommandProgressBarValue = 0;
-        public double BuildCommandProgressBarValue
-        {
-            get => buildCommandProgressBarValue;
-            set
-            {
-                buildCommandProgressBarValue = value;
-                OnPropertyUpdate("BuildCommandProgressBarValue");
             }
         }
 

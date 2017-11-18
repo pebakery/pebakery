@@ -100,8 +100,6 @@ namespace PEBakery.Core.Commands
                         }
                     }
 
-                    Engine.UpdateCommandProgressBar(s, 500);
-
                     File.Copy(srcFile, destPath, true);
                     logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]", cmd));
                 }
@@ -126,8 +124,6 @@ namespace PEBakery.Core.Commands
                         for (int i = 0; i < files.Length; i++)
                         {
                             string f = files[i];
-                            Engine.UpdateCommandProgressBar(s, (1000 * i) / files.Length);
-
                             string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
                             
                             if (File.Exists(destFullPath))
@@ -181,8 +177,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -253,8 +247,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             File.SetAttributes(srcPath, FileAttributes.Normal);
             File.Move(srcPath, destPath);
             if (cmd.Type == CodeType.FileRename)
@@ -291,8 +283,6 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
@@ -314,8 +304,6 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileSize));
             CodeInfo_FileSize info = cmd.Info as CodeInfo_FileSize;
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
             if (File.Exists(filePath) == false)
@@ -325,8 +313,6 @@ namespace PEBakery.Core.Commands
             }
 
             FileInfo fileInfo = new FileInfo(filePath);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             logs.Add(new LogInfo(LogState.Success, $"File [{filePath}] is [{fileInfo.Length}B]", cmd));
 
@@ -343,12 +329,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_FileVersion));
             CodeInfo_FileVersion info = cmd.Info as CodeInfo_FileVersion;
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
             FileVersionInfo v = FileVersionInfo.GetVersionInfo(filePath);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             string verStr = $"{v.FileMajorPart}.{v.FileMinorPart}.{v.FileBuildPart}.{v.FilePrivatePart}";
             logs.Add(new LogInfo(LogState.Success, $"File [{filePath}]'s version is [{verStr}]", cmd));
@@ -382,8 +364,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, $"Cannot overwrite file [{destDir}] with directory [{srcDir}]"));
                 return logs;
             }
-
-            Engine.UpdateCommandProgressBar(s, 500);
 
             // Check srcDir contains wildcard
             if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1)
@@ -444,8 +424,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             // Delete Directory
             FileHelper.DirectoryDeleteEx(dirPath);
 
@@ -470,8 +448,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             // SrcPath must be directory 
             // WB082 does not check this, so file can be moved with DirMove
@@ -515,8 +491,6 @@ namespace PEBakery.Core.Commands
 
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             // Path Security Check
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -551,8 +525,6 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirSize));
             CodeInfo_DirSize info = cmd.Info as CodeInfo_DirSize;
 
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
-
             string path = StringEscaper.Preprocess(s, info.Path);
 
             if (Directory.Exists(path) == false)
@@ -567,8 +539,6 @@ namespace PEBakery.Core.Commands
             {
                 FileInfo fileInfo = new FileInfo(files[i]);
                 dirSize += fileInfo.Length;
-
-                s.MainViewModel.BuildCommandProgressBarValue = 200 + (800 * (i + 1) / files.Length);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Directory [{path}] is [{dirSize}B]", cmd));

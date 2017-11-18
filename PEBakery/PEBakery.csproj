@@ -178,7 +178,7 @@
     <Compile Include="Core\CodeParser.cs" />
     <Compile Include="Core\CodeCommand.cs" />
     <Compile Include="Core\Commands\CommandControl.cs" />
-    <Compile Include="Core\LogHtmlExporter.cs" />
+    <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\Parser\PEBakeryScriptVisitor.cs" />
     <Compile Include="WPF\AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
@@ -350,7 +350,7 @@
   <ItemGroup>
     <None Include="Resources\BuildLogHtmlTemplate.cshtml" />
   </ItemGroup>
-   <ItemGroup>
+  <ItemGroup>
     <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

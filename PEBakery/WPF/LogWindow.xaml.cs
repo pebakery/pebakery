@@ -202,7 +202,7 @@ namespace PEBakery.WPF
             {
                 Title = title,
                 Filter = "Text Format (*.txt)|*.txt|HTML Format (*.html)|*.html",
-                InitialDirectory = System.IO.Path.GetDirectoryName(baseDir),
+                InitialDirectory = baseDir,
             };
 
             if (dialog.ShowDialog() == true)

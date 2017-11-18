@@ -18,6 +18,7 @@
 
 using PEBakery.Exceptions;
 using PEBakery.Helper;
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -58,7 +59,10 @@ namespace PEBakery.Core.Commands
             if (!p.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"Plugin [{pluginFile}] does not have section [{sectionName}]");
 
-            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, p.Sections[sectionName]);
+            // Directly read from file
+            List<string> lines = Ini.ParseRawSection(p.FullPath, sectionName);
+            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
+            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, dict);
             if (logs.Count == 0) // No variables
                 logs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
 

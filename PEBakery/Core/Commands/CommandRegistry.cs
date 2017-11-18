@@ -105,8 +105,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
 
-                s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                 proc.WaitForExit();
 
                 if (proc.ExitCode == 0) // Success
@@ -146,8 +144,6 @@ namespace PEBakery.Core.Commands
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
 
-                s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                 proc.WaitForExit();
 
                 if (proc.ExitCode == 0) // Success
@@ -173,8 +169,6 @@ namespace PEBakery.Core.Commands
             if (hKeyStr == null)
                 throw new InternalException("Internal Logic Error");
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
-
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
 
             string valueDataStr;
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, false))
@@ -214,8 +208,6 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
-
             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}\\{valueName}]'s data is [{valueDataStr}]"));
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, valueDataStr);
             logs.AddRange(varLogs);
@@ -241,8 +233,6 @@ namespace PEBakery.Core.Commands
 
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
             string fullValuePath = $"{hKeyStr}\\{keyPath}\\{valueName}";
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             using (RegistryKey subKey = info.HKey.CreateSubKey(keyPath, true))
             {
@@ -383,8 +373,6 @@ namespace PEBakery.Core.Commands
 
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             if (info.ValueName == null)
             { // Delete SubKey
                 try
@@ -466,8 +454,6 @@ namespace PEBakery.Core.Commands
                 }
 
                 List<string> multiStrs = ((string[])regRead).ToList();
-
-                s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                 switch (info.ActionType)
                 {

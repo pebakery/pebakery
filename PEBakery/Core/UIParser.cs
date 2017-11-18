@@ -425,11 +425,8 @@ namespace PEBakery.Core
                         bool isFile = false;
                         if (0 < args.Count)
                         {
-                            if (args[0].StartsWith("__", StringComparison.Ordinal) == false)
-                            {
-                                if (args[0].Equals("FILE", StringComparison.OrdinalIgnoreCase))
-                                    isFile = true;
-                            }
+                            if (args[0].Equals("FILE", StringComparison.OrdinalIgnoreCase))
+                                isFile = true;
                         }
 
                         return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);

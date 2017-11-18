@@ -751,7 +751,7 @@ namespace PEBakery.WPF
                 FontSize = CalcFontPointScale(),
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            box.LostFocus += (object sender, RoutedEventArgs e) =>
+            box.TextChanged += (object sender, TextChangedEventArgs e) =>
             {
                 TextBox tBox = sender as TextBox;
                 uiCmd.Text = tBox.Text;
@@ -769,13 +769,19 @@ namespace PEBakery.WPF
             button.Click += (object sender, RoutedEventArgs e) =>
             {
                 Button bt = sender as Button;
-
+                
                 if (info.IsFile)
                 {
+                    string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
+                    if (File.Exists(currentPath))
+                        currentPath = Path.GetDirectoryName(currentPath);
+                    else
+                        currentPath = string.Empty;
+
                     Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
                     { 
                         Filter = "All Files|*.*",
-                        InitialDirectory = System.IO.Path.GetDirectoryName(StringEscaper.Preprocess(variables, uiCmd.Text)),
+                        InitialDirectory = currentPath,
                     };
                     if (dialog.ShowDialog() == true)
                     {
@@ -784,10 +790,14 @@ namespace PEBakery.WPF
                 }
                 else
                 {
+                    string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
+                    if (Directory.Exists(currentPath) == false)
+                        currentPath = string.Empty;
+
                     System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
                     {
                         ShowNewFolderButton = true,
-                        SelectedPath = StringEscaper.Preprocess(variables, uiCmd.Text),   
+                        SelectedPath = currentPath,   
                     };
                     System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                     if (result == System.Windows.Forms.DialogResult.OK)
@@ -960,6 +970,7 @@ namespace PEBakery.WPF
 
                 EngineState s = new EngineState(addr.Plugin.Project, logger, mainModel, addr.Plugin, addr.Section.SectionName);
                 s.SetOption(setting);
+                s.DisableLogger = setting.Log_DisableInInterface;
 
                 Engine.WorkingEngine = new Engine(s);
 

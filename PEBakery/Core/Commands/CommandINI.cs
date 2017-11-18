@@ -46,12 +46,7 @@ namespace PEBakery.Core.Commands
             if (key.Equals(string.Empty, StringComparison.Ordinal))
                 throw new ExecuteException("Key name cannot be empty");
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string value = Ini.GetKey(fileName, sectionName, key);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
-
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
@@ -78,15 +73,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIReadOp infoOp = cmd.Info as CodeInfo_INIReadOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -104,11 +96,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             keys = Ini.GetKeys(fileName, keys);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -153,15 +141,11 @@ namespace PEBakery.Core.Commands
             if (key.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
@@ -183,15 +167,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIWriteOp infoOp = cmd.Info as CodeInfo_INIWriteOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -210,15 +191,11 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key, value);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.SetKeys(fileName, keys);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
             {
@@ -258,15 +235,11 @@ namespace PEBakery.Core.Commands
             if (key.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             bool result = Ini.DeleteKey(fileName, sectionName, key);
             if (result)
@@ -284,15 +257,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIDeleteOp infoOp = cmd.Info as CodeInfo_INIDeleteOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -310,11 +280,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             bool[] result = Ini.DeleteKeys(fileName, keys);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -358,15 +324,11 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.AddSection(fileName, sectionName);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] added to [{fileName}]", cmd));
@@ -383,15 +345,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIAddSectionOp infoOp = cmd.Info as CodeInfo_INIAddSectionOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
@@ -405,15 +364,11 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.AddSections(fileName, sections);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
             {
@@ -450,11 +405,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             bool result = Ini.DeleteSection(fileName, sectionName);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] deleted from [{fileName}]", cmd));
@@ -471,15 +422,12 @@ namespace PEBakery.Core.Commands
             CodeInfo_INIDeleteSectionOp infoOp = cmd.Info as CodeInfo_INIDeleteSectionOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
@@ -493,11 +441,7 @@ namespace PEBakery.Core.Commands
                 sections[i] = sectionName;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             bool result = Ini.DeleteSections(fileName, sections);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
             {
@@ -535,15 +479,11 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.WriteRawLine(fileName, sectionName, line, info.Append);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Line [{line}] wrote to [{fileName}]", cmd));
@@ -562,15 +502,11 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
             bool append = infoOp.Infos[0].Append;
 
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
-
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -583,15 +519,11 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, line);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.WriteRawLines(fileName, keys, append);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             if (result)
             {
@@ -625,15 +557,11 @@ namespace PEBakery.Core.Commands
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destFile = StringEscaper.Preprocess(s, info.DestFile);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             if (StringEscaper.PathSecurityCheck(destFile, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 700;
 
             bool result = Ini.Merge(srcFile, destFile);
             if (result)

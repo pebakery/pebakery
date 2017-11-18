@@ -49,24 +49,8 @@
 		<!-- Custom Fonts -->
 		<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
 	</head>
-	<body id="page-top" data-spy="scroll" data-target=".navbar-fixed-top">
-		<!-- Navigation -->
-		<nav class="navbar navbar-expand-lg navbar-light bg-light">
-			<a class="navbar-brand" href="#page-top">PEBakery Log</a>
-			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav mr-auto">
-					<li class="nav-item"><a href="#summary" class="nav-link">Summary</a></li>
-					<li class="nav-item"><a href="#plugin" class="nav-link">Plugin</a></li>
-					<li class="nav-item"><a href="#vars" class="nav-link">Variables</a></li>
-					<li class="nav-item"><a href="#codes" class="nav-link">Codes</a></li>
-				</ul>
-			</div>
-		</nav>
-
-		<h1 class="container mt-2 text-center">PEBakery Build &lt;Project @Model.BuildName&gt;</h1>
+	<body id="page-top" data-spy="scroll">
+		<h1 class="container mt-2 text-center">PEBakery Build &lt;@Model.BuildName&gt;</h1>
 
 		<!-- Summary -->
 		<header id="summary" class="container-fluid">

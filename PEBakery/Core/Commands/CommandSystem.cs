@@ -54,8 +54,6 @@ namespace PEBakery.Core.Commands
 
                         string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
                             System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
@@ -84,8 +82,6 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         // ExecuteCommand decrease ErrorOffCount after executing one command.
                         s.Logger.ErrorOffCount = lines + 1; // So add 1
 
@@ -105,8 +101,6 @@ namespace PEBakery.Core.Commands
                             envVarValue = string.Empty;
                         }
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         logs.Add(new LogInfo(LogState.Success, $"Environment variable [{envVarName}]'s value is [{envVarValue}]"));
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, envVarValue);
                         logs.AddRange(varLogs);
@@ -120,8 +114,6 @@ namespace PEBakery.Core.Commands
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
-
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                         if (lastFreeLetter != '\0') // Success
                         {
@@ -145,8 +137,6 @@ namespace PEBakery.Core.Commands
 
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         FileInfo f = new FileInfo(path);
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
                         long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
@@ -166,8 +156,6 @@ namespace PEBakery.Core.Commands
                             WindowsPrincipal principal = new WindowsPrincipal(identity);
                             isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
                         }
-
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                         string isAdminStr;
                         if (isAdmin)
@@ -192,8 +180,6 @@ namespace PEBakery.Core.Commands
 
                         s.OnBuildExit = subInfo.Cmd;
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         logs.Add(new LogInfo(LogState.Success, "OnBuildExit event registered"));
                     }
                     break;
@@ -204,8 +190,6 @@ namespace PEBakery.Core.Commands
                         SystemInfo_OnPluginExit subInfo = info.SubInfo as SystemInfo_OnPluginExit;
 
                         s.OnPluginExit = subInfo.Cmd;
-
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                         logs.Add(new LogInfo(LogState.Success, "OnPluginExit event registered"));
                     }
@@ -245,8 +229,6 @@ namespace PEBakery.Core.Commands
                                 Thread.Sleep(200);
                         }).Wait();
 
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
-
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
                     }
                     break;
@@ -259,8 +241,6 @@ namespace PEBakery.Core.Commands
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
 
                         LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
-
-                        s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                         s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                         s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
@@ -331,8 +311,6 @@ namespace PEBakery.Core.Commands
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             StringBuilder b = new StringBuilder(filePath);
 
             using (Process proc = new Process())
@@ -373,11 +351,7 @@ namespace PEBakery.Core.Commands
                     proc.StartInfo.Verb = verb;
                 }
 
-                s.MainViewModel.BuildCommandProgressBarValue = 600;
-
                 proc.Start();
-
-                s.MainViewModel.BuildCommandProgressBarValue = 800;
 
                 switch (cmd.Type)
                 {

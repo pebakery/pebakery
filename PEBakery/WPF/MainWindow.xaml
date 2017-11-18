@@ -531,8 +531,6 @@
                         <RowDefinition Height="38" />
                         <RowDefinition Height="25" />
                         <RowDefinition Height="38" />
-                        <RowDefinition Height="25" />
-                        <RowDefinition Height="38" />
                         <RowDefinition Height="10" />
                     </Grid.RowDefinitions>
 
@@ -564,27 +562,11 @@
                         Margin="20, 0, 20, 5"
                         TextAlignment="Left"
                         FontWeight="SemiBold"
-                        Text="Command Progress">
-                    </TextBlock>
-
-                    <ProgressBar
-                        Grid.Row="2"
-                        Margin="20, 0, 20, 10"
-                        Minimum="0"
-                        Maximum="{Binding BuildCommandProgressBarMax}"
-                        Value="{Binding BuildCommandProgressBarValue}">
-                    </ProgressBar>
-
-                    <TextBlock
-                        Grid.Row="3"
-                        Margin="20, 0, 20, 5"
-                        TextAlignment="Left"
-                        FontWeight="SemiBold"
                         Text="Plugin Progress">
                     </TextBlock>
 
                     <ProgressBar
-                        Grid.Row="4"
+                        Grid.Row="2"
                         Margin="20, 0, 20, 10"
                         Minimum="0"
                         Maximum="{Binding BuildPluginProgressBarMax}"
@@ -592,14 +574,14 @@
                     </ProgressBar>
 
                     <TextBlock
-                        Grid.Row="5"
+                        Grid.Row="3"
                         Margin="20, 0, 20, 5"
                         TextAlignment="Left"
                         FontWeight="SemiBold"
                         Text="Full Progress">
                     </TextBlock>
                     <ProgressBar
-                        Grid.Row="6"
+                        Grid.Row="4"
                         Margin="20, 0, 20, 10"
                         Minimum="0"
                         Maximum="{Binding BuildFullProgressBarMax}"

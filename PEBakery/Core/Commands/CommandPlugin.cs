@@ -59,8 +59,6 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
@@ -68,8 +66,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 600;
 
             if (!Directory.Exists(destDir)) // DestDir already exists
             {
@@ -92,8 +88,6 @@ namespace PEBakery.Core.Commands
                 ms.CopyTo(fs);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 900;
-
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{destDir}]"));
 
             return logs;
@@ -111,9 +105,6 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Params);
 
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
-
             Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             string destPath = Path.GetTempFileName();
@@ -123,8 +114,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 400;
-
             using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, info.FileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
@@ -132,15 +121,11 @@ namespace PEBakery.Core.Commands
                 ms.CopyTo(fs);
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 600;
-
             Process proc = new Process();
             proc.StartInfo.FileName = destPath;
             proc.StartInfo.UseShellExecute = true;
             proc.StartInfo.Verb = "Open";
             proc.Start();
-
-            s.MainViewModel.BuildCommandProgressBarValue = 800;
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted and executed"));
 
@@ -158,8 +143,6 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
-
             Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
@@ -167,8 +150,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             List<string> dirs = p.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
@@ -189,7 +170,6 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            int i = 0;
             List<string> lines = p.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
@@ -200,8 +180,6 @@ namespace PEBakery.Core.Commands
                     ms.Position = 0;
                     ms.CopyTo(fs);
                 }
-
-                s.MainViewModel.BuildCommandProgressBarValue = 200 + ((fileDict.Count * i / fileDict.Count) * 800);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{destDir}]"));
@@ -222,13 +200,10 @@ namespace PEBakery.Core.Commands
 
             Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
 
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
-
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
-                s.MainViewModel.BuildCommandProgressBarValue = 600;
                 logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{p.FullPath}]", cmd));
             }
             else
@@ -243,7 +218,6 @@ namespace PEBakery.Core.Commands
                     for (int i = 0; i < files.Length; i++)
                     {
                         EncodedFile.AttachFile(p, dirName, Path.GetFileName(files[i]), files[i]);
-                        s.MainViewModel.BuildCommandProgressBarValue = 200 + (800 * (i + 1) / files.Length);
                         logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
                     }
 
@@ -251,7 +225,6 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    s.MainViewModel.BuildCommandProgressBarValue = 600;
                     logs.Add(new LogInfo(LogState.Warning, $"Files match wildcard [{filePath}] not found", cmd));
                 }
             }

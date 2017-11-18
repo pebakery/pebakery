@@ -574,6 +574,28 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Log_Comment");
             }
         }
+
+        private bool log_DisableInInterface;
+        public bool Log_DisableInInterface
+        {
+            get => log_DisableInInterface;
+            set
+            {
+                log_DisableInInterface = value;
+                OnPropertyUpdate("Log_DisableInInterface");
+            }
+        }
+
+        private bool log_DisableDelayedLogging;
+        public bool Log_DisableDelayedLogging
+        {
+            get => log_DisableDelayedLogging;
+            set
+            {
+                log_DisableDelayedLogging = value;
+                OnPropertyUpdate("Log_DisableDelayedLogging");
+            }
+        }
         #endregion
 
         #region Compatibility
@@ -645,6 +667,8 @@ namespace PEBakery.WPF
 #endif
             Log_Macro = true;
             Log_Comment = true;
+            Log_DisableInInterface = true;
+            Log_DisableDelayedLogging = false;
 
             // Compatibility
             Compat_DirCopyBug = true;
@@ -676,6 +700,8 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
+                new IniKey("Log", "DisableInInterface"), // Boolean
+                new IniKey("Log", "DisableDelayedLogging"), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey("Compat", "DirCopyBug"), // Boolean
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
@@ -698,6 +724,8 @@ namespace PEBakery.WPF
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
             string str_Log_Macro = dict["Log_Macro"];
             string str_Log_Comment = dict["Log_Comment"];
+            string str_Log_DisableInInterface = dict["Log_DisableInInterface"];
+            string str_Log_DisableDelayedLogging = dict["Log_DisableDelayedLogging"];
             string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
             string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
@@ -800,6 +828,20 @@ namespace PEBakery.WPF
                     Log_Comment = false;
             }
 
+            // Log - DisableInInterface (Default = True)
+            if (str_Log_DisableInInterface != null)
+            {
+                if (str_Log_DisableInInterface.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Log_DisableInInterface = false;
+            }
+
+            // Log - DisableDelayedLogging (Default = False)
+            if (str_Log_DisableDelayedLogging != null)
+            {
+                if (str_Log_DisableDelayedLogging.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Log_DisableDelayedLogging = true;
+            }
+
             // Compatibility - DirCopyBug (Default = True)
             if (str_Compat_DirCopyBug != null)
             {
@@ -839,6 +881,8 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
+                new IniKey("Log", "DisableInInterface", Log_DisableInInterface.ToString()),
+                new IniKey("Log", "DisableDelayedLogging", Log_DisableDelayedLogging.ToString()),
                 new IniKey("Project", "DefaultProject", Project_Default),
                 new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),

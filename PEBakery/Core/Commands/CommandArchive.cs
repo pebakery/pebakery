@@ -57,8 +57,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             if (Directory.Exists(destArchive))
             {
                 throw new ExecuteException($"[{destArchive}] should be a file, not a directory");
@@ -106,8 +104,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
             if (!File.Exists(srcArchive))
                 throw new ExecuteException($"Cannot find [{srcArchive}]");
 
@@ -147,8 +143,6 @@ namespace PEBakery.Core.Commands
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             if (!Directory.Exists(destDir))
             {
@@ -212,10 +206,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
-
-               
-
             // Check srcFile contains wildcard
             if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
@@ -234,8 +224,6 @@ namespace PEBakery.Core.Commands
                     for (int i = 0; i < files.Length; i++)
                     {
                         string f = files[i];
-                        Engine.UpdateCommandProgressBar(s, (1000 * i) / files.Length);
-
                         InternalCopyOrExpand(s, logs, info, f, destPath);
                     }
 
