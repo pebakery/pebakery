@@ -232,6 +232,37 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
                     }
                     break;
+                case SystemType.Rescan:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Rescan));
+                        SystemInfo_Rescan subInfo = info.SubInfo as SystemInfo_Rescan;
+
+                        string pPath = StringEscaper.Preprocess(s, subInfo.PluginToRefresh);
+                        string pFullPath = Path.GetFullPath(pPath);
+
+                        // Reload plugin
+                        Plugin p = s.Project.GetPluginByFullPath(pFullPath);
+                        p = s.Project.RefreshPlugin(p, s);
+                        if (p == null)
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"Reloading plugin [{pFullPath}] failed"));
+                            return logs;
+                        }
+
+                        // Update MainWindow
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MainWindow w = (Application.Current.MainWindow as MainWindow);
+                            if (p.Equals(w.CurMainTree.Plugin))
+                            {
+                                w.CurMainTree.Plugin = p;
+                                w.DrawPlugin(w.CurMainTree.Plugin);
+                            }
+                        });
+
+                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
+                    }
+                    break;
                 case SystemType.SaveLog:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog));

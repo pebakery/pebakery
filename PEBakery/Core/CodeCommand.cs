@@ -153,7 +153,6 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
-            CodeType.CopyOrExpand, // NT6 does not have cabinet files such as .ex_, .dl_
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
@@ -2362,6 +2361,7 @@ namespace PEBakery.Core
         OnScriptExit, OnPluginExit,
         RefreshInterface,
         RescanScripts,
+        Rescan,
         SaveLog,
 
         // Deprecated, WB082 Compability Shim
@@ -2534,6 +2534,22 @@ namespace PEBakery.Core
     { // System,RescanScripts
         public SystemInfo_RescanScripts() { }
         public override string ToString() { return "RescanScripts"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_Rescan : SystemInfo
+    { // System,Rescan,<PluginToRefresh>
+        public string PluginToRefresh;
+
+        public SystemInfo_Rescan(string pluginToRefresh)
+        {
+            PluginToRefresh = pluginToRefresh;
+        }
+
+        public override string ToString()
+        {
+            return $"Rescan,{PluginToRefresh}";
+        }
     }
 
     [Serializable]

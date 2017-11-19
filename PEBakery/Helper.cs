@@ -1112,7 +1112,7 @@ namespace PEBakery.Helper
                 return ParseStringToNumberType.String;
 
             // base 10 integer - Z
-            if (Regex.IsMatch(str, @"^\d+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled))
             {
                 if (long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1128,7 +1128,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // real number - R
-            else if (Regex.IsMatch(str, @"^(\d+)\.(\d+)$", RegexOptions.Compiled))
+            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled))
             {
                 if (decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out real))
                     return ParseStringToNumberType.Decimal;

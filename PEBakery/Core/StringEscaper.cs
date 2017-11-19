@@ -362,7 +362,7 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex regex = new Regex(@"(#\d+)", RegexOptions.Compiled);
+            Regex regex = new Regex(@"(#[0-9]+)", RegexOptions.Compiled);
             MatchCollection matches = regex.Matches(str);
 
             while (0 < matches.Count)

@@ -1397,12 +1397,12 @@ namespace PEBakery.Core
                 case CodeType.Halt:
                     { // Halt,<Message>
                         const int minArgCount = 0;
-                        const int maxArgCount = 1;
+                        const int maxArgCount = 1; 
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         string message = string.Empty;
-                        if (args.Count == maxArgCount)
+                        if (1 <= args.Count)
                             message = args[0];
                         return new CodeInfo_Halt(message);
                     }
@@ -2373,6 +2373,15 @@ namespace PEBakery.Core
                         info = new SystemInfo_RescanScripts();
                     }
                     break;
+                case SystemType.Rescan:
+                    { // System,Rescan,<PluginToRefresh>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        info = new SystemInfo_Rescan(args[0]);
+                    }
+                    break;
                 case SystemType.SaveLog:
                     { // System,SaveLog,<DestPath>,[LogFormat]
                         const int minArgCount = 1;
@@ -2438,7 +2447,7 @@ namespace PEBakery.Core
         public static bool IsStringContainsVariable(string str)
         {
             MatchCollection matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled); // ABC%Joveler%
-            bool sectionParamMatch = Regex.IsMatch(str, @"(#\d+)", RegexOptions.Compiled); // #1
+            bool sectionParamMatch = Regex.IsMatch(str, @"(#[0-9]+)", RegexOptions.Compiled); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
 
             if (0 < matches.Count || sectionParamMatch || sectionLoopMatch)

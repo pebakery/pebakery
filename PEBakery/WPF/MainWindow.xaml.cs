@@ -399,7 +399,6 @@ namespace PEBakery.WPF
             {
                 watch.Start();
                 e.Result = curMainTree.Plugin.Project.RefreshPlugin(curMainTree.Plugin);
-                
             };
             refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {

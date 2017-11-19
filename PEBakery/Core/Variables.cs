@@ -216,14 +216,11 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            string interfaceSection = "Interface";
-            if (p.MainInfo.ContainsKey("Interface"))
-                interfaceSection = p.MainInfo["Interface"];
-
-            if (p.Sections.ContainsKey(interfaceSection))
+            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            if (iface != null)
             {
                 List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[interfaceSection].GetUICodes(true); }
+                try { uiCodes = p.Sections[ifaceSecName].GetUICodes(true); }
                 catch { } // No [Interface] section, or unable to get List<UICommand>
 
                 if (uiCodes != null)
@@ -231,7 +228,7 @@ namespace PEBakery.Core
                     List<LogInfo> subLogs = UICommandToVariables(uiCodes);
                     if (0 < subLogs.Count)
                     {
-                        logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{interfaceSection}]", 0));
+                        logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSecName}]", 0));
                         logs.AddRange(LogInfo.AddDepth(subLogs, 1));
                         logs.Add(new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", 0));
                         logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
@@ -712,7 +709,7 @@ namespace PEBakery.Core
 
         public static int GetSectionParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, @"(#\d+)", RegexOptions.Compiled);
+            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
@@ -729,7 +726,7 @@ namespace PEBakery.Core
         {
             if (key.StartsWith("%") && key.EndsWith("%")) // Ex) %A%
                 return VarKeyType.Variable;
-            else if (Regex.Match(key, @"(#\d+)", RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
+            else if (Regex.Match(key, @"(#[0-9]+)", RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else
                 return VarKeyType.None;

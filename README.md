@@ -31,6 +31,8 @@ Part of PEBakery is licensed under MIT License and others.
 
 ## Current Status
 
+PEBakery is currently in alpha stage.
+
 ### Test of Win10PESE
 
 - Build is near perfect.
@@ -46,7 +48,7 @@ Part of PEBakery is licensed under MIT License and others.
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
 | File      | 11  | 11          | 11     |
-| Registry  | 8   | 8           | 3      |
+| Registry  | 8   | 8           | 4      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
@@ -59,7 +61,7 @@ Part of PEBakery is licensed under MIT License and others.
 | System    | 17  | 17          | 0      |
 | Branch    | 31  | 31          | 14     |
 | Control   | 6   | 6           | 6      |
-| All       | 160 | 160         | 97     |
+| All       | 160 | 160         | 98     |
 
 ## Help Needed
 

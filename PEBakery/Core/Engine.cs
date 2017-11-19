@@ -165,11 +165,14 @@ namespace PEBakery.Core
                     ReadyRunPlugin(s);
 
                     // Run Main Section
-                    PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
-                    SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
-                    s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
-                    Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
-                    s.Logger.LogEndOfSection(s, addr, 0, true, null);
+                    if (s.CurrentPlugin.Sections.ContainsKey(s.EntrySection))
+                    {
+                        PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
+                        SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
+                        s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
+                        Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
+                        s.Logger.LogEndOfSection(s, addr, 0, true, null);
+                    }
 
                     // End of Plugin
                     FinishRunPlugin(s);
@@ -692,16 +695,20 @@ namespace PEBakery.Core
                 loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
 
-            // string fullPath = StringEscaper.ExpandVariables(s, loadPluginPath);
             string fullPath = loadPluginPath;
             Plugin p = s.Project.GetPluginByFullPath(fullPath);
             if (p == null)
-            { // Cannot Find Plugin in Project
-                if (!File.Exists(fullPath))
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-                p = s.Project.LoadPluginMonkeyPatch(fullPath, false, true);
+            { // Cannot Find Plugin in Project.AllPlugins
+                // Try searching s.Plugins
+                p = s.Plugins.Find(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
                 if (p == null)
-                    throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+                { // Still not found in s.Plugins
+                    if (!File.Exists(fullPath))
+                        throw new ExecuteException($"No plugin in [{fullPath}]");
+                    p = s.Project.LoadPluginMonkeyPatch(fullPath, false, true);
+                    if (p == null)
+                        throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+                }
             }
 
             return p;

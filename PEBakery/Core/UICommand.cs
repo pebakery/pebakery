@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -173,6 +174,20 @@ namespace PEBakery.Core
             builder.Append(",");
             builder.Append(Info.ForgeRawLine());
             return builder.ToString();
+        }
+
+        public void Update()
+        {
+            Ini.SetKey(Addr.Plugin.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
+        }
+        
+        public static void Update(List<UICommand> uiCmdList)
+        {
+            List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
+            foreach (UICommand uiCmd in uiCmdList)
+                keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
+
+            Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
     }
     #endregion
@@ -360,15 +375,15 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder b = new StringBuilder();
             for (int i = 0; i < Items.Count - 1; i++)
             {
-                builder.Append(StringEscaper.QuoteEscape(Items[i]));
-                builder.Append(",");
+                b.Append(StringEscaper.QuoteEscape(Items[i]));
+                b.Append(",");
             }
-            builder.Append(StringEscaper.QuoteEscape(Items.Last()));
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            b.Append(StringEscaper.QuoteEscape(Items.Last()));
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()

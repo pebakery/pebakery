@@ -454,31 +454,58 @@ namespace PEBakery.Core.Commands
                 }
 
                 List<string> multiStrs = ((string[])regRead).ToList();
-
                 switch (info.ActionType)
                 {
                     case RegMultiType.Append:
-                        multiStrs.Add(arg1);
-                        subKey.SetValue(valueName, multiStrs);
-                        logs.Add(new LogInfo(LogState.Success, $"[{arg1}] appended to REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                        {
+                            if (multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase)) != -1)
+                            { // arg1 already exists
+                                logs.Add(new LogInfo(LogState.Warning, $"[{arg1}] already exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
+                            }
+
+                            multiStrs.Add(arg1);
+                            subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
+                            logs.Add(new LogInfo(LogState.Success, $"[{arg1}] appended to REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                        }
                         break;
                     case RegMultiType.Prepend:
-                        multiStrs.Insert(0, arg1);
-                        subKey.SetValue(valueName, multiStrs);
-                        logs.Add(new LogInfo(LogState.Success, $"[{arg1}] prepended to REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                        {
+                            if (multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase)) != -1)
+                            { // arg1 already exists
+                                logs.Add(new LogInfo(LogState.Warning, $"[{arg1}] already exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
+                            }
+
+                            multiStrs.Insert(0, arg1);
+                            subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
+                            logs.Add(new LogInfo(LogState.Success, $"[{arg1}] prepended to REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                        }
                         break;
                     case RegMultiType.Before:
                         {
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
                             if (idx == -1) // Not Found
+                            { // This check should be done first, WB082 does in this order 
+                                logs.Add(new LogInfo(LogState.Error, $"[{arg1}] does not exist in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
+                            }
+
+                            if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"[{arg1}] not found in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
-                                break;
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                return logs;
+                            }
+
+                            if (multiStrs.FindIndex(x => x.Equals(arg2, StringComparison.OrdinalIgnoreCase)) != -1)
+                            { // arg2 already exists
+                                logs.Add(new LogInfo(LogState.Warning, $"[{arg2}] already exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
                             }
 
                             // Found
                             multiStrs.Insert(idx, arg2);
-                            subKey.SetValue(valueName, multiStrs);
+                            subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
                             logs.Add(new LogInfo(LogState.Success, $"[{arg2}] placed at index [{idx + 1}] of REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                         }
                         break;
@@ -486,35 +513,58 @@ namespace PEBakery.Core.Commands
                         {
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
                             if (idx == -1) // Not Found
-                            {
+                            { // This check should be done first, WB082 does in this order 
                                 logs.Add(new LogInfo(LogState.Error, $"[{arg1}] not found in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                                 break;
                             }
 
+                            if (arg2 == null)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                return logs;
+                            }
+
+                            if (multiStrs.FindIndex(x => x.Equals(arg2, StringComparison.OrdinalIgnoreCase)) != -1)
+                            { // arg2 already exists
+                                logs.Add(new LogInfo(LogState.Warning, $"[{arg2}] already exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
+                            }
+
                             // Found
                             multiStrs.Insert(idx + 1, arg2);
-                            subKey.SetValue(valueName, multiStrs);
+                            subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
                             logs.Add(new LogInfo(LogState.Success, $"[{arg2}] placed at index [{idx + 2}] of REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                         }
                         break;
                     case RegMultiType.Place:
-                        { // Different from WB082, it will just overwrite
+                        {
                             if (!NumberHelper.ParseInt32(arg1, out int idx))
                                 throw new ExecuteException($"[{arg1}] is not a valid integer");
-                            if (idx <= 0)
+                            if (idx < 1)
                                 throw new ExecuteException($"Index [{arg1}] must be positive integer");
 
-                            if (0 <= idx && idx <= multiStrs.Count)
+                            if (arg2 == null)
                             {
-                                string beforeValue = multiStrs[idx];
-                                multiStrs.RemoveAt(idx);
-                                multiStrs.Insert(idx, arg2);
-                                subKey.SetValue(valueName, multiStrs);
-                                logs.Add(new LogInfo(LogState.Success, $"[{arg2}] placed at index [{idx + 1}] of REG_MULTI_SZ [{fullKeyPath}]\\{valueName}], overwriting [{beforeValue}]"));
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                return logs;
+                            }
+
+                            if (multiStrs.FindIndex(x => x.Equals(arg2, StringComparison.OrdinalIgnoreCase)) != -1)
+                            { // arg2 already exists
+                                logs.Add(new LogInfo(LogState.Warning, $"[{arg2}] already exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                                return logs;
+                            }
+
+                            // The Index starts from 1
+                            if (1 <= idx && idx <= multiStrs.Count + 1)
+                            {
+                                multiStrs.Insert(idx - 1, arg2);
+                                subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
+                                logs.Add(new LogInfo(LogState.Success, $"[{arg2}] placed at index [{idx}] of REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                             }
                             else
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Index [{idx + 1}] out of range, REG_MULTI_SZ [{fullKeyPath}]\\{valueName}] has [{multiStrs.Count}] strings"));
+                                logs.Add(new LogInfo(LogState.Error, $"Index [{idx}] out of range, REG_MULTI_SZ [{fullKeyPath}]\\{valueName}] has [{multiStrs.Count}] strings"));
                             }
                         }
                         break;
@@ -527,14 +577,19 @@ namespace PEBakery.Core.Commands
                                 break;
                             }
 
-                            string beforeValue = multiStrs[idx];
                             multiStrs.RemoveAt(idx);
-                            subKey.SetValue(valueName, multiStrs);
-                            logs.Add(new LogInfo(LogState.Success, $"[{beforeValue}] (index [{idx + 1}]) deleted from REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                            subKey.SetValue(valueName, multiStrs.ToArray(), RegistryValueKind.MultiString);
+                            logs.Add(new LogInfo(LogState.Success, $"[{arg1}] (index [{idx + 1}]) deleted from REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                         }
                         break;
                     case RegMultiType.Index:
                         {
+                            if (arg2 == null)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                return logs;
+                            }
+
                             if (Variables.DetermineType(info.Arg2) == Variables.VarKeyType.None)
                                 throw new ExecuteException($"[{info.Arg2}] is not valid variable name");
 
@@ -542,8 +597,8 @@ namespace PEBakery.Core.Commands
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
                             idxStr = (idx + 1).ToString();
 
-                            if (idx == -1) // Not Found
-                                logs.Add(new LogInfo(LogState.Error, $"[{arg1}] does not exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
+                            if (idx == -1) // Not Found -> Write 0 into DestVar
+                                logs.Add(new LogInfo(LogState.Success, $"[{arg1}] does not exist in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));
                             else // Found
                                 logs.Add(new LogInfo(LogState.Success, $"[{arg1}] exists in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]'s index [{idxStr}]"));
 

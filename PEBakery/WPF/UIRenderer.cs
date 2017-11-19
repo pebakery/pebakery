@@ -178,7 +178,7 @@ namespace PEBakery.WPF
             {
                 TextBox tBox = sender as TextBox;
                 info.Value = tBox.Text;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
             SetToolTip(box, info.ToolTip);
             DrawToCanvas(r, box, uiCmd.Rect);
@@ -263,18 +263,11 @@ namespace PEBakery.WPF
                 Change = info.Interval,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
-            /*
-            spinner.LostFocus += (object sender, RoutedEventArgs e) =>
-            {
-                SpinnerControl spin = sender as SpinnerControl;
-                info.Value = (int) spin.Value;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
-            };
-            */
+
             spinner.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
             {
                 info.Value = (int)e.NewValue;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
 
             SetToolTip(spinner, info.ToolTip);
@@ -321,13 +314,14 @@ namespace PEBakery.WPF
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                // UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
             checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = false;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
 
             SetToolTip(checkBox, info.ToolTip);
@@ -361,7 +355,7 @@ namespace PEBakery.WPF
                 {
                     info.Index = box.SelectedIndex;
                     uiCmd.Text = info.Items[box.SelectedIndex];
-                    UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                    uiCmd.Update();
                 }
             };
 
@@ -720,13 +714,13 @@ namespace PEBakery.WPF
             {
                 RadioButton btn = sender as RadioButton;
                 info.Selected = true;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
             radio.Unchecked += (object sender, RoutedEventArgs e) =>
             {
                 RadioButton btn = sender as RadioButton;
                 info.Selected = false;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
 
             SetToolTip(radio, info.ToolTip);
@@ -755,7 +749,7 @@ namespace PEBakery.WPF
             {
                 TextBox tBox = sender as TextBox;
                 uiCmd.Text = tBox.Text;
-                UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                uiCmd.Update();
             };
             SetToolTip(box, info.ToolTip);
 
@@ -836,13 +830,9 @@ namespace PEBakery.WPF
             };
             SetToolTip(box, info.ToolTip);
 
-            StackPanel panel = new StackPanel()
-            {
-                Orientation = Orientation.Vertical,
-            };
-            box.Content = panel;
+            Grid grid = new Grid();
+            box.Content = grid;
 
-            Thickness margin = new Thickness(0, 0, 0, fontSize * 0.4);
             for (int i = 0; i < info.Items.Count; i++)
             {
                 RadioButton radio = new RadioButton()
@@ -852,7 +842,6 @@ namespace PEBakery.WPF
                     Tag = i,
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
-                    Margin = margin,
                 };
 
                 radio.IsChecked = (i == info.Selected);
@@ -860,7 +849,7 @@ namespace PEBakery.WPF
                 {
                     RadioButton btn = sender as RadioButton;
                     info.Selected = (int)btn.Tag;
-                    UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
+                    uiCmd.Update();
                 };
 
                 if (info.SectionName != null)
@@ -874,18 +863,20 @@ namespace PEBakery.WPF
                         }
                         else
                         {
-                            Application.Current.Dispatcher.Invoke((Action)(() =>
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
                                 MainWindow w = Application.Current.MainWindow as MainWindow;
                                 w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                            }));
+                            });
                         }
                     };
                 }
 
                 SetToolTip(radio, info.ToolTip);
 
-                panel.Children.Add(radio);
+                Grid.SetRow(radio, i);
+                grid.RowDefinitions.Add(new RowDefinition());
+                grid.Children.Add(radio);
             }
 
             Rect rect = new Rect(uiCmd.Rect.Left, uiCmd.Rect.Top, uiCmd.Rect.Width, uiCmd.Rect.Height);
@@ -923,20 +914,6 @@ namespace PEBakery.WPF
         private static double CalcFontPointScale(double fontPoint = DefaultFontPoint) 
         {
             return fontPoint * PointToDeviceIndependentPixel;
-        }
-
-        public static void UpdatePlugin(string interfaceSectionName, UICommand uiCmd)
-        {
-            Ini.SetKey(uiCmd.Addr.Plugin.FullPath, new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
-        }
-
-        public static void UpdatePlugin(string interfaceSectionName, List<UICommand> uiCmdList)
-        {
-            List<IniKey> keys = new List<IniKey>();
-            foreach (UICommand uiCmd in uiCmdList)
-                keys.Add(new IniKey(interfaceSectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
-
-            Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
         }
 
         private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)

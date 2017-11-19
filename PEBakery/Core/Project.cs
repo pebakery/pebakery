@@ -518,11 +518,14 @@ namespace PEBakery.Core
         }
         #endregion
 
-        public Plugin RefreshPlugin(Plugin plugin)
+        public Plugin RefreshPlugin(Plugin plugin, EngineState s = null)
         {
+            if (plugin == null) throw new ArgumentNullException("plugin");
+
             string pPath = plugin.FullPath;
-            int idx = AllPlugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
-            if (idx == -1)
+            int aIdx = AllPlugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+
+            if (aIdx == -1)
             {
                 // Even if idx is not found in Projects directory, just proceed.
                 // If not, cannot deal with monkey-patched plugins.
@@ -534,7 +537,17 @@ namespace PEBakery.Core
                 Plugin p = LoadPlugin(pPath, false, plugin.IsDirLink);
 
                 if (p != null)
-                    allPlugins[idx] = p;
+                {
+                    allPlugins[aIdx] = p;
+                    if (s != null)
+                    {
+                        // Investigate EngineState to update it on build list
+                        int sIdx = s.Plugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+                        if (sIdx != -1)
+                            s.Plugins[sIdx] = p;
+                    }
+                        
+                }
 
                 return p;
             }

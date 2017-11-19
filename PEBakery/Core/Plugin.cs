@@ -91,7 +91,12 @@ namespace PEBakery.Core
                 if (type == PluginType.Link && linkLoaded)
                     return link.MainInfo;
                 else
-                    return sections["Main"].GetIniDict();
+                {
+                    if (sections.ContainsKey("Main"))
+                        return sections["Main"].GetIniDict();
+                    else // Just return empty dictionary
+                        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
             }
         }
 
@@ -186,8 +191,11 @@ namespace PEBakery.Core
                     string valStr = value.ToString();
                     if (type != PluginType.Directory)
                     {
-                        sections["Main"].IniDict["Selected"] = valStr;
-                        Ini.SetKey(fullPath, new IniKey("Main", "Selected", valStr));
+                        if (sections.ContainsKey("Main"))
+                        {
+                            sections["Main"].IniDict["Selected"] = valStr;
+                            Ini.SetKey(fullPath, new IniKey("Main", "Selected", valStr));
+                        }
                     }
                 }
             }
@@ -594,6 +602,18 @@ namespace PEBakery.Core
                 .Select(x => p.Project.Variables.Expand(x))
                 .Where(x => x.Equals(p.DirectFullPath, StringComparison.Ordinal) == false)
                 .ToArray();
+        }
+
+        public PluginSection GetInterface(out string sectionName)
+        {
+            sectionName = "Interface";
+            if (MainInfo.ContainsKey("Interface"))
+                sectionName = MainInfo["Interface"];
+
+            if (Sections.ContainsKey(sectionName)) // plugin.Sections[secName].GetUICodes(true)
+                return Sections[sectionName];
+            else
+                return null;
         }
         #endregion
 
