@@ -19,7 +19,6 @@ namespace PEBakery
         public static string[] Args;
         public static int Version = 0;
         public static Logger Logger;
-        public static SettingViewModel Setting;
 
         void App_Startup(object sender, StartupEventArgs e)
         {

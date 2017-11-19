@@ -64,18 +64,19 @@ namespace PEBakery.Core
 
                     listLock = new ReaderWriterLockSlim();
 
-                    List<DB_PluginCache> inMemDB = Table<DB_PluginCache>().ToList();
+                    DB_PluginCache[] memDB = Table<DB_PluginCache>().ToArray();
+                    List<DB_PluginCache> updateDB = new List<DB_PluginCache>();
                     var tasks = pUniqueList.Select(p =>
                     {
                         return Task.Run(() =>
                         {
-                            bool updated = CachePlugin(p, inMemDB);
+                            bool updated = CachePlugin(p, memDB, updateDB);
                             worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
                         });
                     }).ToArray();
                     Task.WaitAll(tasks);
                     
-                    InsertOrReplaceAll(inMemDB);
+                    InsertOrReplaceAll(updateDB);
                 }
             }
             catch (SQLiteException e)
@@ -86,48 +87,25 @@ namespace PEBakery.Core
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="p"></param>
-        /// <param name="inMemDB">Use NULL to put direct into .db file</param>
         /// <returns>Return true if cache is updated</returns>
-        private bool CachePlugin(Plugin p, List<DB_PluginCache> inMemDB)
+        private bool CachePlugin(Plugin p, DB_PluginCache[] memDB, List<DB_PluginCache> updateDB)
         {
+            if (memDB == null) throw new ArgumentNullException("memDB");
+
             // Does cache exist?
             FileInfo f = new FileInfo(p.DirectFullPath);
             string sPath = p.DirectFullPath.Remove(0, p.Project.BaseDir.Length + 1);
 
             bool updated = false;
+            // int memIdx = 0;
             DB_PluginCache pCache = null;
-            int inMemIdx = 0;
-            if (inMemDB == null)
-            {
-                pCache = Table<DB_PluginCache>().FirstOrDefault(x => x.Hash == sPath.GetHashCode());
-            }
-            else
-            {
-                listLock.EnterReadLock();
-                try
-                {
-                    inMemIdx = inMemDB.FindIndex(x => x.Hash == sPath.GetHashCode());
-                    if (inMemIdx == -1)
-                        pCache = null;
-                    else
-                        pCache = inMemDB[inMemIdx];
-                }
-                catch
-                {
-                    pCache = null;
-                }
-                finally
-                {
-                    listLock.ExitReadLock();
-                }
-            }
 
-            if (pCache == null) // Cache not exists
-            {
+            // Retrieve Cache
+            pCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+
+            // Update Cache into updateDB
+            if (pCache == null)
+            { // Cache not exists
                 pCache = new DB_PluginCache()
                 {
                     Hash = sPath.GetHashCode(),
@@ -137,67 +115,50 @@ namespace PEBakery.Core
                 };
 
                 BinaryFormatter formatter = new BinaryFormatter();
-                using (MemoryStream mem = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(mem, p);
-                    pCache.Serialized = mem.ToArray();
+                    formatter.Serialize(ms, p);
+                    pCache.Serialized = ms.ToArray();
                 }
 
-                if (inMemDB == null)
+                listLock.EnterWriteLock();
+                try
                 {
-                    Insert(pCache);
+                    updateDB.Add(pCache);
                     updated = true;
                 }
-                else
+                finally
                 {
-                    listLock.EnterWriteLock();
-                    try
-                    {
-                        inMemDB.Add(pCache);
-                        updated = true;
-                    }
-                    finally
-                    {
-                        listLock.ExitWriteLock();
-                    }
+                    listLock.ExitWriteLock();
                 }
             }
             else if (pCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                (DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTime) == false ||
-                pCache.FileSize != f.Length)) // Cache is outdated
-            {
+                (DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTime) == false || pCache.FileSize != f.Length))
+            { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
-                using (MemoryStream mem = new MemoryStream())
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(mem, p);
-                    pCache.Serialized = mem.ToArray();
+                    formatter.Serialize(ms, p);
+                    pCache.Serialized = ms.ToArray();
                     pCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
                     pCache.FileSize = f.Length;
                 }
 
-                if (inMemDB == null)
+                listLock.EnterWriteLock();
+                try
                 {
-                    Update(pCache);
+                    updateDB.Add(pCache);
                     updated = true;
                 }
-                else
+                finally
                 {
-                    listLock.EnterWriteLock();
-                    try
-                    {
-                        inMemDB[inMemIdx] = pCache;
-                        updated = true;
-                    }
-                    finally
-                    {
-                        listLock.ExitWriteLock();
-                    }
+                    listLock.ExitWriteLock();
                 }
             }
 
             if (p.Type == PluginType.Link && p.LinkLoaded)
             {
-                bool linkUpdated = CachePlugin(p.Link, inMemDB);
+                bool linkUpdated = CachePlugin(p.Link, memDB, updateDB);
                 updated = updated || linkUpdated;
             }
 

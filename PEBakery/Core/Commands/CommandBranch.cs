@@ -69,14 +69,12 @@ namespace PEBakery.Core.Commands
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
-            Dictionary<string, string> globalVars = null;
             Dictionary<string, string> fixedVars = null;
             Dictionary<string, CodeCommand> localMacros = null;
             if (cmd.Type == CodeType.Exec)
             {
                 // Backup Varaibles and Macros
                 localVars = s.Variables.GetVarDict(VarsType.Local);
-                globalVars = s.Variables.GetVarDict(VarsType.Global);
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
                 localMacros = s.Macro.LocalDict;
 
@@ -99,7 +97,6 @@ namespace PEBakery.Core.Commands
             {
                 // Restore Variables
                 s.Variables.SetVarDict(VarsType.Local, localVars);
-                s.Variables.SetVarDict(VarsType.Global, globalVars);
                 s.Variables.SetVarDict(VarsType.Fixed, fixedVars);
 
                 // Restore Local Macros

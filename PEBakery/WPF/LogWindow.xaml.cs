@@ -29,13 +29,14 @@ namespace PEBakery.WPF
 
         private LogViewModel m = new LogViewModel();
 
-        public LogWindow()
+        public LogWindow(int selectedTabIndex = 0)
         {
             Interlocked.Increment(ref LogWindow.Count);
 
             InitializeComponent();
             DataContext = m;
 
+            m.SelectedTabIndex = selectedTabIndex;
             m.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
             m.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
             m.Logger.PluginUpdated += PluginUpdateEventHandler;
@@ -200,21 +201,26 @@ namespace PEBakery.WPF
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
             {
                 Title = title,
-                Filter = "Text File (*.txt)|*.txt",
-                InitialDirectory = System.IO.Path.GetDirectoryName(baseDir),
+                Filter = "Text Format (*.txt)|*.txt|HTML Format (*.html)|*.html",
+                InitialDirectory = baseDir,
             };
 
             if (dialog.ShowDialog() == true)
             {
+                string ext = System.IO.Path.GetExtension(dialog.FileName);
+                LogExportType type = LogExportType.Text;
+                if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase))
+                    type = LogExportType.Html;
+
                 if (m.SelectedTabIndex == 0) // System Log
                 {
-                    m.Logger.ExportSystemLog(LogExportType.Text, dialog.FileName);
+                    m.Logger.ExportSystemLog(type, dialog.FileName);
                 }
                 else // Build Log
                 {
                     int idx = m.SelectBuildIndex;
                     long buildId = m.SelectBuildEntries[idx].Item2; // Build Id
-                    m.Logger.ExportBuildLog(LogExportType.Text, dialog.FileName, buildId);
+                    m.Logger.ExportBuildLog(type, dialog.FileName, buildId);
                 }
 
                 Process proc = new Process();
@@ -247,11 +253,6 @@ namespace PEBakery.WPF
 
             RefreshSystemLog();
             RefreshBuildLog();
-        }
-
-        ~LogViewModel()
-        {
-            
         }
 
         #region Refresh 

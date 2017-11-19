@@ -17,6 +17,7 @@ namespace PEBakery.Tests.Core.Command
         private const string Dest_Root = @"Software\PEBakery";
         private const string Dest_RegWrite = @"Software\PEBakery\RegWrite";
         private const string Dest_RegDelete = @"Software\PEBakery\RegDelete";
+        private const string Dest_RegMulti = @"Software\PEBakery\RegMulti";
         #endregion
 
         #region ClassCleanup
@@ -238,6 +239,129 @@ namespace PEBakery.Tests.Core.Command
                     }
                 }
             }
+        }
+        #endregion
+
+        #region RegMulti
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandRegistry")]
+        public void Reg_RegMulti()
+        { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Action>,<Arg1>,[Arg2]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string subKeyStr = Dest_RegMulti;
+            Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
+
+            // Append
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Append,C", new string[] { "A", "B", "C" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Append,B", new string[] { "A", "B" }, ErrorCheck.Warning);
+
+            // Prepend
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Prepend,C", new string[] { "C", "A", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Prepend,A", new string[] { "A", "B" }, ErrorCheck.Warning);
+
+            // Before
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Before,A,C", new string[] { "C", "A", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Before,B,C", new string[] { "A", "C", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Before,D,C", new string[] { "A", "B" }, ErrorCheck.Error);
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Before,A,B", new string[] { "A", "B" }, ErrorCheck.Warning);
+
+            // Behind
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Behind,A,C", new string[] { "A", "C", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Behind,B,C", new string[] { "A", "B", "C" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Behind,D,C", new string[] { "A", "B" }, ErrorCheck.Error);
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Behind,A,B", new string[] { "A", "B" }, ErrorCheck.Warning);
+
+            // Place
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,1,C", new string[] { "C", "A", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,2,C", new string[] { "A", "C", "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,3,C", new string[] { "A", "B", "C" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,0,C", new string[] { "C", "A", "B" }, ErrorCheck.Error);
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,4,C", new string[] { "C", "A", "B" }, ErrorCheck.Error);
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,1,B", new string[] { "A", "B" }, ErrorCheck.Warning);
+
+            // Delete
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Delete,A", new string[] { "B" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Delete,B", new string[] { "A" });
+            RegMulti_Template(s, $@"RegMulti,HKCU,{subKeyStr},Key,Delete,C", new string[] { "A", "B" }, ErrorCheck.Error);
+
+            // Index
+            RegMulti_IndexTemplate(s, $@"RegMulti,HKCU,{subKeyStr},Key,Index,A,%Dest%", 1, "A");
+            RegMulti_IndexTemplate(s, $@"RegMulti,HKCU,{subKeyStr},Key,Index,B,%Dest%", 2, "B");
+            RegMulti_IndexTemplate(s, $@"RegMulti,HKCU,{subKeyStr},Key,Index,C,%Dest%", 0, "C");
+            RegMulti_IndexTemplate(s, $@"RegMulti,HKCU,{subKeyStr},Key,Index,A", 1, "A", ErrorCheck.Error);
+
+            // Error
+            RegMulti_Template_Error(s, $@"RegMulti,HKCU,{subKeyStr},Key,Place,1,C,E", ErrorCheck.ParserError);
+
+            Registry.CurrentUser.DeleteSubKeyTree(subKeyStr, false);
+        }
+
+        private void RegMulti_Template(EngineState s, string rawCode, string[] compStrs, ErrorCheck check = ErrorCheck.Success)
+        {
+            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(Dest_RegMulti, true))
+            {
+                subKey.SetValue("Key", new string[] { "A", "B" }, RegistryValueKind.MultiString);
+            }
+
+            EngineTests.Eval(s, rawCode, CodeType.RegMulti, check);
+
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+            {
+                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(Dest_RegMulti, false))
+                {
+                    Assert.IsNotNull(subKey);
+
+                    RegistryValueKind kind = subKey.GetValueKind("Key");
+                    Assert.IsTrue(kind == RegistryValueKind.MultiString);
+
+                    object valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    Assert.IsNotNull(valueData);
+
+                    string[] destStrs = (string[])valueData;
+                    Assert.IsTrue(destStrs.Length == compStrs.Length);
+                    for (int i = 0; i < destStrs.Length; i++)
+                        Assert.IsTrue(destStrs[i].Equals(compStrs[i], StringComparison.Ordinal));
+                }
+            }
+        }
+
+        private void RegMulti_IndexTemplate(EngineState s, string rawCode, int compIdx, string compStr, ErrorCheck check = ErrorCheck.Success)
+        {
+            using (RegistryKey subKey = Registry.CurrentUser.CreateSubKey(Dest_RegMulti, true))
+            {
+                subKey.SetValue("Key", new string[] { "A", "B" }, RegistryValueKind.MultiString);
+            }
+
+            EngineTests.Eval(s, rawCode, CodeType.RegMulti, check);
+
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+            {
+                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(Dest_RegMulti, false))
+                {
+                    Assert.IsNotNull(subKey);
+
+                    RegistryValueKind kind = subKey.GetValueKind("Key");
+                    Assert.IsTrue(kind == RegistryValueKind.MultiString);
+
+                    object valueData = subKey.GetValue("Key", null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    Assert.IsNotNull(valueData);
+
+                    string[] destStrs = (string[])valueData;
+                    Assert.IsTrue(0 <= compIdx && compIdx <= destStrs.Length);
+                    if (1 <= compIdx && compIdx <= destStrs.Length)
+                    {
+                        Assert.IsTrue(destStrs[compIdx - 1].Equals(compStr, StringComparison.Ordinal));
+                        Assert.IsTrue(s.Variables["Dest"].Equals(compIdx.ToString(), StringComparison.Ordinal));
+                    }
+                }
+            }
+        }
+
+        private void RegMulti_Template_Error(EngineState s, string rawCode, ErrorCheck check)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
         }
         #endregion
 

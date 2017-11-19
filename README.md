@@ -1,5 +1,7 @@
 # PEBakery
 
+![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
+
 PEBakery is WinBuilder-compatible builder for specialized in customizing Windows Preinstalled Envrionment.
 
 | Branch    | Build Status                                                                                                                                                                              |
@@ -29,12 +31,12 @@ Part of PEBakery is licensed under MIT License and others.
 
 ## Current Status
 
+PEBakery is currently in alpha stage.
+
 ### Test of Win10PESE
 
-- Win10PESE x86 can be built without any errors.
-- x86 ISO is bootable, but pinned shortcuts does not appear.
-- Build of Win10PESE x64 will be cond with a few error.
-- x64 ISO is not bootable.
+- Build is near perfect.
+- Built ISO is bootable.
 
 ### Test of MistyPE
 
@@ -46,7 +48,7 @@ Part of PEBakery is licensed under MIT License and others.
 |   Class   | All | Implemented | Tested |
 |-----------|-----|-------------|--------|
 | File      | 11  | 11          | 11     |
-| Registry  | 8   | 8           | 3      |
+| Registry  | 8   | 8           | 4      |
 | Text      | 5   | 5           | 0      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
@@ -59,7 +61,7 @@ Part of PEBakery is licensed under MIT License and others.
 | System    | 17  | 17          | 0      |
 | Branch    | 31  | 31          | 14     |
 | Control   | 6   | 6           | 6      |
-| All       | 160 | 160         | 97     |
+| All       | 160 | 160         | 98     |
 
 ## Help Needed
 
@@ -115,7 +117,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Screenshots
 
-### 20171114 Build
+### Build 20171114
 
 ![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
 ![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)

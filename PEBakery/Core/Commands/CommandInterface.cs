@@ -49,17 +49,19 @@ namespace PEBakery.Core.Commands
             else if (visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase) == false)
                 throw new ExecuteException($"Invalid boolean value [{visibilityStr}]");
 
-            if (cmd.Addr.Plugin.Sections.ContainsKey("Interface") == false)
+            Plugin p = cmd.Addr.Plugin;
+            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [Interface]"));
+                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
-            List<UICommand> uiCodes = cmd.Addr.Plugin.Sections["Interface"].GetUICodes();
-            UICommand uiCmd = uiCodes.FirstOrDefault(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
+            List<UICommand> uiCodes = iface.GetUICodes(true);
+            UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] from section [Interface]"));
+                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] from section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -68,7 +70,7 @@ namespace PEBakery.Core.Commands
             if (uiCmd.Visibility != visibility)
             {
                 uiCmd.Visibility = visibility;
-                UIRenderer.UpdatePlugin("Interface", uiCmd);
+                uiCmd.Update();
 
                 // Re-render Plugin
                 Application.Current.Dispatcher.Invoke(() =>
@@ -89,13 +91,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
-            if (cmd.Addr.Plugin.Sections.ContainsKey("Interface") == false)
+            Plugin p = cmd.Addr.Plugin;
+            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [Interface]"));
+                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
-            List<UICommand> uiCodes = cmd.Addr.Plugin.Sections["Interface"].GetUICodes();
+            List<UICommand> uiCodes = iface.GetUICodes(true);
 
             List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
             foreach (CodeInfo_Visible info in infoOp.InfoList)
@@ -113,10 +117,10 @@ namespace PEBakery.Core.Commands
             List<UICommand> uiCmdList = new List<UICommand>();
             foreach (Tuple<string, bool> args in prepArgs)
             {
-                UICommand uiCmd = uiCodes.FirstOrDefault(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
+                UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] from section [Interface]"));
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] from section [{ifaceSecName}]"));
                     continue;
                 }
 
@@ -124,7 +128,7 @@ namespace PEBakery.Core.Commands
                 uiCmdList.Add(uiCmd);
             }
 
-            UIRenderer.UpdatePlugin("Interface", uiCmdList);
+            UICommand.Update(uiCmdList);
 
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));

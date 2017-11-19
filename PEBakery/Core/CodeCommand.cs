@@ -153,7 +153,6 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
-            CodeType.CopyOrExpand, // NT6 does not have cabinet files such as .ex_, .dl_
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
@@ -478,6 +477,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegExport : CodeInfo
     { // RegExport,<Key>,<RegFile>
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string RegFile;
@@ -499,6 +499,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegRead : CodeInfo
     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -522,6 +523,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegWrite : CodeInfo
     { // RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<ValueData | ValueDatas>,[NOWARN]
+        [NonSerialized]
         public RegistryKey HKey;
         public RegistryValueKind ValueType;
         public string KeyPath;
@@ -612,6 +614,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegDelete : CodeInfo
     { // RegDelete,<HKey>,<KeyPath>,[ValueName]
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -646,6 +649,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RegMulti : CodeInfo
     { // RegMulti,<HKey>,<KeyPath>,<ValueName>,<Type>,<Arg1>,[Arg2]
+        [NonSerialized]
         public RegistryKey HKey;
         public string KeyPath;
         public string ValueName;
@@ -1563,6 +1567,7 @@ namespace PEBakery.Core
         Split,
     }
 
+    [Serializable]
     public class StrFormatInfo { }
 
     [Serializable]
@@ -2033,6 +2038,7 @@ namespace PEBakery.Core
         Pow,
     }
 
+    [Serializable]
     public class MathInfo { }
 
     [Serializable]
@@ -2355,6 +2361,7 @@ namespace PEBakery.Core
         OnScriptExit, OnPluginExit,
         RefreshInterface,
         RescanScripts,
+        Rescan,
         SaveLog,
 
         // Deprecated, WB082 Compability Shim
@@ -2527,6 +2534,22 @@ namespace PEBakery.Core
     { // System,RescanScripts
         public SystemInfo_RescanScripts() { }
         public override string ToString() { return "RescanScripts"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_Rescan : SystemInfo
+    { // System,Rescan,<PluginToRefresh>
+        public string PluginToRefresh;
+
+        public SystemInfo_Rescan(string pluginToRefresh)
+        {
+            PluginToRefresh = pluginToRefresh;
+        }
+
+        public override string ToString()
+        {
+            return $"Rescan,{PluginToRefresh}";
+        }
     }
 
     [Serializable]

@@ -39,7 +39,7 @@ namespace PEBakery.Core
     {
         #region Variables and Constructor
         public static Engine WorkingEngine; // Only 1 Instance can run at one time
-        public static int WorkingLock;
+        public static int WorkingLock = 0;
 
         public EngineState s;
         private Task<long> task;
@@ -74,7 +74,7 @@ namespace PEBakery.Core
                 s.CurrentPlugin = p;
 
             // Init Per-Plugin Log
-            s.PluginId = s.Logger.Build_Plugin_Init(buildId, s.CurrentPlugin, s.CurrentPluginIdx + 1);
+            s.PluginId = s.Logger.Build_Plugin_Init(s, s.CurrentPlugin, s.CurrentPluginIdx + 1);
 
             // Log Plugin Build Start Message
             string msg;
@@ -105,8 +105,11 @@ namespace PEBakery.Core
             else
                 s.MainViewModel.PluginTitleText = $"({s.CurrentPluginIdx + 1}/{s.Plugins.Count}) {StringEscaper.Unescape(p.Title)}";
             s.MainViewModel.PluginDescriptionText = StringEscaper.Unescape(p.Description);
-            s.MainViewModel.PluginVersionText = $"v{p.Version}";
-            s.MainViewModel.PluginAuthorText = p.Author;
+            s.MainViewModel.PluginVersionText = "v" + p.Version;
+            if (MainWindow.PluginAuthorLenLimit < p.Author.Length)
+                s.MainViewModel.PluginAuthorText = p.Author.Substring(0, MainWindow.PluginAuthorLenLimit) + "...";
+            else
+                s.MainViewModel.PluginAuthorText = p.Author;
             s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySection}]...";
 
             long allLineCount = 0;
@@ -136,12 +139,12 @@ namespace PEBakery.Core
             }
         }
 
-        private void FinishRunPlugin(long pluginId)
+        private void FinishRunPlugin(EngineState s)
         {
             // Finish Per-Plugin Log
             s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
             s.Logger.Build_Write(s, Logger.LogSeperator);
-            s.Logger.Build_Plugin_Finish(s.BuildId, pluginId, s.Variables.GetVarDict(VarsType.Local));
+            s.Logger.Build_Plugin_Finish(s, s.Variables.GetVarDict(VarsType.Local));
         }
         #endregion
 
@@ -150,23 +153,29 @@ namespace PEBakery.Core
         {
             task = Task.Run(() =>
             {
-                s.BuildId = s.Logger.Build_Init(runName, s);
+                s.BuildId = s.Logger.Build_Init(s, runName);
 
                 s.MainViewModel.BuildFullProgressBarMax = s.Plugins.Count;
+                
+                // Update project variables
+                s.Project.UpdateProjectVariables();
 
                 while (true)
                 {
                     ReadyRunPlugin(s);
 
                     // Run Main Section
-                    PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
-                    SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
-                    s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
-                    Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
-                    s.Logger.LogEndOfSection(s, addr, 0, true, null);
+                    if (s.CurrentPlugin.Sections.ContainsKey(s.EntrySection))
+                    {
+                        PluginSection mainSection = s.CurrentPlugin.Sections[s.EntrySection];
+                        SectionAddress addr = new SectionAddress(s.CurrentPlugin, mainSection);
+                        s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
+                        Engine.RunSection(s, new SectionAddress(s.CurrentPlugin, mainSection), new List<string>(), 1, false);
+                        s.Logger.LogEndOfSection(s, addr, 0, true, null);
+                    }
 
                     // End of Plugin
-                    FinishRunPlugin(s.PluginId);
+                    FinishRunPlugin(s);
 
                     // OnPluginExit event callback
                     Engine.CheckAndRunCallback(s, ref s.OnPluginExit, FinishEventParam(s), "OnPluginExit");
@@ -212,7 +221,7 @@ namespace PEBakery.Core
                     s.PassCurrentPluginFlag = false;
                 }
 
-                s.Logger.Build_Finish(s.BuildId);
+                s.Logger.Build_Finish(s);
 
                 return s.BuildId;
             });
@@ -247,7 +256,7 @@ namespace PEBakery.Core
 
             RunCommands(s, addr, codes, paramDict, depth, callback);
 
-            // Increase only if cmd resides is CurrentPlugin
+            // Increase only if cmd resides in CurrentPlugin
             if (s.CurrentPlugin.Equals(addr.Plugin))
                 s.ProcessedSectionHashes.Add(addr.Section.GetHashCode());
         }
@@ -308,8 +317,6 @@ namespace PEBakery.Core
             {
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 0;
 
             try
             {
@@ -616,8 +623,6 @@ namespace PEBakery.Core
                 s.MainViewModel.BuildPluginProgressBarValue += 1;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 1000;
-
             // This one is for Unit Test
             return logs; 
         }
@@ -690,31 +695,23 @@ namespace PEBakery.Core
                 loadPluginPath.Equals(Path.GetDirectoryName(currentPluginPath), StringComparison.OrdinalIgnoreCase))
                 inCurrentPlugin = true; // Sometimes this value is not legal, so always use Project.GetPluginByFullPath.
 
-            // string fullPath = StringEscaper.ExpandVariables(s, loadPluginPath);
             string fullPath = loadPluginPath;
             Plugin p = s.Project.GetPluginByFullPath(fullPath);
             if (p == null)
-            { // Cannot Find Plugin in Project
-                if (!File.Exists(fullPath))
-                    throw new ExecuteException($"No plugin in [{fullPath}]");
-                p = s.Project.LoadPluginMonkeyPatch(fullPath, false, true);
+            { // Cannot Find Plugin in Project.AllPlugins
+                // Try searching s.Plugins
+                p = s.Plugins.Find(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
                 if (p == null)
-                    throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+                { // Still not found in s.Plugins
+                    if (!File.Exists(fullPath))
+                        throw new ExecuteException($"No plugin in [{fullPath}]");
+                    p = s.Project.LoadPluginMonkeyPatch(fullPath, false, true);
+                    if (p == null)
+                        throw new ExecuteException($"Unable to load plugin [{fullPath}]");
+                }
             }
 
             return p;
-        }
-
-        internal static void UpdateCommandProgressBar(EngineState s, double val)
-        {
-            if (Application.Current != null) // for Unit Test
-            {
-                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
-                {
-                    s.MainViewModel.BuildCommandProgressBarValue = val;
-                }));
-            }
-            
         }
         #endregion
     }
@@ -757,6 +754,8 @@ namespace PEBakery.Core
         public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
+        public bool DisableLogger = false; // For performance (when engine runnded by interface)
+        public bool DelayedLogging = true; // For performance
 
         // Fields : System Commands
         public CodeCommand OnBuildExit = null;
@@ -806,6 +805,7 @@ namespace PEBakery.Core
             LogComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_DirCopyBug;
+            DelayedLogging = !m.Log_DisableDelayedLogging;
         }
         #endregion
     }

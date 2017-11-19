@@ -52,7 +52,6 @@
                             Grid.Row="0" Grid.Column="0"
                             FontSize="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FontSize, Mode=OneWay}"
                             Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Height, Mode=OneWay}"
-                            Margin="0,0,1,0"
                             VerticalAlignment="Center"
                             VerticalContentAlignment="Center"
                             

@@ -125,36 +125,41 @@
 
                     <Grid Grid.Row="1" Margin="10, 10, 10, 10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="110"></ColumnDefinition>
-                            <ColumnDefinition Width="110"></ColumnDefinition>
-                            <ColumnDefinition Width="*"></ColumnDefinition>
-                            <ColumnDefinition Width="200"></ColumnDefinition>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="200"/>
                         </Grid.ColumnDefinitions>
 
                         <Button
                             Grid.Column="0"
                             Margin="0, 0, 10, 0"
                             Content="Escape"
-                            Click="EscapeButton_Click">
-                        </Button>
+                            Click="EscapeButton_Click"/>
                         <Button
                             Grid.Column="1"
                             Margin="0, 0, 10, 0"
                             Content="Unescape"
-                            Click="UnescapeButton_Click">
-                        </Button>
-                        <CheckBox
+                            Click="UnescapeButton_Click"/>
+                        <StackPanel
                             Grid.Column="2"
                             Margin="0, 0, 10, 0"
-                            VerticalAlignment="Center"
-                            Content="Escape Percent (%)"
-                            IsChecked="{Binding EscapePercentChecked}">
-                        </CheckBox>
+                            Orientation="Horizontal">
+                            <CheckBox
+                                Margin="0, 0, 10, 0"
+                                VerticalAlignment="Center"
+                                Content="Escape %"
+                                IsChecked="{Binding Escaper_EscapePercent}"/>
+                            <CheckBox
+                                Margin="0, 0, 10, 0"
+                                VerticalAlignment="Center"
+                                Content="Escape #, $"
+                                IsChecked="{Binding Escaper_EscapeSharpDollar}"/>
+                        </StackPanel>
                         <Button
                             Grid.Column="3"
                             Content="Escape Sequence Legend"
-                            Click="EscapeSequenceLegend_Click">
-                        </Button>
+                            Click="EscapeSequenceLegend_Click"/>
                     </Grid>
 
                     <Grid Grid.Row="2" Margin="10, 10, 10, 10">
@@ -293,9 +298,10 @@
             </Grid.ColumnDefinitions>
 
             <Button
-                    Grid.Row="0" Grid.Column="1"
-                    Content="Close"
-                    Click="CloseButton_Click">
+                Grid.Row="0" Grid.Column="1"
+                IsCancel="True"
+                Content="Close"
+                Click="CloseButton_Click">
             </Button>
         </Grid>
     </Grid>

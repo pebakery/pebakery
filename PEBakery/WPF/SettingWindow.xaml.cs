@@ -165,7 +165,7 @@ namespace PEBakery.WPF
 
         private void Button_MonospaceFont_Click(object sender, RoutedEventArgs e)
         {
-            Model.General_MonospaceFont = FontHelper.ChooseFontDialog(Model.General_MonospaceFont, this, false, true);
+            Model.Interface_MonospaceFont = FontHelper.ChooseFontDialog(Model.Interface_MonospaceFont, this, false, true);
         }
     }
     #endregion
@@ -193,6 +193,7 @@ namespace PEBakery.WPF
             Logger.DebugLevel = Log_DebugLevel;
             CodeParser.OptimizeCode = General_OptimizeCode;
             CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
+            CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
         }
         #endregion
 
@@ -351,17 +352,6 @@ namespace PEBakery.WPF
         #endregion
 
         #region General
-        private bool general_OptimizeCode;
-        public bool General_OptimizeCode
-        {
-            get => general_OptimizeCode;
-            set
-            {
-                general_OptimizeCode = value;
-                OnPropertyUpdate("General_OptimizeCode");
-            }
-        }
-
         private bool general_EnableLongFilePath;
         public bool General_EnableLongFilePath
         {
@@ -379,40 +369,62 @@ namespace PEBakery.WPF
             }
         }
 
-        private string general_MonospaceFontStr;
-        public string General_MonospaceFontStr
+        private bool general_OptimizeCode;
+        public bool General_OptimizeCode
         {
-            get => general_MonospaceFontStr;
+            get => general_OptimizeCode;
             set
             {
-                general_MonospaceFontStr = value;
-                OnPropertyUpdate("General_MonospaceFontStr");
+                general_OptimizeCode = value;
+                OnPropertyUpdate("General_OptimizeCode");
             }
         }
 
-        private FontHelper.WPFFont general_MonospaceFont;
-        public FontHelper.WPFFont General_MonospaceFont
+        private bool general_ShowLogAfterBuild;
+        public bool General_ShowLogAfterBuild
         {
-            get => general_MonospaceFont;
+            get => general_ShowLogAfterBuild;
             set
             {
-                general_MonospaceFont = value;
-
-                OnPropertyUpdate("General_MonospaceFont");
-                General_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
-
-                OnPropertyUpdate("General_MonospaceFontFamily");
-                OnPropertyUpdate("General_MonospaceFontWeight");
-                OnPropertyUpdate("General_MonospaceFontSize");
+                general_ShowLogAfterBuild = value;
+                OnPropertyUpdate("General_ShowLogAfterBuild");
             }
         }
-
-        public FontFamily General_MonospaceFontFamily { get => general_MonospaceFont.FontFamily; }
-        public FontWeight General_MonospaceFontWeight { get => general_MonospaceFont.FontWeight; }
-        public double General_MonospaceFontSize { get => general_MonospaceFont.FontSizeInDIP; }
         #endregion
 
         #region Interface
+        private string interface_MonospaceFontStr;
+        public string Interface_MonospaceFontStr
+        {
+            get => interface_MonospaceFontStr;
+            set
+            {
+                interface_MonospaceFontStr = value;
+                OnPropertyUpdate("Interface_MonospaceFontStr");
+            }
+        }
+
+        private FontHelper.WPFFont interface_MonospaceFont;
+        public FontHelper.WPFFont Interface_MonospaceFont
+        {
+            get => interface_MonospaceFont;
+            set
+            {
+                interface_MonospaceFont = value;
+
+                OnPropertyUpdate("Interface_MonospaceFont");
+                Interface_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
+
+                OnPropertyUpdate("Interface_MonospaceFontFamily");
+                OnPropertyUpdate("Interface_MonospaceFontWeight");
+                OnPropertyUpdate("Interface_MonospaceFontSize");
+            }
+        }
+
+        public FontFamily Interface_MonospaceFontFamily { get => interface_MonospaceFont.FontFamily; }
+        public FontWeight Interface_MonospaceFontWeight { get => interface_MonospaceFont.FontWeight; }
+        public double Interface_MonospaceFontSize { get => interface_MonospaceFont.FontSizeInDIP; }
+
         private double interface_ScaleFactor;
         public double Interface_ScaleFactor
         {
@@ -421,17 +433,6 @@ namespace PEBakery.WPF
             {
                 interface_ScaleFactor = value;
                 OnPropertyUpdate("Interface_ScaleFactor");
-            }
-        }
-
-        private bool interface_IgnoreEncodedFileChecksum;
-        public bool Interface_IgnoreEncodedFileChecksum
-        {
-            get => interface_IgnoreEncodedFileChecksum;
-            set
-            {
-                interface_IgnoreEncodedFileChecksum = value;
-                OnPropertyUpdate("Interface_IgnoreEncodedFileChecksum");
             }
         }
         #endregion
@@ -573,6 +574,28 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Log_Comment");
             }
         }
+
+        private bool log_DisableInInterface;
+        public bool Log_DisableInInterface
+        {
+            get => log_DisableInInterface;
+            set
+            {
+                log_DisableInInterface = value;
+                OnPropertyUpdate("Log_DisableInInterface");
+            }
+        }
+
+        private bool log_DisableDelayedLogging;
+        public bool Log_DisableDelayedLogging
+        {
+            get => log_DisableDelayedLogging;
+            set
+            {
+                log_DisableDelayedLogging = value;
+                OnPropertyUpdate("Log_DisableDelayedLogging");
+            }
+        }
         #endregion
 
         #region Compatibility
@@ -598,7 +621,16 @@ namespace PEBakery.WPF
             }
         }
 
-        // 
+        private bool compat_RegWriteLegacy;
+        public bool Compat_RegWriteLegacy
+        {
+            get => compat_RegWriteLegacy;
+            set
+            {
+                compat_RegWriteLegacy = value;
+                OnPropertyUpdate("Compat_RegWriteLegacy");
+            }
+        }
         #endregion
 
         #region Utility
@@ -610,17 +642,17 @@ namespace PEBakery.WPF
             // General
             General_EnableLongFilePath = false;
             General_OptimizeCode = true;
+            General_ShowLogAfterBuild = true;
+
+            // Interface
             using (InstalledFontCollection fonts = new InstalledFontCollection())
             {
                 if (fonts.Families.FirstOrDefault(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)) == null)
-                    General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
+                    Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
                 else // Prefer D2Coding over Consolas
-                    General_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
+                    Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
             }
-
-            // Interface
             Interface_ScaleFactor = 100;
-            Interface_IgnoreEncodedFileChecksum = true;
 
             // Plugin
             Plugin_EnableCache = true;
@@ -635,10 +667,13 @@ namespace PEBakery.WPF
 #endif
             Log_Macro = true;
             Log_Comment = true;
+            Log_DisableInInterface = true;
+            Log_DisableDelayedLogging = false;
 
             // Compatibility
             Compat_DirCopyBug = true;
             Compat_LegacyBranchCondition = true;
+            Compat_RegWriteLegacy = true;
         }
 
         public void ReadFromFile()
@@ -653,39 +688,47 @@ namespace PEBakery.WPF
             {
                 new IniKey("General", "EnableLongFilePath"), // Boolean
                 new IniKey("General", "OptimizeCode"), // Boolean
-                new IniKey("General", "MonospaceFontFamily"),
-                new IniKey("General", "MonospaceFontWeight"),
-                new IniKey("General", "MonospaceFontSize"),
+                new IniKey("General", "ShowLogAfterBuild"), // Boolean
+                new IniKey("Interface", "MonospaceFontFamily"),
+                new IniKey("Interface", "MonospaceFontWeight"),
+                new IniKey("Interface", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
-                new IniKey("Interface", "IgnoreEncodedFileChecksum"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
+                new IniKey("Plugin", "SpeedupLoading"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
                 new IniKey("Plugin", "AutoSyntaxCheck"), // Boolean
                 new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
+                new IniKey("Log", "DisableInInterface"), // Boolean
+                new IniKey("Log", "DisableDelayedLogging"), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey("Compat", "DirCopyBug"), // Boolean
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
+                new IniKey("Compat", "RegWriteLegacy"), // Boolean
             };
             keys = Ini.GetKeys(settingFile, keys);
 
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
             string str_General_EnableLongFilePath = dict["General_EnableLongFilePath"];
             string str_General_OptimizeCode = dict["General_OptimizeCode"];
-            string str_Gereal_MonospaceFontFamiliy = dict["General_MonospaceFontFamily"];
-            string str_Gereal_MonospaceFontWeight = dict["General_MonospaceFontWeight"];
-            string str_Gereal_MonospaceFontSize = dict["General_MonospaceFontSize"];
+            string str_General_ShowLogAfterBuild = dict["General_ShowLogAfterBuild"];
+            string str_Interface_MonospaceFontFamiliy = dict["Interface_MonospaceFontFamily"];
+            string str_Interface_MonospaceFontWeight = dict["Interface_MonospaceFontWeight"];
+            string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
-            string str_Interface_IgnoreEncodedFileChecksum = dict["Interface_IgnoreEncodedFileChecksum"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
+            string str_Plugin_SpeedupLoading = dict["Plugin_SpeedupLoading"];
             string str_Plugin_AutoConvertToUTF8 = dict["Plugin_AutoConvertToUTF8"];
             string str_Plugin_AutoSyntaxCheck = dict["Plugin_AutoSyntaxCheck"];
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
             string str_Log_Macro = dict["Log_Macro"];
             string str_Log_Comment = dict["Log_Comment"];
+            string str_Log_DisableInInterface = dict["Log_DisableInInterface"];
+            string str_Log_DisableDelayedLogging = dict["Log_DisableDelayedLogging"];
             string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
+            string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -705,23 +748,30 @@ namespace PEBakery.WPF
                     General_OptimizeCode = false;
             }
 
-            // General - MonospaceFont (Default = Consolas, Regular, 12pt
-            FontFamily monoFontFamiliy = General_MonospaceFont.FontFamily;
-            FontWeight monoFontWeight = General_MonospaceFont.FontWeight;
-            int monoFontSize = General_MonospaceFont.FontSizeInPoint;
-            if (str_Gereal_MonospaceFontFamiliy != null)
-                monoFontFamiliy = new FontFamily(str_Gereal_MonospaceFontFamiliy);
-            if (str_Gereal_MonospaceFontWeight != null)
-                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(str_Gereal_MonospaceFontWeight);
-            if (str_Gereal_MonospaceFontSize != null)
+            // General - ShowLogAfterBuild (Default = True)
+            if (str_General_ShowLogAfterBuild != null)
             {
-                if (int.TryParse(str_Gereal_MonospaceFontSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
+                if (str_General_ShowLogAfterBuild.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    General_ShowLogAfterBuild = false;
+            }
+
+            // Interface - MonospaceFont (Default = Consolas, Regular, 12pt
+            FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
+            FontWeight monoFontWeight = Interface_MonospaceFont.FontWeight;
+            int monoFontSize = Interface_MonospaceFont.FontSizeInPoint;
+            if (str_Interface_MonospaceFontFamiliy != null)
+                monoFontFamiliy = new FontFamily(str_Interface_MonospaceFontFamiliy);
+            if (str_Interface_MonospaceFontWeight != null)
+                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(str_Interface_MonospaceFontWeight);
+            if (str_Interface_MonospaceFontSize != null)
+            {
+                if (int.TryParse(str_Interface_MonospaceFontSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
                 {
                     if (0 < newMonoFontSize)
                         monoFontSize = newMonoFontSize;
                 }
             }
-            General_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
+            Interface_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             // Interface - ScaleFactor (Default = 100)
             if (str_Interface_ScaleFactor != null)
@@ -731,13 +781,6 @@ namespace PEBakery.WPF
                     if (100 <= scaleFactor && scaleFactor <= 200)
                         Interface_ScaleFactor = scaleFactor;
                 }
-            }
-
-            // str_Interface_IgnoreEncodedFileChecksum (Default = True)
-            if (str_Interface_IgnoreEncodedFileChecksum != null)
-            {
-                if (str_Interface_IgnoreEncodedFileChecksum.Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Interface_IgnoreEncodedFileChecksum = false;
             }
 
             // Plugin - EnableCache (Default = True)
@@ -785,6 +828,20 @@ namespace PEBakery.WPF
                     Log_Comment = false;
             }
 
+            // Log - DisableInInterface (Default = True)
+            if (str_Log_DisableInInterface != null)
+            {
+                if (str_Log_DisableInInterface.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Log_DisableInInterface = false;
+            }
+
+            // Log - DisableDelayedLogging (Default = False)
+            if (str_Log_DisableDelayedLogging != null)
+            {
+                if (str_Log_DisableDelayedLogging.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Log_DisableDelayedLogging = true;
+            }
+
             // Compatibility - DirCopyBug (Default = True)
             if (str_Compat_DirCopyBug != null)
             {
@@ -798,6 +855,13 @@ namespace PEBakery.WPF
                 if (str_Compat_LegacyBranchCondition.Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_LegacyBranchCondition = false;
             }
+
+            // Compatibility - RegWriteLegacy (Default = True)
+            if (str_Compat_RegWriteLegacy != null)
+            {
+                if (str_Compat_RegWriteLegacy.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_RegWriteLegacy = false;
+            }
         }
 
         public void WriteToFile()
@@ -806,20 +870,23 @@ namespace PEBakery.WPF
             {
                 new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
                 new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
-                new IniKey("General", "MonospaceFontFamily", General_MonospaceFont.FontFamily.Source),
-                new IniKey("General", "MonospaceFontWeight", General_MonospaceFont.FontWeight.ToString()),
-                new IniKey("General", "MonospaceFontSize", General_MonospaceFont.FontSizeInPoint.ToString()),
+                new IniKey("General", "ShowLogAfterBuild", General_ShowLogAfterBuild.ToString()),
+                new IniKey("Interface", "MonospaceFontFamily", Interface_MonospaceFont.FontFamily.Source),
+                new IniKey("Interface", "MonospaceFontWeight", Interface_MonospaceFont.FontWeight.ToString()),
+                new IniKey("Interface", "MonospaceFontSize", Interface_MonospaceFont.FontSizeInPoint.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
-                new IniKey("Interface", "IgnoreEncodedFileChecksum", Interface_IgnoreEncodedFileChecksum.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
                 new IniKey("Plugin", "AutoSyntaxCheck", Plugin_AutoSyntaxCheck.ToString()),
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
+                new IniKey("Log", "DisableInInterface", Log_DisableInInterface.ToString()),
+                new IniKey("Log", "DisableDelayedLogging", Log_DisableDelayedLogging.ToString()),
                 new IniKey("Project", "DefaultProject", Project_Default),
                 new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
+                new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
         }

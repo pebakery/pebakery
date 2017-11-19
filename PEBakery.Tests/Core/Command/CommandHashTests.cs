@@ -123,7 +123,6 @@ namespace PEBakery.Tests.Core.Command
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.Write("Hello\r\nHash\r\nPEBakery\r\nUnitTest");
-                w.Close();
             }
 
             return tempFile;

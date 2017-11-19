@@ -48,15 +48,11 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
-
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
-
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
 
             // Detect encoding of text
             // If text does not exists, create blank file
@@ -74,8 +70,6 @@ namespace PEBakery.Core.Commands
                     string lineFromSrc;
                     while ((lineFromSrc = reader.ReadLine()) != null)
                         writer.WriteLine(lineFromSrc);
-                    reader.Close();
-                    writer.Close();
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -126,23 +120,17 @@ namespace PEBakery.Core.Commands
             else
                 throw new ExecuteException($"Mode [{modeStr}] must be one of [Append, Prepend]");
 
-            s.MainViewModel.BuildCommandProgressBarValue = 100;
-
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
                 logs.Add(new LogInfo(LogState.Error, errorMsg));
                 return logs;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 300;
-
             // Detect encoding of text
             // If text does not exists, create blank file
             Encoding encoding = Encoding.Default;
             if (File.Exists(fileName))
                 encoding = FileHelper.DetectTextEncoding(fileName);
-
-            s.MainViewModel.BuildCommandProgressBarValue = 500;
 
             string linesToWrite;
             if (mode == TXTAddLineMode.Prepend)
@@ -230,8 +218,6 @@ namespace PEBakery.Core.Commands
                     writer.WriteLine(lineFromSrc);
                     i++;
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -275,8 +261,6 @@ namespace PEBakery.Core.Commands
                     }                        
                     writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -334,8 +318,6 @@ namespace PEBakery.Core.Commands
                     if (writeLine)
                         writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -378,8 +360,6 @@ namespace PEBakery.Core.Commands
                     }
                     writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -419,8 +399,6 @@ namespace PEBakery.Core.Commands
                     else
                         writer.WriteLine(lineFromSrc);
                 }
-                reader.Close();
-                writer.Close();
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 

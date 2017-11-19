@@ -57,22 +57,22 @@ namespace PEBakery.Core
     0x000 - 0x1FF (512B) -> L-V (Length - Value)
         1B : [Length of FileName]
         511B : [FileName]
-    0x200 - 0x207 : 8B -> Length of Raw File
-    0x208 - 0x20F : 8B -> (Type 1) Length of Zlib-Compressed File, (Type 2) Null-padded
+    0x200 - 0x207 : 8B  -> Length of Raw File
+    0x208 - 0x20F : 8B  -> (Type 1) Length of Zlib-Compressed File, (Type 2) Null-padded
     0x210 - 0x21F : 16B -> Null-padded
-    0x220 - 0x223 : 4B -> CRC32 of Raw File
-    0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
-    0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
+    0x220 - 0x223 : 4B  -> CRC32 of Raw File
+    0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01)
+    0x225         : 1B  -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
 
     [FinalFooter]
     Not compressed, 36Byte (0x24)
-    0x00 - 0x04 : 4B -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
-    0x04 - 0x08 : 4B -> Unknown - Always 1 
-    0x08 - 0x0B : 4B -> WB082 ZLBArchive version - Always 2
-    0x0C - 0x0F : 4B -> Zlib Compressed FirstFooter Length
-    0x10 - 0x17 : 8B -> Zlib Compressed File Length
-    0x18 - 0x1B : 4B -> Unknown - Always 1 
-    0x1C - 0x23 : 8B -> Unknown - Always 0
+    0x00 - 0x04   : 4B  -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
+    0x04 - 0x08   : 4B  -> Unknown - Always 1
+    0x08 - 0x0B   : 4B  -> WB082 ZLBArchive version - Always 2
+    0x0C - 0x0F   : 4B  -> Zlib Compressed FirstFooter Length
+    0x10 - 0x17   : 8B  -> Zlib Compressed File Length
+    0x18 - 0x1B   : 4B  -> Unknown - Always 1
+    0x1C - 0x23   : 8B  -> Unknown - Always 0
     
     Note) Which purpose do Unknown entries have?
     0x04 : When changed, WB082 cannot recognize filename. Maybe related to filename encoding?
@@ -86,6 +86,7 @@ namespace PEBakery.Core
     - Design more robust plugin format.
     */
 
+    #region EncodedFile
     public class EncodedFile
     {
         #region Wrapper Methods
@@ -191,10 +192,9 @@ namespace PEBakery.Core
                             using (ZLibStream zs = new ZLibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
                                 zs.Write(input, 0, input.Length);
-                                zs.Close();
-
-                                bodyStream.Position = 0;
                             }
+
+                            bodyStream.Position = 0;
                         }
                         break;
                     case EncodeMode.Raw:
@@ -257,10 +257,8 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(footerStream, CompressionMode.Compress, CompressionLevel.Default, true))
                 {
                     zs.Write(rawFooter, 0, rawFooter.Length);
-                    zs.Close();
-
-                    footerStream.Position = 0;
                 }
+                footerStream.Position = 0;
 
                 // [Stage 4] Concat body and footer
                 bodyStream.CopyTo(concatStream);
@@ -410,9 +408,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
-                    rawFooter = rawFooterStream.ToArray();
-                    zs.Close();
                 }
+
+                rawFooter = rawFooterStream.ToArray();
             }
 
             // [Stage 5] Read first footer
@@ -458,10 +456,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
                 {
                     zs.CopyTo(rawBodyStream);
-                    zs.Close();
-
-                    rawBodyStream.Position = 0;
                 }
+
+                rawBodyStream.Position = 0;
             }
             else if (compMode == 1)  // Type 2, raw
             {
@@ -483,6 +480,7 @@ namespace PEBakery.Core
         }
         #endregion
     }
+    #endregion
 
     #region EncodedFileInfo
     /// <summary>
@@ -583,9 +581,9 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(rawFooterStream);
-                    rawFooter = rawFooterStream.ToArray();
-                    zs.Close();
                 }
+
+                rawFooter = rawFooterStream.ToArray();
             }
 
             // [Stage 5] Read first footer
@@ -637,11 +635,10 @@ namespace PEBakery.Core
                 using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
                 {
                     zs.CopyTo(this.RawBodyStream);
-                    zs.Close();
-
-                    this.RawBodyStream.Position = 0;
-                    this.CompressedBodyValid = true;
                 }
+
+                this.RawBodyStream.Position = 0;
+                this.CompressedBodyValid = true;
             }
             else if (compMode == (ushort)EncodedFile.EncodeMode.Raw)
             {

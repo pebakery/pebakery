@@ -163,7 +163,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -194,7 +193,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -225,7 +223,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -259,7 +256,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -302,7 +298,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -355,7 +350,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -407,7 +401,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -436,7 +429,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -468,7 +460,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -500,7 +491,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -534,7 +524,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -593,7 +582,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -653,7 +641,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -702,7 +689,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("2=B");
                 w.WriteLine("3=C");
                 w.WriteLine("4=D");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "2"));
@@ -712,7 +698,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -738,7 +723,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("2=B");
                 w.WriteLine("3=C");
                 w.WriteLine("4=D");
-                w.Close();
             }
 
             // Induce Error
@@ -749,7 +733,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -776,7 +759,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("2=B");
                 w.WriteLine("3=C");
                 w.WriteLine("4=D");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "2"));
@@ -787,7 +769,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -827,7 +808,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             IniKey[] keys = new IniKey[3]
@@ -845,7 +825,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -887,7 +866,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -909,7 +887,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section]");
                 w.WriteLine("1=A");
                 w.WriteLine("2=B");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.AddSection(tempFile, "Section"));
@@ -919,7 +896,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -951,7 +927,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.AddSection(tempFile, "Section4"));
@@ -961,7 +936,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1015,7 +989,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1049,7 +1022,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             List<string> sections = new List<string>()
@@ -1065,7 +1037,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1115,7 +1086,6 @@ namespace PEBakery.IniLib.Tests
                 string read = r.ReadToEnd();
                 string comp = string.Empty;
 
-                r.Close();
                 Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
 
@@ -1131,7 +1101,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section]");
                 w.WriteLine("1=A");
                 w.WriteLine("2=B");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.DeleteSection(tempFile, "Section"));
@@ -1142,7 +1111,6 @@ namespace PEBakery.IniLib.Tests
                 string read = r.ReadToEnd();
                 string comp = string.Empty;
 
-                r.Close();
                 Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
 
@@ -1166,7 +1134,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.DeleteSection(tempFile, "Section2"));
@@ -1176,7 +1143,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1223,7 +1189,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             List<string> sections = new List<string>()
@@ -1239,7 +1204,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1271,7 +1235,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section3]");
                 w.WriteLine("20=韓");
                 w.WriteLine("21=國");
-                w.Close();
             }
 
             List<string> sections = new List<string>()
@@ -1287,7 +1250,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1335,7 +1297,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
@@ -1345,7 +1306,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1373,14 +1333,12 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(destFile, false, Encoding.Unicode))
             {
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
@@ -1390,7 +1348,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1421,7 +1378,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(destFile, false, Encoding.UTF8))
@@ -1431,7 +1387,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
@@ -1441,7 +1396,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1475,7 +1429,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(destFile, false, Encoding.BigEndianUnicode))
@@ -1483,7 +1436,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
@@ -1493,7 +1445,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1540,7 +1491,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             Assert.IsTrue(read.Equals(string.Empty, StringComparison.Ordinal));
@@ -1564,7 +1514,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
@@ -1574,7 +1523,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1604,14 +1552,12 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
@@ -1621,7 +1567,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1654,7 +1599,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
@@ -1664,7 +1608,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
@@ -1674,7 +1617,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1709,7 +1651,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
@@ -1719,7 +1660,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
@@ -1729,7 +1669,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();
@@ -1762,7 +1701,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine("[Section1]");
                 w.WriteLine("01=A");
                 w.WriteLine("02=B");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(tempFile2, false, Encoding.UTF8))
@@ -1772,7 +1710,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("03=C");
-                w.Close();
             }
 
             using (StreamWriter w = new StreamWriter(destFile, false, Encoding.UTF8))
@@ -1782,7 +1719,6 @@ namespace PEBakery.IniLib.Tests
                 w.WriteLine();
                 w.WriteLine("[Section2]");
                 w.WriteLine("04=F");
-                w.Close();
             }
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
@@ -1792,7 +1728,6 @@ namespace PEBakery.IniLib.Tests
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
-                r.Close();
             }
 
             StringBuilder b = new StringBuilder();

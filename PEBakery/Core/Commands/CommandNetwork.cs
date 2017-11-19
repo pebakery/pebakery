@@ -74,8 +74,6 @@ namespace PEBakery.Core.Commands
                 destPath = downloadTo;
             }
 
-            s.MainViewModel.BuildCommandProgressBarValue = 200;
-
             if (info.HashType != null && info.HashDigest != null)
             { // Calculate Hash After Downloading
                 string tempPath = Path.GetTempFileName();
@@ -83,8 +81,6 @@ namespace PEBakery.Core.Commands
                 {
                     client.DownloadFile(url, tempPath);
                 }
-
-                s.MainViewModel.BuildCommandProgressBarValue = 500;
 
                 string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
                 string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
@@ -132,7 +128,6 @@ namespace PEBakery.Core.Commands
                     downDigest = HashHelper.CalcHashString(hashType, fs);
                 }
 
-                s.MainViewModel.BuildCommandProgressBarValue = 800;
                 if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                 {
                     File.Move(tempPath, destPath);
@@ -150,7 +145,6 @@ namespace PEBakery.Core.Commands
                     client.DownloadFile(url, destPath);
                 }
 
-                s.MainViewModel.BuildCommandProgressBarValue = 700;
                 logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{downloadTo}]"));
             }
 

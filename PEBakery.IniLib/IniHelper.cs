@@ -46,7 +46,6 @@ namespace PEBakery.IniLib
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 fs.Read(bom, 0, bom.Length);
-                fs.Close();
             }
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
@@ -109,8 +108,6 @@ namespace PEBakery.IniLib
                 { // Unsupported Encoding
                     throw new ArgumentException($"[{encoding}] is not supported");
                 }
-
-                fs.Close();
             }
         }
 

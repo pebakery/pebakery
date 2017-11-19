@@ -112,45 +112,43 @@
                                     Click="Button_SourceDirectory_Click">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial
-                                    Kind="FolderUpload"
-                                    Width="Auto"
-                                    Height="Auto"
-                                    Margin="2"/>
+                                            Kind="FolderUpload"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="2"/>
                                     </Button.Content>
                                 </Button>
                                 <Button
-                            Grid.Column="3"
-                            Name="Button_ResetSourceDirectory"
-                            Click="Button_ResetSourceDirectory_Click">
+                                    Grid.Column="3"
+                                    Name="Button_ResetSourceDirectory"
+                                    Click="Button_ResetSourceDirectory_Click">
                                     <Button.Content>
                                         <iconPacks:PackIconMaterial
-                                    Kind="Close"
-                                    Width="Auto"
-                                    Height="Auto"
-                                    Margin="4"/>
+                                            Kind="Close"
+                                            Width="Auto"
+                                            Height="Auto"
+                                            Margin="4"/>
                                     </Button.Content>
                                 </Button>
                             </Grid>
                             <Grid
-                        Height="25"
-                        Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center">
+                                Height="25"
+                                Margin="15, 15, 15, 0"
+                                VerticalAlignment="Center"> 
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    Text="Target Directory">
-                                </TextBlock>
+                                    Text="Target Directory"/>
                                 <TextBox
                                     Grid.Column="1"
                                     Margin="0, 0, 5, 0"
                                     VerticalContentAlignment="Center"
-                                    Text="{Binding Project_TargetDirectory}">
-                                </TextBox>
+                                    Text="{Binding Project_TargetDirectory}"/>
                                 <Button
                                     Grid.Column="2"
                                     Name="Button_TargetDirectory"
@@ -169,21 +167,19 @@
                                 Margin="15, 15, 15, 15"
                                 VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"></ColumnDefinition>
-                                    <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    Text="ISO File">
-                                </TextBlock>
+                                    Text="ISO File"/>
                                 <TextBox
                                     Grid.Column="1"
                                     Margin="0, 0, 5, 0"
                                     VerticalContentAlignment="Center"
-                                    Text="{Binding Project_ISOFile}">
-                                </TextBox>
+                                    Text="{Binding Project_ISOFile}"/>
                                 <Button
                                     Grid.Column="2"
                                     Name="Button_ISOFile"
@@ -204,130 +200,114 @@
             <TabItem Header="General">
                 <StackPanel>
                     <CheckBox
-                        Name="CheckBox_OptimizeCode"
-                        Margin="15, 15, 15, 0"
-                        Content="Optimize Code"
-                        ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
-                        IsChecked="{Binding General_OptimizeCode}">
-                    </CheckBox>
-                    <CheckBox
-                        Name="CheckBox_EnableLongFilePath"
                         Margin="15, 15, 15, 0"
                         Content="Enable Long File Path Support"
                         ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
                         Click="CheckBox_EnableLongFilePath_Click"
-                        IsChecked="{Binding General_EnableLongFilePath}">
-                    </CheckBox>
+                        IsChecked="{Binding General_EnableLongFilePath}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Optimize Code"
+                        IsChecked="{Binding General_OptimizeCode}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Show LogWindow After Build"
+                        IsChecked="{Binding General_ShowLogAfterBuild}" />
+                </StackPanel>
+            </TabItem>
+            <TabItem Header="Interface">
+                <StackPanel>
                     <GroupBox
                         Header="Default Monospace Font"
                         Margin="15, 15, 15, 0"
                         BorderBrush="Gray">
                         <Grid Margin="5, 5, 5, 5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition></ColumnDefinition>
-                                <ColumnDefinition Width="100"></ColumnDefinition>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock
                                 Grid.Row="0" Grid.Column="0"
                                 VerticalAlignment="Center"
-                                FontFamily="{Binding General_MonospaceFontFamily}"
-                                FontWeight="{Binding General_MonospaceFontWeight}"
-                                FontSize="{Binding General_MonospaceFontSize}"
-                                Text="{Binding General_MonospaceFontStr}">
-                            </TextBlock>
+                                FontFamily="{Binding Interface_MonospaceFontFamily}"
+                                FontWeight="{Binding Interface_MonospaceFontWeight}"
+                                FontSize="{Binding Interface_MonospaceFontSize}"
+                                Text="{Binding Interface_MonospaceFontStr}"/>
                             <Button
                                 Grid.Row="0" Grid.Column="1"
                                 Height="25"
                                 Content="Choose"
-                                Click="Button_MonospaceFont_Click">
-                            </Button>
+                                Click="Button_MonospaceFont_Click"/>
                         </Grid>
                     </GroupBox>
-                </StackPanel>
-            </TabItem>
-            <TabItem Header="Interface">
-                <StackPanel>
-                    <TextBlock
-                        Margin="15, 15, 15, 0"
-                        Text="Scale Factor for Plugin Interface">
-                    </TextBlock>
-                    <DockPanel
-                        Margin="15, 10, 15, 0">
-                        <TextBlock
-                            DockPanel.Dock="Right"
-                            TextAlignment="Right"
-                            Text="%">
-                        </TextBlock>
-                        <TextBlock
-                            DockPanel.Dock="Right"
-                            Margin="20, 0, 0, 0"
-                            Width="40" 
-                            Name="ScaleFactorBox"
-                            Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
-                            TextAlignment="Right">
-                        </TextBlock>
-                        <Slider
-                            Minimum="100" Maximum="200"
-                            TickPlacement="BottomRight"
-                            TickFrequency="10"
-                            IsSnapToTickEnabled="True"
-                            Name="ScaleFactorSlider"
-                            Value="{Binding Interface_ScaleFactor}">
-                        </Slider>
-                    </DockPanel>
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        Content="Ignore InterfaceEncoded Image's Checksum"
-                        IsChecked="{Binding Interface_IgnoreEncodedFileChecksum}">
-                    </CheckBox>
+                    <GroupBox
+                        Header="Scale Factor for Plugin Interface"
+                        Margin="15, 10, 15, 0"
+                        BorderBrush="Gray">
+                        <DockPanel Margin="5, 5, 5, 0">
+                            <TextBlock
+                                DockPanel.Dock="Right"
+                                TextAlignment="Right"
+                                Text="%" />
+                            <TextBlock
+                                DockPanel.Dock="Right"
+                                Width="30" 
+                                Name="ScaleFactorBox"
+                                Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
+                                TextAlignment="Right" />
+                            <Slider
+                                Minimum="100" Maximum="200"
+                                TickPlacement="BottomRight"
+                                TickFrequency="10"
+                                IsSnapToTickEnabled="True"
+                                Name="ScaleFactorSlider"
+                                Value="{Binding Interface_ScaleFactor}" />
+                        </DockPanel>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Plugin">
                 <StackPanel>
-                    <CheckBox
-                        Name="CheckBox_CachePlugin"
+                    <GroupBox
+                        Header="Plugin Cache"
                         Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center"
-                        Content="Enable Plugin Caching"
-                        IsChecked="{Binding Plugin_EnableCache}">
-                    </CheckBox>
-                    <DockPanel
-                        Margin="15, 15, 15, 0"
-                        Height="25"
-                        VerticalAlignment="Center">
-                        <Button
-                            Name="Button_ClearCache"
-                            DockPanel.Dock="Right"
-                            Content="Clear Cache Database"
-                            Width="150"
-                            Click="Button_ClearCache_Click">
-                        </Button>
-                        <TextBlock
-                            Name="TextBlock_CacheState"
-                            Margin="0, 0, 15, 0"
-                            VerticalAlignment="Center"
-                            Text="{Binding Plugin_CacheState}">
-                        </TextBlock>
-                    </DockPanel>
+                        BorderBrush="Gray">
+                        <StackPanel>
+                            <CheckBox
+                                Margin="5, 5, 5, 0"
+                                VerticalAlignment="Center"
+                                Content="Enable Plugin Cache"
+                                IsChecked="{Binding Plugin_EnableCache}" />
+                            <DockPanel
+                                Height="25"
+                                Margin="5, 5, 5, 5"
+                                VerticalAlignment="Center">
+                                <Button
+                                    DockPanel.Dock="Right"
+                                    Content="Clear Cache Database"
+                                    Width="150"
+                                    Click="Button_ClearCache_Click" />
+                                <TextBlock
+                                    Margin="0, 0, 10, 0"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Plugin_CacheState}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <CheckBox
-                        Name="CheckBox_ConvertToUTF8"
                         Margin="15, 15, 15, 0"
                         Content="Auto Convert Plugins to UTF-8"
                         ToolTip="Turning on will break compability with WinBuilder 082."
                         IsEnabled="False"
-                        IsChecked="{Binding Plugin_AutoConvertToUTF8}">
-                    </CheckBox>
+                        IsChecked="{Binding Plugin_AutoConvertToUTF8}" />
                     <CheckBox
-                        Name="CheckBox_AutoSyntaxCheck"
                         Margin="15, 15, 15, 0"
                         Content="Auto Check Syntax Error"
                         ToolTip="Useful for developers."
-                        IsChecked="{Binding Plugin_AutoSyntaxCheck}">
-                    </CheckBox>
+                        IsChecked="{Binding Plugin_AutoSyntaxCheck}" />
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Log">
+            <TabItem Header="Logging">
                 <StackPanel>
                     <Grid
                         Margin="15, 15, 15, 0"
@@ -339,44 +319,49 @@
                         <TextBlock
                             Grid.Column="0"
                             VerticalAlignment="Center"
-                            Text="Debug Level">
-                        </TextBlock>
+                            Text="Log Debug Level" />
                         <ComboBox
                             Grid.Column="1"
                             Name="ComboBox_LogDebugLevel"
                             ItemsSource="{Binding Log_DebugLevelList}"
-                            SelectedIndex="{Binding Log_DebugLevelIndex}">
-                        </ComboBox>
+                            SelectedIndex="{Binding Log_DebugLevelIndex}"/>
                     </Grid>
-                    <DockPanel
-                        Height="25"
+                    <GroupBox
+                        Header="Log Database"
                         Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center">
-                        <Button
-                            Name="Button_ClearLog"
-                            DockPanel.Dock="Right"
-                            Content="Clear Log Database"
-                            Width="150"
-                            Click="Button_ClearLog_Click">
-                        </Button>
-                        <TextBlock
-                            Name="TextBlock_LogDBState"
-                            VerticalAlignment="Center"
-                            Text="{Binding Log_DBState}">
-                        </TextBlock>
-                    </DockPanel>
+                        BorderBrush="Gray">
+                        <DockPanel
+                            Height="25"
+                            Margin="5, 5, 5, 5"
+                            VerticalAlignment="Center">
+                            <Button
+                                DockPanel.Dock="Right"
+                                Content="Clear Log Database"
+                                Width="150"
+                                Click="Button_ClearLog_Click" />
+                            <TextBlock
+                                Name="TextBlock_LogDBState"
+                                VerticalAlignment="Center"
+                                Text="{Binding Log_DBState}" />
+                        </DockPanel>
+                    </GroupBox>
                     <CheckBox
-                        Name="CheckBox_SaveMacro"
                         Margin="15, 15, 15, 0"
                         Content="Log Macro"
-                        IsChecked="{Binding Log_Macro}">
-                    </CheckBox>
+                        IsChecked="{Binding Log_Macro}" />
                     <CheckBox
-                        Name="CheckBox_SaveComment"
                         Margin="15, 15, 15, 0"
                         Content="Log Comment"
-                        IsChecked="{Binding Log_Comment}">
-                    </CheckBox>
+                        IsChecked="{Binding Log_Comment}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Disable Logging in Interface"
+                        IsChecked="{Binding Log_DisableInInterface}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Disable Delayed Logging (for Debug)"
+                        ToolTip="Use for only debug purpose, slows down performance!"
+                        IsChecked="{Binding Log_DisableDelayedLogging}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Compatibility">
@@ -389,6 +374,10 @@
                         Margin="15, 15, 15, 0"
                         Content="Allow Deprecated Legacy Branch Condition"
                         IsChecked="{Binding Compat_LegacyBranchCondition}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
+                        IsChecked="{Binding Compat_RegWriteLegacy}" />
                 </StackPanel>
             </TabItem>
         </TabControl>
@@ -397,31 +386,28 @@
                 <RowDefinition></RowDefinition>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
-                <ColumnDefinition Width="20"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
             <Button
                 Grid.Row="0" Grid.Column="0"
                 Name="DefaultButton"
                 Click="DefaultButton_Click"
-                Content="Default">
-            </Button>
+                Content="Default"/>
             <Button
                 Grid.Row="0" Grid.Column="2"
                 IsDefault="True"
                 Name="SaveButton"
                 Click="SaveButton_Click"
-                Content="Save">
-            </Button>
+                Content="Save"/>
             <Button
                 Grid.Row="0" Grid.Column="4"
                 IsCancel="True"
-                Content="Cancel">
-            </Button>
+                Content="Cancel"/>
         </Grid>
     </Grid>
 </Window>
