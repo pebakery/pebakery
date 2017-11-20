@@ -52,6 +52,7 @@ namespace PEBakery.Core
         private readonly List<string> allDirLinkPaths = new List<string>();
 
         // Properties
+        public string ProjectRoot => projectRoot;
         public List<Project> Projects => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
         public List<string> ProjectNames => projectDict.Keys.OrderBy(x => x).ToList(); 
         public Project this[int i] => Projects[i]; 
@@ -81,22 +82,29 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<string> GetProjectNameList()
         {
-            List<string> projNameList = new List<string>();
-
-            string[] projArray = Directory.GetDirectories(projectRoot);
-            foreach (string projDir in projArray)
+            if (Directory.Exists(projectRoot))
             {
-                // Ex) projectDir = E:\WinPE\Win10PESE\Projects
-                // Ex) projPath   = E:\WinPE\Win10PESE\Projects\Win10PESE\script.project
-                // Ex) projName -> E:\WinPE\Win10PESE\Projects\Win10PESE -> Win10PESE
-                if (File.Exists(Path.Combine(projDir, "script.project")))
+                string[] projArray = Directory.GetDirectories(projectRoot);
+                List<string> projNameList = new List<string>(projArray.Length);
+                foreach (string projDir in projArray)
                 {
-                    string projName = Path.GetFileName(projDir);
-                    projNameList.Add(projName);
+                    // Ex) projectDir = E:\WinPE\Win10PESE\Projects
+                    // Ex) projPath   = E:\WinPE\Win10PESE\Projects\Win10PESE\script.project
+                    // Ex) projName -> E:\WinPE\Win10PESE\Projects\Win10PESE -> Win10PESE
+                    if (File.Exists(Path.Combine(projDir, "script.project")))
+                    {
+                        string projName = Path.GetFileName(projDir);
+                        projNameList.Add(projName);
+                    }
                 }
-            }
 
-            return projNameList;
+                return projNameList;
+            }
+            else
+            {
+                // CAnnot find projectRoot, return empty list
+                return new List<string>();
+            }
         }
 
         /// <summary>

@@ -231,18 +231,27 @@ namespace PEBakery.WPF
                 projects.Load(worker);
                 setting.UpdateProjectList();
 
-                // Populate TreeView
-                Dispatcher.Invoke(() =>
-                {
-                    foreach (Project project in projects.Projects)
-                        PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
+                if (0 < projects.ProjectNames.Count)
+                { // Load Success
+                    // Populate TreeView
+                    Dispatcher.Invoke(() =>
+                    {
+                        foreach (Project project in projects.Projects)
+                            PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
 
-                    int pIdx = setting.Project_DefaultIndex;
-                    curMainTree = Model.MainTree.Children[pIdx];
-                    curMainTree.IsExpanded = true;
-                    if (projects[pIdx] != null)
-                        DrawPlugin(projects[pIdx].MainPlugin);
-                });
+                        int pIdx = setting.Project_DefaultIndex;
+                        curMainTree = Model.MainTree.Children[pIdx];
+                        curMainTree.IsExpanded = true;
+                        if (projects[pIdx] != null)
+                            DrawPlugin(projects[pIdx].MainPlugin);
+                    });
+
+                    e.Result = true;
+                }
+                else
+                {
+                    e.Result = false;
+                }
             };
             loadWorker.WorkerReportsProgress = true;
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
@@ -291,42 +300,55 @@ namespace PEBakery.WPF
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                StringBuilder b = new StringBuilder();
-                b.Append("Projects [");
-                List<Project> projList = projects.Projects;
-                for (int i = 0; i < projList.Count; i++)
-                {
-                    b.Append(projList[i].ProjectName);
-                    if (i + 1 < projList.Count)
-                        b.Append(", ");
-                }
-                b.Append("] loaded");
-                logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
+                if ((bool)e.Result)
+                { // Load Success
+                    StringBuilder b = new StringBuilder();
+                    b.Append("Projects [");
+                    List<Project> projList = projects.Projects;
+                    for (int i = 0; i < projList.Count; i++)
+                    {
+                        b.Append(projList[i].ProjectName);
+                        if (i + 1 < projList.Count)
+                            b.Append(", ");
+                    }
+                    b.Append("] loaded");
+                    logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
 
-                watch.Stop();
-                double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                string msg;
-                if (setting.Plugin_EnableCache)
-                {
-                    double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                    msg = $"{allPluginCount} plugins loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
-                    Model.StatusBarText = msg;
+                    watch.Stop();
+                    double t = watch.Elapsed.TotalMilliseconds / 1000.0;
+                    string msg;
+                    if (setting.Plugin_EnableCache)
+                    {
+                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
+                        msg = $"{allPluginCount} plugins loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                        Model.StatusBarText = msg;
+                    }
+                    else
+                    {
+                        msg = $"{allPluginCount} plugins loaded ({t:0.#}s)";
+                        Model.StatusBarText = msg;
+                    }
+                    if (quiet == false)
+                        Model.ProgressRingActive = false;
+                    Model.SwitchStatusProgressBar = true; // Show Status Bar
+
+                    logger.System_Write(new LogInfo(LogState.Info, msg));
+                    logger.System_Write(Logger.LogSeperator);
+
+                    // If plugin cache is enabled, generate cache.
+                    if (setting.Plugin_EnableCache)
+                        StartCacheWorker();
                 }
                 else
                 {
-                    msg = $"{allPluginCount} plugins loaded ({t:0.#}s)";
-                    Model.StatusBarText = msg;
-                }
-                if (quiet == false)
-                    Model.ProgressRingActive = false;
-                Model.SwitchStatusProgressBar = true; // Show Status Bar
-                
-                logger.System_Write(new LogInfo(LogState.Info, msg));
-                logger.System_Write(Logger.LogSeperator);
+                    Model.PluginTitleText = "PEBakery is unable to find projects.";
+                    Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
-                // If plugin cache is enabled, generate cache.
-                if (setting.Plugin_EnableCache)
-                    StartCacheWorker();
+                    if (quiet == false)
+                        Model.ProgressRingActive = false;
+                    Model.SwitchStatusProgressBar = true; // Show Status Bar
+                    Model.StatusBarText = "Unable to find projects.";
+                }
             };
 
             loadWorker.RunWorkerAsync(baseDir);

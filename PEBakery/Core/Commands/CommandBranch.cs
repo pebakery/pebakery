@@ -105,8 +105,7 @@ namespace PEBakery.Core.Commands
 
             s.CurDepth = depthBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
-        }
-            
+        }  
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {

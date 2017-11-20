@@ -645,13 +645,13 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
-            List<LogInfo> list = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>();
             foreach (var kv in dict)
             {
                 string value = kv.Value.Trim().Trim('\"');
-                list.Add(SetValue(type, kv.Key, value));
+                logs.Add(SetValue(type, kv.Key, value));
             }
-            return list;
+            return logs;
         }
         #endregion
 

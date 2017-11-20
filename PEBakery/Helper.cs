@@ -1150,8 +1150,16 @@ namespace PEBakery.Helper
         {
             try
             { // Try Version class compare
-                Version v1 = new Version(str1);
-                Version v2 = new Version(str2);
+                // In case of 0 vs 5.1.2600.5512
+                string str3 = str1;
+                string str4 = str2;
+                if (Regex.IsMatch(str1, @"^[0-9]+$", RegexOptions.Compiled))
+                    str3 = str1 + ".0";
+                if (Regex.IsMatch(str2, @"^[0-9]+$", RegexOptions.Compiled))
+                    str4 = str2 + ".0";
+
+                Version v1 = new Version(str3);
+                Version v2 = new Version(str4);
                 int comp = v1.CompareTo(v2);
                 if (comp < 0)
                     return CompareStringNumberResult.Smaller;
