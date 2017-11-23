@@ -115,14 +115,10 @@ namespace PEBakery.Tests.Core
         {
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
-            cmd = null;
-            try
+            cmd = CodeParser.ParseRawLine(rawCode, addr);
+            if (cmd.Type == CodeType.Error)
             {
-                cmd = CodeParser.ParseRawLine(rawCode, addr);
-            }
-            catch (InvalidCodeCommandException e)
-            {
-                Console.WriteLine(e.Message);
+                Console.WriteLine((cmd.Info as CodeInfo_Error).ErrorMessage);
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;
             }

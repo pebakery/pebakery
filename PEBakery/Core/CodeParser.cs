@@ -45,7 +45,14 @@ namespace PEBakery.Core
             int idx = 0;
             list.Add(rawCode);
 
-            return ParseCommand(list, addr, ref idx);
+            try
+            {
+                return ParseCommand(list, addr, ref idx);
+            }
+            catch (Exception e)
+            {
+                return new CodeCommand(rawCode.Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)));
+            }
         }
 
         public static List<CodeCommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
