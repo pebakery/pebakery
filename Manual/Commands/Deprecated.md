@@ -62,11 +62,11 @@ This commmand is broken in WB082, and it is better to implement this as macro.
 
 Success of conversion to short path depends on registry value `HKLM\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation`.
 
-Thus this commands cannot be guranteed to work properly in every system.
+Thus this commands cannot be guruanteed to work properly in every system.
 
 ### System,HasUAC
 
-Turning off UAC in Windows is very dangerous, and turning UAC by force in Windows 10 will break UWP Apps.
+Turning off UAC in Windows is very dangerous, and turning UAC by force in Windows 10 will break UWP apps.
 
 Currently PEBakery return always true to this command.
 
