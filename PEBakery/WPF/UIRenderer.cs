@@ -379,11 +379,14 @@ namespace PEBakery.WPF
 
             Image image = new Image()
             {
+                StretchDirection = StretchDirection.DownOnly,
+                Stretch = Stretch.Uniform,
                 UseLayoutRounding = true,
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             Button button;
 
+            // double width, height;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
             {
                 if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType type))
@@ -393,6 +396,7 @@ namespace PEBakery.WPF
                 {
                     Style = (Style)r.Window.FindResource("ImageButton")
                 };
+
                 if (type == ImageHelper.ImageType.Svg)
                 {
                     double width = uiCmd.Rect.Width * r.MasterScale;
@@ -524,55 +528,27 @@ namespace PEBakery.WPF
 
             if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
-
                 if (ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
 
                 Image image = new Image()
                 {
-                    UseLayoutRounding = true,
+                    StretchDirection = StretchDirection.DownOnly,
                     Stretch = Stretch.Uniform,
+                    UseLayoutRounding = true,
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-                int margin = 5;
 
                 using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture))
                 {
                     if (type == ImageHelper.ImageType.Svg)
                     {
                         ImageHelper.GetSvgSize(ms, out double width, out double height);
-                        if (uiCmd.Rect.Width < uiCmd.Rect.Height)
-                        {
-                            width = (uiCmd.Rect.Width - margin);
-                            height = (uiCmd.Rect.Width - margin) * height / width;
-                        }
-                        else
-                        {
-                            width = (uiCmd.Rect.Height - margin) * width / height;
-                            height = (uiCmd.Rect.Height - margin);
-                        }
-                        BitmapImage bitmap = ImageHelper.SvgToBitmapImage(ms, width, height);
-                        image.Width = width;
-                        image.Height = height;
-                        image.Source = bitmap;
+                        image.Source = ImageHelper.SvgToBitmapImage(ms, width, height);
                     }
                     else
                     {
-                        BitmapImage bitmap = ImageHelper.ImageToBitmapImage(ms);
-                        double width, height;
-                        if (uiCmd.Rect.Width < uiCmd.Rect.Height)
-                        {
-                            width = (uiCmd.Rect.Width - margin);
-                            height = (uiCmd.Rect.Width - margin) * bitmap.Height / bitmap.Width;
-                        }
-                        else
-                        {
-                            width = (uiCmd.Rect.Height - margin) * bitmap.Width / bitmap.Height;
-                            height = (uiCmd.Rect.Height - margin);
-                        }
-                        image.Width = width;
-                        image.Height = height;
-                        image.Source = bitmap;
+                        image.Source = ImageHelper.ImageToBitmapImage(ms);
                     }
                 }
 
@@ -630,6 +606,7 @@ namespace PEBakery.WPF
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = CalcFontPointScale(),
             };
+
             Hyperlink hyperLink = new Hyperlink()
             {
                 NavigateUri = new Uri(info.URL),

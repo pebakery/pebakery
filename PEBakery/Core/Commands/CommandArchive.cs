@@ -88,7 +88,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> Decompress(EngineState s, CodeCommand cmd)
-        { // Decompress,<ArchiveType>,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+        { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
             List<LogInfo> logs = new List<LogInfo>();
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Decompress));

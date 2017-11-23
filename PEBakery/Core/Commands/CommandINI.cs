@@ -51,14 +51,15 @@ namespace PEBakery.Core.Commands
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
 
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, value, false); 
+                string escapedValue = StringEscaper.Escape(value, false, true, true);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false); 
                 logs.AddRange(varLogs);
             }
             else
             {
                 logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]"));
 
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false, false);
                 logs.AddRange(varLogs);
             }
 
@@ -108,7 +109,8 @@ namespace PEBakery.Core.Commands
                 {
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, kv.Value, false);
+                    string escapedValue = StringEscaper.Escape(kv.Value, false, true, true);
+                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, escapedValue, false, false, false);
                     LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
 

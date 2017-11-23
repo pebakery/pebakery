@@ -837,9 +837,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                string msg = $"Cannot run [{p.Title}]!\r\nPlease implement section [Process]";
-                Logger.System_Write(new LogInfo(LogState.Error, msg));
-                MessageBox.Show(msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Model.StatusBarText = $"Section [Process] does not exist in {p.Title}";
             }
         }
 

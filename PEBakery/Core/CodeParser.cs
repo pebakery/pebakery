@@ -866,7 +866,7 @@ namespace PEBakery.Core
                             {
                                 if (encoding != null)
                                     throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
-                                encoding = Encoding.ASCII;
+                                encoding = Encoding.Default;
                             }
                             else
                             {

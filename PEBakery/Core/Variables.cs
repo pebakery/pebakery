@@ -751,7 +751,7 @@ namespace PEBakery.Core
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
         }
 
-        public static List<LogInfo> SetVariable(EngineState s, string key, string _value, bool global = false, bool permanent = false)
+        public static List<LogInfo> SetVariable(EngineState s, string key, string _value, bool global = false, bool permanent = false, bool expand = true)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
@@ -759,7 +759,12 @@ namespace PEBakery.Core
             //                  Note that $#p will not be unescaped to %.
             // When preprocessed value is nil, it will be removed from dict.
 
-            string finalValue = StringEscaper.Preprocess(s, _value, false);
+            string finalValue;
+            if (expand)
+                finalValue = StringEscaper.Preprocess(s, _value, false);
+            else
+                finalValue = _value;
+
             Variables.VarKeyType type = Variables.DetermineType(key);
             if (finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
             { // Remove variable
