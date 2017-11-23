@@ -1,6 +1,6 @@
 # Commands
 
-## Command Categories
+## Categories
 
 1. [File](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/01_File.md)
 2. [Registry](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/02_Registry.md)
@@ -19,6 +19,3 @@
 
 - [Deprecated](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/Deprecated.md)
 
-## Coding Guide
-
-- Optimization Guide
