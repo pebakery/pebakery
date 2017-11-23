@@ -53,13 +53,6 @@ namespace PEBakery.Exceptions
 
     #region CodeParser, UIParser, Commands
     [Serializable]
-    public class EmptyLineException : Exception
-    {
-        public EmptyLineException() { }
-        public EmptyLineException(string message) : base(message) { }
-        public EmptyLineException(string message, Exception inner) : base(message, inner) { }
-    }
-
     public class InvalidCommandException : Exception
     {
         private string rawLine;
@@ -101,36 +94,7 @@ namespace PEBakery.Exceptions
     }
     #endregion
 
-    #region Command Execution
-    [Serializable]
-    public class ExecuteException : Exception
-    {
-        public ExecuteException() { }
-        public ExecuteException(string message) : base(message) { }
-        public ExecuteException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
     #region Plugin
-    /// <summary>
-    /// Cannot found plugin
-    /// </summary>
-    [Serializable]
-    public class PluginNotFoundException : Exception
-    {
-        public PluginNotFoundException() { }
-        public PluginNotFoundException(string message) : base(message) { }
-        public PluginNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [Serializable]
-    public class PluginSectionNotFoundException : Exception
-    {
-        public PluginSectionNotFoundException() { }
-        public PluginSectionNotFoundException(string message) : base(message) { }
-        public PluginSectionNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-
     [Serializable]
     public class PluginParseException : Exception
     {
@@ -165,19 +129,19 @@ namespace PEBakery.Exceptions
 
     #region EncodedFile
     [Serializable]
-    public class EncodeFileFailException : Exception
+    public class FileEncodeFailException : Exception
     {
-        public EncodeFileFailException() { }
-        public EncodeFileFailException(string message) : base(message) { }
-        public EncodeFileFailException(string message, Exception inner) : base(message, inner) { }
+        public FileEncodeFailException() { }
+        public FileEncodeFailException(string message) : base(message) { }
+        public FileEncodeFailException(string message, Exception inner) : base(message, inner) { }
     }
 
     [Serializable]
-    public class EncodedFileFailException : Exception
+    public class FileDecodeFailException : Exception
     {
-        public EncodedFileFailException() { }
-        public EncodedFileFailException(string message) : base(message) { }
-        public EncodedFileFailException(string message, Exception inner) : base(message, inner) { }
+        public FileDecodeFailException() { }
+        public FileDecodeFailException(string message) : base(message) { }
+        public FileDecodeFailException(string message, Exception inner) : base(message, inner) { }
     }
 
     [Serializable]

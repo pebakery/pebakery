@@ -78,7 +78,6 @@ namespace PEBakery.Core.Commands
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not a valid integer");
-
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
@@ -157,19 +156,12 @@ namespace PEBakery.Core.Commands
                             isAdmin = principal.IsInRole(WindowsBuiltInRole.Administrator);
                         }
 
-                        string isAdminStr;
                         if (isAdmin)
-                        {
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is running as Administrator"));
-                            isAdminStr = "True";
-                        }
                         else
-                        {
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is not running as Administrator"));
-                            isAdminStr = "False";
-                        }
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdminStr);
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -222,7 +214,8 @@ namespace PEBakery.Core.Commands
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             worker = w.StartLoadWorker(true);                
                         });
-
+                        
+                        // TODO: More elegant way?
                         Task.Run(() =>
                         {
                             while (worker.IsBusy)
@@ -241,7 +234,7 @@ namespace PEBakery.Core.Commands
                         string pFullPath = Path.GetFullPath(pPath);
 
                         // Reload plugin
-                        Plugin p = s.Project.GetPluginByFullPath(pFullPath);
+                        Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
                         p = s.Project.RefreshPlugin(p, s);
                         if (p == null)
                         {

@@ -209,14 +209,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIRead
                     case CodeType.INIRead:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIRead));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniRead));
                         switch (cmd.Type)
                         {
                             case CodeType.INIRead:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
-                                    CodeInfo_INIRead firstInfo = (opDict[state][0].Info as CodeInfo_INIRead);
-                                    if (cmd.Info is CodeInfo_INIRead info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead));
+                                    CodeInfo_IniRead firstInfo = (opDict[state][0].Info as CodeInfo_IniRead);
+                                    if (cmd.Info is CodeInfo_IniRead info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
                                     else
@@ -245,14 +245,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIWrite
                     case CodeType.INIWrite:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIWrite));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniWrite));
                         switch (cmd.Type)
                         {
                             case CodeType.INIWrite:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
-                                    CodeInfo_INIWrite firstInfo = (opDict[state][0].Info as CodeInfo_INIWrite);
-                                    if (cmd.Info is CodeInfo_INIWrite info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite));
+                                    CodeInfo_IniWrite firstInfo = (opDict[state][0].Info as CodeInfo_IniWrite);
+                                    if (cmd.Info is CodeInfo_IniWrite info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
                                     else
@@ -281,14 +281,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIDelete
                     case CodeType.INIDelete:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIDelete));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniDelete));
                         switch (cmd.Type)
                         {
                             case CodeType.INIDelete:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
-                                    CodeInfo_INIDelete firstInfo = (opDict[state][0].Info as CodeInfo_INIDelete);
-                                    if (cmd.Info is CodeInfo_INIDelete info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete));
+                                    CodeInfo_IniDelete firstInfo = (opDict[state][0].Info as CodeInfo_IniDelete);
+                                    if (cmd.Info is CodeInfo_IniDelete info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
                                     else
@@ -317,14 +317,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIAddSection
                     case CodeType.INIAddSection:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIAddSection));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniAddSection));
                         switch (cmd.Type)
                         {
                             case CodeType.INIAddSection:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
-                                    CodeInfo_INIAddSection firstInfo = (opDict[state][0].Info as CodeInfo_INIAddSection);
-                                    if (cmd.Info is CodeInfo_INIAddSection info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection));
+                                    CodeInfo_IniAddSection firstInfo = (opDict[state][0].Info as CodeInfo_IniAddSection);
+                                    if (cmd.Info is CodeInfo_IniAddSection info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
                                     else
@@ -353,14 +353,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIDeleteSection
                     case CodeType.INIDeleteSection:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIDeleteSection));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniDeleteSection));
                         switch (cmd.Type)
                         {
                             case CodeType.INIDeleteSection:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
-                                    CodeInfo_INIDeleteSection firstInfo = (opDict[state][0].Info as CodeInfo_INIDeleteSection);
-                                    if (cmd.Info is CodeInfo_INIDeleteSection info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection));
+                                    CodeInfo_IniDeleteSection firstInfo = (opDict[state][0].Info as CodeInfo_IniDeleteSection);
+                                    if (cmd.Info is CodeInfo_IniDeleteSection info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
                                         opDict[state].Add(cmd);
                                     else
@@ -389,14 +389,14 @@ namespace PEBakery.Core
                     #endregion
                     #region INIWriteTextLine
                     case CodeType.INIWriteTextLine:
-                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_INIWriteTextLine));
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniWriteTextLine));
                         switch (cmd.Type)
                         {
                             case CodeType.INIWriteTextLine:
                                 {
-                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWriteTextLine));
-                                    CodeInfo_INIWriteTextLine firstInfo = (opDict[state][0].Info as CodeInfo_INIWriteTextLine);
-                                    if (cmd.Info is CodeInfo_INIWriteTextLine info &&
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine));
+                                    CodeInfo_IniWriteTextLine firstInfo = (opDict[state][0].Info as CodeInfo_IniWriteTextLine);
+                                    if (cmd.Info is CodeInfo_IniWriteTextLine info &&
                                         info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
                                         info.Append == firstInfo.Append)
                                         opDict[state].Add(cmd);
@@ -559,7 +559,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_INIReadOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds));
         }
 
         private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmdList)
@@ -572,7 +572,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_INIWriteOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_IniWriteOp(cmds));
         }
 
         private static CodeCommand OptimizeINIDelete(List<CodeCommand> cmdList)
@@ -585,7 +585,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIDeleteOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniDeleteOp(cmds));
         }
 
         private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmdList)
@@ -598,7 +598,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_INIAddSectionOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_IniAddSectionOp(cmds));
         }
 
         private static CodeCommand OptimizeINIDeleteSection(List<CodeCommand> cmdList)
@@ -611,7 +611,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_INIDeleteSectionOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_IniDeleteSectionOp(cmds));
         }
 
         private static CodeCommand OptimizeINIWriteTextLine(List<CodeCommand> cmdList)
@@ -624,7 +624,7 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_INIWriteTextLineOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniWriteTextLineOp(cmds));
         }
 
         private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)

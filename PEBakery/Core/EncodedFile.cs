@@ -86,6 +86,9 @@ namespace PEBakery.Core
     - Design more robust plugin format.
     */
 
+    // Possible zlib stream header
+    // https://groups.google.com/forum/#!msg/comp.compression/_y2Wwn_Vq_E/EymIVcQ52cEJ
+
     #region EncodedFile
     public class EncodedFile
     {
@@ -124,7 +127,7 @@ namespace PEBakery.Core
 
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new EncodedFileFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
 
             List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
@@ -154,7 +157,7 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new EncodedFileFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.FullPath}]");
 
             List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
@@ -167,7 +170,7 @@ namespace PEBakery.Core
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileName.Length == 0 || 512 <= fileNameUTF8.Length)
             {
-                throw new EncodedFileFailException($"Filename's length should be lower than 512B when UTF8 encoded");
+                throw new FileDecodeFailException($"Filename's length should be lower than 512B when UTF8 encoded");
             }
 
             // Check Overwrite
@@ -336,7 +339,7 @@ namespace PEBakery.Core
             catch
             { // Error -> Rollback!
                 File.Copy(tempFile, p.FullPath, true);
-                throw new EncodedFileFailException($"Error while writing encoded file into [{p.FullPath}]");
+                throw new FileDecodeFailException($"Error while writing encoded file into [{p.FullPath}]");
             }
             finally
             { // Delete temp script
@@ -350,7 +353,7 @@ namespace PEBakery.Core
         private static MemoryStream Decode(List<string> encodedList)
         {
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new EncodedFileFailException("Encoded lines are malformed");
+                throw new FileDecodeFailException("Encoded lines are malformed");
 
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
@@ -360,7 +363,7 @@ namespace PEBakery.Core
 
                 // Each line is 64KB block
                 if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                    throw new EncodedFileFailException("Encoded lines are malformed");
+                    throw new FileDecodeFailException("Encoded lines are malformed");
 
                 StringBuilder b = new StringBuilder();
                 foreach (string block in base64Blocks)
@@ -370,7 +373,7 @@ namespace PEBakery.Core
                     case 0:
                         break;
                     case 1:
-                        throw new EncodedFileFailException("Encoded lines are malformed");
+                        throw new FileDecodeFailException("Encoded lines are malformed");
                     case 2:
                         b.Append("==");
                         break;
@@ -395,10 +398,10 @@ namespace PEBakery.Core
 
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
-                throw new EncodedFileFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException($"Encoded file is corrupted");
             uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
             if (full_crc32 != calcFull_crc32)
-                throw new EncodedFileFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException($"Encoded file is corrupted");
 
             // [Stage 4] Decompress first footer
             byte[] rawFooter;
@@ -430,20 +433,20 @@ namespace PEBakery.Core
             if (compMode == 0) // Type 1, zlib
             {
                 if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                    throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
                 if (compLevel < 1 || 9 < compLevel)
-                    throw new EncodedFileFailException($"Encoded file is corrupted: compLevel");
+                    throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
             }
             else if (compMode == 1) // Type 2, Raw
             {
                 if (compressedBodyLen2 != 0)
-                    throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
                 if (compLevel != 0)
-                    throw new EncodedFileFailException($"Encoded file is corrupted: compLevel");
+                    throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
             }
             else // Wrong compMode
             {
-                throw new EncodedFileFailException($"Encoded file is corrupted: compMode");
+                throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
             }
 
             // [Stage 7] Decompress body
@@ -466,13 +469,13 @@ namespace PEBakery.Core
             }
             else
             {
-                throw new EncodedFileFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException($"Encoded file is corrupted");
             }
 
             // [Stage 8] Validate decompressed body
             uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
             if (compressedBody_crc32 != calcCompBody_crc32)
-                throw new EncodedFileFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException($"Encoded file is corrupted");
 
             // [Stage 9] Return decompressed body stream
             rawBodyStream.Position = 0;
@@ -514,11 +517,11 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new EncodedFileFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
 
             List<string> encodedList = p.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new EncodedFileFailException("Encoded lines are malformed");
+                throw new FileDecodeFailException("Encoded lines are malformed");
 
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
@@ -528,7 +531,7 @@ namespace PEBakery.Core
 
                 // Each line is 64KB block
                 if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                    throw new EncodedFileFailException("Encoded lines are malformed");
+                    throw new FileDecodeFailException("Encoded lines are malformed");
 
                 StringBuilder b = new StringBuilder();
                 foreach (string block in base64Blocks)
@@ -538,7 +541,7 @@ namespace PEBakery.Core
                     case 0:
                         break;
                     case 1:
-                        throw new EncodedFileFailException("Encoded lines are malformed");
+                        throw new FileDecodeFailException("Encoded lines are malformed");
                     case 2:
                         b.Append("==");
                         break;

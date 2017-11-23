@@ -302,6 +302,11 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
             Assert.IsFalse(cond.Check(s, out d));
 
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsTrue(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
+            Assert.IsFalse(cond.Check(s, out d));
+
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
@@ -358,6 +363,11 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
             Assert.IsFalse(cond.Check(s, out d));
 
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsFalse(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
+            Assert.IsTrue(cond.Check(s, out d));
+
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
@@ -410,6 +420,11 @@ namespace PEBakery.Tests.Core.Command
             Assert.IsTrue(cond.Check(s, out d));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
             Assert.IsFalse(cond.Check(s, out d));
+
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsTrue(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
+            Assert.IsTrue(cond.Check(s, out d));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
@@ -464,6 +479,11 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
             Assert.IsTrue(cond.Check(s, out d));
 
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsFalse(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
+            Assert.IsFalse(cond.Check(s, out d));
+
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
@@ -516,6 +536,11 @@ namespace PEBakery.Tests.Core.Command
             Assert.IsTrue(cond.Check(s, out d));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
             Assert.IsTrue(cond.Check(s, out d));
+
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsTrue(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
+            Assert.IsFalse(cond.Check(s, out d));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
@@ -580,6 +605,11 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "12", "12");
             Assert.IsTrue(cond.Check(s, out d));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
+            Assert.IsFalse(cond.Check(s, out d));
+
+            cond = new BranchCondition(type, false, "5", "5.0");
+            Assert.IsTrue(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "5", "5.1.2600");
             Assert.IsFalse(cond.Check(s, out d));
 
             // WB082 does not recognize hex integer representation

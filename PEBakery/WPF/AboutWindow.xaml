@@ -62,7 +62,7 @@
                         FontSize="15"
                         Text="{Binding Info_BuildDate}"/>
                     <Grid
-                        Margin="0, 0, 0, 20"
+                        Margin="0, 0, 0, 10"
                         HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20"/>
@@ -83,6 +83,19 @@
                             </Hyperlink>
                         </TextBlock>
                     </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock
+                            VerticalAlignment="Bottom"
+                            Margin="0, 0, 0, 0"
+                            FontSize="14"
+                            Text="Copyright (c) 2016-2017 Hajin Jang "/>
+                        <TextBlock
+                            VerticalAlignment="Bottom"
+                            Margin="0, 0, 0, 0"
+                            FontSize="12"
+                            Text="(aka ied206, joveler)"/>
+                    </StackPanel>
+                    
                 </StackPanel>
             </TabItem>
             <TabItem Header="License">

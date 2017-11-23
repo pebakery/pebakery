@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20171118과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20171123과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -83,7 +83,7 @@ namespace PEBakery.Properties {
         ///		&lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
         ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstrapcdn.com/boot[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstra[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildLogHtmlTemplate {
             get {
@@ -159,7 +159,7 @@ namespace PEBakery.Properties {
         ///		&lt;title&gt;PEBakery System Log&lt;/title&gt;
         ///
         ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstrapcdn.com/b[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.boots[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string SystemLogHtmlTemplate {
             get {

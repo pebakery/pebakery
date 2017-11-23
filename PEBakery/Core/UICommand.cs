@@ -149,31 +149,31 @@ namespace PEBakery.Core
 
         public string ForgeRawLine(bool includeKey)
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder b = new StringBuilder();
             if (includeKey)
             {
-                builder.Append(StringEscaper.QuoteEscape(Key));
-                builder.Append("=");
+                b.Append(StringEscaper.QuoteEscape(Key));
+                b.Append("=");
             }
 
-            builder.Append(StringEscaper.QuoteEscape(Text));
-            builder.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Text));
+            b.Append(",");
             if (Visibility)
-                builder.Append("1,");
+                b.Append("1,");
             else
-                builder.Append("0,");
-            builder.Append((int) Type);
-            builder.Append(",");
-            builder.Append(Rect.Left);
-            builder.Append(",");
-            builder.Append(Rect.Top);
-            builder.Append(",");
-            builder.Append(Rect.Width);
-            builder.Append(",");
-            builder.Append(Rect.Height);
-            builder.Append(",");
-            builder.Append(Info.ForgeRawLine());
-            return builder.ToString();
+                b.Append("0,");
+            b.Append((int) Type);
+            b.Append(",");
+            b.Append(Rect.Left);
+            b.Append(",");
+            b.Append(Rect.Top);
+            b.Append(",");
+            b.Append(Rect.Width);
+            b.Append(",");
+            b.Append(Rect.Height);
+            b.Append(",");
+            b.Append(Info.ForgeRawLine());
+            return b.ToString();
         }
 
         public void Update()

@@ -118,6 +118,20 @@
                     <TabControl
                         Margin="15, 15, 15, 0"
                         Grid.Row="2">
+                        <TabItem Header="Statistics">
+                            <ListView
+                                HorizontalContentAlignment="Stretch"
+                                ItemsSource="{Binding LogStatModel}"
+                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                AlternationCount="2">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Type" Width="60" DisplayMemberBinding="{Binding Item1}" />
+                                        <GridViewColumn Header="Count" Width="160" DisplayMemberBinding="{Binding Item2}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </TabItem>
                         <TabItem Header="Log (Simple)">
                             <ListView
                                 Name="BuildLogSimpleListView"
@@ -173,41 +187,34 @@
         </TabControl>
         <Grid Grid.Row="1" Margin="15, 15, 15, 15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"></ColumnDefinition>
-                <ColumnDefinition Width="120"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="115"/>
+                <ColumnDefinition Width="115"/>
+                <ColumnDefinition Width="115"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
             <Button
                 Grid.Column="0"
-                Margin="0, 0, 20, 0"
-                Name="RefreshButton"
+                Margin="0, 0, 15, 0"
                 Click="RefreshButton_Click"
-                Content="Refresh">
-            </Button>
+                Content="Refresh"/>
             <Button
                 Grid.Column="1"
-                Margin="0, 0, 20, 0"
-                Name="ClearButton"
+                Margin="0, 0, 15, 0"
                 Click="ClearButton_Click"
-                Content="Clear">
-            </Button>
+                Content="Clear"/>
             <Button
                 Grid.Column="2"
-                Name="ExportButton"
+                Margin="0, 0, 15, 0"
                 Content="Export"
-                Click="ExportButton_Click">
-            </Button>
-            
+                Click="ExportButton_Click"/>
             <Button
                 Grid.Column="4"
                 IsDefault="True"
-                Name="CloseButton"
+                IsCancel="True"
                 Click="CloseButton_Click"
-                Content="Close">
-            </Button>
+                Content="Close"/>
         </Grid>
     </Grid>
 </Window>

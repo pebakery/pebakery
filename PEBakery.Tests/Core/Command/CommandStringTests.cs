@@ -190,14 +190,10 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,Date,%Dest%,yyy-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            try
-            {
-                CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
-            }
-            catch (InvalidCodeCommandException)
-            { // Successfully induced error
-                return;
-            }
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+
+            // Successfully induced error
+            if (cmd.Type == CodeType.Error) return;
 
             Assert.Fail();
         }
@@ -206,14 +202,10 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,Date,%Dest%,yyymdd_hhnnss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            try
-            {
-                CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
-            }
-            catch (InvalidCodeCommandException)
-            { // Successfully induced error
-                return;
-            }
+            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+
+            // Successfully induced error
+            if (cmd.Type == CodeType.Error) return;
 
             Assert.Fail();
         }
@@ -279,6 +271,23 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_Dest_Template(s, @"StrFormat,Ext,,%Dest%", string.Empty);
             StrFormat_Dest_Template(s, @"StrFormat,Ext,https://github.com/ied206/PEBakery.git,%Dest%", ".git");
             StrFormat_Dest_Template(s, @"StrFormat,Ext,https://github.com/ied206/PEBakery,%Dest%", string.Empty);
+        }
+        #endregion
+
+        #region PathCombine
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        [TestMethod]
+        public void StrFormat_PathCombine()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\Windows\System32,notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\Windows,System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\,Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:,Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,D:\Joveler,Korea,%Dest%", @"D:\Joveler\Korea");
         }
         #endregion
 

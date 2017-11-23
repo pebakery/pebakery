@@ -367,7 +367,7 @@ namespace PEBakery.Core
             using (StreamReader reader = new StreamReader(fullPath, encoding))
             {
                 string line;
-                string currentSection = string.Empty; // -1 == empty, 0, 1, ... == index value of sections array
+                string currentSection = string.Empty;
                 bool inSection = false;
                 bool loadSection = false;
                 SectionType type = SectionType.None;

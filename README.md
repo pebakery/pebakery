@@ -56,12 +56,12 @@ PEBakery is currently in alpha stage.
 | Plugin    | 4   | 4           | 0      |
 | Interface | 6   | 6           | 0      |
 | Hash      | 5   | 5           | 5      |
-| String    | 32  | 32          | 30     |
+| String    | 33  | 33          | 31     |
 | Math      | 22  | 22          | 22     |
 | System    | 17  | 17          | 0      |
 | Branch    | 31  | 31          | 14     |
 | Control   | 6   | 6           | 6      |
-| All       | 160 | 160         | 98     |
+| All       | 161 | 161         | 99     |
 
 ## Help Needed
 

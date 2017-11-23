@@ -28,14 +28,14 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
-    public static class CommandINI
+    public static class CommandIni
     {
-        public static List<LogInfo> INIRead(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniRead(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIRead));
-            CodeInfo_INIRead info = cmd.Info as CodeInfo_INIRead;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead));
+            CodeInfo_IniRead info = cmd.Info as CodeInfo_IniRead;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -51,26 +51,27 @@ namespace PEBakery.Core.Commands
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
 
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, value, false); 
+                string escapedValue = StringEscaper.Escape(value, false, true, true);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false); 
                 logs.AddRange(varLogs);
             }
             else
             {
                 logs.Add(new LogInfo(LogState.Ignore, $"Key [{key}] does not exist in [{fileName}]"));
 
-                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false, false);
                 logs.AddRange(varLogs);
             }
 
             return logs;
         }
 
-        public static List<LogInfo> INIReadOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniReadOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIReadOp));
-            CodeInfo_INIReadOp infoOp = cmd.Info as CodeInfo_INIReadOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadOp));
+            CodeInfo_IniReadOp infoOp = cmd.Info as CodeInfo_IniReadOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -83,7 +84,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_INIRead info = infoOp.Infos[i];
+                CodeInfo_IniRead info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
@@ -108,7 +109,8 @@ namespace PEBakery.Core.Commands
                 {
                     logs.Add(new LogInfo(LogState.Success, $"Key [{kv.Key}] and its value [{kv.Value}] successfully read", subCmd));
 
-                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, kv.Value, false);
+                    string escapedValue = StringEscaper.Escape(kv.Value, false, true, true);
+                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, escapedValue, false, false, false);
                     LogInfo.AddCommand(varLogs, subCmd);
                     logs.AddRange(varLogs);
 
@@ -124,12 +126,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
         
-        public static List<LogInfo> INIWrite(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniWrite(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWrite));
-            CodeInfo_INIWrite info = cmd.Info as CodeInfo_INIWrite;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite));
+            CodeInfo_IniWrite info = cmd.Info as CodeInfo_IniWrite;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -159,12 +161,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIWriteOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniWriteOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWriteOp));
-            CodeInfo_INIWriteOp infoOp = cmd.Info as CodeInfo_INIWriteOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteOp));
+            CodeInfo_IniWriteOp infoOp = cmd.Info as CodeInfo_IniWriteOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -177,7 +179,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_INIWrite info = infoOp.Infos[i];
+                CodeInfo_IniWrite info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
@@ -219,12 +221,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIDelete(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniDelete(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDelete));
-            CodeInfo_INIDelete info = cmd.Info as CodeInfo_INIDelete;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete));
+            CodeInfo_IniDelete info = cmd.Info as CodeInfo_IniDelete;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -249,12 +251,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIDeleteOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniDeleteOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteOp));
-            CodeInfo_INIDeleteOp infoOp = cmd.Info as CodeInfo_INIDeleteOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteOp));
+            CodeInfo_IniDeleteOp infoOp = cmd.Info as CodeInfo_IniDeleteOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -267,7 +269,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_INIDelete info = infoOp.Infos[i];
+                CodeInfo_IniDelete info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
@@ -305,12 +307,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIAddSection(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniAddSection(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSection));
-            CodeInfo_INIAddSection info = cmd.Info as CodeInfo_INIAddSection;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection));
+            CodeInfo_IniAddSection info = cmd.Info as CodeInfo_IniAddSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -337,12 +339,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIAddSectionOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniAddSectionOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIAddSectionOp));
-            CodeInfo_INIAddSectionOp infoOp = cmd.Info as CodeInfo_INIAddSectionOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSectionOp));
+            CodeInfo_IniAddSectionOp infoOp = cmd.Info as CodeInfo_IniAddSectionOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -355,7 +357,7 @@ namespace PEBakery.Core.Commands
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
-                CodeInfo_INIAddSection info = infoOp.Infos[i];
+                CodeInfo_IniAddSection info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -386,12 +388,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIDeleteSection(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniDeleteSection(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSection));
-            CodeInfo_INIDeleteSection info = cmd.Info as CodeInfo_INIDeleteSection;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection));
+            CodeInfo_IniDeleteSection info = cmd.Info as CodeInfo_IniDeleteSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -414,12 +416,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIDeleteSectionOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniDeleteSectionOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIDeleteSectionOp));
-            CodeInfo_INIDeleteSectionOp infoOp = cmd.Info as CodeInfo_INIDeleteSectionOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSectionOp));
+            CodeInfo_IniDeleteSectionOp infoOp = cmd.Info as CodeInfo_IniDeleteSectionOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
@@ -432,7 +434,7 @@ namespace PEBakery.Core.Commands
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
             {
-                CodeInfo_INIDeleteSection info = infoOp.Infos[i];
+                CodeInfo_IniDeleteSection info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -459,12 +461,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIWriteTextLine(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniWriteTextLine(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWriteTextLine));
-            CodeInfo_INIWriteTextLine info = cmd.Info as CodeInfo_INIWriteTextLine;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine));
+            CodeInfo_IniWriteTextLine info = cmd.Info as CodeInfo_IniWriteTextLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
@@ -492,12 +494,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIWriteTextLineOp(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniWriteTextLineOp(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIWriteTextLineOp));
-            CodeInfo_INIWriteTextLineOp infoOp = cmd.Info as CodeInfo_INIWriteTextLineOp;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLineOp));
+            CodeInfo_IniWriteTextLineOp infoOp = cmd.Info as CodeInfo_IniWriteTextLineOp;
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
             bool append = infoOp.Infos[0].Append;
@@ -511,7 +513,7 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
             {
-                CodeInfo_INIWriteTextLine info = infoOp.Infos[i];
+                CodeInfo_IniWriteTextLine info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 string line = StringEscaper.Preprocess(s, info.Line); 
@@ -547,12 +549,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> INIMerge(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> IniMerge(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_INIMerge));
-            CodeInfo_INIMerge info = cmd.Info as CodeInfo_INIMerge;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniMerge));
+            CodeInfo_IniMerge info = cmd.Info as CodeInfo_IniMerge;
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destFile = StringEscaper.Preprocess(s, info.DestFile);

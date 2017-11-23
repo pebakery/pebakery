@@ -234,6 +234,7 @@ namespace PEBakery.WPF
     }
 
     #region LogListModel
+    public class LogStatModel : ObservableCollection<Tuple<LogState, int>> { }
     public class SystemLogListModel : ObservableCollection<DB_SystemLog> { }
     public class PluginListModel : ObservableCollection<DB_Plugin> { }
     public class VariableListModel : ObservableCollection<DB_Variable> { }
@@ -264,7 +265,7 @@ namespace PEBakery.WPF
                 log.Time = log.Time.ToLocalTime();
                 list.Add(log);
             }
-                
+
             SystemLogListModel = list;
 
             SystemLogListSelectedIndex = SystemLogListModel.Count - 1;
@@ -289,35 +290,26 @@ namespace PEBakery.WPF
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (buildId == null) // Clear
-                {
-                    SelectPluginEntries.Clear();
+                SelectPluginEntries.Clear();
+                SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
+
+                if (buildId == null)
+                {  // Clear
                     SelectPluginIndex = 0;
                 }
                 else
                 {
                     // Populate SelectPluginEntries
-                    SelectPluginEntries.Clear();
                     var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
                     foreach (DB_Plugin p in plugins)
                     {
                         SelectPluginEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
-                        
-                        /*
-                        var vars = LogDB.Table<DB_Variable>()
-                            .Where(x => x.BuildId == buildId && x.PluginId == p.Id && x.Type == VarsType.Local)
-                            .OrderBy(x => x.Key);
-                        foreach (DB_Variable var in vars)
-                            variableListModel.Add(var);
-                            */
                     }
 
                     if (showLastPlugin)
-                        SelectPluginIndex = SelectPluginEntries.Count - 1; // Last Plugin, which is jjust added
+                        SelectPluginIndex = SelectPluginEntries.Count - 1; // Last Plugin, which is just added
                     else
                         SelectPluginIndex = 0;
-
-                    
                 }
             });
         }
@@ -374,22 +366,10 @@ namespace PEBakery.WPF
                     long buildId = selectBuildEntries[value].Item2;
 
                     RefreshPlugin(SelectBuildEntries[value].Item2, false);
-
-                    VariableListModel variableListModel = new VariableListModel();
-                    var vars = LogDB.Table<DB_Variable>()
-                        .Where(x => x.BuildId == buildId)
-                        .Where(x => x.Type != VarsType.Local)
-                        .OrderBy(x => x.Type)
-                        .ThenBy(x => x.Key);
-                    foreach (DB_Variable v in vars)
-                        variableListModel.Add(v);
-                    
-                    VariableListModel = variableListModel;
                 }
                 else
                 {
                     RefreshPlugin(null, false);
-                    VariableListModel = new VariableListModel();
                 }
 
                 OnPropertyUpdate("SelectBuildIndex");
@@ -419,10 +399,78 @@ namespace PEBakery.WPF
                     long pluginId = selectPluginEntries[value].Item2;
                     long buildId = selectPluginEntries[value].Item3;
 
-                    BuildLogListModel buildLogListModel = new BuildLogListModel();
-                    foreach (DB_BuildLog b in LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.PluginId == pluginId))
-                        buildLogListModel.Add(b);
-                    BuildLogListModel = buildLogListModel;
+                    if (pluginId == -1)
+                    { // Summary
+                        // BuildLog
+                        BuildLogListModel buildLogListModel = new BuildLogListModel();
+                        foreach (LogState state in new LogState[] { LogState.Error, LogState.Warning })
+                        {
+                            var bLogs = LogDB.Table<DB_BuildLog>()
+                           .Where(x => x.BuildId == buildId && x.State == state);
+                            foreach (DB_BuildLog b in bLogs)
+                                buildLogListModel.Add(b);
+                        }
+                        BuildLogListModel = buildLogListModel;
+
+                        // Variables
+                        VariableListModel vModel = new VariableListModel();
+                        var vLogs = LogDB.Table<DB_Variable>()
+                            .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
+                            .OrderBy(x => x.Type)
+                            .ThenBy(x => x.Key);
+                        foreach (DB_Variable v in vLogs)
+                            vModel.Add(v);
+                        VariableListModel = vModel;
+
+                        // Statistics
+                        LogStatModel stat = new LogStatModel();
+                        var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
+                        foreach (LogState state in states)
+                        {
+                            int count = LogDB.Table<DB_BuildLog>()
+                                .Where(x => x.BuildId == buildId && x.State == state)
+                                .Count();
+
+                            stat.Add(new Tuple<LogState, int>(state, count));
+                        }
+                        LogStatModel = stat;
+                    }
+                    else
+                    { // Per Plugin
+                        // BuildLog
+                        BuildLogListModel buildLogListModel = new BuildLogListModel();
+                        foreach (DB_BuildLog b in LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.PluginId == pluginId))
+                            buildLogListModel.Add(b);
+                        BuildLogListModel = buildLogListModel;
+
+                        // Variables
+                        VariableListModel vModel = new VariableListModel();
+                        var vars = LogDB.Table<DB_Variable>()
+                            .Where(x => x.BuildId == buildId && x.Type != VarsType.Local)
+                            .OrderBy(x => x.Type)
+                            .ThenBy(x => x.Key);
+                        foreach (DB_Variable v in vars)
+                            vModel.Add(v);
+                        vars = LogDB.Table<DB_Variable>()
+                            .Where(x => x.BuildId == buildId && x.PluginId == pluginId && x.Type == VarsType.Local)
+                            .OrderBy(x => x.Key);
+                        foreach (DB_Variable var in vars)
+                            vModel.Add(var);
+                        VariableListModel = vModel;
+
+                        // Statistics
+                        LogStatModel stat = new LogStatModel();
+                        var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
+                        foreach (LogState state in states)
+                        {
+                            int count = LogDB.Table<DB_BuildLog>()
+                                .Where(x => x.BuildId == buildId && x.PluginId == pluginId && x.State == state)
+                                .Count();
+
+                            stat.Add(new Tuple<LogState, int>(state, count));
+                        }
+                        LogStatModel = stat;
+                    }
                 }
                 else
                 {
@@ -432,7 +480,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("SelectPluginIndex");
             }
         }
-        
+
         // Plugin Name, Plugin Id, Build Id
         private ObservableCollection<Tuple<string, long, long>> selectPluginEntries = new ObservableCollection<Tuple<string, long, long>>();
         public ObservableCollection<Tuple<string, long, long>> SelectPluginEntries
@@ -445,7 +493,18 @@ namespace PEBakery.WPF
             }
         }
 
-        private BuildLogListModel buildLogListModel;
+        private LogStatModel logStatModel = new LogStatModel();
+        public LogStatModel LogStatModel
+        {
+            get => logStatModel;
+            set
+            {
+                logStatModel = value;
+                OnPropertyUpdate("LogStatModel");
+            }
+        }
+
+        private BuildLogListModel buildLogListModel = new BuildLogListModel();
         public BuildLogListModel BuildLogListModel
         {
             get => buildLogListModel;
@@ -478,7 +537,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private VariableListModel variableListModel;
+        private VariableListModel variableListModel = new VariableListModel();
         public VariableListModel VariableListModel
         {
             get => variableListModel;
@@ -488,7 +547,6 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("VariableListModel");
             }
         }
-
         #endregion
 
         #region Utility

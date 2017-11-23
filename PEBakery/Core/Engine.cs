@@ -40,6 +40,7 @@ namespace PEBakery.Core
         #region Variables and Constructor
         public static Engine WorkingEngine; // Only 1 Instance can run at one time
         public static int WorkingLock = 0;
+        public static bool StopBuildOnError = true;
 
         public EngineState s;
         private Task<long> task;
@@ -79,9 +80,9 @@ namespace PEBakery.Core
             // Log Plugin Build Start Message
             string msg;
             if (s.RunOnePlugin && s.EntrySection.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
-                msg = $"Processing section [{s.EntrySection}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+                msg = $"Processing Section [{s.EntrySection}] of plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
             else
-                msg = $"Processing plugin [{p.ShortPath}] ({s.CurrentPluginIdx + 1}/{s.Plugins.Count})";
+                msg = $"[{s.CurrentPluginIdx + 1}/{s.Plugins.Count}] Processing Plugin [{p.Title}] ({p.ShortPath})";
             s.Logger.Build_Write(s, msg);
             s.Logger.Build_Write(s, Logger.LogSeperator);
 
@@ -142,7 +143,7 @@ namespace PEBakery.Core
         private void FinishRunPlugin(EngineState s)
         {
             // Finish Per-Plugin Log
-            s.Logger.Build_Write(s, $"End of plugin [{s.CurrentPlugin.ShortPath}]");
+            s.Logger.Build_Write(s, $"End of Plugin [{s.CurrentPlugin.ShortPath}]");
             s.Logger.Build_Write(s, Logger.LogSeperator);
             s.Logger.Build_Plugin_Finish(s, s.Variables.GetVarDict(VarsType.Local));
         }
@@ -213,7 +214,6 @@ namespace PEBakery.Core
 
                         break;
                     }
-                    s.Logger.Build_Write(s, string.Empty);
 
                     // Run Next Plugin
                     s.CurrentPluginIdx += 1;
@@ -327,14 +327,18 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Ignore, string.Empty));
                         break;
                     case CodeType.Comment:
-                        if (s.LogComment)
-                            logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                        {
+                            if (s.LogComment)
+                                logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                        }
                         break;
                     case CodeType.Error:
-                        logs.Add(new LogInfo(LogState.Error, string.Empty));
-                        break;
-                    case CodeType.Unknown:
-                        logs.Add(new LogInfo(LogState.Ignore, string.Empty));
+                        {
+                            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error));
+                            CodeInfo_Error info = cmd.Info as CodeInfo_Error;
+
+                            logs.Add(new LogInfo(LogState.Error, info.ErrorMessage));
+                        }
                         break;
                     #endregion
                     #region 01 File
@@ -424,43 +428,43 @@ namespace PEBakery.Core
                     #endregion
                     #region 04 INI
                     case CodeType.INIRead:
-                        logs.AddRange(CommandINI.INIRead(s, cmd));
+                        logs.AddRange(CommandIni.IniRead(s, cmd));
                         break;
                     case CodeType.INIReadOp:
-                        logs.AddRange(CommandINI.INIReadOp(s, cmd));
+                        logs.AddRange(CommandIni.IniReadOp(s, cmd));
                         break;
                     case CodeType.INIWrite:
-                        logs.AddRange(CommandINI.INIWrite(s, cmd));
+                        logs.AddRange(CommandIni.IniWrite(s, cmd));
                         break;
                     case CodeType.INIWriteOp:
-                        logs.AddRange(CommandINI.INIWriteOp(s, cmd));
+                        logs.AddRange(CommandIni.IniWriteOp(s, cmd));
                         break;
                     case CodeType.INIDelete:
-                        logs.AddRange(CommandINI.INIDelete(s, cmd));
+                        logs.AddRange(CommandIni.IniDelete(s, cmd));
                         break;
                     case CodeType.INIDeleteOp:
-                        logs.AddRange(CommandINI.INIDeleteOp(s, cmd));
+                        logs.AddRange(CommandIni.IniDeleteOp(s, cmd));
                         break;
                     case CodeType.INIAddSection:
-                        logs.AddRange(CommandINI.INIAddSection(s, cmd));
+                        logs.AddRange(CommandIni.IniAddSection(s, cmd));
                         break;
                     case CodeType.INIAddSectionOp:
-                        logs.AddRange(CommandINI.INIAddSectionOp(s, cmd));
+                        logs.AddRange(CommandIni.IniAddSectionOp(s, cmd));
                         break;
                     case CodeType.INIDeleteSection:
-                        logs.AddRange(CommandINI.INIDeleteSection(s, cmd));
+                        logs.AddRange(CommandIni.IniDeleteSection(s, cmd));
                         break;
                     case CodeType.INIDeleteSectionOp:
-                        logs.AddRange(CommandINI.INIDeleteSectionOp(s, cmd));
+                        logs.AddRange(CommandIni.IniDeleteSectionOp(s, cmd));
                         break;
                     case CodeType.INIWriteTextLine:
-                        logs.AddRange(CommandINI.INIWriteTextLine(s, cmd));
+                        logs.AddRange(CommandIni.IniWriteTextLine(s, cmd));
                         break;
                     case CodeType.INIWriteTextLineOp:
-                        logs.AddRange(CommandINI.INIWriteTextLineOp(s, cmd));
+                        logs.AddRange(CommandIni.IniWriteTextLineOp(s, cmd));
                         break;
                     case CodeType.INIMerge:
-                        logs.AddRange(CommandINI.INIMerge(s, cmd));
+                        logs.AddRange(CommandIni.IniMerge(s, cmd));
                         break;
                     #endregion
                     #region 05 Archive
@@ -612,6 +616,13 @@ namespace PEBakery.Core
             {
                 MuteLogError(logs);
                 s.Logger.ErrorOffCount -= 1;
+            }
+            
+            // Stop build on error
+            if (0 < logs.Count(x => x.State == LogState.Error))
+            {
+                if (StopBuildOnError)
+                    s.ErrorHaltFlag = true;
             }
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
@@ -783,7 +794,7 @@ namespace PEBakery.Core
             }
             else
             {  // Run only one plugin
-                Plugins = new List<Plugin>() { runSingle };
+                Plugins = new List<Plugin>(1) { runSingle };
 
                 CurrentPlugin = runSingle;
                 CurrentPluginIdx = Plugins.IndexOf(runSingle);
@@ -808,6 +819,16 @@ namespace PEBakery.Core
             DelayedLogging = !m.Log_DisableDelayedLogging;
         }
         #endregion
+    }
+    #endregion
+
+    #region Exception
+    [Serializable]
+    public class ExecuteException : Exception
+    {
+        public ExecuteException() { }
+        public ExecuteException(string message) : base(message) { }
+        public ExecuteException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 }

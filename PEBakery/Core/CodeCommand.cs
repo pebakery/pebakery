@@ -36,7 +36,7 @@ namespace PEBakery.Core
     public enum CodeType
     {
         // 00 Misc
-        None = 0, Comment, Error, Unknown,
+        None = 0, Comment, Error,
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
@@ -181,6 +181,24 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return base.ToString();
+        }
+    }
+    #endregion
+
+    #region CodeInfo 00 - Error
+    [Serializable]
+    public class CodeInfo_Error : CodeInfo
+    { 
+        public string ErrorMessage;
+
+        public CodeInfo_Error(string errorMessage)
+        {
+            ErrorMessage = errorMessage;
+        }
+
+        public override string ToString()
+        {
+            return ErrorMessage;
         }
     }
     #endregion
@@ -814,14 +832,14 @@ namespace PEBakery.Core
 
     #region CodeInfo 04 - INI
     [Serializable]
-    public class CodeInfo_INIRead : CodeInfo
+    public class CodeInfo_IniRead : CodeInfo
     { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
         public string FileName;
         public string SectionName;
         public string Key;
         public string DestVar;
 
-        public CodeInfo_INIRead(string fileName, string sectionName, string key, string destVar)
+        public CodeInfo_IniRead(string fileName, string sectionName, string key, string destVar)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -845,29 +863,29 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIReadOp : CodeInfo
+    public class CodeInfo_IniReadOp : CodeInfo
     {    
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIRead> Infos
+        public List<CodeInfo_IniRead> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIRead).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniRead).ToList();
         }
 
-        public CodeInfo_INIReadOp(List<CodeCommand> cmds)
+        public CodeInfo_IniReadOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIWrite : CodeInfo
+    public class CodeInfo_IniWrite : CodeInfo
     { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
         public string FileName;
         public string SectionName;
         public string Key;
         public string Value;
 
-        public CodeInfo_INIWrite(string fileName, string sectionName, string key, string value)
+        public CodeInfo_IniWrite(string fileName, string sectionName, string key, string value)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -890,28 +908,28 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIWriteOp : CodeInfo
+    public class CodeInfo_IniWriteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIWrite> Infos
+        public List<CodeInfo_IniWrite> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIWrite).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniWrite).ToList();
         }
 
-        public CodeInfo_INIWriteOp(List<CodeCommand> cmds)
+        public CodeInfo_IniWriteOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIDelete : CodeInfo
+    public class CodeInfo_IniDelete : CodeInfo
     { // INIDelete,<FileName>,<SectionName>,<Key>
         public string FileName;
         public string SectionName;
         public string Key;
 
-        public CodeInfo_INIDelete(string fileName, string sectionName, string key)
+        public CodeInfo_IniDelete(string fileName, string sectionName, string key)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -931,27 +949,27 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIDeleteOp : CodeInfo
+    public class CodeInfo_IniDeleteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIDelete> Infos
+        public List<CodeInfo_IniDelete> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIDelete).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniDelete).ToList();
         }
 
-        public CodeInfo_INIDeleteOp(List<CodeCommand> cmds)
+        public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIAddSection : CodeInfo
+    public class CodeInfo_IniAddSection : CodeInfo
     { // INIAddSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
-        public CodeInfo_INIAddSection(string fileName, string sectionName)
+        public CodeInfo_IniAddSection(string fileName, string sectionName)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -968,27 +986,27 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIAddSectionOp : CodeInfo
+    public class CodeInfo_IniAddSectionOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIAddSection> Infos
+        public List<CodeInfo_IniAddSection> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIAddSection).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniAddSection).ToList();
         }
 
-        public CodeInfo_INIAddSectionOp(List<CodeCommand> cmds)
+        public CodeInfo_IniAddSectionOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIDeleteSection : CodeInfo
+    public class CodeInfo_IniDeleteSection : CodeInfo
     { // INIDeleteSection,<FileName>,<SectionName>
         public string FileName;
         public string SectionName;
 
-        public CodeInfo_INIDeleteSection(string fileName, string sectionName)
+        public CodeInfo_IniDeleteSection(string fileName, string sectionName)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -1005,29 +1023,29 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_INIDeleteSectionOp : CodeInfo
+    public class CodeInfo_IniDeleteSectionOp : CodeInfo
     { 
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIDeleteSection> Infos
+        public List<CodeInfo_IniDeleteSection> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIDeleteSection).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniDeleteSection).ToList();
         }
 
-        public CodeInfo_INIDeleteSectionOp(List<CodeCommand> cmds)
+        public CodeInfo_IniDeleteSectionOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIWriteTextLine : CodeInfo
+    public class CodeInfo_IniWriteTextLine : CodeInfo
     { // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
         public string FileName;
         public string SectionName;
         public string Line;
         public bool Append;
 
-        public CodeInfo_INIWriteTextLine(string fileName, string sectionName, string line, bool append)
+        public CodeInfo_IniWriteTextLine(string fileName, string sectionName, string line, bool append)
         {
             FileName = fileName;
             SectionName = sectionName;
@@ -1050,27 +1068,27 @@ namespace PEBakery.Core
     }
    
     [Serializable]
-    public class CodeInfo_INIWriteTextLineOp : CodeInfo
+    public class CodeInfo_IniWriteTextLineOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_INIWriteTextLine> Infos
+        public List<CodeInfo_IniWriteTextLine> Infos
         {
-            get => Cmds.Select(x => x.Info as CodeInfo_INIWriteTextLine).ToList();
+            get => Cmds.Select(x => x.Info as CodeInfo_IniWriteTextLine).ToList();
         }
 
-        public CodeInfo_INIWriteTextLineOp(List<CodeCommand> cmds)
+        public CodeInfo_IniWriteTextLineOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
     }
 
     [Serializable]
-    public class CodeInfo_INIMerge : CodeInfo
+    public class CodeInfo_IniMerge : CodeInfo
     { // INIMerge,<SrcFile>,<DestFile>
         public string SrcFile;
         public string DestFile;
 
-        public CodeInfo_INIMerge(string srcFile, string destFile)
+        public CodeInfo_IniMerge(string srcFile, string destFile)
         {
             SrcFile = srcFile;
             DestFile = destFile;
@@ -1555,6 +1573,7 @@ namespace PEBakery.Core
         Ceil, Floor, Round, // Round added in PEBakery 
         Date,
         FileName, DirPath, Path, Ext, // DirPath == Path
+        PathCombine,
         Inc, Dec, Mult, Div,
         Left, Right,
         SubStr, // Added in PEBakery
@@ -1694,6 +1713,32 @@ namespace PEBakery.Core
             b.Append(StringEscaper.Doublequote(FilePath));
             b.Append(",");
             b.Append(DestVar);            
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class StrFormatInfo_PathCombine : StrFormatInfo
+    { // StrFormat,PathCombine,<DirPath>,<FileName>,<DestVar>
+        public string DirPath;
+        public string FileName;
+        public string DestVar;
+
+        public StrFormatInfo_PathCombine(string dirPath, string fileName, string destVar)
+        {
+            DirPath = dirPath;
+            FileName = fileName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(StringEscaper.Doublequote(DirPath));
+            b.Append(",");
+            b.Append(StringEscaper.Doublequote(FileName));
+            b.Append(",");
+            b.Append(DestVar);
             return b.ToString();
         }
     }
