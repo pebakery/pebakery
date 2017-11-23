@@ -91,6 +91,7 @@ namespace PEBakery.Core.Commands
 
             // Run Section
             int depthBackup = s.CurDepth;
+            int errorOffBackup = s.Logger.ErrorOffCount;
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             if (cmd.Type == CodeType.Exec)
@@ -104,6 +105,7 @@ namespace PEBakery.Core.Commands
             }
 
             s.CurDepth = depthBackup;
+            s.Logger.ErrorOffCount = errorOffBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
         }  
 

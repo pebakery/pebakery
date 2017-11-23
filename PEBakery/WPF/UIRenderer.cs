@@ -46,6 +46,8 @@ namespace PEBakery.WPF
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
 
+        public static bool IgnoreWidthOfWebLabel = false;
+
         private readonly RenderInfo renderInfo;
         private readonly List<UICommand> uiCodes;
         private readonly Variables variables;
@@ -640,7 +642,17 @@ namespace PEBakery.WPF
             block.Inlines.Add(hyperLink);
 
             SetToolTip(block, info.ToolTip);
-            DrawToCanvas(r, block, uiCmd.Rect);
+
+            if (IgnoreWidthOfWebLabel)
+            {
+                Rect rect = uiCmd.Rect;
+                rect.Width = block.Width;
+                DrawToCanvas(r, block, rect);
+            }
+            else
+            {
+                DrawToCanvas(r, block, uiCmd.Rect);
+            }
         }
 
         /// <summary>

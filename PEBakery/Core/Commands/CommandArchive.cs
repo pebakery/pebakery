@@ -279,8 +279,6 @@ namespace PEBakery.Core.Commands
                 string srcCab = srcFile.Substring(0, srcFile.Length - 1) + "_";
                 if (File.Exists(srcCab))
                 {
-                    string destFullPath = Path.Combine(destDir, Path.GetFileName(srcFile));
-
                     // Get Temp Dir
                     string tempDir;
                     {
@@ -299,7 +297,7 @@ namespace PEBakery.Core.Commands
                             result = cab.ExtractAll(tempDir, out List<string> fileList);
                             if (2 < fileList.Count)
                             { // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
-                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] contains multiple files"));
+                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain single file"));
                                 return;
                             }
                         }
@@ -309,12 +307,26 @@ namespace PEBakery.Core.Commands
                             string tempFullPath = Path.Combine(tempDir, srcFileName);
                             if (File.Exists(tempFullPath))
                             {
+                                string destFullPath;
                                 if (destIsDir)
-                                    File.Move(tempFullPath, Path.Combine(destDir, srcFileName));
+                                    destFullPath = Path.Combine(destDir, srcFileName);
                                 else // Move to new name
-                                    File.Move(tempFullPath, Path.Combine(destDir, Path.GetFileName(destPath)));
+                                    destFullPath = Path.Combine(destDir, Path.GetFileName(destPath));
 
-                                logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
+                                if (File.Exists(destFullPath))
+                                    logs.Add(new LogInfo(LogState.Warning, $"File [{destFullPath}] already exists, will be overwritten"));
+
+                                try
+                                {
+                                    if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+                                        Directory.CreateDirectory(Path.GetDirectoryName(destFullPath));
+                                    File.Copy(tempFullPath, destFullPath, true);
+                                    logs.Add(new LogInfo(LogState.Success, $"[{srcFileName}] from [{srcCab}] extracted to [{destFullPath}]"));
+                                }
+                                finally
+                                {
+                                    File.Delete(tempFullPath);
+                                }
                             }
                             else
                             { // Unable to find srcFile

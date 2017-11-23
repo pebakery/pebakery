@@ -282,6 +282,23 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region PathCombine
+        [TestCategory("Command")]
+        [TestCategory("CommandString")]
+        [TestMethod]
+        public void StrFormat_PathCombine()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\Windows\System32,notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\Windows,System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:\,Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,C:,Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\notepad.exe");
+
+            StrFormat_Dest_Template(s, @"StrFormat,PathCombine,D:\Joveler,Korea,%Dest%", @"D:\Joveler\Korea");
+        }
+        #endregion
+
         #region Inc
         [TestCategory("Command")]
         [TestCategory("CommandString")]

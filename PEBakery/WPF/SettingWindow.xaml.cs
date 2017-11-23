@@ -190,10 +190,7 @@ namespace PEBakery.WPF
             this.settingFile = settingFile;
             ReadFromFile();
 
-            Logger.DebugLevel = Log_DebugLevel;
-            CodeParser.OptimizeCode = General_OptimizeCode;
-            CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
-            CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
+            ApplySetting();
         }
         #endregion
 
@@ -390,6 +387,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("General_ShowLogAfterBuild");
             }
         }
+
+        private bool general_StopBuildOnError;
+        public bool General_StopBuildOnError
+        {
+            get => general_StopBuildOnError;
+            set
+            {
+                general_StopBuildOnError = value;
+                OnPropertyUpdate("General_StopBuildOnError");
+            }
+        }
         #endregion
 
         #region Interface
@@ -483,7 +491,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Log
+        #region Logging
         private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
         {
             DebugLevel.Production.ToString(),
@@ -631,9 +639,30 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Compat_RegWriteLegacy");
             }
         }
+
+        private bool compat_IgnoreWidthOfWebLabel;
+        public bool Compat_IgnoreWidthOfWebLabel
+        {
+            get => compat_IgnoreWidthOfWebLabel;
+            set
+            {
+                compat_IgnoreWidthOfWebLabel = value;
+                OnPropertyUpdate("Compat_IgnoreWidthOfWebLabel");
+            }
+        }
         #endregion
 
         #region Utility
+        public void ApplySetting()
+        {
+            CodeParser.OptimizeCode = this.General_OptimizeCode;
+            Engine.StopBuildOnError = this.General_StopBuildOnError;
+            Logger.DebugLevel = this.Log_DebugLevel;
+            CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
+            CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
+            UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
+        }
+
         public void SetToDefault()
         {
             // Project
@@ -643,6 +672,7 @@ namespace PEBakery.WPF
             General_EnableLongFilePath = false;
             General_OptimizeCode = true;
             General_ShowLogAfterBuild = true;
+            General_StopBuildOnError = true;
 
             // Interface
             using (InstalledFontCollection fonts = new InstalledFontCollection())
@@ -674,6 +704,7 @@ namespace PEBakery.WPF
             Compat_DirCopyBug = true;
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
+            Compat_IgnoreWidthOfWebLabel = true;
         }
 
         public void ReadFromFile()
@@ -689,6 +720,7 @@ namespace PEBakery.WPF
                 new IniKey("General", "EnableLongFilePath"), // Boolean
                 new IniKey("General", "OptimizeCode"), // Boolean
                 new IniKey("General", "ShowLogAfterBuild"), // Boolean
+                new IniKey("General", "StopBuildOnError"), // Boolean
                 new IniKey("Interface", "MonospaceFontFamily"),
                 new IniKey("Interface", "MonospaceFontWeight"),
                 new IniKey("Interface", "MonospaceFontSize"),
@@ -706,6 +738,7 @@ namespace PEBakery.WPF
                 new IniKey("Compat", "DirCopyBug"), // Boolean
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
                 new IniKey("Compat", "RegWriteLegacy"), // Boolean
+                new IniKey("Compat", "IgnoreWidthOfWebLabel"), // Boolean
             };
             keys = Ini.GetKeys(settingFile, keys);
 
@@ -713,6 +746,7 @@ namespace PEBakery.WPF
             string str_General_EnableLongFilePath = dict["General_EnableLongFilePath"];
             string str_General_OptimizeCode = dict["General_OptimizeCode"];
             string str_General_ShowLogAfterBuild = dict["General_ShowLogAfterBuild"];
+            string str_General_StopBuildOnError = dict["General_StopBuildOnError"];
             string str_Interface_MonospaceFontFamiliy = dict["Interface_MonospaceFontFamily"];
             string str_Interface_MonospaceFontWeight = dict["Interface_MonospaceFontWeight"];
             string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
@@ -729,6 +763,7 @@ namespace PEBakery.WPF
             string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
             string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
+            string str_Compat_IgnoreWidthOfWebLabel = dict["Compat_IgnoreWidthOfWebLabel"];
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -753,6 +788,13 @@ namespace PEBakery.WPF
             {
                 if (str_General_ShowLogAfterBuild.Equals("False", StringComparison.OrdinalIgnoreCase))
                     General_ShowLogAfterBuild = false;
+            }
+
+            // General - StopBuildOnError (Default = True)
+            if (str_General_StopBuildOnError != null)
+            {
+                if (str_General_StopBuildOnError.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    General_StopBuildOnError = false;
             }
 
             // Interface - MonospaceFont (Default = Consolas, Regular, 12pt
@@ -862,6 +904,13 @@ namespace PEBakery.WPF
                 if (str_Compat_RegWriteLegacy.Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_RegWriteLegacy = false;
             }
+
+            // Compatibility - IgnoreWidthOfWebLabel (Default = True)
+            if (str_Compat_IgnoreWidthOfWebLabel != null)
+            {
+                if (str_Compat_IgnoreWidthOfWebLabel.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_IgnoreWidthOfWebLabel = false;
+            }
         }
 
         public void WriteToFile()
@@ -871,6 +920,7 @@ namespace PEBakery.WPF
                 new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
                 new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
                 new IniKey("General", "ShowLogAfterBuild", General_ShowLogAfterBuild.ToString()),
+                new IniKey("General", "StopBuildOnError", General_StopBuildOnError.ToString()),
                 new IniKey("Interface", "MonospaceFontFamily", Interface_MonospaceFont.FontFamily.Source),
                 new IniKey("Interface", "MonospaceFontWeight", Interface_MonospaceFont.FontWeight.ToString()),
                 new IniKey("Interface", "MonospaceFontSize", Interface_MonospaceFont.FontSizeInPoint.ToString()),
@@ -887,6 +937,7 @@ namespace PEBakery.WPF
                 new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
                 new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
+                new IniKey("Compat", "IgnoreWidthOfWebLabel", Compat_IgnoreWidthOfWebLabel.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
         }

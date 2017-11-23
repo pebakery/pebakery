@@ -38,6 +38,7 @@ using System.Text;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
+using System.Net;
 
 namespace PEBakery.WPF
 {
@@ -739,16 +740,10 @@ namespace PEBakery.WPF
                     if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
                         StartCacheWorker();
 
-                    // LogDebugLevel
-                    Logger.DebugLevel = setting.Log_DebugLevel;
-
-                    // CodeParser
-                    CodeParser.OptimizeCode = setting.General_OptimizeCode;
-                    CodeParser.AllowLegacyBranchCondition = setting.Compat_LegacyBranchCondition;
-                    CodeParser.AllowRegWriteLegacy = setting.Compat_RegWriteLegacy;
+                    // Apply
+                    Setting.ApplySetting();
                 }
             }
-
         }
 
         private void UtilityButton_Click(object sender, RoutedEventArgs e)
@@ -774,6 +769,14 @@ namespace PEBakery.WPF
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
+            Model.ProgressRingActive = true;
+
+            using (WebClient c = new WebClient())
+            {
+                // string str = c.DownloadData();
+            }
+
+            Model.ProgressRingActive = false;
             MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 

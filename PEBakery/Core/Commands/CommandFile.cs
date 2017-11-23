@@ -16,7 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -62,7 +61,8 @@ namespace PEBakery.Core.Commands
             }
 
             // Check srcFileName contains wildcard
-            if (srcFile.IndexOfAny(new char[] { '*', '?' }) == -1)
+            string wildcard = Path.GetFileName(srcFile);
+            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 if (destPathIsDir) // DestPath exists, and it is directory
                 {
@@ -111,9 +111,9 @@ namespace PEBakery.Core.Commands
 
                 string[] files;
                 if (info.NoRec)
-                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile));
+                    files = FileHelper.GetFilesEx(srcDirToFind, wildcard);
                 else
-                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(srcFile), SearchOption.AllDirectories);
+                    files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
 
                 if (0 < files.Length)
                 { // One or more file will be copied
@@ -179,7 +179,8 @@ namespace PEBakery.Core.Commands
             }
 
             // Check srcFileName contains wildcard
-            if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
+            string wildcard = Path.GetFileName(filePath);
+            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 if (File.Exists(filePath))
                 { // Delete File
@@ -206,9 +207,9 @@ namespace PEBakery.Core.Commands
                 
                 string[] files;
                 if (info.NoRec)
-                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(filePath));
+                    files = FileHelper.GetFilesEx(srcDirToFind, wildcard);
                 else
-                    files = FileHelper.GetFilesEx(srcDirToFind, Path.GetFileName(filePath), SearchOption.AllDirectories);
+                    files = FileHelper.GetFilesEx(srcDirToFind, wildcard, SearchOption.AllDirectories);
 
                 if (0 < files.Length)
                 { // One or more file will be deleted
@@ -366,7 +367,8 @@ namespace PEBakery.Core.Commands
             }
 
             // Check srcDir contains wildcard
-            if (srcDir.IndexOfAny(new char[] { '*', '?' }) == -1)
+            string wildcard = Path.GetFileName(srcDir);
+            if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 string destFullPath = Path.Combine(destDir, Path.GetFileName(srcDir));
                 if (Directory.Exists(destFullPath))
@@ -384,16 +386,15 @@ namespace PEBakery.Core.Commands
                 else
                     Directory.CreateDirectory(destDir);
 
-                string wildcard = Path.GetFileName(srcDir);
                 string srcParentDir = Path.GetDirectoryName(srcDir);
 
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
                 if (!dirInfo.Exists)
                     throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
 
-                if (s.CompatDirCopyBug && wildcard.Equals("*", StringComparison.Ordinal))
+                if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
-                    foreach (FileInfo f in dirInfo.GetFiles("*"))
+                    foreach (FileInfo f in dirInfo.GetFiles(wildcard))
                         File.Copy(f.FullName, Path.Combine(destDir, f.Name));
                 }
 

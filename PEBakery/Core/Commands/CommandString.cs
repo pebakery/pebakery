@@ -245,6 +245,25 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
                     }
                     break;
+                case StrFormatType.PathCombine:
+                    { // StrFormat,PathCombine,<DirPath>,<FileName>,<DestVar>
+                        Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_PathCombine));
+                        StrFormatInfo_PathCombine subInfo = info.SubInfo as StrFormatInfo_PathCombine;
+
+                        string dirPath = StringEscaper.Preprocess(s, subInfo.DirPath).Trim();
+                        string fileName = StringEscaper.Preprocess(s, subInfo.FileName).Trim();
+
+                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled))
+                            dirPath = dirPath + @"\";
+
+                        string destStr = Path.Combine(dirPath, fileName);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Path [{dirPath}] and [{fileName}] combined into [{destStr}]"));
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
+                        logs.AddRange(varLogs);
+                    }
+                    break;
                 case StrFormatType.Inc:
                 case StrFormatType.Dec:
                 case StrFormatType.Mult:

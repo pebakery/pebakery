@@ -43,7 +43,6 @@ namespace PEBakery.Core
                 {
                     uiCmdList.Add(ParseUICommand(lines, addr, ref i));
                 }
-                catch (EmptyLineException) { } // Do nothing
                 catch (InvalidUICommandException e)
                 {
                     errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICmd.RawLine})"));
@@ -68,11 +67,11 @@ namespace PEBakery.Core
 
             // Check if rawCode is Empty
             if (rawLine.Equals(string.Empty))
-                throw new EmptyLineException();
+                return new UICommand(rawLine, addr, string.Empty);
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawLine.StartsWith("//") || rawLine.StartsWith("#") || rawLine.StartsWith(";"))
-                throw new EmptyLineException();
+                return new UICommand(rawLine, addr, string.Empty);
 
             // Find key of interface control
             string key = string.Empty;

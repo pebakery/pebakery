@@ -1148,18 +1148,11 @@ namespace PEBakery.Helper
         /// <param name="str2"></param>
         public static CompareStringNumberResult CompareStringNumber(string str1, string str2, bool ignoreCase = true)
         {
-            try
-            { // Try Version class compare
-                // In case of 0 vs 5.1.2600.5512
-                string str3 = str1;
-                string str4 = str2;
-                if (Regex.IsMatch(str1, @"^[0-9]+$", RegexOptions.Compiled))
-                    str3 = str1 + ".0";
-                if (Regex.IsMatch(str2, @"^[0-9]+$", RegexOptions.Compiled))
-                    str4 = str2 + ".0";
-
-                Version v1 = new Version(str3);
-                Version v2 = new Version(str4);
+            // Try version number compare
+            VersionEx v1 = VersionEx.Parse(str1);
+            VersionEx v2 = VersionEx.Parse(str2);
+            if (v1 != null && v2 != null)
+            {
                 int comp = v1.CompareTo(v2);
                 if (comp < 0)
                     return CompareStringNumberResult.Smaller;
@@ -1168,8 +1161,8 @@ namespace PEBakery.Helper
                 else
                     return CompareStringNumberResult.Bigger;
             }
-            catch { } // Do simple int/string compare
 
+            // Do simple number or string compare
             ParseStringToNumberType type1 = ParseStringToNumber(str1, out long z1, out decimal r1);
             ParseStringToNumberType type2 = ParseStringToNumber(str2, out long z2, out decimal r2);
 
@@ -1205,6 +1198,87 @@ namespace PEBakery.Helper
                     return CompareStringNumberResult.Equal;
                 else
                     return CompareStringNumberResult.NotEqual;
+            }
+        }
+
+        /// <summary>
+        /// Extended VersionEx to support single integer
+        /// Ex) 5 vs 5.1.2600.1234
+        /// </summary>
+        public class VersionEx
+        {
+            public int Major { get; private set; }
+            public int Minor { get; private set; }
+            public int Build { get; private set; }
+            public int Revision { get; private set; }
+
+            public VersionEx(int major, int minor, int build, int revision)
+            {
+                if (major < 0) throw new ArgumentOutOfRangeException("major");
+                if (minor < 0) throw new ArgumentOutOfRangeException("minor");
+                if (build < -1) throw new ArgumentOutOfRangeException("build");
+                if (revision < -1) throw new ArgumentOutOfRangeException("revision");
+
+                Major = major;
+                Minor = minor;
+                Build = build;
+                Revision = revision;
+            }
+
+            public static VersionEx Parse(string str)
+            {
+                int[] arr = new int[4] { 0, 0, -1, -1 };
+
+                string[] parts = str.Split('.');
+                if (parts.Length < 1 && 4 < parts.Length)
+                    return null;
+
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (!int.TryParse(parts[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out arr[i]))
+                        return null;
+                }
+
+                return new VersionEx(arr[0], arr[1], arr[2], arr[3]);
+            }
+
+            public int CompareTo(VersionEx value)
+            {
+                if (value == null) throw new ArgumentNullException("value");
+
+                if (Major != value.Major)
+                {
+                    if (Major > value.Major)
+                        return 1;
+                    else
+                        return -1;
+                }
+
+                if (Minor != value.Minor)
+                {
+                    if (Minor > value.Minor)
+                        return 1;
+                    else
+                        return -1;
+                }
+
+                if (Build != value.Build)
+                {
+                    if (Build > value.Build)
+                        return 1;
+                    else
+                        return -1;
+                }
+
+                if (Revision != value.Revision)
+                {
+                    if (Revision > value.Revision)
+                        return 1;
+                    else
+                        return -1;
+                }
+
+                return 0;
             }
         }
 

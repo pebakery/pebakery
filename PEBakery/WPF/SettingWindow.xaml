@@ -213,6 +213,10 @@
                         Margin="15, 15, 15, 0"
                         Content="Show LogWindow After Build"
                         IsChecked="{Binding General_ShowLogAfterBuild}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Stop Build on Error"
+                        IsChecked="{Binding General_StopBuildOnError}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Interface">
@@ -378,6 +382,10 @@
                         Margin="15, 15, 15, 0"
                         Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
                         IsChecked="{Binding Compat_RegWriteLegacy}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Ignore Width of WebLabel"
+                        IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
                 </StackPanel>
             </TabItem>
         </TabControl>

@@ -23,11 +23,13 @@ namespace PEBakery.Core
     public class Variables : ICloneable
     {
         /*
-         * Variables 우선순위
-         * local variables > global variables > fixed variables
+         * Variables search order
+         * 1. local variables
+         * 2. global variables
+         * 3. fixed variables
          */
 
-        #region Variables
+        #region Field and Property
         private Project project;
         private Dictionary<string, string> fixedVars;
         private Dictionary<string, string> globalVars;
@@ -73,13 +75,13 @@ namespace PEBakery.Core
         #region LoadDefaults
         private List<LogInfo> LoadDefaultFixedVariables()
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(32);
 
             #region Builder Variables
             // PEBakery
             logs.Add(SetValue(VarsType.Fixed, "PEBakery", "True"));
             // BaseDir
-            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir));
+            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir.TrimEnd(new char[] { '\\' } )));
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString("000")));
@@ -179,7 +181,7 @@ namespace PEBakery.Core
             // [Variables]
             if (project.MainPlugin.Sections.ContainsKey("Variables"))
             {
-                logs.AddRange(AddVariables(VarsType.Global, project.MainPlugin.Sections["Variables"]));
+                logs = AddVariables(VarsType.Global, project.MainPlugin.Sections["Variables"]);
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeperator));
             }
 
@@ -645,7 +647,7 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> vars = GetVarsMatchesType(type);
 
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(64);
             foreach (var kv in dict)
             {
                 string value = kv.Value.Trim().Trim('\"');

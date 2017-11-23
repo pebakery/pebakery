@@ -976,7 +976,7 @@ namespace PEBakery.Core
         [Ignore]
         public string Text { get => Export(LogExportType.Text); }
 
-        public string Export(LogExportType type)
+        public string Export(LogExportType type, bool logDepth = true)
         {
             string str = string.Empty;
             switch (type)
@@ -986,8 +986,11 @@ namespace PEBakery.Core
                     {
                         StringBuilder b = new StringBuilder();
 
-                        for (int i = 0; i < Depth; i++)
-                            b.Append("  ");
+                        if (logDepth)
+                        {
+                            for (int i = 0; i < Depth; i++)
+                                b.Append("  ");
+                        }
 
                         if (State == LogState.None)
                         { // No State
@@ -1013,8 +1016,11 @@ namespace PEBakery.Core
                     {
                         StringBuilder b = new StringBuilder();
 
-                        for (int i = 0; i < Depth; i++)
-                            b.Append("  ");
+                        if (logDepth)
+                        {
+                            for (int i = 0; i < Depth; i++)
+                                b.Append("  ");
+                        }
 
                         if (RawCode == null)
                             b.Append(Message);

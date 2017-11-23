@@ -648,19 +648,19 @@ namespace PEBakery.Core
             return visiblePluginList;
         }
 
-        private List<Plugin> CollectActivePlugins(List<Plugin> allPluginList)
+        private List<Plugin> CollectActivePlugins(List<Plugin> allPlugist)
         {
-            List<Plugin> activePluginList = new List<Plugin>();
-            foreach (Plugin p in allPluginList)
+            List<Plugin> activePlugins = new List<Plugin>(allPlugist.Count)
+            {
+                mainPlugin
+            };
+
+            foreach (Plugin p in allPlugist.Where(x => !x.IsMainPlugin && (0 < x.Level)))
             {
                 bool active = false;
-                if (p.Type == PluginType.Plugin)
-                {
-                    if (p.IsMainPlugin)
-                    {
-                        active = true;
-                    }
-                    else if (p.Selected != SelectedState.None)
+                if (p.Type == PluginType.Plugin || p.Type == PluginType.Link)
+                {                   
+                    if (p.Selected != SelectedState.None)
                     {
                         if (p.Mandatory || p.Selected == SelectedState.True)
                             active = true;
@@ -668,9 +668,10 @@ namespace PEBakery.Core
                 }
 
                 if (active)
-                    activePluginList.Add(p);
+                    activePlugins.Add(p);
             }
-            return activePluginList;
+            
+            return activePlugins;
         }
         #endregion
 
