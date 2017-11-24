@@ -325,7 +325,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileSize : CodeInfo
-    { // FileSize,<FileName>,<DestVar>
+    { // FileSize,<FilePath>,<DestVar>
         public string FilePath;
         public string DestVar;
 
@@ -424,19 +424,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirSize : CodeInfo
-    { // DirSize,<Path>,<DestVar>
-        public string Path;
+    { // DirSize,<DirPath>,<DestVar>
+        public string DirPath;
         public string DestVar;
 
-        public CodeInfo_DirSize(string path, string destVar)
+        public CodeInfo_DirSize(string dirPath, string destVar)
         {
-            Path = path;
+            DirPath = dirPath;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{Path},{DestVar}";
+            return $"{DirPath},{DestVar}";
         }
     }
     #endregion

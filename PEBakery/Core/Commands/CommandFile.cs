@@ -391,7 +391,7 @@ namespace PEBakery.Core.Commands
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
                 if (!dirInfo.Exists)
                     throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
-
+                
                 if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
                     foreach (FileInfo f in dirInfo.GetFiles(wildcard))
@@ -526,7 +526,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirSize));
             CodeInfo_DirSize info = cmd.Info as CodeInfo_DirSize;
 
-            string path = StringEscaper.Preprocess(s, info.Path);
+            string path = StringEscaper.Preprocess(s, info.DirPath);
 
             if (Directory.Exists(path) == false)
             {
@@ -534,7 +534,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+            string[] files = FileHelper.GetFilesEx(path, "*", SearchOption.AllDirectories);
             long dirSize = 0;
             for (int i = 0; i < files.Length; i++)
             {
