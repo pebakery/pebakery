@@ -160,7 +160,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,Date,%Dest%,yyyy-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
             CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
@@ -175,7 +175,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
             CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
@@ -190,7 +190,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,Date,%Dest%,yyy-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             // Successfully induced error
             if (cmd.Type == CodeType.Error) return;
@@ -202,7 +202,7 @@ namespace PEBakery.Tests.Core.Command
         {
             string rawCode = "StrFormat,Date,%Dest%,yyymdd_hhnnss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             // Successfully induced error
             if (cmd.Type == CodeType.Error) return;

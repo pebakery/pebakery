@@ -36,6 +36,7 @@ using System.ComponentModel;
 using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Linq;
 
 namespace PEBakery.WPF
 {
@@ -69,7 +70,7 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    this.uiCodes = plugin.Sections[interfaceSectionName].GetUICodes(true);
+                    this.uiCodes = plugin.Sections[interfaceSectionName].GetUICodes(true).Where(x => x.Visibility).ToList();
                     logger.System_Write(plugin.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
@@ -92,12 +93,9 @@ namespace PEBakery.WPF
                 return;
 
             InitCanvas(renderInfo.Canvas);
-
+            UICommand[] radioButtons = uiCodes.Where(x => x.Type == UIType.RadioButton).ToArray();
             foreach (UICommand uiCmd in uiCodes)
             {
-                if (uiCmd.Visibility == false)
-                    continue;
-
                 try
                 {
                     switch (uiCmd.Type)
@@ -130,7 +128,7 @@ namespace PEBakery.WPF
                             UIRenderer.RenderWebLabel(renderInfo, uiCmd);
                             break;
                         case UIType.RadioButton:
-                            UIRenderer.RenderRadioButton(renderInfo, uiCmd);
+                            UIRenderer.RenderRadioButton(renderInfo, uiCmd, radioButtons);
                             break;
                         case UIType.Bevel:
                             UIRenderer.RenderBevel(renderInfo, uiCmd);
@@ -663,7 +661,7 @@ namespace PEBakery.WPF
         /// <param name="r.Canvas">Parent r.Canvas</param>
         /// <param name="uiCmd">UICommand</param>
         /// <returns>Success = false, Failure = true</returns>
-        public static void RenderRadioButton(RenderInfo r, UICommand uiCmd)
+        public static void RenderRadioButton(RenderInfo r, UICommand uiCmd, UICommand[] radioButtons)
         {
             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
             UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
@@ -703,13 +701,19 @@ namespace PEBakery.WPF
             {
                 RadioButton btn = sender as RadioButton;
                 info.Selected = true;
-                uiCmd.Update();
-            };
-            radio.Unchecked += (object sender, RoutedEventArgs e) =>
-            {
-                RadioButton btn = sender as RadioButton;
-                info.Selected = false;
-                uiCmd.Update();
+
+                // Uncheck the other RadioButtons
+                List<UICommand> updateList = radioButtons.Where(x => !x.Key.Equals(uiCmd.Key, StringComparison.Ordinal)).ToList();
+                foreach (UICommand uncheck in updateList)
+                {
+                    Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton));
+                    UIInfo_RadioButton unInfo = uncheck.Info as UIInfo_RadioButton;
+
+                    unInfo.Selected = false;
+                }
+
+                updateList.Add(uiCmd);
+                UICommand.Update(updateList);
             };
 
             SetToolTip(radio, info.ToolTip);

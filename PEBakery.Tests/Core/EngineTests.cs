@@ -115,7 +115,7 @@ namespace PEBakery.Tests.Core
         {
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
-            cmd = CodeParser.ParseRawLine(rawCode, addr);
+            cmd = CodeParser.ParseStatement(rawCode, addr);
             if (cmd.Type == CodeType.Error)
             {
                 Console.WriteLine((cmd.Info as CodeInfo_Error).ErrorMessage);
@@ -155,7 +155,7 @@ namespace PEBakery.Tests.Core
         {
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
-            cmds = CodeParser.ParseRawLines(rawCodes, addr, out List<LogInfo> errorLogs);
+            cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
             if (0 < errorLogs.Where(x => x.State == LogState.Error).Count())
             { 
                 Assert.IsTrue(check == ErrorCheck.ParserError);

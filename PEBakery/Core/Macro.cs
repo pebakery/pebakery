@@ -9,6 +9,7 @@ using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using System.Windows;
 using PEBakery.WPF;
+using System.Diagnostics;
 
 namespace PEBakery.Core
 {
@@ -80,7 +81,7 @@ namespace PEBakery.Core
                 {
                     if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
                         && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
-                        macroDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
+                        macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                 }
                 catch (Exception e)
                 {
@@ -115,7 +116,7 @@ namespace PEBakery.Core
                     {
                         try
                         {
-                            localDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
+                            localDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                             logs.Add(new LogInfo(LogState.Success, $"Macro [{kv.Key}] set to [{kv.Value}]", 1));
                             count += 1;
                         }
@@ -141,7 +142,63 @@ namespace PEBakery.Core
         { // Local Macro from [Variables]
             localDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
         }
-}
+
+        public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool permanent)
+        {
+            if (macroCommand != null)
+            { // Insert
+                // Try parsing
+                CodeCommand cmd = CodeParser.ParseStatement(macroCommand, addr);
+                if (cmd.Type == CodeType.Error)
+                {
+                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error));
+                    CodeInfo_Error info = cmd.Info as CodeInfo_Error;
+
+                    return new LogInfo(LogState.Error, info.ErrorMessage);
+                }
+
+                // Put into dictionary
+                if (permanent) // MacroDict
+                {
+                    MacroDict[macroName] = cmd;
+                    return new LogInfo(LogState.Success, $"Global Macro [{macroName}] set to [{cmd.RawCode}]");
+                }
+                else
+                {
+                    LocalDict[macroName] = cmd;
+                    return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
+                }
+            }
+            else
+            { // Delete
+                // Put into dictionary
+                if (permanent) // MacroDict
+                {
+                    if (MacroDict.ContainsKey(macroName))
+                    {
+                        MacroDict.Remove(macroName);
+                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] deleted");
+                    }
+                    else
+                    {
+                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] not found");
+                    }                   
+                }
+                else
+                {
+                    if (LocalDict.ContainsKey(macroName))
+                    {
+                        LocalDict.Remove(macroName);
+                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] deleted");
+                    }
+                    else
+                    {
+                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] not found");
+                    }
+                }
+            }
+        }
+    }
 
     public static class CommandMacro
     {

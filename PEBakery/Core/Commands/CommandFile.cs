@@ -526,15 +526,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirSize));
             CodeInfo_DirSize info = cmd.Info as CodeInfo_DirSize;
 
-            string path = StringEscaper.Preprocess(s, info.DirPath);
+            string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
-            if (Directory.Exists(path) == false)
+            if (Directory.Exists(dirPath) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{path}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Directory [{dirPath}] does not exist"));
                 return logs;
             }
 
-            string[] files = FileHelper.GetFilesEx(path, "*", SearchOption.AllDirectories);
+            string[] files = FileHelper.GetFilesEx(dirPath, "*", SearchOption.AllDirectories);
             long dirSize = 0;
             for (int i = 0; i < files.Length; i++)
             {
@@ -542,7 +542,7 @@ namespace PEBakery.Core.Commands
                 dirSize += fileInfo.Length;
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Directory [{path}] is [{dirSize}B]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Directory [{dirPath}] is [{dirSize}B]", cmd));
 
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, dirSize.ToString());
             logs.AddRange(varLogs);

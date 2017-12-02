@@ -38,8 +38,8 @@ namespace PEBakery.Core
         public static bool AllowRegWriteLegacy = true;
         #endregion
 
-        #region ParseOneRawLine, ParseRawLines
-        public static CodeCommand ParseRawLine(string rawCode, SectionAddress addr)
+        #region ParseStatement, ParseStatements
+        public static CodeCommand ParseStatement(string rawCode, SectionAddress addr)
         {
             List<string> list = new List<string>();
             int idx = 0;
@@ -55,7 +55,7 @@ namespace PEBakery.Core
             }
         }
 
-        public static List<CodeCommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
+        public static List<CodeCommand> ParseStatements(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
             errorLogs = new List<LogInfo>();
@@ -212,7 +212,7 @@ namespace PEBakery.Core
         /// <param name="idx"></param>
         /// <param name="preprocessed"></param>
         /// <returns></returns>
-        private static CodeCommand ParseCommandFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr)
+        private static CodeCommand ParseStateemtFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr)
         {
             CodeType type = CodeType.None;
 
@@ -1320,6 +1320,28 @@ namespace PEBakery.Core
 
                         return new CodeInfo_Set(varName, varValue, global, permanent);
                     }
+                case CodeType.SetMacro:
+                    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string macroName = args[0];
+                        string macroCommand = args[1];
+                        bool permanent = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
+                                permanent = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_SetMacro(macroName, macroCommand, permanent);
+                    }
                 case CodeType.AddVariables:
                     { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
                         const int minArgCount = 2;
@@ -2319,7 +2341,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+                        CodeCommand embed = ParseStateemtFromSlicedArgs(rawCode, args, addr);
 
                         info = new SystemInfo_OnBuildExit(embed);
                     }
@@ -2331,7 +2353,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+                        CodeCommand embed = ParseStateemtFromSlicedArgs(rawCode, args, addr);
 
                         info = new SystemInfo_OnPluginExit(embed);
                     }
@@ -2630,7 +2652,7 @@ namespace PEBakery.Core
 
         public static CodeCommand ForgeIfEmbedCommand(string rawCode, List<string> args, SectionAddress addr)
         {
-            CodeCommand embed = ParseCommandFromSlicedArgs(rawCode, args, addr);
+            CodeCommand embed = ParseStateemtFromSlicedArgs(rawCode, args, addr);
             return embed;
         }
         #endregion

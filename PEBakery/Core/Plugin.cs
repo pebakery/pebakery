@@ -868,7 +868,7 @@ namespace PEBakery.Core
                             if (convDataType == SectionDataConverted.Codes)
                             {
                                 SectionAddress addr = new SectionAddress(plugin, this);
-                                codes = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
+                                codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
                                 logInfos.AddRange(logList);
                             }
                             else if (convDataType == SectionDataConverted.Interfaces)
@@ -914,7 +914,7 @@ namespace PEBakery.Core
             if (type == SectionType.Code && dataType == SectionDataType.Lines)
             {
                 SectionAddress addr = new SectionAddress(plugin, this);
-                codes = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
+                codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
                 logInfos.AddRange(logList);
 
                 convDataType = SectionDataConverted.Codes;

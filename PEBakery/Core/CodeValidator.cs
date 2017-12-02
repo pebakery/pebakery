@@ -76,7 +76,7 @@ namespace PEBakery.Core
             // Force parsing of code, bypassing caching by section.GetCodes()
             List<string> lines = section.GetLines();
             SectionAddress addr = new SectionAddress(p, section);
-            List<CodeCommand> codes = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
+            List<CodeCommand> codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logs);
 
             visitedSections.Add(section);
             InternalValidateCodes(codes, logs);

@@ -510,28 +510,32 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            IniKey[] keys = new IniKey[infoOp.Cmds.Count];
-            for (int i = 0; i < keys.Length; i++)
+            List<IniKey> keyList = new List<IniKey>(infoOp.Infos.Count);
+            for (int i = 0; i < infoOp.Infos.Count; i++)
             {
                 CodeInfo_IniWriteTextLine info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
-                string line = StringEscaper.Preprocess(s, info.Line); 
+                string line = StringEscaper.Preprocess(s, info.Line);
 
-                keys[i] = new IniKey(sectionName, line);
+                if (append)
+                    keyList.Add(new IniKey(sectionName, line));
+                else // prepend
+                    keyList.Insert(0, new IniKey(sectionName, line));
             }
+            IniKey[] keys = keyList.ToArray();
 
             string dirPath = Path.GetDirectoryName(fileName);
             if (Directory.Exists(dirPath) == false)
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteRawLines(fileName, keys, append);
+            bool result = Ini.WriteRawLines(fileName, keyList, append);
 
             if (result)
             {
                 for (int i = 0; i < keys.Length; i++)
                 {
-                    IniKey kv = keys[i];
+                    IniKey kv = keyList[i];
                     logs.Add(new LogInfo(LogState.Success, $"Line [{kv.Key}] written", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Success, $"Wrote [{keys.Length}] lines to [{fileName}]", cmd));
@@ -540,7 +544,7 @@ namespace PEBakery.Core.Commands
             {
                 for (int i = 0; i < keys.Length; i++)
                 {
-                    IniKey kv = keys[i];
+                    IniKey kv = keyList[i];
                     logs.Add(new LogInfo(LogState.Error, $"Could not write line [{kv.Key}]", infoOp.Cmds[i]));
                 }
                 logs.Add(new LogInfo(LogState.Error, $"Could not write [{keys.Length}] lines to [{fileName}]", cmd));

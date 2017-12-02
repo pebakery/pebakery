@@ -55,6 +55,7 @@ namespace PEBakery.Core.Commands
                         string varKey = Variables.TrimPercentMark(info.VarKey);
                         string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
+                        #region Set UI
                         Plugin p = cmd.Addr.Plugin;
                         PluginSection iface = p.GetInterface(out string sectionName);
                         if (iface == null)
@@ -210,11 +211,26 @@ namespace PEBakery.Core.Commands
                         {
                             goto case false;
                         }
+                        #endregion
                     }
                 case false:
                 default:
                     return Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
             }
+        }
+
+        public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
+        { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro));
+            CodeInfo_SetMacro info = cmd.Info as CodeInfo_SetMacro;
+
+            string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
+
+            if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                macroCommand = null;
+
+            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Permanent);
+            return new List<LogInfo>(1) { log };
         }
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
