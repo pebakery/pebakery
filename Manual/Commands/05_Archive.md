@@ -19,31 +19,21 @@ Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Encoding]
 | Format | Archive format. Should be one of `Zip`.<br>TODO: Support `7z` format. |
 | SrcPath | Path of file/directory to compress. |
 | DestArchive | Path to save compressed archive. |
-
-- Optional Arugments
-
-| Argument | Description |
-| --- | --- |
-| CompressLevel | This effects archive size and compression time.<br>Should be one of `Store`, `Fastest`, `Normal`, `Best`.<br>By default, `Normal` is used. |
-| Encoding | Encoding to be used in filename.<br>Should be one of `UTF8`, `UTF16`, `UTF16BE`, `ANSI`. By default,<br>`UTF8` is used. |
+| CompressLevel (Opt) | This effects archive size and compression time.<br>Should be one of `Store`, `Fastest`, `Normal`, `Best`.<br>By default, `Normal` is used. |
+| Encoding  (Opt) | Encoding to be used in filename.<br>Should be one of `UTF8`, `UTF16`, `UTF16BE`, `ANSI`. <br>By default, `UTF8` is used. |
 
 `CompressLevel` and `Encoding` can be used independently.
 
 ### Example
 
 ```pebakery
+// PEBakery.ini will be compressed into Setting.zip.
 Compress,Zip,%BaseDir%\PEBakery.ini,%BaseDir%\Setting.zip
-// PEBakery.ini will be compressed into Setting.zip.
 ```
 
 ```pebakery
-Compress,Zip,%BaseDir%\PEBakery.ini,%BaseDir%\Setting.zip,Best
-// PEBakery.ini will be compressed into Setting.zip.
-```
-
-```pebakery
-Compress,Zip,%BaseDir%\PEBakery.ini,%BaseDir%\Setting.zip,Best
-// PEBakery.ini will be compressed into Setting.zip.
+// PEBakery.ini will be stored into Setting.zip.
+Compress,Zip,%BaseDir%\PEBakery.ini,%BaseDir%\Setting.zip,Store
 ```
 
 ## Decompress
@@ -64,12 +54,7 @@ Decompress,<SrcArchive>,<DestDir>,[Encoding]
 | --- | --- |
 | SrcArchive | Path of archive to decompress. |
 | DestDir | Directory to decompress archive. |
-
-- Optional Arugments
-
-| Argument | Description |
-| --- | --- |
-| Encoding | Encoding used in filename.<br>Should be one of `UTF8`, `UTF16`, `UTF16BE`, `ANSI`. |
+| Encoding (Opt) | Encoding used in filename.<br>Should be one of `UTF8`, `UTF16`, `UTF16BE`, `ANSI`. |
 
 ### Remarks
 
@@ -99,8 +84,8 @@ Archive formats should work in both mode, but not tested:
 ### Example
 
 ```pebakery
-Decompress,%SrcDir%\Setting.7z,%DestDir%
 // Setting.7z will be decompressed into %DestDir%.
+Decompress,%SrcDir%\Setting.7z,%DestDir%
 ```
 
 ## Expand
@@ -119,16 +104,16 @@ Expand,<SrcCab>,<DestDir>,[SingleFile],[PRESERVE],[NOWARN]
 | --- | --- |
 | SrcCab | Path of cabinet to decompress. |
 | DestDir | Directory to decompress cabinet. |
+| SingleFile (Opt) | Extract only this single file. |
 
-- Optional Arugments
+- Flags
 
-| Argument | Description |
+| Flag | Description |
 | --- | --- |
-| SingleFile | Extract only this single file. |
 | PRESERVE | Do not overwrite when `SingleFile` is specified. |
 | NOWARN | Do not log warning if a file is overwritten when `SingleFile` is specified. |
 
-`PRESERVE` and `NOWARN` can be used independently.
+Flags can be used independently.
 
 ### Remarks
 
@@ -139,23 +124,23 @@ Depends on `cabinet.dll`, a Windows component.
 ### Example
 
 ```pebakery
-Expand,%SrcDir%\ex1.cab,%DestDir%
 // ex1.cab will be decompressed into %DestDir%.
+Expand,%SrcDir%\ex1.cab,%DestDir%
 ```
 
 ```pebakery
-Expand,%Source_Win%\EXPLORER.EX_,%Target_Win%
 // EXPLORER.EXE will be extracted from EXPLORER.EX_
+Expand,%Source_Win%\EXPLORER.EX_,%Target_Win%
 ```
 
 ```pebakery
-Expand,%SrcDir%\multi.cab,%DestDir%,BatteryLine.exe
 // Extract only BatteryLine.exe from multi.cab, overwrite with warning if file exists.
+Expand,%SrcDir%\multi.cab,%DestDir%,BatteryLine.exe
 ```
 
 ```pebakery
-Expand,%SrcDir%\multi.cab,%DestDir%,BatteryLine.exe,PRESERVE
 // Extract only BatteryLine.exe from multi.cab, do not overwrite if file exists.
+Expand,%SrcDir%\multi.cab,%DestDir%,BatteryLine.exe,PRESERVE
 ```
 
 ## CopyOrExpand
@@ -177,21 +162,19 @@ CopyOrExpand,<SrcFile>,<DestPath>,[PRESERVE],[NOWARN]
 | SrcFile | Path of file to copy. |
 | DestPath | Path to copy or extract file. |
 
-- Optional Arugments
+- Flags
 
-| Argument | Description |
+| Flag | Description |
 | --- | --- |
 | PRESERVE | Do not overwrite. |
 | NOWARN | Do not log warning if a file is overwritten. |
-
-`PRESERVE` and `NOWARN` can be used independently.
 
 ### Remarks
 
 If `SrcFile` is `%SrcDir%\EXPLORER.EXE`, PEBakery search for files in `%SrcDir%` in order of:
 
 1. EXPLORER.EXE (Copy)
-1. EXPLORER.EX_ (Expand)
+2. EXPLORER.EX_ (Expand)
 
 Its behavior resembles [SetupDecompressOrCopyFile](https://msdn.microsoft.com/en-us/library/aa376992(v=vs.85).aspx) API.
 
@@ -202,13 +185,13 @@ Depends on `cabinet.dll`, a Windows component.
 ### Example
 
 ```pebakery
-CppyOrExpand,%SrcDir%\EXPLORER.EXE,%DestDir%
 // If EXPLORER.EXE exists, it will be copied to %DestDir%.
 // If EXPLORER.EXE does not exist, EXPLORER.EXE will be extracted from EXPLORER.EX_.
+CppyOrExpand,%SrcDir%\EXPLORER.EXE,%DestDir%
 ```
 
 ```pebakery
-CppyOrExpand,%SrcDir%\EXPLORER.EXE,%DestDir%\NEWEXP.EXE
 // If EXPLORER.EXE exists, it will be copied to %DestDir% with the new name NEWEXP.EXE.
 // If EXPLORER.EXE does not exist, EXPLORER.EXE will be extracted from EXPLORER.EX_ with the new name NEWEXP.EXE.
+CppyOrExpand,%SrcDir%\EXPLORER.EXE,%DestDir%\NEWEXP.EXE
 ```

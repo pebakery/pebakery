@@ -240,7 +240,7 @@ namespace PEBakery.Tests.Core.Command
         public void Beep_Template(EngineState s, string rawCode, BeepType beepType)
         {
             SectionAddress addr = EngineTests.DummySectionAddress();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, addr);
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;

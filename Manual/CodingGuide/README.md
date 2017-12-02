@@ -82,4 +82,4 @@ TXTAddLine,%DestDir%\hello.txt,"Have a nice day.",Append
 
 If optimized commands throws an exception, all of the data cannot be processed properly.
 
-So make sure you codes avoid unaviodable exceptions.
+So make sure your codes to avoid exceptions.

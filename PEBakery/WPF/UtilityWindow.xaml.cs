@@ -187,7 +187,7 @@ namespace PEBakery.WPF
             SectionAddress addr = new SectionAddress(p, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<CodeCommand> cmds = CodeParser.ParseRawLines(lines, addr, out List<LogInfo> errorLogs);
+            List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);
 
             // Check Macros
             Macro macro = new Macro(project, project.Variables, out List<LogInfo> macroLogs);

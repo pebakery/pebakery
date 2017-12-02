@@ -49,7 +49,7 @@ namespace PEBakery.Core.Parser
         public override List<CodeCommand> VisitNormalStmt([NotNull] PEBakeryScriptParser.NormalStmtContext context)
         {
             string rawCode = context.GetText().Trim();
-            CodeCommand cmd = CodeParser.ParseRawLine(rawCode, new SectionAddress());
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, new SectionAddress());
 
             Console.WriteLine(cmd);
 

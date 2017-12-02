@@ -72,7 +72,7 @@ namespace PEBakery.Core
         // 14 Control
         Set = 1400, AddVariables, Exit, Halt, Wait, Beep, 
         // 15 External Macro
-        Macro = 1500,
+        Macro = 1500, SetMacro,
     }
     #endregion
 
@@ -325,7 +325,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileSize : CodeInfo
-    { // FileSize,<FileName>,<DestVar>
+    { // FileSize,<FilePath>,<DestVar>
         public string FilePath;
         public string DestVar;
 
@@ -424,19 +424,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirSize : CodeInfo
-    { // DirSize,<Path>,<DestVar>
-        public string Path;
+    { // DirSize,<DirPath>,<DestVar>
+        public string DirPath;
         public string DestVar;
 
-        public CodeInfo_DirSize(string path, string destVar)
+        public CodeInfo_DirSize(string dirPath, string destVar)
         {
-            Path = path;
+            DirPath = dirPath;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{Path},{DestVar}";
+            return $"{DirPath},{DestVar}";
         }
     }
     #endregion
@@ -3402,6 +3402,32 @@ namespace PEBakery.Core
             if (Permanent)
                 b.Append(",PERMANENT");
 
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_SetMacro : CodeInfo
+    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+        public string MacroName;
+        public string MacroCommand;
+        public bool Permanent;
+
+        public CodeInfo_SetMacro(string macroName, string macroCommand, bool permanent)
+        {
+            MacroName = macroName;
+            MacroCommand = macroCommand;
+            Permanent = permanent;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(MacroName);
+            b.Append(",");
+            b.Append(MacroCommand);
+            if (Permanent)
+                b.Append(",PERMANENT");
             return b.ToString();
         }
     }
