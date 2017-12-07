@@ -2688,6 +2688,7 @@ namespace PEBakery.Core
         ExistSection,
         ExistRegSection, ExistRegSubKey,
         ExistRegKey, ExistRegValue,
+        ExistRegMulti,
         ExistVar,
         ExistMacro,
         // ETC
@@ -2705,6 +2706,7 @@ namespace PEBakery.Core
         public string Arg1;
         public string Arg2;
         public string Arg3;
+        public string Arg4;
         public BranchCondition(BranchConditionType type, bool notFlag)
         {
             Type = type;
@@ -2772,6 +2774,23 @@ namespace PEBakery.Core
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
+                    break;
+                default:
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
+            }
+        }
+
+        public BranchCondition(BranchConditionType type, bool notFlag, string arg1, string arg2, string arg3, string arg4)
+        {
+            Type = type;
+            NotFlag = notFlag;
+            switch (type)
+            {
+                case BranchConditionType.ExistRegMulti:
+                    Arg1 = arg1;
+                    Arg2 = arg2;
+                    Arg3 = arg3;
+                    Arg4 = arg4;
                     break;
                 default:
                     throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
@@ -2999,6 +3018,58 @@ namespace PEBakery.Core
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
                             else
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                        }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistRegMulti:
+                    {
+                        string rootKey = StringEscaper.Preprocess(s, Arg1);
+                        string subKey = StringEscaper.Preprocess(s, Arg2);
+                        string valueName = StringEscaper.Preprocess(s, Arg3);
+                        string subStr = StringEscaper.Preprocess(s, Arg4);
+
+                        match = false;
+                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        if (regRoot == null)
+                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        {
+                            if (regSubKey == null)
+                            {
+                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
+                            }
+                            else
+                            {
+                                object valueData = regSubKey.GetValue(valueName, null);
+                                if (valueData == null)
+                                {
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                                }
+                                else
+                                {
+                                    RegistryValueKind kind = regSubKey.GetValueKind(valueName);
+                                    if (kind != RegistryValueKind.MultiString)
+                                    {
+                                        logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] is not REG_MULTI_SZ";
+                                    }
+                                    else
+                                    {
+                                        string[] strs = (string[])valueData;
+                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                        {
+                                            match = true;
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                        }
+                                        else
+                                        {
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         if (NotFlag)

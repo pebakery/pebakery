@@ -173,15 +173,14 @@ namespace PEBakery.Core.Commands
             string valueDataStr;
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, false))
             {
-                RegistryValueKind kind = subKey.GetValueKind(valueName);
                 object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-
                 if (valueData == null)
                 {
                     logs.Add(new LogInfo(LogState.Error, $"Cannot read registry key [{fullKeyPath}]"));
                     return logs;
                 }
 
+                RegistryValueKind kind = subKey.GetValueKind(valueName);
                 switch (kind)
                 { 
                     case RegistryValueKind.None:

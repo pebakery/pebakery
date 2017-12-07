@@ -181,6 +181,39 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region ExistRegMulti
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfExistRegMulti()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchConditionType type = BranchConditionType.ExistRegMulti;
+            BranchCondition cond;
+
+            cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
+            Assert.IsTrue(cond.Check(s, out string d));
+            cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
+            Assert.IsFalse(cond.Check(s, out d));
+            cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
+            Assert.IsFalse(cond.Check(s, out d));
+
+            cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
+            Assert.IsFalse(cond.Check(s, out d));
+            cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
+            Assert.IsTrue(cond.Check(s, out d));
+            cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
+            Assert.IsTrue(cond.Check(s, out d));
+
+            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, @"If,Not,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceProvider\Order,ExcluedProviders,EMS,Set,%Dest%,T", "T");
+        }
+        #endregion
+
         #region ExistVar
         [TestMethod]
         [TestCategory("Command")]

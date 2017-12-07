@@ -2553,6 +2553,11 @@ namespace PEBakery.Core
                     cond = new BranchCondition(BranchConditionType.ExistRegValue, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
                     embIdx = cIdx + 4;
                 }
+                else if (condStr.Equals("ExistRegMulti", StringComparison.OrdinalIgnoreCase))
+                { 
+                    cond = new BranchCondition(BranchConditionType.ExistRegMulti, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3], args[cIdx + 4]);
+                    embIdx = cIdx + 5;
+                }
                 else if (condStr.Equals("ExistVar", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.ExistVar, notFlag, args[cIdx + 1]);
