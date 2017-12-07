@@ -365,12 +365,16 @@ namespace PEBakery.Core
     {
         public List<string> Items;
         public int Index;
+        public string SectionName; // Optional
+        public bool HideProgress; // Optional
 
-        public UIInfo_ComboBox(string tooltip,  List<string> items, int index)
+        public UIInfo_ComboBox(string tooltip,  List<string> items, int index, string sectionName = null, bool hideProgress = false)
             : base(tooltip)
         {
             Items = items;
             Index = index;
+            SectionName = sectionName;
+            HideProgress = hideProgress;
         }
 
         public override string ForgeRawLine()
@@ -382,6 +386,16 @@ namespace PEBakery.Core
                 b.Append(",");
             }
             b.Append(StringEscaper.QuoteEscape(Items.Last()));
+            if (SectionName != null)
+            {
+                b.Append(",_");
+                b.Append(SectionName);
+                b.Append("_,");
+                if (HideProgress)
+                    b.Append("True");
+                else
+                    b.Append("False");
+            }
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }

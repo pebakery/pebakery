@@ -314,7 +314,6 @@ namespace PEBakery.WPF
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
-                // UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
                 uiCmd.Update();
             };
             checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
@@ -358,6 +357,22 @@ namespace PEBakery.WPF
                     uiCmd.Update();
                 }
             };
+
+            if (info.SectionName != null)
+            {
+                comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs e) =>
+                {
+                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    {
+                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
+                    }
+                    else
+                    {
+                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                    }
+                };
+            }
 
             SetToolTip(comboBox, info.ToolTip);
             DrawToCanvas(r, comboBox, uiCmd.Rect);
