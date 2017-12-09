@@ -805,6 +805,8 @@ namespace PEBakery.WPF
                     if (result == System.Windows.Forms.DialogResult.OK)
                     {
                         box.Text = dialog.SelectedPath;
+                        if (Directory.Exists(dialog.SelectedPath))
+                            box.Text += "\\";
                     }
                 }
             };

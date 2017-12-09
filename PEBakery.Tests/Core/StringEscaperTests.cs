@@ -38,42 +38,33 @@ namespace PEBakery.Tests.Core
             Escape_2();
             Escape_3();
             Escape_4();
-            Escape_5();
         }
 
         public void Escape_1()
         {
             string src = StringEscaperTests.SampleString;
             string dest = StringEscaper.Escape(src, false, false);
-            string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
+            string comp = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Escape_2()
         {
             string src = StringEscaperTests.SampleString;
-            string dest = StringEscaper.Escape(src, false, true);
-            string comp = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
+            string dest = StringEscaper.Escape(src, true, false);
+            string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Escape_3()
         {
             string src = StringEscaperTests.SampleString;
-            string dest = StringEscaper.Escape(src, true, false);
-            string comp = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
+            string dest = StringEscaper.Escape(src, true, true);
+            string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void Escape_4()
-        {
-            string src = StringEscaperTests.SampleString;
-            string dest = StringEscaper.Escape(src, true, true);
-            string comp = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public void Escape_5()
         {
             string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]"};
             List<string> dests = StringEscaper.Escape(srcs, true);
@@ -102,20 +93,12 @@ namespace PEBakery.Tests.Core
         public void QuoteEscape_1()
         {
             string src = StringEscaperTests.SampleString;
-            string dest = StringEscaper.QuoteEscape(src, false, false, false);
-            string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#]#$xDollar [$]#$xNewLine [#$x]\"";
+            string dest = StringEscaper.QuoteEscape(src, false, false);
+            string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
         public void QuoteEscape_2()
-        {
-            string src = StringEscaperTests.SampleString;
-            string dest = StringEscaper.QuoteEscape(src, false, false, true);
-            string comp = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]\"";
-            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
-        }
-
-        public void QuoteEscape_3()
         {
             string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> dests = StringEscaper.QuoteEscape(srcs);
@@ -130,7 +113,7 @@ namespace PEBakery.Tests.Core
                 Assert.IsTrue(dests[i].Equals(comps[i], StringComparison.Ordinal));
         }
 
-        public void QuoteEscape_4()
+        public void QuoteEscape_3()
         {
             string[] srcs = new string[] { "Comma [,]", "Space [ ]", "DoubleQuote [\"]" };
             List<string> dests = StringEscaper.QuoteEscape(srcs);
@@ -160,7 +143,7 @@ namespace PEBakery.Tests.Core
 
         public void Unescape_1()
         {
-            string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
+            string src = "Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, false);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -168,7 +151,7 @@ namespace PEBakery.Tests.Core
 
         public void Unescape_2()
         {
-            string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]";
+            string src = "Comma [,]#$xPercent [#$p]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]";
             string dest = StringEscaper.Unescape(src, true);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -176,7 +159,7 @@ namespace PEBakery.Tests.Core
 
         public void Unescape_3()
         {
-            string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
+            string src = "Comma#$s[#$c]#$xPercent#$s[%]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, false);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -184,7 +167,7 @@ namespace PEBakery.Tests.Core
 
         public void Unescape_4()
         {
-            string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[#$h]#$xDollar#$s[#$d]#$xNewLine#$s[#$x]";
+            string src = "Comma#$s[#$c]#$xPercent#$s[#$p]#$xDoubleQuote#$s[#$q]#$xSpace#$s[#$s]#$xTab#$s[#$t]#$xSharp#$s[##]#$xNewLine#$s[#$x]";
             string dest = StringEscaper.Unescape(src, true);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -222,7 +205,7 @@ namespace PEBakery.Tests.Core
 
         public void QuoteUnescape_1()
         {
-            string src = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [#$h]#$xDollar [#$d]#$xNewLine [#$x]\"";
+            string src = "\"Comma [,]#$xPercent [%]#$xDoubleQuote [#$q]#$xSpace [ ]#$xTab [#$t]#$xSharp [##]#$xNewLine [#$x]\"";
             string dest = StringEscaper.QuoteUnescape(src);
             string comp = StringEscaperTests.SampleString;
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
@@ -292,7 +275,7 @@ namespace PEBakery.Tests.Core
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% #$h1";
+            string comp = "%A% ##1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -395,7 +378,7 @@ namespace PEBakery.Tests.Core
 
             string src = "%A% #1";
             string dest = StringEscaper.ExpandVariables(s, src);
-            string comp = "Hello #$h1";
+            string comp = "Hello ##1";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -734,7 +717,6 @@ namespace PEBakery.Tests.Core
                     b.AppendLine("Space [ ]");
                     b.AppendLine("Tab [	]");
                     b.AppendLine("Sharp [#]");
-                    b.AppendLine("Dollar [$]");
                     b.AppendLine("NewLine [");
                     b.Append("]");
                     return sampleString = b.ToString();

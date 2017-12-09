@@ -635,7 +635,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             if (IsFile)
-                b.Append("FILE");
+                b.Append("file");
+            else
+                b.Append("dir");
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }

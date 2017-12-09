@@ -73,7 +73,7 @@ namespace PEBakery.WPF
 
         private void EscapeButton_Click(object sender, RoutedEventArgs e)
         {
-            m.Escaper_ConvertedString = StringEscaper.QuoteEscape(m.Escaper_StringToConvert, false, m.Escaper_EscapePercent, m.Escaper_EscapeSharpDollar);
+            m.Escaper_ConvertedString = StringEscaper.QuoteEscape(m.Escaper_StringToConvert, false, m.Escaper_EscapePercent);
         }
 
         private void UnescapeButton_Click(object sender, RoutedEventArgs e)
@@ -348,17 +348,6 @@ Description=Test Commands
             {
                 escaper_EscapePercent = value;
                 OnPropertyUpdate("Escaper_EscapePercent");
-            }
-        }
-
-        private bool escaper_EscapeSharpDollar = false;
-        public bool Escaper_EscapeSharpDollar
-        {
-            get => escaper_EscapeSharpDollar;
-            set
-            {
-                escaper_EscapeSharpDollar = value;
-                OnPropertyUpdate("Escaper_EscapeSharpDollar");
             }
         }
         #endregion
