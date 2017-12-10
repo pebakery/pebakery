@@ -395,7 +395,7 @@ namespace PEBakery.Core.Commands
                 if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
                     foreach (FileInfo f in dirInfo.GetFiles(wildcard))
-                        File.Copy(f.FullName, Path.Combine(destDir, f.Name));
+                        File.Copy(f.FullName, Path.Combine(destDir, f.Name), true);
                 }
 
                 // Copy first sublevel directory with wildcard

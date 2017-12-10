@@ -179,9 +179,6 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static Version GetProgramVersion()
         {
-            // Assembly assembly = Assembly.GetExecutingAssembly();
-            // FileVersionInfo fileVerInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
-            // return new Version(fileVerInfo.FileMajorPart, fileVerInfo.FileMinorPart, fileVerInfo.FileBuildPart, fileVerInfo.FilePrivatePart);
             return Assembly.GetExecutingAssembly().GetName().Version;
         }
 
@@ -322,92 +319,6 @@ namespace PEBakery.Helper
             }
         }
 
-        /*
-        public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string wildcard = null)
-        {
-            SearchOption opt = SearchOption.TopDirectoryOnly;
-            if (copySubDirs)
-                opt = SearchOption.AllDirectories;
-
-            if (wildcard == null)
-                wildcard = "*";
-
-            foreach (string dir in FileHelper.GetDirectoriesEx(srcDir, wildcard, opt))
-            {
-                string destFullPath = Path.Combine(destDir, dir.Substring(srcDir.Length + 1));
-                Directory.CreateDirectory(destFullPath);
-            }
-
-            foreach (string f in FileHelper.GetFilesEx(srcDir, wildcard, opt))
-            {
-                string destFullPath = Path.Combine(destDir, f.Substring(srcDir.Length + 1));
-                File.Copy(f, destFullPath, true);
-            }
-        }
-        */
-
-        /*
-        /// <summary>
-        /// Copy directory.
-        /// </summary>
-        /// <remarks>
-        /// Based on Official MSDN Code
-        /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
-        /// </remarks>
-        /// <param name="srcDir"></param>
-        /// <param name="destDir"></param>
-        /// <param name="copySubDirs"></param>
-        /// <param name="overwrite"></param>
-        /// <param name="wildcard">Wildcard only for first-sublevel directories</param>
-        public static void WBDirCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string dirWildcard = null)
-        {
-            // Get the subdirectories for the specified directory.
-            DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
-
-            if (!dirInfo.Exists)
-                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {srcDir}");
-
-            // Get the files in the directory and copy them to the new location.
-            try
-            {
-                FileInfo[] files = dirInfo.GetFiles();
-
-                // If the destination directory doesn't exist, create it.
-                if (0 < files.Length && Directory.Exists(destDir) == false)
-                    Directory.CreateDirectory(destDir);
-
-                foreach (FileInfo file in files)
-                {
-                    string tempPath = Path.Combine(destDir, file.Name);
-                    file.CopyTo(tempPath, overwrite);
-                }
-            }
-            catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
-
-            DirectoryInfo[] dirs;
-            try
-            {
-                if (dirWildcard == null)
-                    dirs = dirInfo.GetDirectories();
-                else
-                    dirs = dirInfo.GetDirectories(dirWildcard);
-            }
-            catch (UnauthorizedAccessException) { return; } // Ignore UnauthorizedAccessException
-
-            // If copying subdirectories, copy them and their contents to new location.
-            if (copySubDirs)
-            {
-                if (0 < dirs.Length && Directory.Exists(destDir) == false)
-                    Directory.CreateDirectory(destDir);
-
-                foreach (DirectoryInfo subDir in dirs)
-                { // Starting from second call, wildcard will be disabled, to maintain compatibility with WB082.
-                    string tempPath = Path.Combine(destDir, subDir.Name);
-                    WBDirCopy(subDir.FullName, tempPath, copySubDirs, overwrite, null);
-                }
-            }
-        }
-        */
         /// <summary>
         /// Copy directory.
         /// </summary>

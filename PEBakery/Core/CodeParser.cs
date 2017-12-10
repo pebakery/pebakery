@@ -66,6 +66,12 @@ namespace PEBakery.Core
                 {
                     codeList.Add(ParseCommand(lines, addr, ref i));
                 }
+                catch (InvalidCommandException e)
+                {
+                    CodeCommand error = new CodeCommand(e.RawLine, addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)));
+                    codeList.Add(error);
+                    errorLogs.Add(new LogInfo(LogState.Error, e, error));
+                }
                 catch (Exception e)
                 {
                     CodeCommand error = new CodeCommand(lines[i].Trim(), addr, CodeType.Error, new CodeInfo_Error(Logger.LogExceptionMessage(e)));
@@ -85,13 +91,9 @@ namespace PEBakery.Core
             }
 
             if (OptimizeCode)
-            {
                 return CodeOptimizer.Optimize(compiledList);
-            }
             else
-            {
                 return compiledList;
-            }
         }
         #endregion
 
@@ -191,15 +193,38 @@ namespace PEBakery.Core
             // Check if last operand is \ - MultiLine check - only if one or more operands exists
             if (0 < args.Count)
             {
-                while (string.Equals(args.Last(), @"\", StringComparison.OrdinalIgnoreCase))
+                while (args.Last().Equals(@"\", StringComparison.Ordinal) &&
+                    2 < rawCode.Length && rawCode.Substring(rawCode.Length - 2, 2).Equals(@",\", StringComparison.Ordinal))
                 { // Split next line and append to List<string> operands
                     if (rawCodes.Count <= idx) // Section ended with \, invalid grammar!
-                        throw new InvalidCommandException(@"Last command of a section cannot end with '\'");
+                        throw new InvalidCommandException(@"Last command of a section cannot end with '\'", rawCode);
+
+                    // Get next raw code
+                    string nextRawCode = rawCodes[idx + 1].Trim();
+
+                    // Check if nextRawCode is Empty / Comment
+                    if (nextRawCode.Equals(string.Empty, StringComparison.Ordinal) || 
+                        (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";")))
+                        throw new InvalidCommandException(@"Valid command should be placed after '\'", rawCode);
+
+                    // Parse next raw code
+                    rawCode += Environment.NewLine + nextRawCode;
+                    args.RemoveAt(args.Count - 1); // Remove Last '\'
+                    remainder = nextRawCode;
+                    do
+                    {
+                        tuple = CodeParser.GetNextArgument(remainder);
+                        args.Add(tuple.Item1);
+                        remainder = tuple.Item2;
+                    }
+                    while (remainder != null);
+
+                    // Increase index
                     idx++;
-                    args.AddRange(rawCodes[idx].Trim().Split(','));
                 }
             }
 
+            // Create instance of command
             CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args, addr);
             return new CodeCommand(rawCode, addr, type, info);
         }
@@ -1387,7 +1412,7 @@ namespace PEBakery.Core
                 case CodeType.Halt:
                     { // Halt,<Message>
                         const int minArgCount = 0;
-                        const int maxArgCount = 1; 
+                        const int maxArgCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 

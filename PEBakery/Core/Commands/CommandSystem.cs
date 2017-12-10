@@ -375,7 +375,12 @@ namespace PEBakery.Core.Commands
                     proc.StartInfo.Verb = verb;
                 }
 
+                // Register process instance in EngineState, and run it
+                s.RunningSubProcess = proc;
                 proc.Start();
+                proc.Exited += (object sender, EventArgs e) => {
+                    s.RunningSubProcess = null;
+                };
 
                 switch (cmd.Type)
                 {
@@ -413,7 +418,6 @@ namespace PEBakery.Core.Commands
                         throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
                 }
             }
-                
 
             return logs;
         }
