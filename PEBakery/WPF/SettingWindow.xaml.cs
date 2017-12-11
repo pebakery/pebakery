@@ -618,6 +618,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool compat_FileRenameCanMoveDir;
+        public bool Compat_FileRenameCanMoveDir
+        {
+            get => compat_FileRenameCanMoveDir;
+            set
+            {
+                compat_FileRenameCanMoveDir = value;
+                OnPropertyUpdate("Compat_FileRenameCanMoveDir");
+            }
+        }
+
         private bool compat_LegacyBranchCondition;
         public bool Compat_LegacyBranchCondition
         {
@@ -702,6 +713,7 @@ namespace PEBakery.WPF
 
             // Compatibility
             Compat_DirCopyBug = true;
+            Compat_FileRenameCanMoveDir = true;
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
             Compat_IgnoreWidthOfWebLabel = true;
@@ -736,10 +748,11 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DisableDelayedLogging"), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey("Compat", "DirCopyBug"), // Boolean
+                new IniKey("Compat", "FileRenameCanMoveDir"), // Boolean
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
                 new IniKey("Compat", "RegWriteLegacy"), // Boolean
                 new IniKey("Compat", "IgnoreWidthOfWebLabel"), // Boolean
-            };
+            }; 
             keys = Ini.GetKeys(settingFile, keys);
 
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
@@ -761,6 +774,7 @@ namespace PEBakery.WPF
             string str_Log_DisableInInterface = dict["Log_DisableInInterface"];
             string str_Log_DisableDelayedLogging = dict["Log_DisableDelayedLogging"];
             string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
+            string str_Compat_FileRenameCanMoveDir = dict["Compat_FileRenameCanMoveDir"];
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
             string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
             string str_Compat_IgnoreWidthOfWebLabel = dict["Compat_IgnoreWidthOfWebLabel"];
@@ -891,6 +905,13 @@ namespace PEBakery.WPF
                     Compat_DirCopyBug = false;
             }
 
+            // Compatibility - FileRenameCanMoveDir (Default = True)
+            if (str_Compat_FileRenameCanMoveDir != null)
+            {
+                if (str_Compat_FileRenameCanMoveDir.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_FileRenameCanMoveDir = false;
+            }
+
             // Compatibility - LegacyBranchCondition (Default = True)
             if (str_Compat_LegacyBranchCondition != null)
             {
@@ -935,6 +956,7 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DisableDelayedLogging", Log_DisableDelayedLogging.ToString()),
                 new IniKey("Project", "DefaultProject", Project_Default),
                 new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
+                new IniKey("Compat", "FileRenameCanMoveDir", Compat_FileRenameCanMoveDir.ToString()),
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
                 new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
                 new IniKey("Compat", "IgnoreWidthOfWebLabel", Compat_IgnoreWidthOfWebLabel.ToString()),
