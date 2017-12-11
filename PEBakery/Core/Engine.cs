@@ -238,9 +238,7 @@ namespace PEBakery.Core
 
         public Task ForceStopWait()
         {
-            if (s.RunningSubProcess != null)
-                s.RunningSubProcess.Kill();
-            s.UserHaltFlag = true;
+            ForceStop();
             return Task.Run(() => task.Wait());
         }
         #endregion
@@ -301,7 +299,7 @@ namespace PEBakery.Core
                     s.CurSectionParams = sectionParams;
                     ExecuteCommand(s, curCommand);
 
-                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag)
+                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                         break;
                 }
                 catch (CriticalErrorException)

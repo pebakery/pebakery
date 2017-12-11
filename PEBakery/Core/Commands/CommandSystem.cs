@@ -335,8 +335,11 @@ namespace PEBakery.Core.Commands
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            StringBuilder b = new StringBuilder(filePath);
+            // Must not check existance of filePath with File.Exists()!
+            // Because of PATH envrionment variable, it prevents call of system executables.
+            // Ex) cmd.exe does not exist in %BaseDir%, but in System32 directory.
 
+            StringBuilder b = new StringBuilder(filePath);
             using (Process proc = new Process())
             {
                 proc.StartInfo.FileName = filePath;
@@ -348,74 +351,88 @@ namespace PEBakery.Core.Commands
                     b.Append(parameters);
                 }
 
+                string pathVarBackup = null;
                 if (info.WorkDir != null)
                 {
                     string workDir = StringEscaper.Preprocess(s, info.WorkDir);
                     proc.StartInfo.WorkingDirectory = workDir;
+
+                    // Set PATH environment variable (only for this process)
+                    pathVarBackup = Environment.GetEnvironmentVariable("PATH");
+                    Environment.SetEnvironmentVariable("PATH", workDir + ";" + pathVarBackup);
                 }
 
-                if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    proc.StartInfo.UseShellExecute = true;
-                    proc.StartInfo.Verb = "Open";
-                }
-                else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
-                {
-                    proc.StartInfo.UseShellExecute = false;
-                    proc.StartInfo.Verb = "Open";
-                    proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    proc.StartInfo.CreateNoWindow = true;
+                    if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proc.StartInfo.UseShellExecute = true;
+                        proc.StartInfo.Verb = "Open";
+                    }
+                    else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proc.StartInfo.UseShellExecute = false;
+                        proc.StartInfo.Verb = "Open";
+                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        proc.StartInfo.CreateNoWindow = true;
 
-                    // Redirecting Standard Stream without reading can full buffer, which leads to hang
-                    //proc.StartInfo.RedirectStandardError = true;
-                    //proc.StartInfo.RedirectStandardOutput = true;
-                }
-                else
-                {
-                    proc.StartInfo.Verb = verb;
-                }
-
-                // Register process instance in EngineState, and run it
-                s.RunningSubProcess = proc;
-                proc.Start();
-                proc.Exited += (object sender, EventArgs e) => {
-                    s.RunningSubProcess = null;
-                };
-
-                switch (cmd.Type)
-                {
-                    case CodeType.ShellExecute:
-                        proc.WaitForExit();
-                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
-                        break;
-                    case CodeType.ShellExecuteEx:
-                        logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
-                        break;
-                    case CodeType.ShellExecuteDelete:
-                        proc.WaitForExit();
-                        File.Delete(filePath);
-                        logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
-                        break;
-                    default:
-                        throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
-                }
-
-                if (cmd.Type != CodeType.ShellExecuteEx)
-                {
-                    string exitOutVar;
-                    if (info.ExitOutVar == null)
-                        exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                        // Redirecting standard stream without reading can full buffer, which leads to hang
+                        //proc.StartInfo.RedirectStandardError = true;
+                        //proc.StartInfo.RedirectStandardOutput = true;
+                    }
                     else
-                        exitOutVar = info.ExitOutVar;
+                    {
+                        proc.StartInfo.Verb = verb;
+                    }
 
-                    LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+                    // Register process instance in EngineState, and run it
+                    s.RunningSubProcess = proc;
+                    proc.Start();
+                    proc.Exited += (object sender, EventArgs e) => {
+                        s.RunningSubProcess = null;
+                    };
 
-                    if (log.State == LogState.Success)
-                        logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
-                    else if (log.State == LogState.Error)
-                        logs.Add(log);
-                    else
-                        throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                    switch (cmd.Type)
+                    {
+                        case CodeType.ShellExecute:
+                            proc.WaitForExit();
+                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
+                            break;
+                        case CodeType.ShellExecuteEx:
+                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
+                            break;
+                        case CodeType.ShellExecuteDelete:
+                            proc.WaitForExit();
+                            File.Delete(filePath);
+                            logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
+                            break;
+                        default:
+                            throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
+                    }
+
+                    if (cmd.Type != CodeType.ShellExecuteEx)
+                    {
+                        string exitOutVar;
+                        if (info.ExitOutVar == null)
+                            exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                        else
+                            exitOutVar = info.ExitOutVar;
+
+                        LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
+
+                        if (log.State == LogState.Success)
+                            logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
+                        else if (log.State == LogState.Error)
+                            logs.Add(log);
+                        else
+                            throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                    }
+                }
+                finally
+                {
+                    // Restore PATH environment variable
+                    if (pathVarBackup != null)
+                        Environment.SetEnvironmentVariable("PATH", pathVarBackup);
                 }
             }
 

@@ -65,41 +65,22 @@ namespace PEBakery.Helper
     /// </summary>
     public static class FileHelper
     {
-        /// <summary>
-        /// Detect text file's encoding with BOM
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns></returns>
         public static Encoding DetectTextEncoding(string filePath)
         {
-            byte[] bom = new byte[4];
-
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                fs.Read(bom, 0, bom.Length);
+                return DetectTextEncoding(fs);
             }
-
-            if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
-                return Encoding.UTF8;
-            else if (bom[0] == 0xFF && bom[1] == 0xFE)
-                return Encoding.Unicode;
-            else if (bom[0] == 0xFE && bom[1] == 0xFF)
-                return Encoding.BigEndianUnicode;
-            return Encoding.Default;
         }
 
-        /// <summary>
-        /// Detect text file's encoding with BOM
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <returns></returns>
         public static Encoding DetectTextEncoding(Stream stream)
         {
-            byte[] bom = new byte[4];
+            byte[] bom = new byte[3];
 
+            long posBackup = stream.Position;
             stream.Position = 0;
             stream.Read(bom, 0, bom.Length);
-            stream.Position = 0;
+            stream.Position = posBackup;
 
             if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
                 return Encoding.UTF8;
@@ -110,67 +91,67 @@ namespace PEBakery.Helper
             return Encoding.Default;
         }
 
-        /// <summary>
-        /// Write Unicode BOM into text file stream
-        /// </summary>
-        /// <param name="fs"></param>
-        /// <param name="encoding"></param>
-        /// <returns></returns>
         public static void WriteTextBOM(string path, Encoding encoding)
         {
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
+            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                if (encoding == Encoding.UTF8)
-                {
-                    byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding == Encoding.Unicode)
-                {
-                    byte[] bom = new byte[] { 0xFF, 0xFE };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding == Encoding.BigEndianUnicode)
-                {
-                    byte[] bom = new byte[] { 0xFE, 0xFF };
-                    fs.Write(bom, 0, bom.Length);
-                }
-                else if (encoding != Encoding.Default)
-                { // Unsupported Encoding
-                    throw new ArgumentException($"[{encoding}] is not supported");
-                }
+                WriteTextBOM(fs, encoding);
             }
         }
 
-        /// <summary>
-        /// Write Unicode BOM into text file stream
-        /// </summary>
-        /// <param name="fs"></param>
-        /// <param name="encoding"></param>
-        /// <returns></returns>
-        public static FileStream WriteTextBOM(FileStream fs, Encoding encoding)
+        public static void WriteTextBOM(Stream stream, Encoding encoding)
         {
+            long posBackup = stream.Position;
+            stream.Position = 0;
+
             if (encoding == Encoding.UTF8)
             {
                 byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
-                fs.Write(bom, 0, bom.Length);
+                stream.Write(bom, 0, bom.Length);
             }
             else if (encoding == Encoding.Unicode)
             {
                 byte[] bom = new byte[] { 0xFF, 0xFE };
-                fs.Write(bom, 0, bom.Length);
+                stream.Write(bom, 0, bom.Length);
             }
             else if (encoding == Encoding.BigEndianUnicode)
             {
                 byte[] bom = new byte[] { 0xFE, 0xFF };
-                fs.Write(bom, 0, bom.Length);
+                stream.Write(bom, 0, bom.Length);
             }
             else if (encoding != Encoding.Default)
             { // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
             }
 
-            return fs;
+            stream.Position = posBackup;
+        }
+
+        public static long TextBOMLength(string filePath)
+        {
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return TextBOMLength(fs);
+            }
+        }
+
+        public static long TextBOMLength(Stream stream)
+        {
+            byte[] bom = new byte[3];
+
+            long posBackup = stream.Position;
+            stream.Position = 0;
+            stream.Read(bom, 0, bom.Length);
+            stream.Position = posBackup;
+
+            if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF)
+                return 3;
+            else if (bom[0] == 0xFF && bom[1] == 0xFE)
+                return 2;
+            else if (bom[0] == 0xFE && bom[1] == 0xFF)
+                return 2;
+            else
+                return 0;
         }
 
         /// <summary>
@@ -760,6 +741,35 @@ namespace PEBakery.Helper
             return count;
         }
 
+        public static string ReplaceEx(string str, string oldValue, string newValue, StringComparison comp)
+        {
+            if (str.IndexOf(oldValue, comp) != -1)
+            {
+                int idx = 0;
+                StringBuilder b = new StringBuilder();
+                while (idx < str.Length)
+                {
+                    int vIdx = str.IndexOf(oldValue, idx, comp);
+
+                    if (vIdx == -1)
+                    {
+                        b.Append(str.Substring(idx));
+                        break;
+                    }
+                    else
+                    {
+                        b.Append(str.Substring(idx, vIdx - idx));
+                        b.Append(newValue);
+                        idx = vIdx += oldValue.Length;
+                    }
+                }
+                return b.ToString();
+            }
+            else
+            {
+                return str;
+            }
+        }
     }
     #endregion
 

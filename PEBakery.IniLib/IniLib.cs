@@ -1271,8 +1271,8 @@ namespace PEBakery.IniLib
         /// <param name="lines"></param>
         /// <returns></returns>
         public static StringDictionary ParseIniLinesIniStyle(IEnumerable<string> lines)
-        {
-            return InternalParseIniLinesRegex(@"^([^=]+)=(.*)$", lines);
+        { // This regex exclude %A%=BCD form
+            return InternalParseIniLinesRegex(@"^([^%]+)=(.*)$", lines);
         }
 
         /// <summary>
@@ -1283,8 +1283,15 @@ namespace PEBakery.IniLib
         /// <returns></returns>
         public static StringDictionary ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
-            return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
+            return InternalParseIniLinesRegex(@"^%(.+)%=(.*)$", lines);
         }
+
+        /*
+        public static StringDictionary ParseIniLinesMacroStyle(IEnumerable<string> lines)
+        {
+            return InternalParseIniLinesRegex(@"^(?<!%)([^%\r\n]+)(?!%)=(.*)$", lines);
+        }
+        */
 
         /// <summary>
         /// Parse strings with regex.

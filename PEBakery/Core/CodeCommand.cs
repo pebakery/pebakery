@@ -711,7 +711,7 @@ namespace PEBakery.Core
     public enum TXTAddLineMode { Append, Prepend };
     [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
-    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
+    { // TXTAddLine,<FileName>,<Line>,<Mode>
         public string FileName;
         public string Line;
         public string Mode;
@@ -737,16 +737,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
-    { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
         public string FileName;
-        public string ToBeReplaced;
-        public string ReplaceWith;
+        public string OldStr;
+        public string NewStr;
 
-        public CodeInfo_TXTReplace(string fileName, string toBeReplaced, string replaceWith)
+        public CodeInfo_TXTReplace(string fileName, string oldStr, string newStr)
         {
             FileName = fileName;
-            ToBeReplaced = toBeReplaced;
-            ReplaceWith = replaceWith;
+            OldStr = oldStr;
+            NewStr = newStr;
         }
 
         public override string ToString()
@@ -754,23 +754,23 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(ToBeReplaced);
+            b.Append(OldStr);
             b.Append(",");
-            b.Append(ReplaceWith);
+            b.Append(NewStr);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class CodeInfo_TXTDelLine : CodeInfo
-    { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
+    { // TXTDelLine,<FileName>,<DeleteLine>
         public string FileName;
-        public string DeleteIfBeginWith;
+        public string DeleteLine;
 
-        public CodeInfo_TXTDelLine(string fileName, string deleteIfBeginWith)
+        public CodeInfo_TXTDelLine(string fileName, string deleteLine)
         {
             FileName = fileName;
-            DeleteIfBeginWith = deleteIfBeginWith;
+            DeleteLine = deleteLine;
         }
 
         public override string ToString()
@@ -778,7 +778,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(DeleteIfBeginWith);
+            b.Append(DeleteLine);
             return b.ToString();
         }
     }
@@ -2394,7 +2394,7 @@ namespace PEBakery.Core
 
     #region SystemType, SystemInfo
     public enum SystemType
-    { // 아니 왜 사칙연산이 StrFormat에 있지...
+    {
         Cursor,
         ErrorOff,
         GetEnv,
@@ -2408,7 +2408,6 @@ namespace PEBakery.Core
         RescanScripts,
         Rescan,
         SaveLog,
-
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
@@ -2629,8 +2628,8 @@ namespace PEBakery.Core
         public string Action;
         public string FilePath;
         public string Params; // Optional
-        public string WorkDir;      // Optional
-        public string ExitOutVar;   // Optional
+        public string WorkDir; // Optional
+        public string ExitOutVar; // Optional
 
         /// <summary>
         /// ShellExecute

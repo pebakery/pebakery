@@ -10,9 +10,46 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Tests
 {
+    #region FileHelper
     [TestClass]
     public class FileHelperTests
     {
+        #region DetectTextEncoding
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("FileHelper")]
+        public void FileHelper_DetectTextEncoding()
+        {
+            string tempDir = Path.GetTempFileName();
+            File.Delete(tempDir);
+            Directory.CreateDirectory(tempDir);
+            string tempFile = Path.Combine(tempDir, "Sample.txt");
+
+            try
+            {
+                // Empty -> ANSI
+                File.Create(tempFile).Close();
+                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Default);
+
+                // UTF-16 LE
+                FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.Unicode);
+
+                // UTF-16 BE
+                FileHelper.WriteTextBOM(tempFile, Encoding.BigEndianUnicode);
+                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.BigEndianUnicode);
+
+                // UTF-8
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                Assert.AreEqual(FileHelper.DetectTextEncoding(tempFile), Encoding.UTF8);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+        #endregion
+
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
@@ -87,4 +124,31 @@ namespace PEBakery.Tests
             }
         }
     }
+    #endregion
+
+    #region StringHelper
+    [TestClass]
+    public class StringHelperTests
+    {
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("StringHelper")]
+        public void StringHelper_ReplaceEx()
+        {
+            string str;
+
+            str = StringHelper.ReplaceEx(@"ABCD", "AB", "XYZ", StringComparison.Ordinal);
+            Assert.IsTrue(str.Equals("XYZCD", StringComparison.Ordinal));
+
+            str = StringHelper.ReplaceEx(@"ABCD", "ab", "XYZ", StringComparison.Ordinal);
+            Assert.IsTrue(str.Equals("ABCD", StringComparison.Ordinal));
+
+            str = StringHelper.ReplaceEx(@"abcd", "AB", "XYZ", StringComparison.OrdinalIgnoreCase);
+            Assert.IsTrue(str.Equals("XYZcd", StringComparison.Ordinal));
+
+            str = StringHelper.ReplaceEx(@"abcd", "ab", "XYZ", StringComparison.OrdinalIgnoreCase);
+            Assert.IsTrue(str.Equals("XYZcd", StringComparison.Ordinal));
+        }
+    }
+    #endregion
 }

@@ -291,8 +291,7 @@ namespace PEBakery.Core.Commands
             }
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
-            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-            FileHelper.WriteTextBOM(fs, encoding).Close();
+            FileHelper.WriteTextBOM(filePath, encoding);
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
 
             return logs;

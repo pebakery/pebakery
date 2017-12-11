@@ -222,42 +222,42 @@
                             if (@item.State == LogState.Success)
                             {
                             <tr>
-                                <td class="text-nowrap text-success"><i class="fa fa-fw fa-check"></i>@item.State</td>
+                                <td class="text-nowrap text-success"><i class="fa fa-fw fa-check"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
                             else if (@item.State == LogState.Warning)
                             {
                             <tr class="bg-warning">
-                                <td class="text-nowrap"><i class="fa fa-fw fa-warning"></i>@item.State</td>
+                                <td class="text-nowrap"><i class="fa fa-fw fa-warning"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
                             else if (@item.State == LogState.Error)
                             {
                             <tr class="bg-danger" id='@string.Format("error_{0}", @item.Href)'>
-                                <td class="text-nowrap"><i class="fa fa-fw fa-remove"></i>@item.State</td>
+                                <td class="text-nowrap"><i class="fa fa-fw fa-remove"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
                             else if (@item.State == LogState.Info)
                             {
                             <tr>
-                                <td class="text-nowrap text-info"><i class="fa fa-fw fa-info-circle"></i>@item.State</td>
+                                <td class="text-nowrap text-info"><i class="fa fa-fw fa-info-circle"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
                             else if (@item.State == LogState.Ignore)
                             {
                             <tr class="text-muted">
-                                <td class="text-nowrap"><i class="fa fa-fw fa-file"></i>@item.State</td>
+                                <td class="text-nowrap"><i class="fa fa-fw fa-file"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
                             else if (@item.State == LogState.Muted)
                             {
                             <tr class="text-muted">
-                                <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>@item.State</td>
+                                <td class="text-nowrap"><i class="fa fa-fw fa-lock"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }

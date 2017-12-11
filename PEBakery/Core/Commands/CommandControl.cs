@@ -249,12 +249,20 @@ namespace PEBakery.Core.Commands
 
             // Directly read from file
             List<string> lines = Ini.ParseRawSection(p.FullPath, sectionName);
-            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
-            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, dict);
-            if (logs.Count == 0) // No variables
-                logs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
 
-            return logs;
+            // Add Variables
+            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);
+            List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
+
+            // Add Macros
+            SectionAddress addr = new SectionAddress(p, p.Sections[sectionName]);
+            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(addr, lines, true);
+            varLogs.AddRange(macroLogs);
+
+            if (varLogs.Count == 0) // No variables
+                varLogs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
+
+            return varLogs;
         }
 
         public static List<LogInfo> Exit(EngineState s, CodeCommand cmd)
@@ -278,6 +286,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
 
+            if (s.RunningSubProcess != null)
+                s.RunningSubProcess.Kill();
             s.CmdHaltFlag = true;
 
             logs.Add(new LogInfo(LogState.Warning, info.Message, cmd));
