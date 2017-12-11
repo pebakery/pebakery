@@ -55,6 +55,7 @@ namespace PEBakery.Core.Commands
                         string varKey = Variables.TrimPercentMark(info.VarKey);
                         string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
+                        #region Set UI
                         Plugin p = cmd.Addr.Plugin;
                         PluginSection iface = p.GetInterface(out string sectionName);
                         if (iface == null)
@@ -210,11 +211,26 @@ namespace PEBakery.Core.Commands
                         {
                             goto case false;
                         }
+                        #endregion
                     }
                 case false:
                 default:
                     return Variables.SetVariable(s, info.VarKey, info.VarValue, info.Global, info.Permanent);
             }
+        }
+
+        public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
+        { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro));
+            CodeInfo_SetMacro info = cmd.Info as CodeInfo_SetMacro;
+
+            string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
+
+            if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                macroCommand = null;
+
+            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Permanent);
+            return new List<LogInfo>(1) { log };
         }
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
@@ -233,12 +249,20 @@ namespace PEBakery.Core.Commands
 
             // Directly read from file
             List<string> lines = Ini.ParseRawSection(p.FullPath, sectionName);
-            Dictionary<string, string> dict = Ini.ParseIniLinesVarStyle(lines);
-            List<LogInfo> logs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, dict);
-            if (logs.Count == 0) // No variables
-                logs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
 
-            return logs;
+            // Add Variables
+            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);
+            List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
+
+            // Add Macros
+            SectionAddress addr = new SectionAddress(p, p.Sections[sectionName]);
+            List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(addr, lines, true);
+            varLogs.AddRange(macroLogs);
+
+            if (varLogs.Count == 0) // No variables
+                varLogs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
+
+            return varLogs;
         }
 
         public static List<LogInfo> Exit(EngineState s, CodeCommand cmd)
@@ -262,6 +286,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
 
+            if (s.RunningSubProcess != null)
+                s.RunningSubProcess.Kill();
             s.CmdHaltFlag = true;
 
             logs.Add(new LogInfo(LogState.Warning, info.Message, cmd));

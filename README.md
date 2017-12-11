@@ -49,7 +49,7 @@ PEBakery is currently in alpha stage.
 |-----------|-----|-------------|--------|
 | File      | 11  | 11          | 11     |
 | Registry  | 8   | 8           | 4      |
-| Text      | 5   | 5           | 0      |
+| Text      | 5   | 5           | 5      |
 | INI       | 7   | 7           | 0      |
 | Archive   | 4   | 4           | 4      |
 | Network   | 2   | 2           | 2      |
@@ -59,9 +59,9 @@ PEBakery is currently in alpha stage.
 | String    | 33  | 33          | 31     |
 | Math      | 22  | 22          | 22     |
 | System    | 17  | 17          | 0      |
-| Branch    | 31  | 31          | 14     |
+| Branch    | 26  | 26          | 14     |
 | Control   | 6   | 6           | 6      |
-| All       | 161 | 161         | 99     |
+| All       | 156 | 156         | 104    |
 
 ## Help Needed
 

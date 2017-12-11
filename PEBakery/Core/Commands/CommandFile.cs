@@ -291,8 +291,7 @@ namespace PEBakery.Core.Commands
             }
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
-            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-            FileHelper.WriteTextBOM(fs, encoding).Close();
+            FileHelper.WriteTextBOM(filePath, encoding);
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
 
             return logs;
@@ -391,11 +390,11 @@ namespace PEBakery.Core.Commands
                 DirectoryInfo dirInfo = new DirectoryInfo(srcParentDir);
                 if (!dirInfo.Exists)
                     throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
-
+                
                 if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
                     foreach (FileInfo f in dirInfo.GetFiles(wildcard))
-                        File.Copy(f.FullName, Path.Combine(destDir, f.Name));
+                        File.Copy(f.FullName, Path.Combine(destDir, f.Name), true);
                 }
 
                 // Copy first sublevel directory with wildcard
@@ -526,15 +525,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_DirSize));
             CodeInfo_DirSize info = cmd.Info as CodeInfo_DirSize;
 
-            string path = StringEscaper.Preprocess(s, info.Path);
+            string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
-            if (Directory.Exists(path) == false)
+            if (Directory.Exists(dirPath) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{path}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Directory [{dirPath}] does not exist"));
                 return logs;
             }
 
-            string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
+            string[] files = FileHelper.GetFilesEx(dirPath, "*", SearchOption.AllDirectories);
             long dirSize = 0;
             for (int i = 0; i < files.Length; i++)
             {
@@ -542,7 +541,7 @@ namespace PEBakery.Core.Commands
                 dirSize += fileInfo.Length;
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Directory [{path}] is [{dirSize}B]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Directory [{dirPath}] is [{dirSize}B]", cmd));
 
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, dirSize.ToString());
             logs.AddRange(varLogs);

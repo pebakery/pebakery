@@ -82,8 +82,9 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
+                        long bomLen = FileHelper.TextBOMLength(fs);
                         byte[] lastChar = new byte[2];
-                        if (2 <= fs.Length)
+                        if (2 + bomLen <= fs.Length)
                         {
                             fs.Position = fs.Length - 2;
                             fs.Read(lastChar, 0, 2);
@@ -163,8 +164,9 @@ namespace PEBakery.Core.Commands
                 {
                     using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
+                        long bomLen = FileHelper.TextBOMLength(fs);
                         byte[] lastChar = new byte[2];
-                        if (2 <= fs.Length)
+                        if (2 + bomLen <= fs.Length)
                         {
                             fs.Position = fs.Length - 2;
                             fs.Read(lastChar, 0, 2);
@@ -193,8 +195,8 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string toBeReplaced = StringEscaper.Preprocess(s, info.ToBeReplaced);
-            string replaceWith = StringEscaper.Preprocess(s, info.ReplaceWith);
+            string toBeReplaced = StringEscaper.Preprocess(s, info.OldStr);
+            string replaceWith = StringEscaper.Preprocess(s, info.NewStr);
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -211,13 +213,9 @@ namespace PEBakery.Core.Commands
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
-                string lineFromSrc;
-                while ((lineFromSrc = reader.ReadLine()) != null)
-                {
-                    lineFromSrc = lineFromSrc.Replace(toBeReplaced, replaceWith);
-                    writer.WriteLine(lineFromSrc);
-                    i++;
-                }
+                string str = reader.ReadToEnd();
+                str = StringHelper.ReplaceEx(str, toBeReplaced, replaceWith, StringComparison.OrdinalIgnoreCase);
+                writer.Write(str);
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -234,7 +232,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteIfBeginWith);
+            string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -251,15 +249,16 @@ namespace PEBakery.Core.Commands
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
-                string lineFromSrc;
-                while ((lineFromSrc = reader.ReadLine()) != null)
+                string srcLine;
+                while ((srcLine = reader.ReadLine()) != null)
                 {
-                    if (lineFromSrc.StartsWith(deleteIfBeginWith, StringComparison.OrdinalIgnoreCase))
+                    // Strange enough, WB082 treat [deleteLine] as case sensitive string.
+                    if (srcLine.StartsWith(deleteLine, StringComparison.Ordinal))
                     {
                         i++;
                         continue;
                     }                        
-                    writer.WriteLine(lineFromSrc);
+                    writer.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
@@ -287,11 +286,11 @@ namespace PEBakery.Core.Commands
             if (File.Exists(fileName) == false)
                 throw new ExecuteException($"File [{fileName}] not exists");
 
-            List<string> prepDeleteIfBeginWith = new List<string>();
+            List<string> prepDeleteLine = new List<string>();
             foreach (CodeInfo_TXTDelLine info in infoOp.InfoList)
             {
-                string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteIfBeginWith);
-                prepDeleteIfBeginWith.Add(deleteIfBeginWith);
+                string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteLine);
+                prepDeleteLine.Add(deleteIfBeginWith);
             }
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
@@ -301,13 +300,14 @@ namespace PEBakery.Core.Commands
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
-                string lineFromSrc;
-                while ((lineFromSrc = reader.ReadLine()) != null)
+                string srcLine;
+                while ((srcLine = reader.ReadLine()) != null)
                 {
                     bool writeLine = true;
-                    foreach (string deleteIfBeginWith in prepDeleteIfBeginWith)
+                    foreach (string deleteLine in prepDeleteLine)
                     {
-                        if (lineFromSrc.StartsWith(deleteIfBeginWith, StringComparison.OrdinalIgnoreCase))
+                        // Strange enough, WB082 treat [deleteLine] as case sensitive string.
+                        if (srcLine.StartsWith(deleteLine, StringComparison.Ordinal))
                         {
                             writeLine = false;
                             count++;
@@ -316,7 +316,7 @@ namespace PEBakery.Core.Commands
                     }
                     
                     if (writeLine)
-                        writer.WriteLine(lineFromSrc);
+                        writer.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
@@ -349,16 +349,18 @@ namespace PEBakery.Core.Commands
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
-                string lineFromSrc;
-                while ((lineFromSrc = reader.ReadLine()) != null)
+                string srcLine;
+                while ((srcLine = reader.ReadLine()) != null)
                 {
-                    int count = StringHelper.CountOccurrences(lineFromSrc, " ");
+                    // WB082 delete spaces only if spaces are placed in front of line.
+                    // Same with C#'s string.TrimStart().
+                    int count = StringHelper.CountOccurrences(srcLine, " ");
                     if (0 < count)
                     {
                         i++;
-                        lineFromSrc = lineFromSrc.Replace(" ", string.Empty);
+                        srcLine = srcLine.TrimStart();
                     }
-                    writer.WriteLine(lineFromSrc);
+                    writer.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);

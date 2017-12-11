@@ -9,6 +9,7 @@ using PEBakery.Exceptions;
 using PEBakery.Core.Commands;
 using System.Windows;
 using PEBakery.WPF;
+using System.Diagnostics;
 
 namespace PEBakery.Core
 {
@@ -80,7 +81,7 @@ namespace PEBakery.Core
                 {
                     if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
                         && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
-                        macroDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
+                        macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                 }
                 catch (Exception e)
                 {
@@ -89,44 +90,55 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Plugin p)
+        public List<LogInfo> LoadLocalMacroDict(Plugin p, string sectionName = "Variables", bool append = false)
         {
-            List<LogInfo> logs = new List<LogInfo>();
-            localDict.Clear();
-
-            if (p.Sections.ContainsKey("Variables"))
+            if (p.Sections.ContainsKey(sectionName))
             {
-                PluginSection section = p.Sections["Variables"];
-                
+                PluginSection section = p.Sections[sectionName];
+
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
-                Dictionary<string, string> dict =
-                    Ini.ParseIniLinesIniStyle(section.GetLines())
-                    .Where(x => !(x.Key.StartsWith("%", StringComparison.Ordinal) && x.Key.EndsWith("%", StringComparison.Ordinal)))
-                    .ToDictionary(x => x.Key, x => x.Value);
+                SectionAddress addr = new SectionAddress(p, section);
+                Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.GetLines());
+                return LoadLocalMacroDict(addr, dict, append);
+            }
+            else
+            {
+                return new List<LogInfo>();
+            }
+        }
 
-                if (0 < dict.Keys.Count)
+        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append = false)
+        {
+            Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(lines);
+            return LoadLocalMacroDict(addr, dict, append);
+        }
+
+        private List<LogInfo> LoadLocalMacroDict(SectionAddress addr, Dictionary<string, string> dict, bool append)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            if (append == false)
+                localDict.Clear();
+
+            if (0 < dict.Keys.Count)
+            {
+                int count = 0;
+                logs.Add(new LogInfo(LogState.Info, $"Import Macro from [{addr.Section.SectionName}]", 0));
+                foreach (var kv in dict)
                 {
-                    SectionAddress addr = new SectionAddress(p, section);
-
-                    int count = 0;
-                    logs.Add(new LogInfo(LogState.Info, "Import Macro from [Variables]", 0));
-                    foreach (var kv in dict)
+                    try
                     {
-                        try
-                        {
-                            localDict[kv.Key] = CodeParser.ParseRawLine(kv.Value, addr);
-                            logs.Add(new LogInfo(LogState.Success, $"Macro [{kv.Key}] set to [{kv.Value}]", 1));
-                            count += 1;
-                        }
-                        catch (Exception e)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, e));
-                        }
+                        localDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                        logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
+                        count += 1;
                     }
-                    logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
-                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                    catch (Exception e)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, e));
+                    }
                 }
+                logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
+                logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
             }
 
             return logs;
@@ -141,7 +153,63 @@ namespace PEBakery.Core
         { // Local Macro from [Variables]
             localDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
         }
-}
+
+        public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool permanent)
+        {
+            if (macroCommand != null)
+            { // Insert
+                // Try parsing
+                CodeCommand cmd = CodeParser.ParseStatement(macroCommand, addr);
+                if (cmd.Type == CodeType.Error)
+                {
+                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error));
+                    CodeInfo_Error info = cmd.Info as CodeInfo_Error;
+
+                    return new LogInfo(LogState.Error, info.ErrorMessage);
+                }
+
+                // Put into dictionary
+                if (permanent) // MacroDict
+                {
+                    MacroDict[macroName] = cmd;
+                    return new LogInfo(LogState.Success, $"Global Macro [{macroName}] set to [{cmd.RawCode}]");
+                }
+                else
+                {
+                    LocalDict[macroName] = cmd;
+                    return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
+                }
+            }
+            else
+            { // Delete
+                // Put into dictionary
+                if (permanent) // MacroDict
+                {
+                    if (MacroDict.ContainsKey(macroName))
+                    {
+                        MacroDict.Remove(macroName);
+                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] deleted");
+                    }
+                    else
+                    {
+                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] not found");
+                    }                   
+                }
+                else
+                {
+                    if (LocalDict.ContainsKey(macroName))
+                    {
+                        LocalDict.Remove(macroName);
+                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] deleted");
+                    }
+                    else
+                    {
+                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] not found");
+                    }
+                }
+            }
+        }
+    }
 
     public static class CommandMacro
     {

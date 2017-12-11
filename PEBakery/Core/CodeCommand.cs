@@ -72,7 +72,7 @@ namespace PEBakery.Core
         // 14 Control
         Set = 1400, AddVariables, Exit, Halt, Wait, Beep, 
         // 15 External Macro
-        Macro = 1500,
+        Macro = 1500, SetMacro,
     }
     #endregion
 
@@ -325,7 +325,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_FileSize : CodeInfo
-    { // FileSize,<FileName>,<DestVar>
+    { // FileSize,<FilePath>,<DestVar>
         public string FilePath;
         public string DestVar;
 
@@ -424,19 +424,19 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_DirSize : CodeInfo
-    { // DirSize,<Path>,<DestVar>
-        public string Path;
+    { // DirSize,<DirPath>,<DestVar>
+        public string DirPath;
         public string DestVar;
 
-        public CodeInfo_DirSize(string path, string destVar)
+        public CodeInfo_DirSize(string dirPath, string destVar)
         {
-            Path = path;
+            DirPath = dirPath;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"{Path},{DestVar}";
+            return $"{DirPath},{DestVar}";
         }
     }
     #endregion
@@ -711,7 +711,7 @@ namespace PEBakery.Core
     public enum TXTAddLineMode { Append, Prepend };
     [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
-    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
+    { // TXTAddLine,<FileName>,<Line>,<Mode>
         public string FileName;
         public string Line;
         public string Mode;
@@ -737,16 +737,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
-    { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
         public string FileName;
-        public string ToBeReplaced;
-        public string ReplaceWith;
+        public string OldStr;
+        public string NewStr;
 
-        public CodeInfo_TXTReplace(string fileName, string toBeReplaced, string replaceWith)
+        public CodeInfo_TXTReplace(string fileName, string oldStr, string newStr)
         {
             FileName = fileName;
-            ToBeReplaced = toBeReplaced;
-            ReplaceWith = replaceWith;
+            OldStr = oldStr;
+            NewStr = newStr;
         }
 
         public override string ToString()
@@ -754,23 +754,23 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(ToBeReplaced);
+            b.Append(OldStr);
             b.Append(",");
-            b.Append(ReplaceWith);
+            b.Append(NewStr);
             return b.ToString();
         }
     }
 
     [Serializable]
     public class CodeInfo_TXTDelLine : CodeInfo
-    { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
+    { // TXTDelLine,<FileName>,<DeleteLine>
         public string FileName;
-        public string DeleteIfBeginWith;
+        public string DeleteLine;
 
-        public CodeInfo_TXTDelLine(string fileName, string deleteIfBeginWith)
+        public CodeInfo_TXTDelLine(string fileName, string deleteLine)
         {
             FileName = fileName;
-            DeleteIfBeginWith = deleteIfBeginWith;
+            DeleteLine = deleteLine;
         }
 
         public override string ToString()
@@ -778,7 +778,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(DeleteIfBeginWith);
+            b.Append(DeleteLine);
             return b.ToString();
         }
     }
@@ -2394,7 +2394,7 @@ namespace PEBakery.Core
 
     #region SystemType, SystemInfo
     public enum SystemType
-    { // 아니 왜 사칙연산이 StrFormat에 있지...
+    {
         Cursor,
         ErrorOff,
         GetEnv,
@@ -2408,7 +2408,6 @@ namespace PEBakery.Core
         RescanScripts,
         Rescan,
         SaveLog,
-
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
@@ -2629,8 +2628,8 @@ namespace PEBakery.Core
         public string Action;
         public string FilePath;
         public string Params; // Optional
-        public string WorkDir;      // Optional
-        public string ExitOutVar;   // Optional
+        public string WorkDir; // Optional
+        public string ExitOutVar; // Optional
 
         /// <summary>
         /// ShellExecute
@@ -2688,6 +2687,7 @@ namespace PEBakery.Core
         ExistSection,
         ExistRegSection, ExistRegSubKey,
         ExistRegKey, ExistRegValue,
+        ExistRegMulti,
         ExistVar,
         ExistMacro,
         // ETC
@@ -2705,6 +2705,7 @@ namespace PEBakery.Core
         public string Arg1;
         public string Arg2;
         public string Arg3;
+        public string Arg4;
         public BranchCondition(BranchConditionType type, bool notFlag)
         {
             Type = type;
@@ -2772,6 +2773,23 @@ namespace PEBakery.Core
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
+                    break;
+                default:
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
+            }
+        }
+
+        public BranchCondition(BranchConditionType type, bool notFlag, string arg1, string arg2, string arg3, string arg4)
+        {
+            Type = type;
+            NotFlag = notFlag;
+            switch (type)
+            {
+                case BranchConditionType.ExistRegMulti:
+                    Arg1 = arg1;
+                    Arg2 = arg2;
+                    Arg3 = arg3;
+                    Arg4 = arg4;
                     break;
                 default:
                     throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
@@ -2999,6 +3017,58 @@ namespace PEBakery.Core
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
                             else
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                        }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistRegMulti:
+                    {
+                        string rootKey = StringEscaper.Preprocess(s, Arg1);
+                        string subKey = StringEscaper.Preprocess(s, Arg2);
+                        string valueName = StringEscaper.Preprocess(s, Arg3);
+                        string subStr = StringEscaper.Preprocess(s, Arg4);
+
+                        match = false;
+                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        if (regRoot == null)
+                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        {
+                            if (regSubKey == null)
+                            {
+                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
+                            }
+                            else
+                            {
+                                object valueData = regSubKey.GetValue(valueName, null);
+                                if (valueData == null)
+                                {
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                                }
+                                else
+                                {
+                                    RegistryValueKind kind = regSubKey.GetValueKind(valueName);
+                                    if (kind != RegistryValueKind.MultiString)
+                                    {
+                                        logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] is not REG_MULTI_SZ";
+                                    }
+                                    else
+                                    {
+                                        string[] strs = (string[])valueData;
+                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                        {
+                                            match = true;
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                        }
+                                        else
+                                        {
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         if (NotFlag)
@@ -3402,6 +3472,32 @@ namespace PEBakery.Core
             if (Permanent)
                 b.Append(",PERMANENT");
 
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_SetMacro : CodeInfo
+    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+        public string MacroName;
+        public string MacroCommand;
+        public bool Permanent;
+
+        public CodeInfo_SetMacro(string macroName, string macroCommand, bool permanent)
+        {
+            MacroName = macroName;
+            MacroCommand = macroCommand;
+            Permanent = permanent;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(MacroName);
+            b.Append(",");
+            b.Append(MacroCommand);
+            if (Permanent)
+                b.Append(",PERMANENT");
             return b.ToString();
         }
     }

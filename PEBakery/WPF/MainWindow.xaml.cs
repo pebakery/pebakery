@@ -428,6 +428,9 @@ namespace PEBakery.WPF
                 if (e.Result is Plugin p)
                 {
                     curMainTree.Plugin = p;
+                    curMainTree.ParentCheckedPropagation();
+                    UpdateTreeViewIcon(curMainTree);
+
                     DrawPlugin(curMainTree.Plugin);
                 }
 
@@ -962,44 +965,58 @@ namespace PEBakery.WPF
 
         public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
         {
-            TreeViewModel item = new TreeViewModel(treeRoot, treeParent);
+            TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
+            {
+                Plugin = p
+            };
             treeParent.Children.Add(item);
-            item.Plugin = p;
+            UpdateTreeViewIcon(item);
+
+            return item;
+        }
+
+        TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
+        {
+            Plugin p = item.Plugin;
 
             if (p.Type == PluginType.Directory)
             {
                 if (p.IsDirLink)
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
             else if (p.Type == PluginType.Plugin)
             {
                 if (p.IsMainPlugin)
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0);
                 else
                 {
                     if (p.IsDirLink)
                     {
                         if (p.Mandatory)
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                     }
                     else
                     {
                         if (p.Mandatory)
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
                     }
-                        
+
                 }
-                
+
             }
             else if (p.Type == PluginType.Link)
             {
-                item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+            }
+            else
+            { // Error
+                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.WindowClose, 0);
             }
 
             return item;
@@ -1600,6 +1617,9 @@ namespace PEBakery.WPF
             {
                 plugin = value;
                 OnPropertyUpdate("Plugin");
+                OnPropertyUpdate("Checked");
+                OnPropertyUpdate("CheckBoxVisible");
+                OnPropertyUpdate("Text");
             }
         }
 
@@ -1624,11 +1644,6 @@ namespace PEBakery.WPF
                 .ThenBy(x => x.Plugin.Type)
                 .ThenBy(x => x.Plugin.FullPath);
             children = new ObservableCollection<TreeViewModel>(sorted);
-        }
-
-        public void SetIcon(Control icon)
-        {
-            this.icon = icon;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -231,12 +231,14 @@ namespace PEBakery.Core
 
         public void ForceStop()
         {
+            if (s.RunningSubProcess != null)
+                s.RunningSubProcess.Kill();
             s.UserHaltFlag = true;
         }
 
         public Task ForceStopWait()
         {
-            s.UserHaltFlag = true;
+            ForceStop();
             return Task.Run(() => task.Wait());
         }
         #endregion
@@ -297,7 +299,7 @@ namespace PEBakery.Core
                     s.CurSectionParams = sectionParams;
                     ExecuteCommand(s, curCommand);
 
-                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag)
+                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                         break;
                 }
                 catch (CriticalErrorException)
@@ -731,7 +733,7 @@ namespace PEBakery.Core
     #region EngineState
     public class EngineState
     {
-        // Fields used globally
+        #region Field and Properties
         public Project Project;
         public List<Plugin> Plugins;
         public Variables Variables => Project.Variables;
@@ -744,7 +746,7 @@ namespace PEBakery.Core
         public string BaseDir => Project.BaseDir;
         public Plugin MainPlugin => Project.MainPlugin;
 
-        // Fields : Engine's state
+        // Engine's state
         public Plugin CurrentPlugin;
         public int CurrentPluginIdx;
         public PluginSection CurrentSection;
@@ -753,7 +755,8 @@ namespace PEBakery.Core
         public int CurDepth = 1;
         public bool ElseFlag = false;
         public bool LoopRunning = false;
-        public long LoopCounter;
+        public long LoopCounter = 0;
+        public Process RunningSubProcess = null;
         public bool PassCurrentPluginFlag = false;
         public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false;
@@ -768,12 +771,13 @@ namespace PEBakery.Core
         public bool DisableLogger = false; // For performance (when engine runnded by interface)
         public bool DelayedLogging = true; // For performance
 
-        // Fields : System Commands
+        // System Commands
         public CodeCommand OnBuildExit = null;
         public CodeCommand OnPluginExit = null;
 
         // Readonly Fields
         public readonly string EntrySection;
+        #endregion
 
         public EngineState(Project project, Logger logger, MainViewModel mainModel, Plugin runSingle = null, string entrySection = "Process")
         {
