@@ -537,13 +537,6 @@ namespace PEBakery.Core
             {
                 if (type == PluginType.Plugin)
                 {
-                    /*
-                    if (sections["Main"].IniDict.ContainsKey("Title")
-                        && sections["Main"].IniDict.ContainsKey("Description")
-                        && sections["Main"].IniDict.ContainsKey("Level"))
-                        fail = false;
-                        */
-
                     if (sections["Main"].IniDict.ContainsKey("Title")
                         && sections["Main"].IniDict.ContainsKey("Description"))
                         fail = false;

@@ -406,13 +406,13 @@ namespace PEBakery.WPF
             }
         }
         
-        public void StartReloadPluginWorker()
+        public BackgroundWorker StartReloadPluginWorker()
         {
             if (curMainTree == null)
-                return;
+                return null;
 
             if (refreshWorker.IsBusy)
-                return;
+                return null;
 
             Stopwatch watch = new Stopwatch();
 
@@ -440,6 +440,8 @@ namespace PEBakery.WPF
                 Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
             };
             refreshWorker.RunWorkerAsync();
+
+            return refreshWorker;
         }
 
         private void StartSyntaxCheckWorker(bool quiet)

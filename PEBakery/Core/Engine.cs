@@ -768,6 +768,7 @@ namespace PEBakery.Core
         public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
+        public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool DisableLogger = false; // For performance (when engine runnded by interface)
         public bool DelayedLogging = true; // For performance
 
@@ -820,6 +821,7 @@ namespace PEBakery.Core
             LogComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_DirCopyBug;
+            CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
             DelayedLogging = !m.Log_DisableDelayedLogging;
         }
         #endregion

@@ -183,11 +183,20 @@ namespace PEBakery.Core
         
         public static void Update(List<UICommand> uiCmdList)
         {
-            List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
-            foreach (UICommand uiCmd in uiCmdList)
-                keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
+            if (0 < uiCmdList.Count)
+            {
+                string fullPath = uiCmdList[0].Addr.Plugin.FullPath;
+                List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
+                for (int i = 0; i < uiCmdList.Count; i++)
+                {
+                    UICommand uiCmd = uiCmdList[i];
+                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase));
 
-            Ini.SetKeys(uiCmdList[0].Addr.Plugin.FullPath, keys);
+                    keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
+                }
+
+                Ini.SetKeys(fullPath, keys);
+            }           
         }
     }
     #endregion

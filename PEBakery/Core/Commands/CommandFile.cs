@@ -248,6 +248,41 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            if (File.Exists(srcPath) == false)
+            {
+                // Check if srcPath is directory
+                if (Directory.Exists(srcPath))
+                {
+                    if (s.CompatFileRenameCanMoveDir)
+                    {
+                        if (Directory.Exists(destPath))
+                        {
+                            string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+
+                            Directory.Move(srcPath, destFullPath);
+                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
+                            return logs;
+                        }
+                        else
+                        {
+                            Directory.Move(srcPath, destPath);
+                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
+                            return logs;
+                        }
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{srcPath}] is a directory, not a file"));
+                        return logs;
+                    }
+                }
+                else
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{srcPath}] does not exist"));
+                    return logs;
+                }
+            }
+
             File.SetAttributes(srcPath, FileAttributes.Normal);
             File.Move(srcPath, destPath);
             if (cmd.Type == CodeType.FileRename)
