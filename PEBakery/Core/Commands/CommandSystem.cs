@@ -191,24 +191,14 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
-                        BackgroundWorker worker = null;
+                        AutoResetEvent resetEvent = null;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-
                             if (w.CurMainTree.Plugin.Equals(cmd.Addr.Plugin))
-                                worker = w.StartReloadPluginWorker();
+                                resetEvent = w.StartReloadPluginWorker();
                         });
-
-                        // TODO: More elegant way?
-                        if (worker != null)
-                        {
-                            Task.Run(() =>
-                            {
-                                while (worker.IsBusy)
-                                    Thread.Sleep(200);
-                            }).Wait();
-                        }
+                        resetEvent.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered plugin [{cmd.Addr.Plugin.Title}]"));
                     }

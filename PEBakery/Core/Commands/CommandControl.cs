@@ -40,6 +40,22 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Set));
             CodeInfo_Set info = cmd.Info as CodeInfo_Set;
 
+            Variables.VarKeyType varType = Variables.DetermineType(info.VarKey);
+            if (varType == Variables.VarKeyType.None)
+            {
+                // Check Macro
+                if (Regex.Match(info.VarKey, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                {
+                    string macroCommand = StringEscaper.Preprocess(s, info.VarValue);
+
+                    if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                        macroCommand = null;
+
+                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent);
+                    return new List<LogInfo>(1) { log };
+                }
+            }
+
             // [WB082 Behavior]
             // If PERMANENT was used but the key exists in interface command, the value will not be written to script.project but in interface.
             // Need to investigate where the logs are saved in this case.

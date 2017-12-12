@@ -33,6 +33,7 @@ namespace PEBakery.Core
     public static class CodeParser
     {
         #region Field
+        // Options
         public static bool OptimizeCode = true;
         public static bool AllowLegacyBranchCondition = true;
         public static bool AllowRegWriteLegacy = true;
@@ -484,6 +485,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
 
                         return new CodeInfo_DirSize(args[0], args[1]);
+                    }
+                case CodeType.PathMove:
+                    { // PathMove,<SrcPath>,<DestPath>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_PathMove(args[0], args[1]);
                     }
                 #endregion
                 #region 02 Registry
@@ -2472,10 +2481,10 @@ namespace PEBakery.Core
         #endregion
 
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
-        public static bool IsStringContainsVariable(string str)
+        public static bool StringContainsVariable(string str)
         {
-            MatchCollection matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled); // ABC%Joveler%
-            bool sectionParamMatch = Regex.IsMatch(str, @"(#[0-9]+)", RegexOptions.Compiled); // #1
+            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled); // ABC%Joveler%
+            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
 
             if (0 < matches.Count || sectionParamMatch || sectionLoopMatch)
@@ -2499,7 +2508,7 @@ namespace PEBakery.Core
 
             BranchCondition cond;
             CodeCommand embCmd;
-            if (IsStringContainsVariable(args[cIdx])) // BranchCondition - Compare series
+            if (StringContainsVariable(args[cIdx])) // BranchCondition - Compare series
             {
                 string condStr = args[cIdx + 1];
                 BranchConditionType condType;

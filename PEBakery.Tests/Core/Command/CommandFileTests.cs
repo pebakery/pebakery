@@ -25,6 +25,7 @@ namespace PEBakery.Tests.Core.Command
         private const string DestDir_DirDelete = "Dest_DirDelete";
         private const string DestDir_DirMove = "Dest_DirMove";
         private const string DestDir_DirMake = "Dest_DirMake";
+        private const string DestDir_PathMove = "Dest_PathMove";
         #endregion
 
         #region FileCopy
@@ -230,7 +231,7 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region FileRename
+        #region FileRename, FileMove
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandFile")]
@@ -644,7 +645,7 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region FileSize
+        #region DirSize
         [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandFile")]
@@ -670,6 +671,80 @@ namespace PEBakery.Tests.Core.Command
             if (check == ErrorCheck.Success)
             {
                 Assert.IsTrue(s.Variables["Dest"].Equals(comp, StringComparison.Ordinal));
+            }
+        }
+        #endregion
+
+        #region PathMove
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandFile")]
+        public void File_PathMove()
+        { // PathMove,<SrcPath>,<DestPath>
+            EngineState s = EngineTests.CreateEngineState();
+
+            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
+            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_PathMove);
+
+            PathMove_FileTemplate(s, $@"PathMove,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
+            PathMove_DirTemplate(s, $@"PathMove,{scriptDestDir}\ABCD,{scriptDestDir}\XYZ", "ABCD", "XYZ");
+        }
+
+        private void PathMove_FileTemplate(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
+
+            string srcDir = Path.Combine(dirPath, SrcDir_File);
+            string destDir = Path.Combine(dirPath, DestDir_PathMove);
+
+            string srcFullPath = Path.Combine(destDir, srcFileName);
+            string destFullPath = Path.Combine(destDir, destFileName);
+
+            if (Directory.Exists(destDir))
+                Directory.Delete(destDir, true);
+            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+            try
+            {
+                EngineTests.Eval(s, rawCode, CodeType.PathMove, check);
+
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.IsFalse(File.Exists(srcFullPath));
+                    Assert.IsTrue(File.Exists(destFullPath));
+                }
+            }
+            finally
+            {
+                Directory.Delete(destDir, true);
+            }
+        }
+
+        private void PathMove_DirTemplate(EngineState s, string rawCode, string srcFileName, string destFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
+
+            string srcDir = Path.Combine(dirPath, SrcDir_Dir);
+            string destDir = Path.Combine(dirPath, DestDir_PathMove);
+
+            string srcFullPath = Path.Combine(destDir, srcFileName);
+            string destFullPath = Path.Combine(destDir, destFileName);
+
+            if (Directory.Exists(destDir))
+                Directory.Delete(destDir, true);
+            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+            try
+            {
+                EngineTests.Eval(s, rawCode, CodeType.PathMove, check);
+
+                if (check == ErrorCheck.Success)
+                {
+                    Assert.IsFalse(Directory.Exists(srcFullPath));
+                    Assert.IsTrue(Directory.Exists(destFullPath));
+                }
+            }
+            finally
+            {
+                Directory.Delete(destDir, true);
             }
         }
         #endregion

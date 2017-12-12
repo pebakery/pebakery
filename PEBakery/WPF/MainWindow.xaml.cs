@@ -80,6 +80,7 @@ namespace PEBakery.WPF
         private SettingViewModel setting;
         public SettingViewModel Setting => setting;
         public MainViewModel Model { get; private set; }
+        public Canvas MainCanvas => Model.MainCanvas;
 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
@@ -94,8 +95,8 @@ namespace PEBakery.WPF
             string[] args = App.Args;
             if (int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
             {
-                Console.WriteLine("Cannot determine version");
-                Application.Current.Shutdown(1);
+                MessageBox.Show($"Invalid version [{App.Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(1);
             }  
 
             string argBaseDir = Environment.CurrentDirectory;
@@ -106,6 +107,12 @@ namespace PEBakery.WPF
                     if (i + 1 < args.Length)
                     {
                         argBaseDir = System.IO.Path.GetFullPath(args[i + 1]);
+                        if (Directory.Exists(argBaseDir) == false)
+                        {
+                            MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Environment.Exit(1); // Force Shutdown
+                            // Application.Current.Shutdown(1); // Grateful Shutdown
+                        }
                         Environment.CurrentDirectory = argBaseDir;
                     }
                     else
@@ -406,8 +413,10 @@ namespace PEBakery.WPF
             }
         }
         
-        public BackgroundWorker StartReloadPluginWorker()
+        public AutoResetEvent StartReloadPluginWorker()
         {
+            AutoResetEvent resetEvent = new AutoResetEvent(false);
+
             if (curMainTree == null)
                 return null;
 
@@ -431,17 +440,22 @@ namespace PEBakery.WPF
                     curMainTree.ParentCheckedPropagation();
                     UpdateTreeViewIcon(curMainTree);
 
-                    DrawPlugin(curMainTree.Plugin);
+                    DrawPlugin(curMainTree.Plugin);                   
                 }
 
                 Model.ProgressRingActive = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
+                if ((Plugin)e.Result == null)
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reload failed. ({sec:0.000}sec)";
+                else
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
+
+                resetEvent.Set();
             };
             refreshWorker.RunWorkerAsync();
 
-            return refreshWorker;
+            return resetEvent;
         }
 
         private void StartSyntaxCheckWorker(bool quiet)
@@ -596,6 +610,7 @@ namespace PEBakery.WPF
                 if (setting.Plugin_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
             }
+            Model.OnPropertyUpdate("MainCanvas");
         }
 
         public void DrawPluginLogo(Plugin p)
@@ -795,6 +810,9 @@ namespace PEBakery.WPF
         #region Plugin Buttons
         private async void PluginRunButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null)
+                return;
+
             Plugin p = curMainTree.Plugin;
             if (p.Sections.ContainsKey("Process"))
             {
@@ -848,6 +866,9 @@ namespace PEBakery.WPF
 
         private void PluginEditButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null)
+                return;
+            
             ProcessStartInfo procInfo = new ProcessStartInfo()
             {
                 Verb = "open",
@@ -859,11 +880,17 @@ namespace PEBakery.WPF
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null)
+                return;
+
             StartReloadPluginWorker();
         }
 
         private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null)
+                return;
+
             StartSyntaxCheckWorker(false);
         }
         #endregion
@@ -1121,6 +1148,17 @@ namespace PEBakery.WPF
         {
             MainTree = new TreeViewModel(null, null);
             BuildTree = new TreeViewModel(null, null);
+
+            Canvas canvas = new Canvas()
+            {
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(10, 10, 10, 10),
+            };
+            Grid.SetRow(canvas, 0);
+            Grid.SetColumn(canvas, 0);
+            Panel.SetZIndex(canvas, -1);
+            MainCanvas = canvas;
         }
 
         #region Normal Interface
@@ -1334,6 +1372,17 @@ namespace PEBakery.WPF
             {
                 mainTree = value;
                 OnPropertyUpdate("MainTree");
+            }
+        }
+
+        private Canvas mainCanvas;
+        public Canvas MainCanvas
+        {
+            get => mainCanvas;
+            set
+            {
+                mainCanvas = value;
+                OnPropertyUpdate("MainCanvas");
             }
         }
         #endregion
@@ -1622,6 +1671,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Checked");
                 OnPropertyUpdate("CheckBoxVisible");
                 OnPropertyUpdate("Text");
+                OnPropertyUpdate("MainCanvas");
             }
         }
 

@@ -40,6 +40,7 @@ namespace PEBakery.Core
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
+        PathMove = 160,
         // 02 Registry
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
         RegWriteLegacy = 260,
@@ -437,6 +438,24 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{DirPath},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_PathMove : CodeInfo
+    { // PathMove,<SrcPath>,<DestPath>
+        public string SrcPath;
+        public string DestPath;
+
+        public CodeInfo_PathMove(string srcPath, string destPath)
+        {
+            SrcPath = srcPath;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcPath},{DestPath}";
         }
     }
     #endregion
@@ -2624,21 +2643,12 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-
         public string Action;
         public string FilePath;
         public string Params; // Optional
         public string WorkDir; // Optional
         public string ExitOutVar; // Optional
 
-        /// <summary>
-        /// ShellExecute
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="filePath"></param>
-        /// <param name="parameters">Optinal</param>
-        /// <param name="workDir">Optinal</param>
-        /// <param name="exitOutVar">Optinal - Variable</param>
         public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
         {
             Action = action;

@@ -376,7 +376,7 @@
                         IsChecked="{Binding Compat_DirCopyBug}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
-                        Content="Allow FileRename to Move Directory"
+                        Content="FileRename and DirMove work like PathMove"
                         IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"

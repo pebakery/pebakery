@@ -378,6 +378,9 @@ namespace PEBakery.Core
                     case CodeType.DirSize:
                         logs.AddRange(CommandFile.DirSize(s, cmd));
                         break;
+                    case CodeType.PathMove:
+                        logs.AddRange(CommandFile.PathMove(s, cmd));
+                        break;
                     #endregion
                     #region 02 Registry
                     case CodeType.RegHiveLoad:
@@ -570,6 +573,9 @@ namespace PEBakery.Core
                     #region 14 Control
                     case CodeType.Set:
                         logs.AddRange(CommandControl.Set(s, cmd));
+                        break;
+                    case CodeType.SetMacro:
+                        logs.AddRange(CommandControl.SetMacro(s, cmd));
                         break;
                     case CodeType.AddVariables:
                         logs.AddRange(CommandControl.AddVariables(s, cmd));

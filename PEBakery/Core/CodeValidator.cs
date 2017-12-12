@@ -140,7 +140,7 @@ namespace PEBakery.Core
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
-                                else if (CodeParser.IsStringContainsVariable(info.SectionName) == false)
+                                else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
                         }
@@ -159,7 +159,7 @@ namespace PEBakery.Core
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
-                                else if (CodeParser.IsStringContainsVariable(info.SectionName) == false)
+                                else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
                         }

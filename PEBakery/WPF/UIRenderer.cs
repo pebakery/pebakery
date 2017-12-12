@@ -983,7 +983,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.DrawPlugin(addr.Plugin);
+                        w.DrawPlugin(w.CurMainTree.Plugin);
                     });
                 }
             }
