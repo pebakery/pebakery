@@ -92,7 +92,7 @@ namespace PEBakery.Core
 
             // Load Per-Plugin Macro
             s.Macro.ResetLocalMacros();
-            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
+            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p, false));
 
             // Reset Current Section Parameter
             s.CurSectionParams = new Dictionary<int, string>();
@@ -628,19 +628,18 @@ namespace PEBakery.Core
                 MuteLogError(logs);
                 s.Logger.ErrorOffCount -= 1;
             }
-            
+
             // Stop build on error
-            if (0 < logs.Count(x => x.State == LogState.Error))
+            if (StopBuildOnError)
             {
-                if (StopBuildOnError)
+                if (0 < logs.Count(x => x.State == LogState.Error))
                     s.ErrorHaltFlag = true;
             }
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
             // Increase only if cmd resides is CurrentPlugin
-            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) &&
-                (s.CurrentPlugin.Equals(cmd.Addr.Plugin)))
+            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) && s.CurrentPlugin.Equals(cmd.Addr.Plugin))
             {
                 s.MainViewModel.BuildPluginProgressBarValue += 1;
             }
@@ -651,33 +650,34 @@ namespace PEBakery.Core
 
         private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentPlugin = false)
         {
-            if (cbCmd != null)
+            if (cbCmd == null)
+                return;
+            
+            s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
+
+            if (changeCurrentPlugin)
+                s.CurrentPlugin = cbCmd.Addr.Plugin;
+
+            s.CurDepth = 0;
+            if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
-                s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
-
-                if (changeCurrentPlugin)
-                    s.CurrentPlugin = cbCmd.Addr.Plugin;
-
-                s.CurDepth = 0;
-                if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
-                {
-                    Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
-                    CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
-                    if (1 <= info.Parameters.Count)
-                        info.Parameters[0] = eventParam;
-                    else
-                        info.Parameters.Add(eventParam);
-
-                    CommandBranch.RunExec(s, cbCmd, false, false, true);
-                }
+                Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
+                CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
+                if (1 <= info.Parameters.Count)
+                    info.Parameters[0] = eventParam;
                 else
-                {
-                    ExecuteCommand(s, cbCmd);
-                }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
-                s.Logger.Build_Write(s, Logger.LogSeperator);
-                cbCmd = null;
+                    info.Parameters.Add(eventParam);
+
+                CommandBranch.RunExec(s, cbCmd, false, false, true);
             }
+            else
+            {
+                ExecuteCommand(s, cbCmd);
+            }
+
+            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+            s.Logger.Build_Write(s, Logger.LogSeperator);
+            cbCmd = null;
         }
 
         public string FinishEventParam(EngineState s)

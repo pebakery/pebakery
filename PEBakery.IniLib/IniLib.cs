@@ -1,6 +1,5 @@
 ﻿/*
     Copyright (C) 2016-2017 Hajin Jang
-    Licensed under MIT License.
  
     MIT License
 
@@ -1273,10 +1272,7 @@ namespace PEBakery.IniLib
         {
             // This regex exclude %A%=BCD form.
             // Used [^=] to prevent '=' in key.
-            return InternalParseIniLinesRegex(@"^([^%=]+)=(.*)$", lines);
-
-            // For Macro Only?
-            // return InternalParseIniLinesRegex(@"^(?<!%)([^%\r\n]+)(?!%)=(.*)$", lines);
+            return InternalParseIniLinesRegex(@"^(?<!\/\/|#|;)([^%=\r\n]+)=(.*)$", lines);
         }
 
         /// <summary>
@@ -1684,7 +1680,7 @@ namespace PEBakery.IniLib
     }
     #endregion
 
-    #region 
+    #region IniFile
     public class IniFile
     {
         public string FilePath { get; set; }

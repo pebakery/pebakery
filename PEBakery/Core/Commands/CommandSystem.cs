@@ -267,9 +267,12 @@ namespace PEBakery.Core.Commands
 
                         LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
 
-                        s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
-                        s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
-                    }
+                        if (s.DisableLogger == false)
+                        {
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
+                        }
+                    }   
                     break;
                     // WB082 Compability Shim
                 case SystemType.HasUAC:
@@ -307,7 +310,7 @@ namespace PEBakery.Core.Commands
 
                         // Load Per-Plugin Macro
                         s.Macro.ResetLocalMacros();
-                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin);
+                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, $"Variables are reset to default state"));

@@ -94,7 +94,7 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Plugin p, string sectionName = "Variables", bool append = false)
+        public List<LogInfo> LoadLocalMacroDict(Plugin p, bool append, string sectionName = "Variables")
         {
             if (p.Sections.ContainsKey(sectionName))
             {
@@ -112,7 +112,7 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append = false)
+        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append)
         {
             Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(lines);
             return LoadLocalMacroDict(addr, dict, append);
