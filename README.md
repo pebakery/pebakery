@@ -60,8 +60,8 @@ PEBakery is currently in alpha stage.
 | Math      | 22  | 22          | 22     |
 | System    | 17  | 17          | 0      |
 | Branch    | 26  | 26          | 16     |
-| Control   | 6   | 6           | 6      |
-| All       | 158 | 158         | 106    |
+| Control   | 7   | 7           | 7      |
+| All       | 158 | 158         | 107    |
 
 ## Help Needed
 

@@ -424,6 +424,9 @@ namespace PEBakery.Core
                     case CodeType.TXTDelLine:
                         logs.AddRange(CommandText.TXTDelLine(s, cmd));
                         break;
+                    case CodeType.TXTDelLineOp:
+                        logs.AddRange(CommandText.TXTDelLineOp(s, cmd));
+                        break;
                     case CodeType.TXTDelSpaces:
                         logs.AddRange(CommandText.TXTDelSpaces(s, cmd));
                         break;

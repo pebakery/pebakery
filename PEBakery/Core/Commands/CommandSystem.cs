@@ -195,10 +195,10 @@ namespace PEBakery.Core.Commands
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            if (w.CurMainTree.Plugin.Equals(cmd.Addr.Plugin))
-                                resetEvent = w.StartReloadPluginWorker();
+                            resetEvent = w.StartReloadPluginWorker();
                         });
-                        resetEvent.WaitOne();
+                        if (resetEvent != null)
+                            resetEvent.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered plugin [{cmd.Addr.Plugin.Title}]"));
                     }

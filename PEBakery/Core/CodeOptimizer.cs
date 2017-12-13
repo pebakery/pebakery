@@ -197,7 +197,7 @@ namespace PEBakery.Core
                                 }
                                 else
                                 {
-                                    CodeCommand opCmd = OptimizeTXTAddLine(opDict[state]);
+                                    CodeCommand opCmd = OptimizeTXTDelLine(opDict[state]);
                                     optimized.Add(opCmd);
                                 }
                                 opDict[state].Clear();

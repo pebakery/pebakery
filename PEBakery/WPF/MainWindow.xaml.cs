@@ -673,6 +673,9 @@ namespace PEBakery.WPF
         #region Main Buttons
         private async void BuildButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null)
+                return;
+
             // TODO: Exact Locking without Race Condition
             if (Engine.WorkingLock == 0)  // Start Build
             {
