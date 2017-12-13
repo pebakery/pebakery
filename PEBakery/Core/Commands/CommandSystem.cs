@@ -268,7 +268,7 @@ namespace PEBakery.Core.Commands
                         LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
 
                         if (s.DisableLogger == false)
-                        {
+                        { // When logger is disabled, s.BuildId is invalid.
                             s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                             s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
                         }

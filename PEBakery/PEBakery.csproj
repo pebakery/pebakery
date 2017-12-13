@@ -161,7 +161,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Core\CodeParserEx.cs" />
     <Compile Include="Core\CodeOptimizer.cs" />
     <Compile Include="Core\CodeValidator.cs" />
     <Compile Include="Core\Commands\CommandArchive.cs" />

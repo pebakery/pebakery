@@ -108,9 +108,26 @@ namespace PEBakery.Core
             if (dqIdx == 0) // With Doublequote, dqIdx should be 0
             { // Ex) "   Return SetError(@error,0,0)",Append
                 // [   Return SetError(@error,0,0)], [Append]
-                int nextIdx = str.IndexOf("\"", 1, StringComparison.Ordinal);
-                if (nextIdx == -1) // Error, doublequote must be multiple of 2
-                    throw new InvalidCommandException("Doublequote's number should be even number");
+                int nextIdx = str.IndexOf('\"', 1);
+                while (true)
+                {
+                    if (nextIdx == -1) // Error, doublequote must be multiple of 2
+                        throw new InvalidCommandException("Doublequote's number should be even number");
+
+                    // Ignore ""
+                    // Ex) Echo,"Hello""World"
+                    if (nextIdx + 1 < str.Length && str[nextIdx + 1] == '\"') // Matched ""
+                    {
+                        if (nextIdx + 2 < str.Length)
+                            nextIdx = str.IndexOf('\"', nextIdx + 2);
+                        else
+                            nextIdx = -1;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
 
                 int pIdx = str.IndexOf(",", nextIdx, StringComparison.Ordinal);
 

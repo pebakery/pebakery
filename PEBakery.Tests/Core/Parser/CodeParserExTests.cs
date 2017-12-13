@@ -25,7 +25,7 @@ namespace PEBakery.Tests.Core.Parser
 
         [TestMethod]
         [TestCategory("CodeParserEx")]
-        public void CodeParserEx_FileCopy()
+        public void CodeParserEx()
         {
             StringBuilder b = new StringBuilder();
             b.AppendLine("If,ExistDir,%BaseDir%,Begin");

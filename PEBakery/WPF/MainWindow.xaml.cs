@@ -210,10 +210,10 @@ namespace PEBakery.WPF
             Model.BottomProgressBarMaximum = 100;
             Model.BottomProgressBarValue = 0;
             if (quiet == false)
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
+            
             loadWorker = new BackgroundWorker();
-
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 string baseDir = (string)e.Argument;
@@ -236,7 +236,8 @@ namespace PEBakery.WPF
                 Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
 
                 // Let's load plugins parallelly
-                projects.Load(worker);
+                List<LogInfo> errorLogs = projects.Load(worker);
+                Logger.System_Write(errorLogs);
                 setting.UpdateProjectList();
 
                 if (0 < projects.ProjectNames.Count)
@@ -337,7 +338,7 @@ namespace PEBakery.WPF
                         Model.StatusBarText = msg;
                     }
                     if (quiet == false)
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
 
                     logger.System_Write(new LogInfo(LogState.Info, msg));
@@ -353,7 +354,7 @@ namespace PEBakery.WPF
                     Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
                     if (quiet == false)
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Model.StatusBarText = "Unable to find projects.";
                 }
@@ -373,7 +374,7 @@ namespace PEBakery.WPF
                     Stopwatch watch = new Stopwatch();
                     cacheWorker = new BackgroundWorker();
 
-                    Model.ProgressRingActive = true;
+                    Model.WorkInProgress = true;
                     int updatedCount = 0;
                     int cachedCount = 0;
                     cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
@@ -402,7 +403,7 @@ namespace PEBakery.WPF
                         logger.System_Write(new LogInfo(LogState.Info, msg));
                         logger.System_Write(Logger.LogSeperator);
 
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     };
                     cacheWorker.RunWorkerAsync();
                 }
@@ -417,7 +418,7 @@ namespace PEBakery.WPF
         {
             AutoResetEvent resetEvent = new AutoResetEvent(false);
 
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
                 return null;
 
             if (refreshWorker.IsBusy)
@@ -425,7 +426,7 @@ namespace PEBakery.WPF
 
             Stopwatch watch = new Stopwatch();
 
-            Model.ProgressRingActive = true;
+            Model.WorkInProgress = true;
             refreshWorker = new BackgroundWorker();
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
@@ -443,7 +444,7 @@ namespace PEBakery.WPF
                     DrawPlugin(curMainTree.Plugin);                   
                 }
 
-                Model.ProgressRingActive = false;
+                Model.WorkInProgress = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
                 if ((Plugin)e.Result == null)
@@ -460,17 +461,14 @@ namespace PEBakery.WPF
 
         private void StartSyntaxCheckWorker(bool quiet)
         {
-            if (curMainTree == null)
-                return;
-
-            if (curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
                 return;
 
             if (syntaxCheckWorker.IsBusy)
                 return;
 
             if (quiet == false)
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
 
             Plugin p = curMainTree.Plugin;
 
@@ -569,7 +567,7 @@ namespace PEBakery.WPF
                 }
 
                 if (quiet == false)
-                    Model.ProgressRingActive = false;
+                    Model.WorkInProgress = false;
             };
             syntaxCheckWorker.RunWorkerAsync();
         }
@@ -673,7 +671,10 @@ namespace PEBakery.WPF
         #region Main Buttons
         private async void BuildButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
                 return;
 
             // TODO: Exact Locking without Race Condition
@@ -697,7 +698,7 @@ namespace PEBakery.WPF
                 Model.SwitchNormalBuildInterface = false;
 
                 // Turn on progress ring
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
 
                 Stopwatch watch = Stopwatch.StartNew();
 
@@ -708,7 +709,7 @@ namespace PEBakery.WPF
                 logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
                 // Turn off progress ring
-                Model.ProgressRingActive = false;
+                Model.WorkInProgress = false;
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
@@ -792,14 +793,17 @@ namespace PEBakery.WPF
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            Model.ProgressRingActive = true;
+            if (Model.WorkInProgress)
+                return;
+
+            Model.WorkInProgress = true;
 
             using (WebClient c = new WebClient())
             {
                 // string str = c.DownloadData();
             }
 
-            Model.ProgressRingActive = false;
+            Model.WorkInProgress = false;
             MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
@@ -813,7 +817,10 @@ namespace PEBakery.WPF
         #region Plugin Buttons
         private async void PluginRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
                 return;
 
             Plugin p = curMainTree.Plugin;
@@ -869,9 +876,12 @@ namespace PEBakery.WPF
 
         private void PluginEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
                 return;
-            
+
+            if (Model.WorkInProgress)
+                return;
+
             ProcessStartInfo procInfo = new ProcessStartInfo()
             {
                 Verb = "open",
@@ -883,7 +893,10 @@ namespace PEBakery.WPF
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
                 return;
 
             StartReloadPluginWorker();
@@ -891,7 +904,10 @@ namespace PEBakery.WPF
 
         private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
                 return;
 
             StartSyntaxCheckWorker(false);
@@ -906,7 +922,6 @@ namespace PEBakery.WPF
             // Populate MainPlugin
             TreeViewModel projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
 
-            // foreach (Plugin p in pList.Where(p => !p.Equals(project.MainPlugin)))
             foreach (Plugin p in pList)
             {
                 Debug.Assert(p != null);
@@ -1165,14 +1180,14 @@ namespace PEBakery.WPF
         }
 
         #region Normal Interface
-        private bool progressRingActive = true;
-        public bool ProgressRingActive
+        private bool workInProgress = false;
+        public bool WorkInProgress
         {
-            get => progressRingActive;
+            get => workInProgress;
             set
             {
-                progressRingActive = value;
-                OnPropertyUpdate("ProgressRingActive");
+                workInProgress = value;
+                OnPropertyUpdate("WorkInProgress");
             }
         }
 
@@ -1572,7 +1587,7 @@ namespace PEBakery.WPF
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
                 w.Dispatcher.Invoke(() =>
                 {
-                    w.Model.ProgressRingActive = true;
+                    w.Model.WorkInProgress = true;
                     if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
                     {
                         if (value)
@@ -1612,7 +1627,7 @@ namespace PEBakery.WPF
 
                         OnPropertyUpdate("Checked");
                     }
-                    w.Model.ProgressRingActive = false;
+                    w.Model.WorkInProgress = false;
                 });
             }
         }

@@ -281,7 +281,10 @@ namespace PEBakery.Core
 
                             // Mandatory Entry
                             this.title = mainSection.IniDict["Title"];
-                            this.description = mainSection.IniDict["Description"];
+                            if (mainSection.IniDict.ContainsKey("Description"))
+                                this.description = mainSection.IniDict["Description"];
+                            else
+                                this.description = string.Empty;
                             if (level == null)
                             {
                                 if (mainSection.IniDict.ContainsKey("Level"))
@@ -346,8 +349,6 @@ namespace PEBakery.Core
                             this.description = string.Empty;
                             this.level = 0;
                         }
-
-                        
                     }
                     break;
                 default:
@@ -537,8 +538,7 @@ namespace PEBakery.Core
             {
                 if (type == PluginType.Plugin)
                 {
-                    if (sections["Main"].IniDict.ContainsKey("Title")
-                        && sections["Main"].IniDict.ContainsKey("Description"))
+                    if (sections["Main"].IniDict.ContainsKey("Title"))
                         fail = false;
                 }
                 else if (type == PluginType.Link)

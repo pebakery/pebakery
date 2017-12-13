@@ -291,7 +291,6 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 SelectPluginEntries.Clear();
-                SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
 
                 if (buildId == null)
                 {  // Clear
@@ -300,6 +299,7 @@ namespace PEBakery.WPF
                 else
                 {
                     // Populate SelectPluginEntries
+                    SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
                     var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
                     foreach (DB_Plugin p in plugins)
                     {

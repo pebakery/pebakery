@@ -239,31 +239,60 @@ namespace PEBakery.WPF
                         new IniKey("Main", "SourceDir"),
                         new IniKey("Main", "TargetDir"),
                         new IniKey("Main", "ISOFile"),
+                        new IniKey("Main", "PathSetting"),
                     };
                     keys = Ini.GetKeys(fullPath, keys);
 
-                    Project_SourceDirectoryList = new ObservableCollection<string>();
-                    string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (string rawDir in rawDirList)
-                    {
-                        string dir = rawDir.Trim();
-                        if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
-                            Project_SourceDirectoryList.Add(dir);
-                    }
+                    // PathSetting
+                    if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        Project_PathEnabled = false;
+                    else
+                        Project_PathEnabled = true;
 
+                    // SourceDir
+                    Project_SourceDirectoryList = new ObservableCollection<string>();
+                    if (keys[0].Value != null)
+                    {
+                        string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string rawDir in rawDirList)
+                        {
+                            string dir = rawDir.Trim();
+                            if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                                Project_SourceDirectoryList.Add(dir);
+                        }
+                    }
+                    
                     if (0 < Project_SourceDirectoryList.Count)
                     {
                         project_SourceDirectoryIndex = 0;
                         OnPropertyUpdate("Project_SourceDirectoryIndex");
                     }
 
-                    project_TargetDirectory = keys[1].Value;
-                    project_ISOFile = keys[2].Value;
-                    OnPropertyUpdate("Project_TargetDirectory");
-                    OnPropertyUpdate("Project_ISOFile");
+                    if (keys[1].Value != null)
+                    {
+                        project_TargetDirectory = keys[1].Value;
+                        OnPropertyUpdate("Project_TargetDirectory");
+                    }
+                    
+                    if (keys[2].Value != null)
+                    {
+                        project_ISOFile = keys[2].Value;
+                        OnPropertyUpdate("Project_ISOFile");
+                    }
                 }
 
                 OnPropertyUpdate("Project_SelectedIndex");
+            }
+        }
+
+        private bool project_PathEnabled = true;
+        public bool Project_PathEnabled
+        {
+            get => project_PathEnabled;
+            set
+            {
+                project_PathEnabled = value;
+                OnPropertyUpdate("Project_PathEnabled");
             }
         }
 
