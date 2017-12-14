@@ -46,7 +46,7 @@ namespace PEBakery.Core
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
-        TXTAddLineOp = 380, TXTDelLineOp,
+        TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
         INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
@@ -126,23 +126,25 @@ namespace PEBakery.Core
     {
         public string RawCode;
         public SectionAddress Addr;
-
         public CodeType Type;
         public CodeInfo Info;
+        public int LineIdx = 0;
 
-        public CodeCommand(string rawCode, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
-        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Addr = addr;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
         public override string ToString()
@@ -777,6 +779,17 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(NewStr);
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_TXTReplaceOp : CodeInfo
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
+        public List<CodeInfo_TXTReplace> InfoList;
+
+        public CodeInfo_TXTReplaceOp(List<CodeInfo_TXTReplace> infoList)
+        {
+            InfoList = infoList;
         }
     }
 

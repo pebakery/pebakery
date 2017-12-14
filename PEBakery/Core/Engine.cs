@@ -280,7 +280,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region RunCommands, RunCallback, ExecuteCommand
+        #region RunCommands, RunCallback
         public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
             if (codes.Count == 0)
@@ -309,7 +309,9 @@ namespace PEBakery.Core
                 }
             }
         }
+        #endregion
 
+        #region ExecuteCommand
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -420,6 +422,9 @@ namespace PEBakery.Core
                         break;
                     case CodeType.TXTReplace:
                         logs.AddRange(CommandText.TXTReplace(s, cmd));
+                        break;
+                    case CodeType.TXTReplaceOp:
+                        logs.AddRange(CommandText.TXTReplaceOp(s, cmd));
                         break;
                     case CodeType.TXTDelLine:
                         logs.AddRange(CommandText.TXTDelLine(s, cmd));

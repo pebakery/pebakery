@@ -49,7 +49,7 @@ namespace PEBakery.Core.Parser
         public override List<CodeCommand> VisitNormalStmt([NotNull] PEBakeryScriptParser.NormalStmtContext context)
         {
             string rawCode = context.GetText().Trim();
-            CodeCommand cmd = CodeParser.ParseStatement(rawCode, new SectionAddress());
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
             Console.WriteLine(cmd);
 
@@ -65,7 +65,7 @@ namespace PEBakery.Core.Parser
 
             List<CodeCommand> ifBlock = Visit(context.branchBlock());
 
-            CodeCommand ifCmd = new CodeCommand(context.GetText(), CodeType.If, new CodeInfo_If(cond, ifBlock));
+            CodeCommand ifCmd = new CodeCommand(context.GetText(), CodeType.If, new CodeInfo_If(cond, ifBlock), 0);
             codes.Add(ifCmd);
 
             if (context.elseStmt() != null)
@@ -97,7 +97,7 @@ namespace PEBakery.Core.Parser
 
             Console.WriteLine(context.GetText());
 
-            CodeCommand elseCmd = new CodeCommand(context.GetText(), CodeType.Else, new CodeInfo_Else(elseBlock));
+            CodeCommand elseCmd = new CodeCommand(context.GetText(), CodeType.Else, new CodeInfo_Else(elseBlock), 0);
             return elseCmd;
         }
     }

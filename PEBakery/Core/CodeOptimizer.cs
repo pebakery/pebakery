@@ -29,7 +29,7 @@ using System.Diagnostics;
 namespace PEBakery.Core
 {
     /* 
-     * Basic of Code Optimization
+     * [Basic of Code Optimization]
      * 
      * 같은 파일에 대해 File IO를 하는 명령어가 연달아 있을 경우
      * -> 한번에 묶어서 처리하면 IO 오버헤드를 크게 줄일 수 있다.
@@ -45,6 +45,7 @@ namespace PEBakery.Core
         private static readonly List<CodeType> toOptimize = new List<CodeType>()
         {
             CodeType.TXTAddLine,
+            CodeType.TXTReplace,
             CodeType.TXTDelLine,
             CodeType.INIRead,
             CodeType.INIWrite,
@@ -107,6 +108,10 @@ namespace PEBakery.Core
                                 state = CodeType.TXTAddLine;
                                 opDict[CodeType.TXTAddLine].Add(cmd);
                                 break;
+                            case CodeType.TXTReplace:
+                                state = CodeType.TXTReplace;
+                                opDict[CodeType.TXTReplace].Add(cmd);
+                                break;
                             case CodeType.TXTDelLine:
                                 state = CodeType.TXTDelLine;
                                 opDict[CodeType.TXTDelLine].Add(cmd);
@@ -161,6 +166,41 @@ namespace PEBakery.Core
                                 else
                                 {
                                     CodeCommand opCmd = OptimizeTXTAddLine(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
+                    #region TXTReplace
+                    case CodeType.TXTReplace:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_TXTReplace));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.TXTReplace:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace));
+                                    CodeInfo_TXTReplace firstInfo = (opDict[state][0].Info as CodeInfo_TXTReplace);
+                                    if (cmd.Info is CodeInfo_TXTReplace info && info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeTXTReplace(opDict[state]);
                                     optimized.Add(opCmd);
                                 }
                                 opDict[state].Clear();
@@ -470,6 +510,9 @@ namespace PEBakery.Core
                         case CodeType.TXTAddLine:
                             opCmd = OptimizeTXTAddLine(kv.Value);
                             break;
+                        case CodeType.TXTReplace:
+                            opCmd = OptimizeTXTReplace(kv.Value);
+                            break;
                         case CodeType.TXTDelLine:
                             opCmd = OptimizeTXTDelLine(kv.Value);
                             break;
@@ -514,6 +557,8 @@ namespace PEBakery.Core
         // TODO: Is there any 'generic' way?
         private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
             foreach (CodeCommand cmd in cmdList)
             {
@@ -524,11 +569,30 @@ namespace PEBakery.Core
             }
 
             string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList));
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList), cmdList[0].LineIdx);
+        }
+
+        private static CodeCommand OptimizeTXTReplace(List<CodeCommand> cmdList)
+        {
+            Debug.Assert(0 < cmdList.Count);
+
+            List<CodeInfo_TXTReplace> infoList = new List<CodeInfo_TXTReplace>();
+            foreach (CodeCommand cmd in cmdList)
+            {
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace));
+                CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
+
+                infoList.Add(info);
+            }
+
+            string rawCode = $"Optimized TXTReplace at [{cmdList[0].Addr.Section.SectionName}]";
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTReplaceOp, new CodeInfo_TXTReplaceOp(infoList), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             List<CodeInfo_TXTDelLine> infoList = new List<CodeInfo_TXTDelLine>();
             foreach (CodeCommand cmd in cmdList)
             {
@@ -546,11 +610,13 @@ namespace PEBakery.Core
                 if (i + 1 < cmdList.Count)
                     b.AppendLine();
             }
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIRead(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -559,11 +625,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -572,11 +640,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_IniWriteOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteOp, new CodeInfo_IniWriteOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIDelete(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -585,11 +655,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniDeleteOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniDeleteOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -598,11 +670,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_IniAddSectionOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIAddSectionOp, new CodeInfo_IniAddSectionOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIDeleteSection(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -611,11 +685,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_IniDeleteSectionOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIDeleteSectionOp, new CodeInfo_IniDeleteSectionOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIWriteTextLine(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < cmdList.Count; i++)
             {
@@ -624,11 +700,13 @@ namespace PEBakery.Core
                     b.AppendLine();
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniWriteTextLineOp(cmds));
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniWriteTextLineOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)
         {
+            Debug.Assert(0 < cmdList.Count);
+
             List<CodeInfo_Visible> infoList = new List<CodeInfo_Visible>();
             foreach (CodeCommand cmd in cmdList)
             {
@@ -639,7 +717,7 @@ namespace PEBakery.Core
             }
 
             string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList));
+            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList), cmdList[0].LineIdx);
         }
         #endregion
     }

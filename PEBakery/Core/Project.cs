@@ -39,6 +39,7 @@ namespace PEBakery.Core
     #region ProjectCollection
     public class ProjectCollection
     {
+        #region Fields and Properties
         // Fields
         private readonly string baseDir;
         private readonly string projectRoot;
@@ -56,14 +57,17 @@ namespace PEBakery.Core
         public List<Project> Projects => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
         public List<string> ProjectNames => projectDict.Keys.OrderBy(x => x).ToList(); 
         public Project this[int i] => Projects[i]; 
-        public int Count => projectDict.Count; 
+        public int Count => projectDict.Count;
+        #endregion
 
+        #region Constructor
         public ProjectCollection(string baseDir, PluginCache pluginCache)
         {
             this.baseDir = baseDir;
             this.projectRoot = Path.Combine(baseDir, "Projects");
             this.pluginCache = pluginCache;
         }
+        #endregion
 
         public int PrepareLoad(out int processCount)
         {
@@ -317,6 +321,7 @@ namespace PEBakery.Core
     #region Project
     public class Project : ICloneable
     {
+        #region Fields and Properties
         // Fields
         private readonly string projectName;
         private readonly string projectRoot;
@@ -340,7 +345,8 @@ namespace PEBakery.Core
         public List<Plugin> VisiblePlugins => CollectVisiblePlugins(allPlugins);
         public Variables Variables { get => variables; set => variables = value; }
         public int LoadedPluginCount => loadedPluginCount; 
-        public int AllPluginCount => allPluginCount; 
+        public int AllPluginCount => allPluginCount;
+        #endregion
 
         #region Constructor
         public Project(string baseDir, string projectName)

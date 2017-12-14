@@ -37,7 +37,7 @@ namespace PEBakery.Tests.Core.Parser
 
             PEBakeryScriptParser parser = Setup(b.ToString());
 
-            CodesVisitor visitor = new CodesVisitor(new SectionAddress());
+            CodesVisitor visitor = new CodesVisitor(EngineTests.DummySectionAddress());
             List<CodeCommand> cmds = visitor.Visit(parser.codes());
 
             Assert.IsTrue(cmds != null);

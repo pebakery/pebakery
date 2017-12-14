@@ -48,7 +48,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Consants
+        #region Consantants
         internal const int PluginAuthorLenLimit = 35;
         #endregion
 
@@ -671,16 +671,16 @@ namespace PEBakery.WPF
         #region Main Buttons
         private async void BuildButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
-                return;
-
-            if (Model.WorkInProgress)
-                return;
-
             // TODO: Exact Locking without Race Condition
             if (Engine.WorkingLock == 0)  // Start Build
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
+
+                if (curMainTree == null || curMainTree.Plugin == null || Model.WorkInProgress)
+                {
+                    Interlocked.Decrement(ref Engine.WorkingLock);
+                    return;
+                }
 
                 // Determine current project
                 Project project = curMainTree.Plugin.Project;
@@ -1597,7 +1597,8 @@ namespace PEBakery.WPF
                             try
                             {
                                 // Run 'Disable' directive
-                                DisablePlugins(root, plugin);
+                                List<LogInfo> errorLogs = DisablePlugins(root, plugin);
+                                w.Logger.System_Write(errorLogs);
                             }
                             catch (Exception e)
                             {
@@ -1749,28 +1750,31 @@ namespace PEBakery.WPF
             return null;
         }
 
-        private void DisablePlugins(TreeViewModel root, Plugin p)
+        private List<LogInfo> DisablePlugins(TreeViewModel root, Plugin p)
         {
             if (root == null || p == null)
-                return;
+                return new List<LogInfo>();
 
-            string[] paths = Plugin.GetDisablePluginPaths(p);
+            string[] paths = Plugin.GetDisablePluginPaths(p, out List<LogInfo> errorLogs);
+            if (paths == null)
+                return new List<LogInfo>();
+
             foreach (string path in paths)
             {
-                Plugin pToDisable = p.Project.AllPlugins.FirstOrDefault(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
-                if (pToDisable != null)
+                int exist = p.Project.AllPlugins.Count(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
+                if (exist == 1)
                 {
                     Ini.SetKey(path, "Main", "Selected", "False");
                     TreeViewModel found = FindPluginByFullPath(path);
                     if (found != null)
                     {
                         if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
-                        {
                             found.Checked = false;
-                        }
                     }
                 }
-            }    
+            }
+
+            return errorLogs;
         }
     }
     #endregion

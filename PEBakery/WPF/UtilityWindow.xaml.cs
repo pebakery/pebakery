@@ -183,7 +183,7 @@ namespace PEBakery.WPF
             if (project.MainPlugin.Sections.ContainsKey("Process"))
                 section = p.Sections["Process"];
             else
-                section = new PluginSection(p, "Process", SectionType.Code, new List<string>());
+                section = new PluginSection(p, "Process", SectionType.Code, new List<string>(), 1);
             SectionAddress addr = new SectionAddress(p, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();

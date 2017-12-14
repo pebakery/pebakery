@@ -103,6 +103,7 @@ namespace PEBakery.WPF
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
         {
             if (m.SelectBuildEntries != null &&
+                0 <= m.SelectBuildIndex && m.SelectBuildIndex < m.SelectBuildEntries.Count &&
                 m.SelectBuildEntries[m.SelectBuildIndex].Item2 == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
@@ -163,6 +164,18 @@ namespace PEBakery.WPF
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
+            bool busy = false;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                busy = w.Model.WorkInProgress || (0 < Engine.WorkingLock);
+            });
+            if (busy)
+            {
+                MessageBox.Show("PEBakery is busy, please wait.", "Please Wait", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             int idx = MainTab.SelectedIndex;
             switch (idx)
             {
