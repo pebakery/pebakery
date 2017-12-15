@@ -85,7 +85,7 @@ namespace PEBakery.Core.Commands
 
                 // Load Per-Plugin Macro
                 s.Macro.ResetLocalMacros();
-                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p);
+                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p, false);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 

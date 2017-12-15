@@ -103,6 +103,7 @@ namespace PEBakery.WPF
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
         {
             if (m.SelectBuildEntries != null &&
+                0 <= m.SelectBuildIndex && m.SelectBuildIndex < m.SelectBuildEntries.Count &&
                 m.SelectBuildEntries[m.SelectBuildIndex].Item2 == e.Log.BuildId)
             {
                 if (e.Log.Type != VarsType.Local)
@@ -163,6 +164,18 @@ namespace PEBakery.WPF
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
+            bool busy = false;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                busy = w.Model.WorkInProgress || (0 < Engine.WorkingLock);
+            });
+            if (busy)
+            {
+                MessageBox.Show("PEBakery is busy, please wait.", "Please Wait", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             int idx = MainTab.SelectedIndex;
             switch (idx)
             {
@@ -291,7 +304,6 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 SelectPluginEntries.Clear();
-                SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
 
                 if (buildId == null)
                 {  // Clear
@@ -300,6 +312,7 @@ namespace PEBakery.WPF
                 else
                 {
                     // Populate SelectPluginEntries
+                    SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
                     var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
                     foreach (DB_Plugin p in plugins)
                     {

@@ -94,6 +94,7 @@ namespace PEBakery.Core
             IniKey[] keys = new IniKey[]
             {
                 new IniKey("Main", "Title"),
+                new IniKey("Main", "PathSetting"),
                 new IniKey("Main", "SourceDir"),
                 new IniKey("Main", "TargetDir"),
                 new IniKey("Main", "ISOFile"),
@@ -101,47 +102,59 @@ namespace PEBakery.Core
             keys = Ini.GetKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
-            // SourceDir
-            string sourceDir = string.Empty;
-            string sourceDirs = dict["SourceDir"];
-            if (sourceDirs != null) // Empty
-            {
-                string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string rawDir in rawDirList)
-                {
-                    string dir = rawDir.Trim();
-                    if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
-                    {
-                        sourceDir = dir;
-                        break;
-                    }
-                }
-            }
-
             string projectTitle = dict["Title"];
             if (projectTitle == null || projectTitle.Equals(string.Empty, StringComparison.Ordinal))
                 projectTitle = project.ProjectName;
 
-            string targetDir = dict["TargetDir"];
-            if (targetDir == null || targetDir.Equals(string.Empty, StringComparison.Ordinal))
-                targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            // If PathSetting is set to False, ignore SourceDir, TargetDir and ISOFile
+            bool pathEnabled = true;
+            string pathEnabledStr = dict["PathSetting"];
+            if (pathEnabledStr != null && pathEnabledStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                pathEnabled = false;
 
-            string isoFile = dict["ISOFile"];
-            if (isoFile == null || isoFile.Equals(string.Empty, StringComparison.Ordinal))
-                isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
+            string targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
+            string isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
+            if (pathEnabled)
+            {
+                // Get SourceDir
+                string sourceDir = string.Empty;
+                string sourceDirs = dict["SourceDir"];
+                if (sourceDirs != null) // Empty
+                {
+                    string[] rawDirList = sourceDirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string rawDir in rawDirList)
+                    {
+                        string dir = rawDir.Trim();
+                        if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                        {
+                            sourceDir = dir;
+                            break;
+                        }
+                    }
+                }
+
+                // Set SourceDir
+                logs.Add(SetValue(VarsType.Fixed, "SourceDir", sourceDir));
+
+                string targetDirStr = dict["TargetDir"];
+                if (targetDirStr != null && 0 < targetDirStr.Length)
+                    targetDir = targetDirStr;
+
+                string isoFileStr = dict["ISOFile"];
+                if (isoFileStr != null && 0 < isoFileStr.Length)
+                    isoFile = isoFileStr;
+            }          
 
             // ProjectTitle
             logs.Add(SetValue(VarsType.Fixed, "ProjectTitle", projectTitle));
             // ProjectDir
             logs.Add(SetValue(VarsType.Fixed, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
-            // SourceDir
-            logs.Add(SetValue(VarsType.Fixed, "SourceDir", sourceDir));
             // TargetDir
             logs.Add(SetValue(VarsType.Fixed, "TargetDir", targetDir));
             // ISOFile
             logs.Add(SetValue(VarsType.Fixed, "ISOFile", isoFile));
             // ISODir
-            logs.Add(SetValue(VarsType.Fixed, "ISODir", Path.GetDirectoryName(isoFile)));
+            logs.Add(SetValue(VarsType.Fixed, "ISODir", FileHelper.GetDirNameEx(isoFile)));
             #endregion
 
             #region Envrionment Variables
@@ -308,7 +321,7 @@ namespace PEBakery.Core
 
                 if (value != null)
                 {
-                    value = StringEscaper.Escape(value, false, true);
+                    // value = StringEscaper.Escape(value, false, true);
                     logs.Add(SetValue(VarsType.Local, destVar, value));
                 }
             }
@@ -723,12 +736,16 @@ namespace PEBakery.Core
                 return 0; // Error
         }
 
+        public const string VarKeyRegex_ContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
+        public const string VarKeyRegex_ContainsSectionParams = @"(#[0-9]+)";
+        public const string VarKeyRegex_Variable = @"^" + VarKeyRegex_ContainsVariable + @"$";
+        public const string VarKeyRegex_SectionParams = @"^" + VarKeyRegex_ContainsSectionParams + @"$";
         public enum VarKeyType { None, Variable, SectionParams }
         public static VarKeyType DetermineType(string key)
         {
-            if (key.StartsWith("%") && key.EndsWith("%")) // Ex) %A%
-                return VarKeyType.Variable;
-            else if (Regex.Match(key, @"(#[0-9]+)", RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
+            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled).Success) // Ex) %A%
+                return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
+            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else
                 return VarKeyType.None;
@@ -761,7 +778,8 @@ namespace PEBakery.Core
 
             string finalValue;
             if (expand)
-                finalValue = StringEscaper.Preprocess(s, _value, false);
+                // finalValue = StringEscaper.Preprocess(s, _value, false);
+                finalValue = StringEscaper.ExpandVariables(s, _value);
             else
                 finalValue = _value;
 

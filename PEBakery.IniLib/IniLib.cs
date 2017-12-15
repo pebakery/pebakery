@@ -1,6 +1,5 @@
 ﻿/*
     Copyright (C) 2016-2017 Hajin Jang
-    Licensed under MIT License.
  
     MIT License
 
@@ -307,7 +306,7 @@ namespace PEBakery.IniLib
                 // If file do not exists or blank, just create new file and insert keys.
                 if (fileExist == false)
                 {
-                    using (StreamWriter writer = new StreamWriter(file, false, Encoding.UTF8))
+                    using (StreamWriter w = new StreamWriter(file, false, Encoding.UTF8))
                     {
                         string beforeSection = string.Empty;
                         for (int i = 0; i < iniKeys.Count; i++)
@@ -315,15 +314,14 @@ namespace PEBakery.IniLib
                             if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
                             {
                                 if (0 < i)
-                                    writer.WriteLine();
-                                writer.WriteLine($"[{iniKeys[i].Section}]");
+                                    w.WriteLine();
+                                w.WriteLine($"[{iniKeys[i].Section}]");
                             }
 
-                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                            w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
 
                             beforeSection = iniKeys[i].Section;
                         }
-                        writer.Close();
                     }
                     return true;
                 }
@@ -331,8 +329,8 @@ namespace PEBakery.IniLib
                 List<int> processedKeys = new List<int>(iniKeys.Count);
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = IniHelper.DetectTextEncoding(file);
-                using (StreamReader reader = new StreamReader(file, encoding, true))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine = string.Empty;
                     string line = string.Empty;
@@ -341,9 +339,9 @@ namespace PEBakery.IniLib
                     List<string> processedSections = new List<string>(iniKeys.Count);
 
                     // Is Original File Empty?
-                    if (reader.Peek() == -1)
+                    if (r.Peek() == -1)
                     {
-                        reader.Close();
+                        r.Close();
 
                         // Write all and exit
                         string beforeSection = string.Empty;
@@ -352,22 +350,22 @@ namespace PEBakery.IniLib
                             if (beforeSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase) == false)
                             {
                                 if (0 < i)
-                                    writer.WriteLine();
-                                writer.WriteLine($"[{iniKeys[i].Section}]");
+                                    w.WriteLine();
+                                w.WriteLine($"[{iniKeys[i].Section}]");
                             }
 
-                            writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                            w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
 
                             beforeSection = iniKeys[i].Section;
                         }
 
-                        writer.Close();
+                        w.Close();
 
                         IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
 
-                    while ((rawLine = reader.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineWritten = false;
                         line = rawLine.Trim(); // Remove whitespace
@@ -379,7 +377,7 @@ namespace PEBakery.IniLib
                             line.StartsWith("//", StringComparison.Ordinal))
                         {
                             thisLineWritten = true;
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                             continue;
                         }
 
@@ -400,7 +398,7 @@ namespace PEBakery.IniLib
                                     {
                                         processedKeys.Add(i);
 
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                                        w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
@@ -422,7 +420,7 @@ namespace PEBakery.IniLib
                                 }
                             }
                             thisLineWritten = true;
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                         }
 
                         // key=value
@@ -443,20 +441,20 @@ namespace PEBakery.IniLib
                                         processedKeys.Add(i);
                                         thisLineWritten = true;
 
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                                        w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
 
                                 if (!thisLineWritten)
                                 {
                                     thisLineWritten = true;
-                                    writer.WriteLine(rawLine);
+                                    w.WriteLine(rawLine);
                                 }
                             }
                             else
                             {
                                 thisLineWritten = true;
-                                writer.WriteLine(rawLine);
+                                w.WriteLine(rawLine);
                             }
                         }
 
@@ -475,16 +473,16 @@ namespace PEBakery.IniLib
                                         processedKeys.Add(i);
                                         thisLineWritten = true;
 
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                                        w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
                             thisLineWritten = true;
-                            writer.WriteLine();
+                            w.WriteLine();
                         }
 
                         // End of file
-                        if (reader.Peek() == -1)
+                        if (r.Peek() == -1)
                         {
                             if (inTargetSection)
                             { // Currently in section? check currentSection
@@ -497,10 +495,10 @@ namespace PEBakery.IniLib
                                     {
                                         processedKeys.Add(i);
                                         if (thisLineWritten == false)
-                                            writer.WriteLine(rawLine);
+                                            w.WriteLine(rawLine);
                                         thisLineWritten = true;
 
-                                        writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                                        w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                                     }
                                 }
                             }
@@ -514,20 +512,20 @@ namespace PEBakery.IniLib
                                 if (processedSections.Any(s => s.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     if (thisLineWritten == false)
-                                        writer.WriteLine(rawLine);
+                                        w.WriteLine(rawLine);
                                     thisLineWritten = true;
 
                                     processedSections.Add(iniKeys[i].Section);
-                                    writer.WriteLine($"\r\n[{iniKeys[i].Section}]");
+                                    w.WriteLine($"\r\n[{iniKeys[i].Section}]");
                                 }
                                 processedKeys.Add(i);
 
-                                writer.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
+                                w.WriteLine($"{iniKeys[i].Key}={iniKeys[i].Value}");
                             }
                         }
 
                         if (thisLineWritten == false)
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                     }
                 }
 
@@ -1272,7 +1270,9 @@ namespace PEBakery.IniLib
         /// <returns></returns>
         public static StringDictionary ParseIniLinesIniStyle(IEnumerable<string> lines)
         {
-            return InternalParseIniLinesRegex(@"^([^=]+)=(.*)$", lines);
+            // This regex exclude %A%=BCD form.
+            // Used [^=] to prevent '=' in key.
+            return InternalParseIniLinesRegex(@"^(?<!\/\/|#|;)([^%=\r\n]+)=(.*)$", lines);
         }
 
         /// <summary>
@@ -1283,6 +1283,7 @@ namespace PEBakery.IniLib
         /// <returns></returns>
         public static StringDictionary ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
+            // Used [^=] to prevent '=' in key.
             return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
         }
 
@@ -1679,7 +1680,7 @@ namespace PEBakery.IniLib
     }
     #endregion
 
-    #region 
+    #region IniFile
     public class IniFile
     {
         public string FilePath { get; set; }

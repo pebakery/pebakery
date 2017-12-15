@@ -10,6 +10,7 @@ using PEBakery.Core.Commands;
 using System.Windows;
 using PEBakery.WPF;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
 {
@@ -26,6 +27,8 @@ namespace PEBakery.Core
         public PluginSection MacroSection => macroSection;
         public Dictionary<string, CodeCommand> MacroDict => macroDict; // Macro Library - [ApiVar]
         public Dictionary<string, CodeCommand> LocalDict => localDict;
+
+        public const string MacroNameRegex = @"^([a-zA-Z0-9_]+)$";
 
         public Macro(Project project, Variables variables, out List<LogInfo> logs)
         { 
@@ -79,9 +82,10 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
-                        && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
+                    if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
                         macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                 }
                 catch (Exception e)
                 {
@@ -90,44 +94,61 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Plugin p)
+        public List<LogInfo> LoadLocalMacroDict(Plugin p, bool append, string sectionName = "Variables")
         {
-            List<LogInfo> logs = new List<LogInfo>();
-            localDict.Clear();
-
-            if (p.Sections.ContainsKey("Variables"))
+            if (p.Sections.ContainsKey(sectionName))
             {
-                PluginSection section = p.Sections["Variables"];
-                
+                PluginSection section = p.Sections[sectionName];
+
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
-                Dictionary<string, string> dict =
-                    Ini.ParseIniLinesIniStyle(section.GetLines())
-                    .Where(x => !(x.Key.StartsWith("%", StringComparison.Ordinal) && x.Key.EndsWith("%", StringComparison.Ordinal)))
-                    .ToDictionary(x => x.Key, x => x.Value);
+                SectionAddress addr = new SectionAddress(p, section);
+                Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.GetLines());
+                return LoadLocalMacroDict(addr, dict, append);
+            }
+            else
+            {
+                return new List<LogInfo>();
+            }
+        }
 
-                if (0 < dict.Keys.Count)
+        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append)
+        {
+            Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(lines);
+            return LoadLocalMacroDict(addr, dict, append);
+        }
+
+        private List<LogInfo> LoadLocalMacroDict(SectionAddress addr, Dictionary<string, string> dict, bool append)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+            if (append == false)
+                localDict.Clear();
+
+            if (0 < dict.Keys.Count)
+            {
+                int count = 0;
+                logs.Add(new LogInfo(LogState.Info, $"Import Macro from [{addr.Section.SectionName}]", 0));
+                foreach (var kv in dict)
                 {
-                    SectionAddress addr = new SectionAddress(p, section);
-
-                    int count = 0;
-                    logs.Add(new LogInfo(LogState.Info, "Import Macro from [Variables]", 0));
-                    foreach (var kv in dict)
+                    try
                     {
-                        try
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
                         {
-                            localDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
-                            logs.Add(new LogInfo(LogState.Success, $"Macro [{kv.Key}] set to [{kv.Value}]", 1));
-                            count += 1;
+                            logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                            continue;
                         }
-                        catch (Exception e)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, e));
-                        }
+
+                        localDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                        logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
+                        count += 1;
                     }
-                    logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
-                    logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
+                    catch (Exception e)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, e));
+                    }
                 }
+                logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
+                logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
             }
 
             return logs;
@@ -145,6 +166,9 @@ namespace PEBakery.Core
 
         public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool permanent)
         {
+            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+                return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
+
             if (macroCommand != null)
             { // Insert
                 // Try parsing
@@ -181,7 +205,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] not found");
+                        return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
                     }                   
                 }
                 else
@@ -193,7 +217,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] not found");
+                        return new LogInfo(LogState.Error, $"Local Macro [{macroName}] not found");
                     }
                 }
             }

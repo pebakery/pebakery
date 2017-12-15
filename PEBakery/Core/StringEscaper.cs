@@ -67,76 +67,89 @@ namespace PEBakery.Core
             { @"#$s", @" " },
             { @"#$t", "\t"},
             { @"#$x", Environment.NewLine},
-            // { @"#$z", "\x00\x00"} -> This should go to EngineRegistry
         };
 
-        private static readonly Dictionary<string, string> postUnescapeDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { @"#$h", @"#" }, // Added in PEBakery
-            { @"#$d", @"$" }, // Added in PEBakery
-        };
-
-        public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$h = Sharp [#]\r\n#$d = Dollar [$]\r\n#$x = NewLine";
+        public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
         {
-            str = unescapeSeqs.Keys.Aggregate(str, (from, to) => from.Replace(to, unescapeSeqs[to]));
-
-            if (escapePercent)
-                str = UnescapePercent(str);
-
-            // Unescape #$h and #$d
-            // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
-            int hIdx, dIdx;
             int idx = 0;
             StringBuilder b = new StringBuilder();
             while (idx < str.Length)
             {
-                hIdx = str.IndexOf("#$h", idx, StringComparison.OrdinalIgnoreCase);
-                dIdx = str.IndexOf("#$d", idx, StringComparison.OrdinalIgnoreCase);
-
+                int hIdx = str.IndexOf('#', idx);
                 if (hIdx == -1)
-                { 
-                    if (dIdx == -1)
-                    { // # (X), $ (X), just return;
-                        b.Append(str.Substring(idx));
-                        break;
-                    }
-                    else
-                    { // # (X), $ (O)
-                        b.Append(str.Substring(idx, dIdx - idx));
-                        b.Append(postUnescapeDict["#$d"]);
-                        idx = dIdx += 3;
-                    }
+                { // # (X)
+                    b.Append(str.Substring(idx));
+                    break;
                 }
-                else 
-                { // hIdx only
-                    if (dIdx == -1)
-                    { // # (O), $ (X)
-                        b.Append(str.Substring(idx, hIdx - idx));
-                        b.Append(postUnescapeDict["#$h"]);
-                        idx = hIdx += 3;
-                    }
-                    else
-                    { // # (O), $ (O)
-                        Debug.Assert(hIdx != dIdx);
-                        if (dIdx < hIdx)
-                        { // Escape Dollar
-                            b.Append(str.Substring(idx, dIdx - idx));
-                            b.Append(postUnescapeDict["#$d"]);
-                            idx = dIdx += 3;
+                else
+                { // # (O)
+                    b.Append(str.Substring(idx, hIdx - idx));
+                    if (hIdx + 1 < str.Length)
+                    {
+                        char ch1 = str[hIdx + 1];
+                        if (ch1 == '#')
+                        { // ## -> [#]
+                            b.Append('#');
+                            idx = hIdx + 2;
+                        }
+                        else if (ch1 == '$')
+                        {
+                            if (idx + 2 < str.Length)
+                            {
+                                char ch2 = str[hIdx + 2];
+                                switch (ch2)
+                                {
+                                    case 'c': // #$c -> [,]
+                                        b.Append(',');
+                                        break;
+                                    case 'p': // #$p -> [%]
+                                        b.Append('%');
+                                        break;
+                                    case 'q': // #$q -> ["]
+                                        b.Append('"');
+                                        break;
+                                    case 's': // #$s -> [ ]
+                                        b.Append(' ');
+                                        break;
+                                    case 't': // #$t -> [   ]
+                                        b.Append('\t');
+                                        break;
+                                    case 'x': // #$x -> [\r\n]
+                                        b.Append("\r\n");
+                                        break;
+                                    default: // No escape
+                                        b.Append(@"#$");
+                                        idx = hIdx + 2;
+                                        continue;
+                                }
+                                idx = hIdx + 3;
+                            }
+                            else
+                            { // Last 2 characters of string
+                                b.Append("#$");
+                                idx = hIdx + 2;
+                            }                               
                         }
                         else
-                        { // Escape Hash
-                            b.Append(str.Substring(idx, hIdx - idx));
-                            b.Append(postUnescapeDict["#$h"]);
-                            idx = hIdx += 3;
+                        {
+                            b.Append('#');
+                            idx = hIdx + 1;
                         }
+                    }
+                    else
+                    { // Last character of string
+                        b.Append('#');
+                        idx = hIdx + 1;
                     }
                 }
             }
             str = b.ToString();
 
+            if (escapePercent)
+                str = UnescapePercent(str);
+            
             return str;
         }
 
@@ -177,7 +190,6 @@ namespace PEBakery.Core
         private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @",", @"#$c" },
-            // { @"%", @"#$p" }, // Seems even WB082 ignore this escape seqeunce?
             { "\"", @"#$q" },
             { @" ", @"#$s" },
             { "\t", @"#$t" },
@@ -191,64 +203,28 @@ namespace PEBakery.Core
             { Environment.NewLine, @"#$x" },
         };
 
-        private static readonly Dictionary<string, string> preEscapeDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        public static string Escape(string str, bool fullEscape = false, bool escapePercent = false)
         {
-            { @"#", @"#$h" }, // Added in PEBakery
-            { @"$", @"#$d" }, // Added in PEBakery
-        };
-
-        public static string Escape(string str, bool fullEscape = false, bool escapePercent = false, bool escapeSharpDollar = true)
-        {
-            // Escape # and $
-            if (escapeSharpDollar)
+            // Escape # first
+            // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
+            if (str.IndexOf('#') != -1)
             {
-                // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
-                int hIdx, dIdx;
                 int idx = 0;
                 StringBuilder b = new StringBuilder();
                 while (idx < str.Length)
                 {
-                    hIdx = str.IndexOf('#', idx);
-                    dIdx = str.IndexOf('$', idx);
+                    int hIdx = str.IndexOf('#', idx);
 
                     if (hIdx == -1)
-                    {
-                        if (dIdx == -1)
-                        { // # (X), $ (X)
-                            b.Append(str.Substring(idx));
-                            break;
-                        }
-                        else
-                        { // # (X), $ (O)
-                            b.Append(str.Substring(idx, dIdx - idx));
-                            b.Append(preEscapeDict["$"]);
-                            idx = dIdx += 1;
-                        }
+                    { // # (X)
+                        b.Append(str.Substring(idx));
+                        break;
                     }
                     else
-                    { // hIdx only
-                        if (dIdx == -1)
-                        { // # (O), $ (X)
-                            b.Append(str.Substring(idx, hIdx - idx));
-                            b.Append(preEscapeDict["#"]);
-                            idx = hIdx += 1;
-                        }
-                        else
-                        { // # (O), $ (O)
-                            Debug.Assert(hIdx != dIdx);
-                            if (dIdx < hIdx)
-                            { // Escape Dollar
-                                b.Append(str.Substring(idx, dIdx - idx));
-                                b.Append(preEscapeDict["$"]);
-                                idx = dIdx += 1;
-                            }
-                            else
-                            { // Escape Hash
-                                b.Append(str.Substring(idx, hIdx - idx));
-                                b.Append(preEscapeDict["#"]);
-                                idx = hIdx += 1;
-                            }
-                        }
+                    { // # (O)
+                        b.Append(str.Substring(idx, hIdx - idx));
+                        b.Append(@"##");
+                        idx = hIdx += 1;
                     }
                 }
                 str = b.ToString();
@@ -263,22 +239,22 @@ namespace PEBakery.Core
             str = dict.Keys.Aggregate(str, (from, to) => from.Replace(to, dict[to]));
 
             if (escapePercent)
-                return EscapePercent(str);
-            else
-                return str;
+                str = EscapePercent(str);
+            
+            return str;
         }
 
-        public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false, bool escapeSharpDollar = true)
+        public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
             List<string> escaped = new List<string>(strs.Count());
             foreach (string str in strs)
-                escaped.Add(Escape(str, fullEscape, escapePercent, escapeSharpDollar));
+                escaped.Add(Escape(str, fullEscape, escapePercent));
             return escaped;
         }
 
         public static string EscapePercent(string str)
         {
-            return str.Replace(@"%", @"#$p");
+            return StringHelper.ReplaceEx(str, @"%", @"#$p", StringComparison.Ordinal);
         }
 
         public static List<string> EscapePercent(IEnumerable<string> strs)
@@ -297,7 +273,7 @@ namespace PEBakery.Core
                 return str;
         }
 
-        public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false, bool escapeSharpDollar = false)
+        public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
         {
             bool needQuote = false;
 
@@ -306,17 +282,17 @@ namespace PEBakery.Core
                 needQuote = true;
 
             // Escape characters
-            str = Escape(str, fullEscape, escapePercent, escapeSharpDollar); // WB082 escape sequence
+            str = Escape(str, fullEscape, escapePercent); // WB082 escape sequence
             if (needQuote)
                 str = Doublequote(str); // Doublequote escape
             return str;
         }
 
-        public static List<string> QuoteEscape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false, bool escapeSharpDollar = true)
+        public static List<string> QuoteEscape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
             List<string> escaped = new List<string>(strs.Count());
             foreach (string str in strs)
-                escaped.Add(QuoteEscape(str, fullEscape, escapePercent, escapeSharpDollar));
+                escaped.Add(QuoteEscape(str, fullEscape, escapePercent));
             return escaped;
         }
         #endregion
@@ -362,9 +338,9 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex regex = new Regex(@"(#[0-9]+)", RegexOptions.Compiled);
-            MatchCollection matches = regex.Matches(str);
+            Regex regex = new Regex(@"(?<!#)(#[0-9]+)", RegexOptions.Compiled);
 
+            MatchCollection matches = regex.Matches(str);
             while (0 < matches.Count)
             {
                 StringBuilder b = new StringBuilder();
@@ -393,7 +369,7 @@ namespace PEBakery.Core
                     else
                     { 
                         if (s.CurDepth == 1) // Dirty Hack for WB082 compatibility
-                            param = $"#$h{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
+                            param = $"##{pIdx}"; // [Process] -> Should return #{pIdx} even it was not found
                         else
                             param = string.Empty; // Not in entry section -> return string.Empty;
                     }
@@ -409,18 +385,13 @@ namespace PEBakery.Core
                 matches = regex.Matches(str);
             }
 
-            if (s.LoopRunning)
-            { // Escape #c
-                int idx = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase);
-                if (idx != -1)
-                {
-                    StringBuilder b = new StringBuilder();
-                    b.Append(str.Substring(0, idx));
-                    b.Append(s.LoopCounter);
-                    b.Append(str.Substring(idx + 2)); // +2 for removing #c
-                    str = b.ToString();
-                }
-            }
+            // Escape #a (Current Argument Count)
+            if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
+                str = StringHelper.ReplaceEx(str, "#a", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
+
+            // Escape #c (Loop Counter)
+            if (s.LoopRunning) 
+                str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
 
             return str;
         }

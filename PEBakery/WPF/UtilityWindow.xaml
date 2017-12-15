@@ -150,11 +150,6 @@
                                 VerticalAlignment="Center"
                                 Content="Escape %"
                                 IsChecked="{Binding Escaper_EscapePercent}"/>
-                            <CheckBox
-                                Margin="0, 0, 10, 0"
-                                VerticalAlignment="Center"
-                                Content="Escape #, $"
-                                IsChecked="{Binding Escaper_EscapeSharpDollar}"/>
                         </StackPanel>
                         <Button
                             Grid.Column="3"

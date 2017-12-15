@@ -248,6 +248,41 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            if (File.Exists(srcPath) == false)
+            {
+                // Check if srcPath is directory
+                if (Directory.Exists(srcPath))
+                {
+                    if (s.CompatFileRenameCanMoveDir)
+                    {
+                        if (Directory.Exists(destPath))
+                        {
+                            string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+
+                            Directory.Move(srcPath, destFullPath);
+                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
+                            return logs;
+                        }
+                        else
+                        {
+                            Directory.Move(srcPath, destPath);
+                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
+                            return logs;
+                        }
+                    }
+                    else
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{srcPath}] is a directory, not a file"));
+                        return logs;
+                    }
+                }
+                else
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{srcPath}] does not exist"));
+                    return logs;
+                }
+            }
+
             File.SetAttributes(srcPath, FileAttributes.Normal);
             File.Move(srcPath, destPath);
             if (cmd.Type == CodeType.FileRename)
@@ -291,8 +326,7 @@ namespace PEBakery.Core.Commands
             }
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
-            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-            FileHelper.WriteTextBOM(fs, encoding).Close();
+            FileHelper.WriteTextBOM(filePath, encoding);
             logs.Add(new LogInfo(LogState.Success, $"Created blank text file [{filePath}]", cmd));
 
             return logs;
@@ -395,7 +429,7 @@ namespace PEBakery.Core.Commands
                 if (s.CompatDirCopyBug)
                 { // Simulate WB082's [DirCopy,%SrcDir%\*,%DestDir%] filecopy bug
                     foreach (FileInfo f in dirInfo.GetFiles(wildcard))
-                        File.Copy(f.FullName, Path.Combine(destDir, f.Name));
+                        File.Copy(f.FullName, Path.Combine(destDir, f.Name), true);
                 }
 
                 // Copy first sublevel directory with wildcard
@@ -546,6 +580,59 @@ namespace PEBakery.Core.Commands
 
             List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, dirSize.ToString());
             logs.AddRange(varLogs);
+
+            return logs;
+        }
+
+        public static List<LogInfo> PathMove(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PathMove));
+            CodeInfo_PathMove info = cmd.Info as CodeInfo_PathMove;
+
+            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            // SrcPath must be directory
+            if (File.Exists(srcPath))
+            {
+                File.SetAttributes(srcPath, FileAttributes.Normal);
+                File.Move(srcPath, destPath);
+                logs.Add(new LogInfo(LogState.Success, $"File [{srcPath}] moved to [{destPath}]"));
+            }
+            else if (Directory.Exists(srcPath))
+            {
+                // DestPath must be directory 
+                if (File.Exists(destPath))
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"[{destPath}] is a file, not a directory"));
+                    return logs;
+                }
+
+                if (Directory.Exists(destPath))
+                {
+                    string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+                    Directory.Move(srcPath, destFullPath);
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
+                }
+                else
+                {
+                    Directory.Move(srcPath, destPath);
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
+                }
+            }
+            else
+            {
+                logs.Add(new LogInfo(LogState.Success, $"Path [{srcPath}] does not exist"));
+            }
 
             return logs;
         }

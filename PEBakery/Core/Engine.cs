@@ -92,7 +92,7 @@ namespace PEBakery.Core
 
             // Load Per-Plugin Macro
             s.Macro.ResetLocalMacros();
-            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p));
+            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p, false));
 
             // Reset Current Section Parameter
             s.CurSectionParams = new Dictionary<int, string>();
@@ -231,12 +231,14 @@ namespace PEBakery.Core
 
         public void ForceStop()
         {
+            if (s.RunningSubProcess != null)
+                s.RunningSubProcess.Kill();
             s.UserHaltFlag = true;
         }
 
         public Task ForceStopWait()
         {
-            s.UserHaltFlag = true;
+            ForceStop();
             return Task.Run(() => task.Wait());
         }
         #endregion
@@ -278,7 +280,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region RunCommands, RunCallback, ExecuteCommand
+        #region RunCommands, RunCallback
         public static void RunCommands(EngineState s, SectionAddress addr, List<CodeCommand> codes, Dictionary<int, string> sectionParams, int depth, bool callback = false)
         {
             if (codes.Count == 0)
@@ -297,7 +299,7 @@ namespace PEBakery.Core
                     s.CurSectionParams = sectionParams;
                     ExecuteCommand(s, curCommand);
 
-                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag)
+                    if (s.PassCurrentPluginFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                         break;
                 }
                 catch (CriticalErrorException)
@@ -307,7 +309,9 @@ namespace PEBakery.Core
                 }
             }
         }
+        #endregion
 
+        #region ExecuteCommand
         public static List<LogInfo> ExecuteCommand(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -376,6 +380,9 @@ namespace PEBakery.Core
                     case CodeType.DirSize:
                         logs.AddRange(CommandFile.DirSize(s, cmd));
                         break;
+                    case CodeType.PathMove:
+                        logs.AddRange(CommandFile.PathMove(s, cmd));
+                        break;
                     #endregion
                     #region 02 Registry
                     case CodeType.RegHiveLoad:
@@ -416,8 +423,14 @@ namespace PEBakery.Core
                     case CodeType.TXTReplace:
                         logs.AddRange(CommandText.TXTReplace(s, cmd));
                         break;
+                    case CodeType.TXTReplaceOp:
+                        logs.AddRange(CommandText.TXTReplaceOp(s, cmd));
+                        break;
                     case CodeType.TXTDelLine:
                         logs.AddRange(CommandText.TXTDelLine(s, cmd));
+                        break;
+                    case CodeType.TXTDelLineOp:
+                        logs.AddRange(CommandText.TXTDelLineOp(s, cmd));
                         break;
                     case CodeType.TXTDelSpaces:
                         logs.AddRange(CommandText.TXTDelSpaces(s, cmd));
@@ -569,6 +582,9 @@ namespace PEBakery.Core
                     case CodeType.Set:
                         logs.AddRange(CommandControl.Set(s, cmd));
                         break;
+                    case CodeType.SetMacro:
+                        logs.AddRange(CommandControl.SetMacro(s, cmd));
+                        break;
                     case CodeType.AddVariables:
                         logs.AddRange(CommandControl.AddVariables(s, cmd));
                         break;
@@ -583,6 +599,12 @@ namespace PEBakery.Core
                         break;
                     case CodeType.Beep:
                         logs.AddRange(CommandControl.Beep(s, cmd));
+                        break;
+                    case CodeType.GetParam:
+                        logs.AddRange(CommandControl.GetParam(s, cmd));
+                        break;
+                    case CodeType.PackParam:
+                        logs.AddRange(CommandControl.PackParam(s, cmd));
                         break;
                     #endregion
                     #region 15 External Macro
@@ -617,19 +639,18 @@ namespace PEBakery.Core
                 MuteLogError(logs);
                 s.Logger.ErrorOffCount -= 1;
             }
-            
+
             // Stop build on error
-            if (0 < logs.Count(x => x.State == LogState.Error))
+            if (StopBuildOnError)
             {
-                if (StopBuildOnError)
+                if (0 < logs.Count(x => x.State == LogState.Error))
                     s.ErrorHaltFlag = true;
             }
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
             // Increase only if cmd resides is CurrentPlugin
-            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) &&
-                (s.CurrentPlugin.Equals(cmd.Addr.Plugin)))
+            if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) && s.CurrentPlugin.Equals(cmd.Addr.Plugin))
             {
                 s.MainViewModel.BuildPluginProgressBarValue += 1;
             }
@@ -640,33 +661,34 @@ namespace PEBakery.Core
 
         private static void CheckAndRunCallback(EngineState s, ref CodeCommand cbCmd, string eventParam, string eventName, bool changeCurrentPlugin = false)
         {
-            if (cbCmd != null)
+            if (cbCmd == null)
+                return;
+            
+            s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
+
+            if (changeCurrentPlugin)
+                s.CurrentPlugin = cbCmd.Addr.Plugin;
+
+            s.CurDepth = 0;
+            if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
-                s.Logger.Build_Write(s, $"Processing callback of event [{eventName}]");
-
-                if (changeCurrentPlugin)
-                    s.CurrentPlugin = cbCmd.Addr.Plugin;
-
-                s.CurDepth = 0;
-                if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
-                {
-                    Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
-                    CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
-                    if (1 <= info.Parameters.Count)
-                        info.Parameters[0] = eventParam;
-                    else
-                        info.Parameters.Add(eventParam);
-
-                    CommandBranch.RunExec(s, cbCmd, false, false, true);
-                }
+                Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
+                CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
+                if (1 <= info.Parameters.Count)
+                    info.Parameters[0] = eventParam;
                 else
-                {
-                    ExecuteCommand(s, cbCmd);
-                }
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
-                s.Logger.Build_Write(s, Logger.LogSeperator);
-                cbCmd = null;
+                    info.Parameters.Add(eventParam);
+
+                CommandBranch.RunExec(s, cbCmd, false, false, true);
             }
+            else
+            {
+                ExecuteCommand(s, cbCmd);
+            }
+
+            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of callback [{eventName}]", s.CurDepth));
+            s.Logger.Build_Write(s, Logger.LogSeperator);
+            cbCmd = null;
         }
 
         public string FinishEventParam(EngineState s)
@@ -731,7 +753,7 @@ namespace PEBakery.Core
     #region EngineState
     public class EngineState
     {
-        // Fields used globally
+        #region Field and Properties
         public Project Project;
         public List<Plugin> Plugins;
         public Variables Variables => Project.Variables;
@@ -740,11 +762,21 @@ namespace PEBakery.Core
         public bool RunOnePlugin;
         public MainViewModel MainViewModel;
 
-        // Properties
+        // Property
         public string BaseDir => Project.BaseDir;
         public Plugin MainPlugin => Project.MainPlugin;
+        public int CurSectionParamsCount
+        {
+            get
+            {
+                if (0 < CurSectionParams.Count)
+                    return CurSectionParams.Keys.Max();
+                else
+                    return 0;
+            }
+        }
 
-        // Fields : Engine's state
+        // Engine's state
         public Plugin CurrentPlugin;
         public int CurrentPluginIdx;
         public PluginSection CurrentSection;
@@ -753,7 +785,8 @@ namespace PEBakery.Core
         public int CurDepth = 1;
         public bool ElseFlag = false;
         public bool LoopRunning = false;
-        public long LoopCounter;
+        public long LoopCounter = 0;
+        public Process RunningSubProcess = null;
         public bool PassCurrentPluginFlag = false;
         public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false;
@@ -765,15 +798,17 @@ namespace PEBakery.Core
         public bool LogComment = true; // Used in logging
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
+        public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool DisableLogger = false; // For performance (when engine runnded by interface)
         public bool DelayedLogging = true; // For performance
 
-        // Fields : System Commands
+        // System Commands
         public CodeCommand OnBuildExit = null;
         public CodeCommand OnPluginExit = null;
 
         // Readonly Fields
         public readonly string EntrySection;
+        #endregion
 
         public EngineState(Project project, Logger logger, MainViewModel mainModel, Plugin runSingle = null, string entrySection = "Process")
         {
@@ -816,6 +851,7 @@ namespace PEBakery.Core
             LogComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_DirCopyBug;
+            CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
             DelayedLogging = !m.Log_DisableDelayedLogging;
         }
         #endregion

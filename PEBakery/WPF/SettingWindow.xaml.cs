@@ -239,31 +239,60 @@ namespace PEBakery.WPF
                         new IniKey("Main", "SourceDir"),
                         new IniKey("Main", "TargetDir"),
                         new IniKey("Main", "ISOFile"),
+                        new IniKey("Main", "PathSetting"),
                     };
                     keys = Ini.GetKeys(fullPath, keys);
 
-                    Project_SourceDirectoryList = new ObservableCollection<string>();
-                    string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (string rawDir in rawDirList)
-                    {
-                        string dir = rawDir.Trim();
-                        if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
-                            Project_SourceDirectoryList.Add(dir);
-                    }
+                    // PathSetting
+                    if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        Project_PathEnabled = false;
+                    else
+                        Project_PathEnabled = true;
 
+                    // SourceDir
+                    Project_SourceDirectoryList = new ObservableCollection<string>();
+                    if (keys[0].Value != null)
+                    {
+                        string[] rawDirList = keys[0].Value.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string rawDir in rawDirList)
+                        {
+                            string dir = rawDir.Trim();
+                            if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                                Project_SourceDirectoryList.Add(dir);
+                        }
+                    }
+                    
                     if (0 < Project_SourceDirectoryList.Count)
                     {
                         project_SourceDirectoryIndex = 0;
                         OnPropertyUpdate("Project_SourceDirectoryIndex");
                     }
 
-                    project_TargetDirectory = keys[1].Value;
-                    project_ISOFile = keys[2].Value;
-                    OnPropertyUpdate("Project_TargetDirectory");
-                    OnPropertyUpdate("Project_ISOFile");
+                    if (keys[1].Value != null)
+                    {
+                        project_TargetDirectory = keys[1].Value;
+                        OnPropertyUpdate("Project_TargetDirectory");
+                    }
+                    
+                    if (keys[2].Value != null)
+                    {
+                        project_ISOFile = keys[2].Value;
+                        OnPropertyUpdate("Project_ISOFile");
+                    }
                 }
 
                 OnPropertyUpdate("Project_SelectedIndex");
+            }
+        }
+
+        private bool project_PathEnabled = true;
+        public bool Project_PathEnabled
+        {
+            get => project_PathEnabled;
+            set
+            {
+                project_PathEnabled = value;
+                OnPropertyUpdate("Project_PathEnabled");
             }
         }
 
@@ -618,6 +647,17 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool compat_FileRenameCanMoveDir;
+        public bool Compat_FileRenameCanMoveDir
+        {
+            get => compat_FileRenameCanMoveDir;
+            set
+            {
+                compat_FileRenameCanMoveDir = value;
+                OnPropertyUpdate("Compat_FileRenameCanMoveDir");
+            }
+        }
+
         private bool compat_LegacyBranchCondition;
         public bool Compat_LegacyBranchCondition
         {
@@ -702,6 +742,7 @@ namespace PEBakery.WPF
 
             // Compatibility
             Compat_DirCopyBug = true;
+            Compat_FileRenameCanMoveDir = true;
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
             Compat_IgnoreWidthOfWebLabel = true;
@@ -736,10 +777,11 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DisableDelayedLogging"), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey("Compat", "DirCopyBug"), // Boolean
+                new IniKey("Compat", "FileRenameCanMoveDir"), // Boolean
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
                 new IniKey("Compat", "RegWriteLegacy"), // Boolean
                 new IniKey("Compat", "IgnoreWidthOfWebLabel"), // Boolean
-            };
+            }; 
             keys = Ini.GetKeys(settingFile, keys);
 
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
@@ -761,6 +803,7 @@ namespace PEBakery.WPF
             string str_Log_DisableInInterface = dict["Log_DisableInInterface"];
             string str_Log_DisableDelayedLogging = dict["Log_DisableDelayedLogging"];
             string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
+            string str_Compat_FileRenameCanMoveDir = dict["Compat_FileRenameCanMoveDir"];
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
             string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
             string str_Compat_IgnoreWidthOfWebLabel = dict["Compat_IgnoreWidthOfWebLabel"];
@@ -891,6 +934,13 @@ namespace PEBakery.WPF
                     Compat_DirCopyBug = false;
             }
 
+            // Compatibility - FileRenameCanMoveDir (Default = True)
+            if (str_Compat_FileRenameCanMoveDir != null)
+            {
+                if (str_Compat_FileRenameCanMoveDir.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_FileRenameCanMoveDir = false;
+            }
+
             // Compatibility - LegacyBranchCondition (Default = True)
             if (str_Compat_LegacyBranchCondition != null)
             {
@@ -935,6 +985,7 @@ namespace PEBakery.WPF
                 new IniKey("Log", "DisableDelayedLogging", Log_DisableDelayedLogging.ToString()),
                 new IniKey("Project", "DefaultProject", Project_Default),
                 new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
+                new IniKey("Compat", "FileRenameCanMoveDir", Compat_FileRenameCanMoveDir.ToString()),
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
                 new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
                 new IniKey("Compat", "IgnoreWidthOfWebLabel", Compat_IgnoreWidthOfWebLabel.ToString()),

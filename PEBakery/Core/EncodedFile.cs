@@ -1,6 +1,4 @@
-﻿#define NATIVE_ZLIB
-
-/*
+﻿/*
     Copyright (C) 2016-2017 Hajin Jang
     Licensed under GPL 3.0
  
@@ -38,7 +36,7 @@ namespace PEBakery.Core
     Streams are encoded in base64 format.
     Concat all lines into one long string, append '=', '==' or nothing according to length.
     (Need '=' padding to be appended to be .Net acknowledged base64 format)
-    Decode base64 encoded string to get binary, which follows these 2 types
+    Decode base64 encoded string to get binary, which follows these 2 types.
     
     Note)
     All bytes is ordered in little endian
@@ -79,7 +77,7 @@ namespace PEBakery.Core
     0x08 : When changed to higher value than 2, WB082 refuses to decompress with error message
         Error Message = $"The archive was created with a different version of ZLBArchive v{value}"
     0x18 : Decompress by WB082 is unaffected by this value
-    0x1C : When changed, WB082 think the encoded file is corrupted
+    0x1C : When changed, WB082 thinks the encoded file is corrupted
     
     [How to improve?]
     - Use LZMA instead of zlib, for better compression rate.

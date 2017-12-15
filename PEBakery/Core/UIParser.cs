@@ -257,27 +257,39 @@ namespace PEBakery.Core
                 case UIType.ComboBox:
                     { // Variable Length
                         List<string> items = new List<string>();
-                        string last = args.Last();
+
+                        // Have ToolTip?
                         string toolTip = null;
-                        int count = 0;
-                        if (last.StartsWith("__", StringComparison.Ordinal))
+                        int cnt = args.Count;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal))
                         {
-                            toolTip = last;
-                            count = args.Count - 1;
-                        }
-                        else
-                        {
-                            count = args.Count;
+                            toolTip = args.Last();
+                            cnt -= 1;
                         }
 
-                        for (int i = 0; i < count; i++)
+                        string sectionName = null;
+                        bool hideProgress = false;
+                        if (2 <= cnt &&
+                            (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
+                            (args[cnt - 2].StartsWith("_", StringComparison.Ordinal) && args[cnt - 2].EndsWith("_", StringComparison.Ordinal)))
+                        { // Has [RunOptinal] -> <SectionName>,<HideProgress>
+                            if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
+                                hideProgress = true;
+                            else if (args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                                throw new InvalidCommandException($"Invalid argument [{args[cnt - 1]}], must be [True] or [False]");
+
+                            sectionName = args[cnt - 2].Substring(1, args[cnt - 2].Length - 2);
+                            cnt -= 2;
+                        }
+
+                        for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
 
                         int idx = items.IndexOf(arguments[0]);
                         if (idx == -1)
                             throw new InvalidCommandException($"[{type}] has wrong selected value [{arguments[0]}]");
 
-                        return new UIInfo_ComboBox(toolTip, items, idx);
+                        return new UIInfo_ComboBox(toolTip, items, idx, sectionName, hideProgress);
                     }
                 #endregion
                 #region Image
@@ -300,7 +312,7 @@ namespace PEBakery.Core
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
-                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount))
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         return new UIInfo_TextFile(GetInfoTooltip(args, maxOpCount));
@@ -424,8 +436,12 @@ namespace PEBakery.Core
                         bool isFile = false;
                         if (0 < args.Count)
                         {
-                            if (args[0].Equals("FILE", StringComparison.OrdinalIgnoreCase))
+                            if (args[0].Equals("file", StringComparison.OrdinalIgnoreCase))
                                 isFile = true;
+                            else if (args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
+                                isFile = false;
+                            else
+                                throw new InvalidCommandException($"Argument [{type}] should be one of [file] or [dir]");
                         }
 
                         return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);

@@ -74,7 +74,7 @@ namespace PEBakery.Core.Commands
             switch (arcType)
             {
                 case ArchiveCompressFormat.Zip:
-                    success = ArchiveHelper.CompressNativeZip(srcPath, destArchive, compLevel, encoding);
+                    success = ArchiveHelper.CompressManagedZip(srcPath, destArchive, compLevel, encoding);
                     break;
                 default:
                     throw new ExecuteException($"Compressing to [{arcType}] format is not supported");
@@ -264,6 +264,8 @@ namespace PEBakery.Core.Commands
                 string destFullPath = destPath;
                 if (destIsDir)
                     destFullPath = Path.Combine(destPath, srcFileName);
+                else if (!destIsFile)
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
 
                 File.Copy(srcFile, destFullPath, !info.Preserve);
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));

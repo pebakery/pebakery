@@ -40,12 +40,13 @@ namespace PEBakery.Core
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
+        PathMove = 160,
         // 02 Registry
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
-        TXTAddLineOp = 380, TXTDelLineOp,
+        TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
         INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
@@ -70,9 +71,10 @@ namespace PEBakery.Core
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
-        Set = 1400, AddVariables, Exit, Halt, Wait, Beep, 
+        Set = 1400, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
+        GetParam = 1498, PackParam = 1499, // Will be deprecated
         // 15 External Macro
-        Macro = 1500, SetMacro,
+        Macro = 1500,
     }
     #endregion
 
@@ -125,23 +127,25 @@ namespace PEBakery.Core
     {
         public string RawCode;
         public SectionAddress Addr;
-
         public CodeType Type;
         public CodeInfo Info;
+        public int LineIdx = 0;
 
-        public CodeCommand(string rawCode, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
-        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Addr = addr;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
         public override string ToString()
@@ -153,6 +157,8 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
+            CodeType.GetParam,
+            CodeType.PackParam,
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
@@ -439,6 +445,24 @@ namespace PEBakery.Core
             return $"{DirPath},{DestVar}";
         }
     }
+
+    [Serializable]
+    public class CodeInfo_PathMove : CodeInfo
+    { // PathMove,<SrcPath>,<DestPath>
+        public string SrcPath;
+        public string DestPath;
+
+        public CodeInfo_PathMove(string srcPath, string destPath)
+        {
+            SrcPath = srcPath;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcPath},{DestPath}";
+        }
+    }
     #endregion
 
     #region CodeInfo 02 - Registry
@@ -711,7 +735,7 @@ namespace PEBakery.Core
     public enum TXTAddLineMode { Append, Prepend };
     [Serializable]
     public class CodeInfo_TXTAddLine : CodeInfo
-    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
+    { // TXTAddLine,<FileName>,<Line>,<Mode>
         public string FileName;
         public string Line;
         public string Mode;
@@ -737,16 +761,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_TXTReplace : CodeInfo
-    { // TXTReplace,<FileName>,<ToBeReplaced>,<ReplaceWith>
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
         public string FileName;
-        public string ToBeReplaced;
-        public string ReplaceWith;
+        public string OldStr;
+        public string NewStr;
 
-        public CodeInfo_TXTReplace(string fileName, string toBeReplaced, string replaceWith)
+        public CodeInfo_TXTReplace(string fileName, string oldStr, string newStr)
         {
             FileName = fileName;
-            ToBeReplaced = toBeReplaced;
-            ReplaceWith = replaceWith;
+            OldStr = oldStr;
+            NewStr = newStr;
         }
 
         public override string ToString()
@@ -754,23 +778,34 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(ToBeReplaced);
+            b.Append(OldStr);
             b.Append(",");
-            b.Append(ReplaceWith);
+            b.Append(NewStr);
             return b.ToString();
         }
     }
 
     [Serializable]
-    public class CodeInfo_TXTDelLine : CodeInfo
-    { // TXTDelLine,<FileName>,<DeleteIfBeginWith>
-        public string FileName;
-        public string DeleteIfBeginWith;
+    public class CodeInfo_TXTReplaceOp : CodeInfo
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
+        public List<CodeInfo_TXTReplace> InfoList;
 
-        public CodeInfo_TXTDelLine(string fileName, string deleteIfBeginWith)
+        public CodeInfo_TXTReplaceOp(List<CodeInfo_TXTReplace> infoList)
+        {
+            InfoList = infoList;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_TXTDelLine : CodeInfo
+    { // TXTDelLine,<FileName>,<DeleteLine>
+        public string FileName;
+        public string DeleteLine;
+
+        public CodeInfo_TXTDelLine(string fileName, string deleteLine)
         {
             FileName = fileName;
-            DeleteIfBeginWith = deleteIfBeginWith;
+            DeleteLine = deleteLine;
         }
 
         public override string ToString()
@@ -778,7 +813,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(DeleteIfBeginWith);
+            b.Append(DeleteLine);
             return b.ToString();
         }
     }
@@ -2394,7 +2429,7 @@ namespace PEBakery.Core
 
     #region SystemType, SystemInfo
     public enum SystemType
-    { // 아니 왜 사칙연산이 StrFormat에 있지...
+    {
         Cursor,
         ErrorOff,
         GetEnv,
@@ -2408,7 +2443,6 @@ namespace PEBakery.Core
         RescanScripts,
         Rescan,
         SaveLog,
-
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
@@ -2625,21 +2659,12 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-
         public string Action;
         public string FilePath;
         public string Params; // Optional
-        public string WorkDir;      // Optional
-        public string ExitOutVar;   // Optional
+        public string WorkDir; // Optional
+        public string ExitOutVar; // Optional
 
-        /// <summary>
-        /// ShellExecute
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="filePath"></param>
-        /// <param name="parameters">Optinal</param>
-        /// <param name="workDir">Optinal</param>
-        /// <param name="exitOutVar">Optinal - Variable</param>
         public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
         {
             Action = action;
@@ -2688,6 +2713,7 @@ namespace PEBakery.Core
         ExistSection,
         ExistRegSection, ExistRegSubKey,
         ExistRegKey, ExistRegValue,
+        ExistRegMulti,
         ExistVar,
         ExistMacro,
         // ETC
@@ -2705,6 +2731,7 @@ namespace PEBakery.Core
         public string Arg1;
         public string Arg2;
         public string Arg3;
+        public string Arg4;
         public BranchCondition(BranchConditionType type, bool notFlag)
         {
             Type = type;
@@ -2772,6 +2799,23 @@ namespace PEBakery.Core
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
+                    break;
+                default:
+                    throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
+            }
+        }
+
+        public BranchCondition(BranchConditionType type, bool notFlag, string arg1, string arg2, string arg3, string arg4)
+        {
+            Type = type;
+            NotFlag = notFlag;
+            switch (type)
+            {
+                case BranchConditionType.ExistRegMulti:
+                    Arg1 = arg1;
+                    Arg2 = arg2;
+                    Arg3 = arg3;
+                    Arg4 = arg4;
                     break;
                 default:
                     throw new InternalException($"Wrong BranchCondition, [{type}] does not take 3 arguments");
@@ -2999,6 +3043,58 @@ namespace PEBakery.Core
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
                             else
                                 logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                        }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistRegMulti:
+                    {
+                        string rootKey = StringEscaper.Preprocess(s, Arg1);
+                        string subKey = StringEscaper.Preprocess(s, Arg2);
+                        string valueName = StringEscaper.Preprocess(s, Arg3);
+                        string subStr = StringEscaper.Preprocess(s, Arg4);
+
+                        match = false;
+                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                        if (regRoot == null)
+                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                        {
+                            if (regSubKey == null)
+                            {
+                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
+                            }
+                            else
+                            {
+                                object valueData = regSubKey.GetValue(valueName, null);
+                                if (valueData == null)
+                                {
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                                }
+                                else
+                                {
+                                    RegistryValueKind kind = regSubKey.GetValueKind(valueName);
+                                    if (kind != RegistryValueKind.MultiString)
+                                    {
+                                        logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] is not REG_MULTI_SZ";
+                                    }
+                                    else
+                                    {
+                                        string[] strs = (string[])valueData;
+                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                        {
+                                            match = true;
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                        }
+                                        else
+                                        {
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         if (NotFlag)
@@ -3382,9 +3478,9 @@ namespace PEBakery.Core
         public bool Global;
         public bool Permanent;
 
-        public CodeInfo_Set(string varName, string varValue, bool global, bool permanent)
+        public CodeInfo_Set(string varKey, string varValue, bool global, bool permanent)
         {
-            VarKey = varName;
+            VarKey = varKey;
             VarValue = varValue;
             Global = global;
             Permanent = permanent;
@@ -3449,38 +3545,34 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_GetParam : CodeInfo
-    {
-        public int Index;
-        public string VarName;
+    { // GetParam,<Index>,<DestVar>
+        public string Index;
+        public string DestVar;
 
-        public CodeInfo_GetParam(int index, string varName)
+        public CodeInfo_GetParam(string index, string destVar)
         {
             Index = index;
-            VarName = varName;
+            DestVar = destVar;
         }
 
         public override string ToString()
         {
-            StringBuilder b = new StringBuilder();
-            b.Append(Index);
-            b.Append(",");
-            b.Append(VarName);
-            return b.ToString();
+            return $"{Index},{DestVar}";
         }
     }
 
     [Serializable]
     public class CodeInfo_PackParam : CodeInfo
-    { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
-        public int StartIndex;
+    { // PackParam,<StartIndex>,<DestVar>,[VarCount]
+        public string StartIndex;
         public string DestVar;
-        public string VarNum; // optional
+        public string VarCount; // optional
 
-        public CodeInfo_PackParam(int startIndex, string varName, string varNum)
+        public CodeInfo_PackParam(string startIndex, string destVar, string varCount)
         {
             StartIndex = startIndex;
-            DestVar = varName;
-            VarNum = varNum;
+            DestVar = destVar;
+            VarCount = varCount;
         }
 
         public override string ToString()
@@ -3489,10 +3581,10 @@ namespace PEBakery.Core
             b.Append(StartIndex);
             b.Append(",");
             b.Append(DestVar);
-            if (VarNum != null)
+            if (VarCount != null)
             {
                 b.Append(",");
-                b.Append(VarNum);
+                b.Append(VarCount);
             }
             return b.ToString();
         }

@@ -314,7 +314,6 @@ namespace PEBakery.WPF
             {
                 CheckBox box = sender as CheckBox;
                 info.Value = true;
-                // UIRenderer.UpdatePlugin(r.InterfaceSectionName, uiCmd);
                 uiCmd.Update();
             };
             checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
@@ -358,6 +357,22 @@ namespace PEBakery.WPF
                     uiCmd.Update();
                 }
             };
+
+            if (info.SectionName != null)
+            {
+                comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs e) =>
+                {
+                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    {
+                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
+                    }
+                    else
+                    {
+                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                    }
+                };
+            }
 
             SetToolTip(comboBox, info.ToolTip);
             DrawToCanvas(r, comboBox, uiCmd.Rect);
@@ -790,6 +805,8 @@ namespace PEBakery.WPF
                     if (result == System.Windows.Forms.DialogResult.OK)
                     {
                         box.Text = dialog.SelectedPath;
+                        if (Directory.Exists(dialog.SelectedPath))
+                            box.Text += "\\";
                     }
                 }
             };
@@ -936,7 +953,7 @@ namespace PEBakery.WPF
                     }
                 });
 
-                mainModel.ProgressRingActive = true;
+                mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(addr.Plugin.Project, logger, mainModel, addr.Plugin, addr.Section.SectionName);
                 s.SetOption(setting);
@@ -956,7 +973,7 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = true;
 
                 // Turn off ProgressRing
-                mainModel.ProgressRingActive = false;
+                mainModel.WorkInProgress = false;
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
@@ -966,7 +983,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.DrawPlugin(addr.Plugin);
+                        w.DrawPlugin(w.CurMainTree.Plugin);
                     });
                 }
             }

@@ -48,7 +48,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Consants
+        #region Consantants
         internal const int PluginAuthorLenLimit = 35;
         #endregion
 
@@ -80,6 +80,7 @@ namespace PEBakery.WPF
         private SettingViewModel setting;
         public SettingViewModel Setting => setting;
         public MainViewModel Model { get; private set; }
+        public Canvas MainCanvas => Model.MainCanvas;
 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
@@ -94,8 +95,8 @@ namespace PEBakery.WPF
             string[] args = App.Args;
             if (int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
             {
-                Console.WriteLine("Cannot determine version");
-                Application.Current.Shutdown(1);
+                MessageBox.Show($"Invalid version [{App.Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(1);
             }  
 
             string argBaseDir = Environment.CurrentDirectory;
@@ -106,6 +107,12 @@ namespace PEBakery.WPF
                     if (i + 1 < args.Length)
                     {
                         argBaseDir = System.IO.Path.GetFullPath(args[i + 1]);
+                        if (Directory.Exists(argBaseDir) == false)
+                        {
+                            MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
+                            Environment.Exit(1); // Force Shutdown
+                            // Application.Current.Shutdown(1); // Grateful Shutdown
+                        }
                         Environment.CurrentDirectory = argBaseDir;
                     }
                     else
@@ -203,10 +210,10 @@ namespace PEBakery.WPF
             Model.BottomProgressBarMaximum = 100;
             Model.BottomProgressBarValue = 0;
             if (quiet == false)
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
             Model.SwitchStatusProgressBar = false; // Show Progress Bar
+            
             loadWorker = new BackgroundWorker();
-
             loadWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 string baseDir = (string)e.Argument;
@@ -229,7 +236,8 @@ namespace PEBakery.WPF
                 Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
 
                 // Let's load plugins parallelly
-                projects.Load(worker);
+                List<LogInfo> errorLogs = projects.Load(worker);
+                Logger.System_Write(errorLogs);
                 setting.UpdateProjectList();
 
                 if (0 < projects.ProjectNames.Count)
@@ -330,7 +338,7 @@ namespace PEBakery.WPF
                         Model.StatusBarText = msg;
                     }
                     if (quiet == false)
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
 
                     logger.System_Write(new LogInfo(LogState.Info, msg));
@@ -346,7 +354,7 @@ namespace PEBakery.WPF
                     Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
                     if (quiet == false)
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Model.StatusBarText = "Unable to find projects.";
                 }
@@ -366,7 +374,7 @@ namespace PEBakery.WPF
                     Stopwatch watch = new Stopwatch();
                     cacheWorker = new BackgroundWorker();
 
-                    Model.ProgressRingActive = true;
+                    Model.WorkInProgress = true;
                     int updatedCount = 0;
                     int cachedCount = 0;
                     cacheWorker.DoWork += (object sender, DoWorkEventArgs e) =>
@@ -395,7 +403,7 @@ namespace PEBakery.WPF
                         logger.System_Write(new LogInfo(LogState.Info, msg));
                         logger.System_Write(Logger.LogSeperator);
 
-                        Model.ProgressRingActive = false;
+                        Model.WorkInProgress = false;
                     };
                     cacheWorker.RunWorkerAsync();
                 }
@@ -406,17 +414,19 @@ namespace PEBakery.WPF
             }
         }
         
-        public void StartReloadPluginWorker()
+        public AutoResetEvent StartReloadPluginWorker()
         {
-            if (curMainTree == null)
-                return;
+            AutoResetEvent resetEvent = new AutoResetEvent(false);
+
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return null;
 
             if (refreshWorker.IsBusy)
-                return;
+                return null;
 
             Stopwatch watch = new Stopwatch();
 
-            Model.ProgressRingActive = true;
+            Model.WorkInProgress = true;
             refreshWorker = new BackgroundWorker();
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
@@ -428,30 +438,37 @@ namespace PEBakery.WPF
                 if (e.Result is Plugin p)
                 {
                     curMainTree.Plugin = p;
-                    DrawPlugin(curMainTree.Plugin);
+                    curMainTree.ParentCheckedPropagation();
+                    UpdateTreeViewIcon(curMainTree);
+
+                    DrawPlugin(curMainTree.Plugin);                   
                 }
 
-                Model.ProgressRingActive = false;
+                Model.WorkInProgress = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
+                if ((Plugin)e.Result == null)
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reload failed. ({sec:0.000}sec)";
+                else
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
+
+                resetEvent.Set();
             };
             refreshWorker.RunWorkerAsync();
+
+            return resetEvent;
         }
 
         private void StartSyntaxCheckWorker(bool quiet)
         {
-            if (curMainTree == null)
-                return;
-
-            if (curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Plugin == null)
                 return;
 
             if (syntaxCheckWorker.IsBusy)
                 return;
 
             if (quiet == false)
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
 
             Plugin p = curMainTree.Plugin;
 
@@ -550,7 +567,7 @@ namespace PEBakery.WPF
                 }
 
                 if (quiet == false)
-                    Model.ProgressRingActive = false;
+                    Model.WorkInProgress = false;
             };
             syntaxCheckWorker.RunWorkerAsync();
         }
@@ -591,6 +608,7 @@ namespace PEBakery.WPF
                 if (setting.Plugin_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
             }
+            Model.OnPropertyUpdate("MainCanvas");
         }
 
         public void DrawPluginLogo(Plugin p)
@@ -658,6 +676,12 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
+                if (curMainTree == null || curMainTree.Plugin == null || Model.WorkInProgress)
+                {
+                    Interlocked.Decrement(ref Engine.WorkingLock);
+                    return;
+                }
+
                 // Determine current project
                 Project project = curMainTree.Plugin.Project;
 
@@ -674,7 +698,7 @@ namespace PEBakery.WPF
                 Model.SwitchNormalBuildInterface = false;
 
                 // Turn on progress ring
-                Model.ProgressRingActive = true;
+                Model.WorkInProgress = true;
 
                 Stopwatch watch = Stopwatch.StartNew();
 
@@ -685,7 +709,7 @@ namespace PEBakery.WPF
                 logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
                 // Turn off progress ring
-                Model.ProgressRingActive = false;
+                Model.WorkInProgress = false;
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
@@ -769,14 +793,17 @@ namespace PEBakery.WPF
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            Model.ProgressRingActive = true;
+            if (Model.WorkInProgress)
+                return;
+
+            Model.WorkInProgress = true;
 
             using (WebClient c = new WebClient())
             {
                 // string str = c.DownloadData();
             }
 
-            Model.ProgressRingActive = false;
+            Model.WorkInProgress = false;
             MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
@@ -790,6 +817,12 @@ namespace PEBakery.WPF
         #region Plugin Buttons
         private async void PluginRunButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
             Plugin p = curMainTree.Plugin;
             if (p.Sections.ContainsKey("Process"))
             {
@@ -843,6 +876,12 @@ namespace PEBakery.WPF
 
         private void PluginEditButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
             ProcessStartInfo procInfo = new ProcessStartInfo()
             {
                 Verb = "open",
@@ -854,11 +893,23 @@ namespace PEBakery.WPF
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
             StartReloadPluginWorker();
         }
 
         private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
         {
+            if (curMainTree == null || curMainTree.Plugin == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
             StartSyntaxCheckWorker(false);
         }
         #endregion
@@ -871,7 +922,6 @@ namespace PEBakery.WPF
             // Populate MainPlugin
             TreeViewModel projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
 
-            // foreach (Plugin p in pList.Where(p => !p.Equals(project.MainPlugin)))
             foreach (Plugin p in pList)
             {
                 Debug.Assert(p != null);
@@ -962,44 +1012,58 @@ namespace PEBakery.WPF
 
         public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
         {
-            TreeViewModel item = new TreeViewModel(treeRoot, treeParent);
+            TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
+            {
+                Plugin = p
+            };
             treeParent.Children.Add(item);
-            item.Plugin = p;
+            UpdateTreeViewIcon(item);
+
+            return item;
+        }
+
+        TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
+        {
+            Plugin p = item.Plugin;
 
             if (p.Type == PluginType.Directory)
             {
                 if (p.IsDirLink)
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
             else if (p.Type == PluginType.Plugin)
             {
                 if (p.IsMainPlugin)
-                    item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0));
+                    item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0);
                 else
                 {
                     if (p.IsDirLink)
                     {
                         if (p.Mandatory)
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                     }
                     else
                     {
                         if (p.Mandatory)
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
-                            item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0));
+                            item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
                     }
-                        
+
                 }
-                
+
             }
             else if (p.Type == PluginType.Link)
             {
-                item.SetIcon(ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0));
+                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
+            }
+            else
+            { // Error
+                item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.WindowClose, 0);
             }
 
             return item;
@@ -1102,17 +1166,28 @@ namespace PEBakery.WPF
         {
             MainTree = new TreeViewModel(null, null);
             BuildTree = new TreeViewModel(null, null);
+
+            Canvas canvas = new Canvas()
+            {
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(10, 10, 10, 10),
+            };
+            Grid.SetRow(canvas, 0);
+            Grid.SetColumn(canvas, 0);
+            Panel.SetZIndex(canvas, -1);
+            MainCanvas = canvas;
         }
 
         #region Normal Interface
-        private bool progressRingActive = true;
-        public bool ProgressRingActive
+        private bool workInProgress = false;
+        public bool WorkInProgress
         {
-            get => progressRingActive;
+            get => workInProgress;
             set
             {
-                progressRingActive = value;
-                OnPropertyUpdate("ProgressRingActive");
+                workInProgress = value;
+                OnPropertyUpdate("WorkInProgress");
             }
         }
 
@@ -1317,6 +1392,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("MainTree");
             }
         }
+
+        private Canvas mainCanvas;
+        public Canvas MainCanvas
+        {
+            get => mainCanvas;
+            set
+            {
+                mainCanvas = value;
+                OnPropertyUpdate("MainCanvas");
+            }
+        }
         #endregion
 
         #region Build Interface
@@ -1405,6 +1491,56 @@ namespace PEBakery.WPF
             {
                 buildFullProgressBarValue = value;
                 OnPropertyUpdate("BuildFullProgressBarValue");
+            }
+        }
+
+        private string buildStdOutRedirect = string.Empty;
+        public string BuildStdOutRedirect
+        {
+            get => buildStdOutRedirect;
+            set
+            {
+                buildStdOutRedirect = value;
+                OnPropertyUpdate("BuildStdOutRedirect");
+            }
+        }
+
+        private Visibility buildStdOutRedirectVisibility = Visibility.Collapsed;
+        public Visibility BuildStdOutRedirectVisibility => buildStdOutRedirectVisibility;
+        public bool BuildStdOutRedirectShow
+        {
+            set
+            {
+                if (value)
+                    buildStdOutRedirectVisibility = Visibility.Visible;
+                else
+                    buildStdOutRedirectVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildStdOutRedirectVisibility");
+            }
+        }
+
+        private string buildStdErrRedirect = string.Empty;
+        public string BuildStdErrRedirect
+        {
+            get => buildStdErrRedirect;
+            set
+            {
+                buildStdErrRedirect = value;
+                OnPropertyUpdate("BuildStdErrRedirect");
+            }
+        }
+
+        private Visibility buildStdErrRedirectVisibility = Visibility.Collapsed;
+        public Visibility BuildStdErrRedirectVisibility => buildStdErrRedirectVisibility;
+        public bool BuildStdErrRedirectShow
+        {
+            set
+            {
+                if (value)
+                    buildStdErrRedirectVisibility = Visibility.Visible;
+                else
+                    buildStdErrRedirectVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildStdErrRedirectVisibility");
             }
         }
         #endregion
@@ -1501,7 +1637,7 @@ namespace PEBakery.WPF
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
                 w.Dispatcher.Invoke(() =>
                 {
-                    w.Model.ProgressRingActive = true;
+                    w.Model.WorkInProgress = true;
                     if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
                     {
                         if (value)
@@ -1511,7 +1647,8 @@ namespace PEBakery.WPF
                             try
                             {
                                 // Run 'Disable' directive
-                                DisablePlugins(root, plugin);
+                                List<LogInfo> errorLogs = DisablePlugins(root, plugin);
+                                w.Logger.System_Write(errorLogs);
                             }
                             catch (Exception e)
                             {
@@ -1541,7 +1678,7 @@ namespace PEBakery.WPF
 
                         OnPropertyUpdate("Checked");
                     }
-                    w.Model.ProgressRingActive = false;
+                    w.Model.WorkInProgress = false;
                 });
             }
         }
@@ -1600,6 +1737,10 @@ namespace PEBakery.WPF
             {
                 plugin = value;
                 OnPropertyUpdate("Plugin");
+                OnPropertyUpdate("Checked");
+                OnPropertyUpdate("CheckBoxVisible");
+                OnPropertyUpdate("Text");
+                OnPropertyUpdate("MainCanvas");
             }
         }
 
@@ -1624,11 +1765,6 @@ namespace PEBakery.WPF
                 .ThenBy(x => x.Plugin.Type)
                 .ThenBy(x => x.Plugin.FullPath);
             children = new ObservableCollection<TreeViewModel>(sorted);
-        }
-
-        public void SetIcon(Control icon)
-        {
-            this.icon = icon;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -1664,28 +1800,31 @@ namespace PEBakery.WPF
             return null;
         }
 
-        private void DisablePlugins(TreeViewModel root, Plugin p)
+        private List<LogInfo> DisablePlugins(TreeViewModel root, Plugin p)
         {
             if (root == null || p == null)
-                return;
+                return new List<LogInfo>();
 
-            string[] paths = Plugin.GetDisablePluginPaths(p);
+            string[] paths = Plugin.GetDisablePluginPaths(p, out List<LogInfo> errorLogs);
+            if (paths == null)
+                return new List<LogInfo>();
+
             foreach (string path in paths)
             {
-                Plugin pToDisable = p.Project.AllPlugins.FirstOrDefault(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
-                if (pToDisable != null)
+                int exist = p.Project.AllPlugins.Count(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
+                if (exist == 1)
                 {
                     Ini.SetKey(path, "Main", "Selected", "False");
                     TreeViewModel found = FindPluginByFullPath(path);
                     if (found != null)
                     {
                         if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
-                        {
                             found.Checked = false;
-                        }
                     }
                 }
-            }    
+            }
+
+            return errorLogs;
         }
     }
     #endregion

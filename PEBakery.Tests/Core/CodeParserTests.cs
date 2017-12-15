@@ -35,6 +35,7 @@ namespace PEBakery.Tests
             CodeParser_GetNextArgument_2();
             CodeParser_GetNextArgument_3();
             CodeParser_GetNextArgument_4();
+            CodeParser_GetNextArgument_5();
         }
 
         public static void CodeParser_GetNextArgument_Test(string code, List<Tuple<string, string>> testcases)
@@ -114,6 +115,19 @@ namespace PEBakery.Tests
                 new Tuple<string, string>(@"Set", @"%Waik2Tools%,"),
                 new Tuple<string, string>(@"%Waik2Tools%", string.Empty),
                 new Tuple<string, string>(string.Empty, null),
+            };
+
+            CodeParser_GetNextArgument_Test(code, testcases);
+        }
+
+        public void CodeParser_GetNextArgument_5()
+        {
+            string code = "Message,\"Hello\"\"World\",Information";
+            List<Tuple<string, string>> testcases = new List<Tuple<string, string>>()
+            {
+                new Tuple<string, string>("Message", "\"Hello\"\"World\",Information"),
+                new Tuple<string, string>("Hello\"\"World", "Information"),
+                new Tuple<string, string>("Information", null),
             };
 
             CodeParser_GetNextArgument_Test(code, testcases);
