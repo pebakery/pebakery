@@ -355,5 +355,71 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        public static List<LogInfo> GetParam(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(2);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam));
+            CodeInfo_GetParam info = cmd.Info as CodeInfo_GetParam;
+
+            string indexStr = StringEscaper.Preprocess(s, info.Index);
+            if (!NumberHelper.ParseInt32(indexStr, out int index))
+                throw new ExecuteException($"[{indexStr}] is not a valid integer");
+
+            if (s.CurSectionParams.ContainsKey(index) && index <= s.CurSectionParamsCount)
+            {
+                string parameter = StringEscaper.Escape(s.CurSectionParams[index], true, false);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, parameter, false, false);
+                logs.AddRange(varLogs);
+            }
+            else
+            {
+                logs.Add(new LogInfo(LogState.Ignore, $"Section parameter [#{index}] does not exist"));
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false);
+                logs.AddRange(varLogs);
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> PackParam(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(4);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam));
+            CodeInfo_PackParam info = cmd.Info as CodeInfo_PackParam;
+
+            string startIndexStr = StringEscaper.Preprocess(s, info.StartIndex);
+            if (!NumberHelper.ParseInt32(startIndexStr, out int startIndex))
+                throw new ExecuteException($"[{startIndexStr}] is not a valid integer");
+
+            int varCount = s.CurSectionParamsCount;
+            if (startIndex <= varCount)
+            {
+                StringBuilder b = new StringBuilder();
+                for (int i = 1; i <= varCount; i++)
+                {
+                    b.Append('"');
+                    if (s.CurSectionParams.ContainsKey(i))
+                        b.Append(StringEscaper.Escape(s.CurSectionParams[i], true, false));
+                    b.Append('"');
+                    if (i + 1 <= varCount)
+                        b.Append(',');
+                }
+
+                logs.AddRange(Variables.SetVariable(s, info.DestVar, b.ToString(), false, false));
+            }
+            else
+            {
+                logs.Add(new LogInfo(LogState.Ignore, $"StartIndex [#{startIndex}] is invalid, [{varCount}] section parameters provided."));
+                logs.AddRange(Variables.SetVariable(s, info.DestVar, string.Empty, false, false));
+            }
+
+            if (info.VarCount != null)
+                logs.AddRange(Variables.SetVariable(s, info.VarCount, varCount.ToString(), false, false));
+
+            return logs;
+        }
     }
 }

@@ -736,7 +736,7 @@ namespace PEBakery.Core
                 return 0; // Error
         }
 
-        public const string VarKeyRegex_ContainsVariable = @"(%[a-zA-Z0-9_#\(\)\.]+%)";
+        public const string VarKeyRegex_ContainsVariable = @"(%[a-zA-Z0-9_\-#\(\)\.]+%)";
         public const string VarKeyRegex_ContainsSectionParams = @"(#[0-9]+)";
         public const string VarKeyRegex_Variable = @"^" + VarKeyRegex_ContainsVariable + @"$";
         public const string VarKeyRegex_SectionParams = @"^" + VarKeyRegex_ContainsSectionParams + @"$";

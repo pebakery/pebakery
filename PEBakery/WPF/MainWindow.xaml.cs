@@ -1493,6 +1493,56 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("BuildFullProgressBarValue");
             }
         }
+
+        private string buildStdOutRedirect = string.Empty;
+        public string BuildStdOutRedirect
+        {
+            get => buildStdOutRedirect;
+            set
+            {
+                buildStdOutRedirect = value;
+                OnPropertyUpdate("BuildStdOutRedirect");
+            }
+        }
+
+        private Visibility buildStdOutRedirectVisibility = Visibility.Collapsed;
+        public Visibility BuildStdOutRedirectVisibility => buildStdOutRedirectVisibility;
+        public bool BuildStdOutRedirectShow
+        {
+            set
+            {
+                if (value)
+                    buildStdOutRedirectVisibility = Visibility.Visible;
+                else
+                    buildStdOutRedirectVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildStdOutRedirectVisibility");
+            }
+        }
+
+        private string buildStdErrRedirect = string.Empty;
+        public string BuildStdErrRedirect
+        {
+            get => buildStdErrRedirect;
+            set
+            {
+                buildStdErrRedirect = value;
+                OnPropertyUpdate("BuildStdErrRedirect");
+            }
+        }
+
+        private Visibility buildStdErrRedirectVisibility = Visibility.Collapsed;
+        public Visibility BuildStdErrRedirectVisibility => buildStdErrRedirectVisibility;
+        public bool BuildStdErrRedirectShow
+        {
+            set
+            {
+                if (value)
+                    buildStdErrRedirectVisibility = Visibility.Visible;
+                else
+                    buildStdErrRedirectVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildStdErrRedirectVisibility");
+            }
+        }
         #endregion
 
         public event PropertyChangedEventHandler PropertyChanged;

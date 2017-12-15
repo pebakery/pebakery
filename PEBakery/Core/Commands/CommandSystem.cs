@@ -366,41 +366,95 @@ namespace PEBakery.Core.Commands
                     Environment.SetEnvironmentVariable("PATH", workDir + ";" + pathVarBackup);
                 }
 
+                bool redirectStandardStream = false;
+                Stopwatch watch = Stopwatch.StartNew();
+                StringBuilder bStdOut = new StringBuilder();
+                StringBuilder bStdErr = new StringBuilder();
                 try
                 {
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.UseShellExecute = true;
                         proc.StartInfo.Verb = "Open";
+                        proc.StartInfo.UseShellExecute = true;
                     }
                     else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.UseShellExecute = false;
                         proc.StartInfo.Verb = "Open";
+                        proc.StartInfo.UseShellExecute = false;
                         proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         proc.StartInfo.CreateNoWindow = true;
 
                         // Redirecting standard stream without reading can full buffer, which leads to hang
-                        //proc.StartInfo.RedirectStandardError = true;
-                        //proc.StartInfo.RedirectStandardOutput = true;
+                        if (cmd.Type != CodeType.ShellExecuteEx)
+                        {
+                            redirectStandardStream = true;
+
+                            proc.StartInfo.RedirectStandardOutput = true;
+                            proc.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+                            {
+                                if (e.Data != null)
+                                {
+                                    bStdOut.AppendLine(e.Data);
+                                    s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
+                                } 
+                            };
+
+                            proc.StartInfo.RedirectStandardError = true;
+                            proc.ErrorDataReceived += (object sender, DataReceivedEventArgs e) =>
+                            {
+                                if (e.Data != null)
+                                {
+                                    bStdErr.AppendLine(e.Data);
+                                    //s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
+                                }
+                            };
+
+                            s.MainViewModel.BuildStdOutRedirectShow = true;
+                        }
+                    }
+                    else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proc.StartInfo.Verb = "Open";
+                        proc.StartInfo.UseShellExecute = true;
+                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
                     }
                     else
                     {
                         proc.StartInfo.Verb = verb;
+                        proc.StartInfo.UseShellExecute = true;
                     }
 
                     // Register process instance in EngineState, and run it
                     s.RunningSubProcess = proc;
-                    proc.Start();
-                    proc.Exited += (object sender, EventArgs e) => {
+                    proc.Exited += (object sender, EventArgs e) => 
+                    {
                         s.RunningSubProcess = null;
+                        if (redirectStandardStream)
+                        {
+                            s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
+                            s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                                w.BuildStdOutRedirectTextBox.CaretIndex = s.MainViewModel.BuildStdOutRedirect.Length;
+                            });
+                            watch.Stop();
+                        }
                     };
+                    proc.Start();
 
+                    if (redirectStandardStream)
+                    {
+                        proc.BeginOutputReadLine();
+                        proc.BeginErrorReadLine();
+                    }
+
+                    long tookTime = (long)watch.Elapsed.TotalSeconds;
                     switch (cmd.Type)
                     {
                         case CodeType.ShellExecute:
                             proc.WaitForExit();
-                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;
                         case CodeType.ShellExecuteEx:
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}]"));
@@ -408,7 +462,7 @@ namespace PEBakery.Core.Commands
                         case CodeType.ShellExecuteDelete:
                             proc.WaitForExit();
                             File.Delete(filePath);
-                            logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;
                         default:
                             throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
@@ -430,6 +484,27 @@ namespace PEBakery.Core.Commands
                             logs.Add(log);
                         else
                             throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+
+                        if (redirectStandardStream)
+                        {
+                            string stdout = s.MainViewModel.BuildStdOutRedirect.Trim();
+                            if (0 < stdout.Length)
+                            {
+                                if (stdout.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdout}"));
+                                else // With NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdout}\r\n"));
+                            }
+                                
+                            string stderr = s.MainViewModel.BuildStdErrRedirect.Trim();
+                            if (0 < stderr.Length)
+                            {
+                                if (stderr.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stderr}"));
+                                else // With NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stderr}\r\n"));
+                            }
+                        }
                     }
                 }
                 finally
@@ -437,6 +512,13 @@ namespace PEBakery.Core.Commands
                     // Restore PATH environment variable
                     if (pathVarBackup != null)
                         Environment.SetEnvironmentVariable("PATH", pathVarBackup);
+                    if (redirectStandardStream)
+                    {
+                        s.MainViewModel.BuildStdOutRedirect = string.Empty;
+                        s.MainViewModel.BuildStdOutRedirectShow = false;
+                        s.MainViewModel.BuildStdErrRedirect = string.Empty;
+                        s.MainViewModel.BuildStdErrRedirectShow = false;
+                    }
                 }
             }
 

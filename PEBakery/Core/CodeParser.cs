@@ -1478,6 +1478,61 @@ namespace PEBakery.Core
 
                         return new CodeInfo_Beep(beepType);
                     }
+                case CodeType.GetParam:
+                    { // GetParam,<Index>,<DestVar>
+                        const int argCount = 2;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        Variables.VarKeyType varKeyType = Variables.DetermineType(args[1]);
+                        switch (varKeyType)
+                        {
+                            case Variables.VarKeyType.Variable:
+                                break;
+                            case Variables.VarKeyType.SectionParams:
+                                throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
+                            default:
+                                throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
+                        }
+
+                        return new CodeInfo_GetParam(args[0], args[1]);
+                    }
+                case CodeType.PackParam:
+                    { // PackParam,<StartIndex>,<DestVar>,[VarCount]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        Variables.VarKeyType varKeyType = Variables.DetermineType(args[1]);
+                        switch (varKeyType)
+                        {
+                            case Variables.VarKeyType.Variable:
+                                break;
+                            case Variables.VarKeyType.SectionParams:
+                                throw new InvalidCommandException($"Section parameter [{args[1]}] cannot be used in GetParam", rawCode);
+                            default:
+                                throw new InvalidCommandException($"[{args[1]}] is not a valid variable name", rawCode);
+                        }
+
+                        string varCount = null;
+                        if (args.Count == 3)
+                        {
+                            varKeyType = Variables.DetermineType(args[2]);
+                            switch (varKeyType)
+                            {
+                                case Variables.VarKeyType.Variable:
+                                    varCount = args[2];
+                                    break;
+                                case Variables.VarKeyType.SectionParams:
+                                    throw new InvalidCommandException($"Section parameter [{args[2]}] cannot be used in GetParam", rawCode);
+                                default:
+                                    throw new InvalidCommandException($"[{args[2]}] is not a valid variable name", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_PackParam(args[0], args[1], varCount);
+                    }
                 #endregion
                 #region 15 External Macro
                 case CodeType.Macro:
@@ -2512,8 +2567,9 @@ namespace PEBakery.Core
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled); // ABC%Joveler%
             bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
+            bool sectionParamCountMatch = (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1); // #a
 
-            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch)
+            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch)
                 return true;
             else
                 return false;
