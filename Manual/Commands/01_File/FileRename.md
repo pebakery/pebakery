@@ -17,7 +17,7 @@ FileRename,<SrcPath>,<DestPath>
 | SrcPath | Path of file to rename. |
 | DestPath | New path to rename file. |
 
-## Remark
+## Remarks
 
 FileRename can also be used to move file.
 

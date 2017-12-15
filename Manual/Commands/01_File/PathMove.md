@@ -15,7 +15,7 @@ PathMove,<SrcPath>,<DestPath>
 | SrcPath | Path of file or directory to move. |
 | DestPath | Destination Path. |
 
-## Remark
+## Remarks
 
 Turning on compatibility option `FileRename and DirMove work like PathMove` makes FileRename and DirMove identical to PathMove.
 

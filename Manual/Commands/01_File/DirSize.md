@@ -17,7 +17,7 @@ DirSize,<DirPath>,<DestVar>
 | DirPath | Path of the directory. |
 | DestVar | Variable name to save directory size. |
 
-## Remark
+## Remarks
 
 If `DirPath` contains files cannot be accessed with `administrator` privilege, PEBakery ignores them.
 

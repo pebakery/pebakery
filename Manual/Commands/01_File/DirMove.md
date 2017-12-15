@@ -15,7 +15,7 @@ DirMove,<SrcDir>,<DestPath>
 | SrcDir | Source directory to move. |
 | DestPath | Destination directory. |
 
-## Remark
+## Remarks
 
 WinBuilder 082 allows DirMove to move file. Turning on compatibility option `FileRename and DirMove work like PathMove` makes DirMove identical to PathMove.
 

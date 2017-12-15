@@ -117,7 +117,7 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ## Documentation
 
-See [PEBakery Manual](./Manual).
+See [PEBakery Manual](./Manual/README.md).
 
 ## Screenshots
 

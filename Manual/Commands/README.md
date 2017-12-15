@@ -6,7 +6,7 @@
 1. [Registry](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/02_Registry.md)
 1. [Text](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/03_Text.md)
 1. [INI](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/04_INI.md)
-1. [Compress](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/05_Compress.md)
+1. [Archive](./05_Archive/README.md)
 1. [Network](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/06_Network.md)
 1. [Attach](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/07_Attach.md)
 1. [Interface](https://github.com/ied206/PEBakery/tree/docs/Manual/Commands/08_Interface.md)
