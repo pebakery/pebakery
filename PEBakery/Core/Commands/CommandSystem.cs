@@ -191,24 +191,14 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
-                        BackgroundWorker worker = null;
+                        AutoResetEvent resetEvent = null;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-
-                            if (w.CurMainTree.Plugin.Equals(cmd.Addr.Plugin))
-                                worker = w.StartReloadPluginWorker();
+                            resetEvent = w.StartReloadPluginWorker();
                         });
-
-                        // TODO: More elegant way?
-                        if (worker != null)
-                        {
-                            Task.Run(() =>
-                            {
-                                while (worker.IsBusy)
-                                    Thread.Sleep(200);
-                            }).Wait();
-                        }
+                        if (resetEvent != null)
+                            resetEvent.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered plugin [{cmd.Addr.Plugin.Title}]"));
                     }
@@ -277,9 +267,12 @@ namespace PEBakery.Core.Commands
 
                         LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
 
-                        s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
-                        s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
-                    }
+                        if (s.DisableLogger == false)
+                        { // When logger is disabled, s.BuildId is invalid.
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
+                        }
+                    }   
                     break;
                     // WB082 Compability Shim
                 case SystemType.HasUAC:
@@ -317,7 +310,7 @@ namespace PEBakery.Core.Commands
 
                         // Load Per-Plugin Macro
                         s.Macro.ResetLocalMacros();
-                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin);
+                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, $"Variables are reset to default state"));

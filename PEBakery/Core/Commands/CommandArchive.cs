@@ -74,7 +74,7 @@ namespace PEBakery.Core.Commands
             switch (arcType)
             {
                 case ArchiveCompressFormat.Zip:
-                    success = ArchiveHelper.CompressNativeZip(srcPath, destArchive, compLevel, encoding);
+                    success = ArchiveHelper.CompressManagedZip(srcPath, destArchive, compLevel, encoding);
                     break;
                 default:
                     throw new ExecuteException($"Compressing to [{arcType}] format is not supported");

@@ -10,6 +10,7 @@ using PEBakery.Core.Commands;
 using System.Windows;
 using PEBakery.WPF;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace PEBakery.Core
 {
@@ -26,6 +27,8 @@ namespace PEBakery.Core
         public PluginSection MacroSection => macroSection;
         public Dictionary<string, CodeCommand> MacroDict => macroDict; // Macro Library - [ApiVar]
         public Dictionary<string, CodeCommand> LocalDict => localDict;
+
+        public const string MacroNameRegex = @"^([a-zA-Z0-9_]+)$";
 
         public Macro(Project project, Variables variables, out List<LogInfo> logs)
         { 
@@ -79,9 +82,10 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    if (kv.Key.StartsWith("%", StringComparison.Ordinal) == false
-                        && kv.Key.EndsWith("%", StringComparison.Ordinal) == false)
+                    if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
                         macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                    else
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
                 }
                 catch (Exception e)
                 {
@@ -90,7 +94,7 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Plugin p, string sectionName = "Variables", bool append = false)
+        public List<LogInfo> LoadLocalMacroDict(Plugin p, bool append, string sectionName = "Variables")
         {
             if (p.Sections.ContainsKey(sectionName))
             {
@@ -108,7 +112,7 @@ namespace PEBakery.Core
             }
         }
 
-        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append = false)
+        public List<LogInfo> LoadLocalMacroDict(SectionAddress addr, IEnumerable<string> lines, bool append)
         {
             Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(lines);
             return LoadLocalMacroDict(addr, dict, append);
@@ -128,6 +132,12 @@ namespace PEBakery.Core
                 {
                     try
                     {
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                            continue;
+                        }
+
                         localDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         logs.Add(new LogInfo(LogState.Success, $"Local macro [{kv.Key}] set to [{kv.Value}]", 1));
                         count += 1;
@@ -156,6 +166,9 @@ namespace PEBakery.Core
 
         public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool permanent)
         {
+            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+                return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
+
             if (macroCommand != null)
             { // Insert
                 // Try parsing
@@ -192,7 +205,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        return new LogInfo(LogState.Success, $"Global Macro [{macroName}] not found");
+                        return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
                     }                   
                 }
                 else
@@ -204,7 +217,7 @@ namespace PEBakery.Core
                     }
                     else
                     {
-                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] not found");
+                        return new LogInfo(LogState.Error, $"Local Macro [{macroName}] not found");
                     }
                 }
             }

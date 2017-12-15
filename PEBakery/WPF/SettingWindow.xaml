@@ -83,28 +83,26 @@
                         Height="Auto"
                         BorderBrush="Gray"
                         BorderThickness="1">
-                        <StackPanel>
+                        <StackPanel IsEnabled="{Binding Project_PathEnabled}">
                             <Grid
                             Height="25"
                             Margin="15, 15, 15, 0"
                             VerticalAlignment="Center">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"></ColumnDefinition>
+                                    <ColumnDefinition Width="150"/>
                                     <ColumnDefinition></ColumnDefinition>
-                                    <ColumnDefinition Width="30"></ColumnDefinition>
-                                    <ColumnDefinition Width="25"></ColumnDefinition>
+                                    <ColumnDefinition Width="30"/>
+                                    <ColumnDefinition Width="25"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Grid.Column="0"
                                     VerticalAlignment="Center"
-                                    Text="Source Directory">
-                                </TextBlock>
+                                    Text="Source Directory"/>
                                 <ComboBox
                                     Grid.Column="1"
                                     Margin="0, 0, 5, 0"
                                     ItemsSource="{Binding Project_SourceDirectoryList}"
-                                    SelectedIndex="{Binding Project_SourceDirectoryIndex}">
-                                </ComboBox>
+                                    SelectedIndex="{Binding Project_SourceDirectoryIndex}"/>
                                 <Button
                                     Grid.Column="2"
                                     Margin="0, 0, 5, 0"
@@ -376,7 +374,7 @@
                         IsChecked="{Binding Compat_DirCopyBug}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
-                        Content="Allow FileRename to Move Directory"
+                        Content="FileRename and DirMove work like PathMove"
                         IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"

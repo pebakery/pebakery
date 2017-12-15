@@ -188,9 +188,16 @@ namespace PEBakery.Core
         public override string ToString()
         {
             if (Command != null)
-                return $"[{State}] {Message} ({Command.RawCode})";
+            {
+                if (0 < Command.LineIdx)
+                    return $"[{State}] {Message} (Line {Command.LineIdx}, {Command.RawCode})";
+                else
+                    return $"[{State}] {Message} ({Command.RawCode})";
+            }
             else
+            {
                 return $"[{State}] {Message}";
+            }
         }
     }
     #endregion

@@ -39,6 +39,7 @@ namespace PEBakery.Core
     #region ProjectCollection
     public class ProjectCollection
     {
+        #region Fields and Properties
         // Fields
         private readonly string baseDir;
         private readonly string projectRoot;
@@ -56,14 +57,17 @@ namespace PEBakery.Core
         public List<Project> Projects => projectDict.Values.OrderBy(x => x.ProjectName).ToList(); 
         public List<string> ProjectNames => projectDict.Keys.OrderBy(x => x).ToList(); 
         public Project this[int i] => Projects[i]; 
-        public int Count => projectDict.Count; 
+        public int Count => projectDict.Count;
+        #endregion
 
+        #region Constructor
         public ProjectCollection(string baseDir, PluginCache pluginCache)
         {
             this.baseDir = baseDir;
             this.projectRoot = Path.Combine(baseDir, "Projects");
             this.pluginCache = pluginCache;
         }
+        #endregion
 
         public int PrepareLoad(out int processCount)
         {
@@ -163,8 +167,9 @@ namespace PEBakery.Core
             return allCount;
         }
 
-        public void Load(BackgroundWorker worker)
+        public List<LogInfo> Load(BackgroundWorker worker)
         {
+            List<LogInfo> logs = new List<LogInfo>(32);
             try
             {
                 foreach (var kv in pluginPathDict)
@@ -172,7 +177,8 @@ namespace PEBakery.Core
                     Project project = new Project(baseDir, kv.Key);
 
                     // Load plugins
-                    project.Load(kv.Value, dirLinkPathDict[kv.Key], pluginCache, worker);
+                    List<LogInfo> projLogs = project.Load(kv.Value, dirLinkPathDict[kv.Key], pluginCache, worker);
+                    logs.AddRange(projLogs);
 
                     // Add Project.Plugins to ProjectCollections.Plugins
                     this.allProjectPlugins.AddRange(project.AllPlugins);
@@ -181,7 +187,8 @@ namespace PEBakery.Core
                 }
 
                 // Populate *.link plugins
-                LoadLinks(worker);
+                List<LogInfo> linkLogs = LoadLinks(worker);
+                logs.AddRange(linkLogs);
 
                 // PostLoad plugins
                 foreach (var kv in projectDict)
@@ -195,10 +202,13 @@ namespace PEBakery.Core
                 MessageBox.Show(msg, "SQLite Error!", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown(1);
             }
+
+            return logs;
         }
 
-        private void LoadLinks(BackgroundWorker worker)
+        private List<LogInfo> LoadLinks(BackgroundWorker worker)
         {
+            List<LogInfo> logs = new List<LogInfo>(32);
             List<int> removeIdxs = new List<int>();
 
             // Doing this will consume memory, but also greatly increase performance.
@@ -215,63 +225,70 @@ namespace PEBakery.Core
                     Plugin link = null;
                     bool valid = false;
                     int cached = 2;
-                    do
+                    try
                     {
-                        string linkPath = p.Sections["Main"].IniDict["Link"];
-                        string linkFullPath = Path.Combine(baseDir, linkPath);
-                        if (File.Exists(linkFullPath) == false) // Invalid link
-                            break;
+                        do
+                        {
+                            string linkPath = p.Sections["Main"].IniDict["Link"];
+                            string linkFullPath = Path.Combine(baseDir, linkPath);
+                            if (File.Exists(linkFullPath) == false) // Invalid link
+                                break;
 
-                        // Load .link's linked plugins with cache
-                        if (pluginCache != null)
-                        { // Case of PluginCache enabled
-                            FileInfo f = new FileInfo(linkFullPath);
-                            DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
-                            if (pCache != null && 
-                                pCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
-                                DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
-                                pCache.FileSize == f.Length)
-                            {
-                                try
+                            // Load .link's linked plugins with cache
+                            if (pluginCache != null)
+                            { // Case of PluginCache enabled
+                                FileInfo f = new FileInfo(linkFullPath);
+                                DB_PluginCache pCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
+                                if (pCache != null &&
+                                    pCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
+                                    DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                                    pCache.FileSize == f.Length)
                                 {
-                                    using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                    try
                                     {
-                                        BinaryFormatter formatter = new BinaryFormatter();
-                                        link = (Plugin)formatter.Deserialize(memStream);
+                                        using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                        {
+                                            BinaryFormatter formatter = new BinaryFormatter();
+                                            link = (Plugin)formatter.Deserialize(memStream);
+                                        }
+                                        link.Project = p.Project;
+                                        link.IsDirLink = false;
+                                        cached = 3;
                                     }
-                                    link.Project = p.Project;
-                                    link.IsDirLink = false;
-                                    cached = 3;
+                                    catch { }
                                 }
-                                catch { }
                             }
+
+                            if (link == null)
+                            {
+                                // TODO : Lazy loading of link, takes too much time at start
+                                string ext = Path.GetExtension(linkFullPath);
+                                PluginType type = PluginType.Plugin;
+                                if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
+                                    type = PluginType.Link;
+                                link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null, false, false, false);
+
+                                Debug.Assert(p != null);
+                            }
+
+                            // Check Plugin Link's validity
+                            // Also, convert nested link to one-depth link
+                            if (link == null)
+                                break;
+
+                            if (link.Type == PluginType.Plugin)
+                            {
+                                valid = true;
+                                break;
+                            }
+                            link = link.Link;
                         }
-
-                        if (link == null)
-                        {
-                            // TODO : Lazy loading of link, takes too much time at start
-                            string ext = Path.GetExtension(linkFullPath);
-                            PluginType type = PluginType.Plugin;
-                            if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                                type = PluginType.Link;
-                            link = new Plugin(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null, false, false, false);
-
-                            Debug.Assert(p != null);
-                        }
-
-                        // Check Plugin Link's validity
-                        // Also, convert nested link to one-depth link
-                        if (link == null)
-                            break;
-
-                        if (link.Type == PluginType.Plugin)
-                        {
-                            valid = true;
-                            break;
-                        }
-                        link = link.Link;
+                        while (link.Type != PluginType.Plugin);
                     }
-                    while (link.Type != PluginType.Plugin);
+                    catch (Exception e)
+                    { // Parser Error
+                        logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
+                    }
 
                     if (valid)
                     {
@@ -280,7 +297,7 @@ namespace PEBakery.Core
                         if (worker != null)
                             worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
                     }
-                    else
+                    else // Error
                     {
                         int idx = allProjectPlugins.IndexOf(p);
                         removeIdxs.Add(idx);
@@ -295,6 +312,8 @@ namespace PEBakery.Core
             var idxs = removeIdxs.OrderByDescending(x => x);
             foreach (int idx in idxs)
                 allProjectPlugins.RemoveAt(idx);
+
+            return logs;
         }
     }
     #endregion
@@ -302,6 +321,7 @@ namespace PEBakery.Core
     #region Project
     public class Project : ICloneable
     {
+        #region Fields and Properties
         // Fields
         private readonly string projectName;
         private readonly string projectRoot;
@@ -325,7 +345,8 @@ namespace PEBakery.Core
         public List<Plugin> VisiblePlugins => CollectVisiblePlugins(allPlugins);
         public Variables Variables { get => variables; set => variables = value; }
         public int LoadedPluginCount => loadedPluginCount; 
-        public int AllPluginCount => allPluginCount; 
+        public int AllPluginCount => allPluginCount;
+        #endregion
 
         #region Constructor
         public Project(string baseDir, string projectName)
@@ -340,8 +361,10 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Plugins
-        public void Load(List<string> allPluginPathList, List<string> allDirLinkPathList, PluginCache pluginCache, BackgroundWorker worker)
+        public List<LogInfo> Load(List<string> allPluginPathList, List<string> allDirLinkPathList, PluginCache pluginCache, BackgroundWorker worker)
         {
+            List<LogInfo> logs = new List<LogInfo>(32);
+
             ReaderWriterLockSlim listLock = new ReaderWriterLockSlim();
             string mainPluginPath = Path.Combine(projectDir, "script.project");
             allPlugins = new List<Plugin>();
@@ -425,11 +448,7 @@ namespace PEBakery.Core
                     }
                     catch (Exception e)
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w.Logger.System_Write(new LogInfo(LogState.Error, e));
-                        });
+                        logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
                         if (worker != null)
                             worker.ReportProgress(cached);
                     }
@@ -439,13 +458,14 @@ namespace PEBakery.Core
 
             mainPlugin = allPlugins.Where(x => x.IsMainPlugin).FirstOrDefault();
             Debug.Assert(mainPlugin != null);
+
+            return logs;
         }
 
         #region PostLoad, Sort
         public void PostLoad()
         {
             this.allPlugins = InternalSortPlugin(allPlugins);
-
             this.Variables = new Variables(this);
         }
 
@@ -554,7 +574,6 @@ namespace PEBakery.Core
                         if (sIdx != -1)
                             s.Plugins[sIdx] = p;
                     }
-                        
                 }
 
                 return p;

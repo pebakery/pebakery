@@ -153,7 +153,7 @@
                 Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                 Margin="10"
                 HorizontalAlignment="Left"
-                IsActive="{Binding ProgressRingActive}">
+                IsActive="{Binding WorkInProgress}">
             </custom:ProgressRing>
             <Button 
                 Grid.Row="0" Grid.Column="2" 
@@ -595,7 +595,9 @@
                     VerticalAlignment="Stretch"
                     HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto"
-                    Visibility="{Binding NormalInterfaceVisibility}">
+                    Visibility="{Binding NormalInterfaceVisibility}"
+                    Content="{Binding MainCanvas}">
+                    <!--
                     <Canvas 
                         Name="MainCanvas"
                         Grid.Row="0" Grid.Column="0"
@@ -604,6 +606,7 @@
                         Margin="10, 10, 10, 10"
                         Panel.ZIndex="-1">
                     </Canvas>
+                     -->
                 </ScrollViewer>
 
             </Grid>

@@ -119,6 +119,9 @@ namespace PEBakery.Core.Commands
                 else
                 {
                     logs.Add(new LogInfo(LogState.Ignore, $"Key [{kv.Key}] does not exist", subCmd));
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, infoOp.Infos[i].DestVar, string.Empty, false, false, false);
+                    logs.AddRange(varLogs);
                 }
             }
             logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] values from [{fileName}]", cmd));

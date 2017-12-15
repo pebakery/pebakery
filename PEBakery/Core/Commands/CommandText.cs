@@ -195,8 +195,8 @@ namespace PEBakery.Core.Commands
             CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string toBeReplaced = StringEscaper.Preprocess(s, info.OldStr);
-            string replaceWith = StringEscaper.Preprocess(s, info.NewStr);
+            string oldStr = StringEscaper.Preprocess(s, info.OldStr);
+            string newStr = StringEscaper.Preprocess(s, info.NewStr);
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -205,21 +205,75 @@ namespace PEBakery.Core.Commands
             }
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteException($"File [{fileName}] not exists");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
+
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
-            int i = 0;
             string tempPath = Path.GetTempFileName();
             using (StreamReader reader = new StreamReader(fileName, encoding))
             using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
             {
                 string str = reader.ReadToEnd();
-                str = StringHelper.ReplaceEx(str, toBeReplaced, replaceWith, StringComparison.OrdinalIgnoreCase);
+                str = StringHelper.ReplaceEx(str, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
                 writer.Write(str);
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Replaced [{toBeReplaced}] with [{replaceWith}] [{i}] times", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Replaced [{oldStr}] with [{newStr}]", cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> TXTReplaceOp(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplaceOp));
+            CodeInfo_TXTReplaceOp infoOp = cmd.Info as CodeInfo_TXTReplaceOp;
+
+            string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            if (File.Exists(fileName) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
+
+            List<Tuple<string, string>> prepReplace = new List<Tuple<string, string>>();
+            foreach (CodeInfo_TXTReplace info in infoOp.InfoList)
+            {
+                string oldStr = StringEscaper.Preprocess(s, info.OldStr);
+                string newStr = StringEscaper.Preprocess(s, info.NewStr);
+                prepReplace.Add(new Tuple<string, string>(oldStr, newStr));
+            }
+
+            Encoding encoding = FileHelper.DetectTextEncoding(fileName);
+
+            string tempPath = Path.GetTempFileName();
+            using (StreamReader reader = new StreamReader(fileName, encoding))
+            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            {
+                string str = reader.ReadToEnd();
+                foreach (var tup in prepReplace)
+                {
+                    string oldStr = tup.Item1;
+                    string newStr = tup.Item2;
+
+                    str = StringHelper.ReplaceEx(str, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
+                    logs.Add(new LogInfo(LogState.Success, $"Replaced [{oldStr}] with [{newStr}]"));
+                }
+                writer.Write(str);
+            }
+            FileHelper.FileReplaceEx(tempPath, fileName);
 
             return logs;
         }
@@ -241,7 +295,11 @@ namespace PEBakery.Core.Commands
             }
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteException($"File [{fileName}] not exists");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
+
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -263,7 +321,7 @@ namespace PEBakery.Core.Commands
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] lines from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] lines from [{fileName}]"));
 
             return logs;
         }
@@ -284,13 +342,16 @@ namespace PEBakery.Core.Commands
             }
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteException($"File [{fileName}] not exists");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
 
             List<string> prepDeleteLine = new List<string>();
             foreach (CodeInfo_TXTDelLine info in infoOp.InfoList)
             {
-                string deleteIfBeginWith = StringEscaper.Preprocess(s, info.DeleteLine);
-                prepDeleteLine.Add(deleteIfBeginWith);
+                string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
+                prepDeleteLine.Add(deleteLine);
             }
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
@@ -321,7 +382,7 @@ namespace PEBakery.Core.Commands
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{count}] lines from [{fileName}]", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{count}] lines from [{fileName}]"));
 
             return logs;
         }
@@ -341,7 +402,11 @@ namespace PEBakery.Core.Commands
             }
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteException($"File [{fileName}] not exists");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
+
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -365,7 +430,7 @@ namespace PEBakery.Core.Commands
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] spaces", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] spaces"));
 
             return logs;
         }
@@ -385,7 +450,11 @@ namespace PEBakery.Core.Commands
             }
 
             if (File.Exists(fileName) == false)
-                throw new ExecuteException($"File [{fileName}] not exists");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                return logs;
+            }
+
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             int i = 0;
@@ -404,7 +473,7 @@ namespace PEBakery.Core.Commands
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] empty lines", cmd));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] empty lines"));
 
             return logs;
         }

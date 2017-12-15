@@ -953,7 +953,7 @@ namespace PEBakery.WPF
                     }
                 });
 
-                mainModel.ProgressRingActive = true;
+                mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(addr.Plugin.Project, logger, mainModel, addr.Plugin, addr.Section.SectionName);
                 s.SetOption(setting);
@@ -973,7 +973,7 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = true;
 
                 // Turn off ProgressRing
-                mainModel.ProgressRingActive = false;
+                mainModel.WorkInProgress = false;
 
                 Engine.WorkingEngine = null;
                 Interlocked.Decrement(ref Engine.WorkingLock);
@@ -983,7 +983,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.DrawPlugin(addr.Plugin);
+                        w.DrawPlugin(w.CurMainTree.Plugin);
                     });
                 }
             }

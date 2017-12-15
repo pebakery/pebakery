@@ -23,7 +23,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Collections;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
@@ -230,7 +229,7 @@ namespace PEBakery.Core
                         List<string> dirInfo = new List<string>();
                         sections = new Dictionary<string, PluginSection>(StringComparer.OrdinalIgnoreCase)
                         {
-                            ["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>())
+                            ["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>(), 1)
                         };
 
                         // Mandatory Entries
@@ -281,7 +280,10 @@ namespace PEBakery.Core
 
                             // Mandatory Entry
                             this.title = mainSection.IniDict["Title"];
-                            this.description = mainSection.IniDict["Description"];
+                            if (mainSection.IniDict.ContainsKey("Description"))
+                                this.description = mainSection.IniDict["Description"];
+                            else
+                                this.description = string.Empty;
                             if (level == null)
                             {
                                 if (mainSection.IniDict.ContainsKey("Level"))
@@ -346,8 +348,6 @@ namespace PEBakery.Core
                             this.description = string.Empty;
                             this.level = 0;
                         }
-
-                        
                     }
                     break;
                 default:
@@ -366,6 +366,8 @@ namespace PEBakery.Core
             
             using (StreamReader reader = new StreamReader(fullPath, encoding))
             {
+                int idx = 0;
+                int sectionIdx = 0;
                 string line;
                 string currentSection = string.Empty;
                 bool inSection = false;
@@ -374,16 +376,18 @@ namespace PEBakery.Core
                 List<string> lines = new List<string>();
                 while ((line = reader.ReadLine()) != null)
                 { // Read text line by line
+                    idx++;
                     line = line.Trim();
                     if (line.StartsWith("[", StringComparison.Ordinal) &&
                         line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
                         if (inSection)
                         { // End of section
-                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
+                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
 
+                        sectionIdx = idx;
                         currentSection = line.Substring(1, line.Length - 2);
                         type = DetectTypeOfSection(currentSection, false);
                         if (LoadSectionAtPluginLoadTime(type))
@@ -399,7 +403,7 @@ namespace PEBakery.Core
                     { // End of .script
                         if (inSection)
                         {
-                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines);
+                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
                     }
@@ -504,7 +508,7 @@ namespace PEBakery.Core
             }
         }
 
-        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines)
+        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
             Dictionary<string, string> sectionKeys;
             switch (type)
@@ -513,17 +517,17 @@ namespace PEBakery.Core
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                     sectionKeys = Ini.ParseIniLinesIniStyle(lines);
-                    return new PluginSection(this, sectionName, type, sectionKeys); // SectionDataType.IniDict
+                    return new PluginSection(this, sectionName, type, sectionKeys, lineIdx); // SectionDataType.IniDict
                 case SectionType.Variables:
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.Uninspected:
                 case SectionType.Interface:
-                    return new PluginSection(this, sectionName, type, lines); // SectionDataType.Lines
+                    return new PluginSection(this, sectionName, type, lines, lineIdx); // SectionDataType.Lines
                 case SectionType.AttachEncode: // do not load now
-                    return new PluginSection(this, sectionName, type, false);
+                    return new PluginSection(this, sectionName, type, false, lineIdx);
                 default:
-                    throw new PluginParseException("Invalid SectionType " + type.ToString());
+                    throw new PluginParseException($"Invalid SectionType [{type}]");
             }
         }
 
@@ -537,8 +541,7 @@ namespace PEBakery.Core
             {
                 if (type == PluginType.Plugin)
                 {
-                    if (sections["Main"].IniDict.ContainsKey("Title")
-                        && sections["Main"].IniDict.ContainsKey("Description"))
+                    if (sections["Main"].IniDict.ContainsKey("Title"))
                         fail = false;
                 }
                 else if (type == PluginType.Link)
@@ -552,8 +555,10 @@ namespace PEBakery.Core
                 throw new PluginParseException($"[{fullPath}] is invalid, check [Main] Section");
         }
 
-        public static string[] GetDisablePluginPaths(Plugin p)
+        public static string[] GetDisablePluginPaths(Plugin p, out List<LogInfo> errorLogs)
         {
+            errorLogs = new List<LogInfo>();
+
             if (p.Type == PluginType.Directory || p.isMainPlugin)
                 return null;
 
@@ -587,14 +592,20 @@ namespace PEBakery.Core
             }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
-           // for (int i = 0; i < paths.Count; i++)
-           //     paths[i] = p.Project.Variables.Expand(paths[i]);
-            //return paths;
+            // Filter out plugin itself
+            List<string> filteredPaths = new List<string>(paths.Count);
+            foreach (string path in paths)
+            {
+                try
+                {
+                    string pPath = p.Project.Variables.Expand(path);
+                    if (pPath.Equals(p.DirectFullPath, StringComparison.OrdinalIgnoreCase) == false)
+                        filteredPaths.Add(p.Project.Variables.Expand(path));
+                }
+                catch (Exception e) { errorLogs.Add(new LogInfo(LogState.Success, Logger.LogExceptionMessage(e))); }
+            }
 
-            return paths
-                .Select(x => p.Project.Variables.Expand(x))
-                .Where(x => x.Equals(p.DirectFullPath, StringComparison.Ordinal) == false)
-                .ToArray();
+            return filteredPaths.ToArray();
         }
 
         public PluginSection GetInterface(out string sectionName)
@@ -698,6 +709,7 @@ namespace PEBakery.Core
         [NonSerialized]
         private SectionDataConverted convDataType = SectionDataConverted.None;
         private bool loaded;
+        private int lineIdx;
 
         public Plugin Plugin => plugin;
         public string SectionName => sectionName;
@@ -705,6 +717,7 @@ namespace PEBakery.Core
         public SectionDataType DataType { get => dataType; set => dataType = value; }
         public SectionDataConverted ConvertedType => convDataType; 
         public bool Loaded => loaded;
+        public int LineIdx => lineIdx;
 
         // Logs
         private List<LogInfo> logInfos = new List<LogInfo>();
@@ -783,29 +796,31 @@ namespace PEBakery.Core
             this.loaded = false;
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, bool load)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, bool load, int lineIdx)
         {
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SelectDataType(type);
             this.loaded = false;
+            this.lineIdx = lineIdx;
             if (load)
                 Load();
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load, int lineIdx)
         {
             this.plugin = plugin;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = dataType;
             this.loaded = false;
+            this.lineIdx = lineIdx;
             if (load)
                 Load();
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, Dictionary<string, string> iniDict)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, Dictionary<string, string> iniDict, int lineIdx)
         {
             this.plugin = plugin;
             this.sectionName = sectionName;
@@ -813,9 +828,10 @@ namespace PEBakery.Core
             this.dataType = SectionDataType.IniDict;
             this.loaded = true;
             this.iniDict = iniDict;
+            this.lineIdx = lineIdx;
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<string> lines)
+        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
             this.plugin = plugin;
             this.sectionName = sectionName;
@@ -823,6 +839,7 @@ namespace PEBakery.Core
             this.dataType = SectionDataType.Lines;
             this.loaded = true;
             this.lines = lines;
+            this.lineIdx = lineIdx;
         }
 
         public SectionDataType SelectDataType(SectionType type)

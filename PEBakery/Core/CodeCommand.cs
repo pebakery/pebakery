@@ -40,12 +40,13 @@ namespace PEBakery.Core
         // 01 File
         FileCopy = 100, FileDelete, FileRename, FileMove, FileCreateBlank, FileSize, FileVersion,
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
+        PathMove = 160,
         // 02 Registry
         RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
-        TXTAddLineOp = 380, TXTDelLineOp,
+        TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
         INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
         INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
@@ -125,23 +126,25 @@ namespace PEBakery.Core
     {
         public string RawCode;
         public SectionAddress Addr;
-
         public CodeType Type;
         public CodeInfo Info;
+        public int LineIdx = 0;
 
-        public CodeCommand(string rawCode, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
-        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info)
+        public CodeCommand(string rawCode, SectionAddress addr, CodeType type, CodeInfo info, int lineIdx)
         {
             RawCode = rawCode;
             Addr = addr;
             Type = type;
             Info = info;
+            LineIdx = lineIdx;
         }
 
         public override string ToString()
@@ -437,6 +440,24 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{DirPath},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_PathMove : CodeInfo
+    { // PathMove,<SrcPath>,<DestPath>
+        public string SrcPath;
+        public string DestPath;
+
+        public CodeInfo_PathMove(string srcPath, string destPath)
+        {
+            SrcPath = srcPath;
+            DestPath = destPath;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcPath},{DestPath}";
         }
     }
     #endregion
@@ -758,6 +779,17 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(NewStr);
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_TXTReplaceOp : CodeInfo
+    { // TXTReplace,<FileName>,<OldStr>,<NewStr>
+        public List<CodeInfo_TXTReplace> InfoList;
+
+        public CodeInfo_TXTReplaceOp(List<CodeInfo_TXTReplace> infoList)
+        {
+            InfoList = infoList;
         }
     }
 
@@ -2624,21 +2656,12 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-
         public string Action;
         public string FilePath;
         public string Params; // Optional
         public string WorkDir; // Optional
         public string ExitOutVar; // Optional
 
-        /// <summary>
-        /// ShellExecute
-        /// </summary>
-        /// <param name="action"></param>
-        /// <param name="filePath"></param>
-        /// <param name="parameters">Optinal</param>
-        /// <param name="workDir">Optinal</param>
-        /// <param name="exitOutVar">Optinal - Variable</param>
         public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
         {
             Action = action;

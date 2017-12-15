@@ -583,5 +583,58 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        public static List<LogInfo> PathMove(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PathMove));
+            CodeInfo_PathMove info = cmd.Info as CodeInfo_PathMove;
+
+            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Path Security Check
+            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            // SrcPath must be directory
+            if (File.Exists(srcPath))
+            {
+                File.SetAttributes(srcPath, FileAttributes.Normal);
+                File.Move(srcPath, destPath);
+                logs.Add(new LogInfo(LogState.Success, $"File [{srcPath}] moved to [{destPath}]"));
+            }
+            else if (Directory.Exists(srcPath))
+            {
+                // DestPath must be directory 
+                if (File.Exists(destPath))
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"[{destPath}] is a file, not a directory"));
+                    return logs;
+                }
+
+                if (Directory.Exists(destPath))
+                {
+                    string destFullPath = Path.Combine(destPath, Path.GetFileName(srcPath));
+                    Directory.Move(srcPath, destFullPath);
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
+                }
+                else
+                {
+                    Directory.Move(srcPath, destPath);
+                    logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
+                }
+            }
+            else
+            {
+                logs.Add(new LogInfo(LogState.Success, $"Path [{srcPath}] does not exist"));
+            }
+
+            return logs;
+        }
     }
 }

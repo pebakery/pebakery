@@ -134,7 +134,7 @@ namespace PEBakery.WPF
                 });
 
                 mainModel.SwitchNormalBuildInterface = false;
-                mainModel.ProgressRingActive = true;
+                mainModel.WorkInProgress = true;
 
                 EngineState s = new EngineState(p.Project, logger, mainModel, p);
                 s.SetOption(setting);
@@ -143,7 +143,7 @@ namespace PEBakery.WPF
 
                 await Engine.WorkingEngine.Run($"CodeBox - {project.ProjectName}");
 
-                mainModel.ProgressRingActive = false;
+                mainModel.WorkInProgress = false;
                 mainModel.SwitchNormalBuildInterface = true;
 
                 Application.Current.Dispatcher.Invoke(() =>
@@ -183,7 +183,7 @@ namespace PEBakery.WPF
             if (project.MainPlugin.Sections.ContainsKey("Process"))
                 section = p.Sections["Process"];
             else
-                section = new PluginSection(p, "Process", SectionType.Code, new List<string>());
+                section = new PluginSection(p, "Process", SectionType.Code, new List<string>(), 1);
             SectionAddress addr = new SectionAddress(p, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
