@@ -28,7 +28,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
-using System.IO.Compression;
 using System.IO.MemoryMappedFiles;
 using System.Globalization;
 using System.Reflection;
@@ -1590,6 +1589,8 @@ namespace PEBakery.Helper
             Best = 9,
         }
 
+        /*
+        // Do not use System.IO.Compression, it causes lots of error when .Net Standard 2.0 is referenced!
         public static bool CompressNativeZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
             CompressionLevel level;
@@ -1636,6 +1637,7 @@ namespace PEBakery.Helper
             else
                 return false;
         }
+        */
 
         public static bool CompressManagedZip(string srcPath, string destArchive, ArchiveHelper.CompressLevel helperLevel, Encoding encoding)
         {
