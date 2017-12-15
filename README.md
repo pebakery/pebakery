@@ -82,7 +82,7 @@ WB082 has lots of undocumented behaviors, and it takes time to inspect all of th
 
 PEBakery needs more well-designed UI.
 
-### Documentation
+### Documents
 
 PEBakery needs to be documented, especially for plugin developers.
 
@@ -108,12 +108,16 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 ### Recommended
 
 - Visual Studio 2017
-- .Net Framework 4.7 Developer Pack
+- .Net Framework 4.7.1 Developer Pack
 
 ### Requirement
 
 - C# 7 Compiler
-- .Net Framework 4.7
+- .Net Framework 4.7.1
+
+## Documentation
+
+See [PEBakery Manual](./Manual).
 
 ## Screenshots
 
