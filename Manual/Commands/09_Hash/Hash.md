@@ -1,10 +1,8 @@
-# Hash Command
-
-## Hash
+# Hash
 
 Cacluates hash from file.
 
-### Syntax
+## Syntax
 
 ```pebakery
 Hash,<HashType>,<FilePath>,<DestVar>
@@ -18,7 +16,7 @@ Hash,<HashType>,<FilePath>,<DestVar>
 | FilePath | Path of file to calculate hash. |
 | DestVar | Variable name to save hash digest. |
 
-### Example
+## Example
 
 ```pebakery
 // %Dest% is set to "15750221bbffa36c055d656c46899460".
