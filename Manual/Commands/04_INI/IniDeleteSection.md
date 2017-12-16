@@ -1,6 +1,6 @@
 # IniDeleteSection
 
-This command will delete a given section inside the file you specify.
+This command will delete a given section, along with all keys and values it contains from the file you specify.
 
 ## Syntax
 
@@ -13,10 +13,10 @@ IniDeleteSection,<Filename>,<Section>
 | Argument | Description |
 | --- | --- |
 | FileName | The full path of the file. |
-| Section | The Section containing the value to be removed. |
+| Section | The Section to be removed. |
 
 ## Remarks
-All keys and values inside this section are completely removed.
+
 
 ## Example
 
