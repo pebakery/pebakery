@@ -16,9 +16,10 @@ IniMerge,<SrcFile>,<DestFile>
 | DestFile | The full path of the file to be updated with the new information. |
 
 ## Remarks
-`SrcFile` will never be modified.
-Only .ini specific contents will be merged. Anthing that is not a [Section] name or part of a key=value pair will be ignored. Standard .ini recognized comments such as `; This is a comment` or `# This is another comment` as well as PEBakery style comments `// PEBakery style comment` will likewise be ignored.
-If `DestFile` does not exist it will be created as a copy of `SrcFile`.
++ `SrcFile` will never be modified.
++ If `DestFile` does not exist it will be created.
++ Only .ini specific contents will be merged. Anthing that is not a [Section] name or part of a key=value pair will be ignored. Standard .ini recognized comments such as `; Comment` or `# Comment` as well as PEBakery style comments `// Comment` will likewise be ignored.
+
 
 ## Example
 
