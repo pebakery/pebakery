@@ -13,7 +13,7 @@ IniAddSection,<Filename>,<Section>
 | Argument | Description |
 | --- | --- |
 | FileName | The full path of the file. |
-| Section | The Section containing the value to be removed. |
+| Section | The name of the Section to be added. |
 
 ## Remarks
 If the section already exists no action will be taken.
