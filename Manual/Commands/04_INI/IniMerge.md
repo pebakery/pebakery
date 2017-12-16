@@ -17,6 +17,7 @@ IniMerge,<SrcFile>,<DestFile>
 
 ## Remarks
 `SrcFile` will never be modified.
+Only .ini specific contents will be merged. Anthing that is not a [Section] name or part of a key=value pair will be ignored. Standard .ini recognized comments such as `; This is a comment` or `# This is another comment` as well as PEBakery style comments `// PEBakery style comment` will likewise be ignored.
 If `DestFile` does not exist it will be created as a copy of `SrcFile`.
 
 ## Example
@@ -26,6 +27,7 @@ Lets assume we have the following .ini files.
 C:\myFile1.ini:
 ```pebakery
 [Variables]
+// Here are some variables
 myvar1="Homes32"
 myvar2="ChrisR"
 
@@ -66,7 +68,8 @@ pCheckbox1="Show Window?",1,3,10,32,278,18,False
 pText1="Show other text:",1,1,10,8,106,18,8,Normal
 ```
 As we can see several things have happened.
-+ the key `myvar2` was updated with the value from the `SrcFile`.
-+ the label for the element *pText1* was changed.
-+ the section `Interface-2` did not exist in the `DestFile` so it was created.
++ The comment `// Here are some variables` was not merged because it is not a valid .ini file component.
++ The key `myvar2` was updated with the value from the `SrcFile`.
++ The label for the element *pText1* was changed.
++ The section `Interface-2` did not exist in the `DestFile` so it was created.
 + `myvar1` and `pCheckbox1` were identical in both files so they were not modified.
