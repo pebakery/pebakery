@@ -1,6 +1,6 @@
 # IniMerge
 
-This command will combine the contents of the two .ini files.
+This command will combine the contents of two .ini files.
 
 ## Syntax
 
