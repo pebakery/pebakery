@@ -539,22 +539,45 @@
                         BorderBrush="Gray"
                         BorderThickness="1"
                         Margin="20, 20, 20, 20">
-                        <StackPanel Orientation="Vertical">
+                        <DockPanel>
                             <TextBlock
+                                DockPanel.Dock="Top"
                                 TextAlignment="Left"
                                 Margin="10, 10, 10, 0"
                                 TextWrapping="Wrap"
                                 FontWeight="SemiBold"
-                                Text="Message">
-                            </TextBlock>
+                                Text="Message"/>
                             <TextBlock
-                                VerticalAlignment="Center"
+                                DockPanel.Dock="Top"
+                                VerticalAlignment="Top"
                                 TextAlignment="Left"
                                 Margin="10, 10, 10, 0"
                                 TextWrapping="Wrap"
-                                Text="{Binding BuildEchoMessage}">
-                            </TextBlock>
-                        </StackPanel>
+                                Text="{Binding BuildEchoMessage}"/>
+                            <TextBlock
+                                DockPanel.Dock="Top"
+                                TextAlignment="Left"
+                                Margin="10, 20, 10, 0"
+                                TextWrapping="Wrap"
+                                FontWeight="SemiBold"
+                                Visibility="{Binding BuildStdOutRedirectVisibility}"
+                                Text="ShellExecute Standard Output"/>
+                            <TextBox
+                                DockPanel.Dock="Top"
+                                Name="BuildStdOutRedirectTextBox"
+                                Margin="10, 10, 10, 10"
+                                Visibility="{Binding BuildStdOutRedirectVisibility}"
+                                TextAlignment="Left"
+                                VerticalAlignment="Top"
+                                TextWrapping="Wrap"
+                                AcceptsReturn="True"
+                                VerticalContentAlignment="Stretch"
+                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                ScrollViewer.CanContentScroll="True"
+                                IsReadOnly="True"
+                                Text="{Binding BuildStdOutRedirect}"/>
+                        </DockPanel>
                     </Border>
 
                     <TextBlock
@@ -597,18 +620,7 @@
                     VerticalScrollBarVisibility="Auto"
                     Visibility="{Binding NormalInterfaceVisibility}"
                     Content="{Binding MainCanvas}">
-                    <!--
-                    <Canvas 
-                        Name="MainCanvas"
-                        Grid.Row="0" Grid.Column="0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Margin="10, 10, 10, 10"
-                        Panel.ZIndex="-1">
-                    </Canvas>
-                     -->
                 </ScrollViewer>
-
             </Grid>
         </Grid>
     </DockPanel>

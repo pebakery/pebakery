@@ -312,7 +312,7 @@ namespace PEBakery.Core
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
-                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount))
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         return new UIInfo_TextFile(GetInfoTooltip(args, maxOpCount));

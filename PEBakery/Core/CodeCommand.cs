@@ -71,9 +71,10 @@ namespace PEBakery.Core
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
-        Set = 1400, AddVariables, Exit, Halt, Wait, Beep, 
+        Set = 1400, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
+        GetParam = 1498, PackParam = 1499, // Will be deprecated
         // 15 External Macro
-        Macro = 1500, SetMacro,
+        Macro = 1500,
     }
     #endregion
 
@@ -156,6 +157,8 @@ namespace PEBakery.Core
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
             CodeType.ExtractAndRun, // Better to have as Macro
+            CodeType.GetParam,
+            CodeType.PackParam,
         };
 
         public readonly static CodeType[] OptimizedCodeType = new CodeType[]
@@ -3475,9 +3478,9 @@ namespace PEBakery.Core
         public bool Global;
         public bool Permanent;
 
-        public CodeInfo_Set(string varName, string varValue, bool global, bool permanent)
+        public CodeInfo_Set(string varKey, string varValue, bool global, bool permanent)
         {
-            VarKey = varName;
+            VarKey = varKey;
             VarValue = varValue;
             Global = global;
             Permanent = permanent;
@@ -3542,38 +3545,34 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_GetParam : CodeInfo
-    {
-        public int Index;
-        public string VarName;
+    { // GetParam,<Index>,<DestVar>
+        public string Index;
+        public string DestVar;
 
-        public CodeInfo_GetParam(int index, string varName)
+        public CodeInfo_GetParam(string index, string destVar)
         {
             Index = index;
-            VarName = varName;
+            DestVar = destVar;
         }
 
         public override string ToString()
         {
-            StringBuilder b = new StringBuilder();
-            b.Append(Index);
-            b.Append(",");
-            b.Append(VarName);
-            return b.ToString();
+            return $"{Index},{DestVar}";
         }
     }
 
     [Serializable]
     public class CodeInfo_PackParam : CodeInfo
-    { // PackParam,<StartIndex>,<VarName>[,VarNum] -- Cannot figure out how it works
-        public int StartIndex;
+    { // PackParam,<StartIndex>,<DestVar>,[VarCount]
+        public string StartIndex;
         public string DestVar;
-        public string VarNum; // optional
+        public string VarCount; // optional
 
-        public CodeInfo_PackParam(int startIndex, string varName, string varNum)
+        public CodeInfo_PackParam(string startIndex, string destVar, string varCount)
         {
             StartIndex = startIndex;
-            DestVar = varName;
-            VarNum = varNum;
+            DestVar = destVar;
+            VarCount = varCount;
         }
 
         public override string ToString()
@@ -3582,10 +3581,10 @@ namespace PEBakery.Core
             b.Append(StartIndex);
             b.Append(",");
             b.Append(DestVar);
-            if (VarNum != null)
+            if (VarCount != null)
             {
                 b.Append(",");
-                b.Append(VarNum);
+                b.Append(VarCount);
             }
             return b.ToString();
         }

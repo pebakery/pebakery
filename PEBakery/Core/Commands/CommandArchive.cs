@@ -264,6 +264,8 @@ namespace PEBakery.Core.Commands
                 string destFullPath = destPath;
                 if (destIsDir)
                     destFullPath = Path.Combine(destPath, srcFileName);
+                else if (!destIsFile)
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
 
                 File.Copy(srcFile, destFullPath, !info.Preserve);
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] copied to [{destPath}]"));

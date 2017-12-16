@@ -1,10 +1,8 @@
-# Network Command
-
-## WebGet
+# WebGet
 
 Download file from internet.
 
-### Syntax
+## Syntax
 
 ```pebakery
 WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
@@ -26,7 +24,7 @@ WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
 
 `HashType` and `HashDigest` should be used at same time.
 
-### Example
+## Example
 
 ```pebakery
 // zlib source code will be downloaded to %BaseDir%\zlib.tar.gz.

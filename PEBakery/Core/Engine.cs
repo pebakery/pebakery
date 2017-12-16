@@ -600,6 +600,12 @@ namespace PEBakery.Core
                     case CodeType.Beep:
                         logs.AddRange(CommandControl.Beep(s, cmd));
                         break;
+                    case CodeType.GetParam:
+                        logs.AddRange(CommandControl.GetParam(s, cmd));
+                        break;
+                    case CodeType.PackParam:
+                        logs.AddRange(CommandControl.PackParam(s, cmd));
+                        break;
                     #endregion
                     #region 15 External Macro
                     case CodeType.Macro:
@@ -756,9 +762,19 @@ namespace PEBakery.Core
         public bool RunOnePlugin;
         public MainViewModel MainViewModel;
 
-        // Properties
+        // Property
         public string BaseDir => Project.BaseDir;
         public Plugin MainPlugin => Project.MainPlugin;
+        public int CurSectionParamsCount
+        {
+            get
+            {
+                if (0 < CurSectionParams.Count)
+                    return CurSectionParams.Keys.Max();
+                else
+                    return 0;
+            }
+        }
 
         // Engine's state
         public Plugin CurrentPlugin;

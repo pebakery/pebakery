@@ -42,16 +42,6 @@ No longer used, PEBakery will always split parameters.
 
 No longer used.
 
-### If,ExistRegMulti
-
-No longer used.
-
-### GetParam / PackParam
-
-Those commands are totally broken in WB082, so no project used this command.
-
-PEBakery supports infinite number of section parameter, so these commands are no longer necessary.
-
 ## Commands will be deprecated
 
 ### WebGetIfNotExist
@@ -75,3 +65,9 @@ Currently PEBakery return always true to this command.
 While WB082 manual claims this command will refresh variables to use newer value, it just clear variables in real WB082.
 
 Currently PEBakery reset variables to default plugin variables.
+
+### GetParam / PackParam
+
+Those commands are totally broken in WB082, so it was not used.
+
+PEBakery supports infinite number of section parameter, so these commands are no longer necessary.

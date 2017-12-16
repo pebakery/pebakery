@@ -147,56 +147,9 @@ namespace PEBakery.Core
             }
             str = b.ToString();
 
-            // str = unescapeSeqs.Keys.Aggregate(str, (from, to) => from.Replace(to, unescapeSeqs[to]));
             if (escapePercent)
                 str = UnescapePercent(str);
-            /*
-            // Unescape ##
-            // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
-            if (0 < sharpPosition.Count)
-            {
-                int idx = 0;
-                StringBuilder b = new StringBuilder();
-                // foreach (int hIdx in sharpPosition)
-                for (int i = 0; i < sharpPosition.Count; i++)
-                {
-                    int hIdx = sharpPosition[i];
-
-                    Debug.Assert(str.Substring(hIdx, 2).Equals(dummyStr, StringComparison.Ordinal));
-
-                    b.Append(str.Substring(idx, hIdx - idx));
-                    b.Append("#");
-                    idx = hIdx += 2;
-                }
-                b.Append(str.Substring(idx));
-                str = b.ToString();
-            }
-
-            // Unescape ##
-            // Keys.Aggregate를 쓰고 싶지만 그렇게 하면 #과 $가 서로를 escaping해버리는 참사가 발생한다.
-            if (str.IndexOf("##", StringComparison.OrdinalIgnoreCase) != -1)
-            {
-                int idx = 0;
-                StringBuilder b = new StringBuilder();
-                while (idx < str.Length)
-                {
-                    int hIdx = str.IndexOf("##", idx, StringComparison.OrdinalIgnoreCase);
-
-                    if (hIdx == -1)
-                    { // # (X)
-                        b.Append(str.Substring(idx));
-                        break;
-                    }
-                    else
-                    { // # (O)
-                        b.Append(str.Substring(idx, hIdx - idx));
-                        b.Append("#");
-                        idx = hIdx += 2;
-                    }
-                }
-                str = b.ToString();
-            }
-            */
+            
             return str;
         }
 
@@ -237,7 +190,6 @@ namespace PEBakery.Core
         private static readonly Dictionary<string, string> fullEscapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @",", @"#$c" },
-            // { @"%", @"#$p" }, // Seems even WB082 ignore this escape seqeunce?
             { "\"", @"#$q" },
             { @" ", @"#$s" },
             { "\t", @"#$t" },
@@ -302,7 +254,7 @@ namespace PEBakery.Core
 
         public static string EscapePercent(string str)
         {
-            return str.Replace(@"%", @"#$p");
+            return StringHelper.ReplaceEx(str, @"%", @"#$p", StringComparison.Ordinal);
         }
 
         public static List<string> EscapePercent(IEnumerable<string> strs)
@@ -433,18 +385,13 @@ namespace PEBakery.Core
                 matches = regex.Matches(str);
             }
 
-            if (s.LoopRunning)
-            { // Escape #c
-                int idx = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase);
-                if (idx != -1)
-                {
-                    StringBuilder b = new StringBuilder();
-                    b.Append(str.Substring(0, idx));
-                    b.Append(s.LoopCounter);
-                    b.Append(str.Substring(idx + 2)); // +2 for removing #c
-                    str = b.ToString();
-                }
-            }
+            // Escape #a (Current Argument Count)
+            if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
+                str = StringHelper.ReplaceEx(str, "#a", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
+
+            // Escape #c (Loop Counter)
+            if (s.LoopRunning) 
+                str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
 
             return str;
         }
