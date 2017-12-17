@@ -2903,26 +2903,29 @@ namespace PEBakery.Core
                         string filePath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
-                        bool filePathContainsWildcard = true;
-                        if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            filePathContainsWildcard = false;
+                        bool containsWildcard = true;
+                        if (Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                            containsWildcard = false;
 
                         // Check if file exists
                         if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
                         {
                             match = false;
                         }
-                        else if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        else if (containsWildcard)
                         {
-                            match = false;
-                        }
-                        else if (filePathContainsWildcard) 
-                        {
-                            string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
-                            if (0 < list.Length)
-                                match = true;
-                            else
+                            if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
+                            {
                                 match = false;
+                            }
+                            else
+                            {
+                                string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
+                                if (0 < list.Length)
+                                    match = true;
+                                else
+                                    match = false;
+                            }
                         }
                         else
                         {
@@ -2943,26 +2946,29 @@ namespace PEBakery.Core
                         string dirPath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
-                        bool dirPathContainsWildcard = true;
-                        if (dirPath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            dirPathContainsWildcard = false;
+                        bool containsWildcard = true;
+                        if (Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                            containsWildcard = false;
 
                         // Check if directory exists
                         if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
                         {
                             match = false;
                         }
-                        else if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        else if (containsWildcard)
                         {
-                            match = false;
-                        }
-                        else if (dirPathContainsWildcard)
-                        {
-                            string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
-                            if (0 < list.Length)
-                                match = true;
-                            else
+                            if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
+                            {
                                 match = false;
+                            }
+                            else
+                            {
+                                string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
+                                if (0 < list.Length)
+                                    match = true;
+                                else
+                                    match = false;
+                            }
                         }
                         else
                         {

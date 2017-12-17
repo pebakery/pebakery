@@ -41,8 +41,10 @@ using System.Linq;
 namespace PEBakery.WPF
 {
     // TODO: Fix potential memory leak due to event handler
+    #region UIRenderer
     public class UIRenderer
     {
+        #region Fields
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
@@ -53,7 +55,9 @@ namespace PEBakery.WPF
         private readonly List<UICommand> uiCodes;
         private readonly Variables variables;
         private readonly Logger logger;
+        #endregion
 
+        #region Constructor
         public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
         {
             this.logger = logger;
@@ -85,6 +89,7 @@ namespace PEBakery.WPF
                 logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
             }
         }
+        #endregion
 
         #region Render All
         public void Render()
@@ -183,7 +188,7 @@ namespace PEBakery.WPF
             SetToolTip(box, info.ToolTip);
             DrawToCanvas(r, box, uiCmd.Rect);
 
-            if (string.Equals(uiCmd.Text, string.Empty, StringComparison.Ordinal) == false)
+            if (uiCmd.Text.Equals(string.Empty, StringComparison.Ordinal) == false)
             {
                 TextBlock block = new TextBlock()
                 {
@@ -773,7 +778,7 @@ namespace PEBakery.WPF
                 Button bt = sender as Button;
                 
                 if (info.IsFile)
-                {
+                { // File
                     string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
                     if (File.Exists(currentPath))
                         currentPath = Path.GetDirectoryName(currentPath);
@@ -791,7 +796,7 @@ namespace PEBakery.WPF
                     }
                 }
                 else
-                {
+                { // Directory
                     string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
                     if (Directory.Exists(currentPath) == false)
                         currentPath = string.Empty;
@@ -805,7 +810,7 @@ namespace PEBakery.WPF
                     if (result == System.Windows.Forms.DialogResult.OK)
                     {
                         box.Text = dialog.SelectedPath;
-                        if (Directory.Exists(dialog.SelectedPath))
+                        if (Directory.Exists(dialog.SelectedPath) && !dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
                             box.Text += "\\";
                     }
                 }
@@ -990,6 +995,7 @@ namespace PEBakery.WPF
         }
         #endregion
     }
+    #endregion
 
     #region RenderInfo
     public struct RenderInfo

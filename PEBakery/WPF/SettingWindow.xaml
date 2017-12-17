@@ -266,6 +266,10 @@
                                 Value="{Binding Interface_ScaleFactor}" />
                         </DockPanel>
                     </GroupBox>
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        Content="Display Standard Output When Executing ShellExecute"
+                        IsChecked="{Binding Interface_DisplayShellExecuteStdOut}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Plugin">

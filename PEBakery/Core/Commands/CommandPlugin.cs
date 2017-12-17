@@ -33,17 +33,17 @@ namespace PEBakery.Core.Commands
     {
         /*
          * WB082 Behavior
-         * ExtractFile : DestDir는 반드시 Directory 이름으로 간주한다. 없으면 생성한다.
+         * ExtractFile : DestDir must be Directory, create if not exists.
          * Ex) (...),README.txt,%BaseDir%\Temp\Hello
-         *   -> Hello가 존재하지 않을 경우 : Hello 디렉토리를 만들고 그 밑에 압축해제
-         *   -> Hello가 파일일 경우 : 실패
-         *   -> Hello가 디렉토리일 경우 : 디렉터리 밑에 압축해제
+         *   -> No Hello : Create direcotry "Hello" and extract files into new directory.
+         *   -> Hello is a file : Failure
+         *   -> Hello is a directory : Extract files into directory.
          * 
          * ExtractAllFiles
          * Ex) (...),Fonts,%BaseDir%\Temp\Hello
-         *   -> Hello가 존재하지 않을 경우 : 실패
-         *   -> Hello가 파일일 경우 : 실패
-         *   -> Hello가 디렉토리일 경우 : 디렉터리 밑에 압축해제
+         *   -> No Hello : Failure
+         *   -> Hello is a file : Failure
+         *   -> Hello is a direcotry : Extract files into directory.
          * 
          */
 
@@ -160,12 +160,12 @@ namespace PEBakery.Core.Commands
             {
                 if (File.Exists(destDir))
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not directory, DestDir must be directory"));
+                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not a directory"));
                     return logs;
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Directory [{destDir}] does not exists, DestDir must exists"));
+                    logs.Add(new LogInfo(LogState.Error, $"Directory [{destDir}] does not exist"));
                     return logs;
                 }
             }

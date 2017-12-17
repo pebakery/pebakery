@@ -191,6 +191,8 @@ namespace PEBakery.Helper
             string dirName = Path.GetDirectoryName(path);
             if (dirName == string.Empty)
                 dirName = ".";
+            else if (dirName == null) // path denotes root directory
+                dirName = path; // So return root itself
             return dirName;
         }
 

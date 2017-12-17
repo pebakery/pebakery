@@ -81,8 +81,9 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
-                        // ExecuteCommand decrease ErrorOffCount after executing one command.
-                        s.Logger.ErrorOffCount = lines + 1; // So add 1
+                        // +1 to not count ErrorOff itself
+                        s.ErrorOffStartLineIdx = cmd.LineIdx + 1;
+                        s.ErrorOffLineCount = lines;
 
                         logs.Add(new LogInfo(LogState.Success, $"Error is off for [{lines}] lines"));
                     }
@@ -433,11 +434,6 @@ namespace PEBakery.Core.Commands
                         {
                             s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
                             s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                                w.BuildStdOutRedirectTextBox.CaretIndex = s.MainViewModel.BuildStdOutRedirect.Length;
-                            });
                             watch.Stop();
                         }
                     };
