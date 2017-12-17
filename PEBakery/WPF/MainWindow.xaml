@@ -576,6 +576,7 @@
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                 ScrollViewer.CanContentScroll="True"
                                 IsReadOnly="True"
+                                TextChanged="BuildStdOutRedirectTextBox_TextChanged"
                                 Text="{Binding BuildStdOutRedirect}"/>
                         </DockPanel>
                     </Border>

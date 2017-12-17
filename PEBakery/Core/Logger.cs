@@ -273,7 +273,6 @@ namespace PEBakery.Core
     {
         #region Fields, Constructor, Destructor
         public LogDB DB;
-        public int ErrorOffCount = 0;
         public bool SuspendLog = false;
 
         public static DebugLevel DebugLevel;

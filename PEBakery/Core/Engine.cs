@@ -60,7 +60,8 @@ namespace PEBakery.Core
             long buildId = s.BuildId;
 
             // Turn off System,ErrorOff
-            s.Logger.ErrorOffCount = 0;
+            s.ErrorOffStartLineIdx = -1;
+            s.ErrorOffLineCount = 0;
             // Turn off System,Log,Off
             s.Logger.SuspendLog = false;
 
@@ -634,10 +635,13 @@ namespace PEBakery.Core
             }
 
             // If ErrorOffCount is on, ignore LogState.Error
-            if (0 < s.Logger.ErrorOffCount)
+            if (0 <= s.ErrorOffStartLineIdx && 
+                s.ErrorOffStartLineIdx <= cmd.LineIdx && 
+                cmd.LineIdx < s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
             {
                 MuteLogError(logs);
-                s.Logger.ErrorOffCount -= 1;
+                if (cmd.LineIdx + 1 == s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
+                    s.ErrorOffStartLineIdx = -1;
             }
 
             // Stop build on error
@@ -793,6 +797,8 @@ namespace PEBakery.Core
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
+        public int ErrorOffStartLineIdx = -1; // -1 means ErrorOff is turned off
+        public int ErrorOffLineCount = 0;
 
         // Options
         public bool LogComment = true; // Used in logging

@@ -1155,6 +1155,17 @@ namespace PEBakery.WPF
                 pluginCache.WaitClose();
             logger.DB.Close();
         }
+
+        private void BuildStdOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox textBox = sender as TextBox;
+            var focusedBackup = FocusManager.GetFocusedElement(this);
+
+            textBox.CaretIndex = textBox.Text.Length;
+            textBox.ScrollToEnd();
+
+            FocusManager.SetFocusedElement(this, focusedBackup);
+        }
         #endregion
     }
     #endregion
@@ -1353,7 +1364,7 @@ namespace PEBakery.WPF
 
                     BuildPluginProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
-                    
+
                     NormalInterfaceVisibility = Visibility.Collapsed;
                     BuildInterfaceVisibility = Visibility.Visible;
                 }
@@ -1505,8 +1516,18 @@ namespace PEBakery.WPF
             }
         }
 
+        public static bool DisplayShellExecuteStdOut = true;
         private Visibility buildStdOutRedirectVisibility = Visibility.Collapsed;
-        public Visibility BuildStdOutRedirectVisibility => buildStdOutRedirectVisibility;
+        public Visibility BuildStdOutRedirectVisibility
+        {
+            get
+            {
+                if (DisplayShellExecuteStdOut)
+                    return buildStdOutRedirectVisibility;
+                else
+                    return Visibility.Collapsed;
+            }
+        }
         public bool BuildStdOutRedirectShow
         {
             set
@@ -1545,11 +1566,13 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region OnPropertyUpdate
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+        #endregion
     }
     #endregion
 
