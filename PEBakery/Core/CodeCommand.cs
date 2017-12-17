@@ -868,16 +868,16 @@ namespace PEBakery.Core
     #region CodeInfo 04 - INI
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
-    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
+    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
         public string DestVar;
 
-        public CodeInfo_IniRead(string fileName, string sectionName, string key, string destVar)
+        public CodeInfo_IniRead(string fileName, string section, string key, string destVar)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
             DestVar = destVar;
         }
@@ -887,7 +887,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             b.Append(",%");
@@ -914,16 +914,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniWrite : CodeInfo
-    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+    { // INIWrite,<FileName>,<Section>,<Key>,<Value>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
         public string Value;
 
-        public CodeInfo_IniWrite(string fileName, string sectionName, string key, string value)
+        public CodeInfo_IniWrite(string fileName, string section, string key, string value)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
             Value = value;
         }
@@ -933,7 +933,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             b.Append(",");
@@ -959,15 +959,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDelete : CodeInfo
-    { // INIDelete,<FileName>,<SectionName>,<Key>
+    { // INIDelete,<FileName>,<Section>,<Key>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
 
-        public CodeInfo_IniDelete(string fileName, string sectionName, string key)
+        public CodeInfo_IniDelete(string fileName, string section, string key)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
         }
 
@@ -976,7 +976,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             return b.ToString();
@@ -1000,14 +1000,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniAddSection : CodeInfo
-    { // INIAddSection,<FileName>,<SectionName>
+    { // INIAddSection,<FileName>,<Section>
         public string FileName;
-        public string SectionName;
+        public string Section;
 
-        public CodeInfo_IniAddSection(string fileName, string sectionName)
+        public CodeInfo_IniAddSection(string fileName, string section)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
         }
 
         public override string ToString()
@@ -1015,7 +1015,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             return b.ToString();
         }
     }
@@ -1037,14 +1037,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDeleteSection : CodeInfo
-    { // INIDeleteSection,<FileName>,<SectionName>
+    { // INIDeleteSection,<FileName>,<Section>
         public string FileName;
-        public string SectionName;
+        public string Section;
 
-        public CodeInfo_IniDeleteSection(string fileName, string sectionName)
+        public CodeInfo_IniDeleteSection(string fileName, string section)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
         }
 
         public override string ToString()
@@ -1052,7 +1052,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             return b.ToString();
         }
     }
@@ -1074,16 +1074,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniWriteTextLine : CodeInfo
-    { // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
+    { // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Line;
         public bool Append;
 
-        public CodeInfo_IniWriteTextLine(string fileName, string sectionName, string line, bool append)
+        public CodeInfo_IniWriteTextLine(string fileName, string section, string line, bool append)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Line = line;
             Append = append;
         }
@@ -1093,7 +1093,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Line);
             if (Append)
