@@ -5,7 +5,7 @@ This command will add a new empty section inside the file you specify.
 ## Syntax
 
 ```pebakery
-IniAddSection,<Filename>,<Section> 
+IniAddSection,<FileName>,<Section>
 ```
 
 ### Arguments
@@ -16,11 +16,13 @@ IniAddSection,<Filename>,<Section>
 | Section | The name of the Section to be added. |
 
 ## Remarks
+
 If the section already exists no action will be taken.
 
 ## Example
 
-In the following example the section `mySection` will be created inside C:\myFile.ini. 
+In the following example the section `mySection` will be created inside C:\myFile.ini.
+
 ```pebakery
-IniAddSection,C:\myFile.ini,mySection 
+IniAddSection,C:\myFile.ini,mySection
 ```

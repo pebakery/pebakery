@@ -57,7 +57,7 @@ namespace PEBakery.Core
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800, Message, Echo, UserInput, AddInterface,
+        Visible = 800, Message, Echo, EchoFile, UserInput, AddInterface,
         VisibleOp = 880,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
@@ -67,7 +67,7 @@ namespace PEBakery.Core
         // 11 Math
         Math = 1100,
         // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
@@ -84,6 +84,8 @@ namespace PEBakery.Core
     {
         public Plugin Plugin;
         public PluginSection Section;
+
+        public Project Project => Plugin.Project;
 
         public SectionAddress(Plugin plugin, PluginSection section)
         {
@@ -1509,6 +1511,32 @@ namespace PEBakery.Core
         }
     }
 
+    [Serializable]
+    public class CodeInfo_EchoFile : CodeInfo
+    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+        public string SrcFile;
+        public bool Warn;
+        public bool Encode;
+
+        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
+        {
+            SrcFile = srcFile;
+            Warn = warn;
+            Encode = encode;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            if (Warn)
+                b.Append(",WARN");
+            if (Encode)
+                b.Append(",ENCODE");
+            return b.ToString();
+        }
+    }
+
     #region UserInputType, UserInputInfo
     public enum UserInputType
     { 
@@ -2659,6 +2687,7 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         public string Action;
         public string FilePath;
         public string Params; // Optional

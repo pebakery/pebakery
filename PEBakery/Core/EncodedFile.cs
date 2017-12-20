@@ -168,7 +168,7 @@ namespace PEBakery.Core
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileName.Length == 0 || 512 <= fileNameUTF8.Length)
             {
-                throw new FileDecodeFailException($"Filename's length should be lower than 512B when UTF8 encoded");
+                throw new FileDecodeFailException($"Filename's UTF8 encoded length should be shorter than 512B");
             }
 
             // Check Overwrite

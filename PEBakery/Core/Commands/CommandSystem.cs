@@ -275,7 +275,7 @@ namespace PEBakery.Core.Commands
                         }
                     }   
                     break;
-                    // WB082 Compability Shim
+                    // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
@@ -324,12 +324,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        /// <summary>
-        /// Function for ShellExecute, ShellExecuteDelete
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="cmd"></param>
-        /// <returns></returns>
         public static List<LogInfo> ShellExecute(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -439,6 +433,9 @@ namespace PEBakery.Core.Commands
                     };
                     proc.Start();
 
+                    if (cmd.Type == CodeType.ShellExecuteSlow)
+                        proc.PriorityClass = ProcessPriorityClass.BelowNormal;
+
                     if (redirectStandardStream)
                     {
                         proc.BeginOutputReadLine();
@@ -449,6 +446,7 @@ namespace PEBakery.Core.Commands
                     switch (cmd.Type)
                     {
                         case CodeType.ShellExecute:
+                        case CodeType.ShellExecuteSlow:
                             proc.WaitForExit();
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;

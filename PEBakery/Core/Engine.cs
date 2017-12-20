@@ -528,6 +528,9 @@ namespace PEBakery.Core
                     case CodeType.Echo:
                         logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
+                    case CodeType.EchoFile:
+                        logs.AddRange(CommandInterface.EchoFile(s, cmd));
+                        break;
                     case CodeType.UserInput:
                         logs.AddRange(CommandInterface.UserInput(s, cmd));
                         break;
@@ -557,6 +560,7 @@ namespace PEBakery.Core
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:
+                    case CodeType.ShellExecuteSlow:
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion

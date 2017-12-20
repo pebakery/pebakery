@@ -507,11 +507,13 @@ namespace PEBakery.Core.Commands
                         string subStr = StringEscaper.Preprocess(s, subInfo.ToBeReplaced);
                         string newStr = StringEscaper.Preprocess(s, subInfo.ReplaceWith);
 
-                        string destStr;
                         StringComparison comp = StringComparison.OrdinalIgnoreCase;
                         if (type == StrFormatType.ReplaceX)
                             comp = StringComparison.Ordinal;
 
+                        string destStr = StringHelper.ReplaceEx(srcStr, subStr, newStr, comp);
+
+                        /*
                         if (subStr.Equals(string.Empty, StringComparison.Ordinal))
                         {
                             destStr = srcStr;
@@ -546,6 +548,7 @@ namespace PEBakery.Core.Commands
                                 destStr = srcStr;
                             }
                         }
+                        */
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
