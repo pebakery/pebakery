@@ -38,7 +38,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniRead info = cmd.Info as CodeInfo_IniRead;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -86,7 +86,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniRead info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
 
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -137,7 +137,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWrite info = cmd.Info as CodeInfo_IniWrite;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
             string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
             string value = StringEscaper.Preprocess(s, info.Value);
 
@@ -184,7 +184,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniWrite info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
                 string value = StringEscaper.Preprocess(s, info.Value);
 
@@ -232,7 +232,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniDelete info = cmd.Info as CodeInfo_IniDelete;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
             string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -274,7 +274,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniDelete info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
 
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -318,7 +318,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniAddSection info = cmd.Info as CodeInfo_IniAddSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
@@ -362,7 +362,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniAddSection info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                     throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
 
@@ -399,7 +399,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniDeleteSection info = cmd.Info as CodeInfo_IniDeleteSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                 throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
@@ -439,7 +439,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniDeleteSection info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
                 if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
                     throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
 
@@ -472,7 +472,7 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWriteTextLine info = cmd.Info as CodeInfo_IniWriteTextLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.SectionName); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
             string line = StringEscaper.Preprocess(s, info.Line); 
 
             if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
@@ -518,7 +518,7 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniWriteTextLine info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.SectionName);
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
                 string line = StringEscaper.Preprocess(s, info.Line);
 
                 if (append)

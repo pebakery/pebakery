@@ -213,7 +213,86 @@ namespace PEBakery.Core.Commands
 
             s.MainViewModel.BuildEchoMessage = message;
 
-            logs.Add(new LogInfo(LogState.Success, $"Displayed [{message}]", cmd));
+            logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, message, cmd));
+
+            return logs;
+        }
+
+        public static List<LogInfo> EchoFile(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_EchoFile));
+            CodeInfo_EchoFile info = cmd.Info as CodeInfo_EchoFile;
+
+            string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
+
+            if (!File.Exists(srcFile))
+            {
+                logs.Add(new LogInfo(LogState.Warning, $"File [{srcFile}] does not exist", cmd));
+                return logs;
+            }
+
+            if (info.Encode)
+            { // Binary Mode -> encode files into log database
+                string tempFile = Path.GetRandomFileName();
+                try
+                {
+                    // Create dummy plugin instance
+                    FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                    Plugin p = cmd.Addr.Project.LoadPlugin(tempFile, true, false);
+
+                    // Encode binary file into plugin instance
+                    string fileName = Path.GetFileName(srcFile);
+                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.Compress);
+
+                    // Remove Plugin instance
+                    p = null;
+
+                    // Read encoded text strings into memory
+                    string txtStr;
+                    Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+                    using (StreamReader r = new StreamReader(tempFile, encoding))
+                    {
+                        txtStr = r.ReadToEnd();
+                    }
+
+                    string logStr;
+                    if (txtStr.EndsWith("\r\n", StringComparison.Ordinal))
+                        logStr = $"Encoded File [{srcFile}]\r\n{txtStr}";
+                    else
+                        logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
+
+                    s.MainViewModel.BuildEchoMessage = logStr;
+                    logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
+                }
+                finally
+                {
+                    File.Delete(tempFile);
+                }
+
+
+
+                
+            }
+            else
+            { // Text Mode -> Just read with StreamReader
+                string txtStr;
+                Encoding encoding = FileHelper.DetectTextEncoding(srcFile);
+                using (StreamReader r = new StreamReader(srcFile, encoding))
+                {
+                    txtStr = r.ReadToEnd();
+                }
+
+                string logStr;
+                if (txtStr.EndsWith("\r\n", StringComparison.Ordinal))
+                    logStr = $"File [{srcFile}]\r\n{txtStr}";
+                else
+                    logStr = $"File [{srcFile}]\r\n{txtStr}\r\n";
+
+                s.MainViewModel.BuildEchoMessage = logStr;
+                logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
+            }
 
             return logs;
         }

@@ -365,7 +365,10 @@ namespace PEBakery.Core.Commands
 
             string indexStr = StringEscaper.Preprocess(s, info.Index);
             if (!NumberHelper.ParseInt32(indexStr, out int index))
-                throw new ExecuteException($"[{indexStr}] is not a valid integer");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"[{indexStr}] is not a valid integer"));
+                return logs;
+            }
 
             if (s.CurSectionParams.ContainsKey(index) && index <= s.CurSectionParamsCount)
             {
@@ -392,7 +395,10 @@ namespace PEBakery.Core.Commands
 
             string startIndexStr = StringEscaper.Preprocess(s, info.StartIndex);
             if (!NumberHelper.ParseInt32(startIndexStr, out int startIndex))
-                throw new ExecuteException($"[{startIndexStr}] is not a valid integer");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"[{startIndexStr}] is not a valid integer"));
+                return logs;
+            }
 
             int varCount = s.CurSectionParamsCount;
             if (startIndex <= varCount)

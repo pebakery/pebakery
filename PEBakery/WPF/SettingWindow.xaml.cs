@@ -472,6 +472,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Interface_ScaleFactor");
             }
         }
+
+        private bool interface_DisplayShellExecuteStdOut;
+        public bool Interface_DisplayShellExecuteStdOut
+        {
+            get => interface_DisplayShellExecuteStdOut;
+            set
+            {
+                interface_DisplayShellExecuteStdOut = value;
+                OnPropertyUpdate("Interface_DisplayShellExecuteStdOut");
+            }
+        }
         #endregion
 
         #region Plugin
@@ -701,6 +712,7 @@ namespace PEBakery.WPF
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
+            MainViewModel.DisplayShellExecuteStdOut = this.Interface_DisplayShellExecuteStdOut;
         }
 
         public void SetToDefault()
@@ -723,6 +735,7 @@ namespace PEBakery.WPF
                     Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
             }
             Interface_ScaleFactor = 100;
+            Interface_DisplayShellExecuteStdOut = true;
 
             // Plugin
             Plugin_EnableCache = true;
@@ -766,6 +779,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "MonospaceFontWeight"),
                 new IniKey("Interface", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
+                new IniKey("Interface", "DisplayShellExecuteStdOut"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "SpeedupLoading"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
@@ -792,6 +806,7 @@ namespace PEBakery.WPF
             string str_Interface_MonospaceFontFamiliy = dict["Interface_MonospaceFontFamily"];
             string str_Interface_MonospaceFontWeight = dict["Interface_MonospaceFontWeight"];
             string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
+            string str_Interface_DisplayShellExecuteStdOut = dict["Interface_DisplayShellExecuteStdOut"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
             string str_Plugin_SpeedupLoading = dict["Plugin_SpeedupLoading"];
@@ -866,6 +881,13 @@ namespace PEBakery.WPF
                     if (100 <= scaleFactor && scaleFactor <= 200)
                         Interface_ScaleFactor = scaleFactor;
                 }
+            }
+
+            // Interface - DisplayShellExecuteStdOut (Default = True)
+            if (str_Interface_DisplayShellExecuteStdOut != null)
+            {
+                if (str_Interface_DisplayShellExecuteStdOut.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Interface_DisplayShellExecuteStdOut = false;
             }
 
             // Plugin - EnableCache (Default = True)
@@ -975,6 +997,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "MonospaceFontWeight", Interface_MonospaceFont.FontWeight.ToString()),
                 new IniKey("Interface", "MonospaceFontSize", Interface_MonospaceFont.FontSizeInPoint.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
+                new IniKey("Interface", "DisplayShellExecuteStdOut", Interface_DisplayShellExecuteStdOut.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
                 new IniKey("Plugin", "AutoSyntaxCheck", Plugin_AutoSyntaxCheck.ToString()),

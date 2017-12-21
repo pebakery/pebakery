@@ -57,7 +57,7 @@ namespace PEBakery.Core
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800, Message, Echo, UserInput, AddInterface,
+        Visible = 800, Message, Echo, EchoFile, UserInput, AddInterface,
         VisibleOp = 880,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
@@ -67,7 +67,7 @@ namespace PEBakery.Core
         // 11 Math
         Math = 1100,
         // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
@@ -84,6 +84,8 @@ namespace PEBakery.Core
     {
         public Plugin Plugin;
         public PluginSection Section;
+
+        public Project Project => Plugin.Project;
 
         public SectionAddress(Plugin plugin, PluginSection section)
         {
@@ -868,16 +870,16 @@ namespace PEBakery.Core
     #region CodeInfo 04 - INI
     [Serializable]
     public class CodeInfo_IniRead : CodeInfo
-    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
+    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
         public string DestVar;
 
-        public CodeInfo_IniRead(string fileName, string sectionName, string key, string destVar)
+        public CodeInfo_IniRead(string fileName, string section, string key, string destVar)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
             DestVar = destVar;
         }
@@ -887,7 +889,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             b.Append(",%");
@@ -914,16 +916,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniWrite : CodeInfo
-    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+    { // INIWrite,<FileName>,<Section>,<Key>,<Value>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
         public string Value;
 
-        public CodeInfo_IniWrite(string fileName, string sectionName, string key, string value)
+        public CodeInfo_IniWrite(string fileName, string section, string key, string value)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
             Value = value;
         }
@@ -933,7 +935,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             b.Append(",");
@@ -959,15 +961,15 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDelete : CodeInfo
-    { // INIDelete,<FileName>,<SectionName>,<Key>
+    { // INIDelete,<FileName>,<Section>,<Key>
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Key;
 
-        public CodeInfo_IniDelete(string fileName, string sectionName, string key)
+        public CodeInfo_IniDelete(string fileName, string section, string key)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Key = key;
         }
 
@@ -976,7 +978,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Key);
             return b.ToString();
@@ -1000,14 +1002,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniAddSection : CodeInfo
-    { // INIAddSection,<FileName>,<SectionName>
+    { // INIAddSection,<FileName>,<Section>
         public string FileName;
-        public string SectionName;
+        public string Section;
 
-        public CodeInfo_IniAddSection(string fileName, string sectionName)
+        public CodeInfo_IniAddSection(string fileName, string section)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
         }
 
         public override string ToString()
@@ -1015,7 +1017,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             return b.ToString();
         }
     }
@@ -1037,14 +1039,14 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniDeleteSection : CodeInfo
-    { // INIDeleteSection,<FileName>,<SectionName>
+    { // INIDeleteSection,<FileName>,<Section>
         public string FileName;
-        public string SectionName;
+        public string Section;
 
-        public CodeInfo_IniDeleteSection(string fileName, string sectionName)
+        public CodeInfo_IniDeleteSection(string fileName, string section)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
         }
 
         public override string ToString()
@@ -1052,7 +1054,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             return b.ToString();
         }
     }
@@ -1074,16 +1076,16 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_IniWriteTextLine : CodeInfo
-    { // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
+    { // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
         public string FileName;
-        public string SectionName;
+        public string Section;
         public string Line;
         public bool Append;
 
-        public CodeInfo_IniWriteTextLine(string fileName, string sectionName, string line, bool append)
+        public CodeInfo_IniWriteTextLine(string fileName, string section, string line, bool append)
         {
             FileName = fileName;
-            SectionName = sectionName;
+            Section = section;
             Line = line;
             Append = append;
         }
@@ -1093,7 +1095,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(FileName);
             b.Append(",");
-            b.Append(SectionName);
+            b.Append(Section);
             b.Append(",");
             b.Append(Line);
             if (Append)
@@ -1505,6 +1507,32 @@ namespace PEBakery.Core
             b.Append(Message);
             if (Warn)
                 b.Append(",WARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_EchoFile : CodeInfo
+    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+        public string SrcFile;
+        public bool Warn;
+        public bool Encode;
+
+        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
+        {
+            SrcFile = srcFile;
+            Warn = warn;
+            Encode = encode;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            if (Warn)
+                b.Append(",WARN");
+            if (Encode)
+                b.Append(",ENCODE");
             return b.ToString();
         }
     }
@@ -2443,6 +2471,7 @@ namespace PEBakery.Core
         RescanScripts,
         Rescan,
         SaveLog,
+        SetLocal, EndLocal, 
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
@@ -2659,6 +2688,7 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         public string Action;
         public string FilePath;
         public string Params; // Optional
@@ -2903,26 +2933,29 @@ namespace PEBakery.Core
                         string filePath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
-                        bool filePathContainsWildcard = true;
-                        if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            filePathContainsWildcard = false;
+                        bool containsWildcard = true;
+                        if (Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                            containsWildcard = false;
 
                         // Check if file exists
                         if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
                         {
                             match = false;
                         }
-                        else if (Directory.Exists(Path.GetDirectoryName(filePath)) == false)
+                        else if (containsWildcard)
                         {
-                            match = false;
-                        }
-                        else if (filePathContainsWildcard) 
-                        {
-                            string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
-                            if (0 < list.Length)
-                                match = true;
-                            else
+                            if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
+                            {
                                 match = false;
+                            }
+                            else
+                            {
+                                string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
+                                if (0 < list.Length)
+                                    match = true;
+                                else
+                                    match = false;
+                            }
                         }
                         else
                         {
@@ -2943,26 +2976,29 @@ namespace PEBakery.Core
                         string dirPath = StringEscaper.Preprocess(s, Arg1);
 
                         // Check filePath contains wildcard
-                        bool dirPathContainsWildcard = true;
-                        if (dirPath.IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            dirPathContainsWildcard = false;
+                        bool containsWildcard = true;
+                        if (Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                            containsWildcard = false;
 
                         // Check if directory exists
                         if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
                         {
                             match = false;
                         }
-                        else if (Directory.Exists(Path.GetDirectoryName(dirPath)) == false)
+                        else if (containsWildcard)
                         {
-                            match = false;
-                        }
-                        else if (dirPathContainsWildcard)
-                        {
-                            string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
-                            if (0 < list.Length)
-                                match = true;
-                            else
+                            if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
+                            {
                                 match = false;
+                            }
+                            else
+                            {
+                                string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
+                                if (0 < list.Length)
+                                    match = true;
+                                else
+                                    match = false;
+                            }
                         }
                         else
                         {

@@ -740,13 +740,15 @@ namespace PEBakery.Core
         public const string VarKeyRegex_ContainsSectionParams = @"(#[0-9]+)";
         public const string VarKeyRegex_Variable = @"^" + VarKeyRegex_ContainsVariable + @"$";
         public const string VarKeyRegex_SectionParams = @"^" + VarKeyRegex_ContainsSectionParams + @"$";
-        public enum VarKeyType { None, Variable, SectionParams }
+        public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
         public static VarKeyType DetermineType(string key)
         {
             if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
             else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
+            else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
+                return VarKeyType.ReturnValue;
             else
                 return VarKeyType.None;
         }
@@ -834,6 +836,11 @@ namespace PEBakery.Core
                 { // WB082 does not remove section parameter, just set to string "NIL"
                     logs.Add(Variables.SetSectionParam(s, key, finalValue));
                 }
+                else if (type == Variables.VarKeyType.ReturnValue) // #r
+                { // s.SectionReturnValue's defalt value is string.Empty
+                    s.SectionReturnValue = string.Empty;
+                    logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] deleted"));
+                }
                 else
                 {
                     throw new InvalidCodeCommandException($"Invalid variable name [{key}]");
@@ -885,6 +892,11 @@ namespace PEBakery.Core
                 else if (type == Variables.VarKeyType.SectionParams) // #1, #2, #3, ...
                 {
                     logs.Add(Variables.SetSectionParam(s, key, finalValue));
+                }
+                else if (type == Variables.VarKeyType.ReturnValue) // #r
+                {
+                    s.SectionReturnValue = finalValue;
+                    logs.Add(new LogInfo(LogState.Success, $"ReturnValue [#r] set to [{finalValue}]"));
                 }
                 else
                 {

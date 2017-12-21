@@ -81,8 +81,10 @@ namespace PEBakery.Core.Commands
                         if (lines <= 0)
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
-                        // ExecuteCommand decrease ErrorOffCount after executing one command.
-                        s.Logger.ErrorOffCount = lines + 1; // So add 1
+                        // +1 to not count ErrorOff itself
+                        s.ErrorOffSection = cmd.Addr.Section;
+                        s.ErrorOffStartLineIdx = cmd.LineIdx + 1;
+                        s.ErrorOffLineCount = lines;
 
                         logs.Add(new LogInfo(LogState.Success, $"Error is off for [{lines}] lines"));
                     }
@@ -274,7 +276,27 @@ namespace PEBakery.Core.Commands
                         }
                     }   
                     break;
-                    // WB082 Compability Shim
+                case SystemType.SetLocal:
+                    { // SetLocal
+                        // No SystemInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.EnableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are isolated"));
+                    }
+                    break;
+                case SystemType.EndLocal:
+                    { // EndLocal
+                        // No CodeInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.DisableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are no longer isolated"));
+                    }
+                    break;
+                // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
@@ -323,12 +345,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        /// <summary>
-        /// Function for ShellExecute, ShellExecuteDelete
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="cmd"></param>
-        /// <returns></returns>
         public static List<LogInfo> ShellExecute(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -433,15 +449,13 @@ namespace PEBakery.Core.Commands
                         {
                             s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
                             s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                                w.BuildStdOutRedirectTextBox.CaretIndex = s.MainViewModel.BuildStdOutRedirect.Length;
-                            });
                             watch.Stop();
                         }
                     };
                     proc.Start();
+
+                    if (cmd.Type == CodeType.ShellExecuteSlow)
+                        proc.PriorityClass = ProcessPriorityClass.BelowNormal;
 
                     if (redirectStandardStream)
                     {
@@ -453,6 +467,7 @@ namespace PEBakery.Core.Commands
                     switch (cmd.Type)
                     {
                         case CodeType.ShellExecute:
+                        case CodeType.ShellExecuteSlow:
                             proc.WaitForExit();
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;

@@ -191,6 +191,8 @@ namespace PEBakery.Helper
             string dirName = Path.GetDirectoryName(path);
             if (dirName == string.Empty)
                 dirName = ".";
+            else if (dirName == null) // path denotes root directory
+                dirName = path; // So return root itself
             return dirName;
         }
 
@@ -742,6 +744,9 @@ namespace PEBakery.Helper
 
         public static string ReplaceEx(string str, string oldValue, string newValue, StringComparison comp)
         {
+            if (oldValue.Equals(string.Empty, comp))
+                return str;
+
             if (str.IndexOf(oldValue, comp) != -1)
             {
                 int idx = 0;

@@ -701,6 +701,7 @@ namespace PEBakery.Core
     [Serializable]
     public class PluginSection
     {
+        #region Fields and Properties
         // Common Fields
         private Plugin plugin;
         private string sectionName;
@@ -780,7 +781,9 @@ namespace PEBakery.Core
                 return uiCodes;
             }
         }
+        #endregion
 
+        #region Constructor
         /// <summary>
         /// Constructor
         /// </summary>
@@ -841,7 +844,32 @@ namespace PEBakery.Core
             this.lines = lines;
             this.lineIdx = lineIdx;
         }
+        #endregion
 
+        #region Equals, GetHashCode
+        public override bool Equals(object obj)
+        {
+            PluginSection section = obj as PluginSection;
+            return this.Equals(section);
+        }
+
+        public bool Equals(PluginSection section)
+        {
+            if (section == null) throw new ArgumentNullException("section");
+
+            if (plugin.Equals(section.Plugin) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
+                return true;
+            else
+                return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return plugin.GetHashCode() ^ sectionName.GetHashCode();
+        }
+        #endregion
+
+        #region Methods
         public SectionDataType SelectDataType(SectionType type)
         {
             switch (type)
@@ -1072,6 +1100,7 @@ namespace PEBakery.Core
                 throw new InternalException("GetUICodes must be used with SectionDataType.Interfaces");
             }
         }
+        #endregion
     }
     #endregion
 }
