@@ -82,6 +82,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
                         // +1 to not count ErrorOff itself
+                        s.ErrorOffSection = cmd.Addr.Section;
                         s.ErrorOffStartLineIdx = cmd.LineIdx + 1;
                         s.ErrorOffLineCount = lines;
 
@@ -275,7 +276,27 @@ namespace PEBakery.Core.Commands
                         }
                     }   
                     break;
-                    // WB082 Compatibility Shim
+                case SystemType.SetLocal:
+                    { // SetLocal
+                        // No SystemInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.EnableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are isolated"));
+                    }
+                    break;
+                case SystemType.EndLocal:
+                    { // EndLocal
+                        // No CodeInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.DisableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are no longer isolated"));
+                    }
+                    break;
+                // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));

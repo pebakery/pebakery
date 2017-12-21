@@ -130,10 +130,14 @@ namespace PEBakery.WPF
 
             this.baseDir = argBaseDir;
 
-            this.settingFile = System.IO.Path.Combine(argBaseDir, "PEBakery.ini");
+            this.settingFile = System.IO.Path.Combine(baseDir, "PEBakery.ini");
             this.setting = new SettingViewModel(settingFile);
 
-            string logDBFile = System.IO.Path.Combine(baseDir, "PEBakeryLog.db");
+            string dbDir = System.IO.Path.Combine(baseDir, "Database");
+            if (!Directory.Exists(dbDir))
+                Directory.CreateDirectory(dbDir);
+
+            string logDBFile = System.IO.Path.Combine(dbDir, "PEBakeryLog.db");
             try
             {
                 App.Logger = logger = new Logger(logDBFile);
@@ -150,7 +154,7 @@ namespace PEBakery.WPF
             // If plugin cache is enabled, generate cache after 5 seconds
             if (setting.Plugin_EnableCache)
             {
-                string cacheDBFile = System.IO.Path.Combine(baseDir, "PEBakeryCache.db");
+                string cacheDBFile = System.IO.Path.Combine(dbDir, "PEBakeryCache.db");
                 try
                 {
                     this.pluginCache = new PluginCache(cacheDBFile);

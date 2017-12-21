@@ -1479,7 +1479,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Halt(message);
                     }
                 case CodeType.Wait:
-                    { // Wait,<Second
+                    { // Wait,<Second>
                         const int argCount = 1;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -2535,6 +2535,26 @@ namespace PEBakery.Core
                             info = new SystemInfo_SaveLog(args[0], args[1]);
                     }
                     break;
+                case SystemType.SetLocal:
+                    { // System,SetLocal
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Return empty SystemInfo
+                        info = new SystemInfo();
+                    }
+                    break;
+                case SystemType.EndLocal:
+                    { // System,EndLocal
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Return empty SystemInfo
+                        info = new SystemInfo();
+                    }
+                    break;
                 // Compability Shim
                 case SystemType.HasUAC:
                     { // System,HasUAC,<Command>
@@ -2590,8 +2610,9 @@ namespace PEBakery.Core
             bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
             bool sectionParamCountMatch = (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1); // #a
+            bool sectionReturnValueMatch = (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1); // #r
 
-            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch)
+            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch || sectionReturnValueMatch)
                 return true;
             else
                 return false;

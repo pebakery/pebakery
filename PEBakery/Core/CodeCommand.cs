@@ -2471,6 +2471,7 @@ namespace PEBakery.Core
         RescanScripts,
         Rescan,
         SaveLog,
+        SetLocal, EndLocal, 
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
