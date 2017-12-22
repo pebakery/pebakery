@@ -783,7 +783,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 04 INI
                 case CodeType.INIRead:
-                    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
+                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -795,7 +795,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
                     }
                 case CodeType.INIWrite:
-                    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+                    { // INIWrite,<FileName>,<Section>,<Key>,<Value>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -803,15 +803,27 @@ namespace PEBakery.Core
                         return new CodeInfo_IniWrite(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.INIDelete:
-                    { // INIDelete,<FileName>,<SectionName>,<Key>
+                    { // INIDelete,<FileName>,<Section>,<Key>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
+                case CodeType.INIReadSection:
+                    { // INIReadSection,<FileName>,<Section>,<DestVar>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        string destVar = args[2];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_IniReadSection(args[0], args[1], args[2]);
+                    }
                 case CodeType.INIAddSection:
-                    { // INIAddSection,<FileName>,<SectionName>
+                    { // INIAddSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -819,7 +831,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniAddSection(args[0], args[1]);
                     }
                 case CodeType.INIDeleteSection:
-                    { // INIDeleteSection,<FileName>,<SectionName>
+                    { // INIDeleteSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -827,7 +839,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniDeleteSection(args[0], args[1]);
                     }
                 case CodeType.INIWriteTextLine:
-                    {  // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
+                    {  // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -2513,13 +2525,13 @@ namespace PEBakery.Core
                         info = new SystemInfo_RescanScripts();
                     }
                     break;
-                case SystemType.Rescan:
-                    { // System,Rescan,<PluginToRefresh>
+                case SystemType.Load:
+                    { // System,Load,<Path>
                         const int argCount = 1;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        info = new SystemInfo_Rescan(args[0]);
+                        info = new SystemInfo_Load(args[0]);
                     }
                     break;
                 case SystemType.SaveLog:

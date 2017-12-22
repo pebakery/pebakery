@@ -211,27 +211,22 @@ namespace PEBakery.Core.Commands
                         SystemInfo_RescanScripts subInfo = info.SubInfo as SystemInfo_RescanScripts;
 
                         // Reload Project
-                        BackgroundWorker worker = null;
+                        AutoResetEvent resetEvent = null;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            worker = w.StartLoadWorker(true);                
+                            resetEvent = w.StartLoadWorker(true);                
                         });
-                        
-                        // TODO: More elegant way?
-                        Task.Run(() =>
-                        {
-                            while (worker.IsBusy)
-                                Thread.Sleep(200);
-                        }).Wait();
+                        if (resetEvent != null)
+                            resetEvent.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
                     }
                     break;
-                case SystemType.Rescan:
+                case SystemType.Load:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Rescan));
-                        SystemInfo_Rescan subInfo = info.SubInfo as SystemInfo_Rescan;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load));
+                        SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
 
                         string pPath = StringEscaper.Preprocess(s, subInfo.PluginToRefresh);
                         string pFullPath = Path.GetFullPath(pPath);

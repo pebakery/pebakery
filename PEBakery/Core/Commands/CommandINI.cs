@@ -310,6 +310,110 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        public static List<LogInfo> IniReadSection(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection));
+            CodeInfo_IniReadSection info = cmd.Info as CodeInfo_IniReadSection;
+
+            string fileName = StringEscaper.Preprocess(s, info.FileName);
+            string section = StringEscaper.Preprocess(s, info.Section);
+
+            if (section.Equals(string.Empty, StringComparison.Ordinal))
+                throw new ExecuteException("Section name cannot be empty");
+
+            IniKey[] keys = Ini.ReadSection(fileName, section);
+            if (keys != null)
+            {
+                StringBuilder b = new StringBuilder();
+                b.AppendLine($"[{section}]");
+                foreach (IniKey k in keys)
+                    b.AppendLine($"{k.Key}={k.Value}");
+
+                logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read in [{fileName}]"));
+
+                string escapedValue = StringEscaper.Escape(b.ToString(), false, true);
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, escapedValue, false, false, false);
+                logs.AddRange(varLogs);
+            }
+            else
+            {
+                logs.Add(new LogInfo(LogState.Ignore, $"Section [{section}] does not exist in [{fileName}]"));
+
+                List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, string.Empty, false, false, false);
+                logs.AddRange(varLogs);
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> IniReadSectionOp(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSectionOp));
+            CodeInfo_IniReadSectionOp infoOp = cmd.Info as CodeInfo_IniReadSectionOp;
+
+            string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+
+            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            string[] sections = new string[infoOp.Cmds.Count];
+            string[] destVars = new string[infoOp.Cmds.Count];
+            for (int i = 0; i < sections.Length; i++)
+            {
+                CodeInfo_IniReadSection info = infoOp.Infos[i];
+
+                string section = StringEscaper.Preprocess(s, info.Section);
+                if (section.Equals(string.Empty, StringComparison.Ordinal))
+                    throw new ExecuteException("Section name cannot be empty");
+
+                sections[i] = section;
+                destVars[i] = info.DestVar;
+            }
+
+            Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(fileName, sections);
+
+            int successCount = 0;
+            for (int i = 0; i < sections.Length; i++)
+            {
+                string section = sections[i];
+                IniKey[] keys = keyDict[section];
+                CodeCommand subCmd = infoOp.Cmds[i];
+
+                if (keys != null)
+                {
+                    StringBuilder b = new StringBuilder();
+                    b.AppendLine($"[{section}]");
+                    foreach (IniKey k in keys)
+                        b.AppendLine($"{k.Key}={k.Value}");
+
+                    logs.Add(new LogInfo(LogState.Success, $"Section [{section}] read", subCmd));
+
+                    string escapedValue = StringEscaper.Escape(b.ToString(), false, true);
+                    List<LogInfo> varLogs = Variables.SetVariable(s, destVars[i], escapedValue, false, false, false);
+                    LogInfo.AddCommand(varLogs, subCmd);
+                    logs.AddRange(varLogs);
+                }
+                else
+                {
+                    logs.Add(new LogInfo(LogState.Ignore, $"Section [{section}] does not exist", subCmd));
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, destVars[i], string.Empty, false, false, false);
+                    LogInfo.AddCommand(varLogs, subCmd);
+                    logs.AddRange(varLogs);
+                }
+            }
+            logs.Add(new LogInfo(LogState.Success, $"Read [{successCount}] sections from [{fileName}]", cmd));
+
+            return logs;
+        }
+
         public static List<LogInfo> IniAddSection(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();

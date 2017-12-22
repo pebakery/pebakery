@@ -48,8 +48,8 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
-        INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
+        INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
+        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
         Compress = 500, Decompress, Expand, CopyOrExpand, 
         // 06 Network
@@ -995,6 +995,41 @@ namespace PEBakery.Core
         }
 
         public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniReadSection : CodeInfo
+    { // INIReadSection,<FileName>,<Section>,<DestVar>
+        public string FileName;
+        public string Section;
+        public string DestVar;
+
+        public CodeInfo_IniReadSection(string fileName, string section, string destVar)
+        {
+            FileName = fileName;
+            Section = section;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{FileName},{Section},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniReadSectionOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_IniReadSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
+        }
+
+        public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
@@ -2469,7 +2504,7 @@ namespace PEBakery.Core
         OnScriptExit, OnPluginExit,
         RefreshInterface,
         RescanScripts,
-        Rescan,
+        Load,
         SaveLog,
         SetLocal, EndLocal, 
         // Deprecated, WB082 Compability Shim
@@ -2645,18 +2680,18 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo_Rescan : SystemInfo
-    { // System,Rescan,<PluginToRefresh>
+    public class SystemInfo_Load : SystemInfo
+    { // System,Load,<PluginToRefresh>
         public string PluginToRefresh;
 
-        public SystemInfo_Rescan(string pluginToRefresh)
+        public SystemInfo_Load(string pluginToRefresh)
         {
             PluginToRefresh = pluginToRefresh;
         }
 
         public override string ToString()
         {
-            return $"Rescan,{PluginToRefresh}";
+            return $"Load,{PluginToRefresh}";
         }
     }
 
@@ -2679,9 +2714,6 @@ namespace PEBakery.Core
     }
     #endregion
 
-    /// <summary>
-    /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
-    /// </summary>
     [Serializable]
     public class CodeInfo_ShellExecute : CodeInfo
     {

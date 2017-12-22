@@ -48,7 +48,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Consantants
+        #region Constants
         internal const int PluginAuthorLenLimit = 35;
         #endregion
 
@@ -179,8 +179,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region Background Workers
-        public BackgroundWorker StartLoadWorker(bool quiet = false)
+        public AutoResetEvent StartLoadWorker(bool quiet = false)
         {
+            AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
             // Set PEBakery Logo
@@ -362,10 +363,13 @@ namespace PEBakery.WPF
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Model.StatusBarText = "Unable to find projects.";
                 }
+
+                resetEvent.Set();
             };
 
             loadWorker.RunWorkerAsync(baseDir);
-            return loadWorker;
+
+            return resetEvent;
         }
 
         private void StartCacheWorker()
@@ -506,7 +510,7 @@ namespace PEBakery.WPF
                         {
                             LogInfo log = errorLogs[i];
                             if (log.Command != null)
-                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command}) (Line {log.Command.LineIdx})");
                             else
                                 b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
                         }
@@ -565,6 +569,7 @@ namespace PEBakery.WPF
                             proc.StartInfo.UseShellExecute = true;
                             proc.StartInfo.Verb = "Open";
                             proc.StartInfo.FileName = tempFile;
+                            proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(tempFile);
                             proc.Start();
                         }
                     }
@@ -886,13 +891,11 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            ProcessStartInfo procInfo = new ProcessStartInfo()
+            ProcessStartInfo procInfo = new ProcessStartInfo(curMainTree.Plugin.FullPath)
             {
-                Verb = "open",
-                FileName = curMainTree.Plugin.FullPath,
                 UseShellExecute = true
             };
-            Process.Start(procInfo);
+            Process.Start(procInfo);            
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)

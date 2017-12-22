@@ -465,6 +465,12 @@ namespace PEBakery.Core
                     case CodeType.INIDeleteOp:
                         logs.AddRange(CommandIni.IniDeleteOp(s, cmd));
                         break;
+                    case CodeType.INIReadSection:
+                        logs.AddRange(CommandIni.IniReadSection(s, cmd));
+                        break;
+                    case CodeType.INIReadSectionOp:
+                        logs.AddRange(CommandIni.IniReadSectionOp(s, cmd));
+                        break;
                     case CodeType.INIAddSection:
                         logs.AddRange(CommandIni.IniAddSection(s, cmd));
                         break;

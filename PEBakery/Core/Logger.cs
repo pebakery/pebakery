@@ -190,7 +190,7 @@ namespace PEBakery.Core
             if (Command != null)
             {
                 if (0 < Command.LineIdx)
-                    return $"[{State}] {Message} (Line {Command.LineIdx}, {Command.RawCode})";
+                    return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
                 else
                     return $"[{State}] {Message} ({Command.RawCode})";
             }
@@ -521,6 +521,7 @@ namespace PEBakery.Core
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
                     dbCode.RawCode = log.Command.RawCode;
+                    dbCode.LineIdx = log.Command.LineIdx;
                 }
 
                 if (s.DelayedLogging)
@@ -581,6 +582,7 @@ namespace PEBakery.Core
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
                     dbCode.RawCode = log.Command.RawCode;
+                    dbCode.LineIdx = log.Command.LineIdx;
                 }
 
                 DB.Insert(dbCode);
@@ -962,6 +964,7 @@ namespace PEBakery.Core
         public LogState State { get; set; }
         [MaxLength(65535)]
         public string Message { get; set; }
+        public int LineIdx { get; set; }
         [MaxLength(65535)]
         public string RawCode { get; set; }
 
@@ -978,9 +981,11 @@ namespace PEBakery.Core
             }
         }
         [Ignore]
-        public string TimeStr { get => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture); }
+        public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
         [Ignore]
-        public string Text { get => Export(LogExportType.Text); }
+        public string Text => Export(LogExportType.Text);
+        [Ignore]
+        public string LineIdxStr => LineIdx.ToString();
 
         public string Export(LogExportType type, bool logDepth = true)
         {
@@ -1013,6 +1018,9 @@ namespace PEBakery.Core
                                 b.Append($"[{State}] {Message} ({RawCode})");
                         }
 
+                        if (State == LogState.Error || State == LogState.Warning)
+                            b.Append($" (Line {LineIdx})");
+
                         str = b.ToString();
                     }
                     break;
@@ -1032,6 +1040,9 @@ namespace PEBakery.Core
                             b.Append(Message);
                         else
                             b.Append($"{Message} ({RawCode})");
+
+                        if (State == LogState.Error || State == LogState.Warning)
+                            b.Append($" (Line {LineIdx})");
 
                         str = b.ToString();
                     }
