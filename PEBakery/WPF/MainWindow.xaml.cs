@@ -355,7 +355,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Model.PluginTitleText = "PEBakery is unable to find projects.";
+                    Model.PluginTitleText = "Unable to find projects.";
                     Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
                     if (quiet == false)
@@ -565,10 +565,13 @@ namespace PEBakery.WPF
                             using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
                                 sw.Write(b.ToString());
 
-                            Process proc = new Process();
-                            proc.StartInfo.UseShellExecute = true;
-                            proc.StartInfo.Verb = "Open";
-                            proc.StartInfo.FileName = tempFile;
+                            Process proc = new Process
+                            {
+                                StartInfo = new ProcessStartInfo(tempFile)
+                                {
+                                    UseShellExecute = true
+                                }
+                            };
                             proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(tempFile);
                             proc.Start();
                         }
@@ -895,7 +898,7 @@ namespace PEBakery.WPF
             {
                 UseShellExecute = true
             };
-            Process.Start(procInfo);            
+            Process.Start(procInfo);      
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -922,12 +925,13 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot)
+        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot, TreeViewModel projectRoot = null)
         {
             Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
 
             // Populate MainPlugin
-            TreeViewModel projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
+            if (projectRoot == null)
+                projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
 
             foreach (Plugin p in pList)
             {
@@ -1010,11 +1014,20 @@ namespace PEBakery.WPF
             return final;
         }
 
-        private void RecursiveTreeViewModelSort(TreeViewModel item)
+        public void UpdatePluginTree(Project project, bool redrawPlugin)
         {
-            item.SortChildren();
-            foreach (TreeViewModel child in item.Children)
-                RecursiveTreeViewModelSort(child);
+            TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Plugin.Project.Equals(project));
+            if (projectRoot != null) // Remove existing project tree
+                projectRoot.Children.Clear();
+
+            PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree, projectRoot);
+
+            if (redrawPlugin)
+            {
+                curMainTree = projectRoot;
+                curMainTree.IsExpanded = true;
+                DrawPlugin(projectRoot.Plugin);
+            }
         }
 
         public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)

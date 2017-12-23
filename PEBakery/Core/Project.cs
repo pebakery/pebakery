@@ -594,14 +594,14 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns></returns>
-        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false, bool ignoreMain = false)
+        public Plugin LoadPluginMonkeyPatch(string pFullPath, bool addToProjectTree = false, bool ignoreMain = false)
         {
             // Limit: fullPath must be in BaseDir
-            if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
+            if (pFullPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
-            Plugin p = LoadPlugin(pPath, ignoreMain, false);
-            if (addToList)
+            Plugin p = LoadPlugin(pFullPath, ignoreMain, false);
+            if (addToProjectTree)
             {
                 allPlugins.Add(p);
                 allPluginCount += 1;
@@ -715,15 +715,25 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetPluginByPath
-        public Plugin GetPluginByFullPath(string fullPath)
+        #region GetPluginByPath, ContainsPlugin
+        public Plugin GetPluginByFullPath(string pFullPath)
         {
-            return AllPlugins.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public Plugin GetPluginByShortPath(string shortPath)
+        public Plugin GetPluginByShortPath(string pShortPath)
         {
-            return AllPlugins.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool ContainsPluginByFullPath(string pFullPath)
+        {
+            return (AllPlugins.FindIndex(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase)) != -1);
+        }
+
+        public bool ContainsPluginByShortPath(string pShortPath)
+        {
+            return (AllPlugins.FindIndex(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase)) != -1);
         }
         #endregion
 
@@ -750,6 +760,33 @@ namespace PEBakery.Core
                 allPluginCount = this.allPluginCount,
             };
             return project;
+        }
+        #endregion
+
+        #region Equals
+        public override bool Equals(object obj)
+        {
+            Project project = obj as Project;
+            return Equals(project);
+        }
+
+        public bool Equals(Project project)
+        {
+            if (project == null) throw new ArgumentNullException("project");
+
+            if (projectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
+                projectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&
+                projectDir.Equals(project.ProjectDir, StringComparison.OrdinalIgnoreCase) &&
+                allPluginCount == project.AllPluginCount)
+                return true;
+            else
+                return false;
+
+        }
+
+        public override int GetHashCode()
+        {
+            return projectName.GetHashCode() ^ projectRoot.GetHashCode() ^ projectDir.GetHashCode() ^ allPluginCount.GetHashCode();
         }
         #endregion
     }

@@ -2503,7 +2503,7 @@ namespace PEBakery.Core
         OnBuildExit,
         OnScriptExit, OnPluginExit,
         RefreshInterface,
-        RescanScripts,
+        LoadAll, RescanScripts, 
         Load,
         SaveLog,
         SetLocal, EndLocal, 
@@ -2673,25 +2673,38 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo_RescanScripts : SystemInfo
-    { // System,RescanScripts
-        public SystemInfo_RescanScripts() { }
-        public override string ToString() { return "RescanScripts"; }
+    public class SystemInfo_LoadAll : SystemInfo
+    {
+        // System,LoadAll
+        // System,RescanScripts
+        public SystemInfo_LoadAll() { }
+        public override string ToString() { return "LoadAll"; }
     }
 
     [Serializable]
     public class SystemInfo_Load : SystemInfo
-    { // System,Load,<PluginToRefresh>
-        public string PluginToRefresh;
+    { // System,Load,[SrcFile],[NOREC]
+        public string SrcFile;
+        public bool NoRec;
 
-        public SystemInfo_Load(string pluginToRefresh)
+        public SystemInfo_Load(string srcFile, bool noRec)
         {
-            PluginToRefresh = pluginToRefresh;
+            SrcFile = srcFile;
+            NoRec = noRec;
         }
 
         public override string ToString()
         {
-            return $"Load,{PluginToRefresh}";
+            StringBuilder b = new StringBuilder(8);
+            b.Append("Load");
+            if (SrcFile != null)
+            {
+                b.Append(",");
+                b.Append(SrcFile);
+                if (NoRec)
+                    b.Append(",NOREC");
+            }
+            return b.ToString();
         }
     }
 

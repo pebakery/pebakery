@@ -2516,22 +2516,35 @@ namespace PEBakery.Core
                         info = new SystemInfo_RefreshInterface();
                     }
                     break;
+                case SystemType.LoadAll:
                 case SystemType.RescanScripts:
-                    { // System,RescanScripts
+                    { // System,LoadAll
                         const int argCount = 0;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        info = new SystemInfo_RescanScripts();
+                        info = new SystemInfo_LoadAll();
                     }
                     break;
                 case SystemType.Load:
-                    { // System,Load,<Path>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+                    { // System,Load,[SrcFile],[NOREC]
+                        const int minArgCount = 0;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        info = new SystemInfo_Load(args[0]);
+                        string srcFile = null;
+                        bool noRec = false;
+                        if (args.Count == 1)
+                            srcFile = args[0];
+                        if (args.Count == 2)
+                        {
+                            if (args[1].Equals("NOREC", StringComparison.OrdinalIgnoreCase))
+                                noRec = true;
+                            else
+                                throw new InvalidCommandException($"Invalid Flag [{args[1]}]", rawCode);
+                        }
+                        info = new SystemInfo_Load(srcFile, noRec);
                     }
                     break;
                 case SystemType.SaveLog:
