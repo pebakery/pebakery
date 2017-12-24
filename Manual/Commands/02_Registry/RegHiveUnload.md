@@ -16,7 +16,7 @@ RegHiveLoad,<KeyPath>
 
 ## Remarks
 
-None.
+A registry hive mounted with `RegHiveLoad` should be unmounted with `RegHiveUnload`.
 
 ## Related
 

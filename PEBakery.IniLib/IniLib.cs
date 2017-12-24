@@ -32,11 +32,10 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace PEBakery.IniLib
 {
-    using StringDictionary = Dictionary<string, string>;
-
     #region Exceptions
     /// <summary>
     /// When parsing ini file, specified key not found.
@@ -959,6 +958,126 @@ namespace PEBakery.IniLib
         }
         #endregion
 
+        #region ReadSection
+        public static IniKey[] ReadSection(string file, IniKey iniKey)
+        {
+            return InternalReadSection(file, new string[] { iniKey.Section }).Select(x => x.Value).First();
+        }
+        public static IniKey[] ReadSection(string file, string section)
+        {
+            return InternalReadSection(file, new string[] { section }).Select(x => x.Value).First();
+        }
+        public static Dictionary<string, IniKey[]> ReadSections(string file, IEnumerable<IniKey> iniKeys)
+        {
+            return InternalReadSection(file, iniKeys.Select(x => x.Section));
+        }
+        public static Dictionary<string, IniKey[]> ReadSections(string file, IEnumerable<string> sections)
+        {
+            return InternalReadSection(file, sections);
+        }
+        private static Dictionary<string, IniKey[]> InternalReadSection(string file, IEnumerable<string> sections)
+        {
+            string[] sectionNames = sections.ToArray();
+            Dictionary<string, List<IniKey>> secDict = new Dictionary<string, List<IniKey>>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < sectionNames.Length; i++)
+                secDict[sectionNames[i]] = null;
+
+            ReaderWriterLockSlim rwLock;
+            if (lockDict.ContainsKey(file))
+            {
+                rwLock = lockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                lockDict[file] = rwLock;
+            }
+
+            rwLock.EnterReadLock();
+            try
+            {
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
+                using (StreamReader reader = new StreamReader(file, encoding, true))
+                {
+                    // int len = iniKeys.Count;
+                    string line = string.Empty;
+                    bool inTargetSection = false;
+                    string currentSection = null;
+                    List<IniKey> currentIniKeys = null;
+
+                    while ((line = reader.ReadLine()) != null)
+                    { // Read text line by line
+                        line = line.Trim(); // Remove whitespace
+                        if (line.StartsWith("#", StringComparison.Ordinal) ||
+                            line.StartsWith(";", StringComparison.Ordinal) ||
+                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                            continue;
+
+                        if (inTargetSection)
+                        {
+                            Debug.Assert(currentSection != null);
+
+                            int idx = line.IndexOf('=');
+                            if (idx != -1 && idx != 0) // there is key, and key name is not empty
+                            {
+                                string key = line.Substring(0, idx).Trim();
+                                string value = line.Substring(idx + 1).Trim();
+                                currentIniKeys.Add(new IniKey(currentSection, key, value));
+                            }
+                            else
+                            {
+                                // Search if current section ended
+                                if (line.StartsWith("[", StringComparison.Ordinal) &&
+                                    line.EndsWith("]", StringComparison.Ordinal))
+                                {
+                                    // Only sections contained in sectionNames will be targeted
+                                    inTargetSection = false;
+                                    currentSection = null;
+
+                                    string foundSection = line.Substring(1, line.Length - 2);
+                                    int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                                    if (sIdx != -1)
+                                    {
+                                        inTargetSection = true;
+                                        currentSection = foundSection;
+                                        if (secDict[currentSection] == null)
+                                            secDict[currentSection] = new List<IniKey>(16);
+                                        currentIniKeys = secDict[currentSection];
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        { // not in section
+                          // Check if encountered section head Ex) [Process]
+                            if (line.StartsWith("[", StringComparison.Ordinal) &&
+                                line.EndsWith("]", StringComparison.Ordinal))
+                            {
+                                // Only sections contained in iniKeys will be targeted
+                                string foundSection = line.Substring(1, line.Length - 2);
+                                int sIdx = Array.FindIndex(sectionNames, x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                                if (sIdx != -1)
+                                {
+                                    inTargetSection = true;
+                                    currentSection = foundSection;
+                                    if (secDict[currentSection] == null)
+                                        secDict[currentSection] = new List<IniKey>(16);
+                                    currentIniKeys = secDict[currentSection];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
+
+            return secDict.ToDictionary(x => x.Key, x => x.Value?.ToArray(), StringComparer.OrdinalIgnoreCase);
+        }
+        #endregion
+
         #region AddSection
         public static bool AddSection(string file, IniKey iniKey)
         {
@@ -1268,7 +1387,7 @@ namespace PEBakery.IniLib
         /// </summary>
         /// <param name="lines"></param>
         /// <returns></returns>
-        public static StringDictionary ParseIniLinesIniStyle(IEnumerable<string> lines)
+        public static Dictionary<string, string> ParseIniLinesIniStyle(IEnumerable<string> lines)
         {
             // This regex exclude %A%=BCD form.
             // Used [^=] to prevent '=' in key.
@@ -1281,7 +1400,7 @@ namespace PEBakery.IniLib
         /// There in format of %VarKey%=VarValue
         /// <param name="lines"></param>
         /// <returns></returns>
-        public static StringDictionary ParseIniLinesVarStyle(IEnumerable<string> lines)
+        public static Dictionary<string, string> ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
             // Used [^=] to prevent '=' in key.
             return InternalParseIniLinesRegex(@"^%([^=]+)%=(.*)$", lines);
@@ -1293,9 +1412,9 @@ namespace PEBakery.IniLib
         /// <param name="regex"></param>
         /// <param name="lines"></param>
         /// <returns></returns>
-        private static StringDictionary InternalParseIniLinesRegex(string regex, IEnumerable<string> lines)
+        private static Dictionary<string, string> InternalParseIniLinesRegex(string regex, IEnumerable<string> lines)
         {
-            StringDictionary dict = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string line in lines)
             {
                 Regex regexInstance = new Regex(regex, RegexOptions.Compiled);
@@ -1319,7 +1438,7 @@ namespace PEBakery.IniLib
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static StringDictionary ParseIniSectionToDict(string file, string section)
+        public static Dictionary<string, string> ParseIniSectionToDict(string file, string section)
         {
             List<string> lines = ParseIniSection(file, section);
             return ParseIniLinesIniStyle(lines);
@@ -1406,10 +1525,10 @@ namespace PEBakery.IniLib
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static StringDictionary[] ParseSectionsToDicts(string file, string[] sections)
+        public static Dictionary<string, string>[] ParseSectionsToDicts(string file, string[] sections)
         {
             List<string>[] lines = ParseIniSections(file, sections);
-            StringDictionary[] dicts = new StringDictionary[lines.Length];
+            Dictionary<string, string>[] dicts = new Dictionary<string, string>[lines.Length];
             for (int i = 0; i < lines.Length; i++)
                 dicts[i] = ParseIniLinesIniStyle(lines[i]);
             return dicts;
@@ -1492,7 +1611,7 @@ namespace PEBakery.IniLib
             return lines;
         }
 
-        public static Dictionary<string, StringDictionary> ParseToDict(string srcFile)
+        public static Dictionary<string, Dictionary<string, string>> ParseToDict(string srcFile)
         {
             ReaderWriterLockSlim rwLock;
 
@@ -1506,7 +1625,7 @@ namespace PEBakery.IniLib
                 lockDict[srcFile] = rwLock;
             }
 
-            Dictionary<string, StringDictionary> dict = new Dictionary<string, StringDictionary>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
             rwLock.EnterReadLock();
             try
@@ -1542,7 +1661,7 @@ namespace PEBakery.IniLib
                             line.EndsWith("]", StringComparison.Ordinal))
                         {
                             section = line.Substring(1, line.Length - 2);
-                            dict[section] = new StringDictionary(StringComparer.OrdinalIgnoreCase);
+                            dict[section] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                             continue;
                         }
 
@@ -1684,7 +1803,7 @@ namespace PEBakery.IniLib
     public class IniFile
     {
         public string FilePath { get; set; }
-        public Dictionary<string, StringDictionary> Sections { get; set; }
+        public Dictionary<string, Dictionary<string, string>> Sections { get; set; }
 
         public IniFile(string filePath)
         {

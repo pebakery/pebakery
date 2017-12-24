@@ -398,12 +398,6 @@ namespace PEBakery.Core
                     case CodeType.RegHiveUnload:
                         logs.AddRange(CommandRegistry.RegHiveUnload(s, cmd));
                         break;
-                    case CodeType.RegImport:
-                        logs.AddRange(CommandRegistry.RegImport(s, cmd));
-                        break;
-                    case CodeType.RegExport:
-                        logs.AddRange(CommandRegistry.RegExport(s, cmd));
-                        break;
                     case CodeType.RegRead:
                         logs.AddRange(CommandRegistry.RegRead(s, cmd));
                         break;
@@ -418,6 +412,12 @@ namespace PEBakery.Core
                         break;
                     case CodeType.RegMulti:
                         logs.AddRange(CommandRegistry.RegMulti(s, cmd));
+                        break;
+                    case CodeType.RegImport:
+                        logs.AddRange(CommandRegistry.RegImport(s, cmd));
+                        break;
+                    case CodeType.RegExport:
+                        logs.AddRange(CommandRegistry.RegExport(s, cmd));
                         break;
                     #endregion
                     #region 03 Text
@@ -464,6 +464,12 @@ namespace PEBakery.Core
                         break;
                     case CodeType.INIDeleteOp:
                         logs.AddRange(CommandIni.IniDeleteOp(s, cmd));
+                        break;
+                    case CodeType.INIReadSection:
+                        logs.AddRange(CommandIni.IniReadSection(s, cmd));
+                        break;
+                    case CodeType.INIReadSectionOp:
+                        logs.AddRange(CommandIni.IniReadSectionOp(s, cmd));
                         break;
                     case CodeType.INIAddSection:
                         logs.AddRange(CommandIni.IniAddSection(s, cmd));

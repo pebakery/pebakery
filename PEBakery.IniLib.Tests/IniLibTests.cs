@@ -845,6 +845,233 @@ namespace PEBakery.IniLib.Tests
         }
         #endregion
 
+        #region ReadSection
+        [TestCategory("IniLib")]
+        [TestMethod]
+        public void IniLIb_ReadSection()
+        {
+            IniLib_ReadSection_1();
+            IniLib_ReadSection_2();
+            IniLib_ReadSection_3();
+        }
+
+        public void IniLib_ReadSection_1()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine("2=B");
+                }
+
+                IniKey[] keys = Ini.ReadSection(tempFile, "Section");
+
+                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadSection_2()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine("2=B");
+                }
+
+                IniKey[] keys = Ini.ReadSection(tempFile, "Dummy");
+                // Assert.IsTrue(keys.Count() == 0);
+                Assert.IsTrue(keys == null);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadSection_3()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine("00=A");
+                    w.WriteLine("01=B");
+                    w.WriteLine("02=C");
+                    w.WriteLine();
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("10=한");
+                    w.WriteLine("11=국");
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("20=韓");
+                    w.WriteLine("21=國");
+                }
+
+                IniKey[] keys;
+                keys = Ini.ReadSection(tempFile, new IniKey("Section1"));
+                Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
+                Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+
+                keys = Ini.ReadSection(tempFile, "Section2");
+                Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+
+                keys = Ini.ReadSection(tempFile, "Section3");
+                Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+        #endregion
+
+        #region ReadSections
+        [TestCategory("IniLib")]
+        [TestMethod]
+        public void IniLib_ReadSections()
+        {
+            IniLib_ReadSections_1();
+            IniLib_ReadSections_2();
+            IniLib_ReadSections_3();
+        }
+
+        public void IniLib_ReadSections_1()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine("2=B");
+                }
+
+                Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(tempFile, new IniKey[] { new IniKey("Section") });
+                IniKey[] keys = keyDict["Section"];
+                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadSections_2()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine("2=B");
+                }
+
+                Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(tempFile, new string[] { "Section", "Dummy" });
+                IniKey[] keys = keyDict["Section"];
+                Assert.IsTrue(keys[0].Key.Equals("1", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("2", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+
+                keys = keyDict["Dummy"];
+                Assert.IsTrue(keys == null);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadSections_3()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine("00=A");
+                    w.WriteLine("01=B");
+                    w.WriteLine("02=C");
+                    w.WriteLine();
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("10=한");
+                    w.WriteLine("11=국");
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("20=韓");
+                    w.WriteLine("21=國");
+                }
+
+                IniKey[] keys;
+                Dictionary<string, IniKey[]> keyDict = Ini.ReadSections(tempFile, new string[] { "Section1", "Section2", "Section3" });
+
+                Assert.IsTrue(keyDict.ContainsKey("Section1"));
+                keys = keyDict["Section1"];
+                Assert.IsTrue(keys[0].Key.Equals("00", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("01", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("B", StringComparison.Ordinal));
+                Assert.IsTrue(keys[2].Key.Equals("02", StringComparison.Ordinal));
+                Assert.IsTrue(keys[2].Value.Equals("C", StringComparison.Ordinal));
+
+                Assert.IsTrue(keyDict.ContainsKey("Section2"));
+                keys = keyDict["Section2"];
+                Assert.IsTrue(keys[0].Key.Equals("10", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("한", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("11", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("국", StringComparison.Ordinal));
+
+                Assert.IsTrue(keyDict.ContainsKey("Section3"));
+                keys = keyDict["Section3"];
+                Assert.IsTrue(keys[0].Key.Equals("20", StringComparison.Ordinal));
+                Assert.IsTrue(keys[0].Value.Equals("韓", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Key.Equals("21", StringComparison.Ordinal));
+                Assert.IsTrue(keys[1].Value.Equals("國", StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+        #endregion
+
         #region AddSection
         [TestCategory("IniLib")]
         [TestMethod]

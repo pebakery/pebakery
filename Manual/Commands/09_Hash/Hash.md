@@ -5,7 +5,7 @@ Cacluates hash from file.
 ## Syntax
 
 ```pebakery
-Hash,<HashType>,<FilePath>,<DestVar>
+Hash,<HashType>,<FilePath>,<%DestVar%>
 ```
 
 - Arguments

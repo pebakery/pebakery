@@ -167,6 +167,26 @@ namespace PEBakery.WPF
         {
             Model.Interface_MonospaceFont = FontHelper.ChooseFontDialog(Model.Interface_MonospaceFont, this, false, true);
         }
+
+        private void Button_CustomEditorPath_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+            {
+                Filter = "Executable|*.exe",
+            };
+
+            if (System.IO.File.Exists(Model.Interface_CustomEditorPath))
+            {
+                dialog.FileName = System.IO.Path.GetFileName(Model.Interface_CustomEditorPath);
+                if (System.IO.Directory.Exists(FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath)))
+                    dialog.InitialDirectory = FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath);
+            }
+
+            if (dialog.ShowDialog() == true)
+            {
+                Model.Interface_CustomEditorPath = dialog.FileName;
+            }
+        }
     }
     #endregion
 
@@ -473,6 +493,28 @@ namespace PEBakery.WPF
             }
         }
 
+        private bool interface_UseCustomEditor;
+        public bool Interface_UseCustomEditor
+        {
+            get => interface_UseCustomEditor;
+            set
+            {
+                interface_UseCustomEditor = value;
+                OnPropertyUpdate("Interface_UseCustomEditor");
+            }
+        }
+
+        private string interface_CustomEditorPath;
+        public string Interface_CustomEditorPath
+        {
+            get => interface_CustomEditorPath;
+            set
+            {
+                interface_CustomEditorPath = value;
+                OnPropertyUpdate("Interface_CustomEditorPath");
+            }
+        }
+
         private bool interface_DisplayShellExecuteStdOut;
         public bool Interface_DisplayShellExecuteStdOut
         {
@@ -736,6 +778,8 @@ namespace PEBakery.WPF
             }
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteStdOut = true;
+            Interface_UseCustomEditor = false;
+            Interface_CustomEditorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
 
             // Plugin
             Plugin_EnableCache = true;
@@ -779,6 +823,8 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "MonospaceFontWeight"),
                 new IniKey("Interface", "MonospaceFontSize"),
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
+                new IniKey("Interface", "UseCustomEditor"), // Boolean
+                new IniKey("Interface", "CustomEditorPath"), // String
                 new IniKey("Interface", "DisplayShellExecuteStdOut"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "SpeedupLoading"), // Boolean
@@ -806,6 +852,8 @@ namespace PEBakery.WPF
             string str_Interface_MonospaceFontFamiliy = dict["Interface_MonospaceFontFamily"];
             string str_Interface_MonospaceFontWeight = dict["Interface_MonospaceFontWeight"];
             string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
+            string str_Interface_UseCustomEditor = dict["Interface_UseCustomEditor"];
+            string str_Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
             string str_Interface_DisplayShellExecuteStdOut = dict["Interface_DisplayShellExecuteStdOut"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
@@ -882,6 +930,17 @@ namespace PEBakery.WPF
                         Interface_ScaleFactor = scaleFactor;
                 }
             }
+
+            // Interface_UseCustomEditor (Default = False)
+            if (str_Interface_UseCustomEditor != null)
+            {
+                if (str_Interface_UseCustomEditor.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Interface_UseCustomEditor = true;
+            }
+
+            // Interface_CustomEditorPath
+            if (dict["Interface_CustomEditorPath"] != null)
+                Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
 
             // Interface - DisplayShellExecuteStdOut (Default = True)
             if (str_Interface_DisplayShellExecuteStdOut != null)
@@ -997,6 +1056,8 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "MonospaceFontWeight", Interface_MonospaceFont.FontWeight.ToString()),
                 new IniKey("Interface", "MonospaceFontSize", Interface_MonospaceFont.FontSizeInPoint.ToString()),
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
+                new IniKey("Interface", "UseCustomEditor", Interface_UseCustomEditor.ToString()),
+                new IniKey("Interface", "CustomEditorPath", Interface_CustomEditorPath),
                 new IniKey("Interface", "DisplayShellExecuteStdOut", Interface_DisplayShellExecuteStdOut.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),

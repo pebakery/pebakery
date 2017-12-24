@@ -19,6 +19,8 @@ IniAddSection,<FileName>,<Section>
 
 If the section already exists no action will be taken.
 
+PEBakery will optimize multiple `IniAddSection` in a row to single command.
+
 ## Example
 
 In the following example the section `mySection` will be created inside C:\myFile.ini.

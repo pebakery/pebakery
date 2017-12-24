@@ -2,7 +2,7 @@
 
 Exports the contents of a registry key to a *.reg file.
 
-This command has the same effect as running `REG.exe EXPORT <RegPath> /y` from Windows.
+This command has the same effect as running `REG.exe EXPORT <RegPath> /Y` from Windows.
 
 ## Syntax
 
@@ -27,7 +27,7 @@ RegExport,<KeyPath>,<RegFile>
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 ```pebakery
 // Make sure RegHiveLoad,<KeyPath> matches the path in your *.reg file

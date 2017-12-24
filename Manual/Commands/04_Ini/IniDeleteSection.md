@@ -17,6 +17,8 @@ IniDeleteSection,<Filename>,<Section>
 
 ## Remarks
 
+PEBakery will optimize multiple `IniDeleteSection` in a row to single command.
+
 ## Example
 
 In the following example the section `mySection` will be removed along with any keys and values it contains.
