@@ -534,24 +534,6 @@ namespace PEBakery.Core
 
                         return new CodeInfo_RegHiveUnload(args[0]);
                     }
-                case CodeType.RegImport:
-                    { // RegImport,<RegFile>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        return new CodeInfo_RegImport(args[0]);
-                    }
-                case CodeType.RegExport:
-                    { // RegExport,<HKey>,<KeyPath>,<RegFile>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
-
-                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
-
-                        return new CodeInfo_RegExport(hKey, args[1], args[2]);
-                    }
                 case CodeType.RegRead:
                     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
                         const int argCount = 4;
@@ -723,6 +705,24 @@ namespace PEBakery.Core
                             arg2 = args[5];
 
                         return new CodeInfo_RegMulti(hKey, keyPath, valueName, valType, arg1, arg2);
+                    }
+                case CodeType.RegImport:
+                    { // RegImport,<RegFile>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_RegImport(args[0]);
+                    }
+                case CodeType.RegExport:
+                    { // RegExport,<HKey>,<KeyPath>,<RegFile>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hKey = RegistryHelper.ParseStringToRegKey(args[0]);
+
+                        return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
                 #endregion
                 #region 03 Text

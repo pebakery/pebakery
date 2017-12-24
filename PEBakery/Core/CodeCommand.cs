@@ -42,7 +42,7 @@ namespace PEBakery.Core
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         PathMove = 160,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
+        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
@@ -503,44 +503,6 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_RegImport : CodeInfo
-    { // RegImport,<RegFile>
-        public string RegFile;
-
-        public CodeInfo_RegImport(string regFile)
-        {
-            RegFile = regFile;
-        }
-
-        public override string ToString()
-        {
-            return RegFile;
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_RegExport : CodeInfo
-    { // RegExport,<Key>,<RegFile>
-        [NonSerialized]
-        public RegistryKey HKey;
-        public string KeyPath;
-        public string RegFile;
-
-        public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
-        {
-            HKey = hKey;
-            KeyPath = keyPath;
-            RegFile = regFile;
-        }
-
-        public override string ToString()
-        {
-            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},{KeyPath},{RegFile}";
-        }
-    }
-
-    [Serializable]
     public class CodeInfo_RegRead : CodeInfo
     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
         [NonSerialized]
@@ -729,6 +691,44 @@ namespace PEBakery.Core
                 b.Append(Arg2);
             }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegImport : CodeInfo
+    { // RegImport,<RegFile>
+        public string RegFile;
+
+        public CodeInfo_RegImport(string regFile)
+        {
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            return RegFile;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegExport : CodeInfo
+    { // RegExport,<Key>,<RegFile>
+        [NonSerialized]
+        public RegistryKey HKey;
+        public string KeyPath;
+        public string RegFile;
+
+        public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
+        {
+            HKey = hKey;
+            KeyPath = keyPath;
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},{KeyPath},{RegFile}";
         }
     }
     #endregion

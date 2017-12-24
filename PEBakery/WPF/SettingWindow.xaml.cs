@@ -173,9 +173,15 @@ namespace PEBakery.WPF
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
             {
                 Filter = "Executable|*.exe",
-                FileName = System.IO.Path.GetFileName(Model.Interface_CustomEditorPath),
-                InitialDirectory = FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath),
             };
+
+            if (System.IO.File.Exists(Model.Interface_CustomEditorPath))
+            {
+                dialog.FileName = System.IO.Path.GetFileName(Model.Interface_CustomEditorPath);
+                if (System.IO.Directory.Exists(FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath)))
+                    dialog.InitialDirectory = FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath);
+            }
+
             if (dialog.ShowDialog() == true)
             {
                 Model.Interface_CustomEditorPath = dialog.FileName;
