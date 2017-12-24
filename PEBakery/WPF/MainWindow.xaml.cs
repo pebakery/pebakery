@@ -565,15 +565,7 @@ namespace PEBakery.WPF
                             using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
                                 sw.Write(b.ToString());
 
-                            Process proc = new Process
-                            {
-                                StartInfo = new ProcessStartInfo(tempFile)
-                                {
-                                    UseShellExecute = true
-                                }
-                            };
-                            proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(tempFile);
-                            proc.Start();
+                            OpenTextFile(tempFile, true);
                         }
                     }
                 }
@@ -894,11 +886,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            ProcessStartInfo procInfo = new ProcessStartInfo(curMainTree.Plugin.FullPath)
-            {
-                UseShellExecute = true
-            };
-            Process.Start(procInfo);      
+            OpenTextFile(curMainTree.Plugin.FullPath, false);
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -1140,6 +1128,50 @@ namespace PEBakery.WPF
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
+        }
+        #endregion
+
+        #region OpenTextFile
+        public Process OpenTextFile(string textFile, bool deleteTextFile = false)
+        {
+            Process proc = new Process();
+
+            bool startInfoValid = false;
+            if (setting.Interface_UseCustomEditor)
+            {
+                if (!Path.GetExtension(setting.Interface_CustomEditorPath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else if (!File.Exists(setting.Interface_CustomEditorPath))
+                {
+                    MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    proc.StartInfo = new ProcessStartInfo(setting.Interface_CustomEditorPath)
+                    {
+                        UseShellExecute = true,
+                        Arguments = textFile,
+                    };
+                    startInfoValid = true;
+                }
+            }
+            
+            if (startInfoValid == false)
+            {
+                proc.StartInfo = new ProcessStartInfo(textFile)
+                {
+                    UseShellExecute = true,
+                };
+            }
+
+            if (deleteTextFile)
+                proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(textFile);
+
+            proc.Start();
+
+            return proc;
         }
         #endregion
 

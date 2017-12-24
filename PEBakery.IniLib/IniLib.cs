@@ -1074,7 +1074,7 @@ namespace PEBakery.IniLib
                 rwLock.ExitReadLock();
             }
 
-            return secDict.ToDictionary(x => x.Key, x => x.Value == null ? null : x.Value.ToArray(), StringComparer.OrdinalIgnoreCase);
+            return secDict.ToDictionary(x => x.Key, x => x.Value?.ToArray(), StringComparer.OrdinalIgnoreCase);
         }
         #endregion
 

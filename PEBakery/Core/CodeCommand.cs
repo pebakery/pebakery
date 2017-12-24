@@ -2683,13 +2683,13 @@ namespace PEBakery.Core
 
     [Serializable]
     public class SystemInfo_Load : SystemInfo
-    { // System,Load,[SrcFile],[NOREC]
-        public string SrcFile;
+    { // System,Load,<FilePath>,[NOREC]
+        public string FilePath;
         public bool NoRec;
 
-        public SystemInfo_Load(string srcFile, bool noRec)
+        public SystemInfo_Load(string filePath, bool noRec)
         {
-            SrcFile = srcFile;
+            FilePath = filePath;
             NoRec = noRec;
         }
 
@@ -2697,10 +2697,10 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder(8);
             b.Append("Load");
-            if (SrcFile != null)
+            if (FilePath != null)
             {
                 b.Append(",");
-                b.Append(SrcFile);
+                b.Append(FilePath);
                 if (NoRec)
                     b.Append(",NOREC");
             }

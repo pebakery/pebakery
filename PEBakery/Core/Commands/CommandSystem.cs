@@ -229,115 +229,100 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load));
                         SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
 
-                        if (subInfo.SrcFile == null)
-                        { // Refresh itself
-                            AutoResetEvent resetEvent = null;
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                                resetEvent = w.StartReloadPluginWorker();
-                            });
-                            if (resetEvent != null)
-                                resetEvent.WaitOne();
+                        string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
+                        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+                        if (subInfo.NoRec)
+                            searchOption = SearchOption.AllDirectories;
+                            
+                        // Check wildcard
+                        string wildcard = Path.GetFileName(filePath);
+                        bool containsWildcard = (wildcard.IndexOfAny(new char[] { '*', '?' }) != -1);
 
-                            logs.Add(new LogInfo(LogState.Success, $"Refreshed plugin [{cmd.Addr.Plugin.FullPath}]"));
+                        string[] files;
+                        if (containsWildcard)
+                        { // With wildcard
+                            files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(filePath), wildcard, searchOption);
+                            if (files.Length == 0)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                return logs;
+                            }
                         }
                         else
-                        {
-                            string srcFile = StringEscaper.Preprocess(s, subInfo.SrcFile);
-                            SearchOption searchOption = SearchOption.TopDirectoryOnly;
-                            if (subInfo.NoRec)
-                                searchOption = SearchOption.AllDirectories;
-                            
-                            // Check wildcard
-                            string wildcard = Path.GetFileName(srcFile);
-                            bool containsWildcard = (wildcard.IndexOfAny(new char[] { '*', '?' }) != -1);
+                        { // No wildcard
+                            if (!File.Exists(filePath))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                return logs;
+                            }
 
-                            string[] files;
-                            if (containsWildcard)
-                            { // With wildcard
-                                files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(srcFile), wildcard, searchOption);
-                                if (files.Length == 0)
+                            files = new string[1] { filePath };
+                        }
+
+                        int successCount = 0;
+                        foreach (string f in files)
+                        { 
+                            string pFullPath = Path.GetFullPath(f);
+
+                            // Does this file already exists in project.AllPlugins?
+                            Project project = cmd.Addr.Project;
+                            if (project.ContainsPluginByFullPath(pFullPath))
+                            { // Project Tree conatins this plugin, so just refresh it
+                                // RefreshPlugin -> Update Project.AllPlugins
+                                // TODO: Update EngineState.Plugins?
+                                Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
+                                p = s.Project.RefreshPlugin(p);
+                                if (p == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Plugin [{srcFile}] does not exist"));
-                                    return logs;
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh plugin [{pFullPath}]"));
+                                    continue;
                                 }
+
+                                // Update MainWindow and redraw Plugin
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+
+                                    w.UpdatePluginTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Plugin))
+                                    {
+                                        w.CurMainTree.Plugin = p;
+                                        w.DrawPlugin(w.CurMainTree.Plugin);
+                                    }
+                                });
+
+                                logs.Add(new LogInfo(LogState.Success, $"Refreshed plugin [{f}]"));
+                                successCount += 1;
                             }
                             else
-                            { // No wildcard
-                                if (!File.Exists(srcFile))
+                            { // Add plugins into Project.AllPlugins
+                                Plugin p = cmd.Addr.Project.LoadPluginMonkeyPatch(pFullPath, true, false);
+                                if (p == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Plugin [{srcFile}] does not exist"));
-                                    return logs;
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load plugin [{pFullPath}]"));
+                                    continue;
                                 }
 
-                                files = new string[1] { srcFile };
-                            }
+                                // Update MainWindow.MainTree and redraw Plugin
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
 
-                            int successCount = 0;
-                            foreach (string f in files)
-                            { 
-                                string pFullPath = Path.GetFullPath(f);
-
-                                // Does this file already exists in project.AllPlugins?
-                                Project project = cmd.Addr.Project;
-                                if (project.ContainsPluginByFullPath(pFullPath))
-                                { // Project Tree conatins this plugin, so just refresh it
-                                    // RefreshPlugin -> Update Project.AllPlugins
-                                    // TODO: Update EngineState.Plugins?
-                                    Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
-                                    p = s.Project.RefreshPlugin(p);
-                                    if (p == null)
+                                    w.UpdatePluginTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Plugin))
                                     {
-                                        logs.Add(new LogInfo(LogState.Error, $"Unable to refresh plugin [{pFullPath}]"));
-                                        continue;
+                                        w.CurMainTree.Plugin = p;
+                                        w.DrawPlugin(w.CurMainTree.Plugin);
                                     }
+                                });
 
-                                    // Update MainWindow and redraw Plugin
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-
-                                        w.UpdatePluginTree(project, false);
-                                        if (p.Equals(w.CurMainTree.Plugin))
-                                        {
-                                            w.CurMainTree.Plugin = p;
-                                            w.DrawPlugin(w.CurMainTree.Plugin);
-                                        }
-                                    });
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Refreshed plugin [{f}]"));
-                                    successCount += 1;
-                                }
-                                else
-                                { // Add plugins into Project.AllPlugins
-                                    Plugin p = cmd.Addr.Project.LoadPluginMonkeyPatch(pFullPath, true, false);
-                                    if (p == null)
-                                    {
-                                        logs.Add(new LogInfo(LogState.Error, $"Unable to load plugin [{pFullPath}]"));
-                                        continue;
-                                    }
-
-                                    // Update MainWindow.MainTree and redraw Plugin
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        MainWindow w = (Application.Current.MainWindow as MainWindow);
-
-                                        w.UpdatePluginTree(project, false);
-                                        if (p.Equals(w.CurMainTree.Plugin))
-                                        {
-                                            w.CurMainTree.Plugin = p;
-                                            w.DrawPlugin(w.CurMainTree.Plugin);
-                                        }
-                                    });
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Loaded plugin [{f}], added to plugin tree"));
-                                    successCount += 1;
-                                }
+                                logs.Add(new LogInfo(LogState.Success, $"Loaded plugin [{f}], added to plugin tree"));
+                                successCount += 1;
                             }
-
-                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] plugins"));
                         }
+
+                        if (1 < files.Length)
+                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] plugins"));
                     }
                     break;
                 case SystemType.SaveLog:

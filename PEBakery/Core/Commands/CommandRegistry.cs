@@ -109,7 +109,7 @@ namespace PEBakery.Core.Commands
 
                 if (proc.ExitCode == 0) // Success
                     logs.Add(new LogInfo(LogState.Success, $"Registry file [{regFile}] imported"));
-                else // if (proc.ExitCode == 1) // Failure
+                else // Failure
                     logs.Add(new LogInfo(LogState.Error, $"Registry file [{regFile}] import failed"));
             }
 
@@ -137,7 +137,7 @@ namespace PEBakery.Core.Commands
             using (Process proc = new Process())
             {
                 proc.StartInfo.FileName = "REG.exe";
-                proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /y";
+                proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /Y";
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.Verb = "Open";
                 proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -148,7 +148,7 @@ namespace PEBakery.Core.Commands
 
                 if (proc.ExitCode == 0) // Success
                     logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] exported to [{regFile}]"));
-                else // if (proc.ExitCode == 1) // Failure
+                else // Failure
                     logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] cannot be exported"));
             }
 

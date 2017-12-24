@@ -324,7 +324,16 @@ namespace PEBakery.Core
             try
             {
                 // Write folder info to [EncodedFolders]
-                Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
+                bool writeFolderSection = true;
+                if (p.Sections.ContainsKey("EncodedFolders"))
+                {
+                    List<string> folders = p.Sections["EncodedFolders"].GetLines();
+                    if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
+                        writeFolderSection = false;
+                }
+                
+                if (writeFolderSection)
+                    Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
                 Ini.SetKey(p.FullPath, dirName, fileName, $"{input.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize

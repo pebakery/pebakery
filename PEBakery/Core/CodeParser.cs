@@ -2527,16 +2527,13 @@ namespace PEBakery.Core
                     }
                     break;
                 case SystemType.Load:
-                    { // System,Load,[SrcFile],[NOREC]
-                        const int minArgCount = 0;
+                    { // System,Load,<FilePath>,[NOREC]
+                        const int minArgCount = 1;
                         const int maxArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string srcFile = null;
                         bool noRec = false;
-                        if (args.Count == 1)
-                            srcFile = args[0];
                         if (args.Count == 2)
                         {
                             if (args[1].Equals("NOREC", StringComparison.OrdinalIgnoreCase))
@@ -2544,7 +2541,7 @@ namespace PEBakery.Core
                             else
                                 throw new InvalidCommandException($"Invalid Flag [{args[1]}]", rawCode);
                         }
-                        info = new SystemInfo_Load(srcFile, noRec);
+                        info = new SystemInfo_Load(args[0], noRec);
                     }
                     break;
                 case SystemType.SaveLog:
