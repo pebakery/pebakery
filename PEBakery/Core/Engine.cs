@@ -253,6 +253,9 @@ namespace PEBakery.Core
             // Set CurrentSection
             s.CurrentSection = addr.Section;
 
+            // Set SectionReturnValue to empty string
+            s.SectionReturnValue = string.Empty;
+
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
             for (int i = 0; i < sectionParams.Count; i++)
                 paramDict[i + 1] = StringEscaper.ExpandSectionParams(s, sectionParams[i]);
@@ -271,6 +274,9 @@ namespace PEBakery.Core
 
             // Set CurrentSection
             s.CurrentSection = addr.Section;
+
+            // Set SectionReturnValue to empty string
+            s.SectionReturnValue = string.Empty;
 
             // Must copy ParamDict by value, not reference
             RunCommands(s, addr, codes, new Dictionary<int, string>(paramDict), depth, callback);
@@ -309,6 +315,8 @@ namespace PEBakery.Core
                     break;
                 }
             }
+
+            DisableSetLocal(s, addr.Section);
         }
         #endregion
 
@@ -319,9 +327,7 @@ namespace PEBakery.Core
             int curDepth = s.CurDepth;
 
             if (CodeCommand.DeprecatedCodeType.Contains(cmd.Type))
-            {
                 logs.Add(new LogInfo(LogState.Warning, $"Command [{cmd.Type}] is deprecated"));
-            }
 
             try
             {
@@ -459,6 +465,12 @@ namespace PEBakery.Core
                     case CodeType.INIDeleteOp:
                         logs.AddRange(CommandIni.IniDeleteOp(s, cmd));
                         break;
+                    case CodeType.INIReadSection:
+                        logs.AddRange(CommandIni.IniReadSection(s, cmd));
+                        break;
+                    case CodeType.INIReadSectionOp:
+                        logs.AddRange(CommandIni.IniReadSectionOp(s, cmd));
+                        break;
                     case CodeType.INIAddSection:
                         logs.AddRange(CommandIni.IniAddSection(s, cmd));
                         break;
@@ -528,6 +540,9 @@ namespace PEBakery.Core
                     case CodeType.Echo:
                         logs.AddRange(CommandInterface.Echo(s, cmd));
                         break;
+                    case CodeType.EchoFile:
+                        logs.AddRange(CommandInterface.EchoFile(s, cmd));
+                        break;
                     case CodeType.UserInput:
                         logs.AddRange(CommandInterface.UserInput(s, cmd));
                         break;
@@ -557,6 +572,7 @@ namespace PEBakery.Core
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:
+                    case CodeType.ShellExecuteSlow:
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
@@ -616,7 +632,8 @@ namespace PEBakery.Core
                     #region Error
                     // Error
                     default:
-                        throw new ExecuteException($"Cannot execute [{cmd.Type}] command");
+                        logs.Add(new LogInfo(LogState.Error, $"Cannot execute [{cmd.Type}] command"));
+                        break;
                         #endregion
                 }
             }
@@ -634,15 +651,8 @@ namespace PEBakery.Core
                 logs.Add(new LogInfo(LogState.Error, e, cmd, curDepth));
             }
 
-            // If ErrorOffCount is on, ignore LogState.Error
-            if (0 <= s.ErrorOffStartLineIdx && 
-                s.ErrorOffStartLineIdx <= cmd.LineIdx && 
-                cmd.LineIdx < s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
-            {
-                MuteLogError(logs);
-                if (cmd.LineIdx + 1 == s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
-                    s.ErrorOffStartLineIdx = -1;
-            }
+            // If ErrorOffCount is on, ignore LogState.Error and LogState.Warning
+            ProcessErrorOff(s, cmd, logs);
 
             // Stop build on error
             if (StopBuildOnError)
@@ -653,13 +663,12 @@ namespace PEBakery.Core
 
             s.Logger.Build_Write(s, LogInfo.AddCommandDepth(logs, cmd, curDepth));
 
-            // Increase only if cmd resides is CurrentPlugin
+            // Increase only if cmd resides in CurrentPlugin.
+            // So if a setion is from Macro, it will not be count.
             if (!s.ProcessedSectionHashes.Contains(cmd.Addr.Section.GetHashCode()) && s.CurrentPlugin.Equals(cmd.Addr.Plugin))
-            {
                 s.MainViewModel.BuildPluginProgressBarValue += 1;
-            }
 
-            // This one is for Unit Test
+            // Return logs, used in unit test
             return logs; 
         }
 
@@ -709,6 +718,37 @@ namespace PEBakery.Core
         #endregion
 
         #region Utility Methods
+        public static void ProcessErrorOff(EngineState s, CodeCommand cmd, List<LogInfo> logs)
+        {
+            /*
+            if (s.ErrorOffSection != null &&
+                0 <= s.ErrorOffStartLineIdx &&
+                s.ErrorOffStartLineIdx <= cmd.LineIdx &&
+                cmd.LineIdx < s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
+            {
+                MuteLogError(logs);
+                if (s.ErrorOffSection.Equals(cmd.Addr.Section) &&
+                    cmd.LineIdx + 1 == s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
+                {
+                    s.ErrorOffStartLineIdx = -1;
+                    if (s.ErrorOffStartLineIdx == 0)
+                        s.ErrorOffSection = null;
+                }
+            }
+            */
+
+            if (s.ErrorOffSection != null &&
+                s.ErrorOffSection.Equals(cmd.Addr.Section) &&
+                0 <= s.ErrorOffStartLineIdx &&
+                s.ErrorOffStartLineIdx <= cmd.LineIdx &&
+                cmd.LineIdx < s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
+            {
+                MuteLogError(logs);
+                if (cmd.LineIdx + 1 == s.ErrorOffStartLineIdx + s.ErrorOffLineCount)
+                    s.ErrorOffStartLineIdx = -1;
+            }
+        }
+
         private static void MuteLogError(List<LogInfo> logs)
         {
             for (int i = 0; i < logs.Count; i++)
@@ -750,6 +790,23 @@ namespace PEBakery.Core
 
             return p;
         }
+
+        public static void EnableSetLocal(EngineState s, PluginSection section)
+        {
+            s.LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local);
+            s.SetLocalSection = section;
+        }
+
+        public static void DisableSetLocal(EngineState s, PluginSection section)
+        {
+            if (s.SetLocalSection != null && s.SetLocalSection.Equals(section) &&
+                s.LocalVarsBackup != null)
+            {
+                s.Variables.SetVarDict(VarsType.Local, s.LocalVarsBackup);
+                s.LocalVarsBackup = null;
+                s.SetLocalSection = null;
+            }
+        }
         #endregion
     }
     #endregion
@@ -785,18 +842,23 @@ namespace PEBakery.Core
         public int CurrentPluginIdx;
         public PluginSection CurrentSection;
         public Dictionary<int, string> CurSectionParams = new Dictionary<int, string>();
+        public string SectionReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>();
         public int CurDepth = 1;
         public bool ElseFlag = false;
         public bool LoopRunning = false;
         public long LoopCounter = 0;
         public Process RunningSubProcess = null;
+        public PluginSection SetLocalSection = null; // For System,SetLocal
+        public Dictionary<string, string> LocalVarsBackup = null; // For System,SetLocal
+        public bool InMacro = false;
         public bool PassCurrentPluginFlag = false;
         public bool ErrorHaltFlag = false;
         public bool CmdHaltFlag = false;
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
+        public PluginSection ErrorOffSection = null;
         public int ErrorOffStartLineIdx = -1; // -1 means ErrorOff is turned off
         public int ErrorOffLineCount = 0;
 
@@ -805,7 +867,7 @@ namespace PEBakery.Core
         public bool LogMacro = true; // Used in logging
         public bool CompatDirCopyBug = false; // Compatibility
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
-        public bool DisableLogger = false; // For performance (when engine runnded by interface)
+        public bool DisableLogger = false; // For performance (when engine runned by interface)
         public bool DelayedLogging = true; // For performance
 
         // System Commands

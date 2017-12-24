@@ -199,20 +199,24 @@
                 <StackPanel>
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Enable Long File Path Support"
                         ToolTip="Enabled = Path length is limited to 260&#x0a;Disabled = Path length can be up to 32767"
                         Click="CheckBox_EnableLongFilePath_Click"
                         IsChecked="{Binding General_EnableLongFilePath}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Optimize Code"
                         IsChecked="{Binding General_OptimizeCode}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Show LogWindow After Build"
                         IsChecked="{Binding General_ShowLogAfterBuild}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Stop Build on Error"
                         IsChecked="{Binding General_StopBuildOnError}" />
                 </StackPanel>
@@ -226,7 +230,7 @@
                         <Grid Margin="5, 5, 5, 5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
-                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="25"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 Grid.Row="0" Grid.Column="0"
@@ -238,8 +242,15 @@
                             <Button
                                 Grid.Row="0" Grid.Column="1"
                                 Height="25"
-                                Content="Choose"
-                                Click="Button_MonospaceFont_Click"/>
+                                Click="Button_MonospaceFont_Click">
+                                <Button.Content>
+                                    <iconPacks:PackIconMaterial
+                                        Kind="FormatFont"
+                                        Width="Auto"
+                                        Height="Auto"
+                                        Margin="2"/>
+                                </Button.Content>
+                            </Button>
                         </Grid>
                     </GroupBox>
                     <GroupBox
@@ -253,7 +264,7 @@
                                 Text="%" />
                             <TextBlock
                                 DockPanel.Dock="Right"
-                                Width="30" 
+                                Width="25" 
                                 Name="ScaleFactorBox"
                                 Text="{Binding ElementName=ScaleFactorSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}"
                                 TextAlignment="Right" />
@@ -266,8 +277,71 @@
                                 Value="{Binding Interface_ScaleFactor}" />
                         </DockPanel>
                     </GroupBox>
+                    <GroupBox
+                        Header="Default Code Editor"
+                        Margin="15, 15, 15, 0"
+                        BorderBrush="Gray">
+                        <StackPanel Margin="5, 5, 5, 5">
+                            <CheckBox
+                                DockPanel.Dock="Left" 
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                IsChecked="{Binding Interface_UseCustomEditor}"
+                                Content="Use Custom Editor" />
+                            <DockPanel>
+                                <Button
+                                    DockPanel.Dock="Right"
+                                    Width="25"
+                                    VerticalContentAlignment="Center"
+                                    HorizontalContentAlignment="Center"
+                                    IsEnabled="{Binding Interface_UseCustomEditor}"
+                                    Click="Button_CustomEditorPath_Click">
+                                    <Button.Content>
+                                        <iconPacks:PackIconFontAwesome Kind="FolderOpen"/>
+                                    </Button.Content>
+                                </Button>
+                                <TextBox
+                                    DockPanel.Dock="Left"
+                                    Margin="0, 0, 5, 0"
+                                    VerticalContentAlignment="Center"
+                                    IsEnabled="{Binding Interface_UseCustomEditor}"
+                                    Text="{Binding Interface_CustomEditorPath}" />
+                            </DockPanel>
+                        </StackPanel>
+                        
+                        <!--
+                        <Grid Margin="5, 5, 5, 5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox
+                                Grid.Row="0" Grid.Column="0"
+                                IsChecked="{Binding Interface_DefaultCodeEditor}"
+                                Content="System Default Editor" />
+                            <TextBox
+                                Grid.Row="1" Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Text="{Binding Interface_CustomCodeEditor}" />
+                            <TextBox
+                                Grid.Row="1" Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Text="{Binding Interface_CustomCodeEditor}" />
+                            <Button
+                                Grid.Row="1" Grid.Column="1"
+                                Height="25"
+                                Content="Choose"
+                                Click="Button_MonospaceFont_Click"/>
+                        </Grid>
+                        -->
+                    </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Display Standard Output When Executing ShellExecute"
                         IsChecked="{Binding Interface_DisplayShellExecuteStdOut}" />
                 </StackPanel>
@@ -281,6 +355,7 @@
                         <StackPanel>
                             <CheckBox
                                 Margin="5, 5, 5, 0"
+                                VerticalContentAlignment="Center"
                                 VerticalAlignment="Center"
                                 Content="Enable Plugin Cache"
                                 IsChecked="{Binding Plugin_EnableCache}" />
@@ -302,12 +377,14 @@
                     </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Auto Convert Plugins to UTF-8"
                         ToolTip="Turning on will break compability with WinBuilder 082."
                         IsEnabled="False"
                         IsChecked="{Binding Plugin_AutoConvertToUTF8}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Auto Check Syntax Error"
                         ToolTip="Useful for developers."
                         IsChecked="{Binding Plugin_AutoSyntaxCheck}" />
@@ -353,18 +430,22 @@
                     </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Log Macro"
                         IsChecked="{Binding Log_Macro}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Log Comment"
                         IsChecked="{Binding Log_Comment}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Disable Logging in Interface"
                         IsChecked="{Binding Log_DisableInInterface}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Disable Delayed Logging (for Debug)"
                         ToolTip="Use for only debug purpose, slows down performance!"
                         IsChecked="{Binding Log_DisableDelayedLogging}" />
@@ -374,22 +455,27 @@
                 <StackPanel>
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Simulate WinBuilder's DirCopy Asterisk Bug"
                         IsChecked="{Binding Compat_DirCopyBug}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="FileRename and DirMove work like PathMove"
                         IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Allow Deprecated Legacy Branch Condition"
                         IsChecked="{Binding Compat_LegacyBranchCondition}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
                         IsChecked="{Binding Compat_RegWriteLegacy}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
                         Content="Ignore Width of WebLabel"
                         IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
                 </StackPanel>

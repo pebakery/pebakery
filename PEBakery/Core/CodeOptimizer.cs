@@ -50,6 +50,7 @@ namespace PEBakery.Core
             CodeType.INIRead,
             CodeType.INIWrite,
             CodeType.INIDelete,
+            CodeType.INIReadSection,
             CodeType.INIAddSection,
             CodeType.INIDeleteSection,
             CodeType.INIWriteTextLine,
@@ -123,6 +124,18 @@ namespace PEBakery.Core
                             case CodeType.INIRead:
                                 state = CodeType.INIRead;
                                 opDict[CodeType.INIRead].Add(cmd);
+                                break;
+                            case CodeType.INIReadSection:
+                                state = CodeType.INIReadSection;
+                                opDict[CodeType.INIReadSection].Add(cmd);
+                                break;
+                            case CodeType.INIAddSection:
+                                state = CodeType.INIAddSection;
+                                opDict[CodeType.INIAddSection].Add(cmd);
+                                break;
+                            case CodeType.INIDeleteSection:
+                                state = CodeType.INIDeleteSection;
+                                opDict[CodeType.INIDeleteSection].Add(cmd);
                                 break;
                             case CodeType.INIWriteTextLine:
                                 state = CodeType.INIWriteTextLine;
@@ -355,6 +368,42 @@ namespace PEBakery.Core
                         }
                         break;
                     #endregion
+                    #region INIReadSection
+                    case CodeType.INIReadSection:
+                        Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniReadSection));
+                        switch (cmd.Type)
+                        {
+                            case CodeType.INIAddSection:
+                                {
+                                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection));
+                                    CodeInfo_IniReadSection firstInfo = (opDict[state][0].Info as CodeInfo_IniReadSection);
+                                    if (cmd.Info is CodeInfo_IniReadSection info &&
+                                        info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
+                                        opDict[state].Add(cmd);
+                                    else
+                                        goto default;
+                                }
+                                break;
+                            case CodeType.Comment: // Remove comments
+                                break;
+                            default: // Optimize them
+                                if (opDict[state].Count == 1)
+                                {
+                                    CodeCommand oneCmd = opDict[state][0];
+                                    optimized.Add(oneCmd);
+                                }
+                                else
+                                {
+                                    CodeCommand opCmd = OptimizeINIReadSection(opDict[state]);
+                                    optimized.Add(opCmd);
+                                }
+                                opDict[state].Clear();
+                                optimized.Add(cmd);
+                                state = CodeType.None;
+                                break;
+                        }
+                        break;
+                    #endregion
                     #region INIAddSection
                     case CodeType.INIAddSection:
                         Debug.Assert(opDict[state][0].Info.GetType() == typeof(CodeInfo_IniAddSection));
@@ -525,6 +574,9 @@ namespace PEBakery.Core
                         case CodeType.INIDelete:
                             opCmd = OptimizeINIDelete(kv.Value);
                             break;
+                        case CodeType.INIReadSection:
+                            opCmd = OptimizeINIReadSection(kv.Value);
+                            break;
                         case CodeType.INIAddSection:
                             opCmd = OptimizeINIAddSection(kv.Value);
                             break;
@@ -656,6 +708,21 @@ namespace PEBakery.Core
             }
             List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
             return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniDeleteOp(cmds), cmdList[0].LineIdx);
+        }
+
+        private static CodeCommand OptimizeINIReadSection(List<CodeCommand> cmdList)
+        {
+            Debug.Assert(0 < cmdList.Count);
+
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < cmdList.Count; i++)
+            {
+                b.Append(cmdList[i].RawCode);
+                if (i + 1 < cmdList.Count)
+                    b.AppendLine();
+            }
+            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
+            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.INIReadSectionOp, new CodeInfo_IniReadSectionOp(cmds), cmdList[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIAddSection(List<CodeCommand> cmdList)

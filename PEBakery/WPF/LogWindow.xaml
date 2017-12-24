@@ -160,8 +160,9 @@
                                         <GridViewColumn Header="Time" Width="150" DisplayMemberBinding="{Binding TimeStr}" />
                                         <GridViewColumn Header="Depth" Width="40" DisplayMemberBinding="{Binding Depth}" />
                                         <GridViewColumn Header="State" Width="60" DisplayMemberBinding="{Binding StateStr}" />
-                                        <GridViewColumn Header="Message" Width="360" DisplayMemberBinding="{Binding Message}" />
-                                        <GridViewColumn Header="RawCode" Width="200" DisplayMemberBinding="{Binding RawCode}" />
+                                        <GridViewColumn Header="Line#" Width="45" DisplayMemberBinding="{Binding LineIdxStr}" />
+                                        <GridViewColumn Header="Message" Width="340" DisplayMemberBinding="{Binding Message}" />
+                                        <GridViewColumn Header="RawCode" Width="175" DisplayMemberBinding="{Binding RawCode}" />
                                     </GridView>
                                 </ListView.View>
                             </ListView>

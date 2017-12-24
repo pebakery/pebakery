@@ -744,6 +744,9 @@ namespace PEBakery.Helper
 
         public static string ReplaceEx(string str, string oldValue, string newValue, StringComparison comp)
         {
+            if (oldValue.Equals(string.Empty, comp))
+                return str;
+
             if (str.IndexOf(oldValue, comp) != -1)
             {
                 int idx = 0;

@@ -389,6 +389,10 @@ namespace PEBakery.Core
             if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
                 str = StringHelper.ReplaceEx(str, "#a", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
 
+            // Escape #r (Return Value)
+            if (str.IndexOf("#r", StringComparison.Ordinal) != -1)
+                str = StringHelper.ReplaceEx(str, "#r", s.SectionReturnValue, StringComparison.Ordinal);
+
             // Escape #c (Loop Counter)
             if (s.LoopRunning) 
                 str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);

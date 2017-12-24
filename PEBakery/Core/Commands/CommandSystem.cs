@@ -82,6 +82,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{linesStr}] must be positive integer");
 
                         // +1 to not count ErrorOff itself
+                        s.ErrorOffSection = cmd.Addr.Section;
                         s.ErrorOffStartLineIdx = cmd.LineIdx + 1;
                         s.ErrorOffLineCount = lines;
 
@@ -205,57 +206,123 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.RescanScripts:
+                case SystemType.LoadAll:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RescanScripts));
-                        SystemInfo_RescanScripts subInfo = info.SubInfo as SystemInfo_RescanScripts;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadAll));
+                        SystemInfo_LoadAll subInfo = info.SubInfo as SystemInfo_LoadAll;
 
                         // Reload Project
-                        BackgroundWorker worker = null;
+                        AutoResetEvent resetEvent = null;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            worker = w.StartLoadWorker(true);                
+                            resetEvent = w.StartLoadWorker(true);                
                         });
-                        
-                        // TODO: More elegant way?
-                        Task.Run(() =>
-                        {
-                            while (worker.IsBusy)
-                                Thread.Sleep(200);
-                        }).Wait();
+                        if (resetEvent != null)
+                            resetEvent.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
                     }
                     break;
-                case SystemType.Rescan:
+                case SystemType.Load:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Rescan));
-                        SystemInfo_Rescan subInfo = info.SubInfo as SystemInfo_Rescan;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load));
+                        SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
 
-                        string pPath = StringEscaper.Preprocess(s, subInfo.PluginToRefresh);
-                        string pFullPath = Path.GetFullPath(pPath);
+                        string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
+                        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+                        if (subInfo.NoRec)
+                            searchOption = SearchOption.AllDirectories;
+                            
+                        // Check wildcard
+                        string wildcard = Path.GetFileName(filePath);
+                        bool containsWildcard = (wildcard.IndexOfAny(new char[] { '*', '?' }) != -1);
 
-                        // Reload plugin
-                        Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
-                        p = s.Project.RefreshPlugin(p, s);
-                        if (p == null)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"Reloading plugin [{pFullPath}] failed"));
-                            return logs;
+                        string[] files;
+                        if (containsWildcard)
+                        { // With wildcard
+                            files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(filePath), wildcard, searchOption);
+                            if (files.Length == 0)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                return logs;
+                            }
+                        }
+                        else
+                        { // No wildcard
+                            if (!File.Exists(filePath))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                return logs;
+                            }
+
+                            files = new string[1] { filePath };
                         }
 
-                        // Update MainWindow
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            if (p.Equals(w.CurMainTree.Plugin))
-                            {
-                                w.CurMainTree.Plugin = p;
-                                w.DrawPlugin(w.CurMainTree.Plugin);
-                            }
-                        });
+                        int successCount = 0;
+                        foreach (string f in files)
+                        { 
+                            string pFullPath = Path.GetFullPath(f);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
+                            // Does this file already exists in project.AllPlugins?
+                            Project project = cmd.Addr.Project;
+                            if (project.ContainsPluginByFullPath(pFullPath))
+                            { // Project Tree conatins this plugin, so just refresh it
+                                // RefreshPlugin -> Update Project.AllPlugins
+                                // TODO: Update EngineState.Plugins?
+                                Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
+                                p = s.Project.RefreshPlugin(p);
+                                if (p == null)
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh plugin [{pFullPath}]"));
+                                    continue;
+                                }
+
+                                // Update MainWindow and redraw Plugin
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+
+                                    w.UpdatePluginTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Plugin))
+                                    {
+                                        w.CurMainTree.Plugin = p;
+                                        w.DrawPlugin(w.CurMainTree.Plugin);
+                                    }
+                                });
+
+                                logs.Add(new LogInfo(LogState.Success, $"Refreshed plugin [{f}]"));
+                                successCount += 1;
+                            }
+                            else
+                            { // Add plugins into Project.AllPlugins
+                                Plugin p = cmd.Addr.Project.LoadPluginMonkeyPatch(pFullPath, true, false);
+                                if (p == null)
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load plugin [{pFullPath}]"));
+                                    continue;
+                                }
+
+                                // Update MainWindow.MainTree and redraw Plugin
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+
+                                    w.UpdatePluginTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Plugin))
+                                    {
+                                        w.CurMainTree.Plugin = p;
+                                        w.DrawPlugin(w.CurMainTree.Plugin);
+                                    }
+                                });
+
+                                logs.Add(new LogInfo(LogState.Success, $"Loaded plugin [{f}], added to plugin tree"));
+                                successCount += 1;
+                            }
+                        }
+
+                        if (1 < files.Length)
+                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] plugins"));
                     }
                     break;
                 case SystemType.SaveLog:
@@ -275,7 +342,27 @@ namespace PEBakery.Core.Commands
                         }
                     }   
                     break;
-                    // WB082 Compability Shim
+                case SystemType.SetLocal:
+                    { // SetLocal
+                        // No SystemInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.EnableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are isolated"));
+                    }
+                    break;
+                case SystemType.EndLocal:
+                    { // EndLocal
+                        // No CodeInfo
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
+
+                        Engine.DisableSetLocal(s, cmd.Addr.Section);
+
+                        logs.Add(new LogInfo(LogState.Success, "Local variables are no longer isolated"));
+                    }
+                    break;
+                // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
@@ -324,12 +411,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        /// <summary>
-        /// Function for ShellExecute, ShellExecuteDelete
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="cmd"></param>
-        /// <returns></returns>
         public static List<LogInfo> ShellExecute(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -439,6 +520,9 @@ namespace PEBakery.Core.Commands
                     };
                     proc.Start();
 
+                    if (cmd.Type == CodeType.ShellExecuteSlow)
+                        proc.PriorityClass = ProcessPriorityClass.BelowNormal;
+
                     if (redirectStandardStream)
                     {
                         proc.BeginOutputReadLine();
@@ -449,6 +533,7 @@ namespace PEBakery.Core.Commands
                     switch (cmd.Type)
                     {
                         case CodeType.ShellExecute:
+                        case CodeType.ShellExecuteSlow:
                             proc.WaitForExit();
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;

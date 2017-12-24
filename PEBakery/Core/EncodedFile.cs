@@ -168,7 +168,7 @@ namespace PEBakery.Core
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileName.Length == 0 || 512 <= fileNameUTF8.Length)
             {
-                throw new FileDecodeFailException($"Filename's length should be lower than 512B when UTF8 encoded");
+                throw new FileDecodeFailException($"Filename's UTF8 encoded length should be shorter than 512B");
             }
 
             // Check Overwrite
@@ -324,7 +324,16 @@ namespace PEBakery.Core
             try
             {
                 // Write folder info to [EncodedFolders]
-                Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
+                bool writeFolderSection = true;
+                if (p.Sections.ContainsKey("EncodedFolders"))
+                {
+                    List<string> folders = p.Sections["EncodedFolders"].GetLines();
+                    if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
+                        writeFolderSection = false;
+                }
+                
+                if (writeFolderSection)
+                    Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
                 Ini.SetKey(p.FullPath, dirName, fileName, $"{input.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize

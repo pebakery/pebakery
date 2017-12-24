@@ -727,11 +727,10 @@ namespace PEBakery.Core
                 #endregion
                 #region 03 Text
                 case CodeType.TXTAddLine:
-                    { // TXTAddLine,<FileName>,<Line>,<Mode>[,LineNum]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 4;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                    { // TXTAddLine,<FileName>,<Line>,<Mode>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         string fileName = args[0];
                         string line = args[1];
@@ -784,7 +783,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 04 INI
                 case CodeType.INIRead:
-                    { // INIRead,<FileName>,<SectionName>,<Key>,<DestVar>
+                    { // INIRead,<FileName>,<Section>,<Key>,<DestVar>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -796,7 +795,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniRead(args[0], args[1], args[2], destVar);
                     }
                 case CodeType.INIWrite:
-                    { // INIWrite,<FileName>,<SectionName>,<Key>,<Value>
+                    { // INIWrite,<FileName>,<Section>,<Key>,<Value>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -804,15 +803,27 @@ namespace PEBakery.Core
                         return new CodeInfo_IniWrite(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.INIDelete:
-                    { // INIDelete,<FileName>,<SectionName>,<Key>
+                    { // INIDelete,<FileName>,<Section>,<Key>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         return new CodeInfo_IniDelete(args[0], args[1], args[2]);
                     }
+                case CodeType.INIReadSection:
+                    { // INIReadSection,<FileName>,<Section>,<DestVar>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        string destVar = args[2];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_IniReadSection(args[0], args[1], args[2]);
+                    }
                 case CodeType.INIAddSection:
-                    { // INIAddSection,<FileName>,<SectionName>
+                    { // INIAddSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -820,7 +831,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniAddSection(args[0], args[1]);
                     }
                 case CodeType.INIDeleteSection:
-                    { // INIDeleteSection,<FileName>,<SectionName>
+                    { // INIDeleteSection,<FileName>,<Section>
                         const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -828,7 +839,7 @@ namespace PEBakery.Core
                         return new CodeInfo_IniDeleteSection(args[0], args[1]);
                     }
                 case CodeType.INIWriteTextLine:
-                    {  // IniWriteTextLine,<FileName>,<SectionName>,<Line>,[APPEND] 
+                    {  // IniWriteTextLine,<FileName>,<Section>,<Line>,[APPEND] 
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1184,6 +1195,28 @@ namespace PEBakery.Core
 
                         return new CodeInfo_Echo(args[0], warn);
                     }
+                case CodeType.EchoFile:
+                    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool warn = false;
+                        bool encode = false;
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("WARN", StringComparison.OrdinalIgnoreCase))
+                                warn = true;
+                            else if (arg.Equals("ENCODE", StringComparison.OrdinalIgnoreCase))
+                                encode = true;
+                            else
+                                throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_EchoFile(args[0], warn, encode);
+                    }
                 case CodeType.UserInput:
                     return ParseCodeInfoUserInput(rawCode, args);
                 case CodeType.AddInterface:
@@ -1270,11 +1303,12 @@ namespace PEBakery.Core
                 case CodeType.ShellExecute:
                 case CodeType.ShellExecuteEx:
                 case CodeType.ShellExecuteDelete:
+                case CodeType.ShellExecuteSlow:
                     {
                         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
                         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
                         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-
+                        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1457,7 +1491,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Halt(message);
                     }
                 case CodeType.Wait:
-                    { // Wait,<Second
+                    { // Wait,<Second>
                         const int argCount = 1;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -2482,22 +2516,32 @@ namespace PEBakery.Core
                         info = new SystemInfo_RefreshInterface();
                     }
                     break;
+                case SystemType.LoadAll:
                 case SystemType.RescanScripts:
-                    { // System,RescanScripts
+                    { // System,LoadAll
                         const int argCount = 0;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        info = new SystemInfo_RescanScripts();
+                        info = new SystemInfo_LoadAll();
                     }
                     break;
-                case SystemType.Rescan:
-                    { // System,Rescan,<PluginToRefresh>
-                        const int argCount = 1;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+                case SystemType.Load:
+                    { // System,Load,<FilePath>,[NOREC]
+                        const int minArgCount = 1;
+                        const int maxArgCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [System,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        info = new SystemInfo_Rescan(args[0]);
+                        bool noRec = false;
+                        if (args.Count == 2)
+                        {
+                            if (args[1].Equals("NOREC", StringComparison.OrdinalIgnoreCase))
+                                noRec = true;
+                            else
+                                throw new InvalidCommandException($"Invalid Flag [{args[1]}]", rawCode);
+                        }
+                        info = new SystemInfo_Load(args[0], noRec);
                     }
                     break;
                 case SystemType.SaveLog:
@@ -2511,6 +2555,26 @@ namespace PEBakery.Core
                             info = new SystemInfo_SaveLog(args[0]);
                         else
                             info = new SystemInfo_SaveLog(args[0], args[1]);
+                    }
+                    break;
+                case SystemType.SetLocal:
+                    { // System,SetLocal
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Return empty SystemInfo
+                        info = new SystemInfo();
+                    }
+                    break;
+                case SystemType.EndLocal:
+                    { // System,EndLocal
+                        const int argCount = 0;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Return empty SystemInfo
+                        info = new SystemInfo();
                     }
                     break;
                 // Compability Shim
@@ -2568,8 +2632,9 @@ namespace PEBakery.Core
             bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
             bool sectionParamCountMatch = (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1); // #a
+            bool sectionReturnValueMatch = (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1); // #r
 
-            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch)
+            if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch || sectionReturnValueMatch)
                 return true;
             else
                 return false;

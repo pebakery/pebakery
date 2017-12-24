@@ -256,7 +256,9 @@ namespace PEBakery.Core
 
             if (s.LogMacro)
             {
+                s.InMacro = true;
                 CommandBranch.RunExec(s, macroCmd, true);
+                s.InMacro = false;
             }
             else // Do not log macro
             {

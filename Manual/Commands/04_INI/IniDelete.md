@@ -5,7 +5,7 @@ This command will delete the key from a section inside a file that you specify.
 ## Syntax
 
 ```pebakery
-IniDelete,<Filename>,<Section>,<Key>
+IniDelete,<FileName>,<Section>,<Key>
 ```
 
 ### Arguments
@@ -18,10 +18,10 @@ IniDelete,<Filename>,<Section>,<Key>
 
 ## Remarks
 
-
 ## Example
 
 Lets assume we have the following .ini file:
+
 ```pebakery
 // C:\myFile.ini
 [mySection]
@@ -29,7 +29,8 @@ myKey=myValue
 anotherKey=anotherValue
 ```
 
-In the following example the key `myKey` and it's value will be removed. 
+In the following example the key `myKey` and it's value will be removed.
+
 ```pebakery
-IniDelete,C:\myFile.ini,mySection,myKey 
+IniDelete,C:\myFile.ini,mySection,myKey
 ```

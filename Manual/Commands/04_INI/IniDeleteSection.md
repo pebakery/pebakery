@@ -5,7 +5,7 @@ This command will delete a given section, along with all keys and values it cont
 ## Syntax
 
 ```pebakery
-IniDeleteSection,<Filename>,<Section> 
+IniDeleteSection,<Filename>,<Section>
 ```
 
 ### Arguments
@@ -17,10 +17,10 @@ IniDeleteSection,<Filename>,<Section>
 
 ## Remarks
 
-
 ## Example
 
-In the following example the section `mySection` will be removed along with any keys and values it contains. 
+In the following example the section `mySection` will be removed along with any keys and values it contains.
+
 ```pebakery
-IniDeleteSection,C:\myFile.ini,mySection 
+IniDeleteSection,C:\myFile.ini,mySection
 ```

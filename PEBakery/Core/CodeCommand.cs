@@ -48,8 +48,8 @@ namespace PEBakery.Core
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
-        INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
+        INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
+        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
         Compress = 500, Decompress, Expand, CopyOrExpand, 
         // 06 Network
@@ -57,7 +57,7 @@ namespace PEBakery.Core
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800, Message, Echo, UserInput, AddInterface,
+        Visible = 800, Message, Echo, EchoFile, UserInput, AddInterface,
         VisibleOp = 880,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
@@ -67,7 +67,7 @@ namespace PEBakery.Core
         // 11 Math
         Math = 1100,
         // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
+        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
         // 13 Branch
         Run = 1300, Exec, Loop, If, Else, Begin, End,
         // 14 Control
@@ -84,6 +84,8 @@ namespace PEBakery.Core
     {
         public Plugin Plugin;
         public PluginSection Section;
+
+        public Project Project => Plugin.Project;
 
         public SectionAddress(Plugin plugin, PluginSection section)
         {
@@ -999,6 +1001,41 @@ namespace PEBakery.Core
     }
 
     [Serializable]
+    public class CodeInfo_IniReadSection : CodeInfo
+    { // INIReadSection,<FileName>,<Section>,<DestVar>
+        public string FileName;
+        public string Section;
+        public string DestVar;
+
+        public CodeInfo_IniReadSection(string fileName, string section, string destVar)
+        {
+            FileName = fileName;
+            Section = section;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{FileName},{Section},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniReadSectionOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_IniReadSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
+        }
+
+        public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
     public class CodeInfo_IniAddSection : CodeInfo
     { // INIAddSection,<FileName>,<Section>
         public string FileName;
@@ -1505,6 +1542,32 @@ namespace PEBakery.Core
             b.Append(Message);
             if (Warn)
                 b.Append(",WARN");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_EchoFile : CodeInfo
+    { // EchoFile,<SrcFile>[,WARN][,ENCODE]
+        public string SrcFile;
+        public bool Warn;
+        public bool Encode;
+
+        public CodeInfo_EchoFile(string srcFile, bool warn, bool encode)
+        {
+            SrcFile = srcFile;
+            Warn = warn;
+            Encode = encode;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcFile);
+            if (Warn)
+                b.Append(",WARN");
+            if (Encode)
+                b.Append(",ENCODE");
             return b.ToString();
         }
     }
@@ -2440,9 +2503,10 @@ namespace PEBakery.Core
         OnBuildExit,
         OnScriptExit, OnPluginExit,
         RefreshInterface,
-        RescanScripts,
-        Rescan,
+        LoadAll, RescanScripts, 
+        Load,
         SaveLog,
+        SetLocal, EndLocal, 
         // Deprecated, WB082 Compability Shim
         HasUAC, 
         FileRedirect, 
@@ -2609,25 +2673,38 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo_RescanScripts : SystemInfo
-    { // System,RescanScripts
-        public SystemInfo_RescanScripts() { }
-        public override string ToString() { return "RescanScripts"; }
+    public class SystemInfo_LoadAll : SystemInfo
+    {
+        // System,LoadAll
+        // System,RescanScripts
+        public SystemInfo_LoadAll() { }
+        public override string ToString() { return "LoadAll"; }
     }
 
     [Serializable]
-    public class SystemInfo_Rescan : SystemInfo
-    { // System,Rescan,<PluginToRefresh>
-        public string PluginToRefresh;
+    public class SystemInfo_Load : SystemInfo
+    { // System,Load,<FilePath>,[NOREC]
+        public string FilePath;
+        public bool NoRec;
 
-        public SystemInfo_Rescan(string pluginToRefresh)
+        public SystemInfo_Load(string filePath, bool noRec)
         {
-            PluginToRefresh = pluginToRefresh;
+            FilePath = filePath;
+            NoRec = noRec;
         }
 
         public override string ToString()
         {
-            return $"Rescan,{PluginToRefresh}";
+            StringBuilder b = new StringBuilder(8);
+            b.Append("Load");
+            if (FilePath != null)
+            {
+                b.Append(",");
+                b.Append(FilePath);
+                if (NoRec)
+                    b.Append(",NOREC");
+            }
+            return b.ToString();
         }
     }
 
@@ -2650,15 +2727,13 @@ namespace PEBakery.Core
     }
     #endregion
 
-    /// <summary>
-    /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
-    /// </summary>
     [Serializable]
     public class CodeInfo_ShellExecute : CodeInfo
     {
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         public string Action;
         public string FilePath;
         public string Params; // Optional
