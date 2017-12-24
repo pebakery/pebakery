@@ -236,11 +236,12 @@ namespace PEBakery.WPF
                     m.Logger.ExportBuildLog(type, dialog.FileName, buildId);
                 }
 
-                Process proc = new Process();
-                proc.StartInfo.UseShellExecute = true;
-                proc.StartInfo.Verb = "Open";
-                proc.StartInfo.FileName = dialog.FileName;
-                proc.Start();
+                // Open log file
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    w.OpenTextFile(dialog.FileName);
+                });
             }
         }
         #endregion  

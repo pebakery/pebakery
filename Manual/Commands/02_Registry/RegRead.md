@@ -5,7 +5,7 @@ Reads a value from the registry.
 ## Syntax
 
 ```pebakery
-RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
+RegRead,<HKey>,<KeyPath>,<ValueName>,<%DestVar%>
 ```
 
 ### Arguments
@@ -32,7 +32,7 @@ If the registry key does not exist the operation will fail.
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 ```pebakery
 RegHiveLoad,Tmp_System,%RegSystem%

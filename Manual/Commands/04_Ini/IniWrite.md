@@ -1,6 +1,6 @@
 # IniWrite
 
-This command will write the key and value in the section inside the file you specify
+This command will write the key and value in the section inside the file you specify.
 
 ## Syntax
 
@@ -20,6 +20,8 @@ IniWrite,<FileName>,<Section>,<Key>,<Value>
 ## Remarks
 
 If `FileName` does not exist it will be created.
+
+PEBakery will optimize multiple `IniWrite` in a row to single command.
 
 ## Example 1
 

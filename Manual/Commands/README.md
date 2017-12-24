@@ -5,7 +5,7 @@
 1. [File](./01_File/README.md)
 1. [Registry](./02_Registry/README.md)
 1. [Text](./03_Text/README.md)
-1. [INI](./04_INI/README.md)
+1. [Ini](./04_Ini/README.md)
 1. [Archive](./05_Archive/README.md)
 1. [Network](./06_Network/README.md)
 1. [Plugin](./07_Plugin/REMADE.md)

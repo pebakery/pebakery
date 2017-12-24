@@ -19,6 +19,7 @@ IniRead,<FileName>,<Section>,<Key>,<%DestVar%>
 
 ## Remarks
 
+PEBakery will optimize multiple `IniRead` in a row to single command.
 
 ## Example
 
@@ -32,6 +33,7 @@ anotherKey=anotherValue
 ```
 
 In the following example the value of the key `myKey` will be stored inside `%myVariable%`.
+
 ```pebakery
 IniRead,C:\myFile.ini,mySection,myKey,%myVariable%
 ```

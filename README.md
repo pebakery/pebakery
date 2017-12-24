@@ -2,7 +2,7 @@
 
 ![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
 
-PEBakery is WinBuilder-compatible builder for specialized in customizing Windows Preinstalled Envrionment.
+PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment, compatible with WinBuilder 082.
 
 | Branch    | Build Status                                                                                                                                                                              |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -50,18 +50,18 @@ PEBakery is currently in alpha stage.
 | File      | 12  | 12          | 12     |
 | Registry  | 8   | 8           | 4      |
 | Text      | 5   | 5           | 5      |
-| INI       | 7   | 7           | 0      |
+| Ini       | 8   | 8           | 0      |
 | Archive   | 4   | 4           | 4      |
 | Network   | 2   | 2           | 2      |
 | Plugin    | 4   | 4           | 0      |
-| Interface | 6   | 6           | 0      |
+| Interface | 7   | 7           | 0      |
 | Hash      | 5   | 5           | 5      |
 | String    | 33  | 33          | 31     |
 | Math      | 22  | 22          | 22     |
-| System    | 17  | 17          | 0      |
+| System    | 19  | 19          | 0      |
 | Branch    | 26  | 26          | 16     |
 | Control   | 7   | 7           | 7      |
-| All       | 158 | 158         | 107    |
+| All       | 164 | 164         | 107    |
 
 ## Help Needed
 
@@ -126,6 +126,7 @@ See [PEBakery Manual](https://github.com/ied206/PEBakery/tree/docs/Manual).
 ![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
 ![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
 
-In WB082, same plugins are rendered like this:  
+In WB082, same plugins are rendered like this:
+
 ![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
 ![Korean IME by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082-Korean_IME.png)

@@ -20,11 +20,13 @@ IniWriteTextLine,<FileName>,<Section>,<Line>[,APPEND]
 
 | Flag | Description |
 | --- | --- |
-| Append | *(Optional)* If specified this will cause the string to be inserted at the end of the section. |
+| APPEND | **(Optional)** If specified this will cause the string to be inserted at the end of the section. |
 
 ## Remarks
 
 Unless the `APPEND` flag is specified the `Line` will be inserted at the beginning of the section.
+
+PEBakery will optimize multiple `IniWriteTextLine` in a row to single command.
 
 ## Example
 

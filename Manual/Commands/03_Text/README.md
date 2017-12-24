@@ -1,7 +1,7 @@
 # Text Commands
 
-1. [TxtAddLine](./TxtAddLine.md)
-1. [TxtDelEmptyLines](./TxtDelEmptyLines.md)
-1. [TxtDelLine](./TxtDelLine.md)
-1. [TxtDelSpaces](./TxtDelSpaces.md)
-1. [TxtReplace](./TxtReplace.md)
+1. [TXTAddLine](./TXTAddLine.md)
+1. [TXTReplace](./TXTReplace.md)
+1. [TXTDelLine](./TXTDelLine.md)
+1. [TXTDelSpaces](./TXTDelSpaces.md)
+1. [TXTDelEmptyLines](./TXTDelEmptyLines.md)
