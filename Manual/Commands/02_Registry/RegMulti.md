@@ -41,7 +41,7 @@ If the `string` already exists in `ValueName`, a warning is logged and the `Acti
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 Append a string to the end of the value list.
 
@@ -52,7 +52,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 2
+### Example 2
 
 Prepend a string to the beginning of the value list.
 
@@ -63,7 +63,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 3
+### Example 3
 
 Write a string before a specified value. In this example we will write the value `snapman` before the value `rdyboost`.
 
@@ -74,7 +74,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 4
+### Example 4
 
 Write a string after a specified value. In this example we will write the value `snapman` after the value `rdyboost`.
 
@@ -85,7 +85,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 5
+### Example 5
 
 Write a string at a specific index. In this example we will write the value `snapman` at the 3rd position in the list.
 
@@ -96,7 +96,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 6
+### Example 6
 
 Delete a string from the list.
 
@@ -107,7 +107,7 @@ RegMulti,HKLM,Tmp_System\ControlSet001\Control\Class\{71A27CDD-812A-11D0-BEC7-08
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 7
+### Example 7
 
 Find the position of a specified string if it exists in the list.
 

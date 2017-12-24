@@ -29,7 +29,12 @@ RegWrite,<HKey>,<ValueType>,<KeyPath>,<ValueName>,<Value>,[NOWARN]
 | KeyPath | The full path of the registry key. |
 | ValueName | The name of the value. |
 | Value | The value to write. |
-| NOWARN | **[optional]** Suppress warning messages if the value already exists. |
+
+### Flags
+
+| Flag | Description |
+| --- | --- |
+| NOWARN | **(Optional)** Suppress warning messages if the value already exists. |
 
 ## Remarks
 
@@ -37,7 +42,7 @@ PEBakery does not permit use of variables in `HKey` and `ValueType`.
 
 If you need to modify the value of an ***existing*** REG_MULTI_SZ value consider using the `RegMulti` command to insert and delete values without overwriting the entire value list.
 
-Default behavior is to log a warning message if the registry value exists in an effort to make troubleshooting easier in the event another plugin changes a previously set registry value. Use the `NoWarn` argument to override this behavior.
+Default behavior is to log a warning message if the registry value exists in an effort to make troubleshooting easier in the event another plugin changes a previously set registry value. Use the `NoWarn` flag to override this behavior.
 
 ## Related
 
@@ -45,7 +50,7 @@ Default behavior is to log a warning message if the registry value exists in an 
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 ```pebakery
 RegHiveLoad,Tmp_System,%RegSystem%

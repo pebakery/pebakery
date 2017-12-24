@@ -31,7 +31,7 @@ None.
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 Delete a registry value.
 
@@ -41,7 +41,7 @@ RegDelete,HKLM,Tmp_System\ControlSet001\Services\VgaSave\Device0,DefaultSettings
 RegHiveUnLoad,Tmp_System
 ```
 
-#### Example 2
+### Example 2
 
 Delete a registry key.
 

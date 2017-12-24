@@ -327,7 +327,7 @@ namespace PEBakery.Core
         private readonly string projectRoot;
         private readonly string projectDir;
         private readonly string baseDir;
-        private Plugin mainPlugin;
+        private int mainPluginIdx;
         private List<Plugin> allPlugins;
         private Variables variables;
 
@@ -337,9 +337,9 @@ namespace PEBakery.Core
         // Properties
         public string ProjectName => projectName;
         public string ProjectRoot => projectRoot;
-        public string ProjectDir => projectDir; 
-        public string BaseDir => baseDir; 
-        public Plugin MainPlugin => mainPlugin;
+        public string ProjectDir => projectDir;
+        public string BaseDir => baseDir;
+        public Plugin MainPlugin => allPlugins[mainPluginIdx];
         public List<Plugin> AllPlugins => allPlugins;
         public List<Plugin> ActivePlugins => CollectActivePlugins(allPlugins);
         public List<Plugin> VisiblePlugins => CollectVisiblePlugins(allPlugins);
@@ -456,8 +456,8 @@ namespace PEBakery.Core
             }).ToArray();
             Task.WaitAll(tasks);
 
-            mainPlugin = allPlugins.Where(x => x.IsMainPlugin).FirstOrDefault();
-            Debug.Assert(mainPlugin != null);
+            // mainPluginIdx
+            SetMainPluginIdx();
 
             return logs;
         }
@@ -466,6 +466,8 @@ namespace PEBakery.Core
         public void PostLoad()
         {
             this.allPlugins = InternalSortPlugin(allPlugins);
+            SetMainPluginIdx();
+
             this.Variables = new Variables(this);
         }
 
@@ -544,6 +546,13 @@ namespace PEBakery.Core
 
             return newList;
         }
+
+        public void SetMainPluginIdx()
+        {
+            mainPluginIdx = allPlugins.FindIndex(x => x.IsMainPlugin);
+            Debug.Assert(allPlugins.Count(x => x.IsMainPlugin) == 1);
+            Debug.Assert(mainPluginIdx != -1);
+        }
         #endregion
 
         public Plugin RefreshPlugin(Plugin plugin, EngineState s = null)
@@ -551,34 +560,32 @@ namespace PEBakery.Core
             if (plugin == null) throw new ArgumentNullException("plugin");
 
             string pPath = plugin.FullPath;
-            int aIdx = AllPlugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+            int aIdx = AllPlugins.FindIndex(x => x.FullPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
 
+            Plugin p = null;
             if (aIdx == -1)
             {
                 // Even if idx is not found in Projects directory, just proceed.
                 // If not, cannot deal with monkey-patched plugins.
-                return LoadPlugin(pPath, true, plugin.IsDirLink);
+                p = LoadPlugin(pPath, true, plugin.IsDirLink);
             }
             else
             {
                 // This one is in legit Project list, so [Main] cannot be ignored
-                Plugin p = LoadPlugin(pPath, false, plugin.IsDirLink);
-
+                p = LoadPlugin(pPath, false, plugin.IsDirLink);
                 if (p != null)
                 {
                     allPlugins[aIdx] = p;
                     if (s != null)
                     {
                         // Investigate EngineState to update it on build list
-                        int sIdx = s.Plugins.FindIndex(x => string.Equals(x.FullPath, pPath, StringComparison.OrdinalIgnoreCase));
+                        int sIdx = s.Plugins.FindIndex(x => x.FullPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
                         if (sIdx != -1)
                             s.Plugins[sIdx] = p;
                     }
                 }
-
-                return p;
             }
-            
+            return p;
         }
 
         /// <summary>
@@ -587,14 +594,14 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="plugin"></param>
         /// <returns></returns>
-        public Plugin LoadPluginMonkeyPatch(string pPath, bool addToList = false, bool ignoreMain = false)
+        public Plugin LoadPluginMonkeyPatch(string pFullPath, bool addToProjectTree = false, bool ignoreMain = false)
         {
             // Limit: fullPath must be in BaseDir
-            if (pPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
+            if (pFullPath.StartsWith(this.baseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
-            Plugin p = LoadPlugin(pPath, ignoreMain, false);
-            if (addToList)
+            Plugin p = LoadPlugin(pFullPath, ignoreMain, false);
+            if (addToProjectTree)
             {
                 allPlugins.Add(p);
                 allPluginCount += 1;
@@ -671,7 +678,7 @@ namespace PEBakery.Core
         {
             List<Plugin> activePlugins = new List<Plugin>(allPlugist.Count)
             {
-                mainPlugin
+                MainPlugin
             };
 
             foreach (Plugin p in allPlugist.Where(x => !x.IsMainPlugin && (0 < x.Level)))
@@ -708,15 +715,25 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetPluginByPath
-        public Plugin GetPluginByFullPath(string fullPath)
+        #region GetPluginByPath, ContainsPlugin
+        public Plugin GetPluginByFullPath(string pFullPath)
         {
-            return AllPlugins.Find(x => string.Equals(x.FullPath, fullPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public Plugin GetPluginByShortPath(string shortPath)
+        public Plugin GetPluginByShortPath(string pShortPath)
         {
-            return AllPlugins.Find(x => string.Equals(x.ShortPath, shortPath, StringComparison.OrdinalIgnoreCase));
+            return AllPlugins.Find(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public bool ContainsPluginByFullPath(string pFullPath)
+        {
+            return (AllPlugins.FindIndex(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase)) != -1);
+        }
+
+        public bool ContainsPluginByShortPath(string pShortPath)
+        {
+            return (AllPlugins.FindIndex(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase)) != -1);
         }
         #endregion
 
@@ -725,8 +742,8 @@ namespace PEBakery.Core
         {
             if (variables != null)
             {
-                if (mainPlugin.Sections.ContainsKey("Variables"))
-                    variables.AddVariables(VarsType.Global, mainPlugin.Sections["Variables"]);
+                if (MainPlugin.Sections.ContainsKey("Variables"))
+                    variables.AddVariables(VarsType.Global, MainPlugin.Sections["Variables"]);
             }
         }
         #endregion
@@ -736,13 +753,40 @@ namespace PEBakery.Core
         {
             Project project = new Project(baseDir, projectName)
             {
-                mainPlugin = this.mainPlugin,
+                mainPluginIdx = this.mainPluginIdx,
                 allPlugins = new List<Plugin>(this.allPlugins),
                 variables = this.variables.Clone() as Variables,
                 loadedPluginCount = this.loadedPluginCount,
                 allPluginCount = this.allPluginCount,
             };
             return project;
+        }
+        #endregion
+
+        #region Equals
+        public override bool Equals(object obj)
+        {
+            Project project = obj as Project;
+            return Equals(project);
+        }
+
+        public bool Equals(Project project)
+        {
+            if (project == null) throw new ArgumentNullException("project");
+
+            if (projectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
+                projectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&
+                projectDir.Equals(project.ProjectDir, StringComparison.OrdinalIgnoreCase) &&
+                allPluginCount == project.AllPluginCount)
+                return true;
+            else
+                return false;
+
+        }
+
+        public override int GetHashCode()
+        {
+            return projectName.GetHashCode() ^ projectRoot.GetHashCode() ^ projectDir.GetHashCode() ^ allPluginCount.GetHashCode();
         }
         #endregion
     }

@@ -86,75 +86,6 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> RegImport(EngineState s, CodeCommand cmd)
-        {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport));
-            CodeInfo_RegImport info = cmd.Info as CodeInfo_RegImport;
-
-            string regFile = StringEscaper.Preprocess(s, info.RegFile);
-
-            using (Process proc = new Process())
-            {
-                proc.StartInfo.FileName = "REG.exe";
-                proc.StartInfo.Arguments = $"IMPORT \"{regFile}\"";
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
-                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                proc.StartInfo.CreateNoWindow = true;
-                proc.Start();
-
-                proc.WaitForExit();
-
-                if (proc.ExitCode == 0) // Success
-                    logs.Add(new LogInfo(LogState.Success, $"Registry file [{regFile}] imported"));
-                else // if (proc.ExitCode == 1) // Failure
-                    logs.Add(new LogInfo(LogState.Error, $"Registry file [{regFile}] import failed"));
-            }
-
-            return logs;
-        }
-
-        public static List<LogInfo> RegExport(EngineState s, CodeCommand cmd)
-        {
-            List<LogInfo> logs = new List<LogInfo>();
-
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport));
-            CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
-
-            string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
-            string regFile = StringEscaper.Preprocess(s, info.RegFile);
-
-            string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
-            if (hKeyStr == null)
-                throw new InternalException("Internal Logic Error");
-            string fullKeyPath = $"{hKeyStr}\\{keyPath}";
-
-            if (File.Exists(regFile))
-                logs.Add(new LogInfo(LogState.Warning, $"File [{regFile}] will be overwritten"));
-
-            using (Process proc = new Process())
-            {
-                proc.StartInfo.FileName = "REG.exe";
-                proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /y";
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.Verb = "Open";
-                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                proc.StartInfo.CreateNoWindow = true;
-                proc.Start();
-
-                proc.WaitForExit();
-
-                if (proc.ExitCode == 0) // Success
-                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] exported to [{regFile}]"));
-                else // if (proc.ExitCode == 1) // Failure
-                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] cannot be exported"));
-            }
-
-            return logs;
-        }
-
         public static List<LogInfo> RegRead(EngineState s, CodeCommand cmd)
         { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>();
@@ -606,6 +537,75 @@ namespace PEBakery.Core.Commands
                         }
                         break;
                 }
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> RegImport(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegImport));
+            CodeInfo_RegImport info = cmd.Info as CodeInfo_RegImport;
+
+            string regFile = StringEscaper.Preprocess(s, info.RegFile);
+
+            using (Process proc = new Process())
+            {
+                proc.StartInfo.FileName = "REG.exe";
+                proc.StartInfo.Arguments = $"IMPORT \"{regFile}\"";
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                proc.StartInfo.CreateNoWindow = true;
+                proc.Start();
+
+                proc.WaitForExit();
+
+                if (proc.ExitCode == 0) // Success
+                    logs.Add(new LogInfo(LogState.Success, $"Registry file [{regFile}] imported"));
+                else // Failure
+                    logs.Add(new LogInfo(LogState.Error, $"Registry file [{regFile}] import failed"));
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> RegExport(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegExport));
+            CodeInfo_RegExport info = cmd.Info as CodeInfo_RegExport;
+
+            string keyPath = StringEscaper.Preprocess(s, info.KeyPath);
+            string regFile = StringEscaper.Preprocess(s, info.RegFile);
+
+            string hKeyStr = RegistryHelper.RegKeyToString(info.HKey);
+            if (hKeyStr == null)
+                throw new InternalException("Internal Logic Error");
+            string fullKeyPath = $"{hKeyStr}\\{keyPath}";
+
+            if (File.Exists(regFile))
+                logs.Add(new LogInfo(LogState.Warning, $"File [{regFile}] will be overwritten"));
+
+            using (Process proc = new Process())
+            {
+                proc.StartInfo.FileName = "REG.exe";
+                proc.StartInfo.Arguments = $"EXPORT \"{fullKeyPath}\" \"{regFile}\" /Y";
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                proc.StartInfo.CreateNoWindow = true;
+                proc.Start();
+
+                proc.WaitForExit();
+
+                if (proc.ExitCode == 0) // Success
+                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] exported to [{regFile}]"));
+                else // Failure
+                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] cannot be exported"));
             }
 
             return logs;

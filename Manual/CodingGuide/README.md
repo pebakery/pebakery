@@ -19,10 +19,12 @@ If `Auto Syntax Check Error` setting is enabled, the button's color reports if e
 PEBakery automatically optimizes some commands related to text manipulation.
 
 - TXTAddLine
+- TXTReplace
 - TXTDelLine
 - INIRead
 - INIWrite
 - INIDelete
+- INIReadSection
 - INIAddSection
 - INIDeleteSection
 - INIWriteTextLine
@@ -30,7 +32,7 @@ PEBakery automatically optimizes some commands related to text manipulation.
 
 When commands are optimized, multiple file read/write is compacted into single read/write, improving performance.
 
-The optimization occurs only if **same commands** manipulates **same file** are **linearly placed**.
+The optimization occurs only if **same commands** manipulates **same file** are **placed in a row**.
 
 Make sure your code can be optimized for performance.
 
@@ -70,7 +72,7 @@ TXTDelLine,%target_sys%\autorun.cmd,exit
 TXTAddLine,%target_sys%\autorun.cmd,"hiderun.exe IMEReg.cmd",Append
 ```
 
-Multiple TXTAddLine is writing to same file, but they are not placed linearly.
+Multiple TXTAddLine is writing to same file, but they are not placed in a row.
 
 ```pebakery
 TXTAddLine,%DestDir%\hello.txt,"Hello World!",Append
@@ -80,6 +82,6 @@ TXTAddLine,%DestDir%\hello.txt,"Have a nice day.",Append
 
 ### Possible Problem with Optimization
 
-If optimized commands throws an exception, all of the data cannot be processed properly.
+If optimized commands failes, all data cannot be processed properly.
 
 So make sure your codes to avoid exceptions.

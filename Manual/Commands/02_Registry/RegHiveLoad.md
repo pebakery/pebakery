@@ -19,13 +19,15 @@ RegHiveLoad,<KeyPath>,<HiveFile>
 
 `RegHiveLoad` will always load the `KeyPath` under the local registry **HKLM** key.
 
+A registry hive mounted with `RegHiveLoad` should be unmounted with `RegHiveUnload`.
+
 ## Related
 
 [RegHiveUnload](./RegHiveUnload.md)
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 Most projects will define a set of variables containing paths to the registry hives to make development easier.
 Common examples of this are:
@@ -47,8 +49,7 @@ RegWrite,HKLM,0x1,"Tmp_Software\MyProgram","ProgramVersion","1.2.3"
 // Always unload when we are finished.
 RegHiveUnLoad,Tmp_Software
 ```
-
-#### Example 2
+### Example 2
 
 ```pebakery
 RegHiveLoad,Tmp_Setup,%targetdir%\I386\system32\setupreg.hiv

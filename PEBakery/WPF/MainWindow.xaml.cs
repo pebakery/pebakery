@@ -48,7 +48,7 @@ namespace PEBakery.WPF
     /// </summary>
     public partial class MainWindow : Window
     {
-        #region Consantants
+        #region Constants
         internal const int PluginAuthorLenLimit = 35;
         #endregion
 
@@ -179,8 +179,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region Background Workers
-        public BackgroundWorker StartLoadWorker(bool quiet = false)
+        public AutoResetEvent StartLoadWorker(bool quiet = false)
         {
+            AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
             // Set PEBakery Logo
@@ -354,7 +355,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Model.PluginTitleText = "PEBakery is unable to find projects.";
+                    Model.PluginTitleText = "Unable to find projects.";
                     Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
                     if (quiet == false)
@@ -362,10 +363,13 @@ namespace PEBakery.WPF
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
                     Model.StatusBarText = "Unable to find projects.";
                 }
+
+                resetEvent.Set();
             };
 
             loadWorker.RunWorkerAsync(baseDir);
-            return loadWorker;
+
+            return resetEvent;
         }
 
         private void StartCacheWorker()
@@ -506,7 +510,7 @@ namespace PEBakery.WPF
                         {
                             LogInfo log = errorLogs[i];
                             if (log.Command != null)
-                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command})");
+                                b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message} ({log.Command}) (Line {log.Command.LineIdx})");
                             else
                                 b.AppendLine($"[{i + 1}/{errorLogs.Length}] {log.Message}");
                         }
@@ -561,11 +565,7 @@ namespace PEBakery.WPF
                             using (StreamWriter sw = new StreamWriter(tempFile, false, Encoding.UTF8))
                                 sw.Write(b.ToString());
 
-                            Process proc = new Process();
-                            proc.StartInfo.UseShellExecute = true;
-                            proc.StartInfo.Verb = "Open";
-                            proc.StartInfo.FileName = tempFile;
-                            proc.Start();
+                            OpenTextFile(tempFile, true);
                         }
                     }
                 }
@@ -886,13 +886,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            ProcessStartInfo procInfo = new ProcessStartInfo()
-            {
-                Verb = "open",
-                FileName = curMainTree.Plugin.FullPath,
-                UseShellExecute = true
-            };
-            Process.Start(procInfo);
+            OpenTextFile(curMainTree.Plugin.FullPath, false);
         }
 
         private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -919,12 +913,13 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot)
+        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot, TreeViewModel projectRoot = null)
         {
             Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
 
             // Populate MainPlugin
-            TreeViewModel projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
+            if (projectRoot == null)
+                projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
 
             foreach (Plugin p in pList)
             {
@@ -1007,11 +1002,20 @@ namespace PEBakery.WPF
             return final;
         }
 
-        private void RecursiveTreeViewModelSort(TreeViewModel item)
+        public void UpdatePluginTree(Project project, bool redrawPlugin)
         {
-            item.SortChildren();
-            foreach (TreeViewModel child in item.Children)
-                RecursiveTreeViewModelSort(child);
+            TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Plugin.Project.Equals(project));
+            if (projectRoot != null) // Remove existing project tree
+                projectRoot.Children.Clear();
+
+            PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree, projectRoot);
+
+            if (redrawPlugin)
+            {
+                curMainTree = projectRoot;
+                curMainTree.IsExpanded = true;
+                DrawPlugin(projectRoot.Plugin);
+            }
         }
 
         public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
@@ -1124,6 +1128,50 @@ namespace PEBakery.WPF
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
+        }
+        #endregion
+
+        #region OpenTextFile
+        public Process OpenTextFile(string textFile, bool deleteTextFile = false)
+        {
+            Process proc = new Process();
+
+            bool startInfoValid = false;
+            if (setting.Interface_UseCustomEditor)
+            {
+                if (!Path.GetExtension(setting.Interface_CustomEditorPath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else if (!File.Exists(setting.Interface_CustomEditorPath))
+                {
+                    MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    proc.StartInfo = new ProcessStartInfo(setting.Interface_CustomEditorPath)
+                    {
+                        UseShellExecute = true,
+                        Arguments = textFile,
+                    };
+                    startInfoValid = true;
+                }
+            }
+            
+            if (startInfoValid == false)
+            {
+                proc.StartInfo = new ProcessStartInfo(textFile)
+                {
+                    UseShellExecute = true,
+                };
+            }
+
+            if (deleteTextFile)
+                proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(textFile);
+
+            proc.Start();
+
+            return proc;
         }
         #endregion
 

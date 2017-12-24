@@ -2,7 +2,7 @@
 
 Imports the contents of a registry file (*.reg) to your local registry system.
 
-This command has the same effect as running `REG.exe IMPORT <RegFile> /y` from Windows and is ideal for importing a large quantity of prepared registry entries into your build.
+This command has the same effect as running `REG.exe IMPORT <RegFile>` from Windows and is ideal for importing a large quantity of prepared registry entries into your build.
 
 ## Syntax
 
@@ -29,7 +29,7 @@ Because `RegImport` will imports the *.reg file into your **local** registry, yo
 
 ## Examples
 
-#### Example 1
+### Example 1
 
 Assume we have the following *myFile.reg* file we want to import into our PE Registry. Note that we have already modifed the registry keys to point to the path where we will mount the PE's SYSTEM hive.
 

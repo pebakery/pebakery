@@ -42,14 +42,14 @@ namespace PEBakery.Core
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         PathMove = 160,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegImport, RegExport, RegRead, RegWrite, RegDelete, RegMulti,
+        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
         TXTAddLineOp = 380, TXTReplaceOp, TXTDelLineOp,
         // 04 INI
-        INIWrite = 400, INIRead, INIDelete, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
-        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
+        INIWrite = 400, INIRead, INIDelete, INIReadSection, INIAddSection, INIDeleteSection, INIWriteTextLine, INIMerge,
+        INIWriteOp = 480, INIReadOp, INIDeleteOp, INIReadSectionOp, INIAddSectionOp, INIDeleteSectionOp, INIWriteTextLineOp,
         // 05 Compress
         Compress = 500, Decompress, Expand, CopyOrExpand, 
         // 06 Network
@@ -503,44 +503,6 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_RegImport : CodeInfo
-    { // RegImport,<RegFile>
-        public string RegFile;
-
-        public CodeInfo_RegImport(string regFile)
-        {
-            RegFile = regFile;
-        }
-
-        public override string ToString()
-        {
-            return RegFile;
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_RegExport : CodeInfo
-    { // RegExport,<Key>,<RegFile>
-        [NonSerialized]
-        public RegistryKey HKey;
-        public string KeyPath;
-        public string RegFile;
-
-        public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
-        {
-            HKey = hKey;
-            KeyPath = keyPath;
-            RegFile = regFile;
-        }
-
-        public override string ToString()
-        {
-            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
-            return $"{HKeyStr},{KeyPath},{RegFile}";
-        }
-    }
-
-    [Serializable]
     public class CodeInfo_RegRead : CodeInfo
     { // RegRead,<HKey>,<KeyPath>,<ValueName>,<DestVar>
         [NonSerialized]
@@ -729,6 +691,44 @@ namespace PEBakery.Core
                 b.Append(Arg2);
             }
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegImport : CodeInfo
+    { // RegImport,<RegFile>
+        public string RegFile;
+
+        public CodeInfo_RegImport(string regFile)
+        {
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            return RegFile;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegExport : CodeInfo
+    { // RegExport,<Key>,<RegFile>
+        [NonSerialized]
+        public RegistryKey HKey;
+        public string KeyPath;
+        public string RegFile;
+
+        public CodeInfo_RegExport(RegistryKey hKey, string keyPath, string regFile)
+        {
+            HKey = hKey;
+            KeyPath = keyPath;
+            RegFile = regFile;
+        }
+
+        public override string ToString()
+        {
+            string HKeyStr = RegistryHelper.RegKeyToString(HKey);
+            return $"{HKeyStr},{KeyPath},{RegFile}";
         }
     }
     #endregion
@@ -995,6 +995,41 @@ namespace PEBakery.Core
         }
 
         public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniReadSection : CodeInfo
+    { // INIReadSection,<FileName>,<Section>,<DestVar>
+        public string FileName;
+        public string Section;
+        public string DestVar;
+
+        public CodeInfo_IniReadSection(string fileName, string section, string destVar)
+        {
+            FileName = fileName;
+            Section = section;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{FileName},{Section},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_IniReadSectionOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_IniReadSection> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
+        }
+
+        public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
         {
             Cmds = cmds;
         }
@@ -2468,8 +2503,8 @@ namespace PEBakery.Core
         OnBuildExit,
         OnScriptExit, OnPluginExit,
         RefreshInterface,
-        RescanScripts,
-        Rescan,
+        LoadAll, RescanScripts, 
+        Load,
         SaveLog,
         SetLocal, EndLocal, 
         // Deprecated, WB082 Compability Shim
@@ -2638,25 +2673,38 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo_RescanScripts : SystemInfo
-    { // System,RescanScripts
-        public SystemInfo_RescanScripts() { }
-        public override string ToString() { return "RescanScripts"; }
+    public class SystemInfo_LoadAll : SystemInfo
+    {
+        // System,LoadAll
+        // System,RescanScripts
+        public SystemInfo_LoadAll() { }
+        public override string ToString() { return "LoadAll"; }
     }
 
     [Serializable]
-    public class SystemInfo_Rescan : SystemInfo
-    { // System,Rescan,<PluginToRefresh>
-        public string PluginToRefresh;
+    public class SystemInfo_Load : SystemInfo
+    { // System,Load,<FilePath>,[NOREC]
+        public string FilePath;
+        public bool NoRec;
 
-        public SystemInfo_Rescan(string pluginToRefresh)
+        public SystemInfo_Load(string filePath, bool noRec)
         {
-            PluginToRefresh = pluginToRefresh;
+            FilePath = filePath;
+            NoRec = noRec;
         }
 
         public override string ToString()
         {
-            return $"Rescan,{PluginToRefresh}";
+            StringBuilder b = new StringBuilder(8);
+            b.Append("Load");
+            if (FilePath != null)
+            {
+                b.Append(",");
+                b.Append(FilePath);
+                if (NoRec)
+                    b.Append(",NOREC");
+            }
+            return b.ToString();
         }
     }
 
@@ -2679,9 +2727,6 @@ namespace PEBakery.Core
     }
     #endregion
 
-    /// <summary>
-    /// For ShellExecute, ShellExecuteEx, ShellExecuteDelete
-    /// </summary>
     [Serializable]
     public class CodeInfo_ShellExecute : CodeInfo
     {

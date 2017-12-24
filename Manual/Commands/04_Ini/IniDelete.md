@@ -18,6 +18,8 @@ IniDelete,<FileName>,<Section>,<Key>
 
 ## Remarks
 
+PEBakery will optimize multiple `IniDelete` in a row to single command.
+
 ## Example
 
 Lets assume we have the following .ini file:
