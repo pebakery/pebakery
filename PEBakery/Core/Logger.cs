@@ -38,6 +38,7 @@ namespace PEBakery.Core
         None = 0,
         Success = 100,
         Warning = 200,
+        Overwrite = 201,
         Error = 300,
         CriticalError = 301,
         Info = 400,

@@ -44,6 +44,9 @@
 				font-family: 'D2Coding', monospace;
 				text-align: center;
 			}
+			.text-overwrite {
+				color: #ff6600;
+			}
 		</style>
 
 		<!-- Custom Fonts -->
@@ -96,6 +99,7 @@
                         <th class="text-nowrap">
                             @if (@item.State == LogState.Success) { <i class="fa fa-fw fa-check text-success"></i> }
                             else if (@item.State == LogState.Warning) { <i class="fa fa-fw fa-warning text-warning"></i> }
+							else if (@item.State == LogState.Overwrite) { <i class="fa fa-fw fa-paste text-overwrite"></i> }
                             else if (@item.State == LogState.Error) { <i class="fa fa-fw fa-remove text-danger"></i> }
                             else if (@item.State == LogState.Info) { <i class="fa fa-fw fa-info-circle text-info"></i> }
                             else if (@item.State == LogState.Ignore) { <i class="fa fa-fw fa-file text-muted"></i> }
@@ -233,6 +237,13 @@
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>
                             }
+							else if (@item.State == LogState.Overwrite) 
+							{ 
+							<tr>
+								<td class="text-nowrap text-overwrite"><i class="fa fa-fw fa-paste"></i>&#91;@item.State&#93;</td>
+								<td class="pb-whitespace">@item.Message</td>
+							</tr>
+							}
                             else if (@item.State == LogState.Error)
                             {
                             <tr class="bg-danger" id='@string.Format("error_{0}", @item.Href)'>

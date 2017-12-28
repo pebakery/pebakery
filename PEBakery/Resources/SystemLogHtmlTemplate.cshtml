@@ -44,6 +44,9 @@
 				font-family: 'D2Coding', monospace;
 				text-align: center;
 			}
+			.text-overwrite {
+				color: #ff6600;
+			}
 		</style>
 
 		<!-- Custom Fonts -->
@@ -78,6 +81,14 @@
 							<tr class="bg-warning">
 								<td class="text-nowrap">@item.TimeStr</td>
 								<td class="text-nowrap"><i class="fa fa-fw fa-warning"></i>&#91;@item.State&#93;</td>
+								<td class="pb-whitespace">@item.Message</td>
+							</tr>
+						}
+						else if (@item.State == LogState.Overwrite) 
+						{ 
+							<tr>
+								<td class="text-nowrap">@item.TimeStr</td>
+								<td class="text-nowrap text-overwrite"><i class="fa fa-fw fa-paste"></i>&#91;@item.State&#93;</td>
 								<td class="pb-whitespace">@item.Message</td>
 							</tr>
 						}

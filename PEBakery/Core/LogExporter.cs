@@ -94,7 +94,7 @@ namespace PEBakery.Core
                                 .Where(x => x.State == state)
                                 .Count();
 
-                            w.WriteLine($"{state.ToString().PadRight(8)} : {count}");
+                            w.WriteLine($"{state.ToString().PadRight(9)} : {count}");
                         }
                         w.WriteLine();
                         w.WriteLine();
