@@ -3585,15 +3585,17 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_SetMacro : CodeInfo
-    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+    { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
         public string MacroName;
         public string MacroCommand;
+        public bool Global;
         public bool Permanent;
 
-        public CodeInfo_SetMacro(string macroName, string macroCommand, bool permanent)
+        public CodeInfo_SetMacro(string macroName, string macroCommand, bool global, bool permanent)
         {
             MacroName = macroName;
             MacroCommand = macroCommand;
+            Global = global;
             Permanent = permanent;
         }
 
@@ -3605,6 +3607,8 @@ namespace PEBakery.Core
             b.Append(MacroCommand);
             if (Permanent)
                 b.Append(",PERMANENT");
+            else if (Global)
+                b.Append(",GLOBAL");
             return b.ToString();
         }
     }

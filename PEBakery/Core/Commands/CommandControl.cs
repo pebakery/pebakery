@@ -51,7 +51,7 @@ namespace PEBakery.Core.Commands
                     if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                         macroCommand = null;
 
-                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent);
+                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent, false);
                     return new List<LogInfo>(1) { log };
                 }
             }
@@ -236,7 +236,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
-        { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+        { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro));
             CodeInfo_SetMacro info = cmd.Info as CodeInfo_SetMacro;
 
@@ -245,7 +245,7 @@ namespace PEBakery.Core.Commands
             if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                 macroCommand = null;
 
-            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Permanent);
+            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Global, info.Permanent);
             return new List<LogInfo>(1) { log };
         }
 

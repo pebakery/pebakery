@@ -1415,7 +1415,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Set(varName, varValue, global, permanent);
                     }
                 case CodeType.SetMacro:
-                    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+                    { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1423,6 +1423,7 @@ namespace PEBakery.Core
 
                         string macroName = args[0];
                         string macroCommand = args[1];
+                        bool global = false;
                         bool permanent = false;
 
                         for (int i = minArgCount; i < args.Count; i++)
@@ -1430,11 +1431,13 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
                                 permanent = true;
+                            else if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                                global = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_SetMacro(macroName, macroCommand, permanent);
+                        return new CodeInfo_SetMacro(macroName, macroCommand, global, permanent);
                     }
                 case CodeType.AddVariables:
                     { // AddVariables,%PluginFile%,<Section>[,GLOBAL]

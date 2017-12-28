@@ -340,27 +340,36 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                throw new ExecuteException("File path was not chosen by user");
+                                logs.Add(new LogInfo(LogState.Error, "File path was not chosen by user"));
+                                return logs;
                             }
                         }
                         else
                         {
-                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                            // Temporary measure, Windows Forms API requires [STAThread] model.
+                            bool failure = false;
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ShowNewFolderButton = true,
-                                SelectedPath = initPath,
-                            };
-                            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+                                System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                                {
+                                    ShowNewFolderButton = true,
+                                    SelectedPath = initPath,
+                                };
+                                System.Windows.Forms.DialogResult result = dialog.ShowDialog();
 
-                            if (result == System.Windows.Forms.DialogResult.OK)
-                            {
-                                selectedPath = dialog.SelectedPath;
-                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
-                            }
-                            else
-                            {
-                                throw new ExecuteException("Directory path was not chosen by user");
-                            }
+                                if (result == System.Windows.Forms.DialogResult.OK)
+                                {
+                                    selectedPath = dialog.SelectedPath;
+                                    logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                                }
+                                else
+                                {
+                                    failure = true;
+                                    logs.Add(new LogInfo(LogState.Error, "irectory path was not chosen by user"));
+                                }
+                            });
+                            if (failure)
+                                return logs;
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);

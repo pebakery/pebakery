@@ -754,7 +754,7 @@ namespace PEBakery.WPF
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
-            MainViewModel.DisplayShellExecuteStdOut = this.Interface_DisplayShellExecuteStdOut;
+            MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteStdOut;
         }
 
         public void SetToDefault()

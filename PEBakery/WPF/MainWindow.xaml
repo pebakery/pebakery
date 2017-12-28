@@ -560,13 +560,13 @@
                                 Margin="10, 20, 10, 0"
                                 TextWrapping="Wrap"
                                 FontWeight="SemiBold"
-                                Visibility="{Binding BuildStdOutRedirectVisibility}"
-                                Text="ShellExecute Standard Output"/>
+                                Visibility="{Binding BuildConOutRedirectVisibility}"
+                                Text="ShellExecute Console Output"/>
                             <TextBox
                                 DockPanel.Dock="Top"
-                                Name="BuildStdOutRedirectTextBox"
+                                Name="BuildConOutRedirectTextBox"
                                 Margin="10, 10, 10, 10"
-                                Visibility="{Binding BuildStdOutRedirectVisibility}"
+                                Visibility="{Binding BuildConOutRedirectVisibility}"
                                 TextAlignment="Left"
                                 VerticalAlignment="Top"
                                 TextWrapping="Wrap"
@@ -576,8 +576,8 @@
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                 ScrollViewer.CanContentScroll="True"
                                 IsReadOnly="True"
-                                TextChanged="BuildStdOutRedirectTextBox_TextChanged"
-                                Text="{Binding BuildStdOutRedirect}"/>
+                                TextChanged="BuildConOutRedirectTextBox_TextChanged"
+                                Text="{Binding BuildConOutRedirect}"/>
                         </DockPanel>
                     </Border>
 

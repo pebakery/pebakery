@@ -127,14 +127,14 @@ namespace PEBakery.Core
             if (0 < dict.Keys.Count)
             {
                 int count = 0;
-                logs.Add(new LogInfo(LogState.Info, $"Import Macro from [{addr.Section.SectionName}]", 0));
+                logs.Add(new LogInfo(LogState.Info, $"Import Local Macro from [{addr.Section.SectionName}]", 0));
                 foreach (var kv in dict)
                 {
                     try
                     {
                         if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                            logs.Add(new LogInfo(LogState.Error, $"Invalid local macro name [{kv.Key}]"));
                             continue;
                         }
 
@@ -147,7 +147,7 @@ namespace PEBakery.Core
                         logs.Add(new LogInfo(LogState.Error, e));
                     }
                 }
-                logs.Add(new LogInfo(LogState.Info, $"Imported {count} Macro", 0));
+                logs.Add(new LogInfo(LogState.Info, $"Imported {count} Local Macro", 0));
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeperator, 0));
             }
 
@@ -164,7 +164,7 @@ namespace PEBakery.Core
             localDict = new Dictionary<string, CodeCommand>(newDict, StringComparer.OrdinalIgnoreCase);
         }
 
-        public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool permanent)
+        public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool global, bool permanent)
         {
             if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
                 return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
@@ -183,6 +183,14 @@ namespace PEBakery.Core
 
                 // Put into dictionary
                 if (permanent) // MacroDict
+                {
+                    MacroDict[macroName] = cmd;
+                    if (Ini.SetKey(addr.Project.MainPlugin.FullPath, "Variables", macroName, cmd.RawCode))
+                        return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
+                    else
+                        return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainPlugin.FullPath}]");
+                }
+                else if (global) // MacroDict
                 {
                     MacroDict[macroName] = cmd;
                     return new LogInfo(LogState.Success, $"Global Macro [{macroName}] set to [{cmd.RawCode}]");
