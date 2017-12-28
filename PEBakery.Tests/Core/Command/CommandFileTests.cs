@@ -47,9 +47,9 @@ namespace PEBakery.Tests.Core.Command
             FileCopy_MultiTemplate(s, $@"FileCopy,{scriptSrcDir}\*.ini,{scriptDestDir},NOREC", "*.ini", false);
 
             FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\P.txt,{scriptDestDir}", "P.txt", null, ErrorCheck.Error);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir}", "C.txt", null, ErrorCheck.Warning, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir}", "C.txt", null, ErrorCheck.Overwrite, true);
             FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},NOWARN", "C.txt", null, ErrorCheck.Success, true);
-            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},PRESERVE", "C.txt", null, ErrorCheck.Warning, true);
+            FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},PRESERVE", "C.txt", null, ErrorCheck.Overwrite, true);
             FileCopy_SingleTemplate(s, $@"FileCopy,{scriptSrcDir}\C.txt,{scriptDestDir},PRESERVE,NOWARN", "C.txt", null, ErrorCheck.Success, true, true);
         }
 

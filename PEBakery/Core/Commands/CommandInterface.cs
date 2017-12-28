@@ -346,26 +346,23 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            // Temporary measure, Windows Forms API requires [STAThread] model.
+                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+                            {
+                                SelectedPath = initPath,
+                            };
+
                             bool failure = false;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
-                                {
-                                    ShowNewFolderButton = true,
-                                    SelectedPath = initPath,
-                                };
-                                System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-
-                                if (result == System.Windows.Forms.DialogResult.OK)
+                                if (dialog.ShowDialog(Application.Current.MainWindow))
                                 {
                                     selectedPath = dialog.SelectedPath;
                                     logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
                                 }
                                 else
                                 {
+                                    logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
                                     failure = true;
-                                    logs.Add(new LogInfo(LogState.Error, "irectory path was not chosen by user"));
                                 }
                             });
                             if (failure)

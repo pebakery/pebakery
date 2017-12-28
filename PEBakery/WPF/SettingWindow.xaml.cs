@@ -20,6 +20,7 @@ using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.WPF
 {
@@ -89,16 +90,11 @@ namespace PEBakery.WPF
 
         private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
-            {
-                ShowNewFolderButton = true,
-            };
-
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
             if (0 < Model.Project_SourceDirectoryList.Count)
                 dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
 
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog(this))
             {
                 bool exist = false;
                 for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
@@ -138,13 +134,12 @@ namespace PEBakery.WPF
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
             {
-                ShowNewFolderButton = true,
                 SelectedPath = Model.Project_TargetDirectory,
             };
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+
+            if (dialog.ShowDialog(this))
             {
                 Model.Project_TargetDirectory = dialog.SelectedPath;
             }
@@ -155,9 +150,10 @@ namespace PEBakery.WPF
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
             {
                 Filter = "ISO File (*.iso)|*.iso",
-                InitialDirectory = System.IO.Path.GetDirectoryName(Model.Project_ISOFile),
+                FileName = Model.Project_ISOFile,
             };
-            if (dialog.ShowDialog() == true)
+
+            if (dialog.ShowDialog(this) == true)
             {
                 Model.Project_ISOFile = dialog.FileName;
             }
@@ -173,16 +169,10 @@ namespace PEBakery.WPF
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
             {
                 Filter = "Executable|*.exe",
+                FileName = Model.Interface_CustomEditorPath,
             };
 
-            if (System.IO.File.Exists(Model.Interface_CustomEditorPath))
-            {
-                dialog.FileName = System.IO.Path.GetFileName(Model.Interface_CustomEditorPath);
-                if (System.IO.Directory.Exists(FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath)))
-                    dialog.InitialDirectory = FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath);
-            }
-
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog(this) == true)
             {
                 Model.Interface_CustomEditorPath = dialog.FileName;
             }

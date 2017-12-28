@@ -30,9 +30,10 @@ namespace PEBakery.Tests.Core
     public enum ErrorCheck
     {
         Success = 0,
-        Warning = 1,
-        Error = 2,
-        ParserError = 3,
+        Warning = 10,
+        Overwrite = 11,
+        Error = 20,
+        ParserError = 21,
     }
 
     [TestClass]
@@ -193,6 +194,19 @@ namespace PEBakery.Tests.Core
                             Assert.IsTrue(log.State != LogState.Error);
                             Assert.IsTrue(log.State != LogState.CriticalError);
                             if (log.State == LogState.Warning)
+                                result = true;
+                        }
+                        Assert.IsTrue(result);
+                    }
+                    break;
+                case ErrorCheck.Overwrite:
+                    {
+                        bool result = false;
+                        foreach (LogInfo log in logs)
+                        {
+                            Assert.IsTrue(log.State != LogState.Error);
+                            Assert.IsTrue(log.State != LogState.CriticalError);
+                            if (log.State == LogState.Overwrite)
                                 result = true;
                         }
                         Assert.IsTrue(result);

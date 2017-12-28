@@ -193,6 +193,7 @@
     <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Core\Logger.cs" />
+    <Compile Include="WPF\Controls\VistaFolderBrowserDialog\VistaFolderBrowserDialog.cs" />
     <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
