@@ -56,12 +56,18 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+                            });
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Wait]"));
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.Default;
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                System.Windows.Input.Mouse.OverrideCursor = null;
+                            });
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Normal]"));
                         }
                         else
