@@ -349,6 +349,10 @@ namespace PEBakery.Tests.Core.Command
             cond = new BranchCondition(type, false, "13", "0xC");
             Assert.IsFalse(cond.Check(s, out d));
 
+            // Test for a bug reported in http://theoven.org/index.php?topic=2271.msg25381#msg25381
+            cond = new BranchCondition(type, false, "-1", "0");
+            Assert.IsFalse(cond.Check(s, out d));
+
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,A,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,a,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "10", "If,%Src%,Equal,09,Set,%Dest%,T", "F");
