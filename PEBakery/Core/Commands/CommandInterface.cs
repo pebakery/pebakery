@@ -463,10 +463,6 @@ namespace PEBakery.Core.Commands
                 {
                     File.Delete(tempFile);
                 }
-
-
-
-                
             }
             else
             { // Text Mode -> Just read with StreamReader
@@ -503,8 +499,8 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFilePath));
-                        UserInputInfo_DirFilePath subInfo = info.SubInfo as UserInputInfo_DirFilePath;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile));
+                        UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
 
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
                         string selectedPath = initPath;

@@ -1,25 +1,25 @@
 # Visible
 
-Sets the visibility of a UI element.
+Sets the visibility of a interface control.
 
 ## Syntax
 
 ```pebakery
-Visible,<%Variable%>,<Boolean>
+Visible,<%Key%>,<Boolean>
 ```
 
 ### Arguments
 
 | Argument | Description |
 | --- | --- |
-| %Variable% | The Variable of the UI element to be modified. |
+| %Key% | The key of the interface control to be modified. |
 | Boolean | One of the following values: |
-|| True - Show the element. |
-|| False - Hide the element. |
+|| True - Show the control. |
+|| False - Hide the controlt. |
 
 ## Remarks
 
-Changes made to an element's visibility are persistent.
+Changes made to an control's visibility are persistent.
 
 ## Related
 
