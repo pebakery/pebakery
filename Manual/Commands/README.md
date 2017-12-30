@@ -8,7 +8,7 @@
 1. [Ini](./04_Ini/README.md)
 1. [Archive](./05_Archive/README.md)
 1. [Network](./06_Network/README.md)
-1. [Plugin](./07_Plugin/REMADE.md)
+1. [Plugin](./07_Plugin/README.md)
 1. [Interface](./08_Interface/README.md)
 1. [Hash](./09_Hash/README.md)
 1. [String](./10_String/README.md)
