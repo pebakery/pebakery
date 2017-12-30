@@ -8,11 +8,15 @@ No longer used.
 
 ### RegReadBin / RegWriteBin
 
-Not enough information, and no longer used.
+Not needed. PEBakery has native support for QWORDs and Unicode strings in RegRead and RegWrite.
 
 ### ExtractAllFilesIfNotExist
 
-No longer used.
+No longer used. Can be accomplished via other methods.
+
+### ExtractAndRun
+
+Due to limitations of the original Winbuilder command this can be better accomplished via a macro.
 
 ### StrFormat,CharToOEM / OEMToChar
 
@@ -44,6 +48,10 @@ No longer used.
 
 ## Commands will be deprecated
 
+### ExtractAndRun
+
+Due to the limitations of the original Winbuilder command this is better off implemented as a macro using standard Extract and ShellExecuteDelete
+
 ### WebGetIfNotExist
 
 This commmand is broken in WB082, and it is better to implement this as macro.
@@ -52,7 +60,7 @@ This commmand is broken in WB082, and it is better to implement this as macro.
 
 Success of conversion to short path depends on registry value `HKLM\System\CurrentControlSet\Control\FileSystem\NtfsDisable8dot3NameCreation`.
 
-Thus this commands cannot be guruanteed to work properly in every system.
+Thus this commands cannot be guaranteed to work properly in every system.
 
 ### System,HasUAC
 

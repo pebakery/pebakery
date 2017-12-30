@@ -867,7 +867,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 05 Archive
                 case CodeType.Compress:
-                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
+                    { // Compress,<Format>,<SrcPath>,<DestArchive>,[CompressLevel],[Unicode]
                         const int minArgCount = 3;
                         const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -948,7 +948,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Compress(format, args[1], args[2], compLevel, encoding);
                     }
                 case CodeType.Decompress:
-                    { // Decompress,<SrcArchive>,<DestDir>,[UTF8|UTF16|UTF16BE|ANSI]
+                    { // Decompress,<SrcArchive>,<DestDir>,[Unicode]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1149,6 +1149,32 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_Visible(interfaceKey, visibility);
+                    }
+                case CodeType.ReadInterface:
+                    { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+                        const int minArgCount = 5;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        InterfaceElement element = ParseInterfaceElement(args[0]);
+
+                        string destVar = args[4];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar);
+                    }
+                case CodeType.WriteInterface:
+                    { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+                        const int minArgCount = 5;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        InterfaceElement element = ParseInterfaceElement(args[0]);
+
+                        return new CodeInfo_WriteInterface(element, args[1], args[2], args[3], args[4]);
                     }
                 case CodeType.Message:
                     { // Message,<Message>[,ICON][,TIMEOUT]
@@ -1415,7 +1441,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Set(varName, varValue, global, permanent);
                     }
                 case CodeType.SetMacro:
-                    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+                    { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1423,6 +1449,7 @@ namespace PEBakery.Core
 
                         string macroName = args[0];
                         string macroCommand = args[1];
+                        bool global = false;
                         bool permanent = false;
 
                         for (int i = minArgCount; i < args.Count; i++)
@@ -1430,11 +1457,13 @@ namespace PEBakery.Core
                             string arg = args[i];
                             if (arg.Equals("PERMANENT", StringComparison.OrdinalIgnoreCase))
                                 permanent = true;
+                            else if (arg.Equals("GLOBAL", StringComparison.OrdinalIgnoreCase))
+                                global = true;
                             else
                                 throw new InvalidCommandException($"Invalid argument [{arg}]", rawCode);
                         }
 
-                        return new CodeInfo_SetMacro(macroName, macroCommand, permanent);
+                        return new CodeInfo_SetMacro(macroName, macroCommand, global, permanent);
                     }
                 case CodeType.AddVariables:
                     { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
@@ -1650,6 +1679,25 @@ namespace PEBakery.Core
                 throw new InvalidCommandException($"Invalid RegMultiType [{typeStr}]");
 
             return type;
+        }
+        #endregion
+
+        #region ParseInterfaceElement
+        public static InterfaceElement ParseInterfaceElement(string str)
+        {
+            if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+                throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
+
+            bool invalid = false;
+            if (!Enum.TryParse(str, true, out InterfaceElement e))
+                invalid = true;
+            if (!Enum.IsDefined(typeof(InterfaceElement), e))
+                invalid = true;
+
+            if (invalid)
+                throw new InvalidCommandException($"Invalid InterfaceElement [{str}]");
+
+            return e;
         }
         #endregion
 

@@ -20,6 +20,7 @@ using PEBakery.Helper;
 using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.WPF
 {
@@ -89,16 +90,11 @@ namespace PEBakery.WPF
 
         private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
-            {
-                ShowNewFolderButton = true,
-            };
-
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
             if (0 < Model.Project_SourceDirectoryList.Count)
                 dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
 
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog(this))
             {
                 bool exist = false;
                 for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
@@ -138,13 +134,12 @@ namespace PEBakery.WPF
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
             {
-                ShowNewFolderButton = true,
                 SelectedPath = Model.Project_TargetDirectory,
             };
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+
+            if (dialog.ShowDialog(this))
             {
                 Model.Project_TargetDirectory = dialog.SelectedPath;
             }
@@ -155,9 +150,10 @@ namespace PEBakery.WPF
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog()
             {
                 Filter = "ISO File (*.iso)|*.iso",
-                InitialDirectory = System.IO.Path.GetDirectoryName(Model.Project_ISOFile),
+                FileName = Model.Project_ISOFile,
             };
-            if (dialog.ShowDialog() == true)
+
+            if (dialog.ShowDialog(this) == true)
             {
                 Model.Project_ISOFile = dialog.FileName;
             }
@@ -173,16 +169,10 @@ namespace PEBakery.WPF
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
             {
                 Filter = "Executable|*.exe",
+                FileName = Model.Interface_CustomEditorPath,
             };
 
-            if (System.IO.File.Exists(Model.Interface_CustomEditorPath))
-            {
-                dialog.FileName = System.IO.Path.GetFileName(Model.Interface_CustomEditorPath);
-                if (System.IO.Directory.Exists(FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath)))
-                    dialog.InitialDirectory = FileHelper.GetDirNameEx(Model.Interface_CustomEditorPath);
-            }
-
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog(this) == true)
             {
                 Model.Interface_CustomEditorPath = dialog.FileName;
             }
@@ -515,14 +505,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool interface_DisplayShellExecuteStdOut;
-        public bool Interface_DisplayShellExecuteStdOut
+        private bool interface_DisplayShellExecuteConOut;
+        public bool Interface_DisplayShellExecuteConOut
         {
-            get => interface_DisplayShellExecuteStdOut;
+            get => interface_DisplayShellExecuteConOut;
             set
             {
-                interface_DisplayShellExecuteStdOut = value;
-                OnPropertyUpdate("Interface_DisplayShellExecuteStdOut");
+                interface_DisplayShellExecuteConOut = value;
+                OnPropertyUpdate("Interface_DisplayShellExecuteConOut");
             }
         }
         #endregion
@@ -754,7 +744,7 @@ namespace PEBakery.WPF
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
-            MainViewModel.DisplayShellExecuteStdOut = this.Interface_DisplayShellExecuteStdOut;
+            MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
         }
 
         public void SetToDefault()
@@ -777,7 +767,7 @@ namespace PEBakery.WPF
                     Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
             }
             Interface_ScaleFactor = 100;
-            Interface_DisplayShellExecuteStdOut = true;
+            Interface_DisplayShellExecuteConOut = true;
             Interface_UseCustomEditor = false;
             Interface_CustomEditorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
 
@@ -825,7 +815,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
                 new IniKey("Interface", "UseCustomEditor"), // Boolean
                 new IniKey("Interface", "CustomEditorPath"), // String
-                new IniKey("Interface", "DisplayShellExecuteStdOut"), // Boolean
+                new IniKey("Interface", "DisplayShellExecuteConOut"), // Boolean
                 new IniKey("Plugin", "EnableCache"), // Boolean
                 new IniKey("Plugin", "SpeedupLoading"), // Boolean
                 new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
@@ -854,7 +844,7 @@ namespace PEBakery.WPF
             string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
             string str_Interface_UseCustomEditor = dict["Interface_UseCustomEditor"];
             string str_Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
-            string str_Interface_DisplayShellExecuteStdOut = dict["Interface_DisplayShellExecuteStdOut"];
+            string str_Interface_DisplayShellExecuteConOut = dict["Interface_DisplayShellExecuteConOut"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
             string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
             string str_Plugin_SpeedupLoading = dict["Plugin_SpeedupLoading"];
@@ -943,10 +933,10 @@ namespace PEBakery.WPF
                 Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
 
             // Interface - DisplayShellExecuteStdOut (Default = True)
-            if (str_Interface_DisplayShellExecuteStdOut != null)
+            if (str_Interface_DisplayShellExecuteConOut != null)
             {
-                if (str_Interface_DisplayShellExecuteStdOut.Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Interface_DisplayShellExecuteStdOut = false;
+                if (str_Interface_DisplayShellExecuteConOut.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Interface_DisplayShellExecuteConOut = false;
             }
 
             // Plugin - EnableCache (Default = True)
@@ -1058,7 +1048,7 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
                 new IniKey("Interface", "UseCustomEditor", Interface_UseCustomEditor.ToString()),
                 new IniKey("Interface", "CustomEditorPath", Interface_CustomEditorPath),
-                new IniKey("Interface", "DisplayShellExecuteStdOut", Interface_DisplayShellExecuteStdOut.ToString()),
+                new IniKey("Interface", "DisplayShellExecuteConOut", Interface_DisplayShellExecuteConOut.ToString()),
                 new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
                 new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
                 new IniKey("Plugin", "AutoSyntaxCheck", Plugin_AutoSyntaxCheck.ToString()),

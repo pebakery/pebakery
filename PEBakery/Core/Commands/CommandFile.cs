@@ -72,12 +72,12 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite file [{destFullPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite file [{destFullPath}]", cmd));
                             return logs;
                         }
                         else
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{destFullPath}] will be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destFullPath}] will be overwritten", cmd));
                         }
                     }
 
@@ -91,12 +91,12 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite file [{destPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite file [{destPath}]", cmd));
                             return logs;
                         }
                         else
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{destPath}] will be overwritten", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] will be overwritten", cmd));
                         }
                     }
 
@@ -130,12 +130,12 @@ namespace PEBakery.Core.Commands
                             {
                                 if (info.Preserve)
                                 {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destFullPath}]", cmd));
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{destFullPath}]", cmd));
                                     continue;
                                 }
                                 else
                                 {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destFullPath}] will be overwritten", cmd));
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will be overwritten", cmd));
                                 }
                             }
 
@@ -155,7 +155,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{srcFile}] not found", cmd));
+                    logs.Add(new LogInfo(LogState.Ignore, $"Files matching wildcard [{srcFile}] not found", cmd));
                 }
             }
 

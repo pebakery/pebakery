@@ -534,6 +534,12 @@ namespace PEBakery.Core
                     case CodeType.VisibleOp:
                         logs.AddRange(CommandInterface.VisibleOp(s, cmd));
                         break;
+                    case CodeType.ReadInterface:
+                        logs.AddRange(CommandInterface.ReadInterface(s, cmd));
+                        break;
+                    case CodeType.WriteInterface:
+                        logs.AddRange(CommandInterface.WriteInterface(s, cmd));
+                        break;
                     case CodeType.Message:
                         logs.AddRange(CommandInterface.Message(s, cmd));
                         break;

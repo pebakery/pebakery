@@ -57,7 +57,7 @@ namespace PEBakery.Core
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
-        Visible = 800, Message, Echo, EchoFile, UserInput, AddInterface,
+        Visible = 800, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
         VisibleOp = 880,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
@@ -1479,6 +1479,11 @@ namespace PEBakery.Core
             InterfaceKey = interfaceKey;
             Visibility = visibility;
         }
+
+        public override string ToString()
+        {
+            return $"{InterfaceKey},{Visibility}";
+        }
     }
 
     [Serializable]
@@ -1489,6 +1494,60 @@ namespace PEBakery.Core
         public CodeInfo_VisibleOp(List<CodeInfo_Visible> infoList)
         {
             InfoList = infoList;
+        }
+    }
+
+    [Serializable]
+    public enum InterfaceElement
+    {
+        Text, Visible, PosX, PosY, Width, Height, Value
+    }
+
+    [Serializable]
+    public class CodeInfo_ReadInterface : CodeInfo
+    { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+        public InterfaceElement Element;
+        public string PluginFile;
+        public string Section;
+        public string Key;
+        public string DestVar;
+
+        public CodeInfo_ReadInterface(InterfaceElement element, string pluginFile, string section, string key, string destVar)
+        {
+            Element = element;
+            PluginFile = pluginFile;
+            Section = section;
+            Key = key;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{Element},{PluginFile},{Section},{Key},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WriteInterface : CodeInfo
+    { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+        public InterfaceElement Element;
+        public string PluginFile;
+        public string Section;
+        public string Key;
+        public string Value;
+
+        public CodeInfo_WriteInterface(InterfaceElement element, string pluginFile, string section, string key, string value)
+        {
+            Element = element;
+            PluginFile = pluginFile;
+            Section = section;
+            Key = key;
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            return $"{Element},{PluginFile},{Section},{Key},{Value}";
         }
     }
 
@@ -3585,15 +3644,17 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_SetMacro : CodeInfo
-    { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+    { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
         public string MacroName;
         public string MacroCommand;
+        public bool Global;
         public bool Permanent;
 
-        public CodeInfo_SetMacro(string macroName, string macroCommand, bool permanent)
+        public CodeInfo_SetMacro(string macroName, string macroCommand, bool global, bool permanent)
         {
             MacroName = macroName;
             MacroCommand = macroCommand;
+            Global = global;
             Permanent = permanent;
         }
 
@@ -3605,6 +3666,8 @@ namespace PEBakery.Core
             b.Append(MacroCommand);
             if (Permanent)
                 b.Append(",PERMANENT");
+            else if (Global)
+                b.Append(",GLOBAL");
             return b.ToString();
         }
     }

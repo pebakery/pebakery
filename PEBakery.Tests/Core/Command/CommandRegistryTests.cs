@@ -79,7 +79,7 @@ namespace PEBakery.Tests.Core.Command
                 Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 00, 01, 02 });
             RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,""03,04""",
                 Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 03, 04 },
-                ErrorCheck.Warning);
+                ErrorCheck.Overwrite);
             RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,05,06,07,NOWARN",
                 Registry.CurrentUser, RegistryValueKind.Binary, subKey, "Binary", new byte[] { 05, 06, 07 });
             RegWrite_Template(s, $@"RegWrite,HKCU,0x3,{subKey},Binary,""08,09"",NOWARN",
@@ -88,10 +88,10 @@ namespace PEBakery.Tests.Core.Command
                 Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)1234);
             RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,-1",
                 Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
-                ErrorCheck.Warning);
+                ErrorCheck.Overwrite);
             RegWrite_Template(s, $@"RegWrite,HKCU,0x4,{subKey},DWORD,4294967295",
                 Registry.CurrentUser, RegistryValueKind.DWord, subKey, "DWORD", (uint)4294967295,
-                ErrorCheck.Warning);
+                ErrorCheck.Overwrite);
             RegWrite_Template(s, $@"RegWrite,HKCU,0xB,{subKey},QWORD,4294967296",
                 Registry.CurrentUser, RegistryValueKind.QWord, subKey, "QWORD", (ulong)4294967296);
 
@@ -106,7 +106,7 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineTests.Eval(s, rawCode, CodeType.RegWrite, check);
 
-            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning || check == ErrorCheck.Overwrite)
             {
                 string valueDataStr;
                 using (RegistryKey subKey = hKey.OpenSubKey(keyPath, false))
