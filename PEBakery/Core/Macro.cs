@@ -69,29 +69,55 @@ namespace PEBakery.Core
             }
             macroSection = macroPlugin.Sections[varDict["APIVAR"]];
             variables.SetValue(VarsType.Global, "API", macroPluginPath);
-            if (macroPlugin.Sections.ContainsKey("Varaibles"))
-                variables.AddVariables(VarsType.Global, macroPlugin.Sections["Varaibles"]);
+            if (macroPlugin.Sections.ContainsKey("Variables"))
+                variables.AddVariables(VarsType.Global, macroPlugin.Sections["Variables"]);
 
             // Import Section [APIVAR]'s variables, such as '%Shc_Mode%=0'
             variables.AddVariables(VarsType.Global, macroSection);
 
-            // Parse Section [APIVAR] into dictionary of CodeCommand
-            SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
-            Dictionary<string, string> macroRawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
-            foreach (var kv in macroRawDict)
+            // Parse Section [APIVAR] into MacroDict
             {
-                try
+                SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
+                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
+                foreach (var kv in rawDict)
                 {
-                    if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
-                        macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
-                    else
-                        logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
-                }
-                catch (Exception e)
-                {
-                    logs.Add(new LogInfo(LogState.Error, e));
+                    try
+                    {
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                            macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                        else
+                            logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                    }
+                    catch (Exception e)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, e));
+                    }
                 }
             }
+            
+            // Parse MainPlugin's section [Variables] into MacroDict
+            // (Written by SetMacro, ... ,PERMANENT
+            if (project.MainPlugin.Sections.ContainsKey("Variables"))
+            {
+                PluginSection permaSection = project.MainPlugin.Sections["Variables"];
+                SectionAddress addr = new SectionAddress(project.MainPlugin, permaSection);
+                Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.GetLines());
+                foreach (var kv in rawDict)
+                {
+                    try
+                    {
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                            macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
+                        else
+                            logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
+                    }
+                    catch (Exception e)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, e));
+                    }
+                }
+            }
+            
         }
 
         public List<LogInfo> LoadLocalMacroDict(Plugin p, bool append, string sectionName = "Variables")
