@@ -123,6 +123,30 @@ namespace PEBakery.Core
                             w.WriteLine();
                         }
 
+                        // Show WarnLogs
+                        DB_BuildLog[] warns = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
+                        if (0 < errors.Length)
+                        {
+                            w.WriteLine("<Warnings>");
+
+                            long[] pLogIds = warns.Select(x => x.PluginId).Distinct().ToArray();
+                            DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            foreach (DB_Plugin pLog in pLogs)
+                            {
+                                DB_BuildLog[] wLogs = warns.Where(x => x.PluginId == pLog.Id).ToArray();
+                                if (wLogs.Length == 1)
+                                    w.WriteLine($"- [{wLogs.Length}] Warning in Plugin [{pLog.Name}] ({pLog.Path})");
+                                else
+                                    w.WriteLine($"- [{wLogs.Length}] Warnings in Plugin [{pLog.Name}] ({pLog.Path})");
+
+                                foreach (DB_BuildLog eLog in wLogs)
+                                    w.WriteLine(eLog.Export(LogExportType.Text, false));
+                                w.WriteLine();
+                            }
+
+                            w.WriteLine();
+                        }
+
                         // Plugin
                         var plugins = DB.Table<DB_Plugin>()
                             .Where(x => x.BuildId == buildId)
@@ -244,6 +268,34 @@ namespace PEBakery.Core
                             }
                         }
 
+                        // Show WarnLogs
+                        m.WarnCodeDicts = new Dictionary<PluginHtmlModel, CodeLogHtmlModel[]>();
+                        {
+                            int warnIdx = 0;
+                            DB_BuildLog[] warns = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
+                            if (0 < warns.Length)
+                            {
+                                long[] pLogIds = warns.Select(x => x.PluginId).Distinct().ToArray();
+                                DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                                foreach (DB_Plugin pLog in pLogs)
+                                {
+                                    PluginHtmlModel pModel = new PluginHtmlModel()
+                                    {
+                                        Name = pLog.Name,
+                                        Path = pLog.Path,
+                                    };
+                                    m.WarnCodeDicts[pModel] = warns
+                                        .Where(x => x.PluginId == pLog.Id)
+                                        .Select(x => new CodeLogHtmlModel()
+                                        {
+                                            State = x.State,
+                                            Message = x.Export(LogExportType.Html, false),
+                                            Href = (warnIdx++),
+                                        }).ToArray();
+                                }
+                            }
+                        }
+
                         // Plugins
                         var plugins = DB.Table<DB_Plugin>()
                             .Where(x => x.BuildId == buildId)
@@ -288,6 +340,7 @@ namespace PEBakery.Core
                         {
                             int pIdx = 0;
                             int errIdx = 0;
+                            int warnIdx = 0;
 
                             foreach (DB_Plugin pLog in plugins)
                             {
@@ -315,6 +368,15 @@ namespace PEBakery.Core
                                             State = log.State,
                                             Message = log.Export(LogExportType.Html),
                                             Href = (errIdx++),
+                                        });
+                                    }
+                                    else if (log.State == LogState.Warning)
+                                    {
+                                        logModel.Add(new CodeLogHtmlModel()
+                                        {
+                                            State = log.State,
+                                            Message = log.Export(LogExportType.Html),
+                                            Href = (warnIdx++),
                                         });
                                     }
                                     else
@@ -375,6 +437,7 @@ namespace PEBakery.Core
             public List<PluginHtmlModel> Plugins { get; set; }
             public List<VarHtmlModel> Vars { get; set; }
             public Dictionary<PluginHtmlModel, CodeLogHtmlModel[]> ErrorCodeDicts { get; set; }
+            public Dictionary<PluginHtmlModel, CodeLogHtmlModel[]> WarnCodeDicts { get; set; }
             public List<Tuple<PluginHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>> CodeLogs { get; set; }
             // public List<CodeLogHtmlModel> CodeLogs { get; set; }
         }

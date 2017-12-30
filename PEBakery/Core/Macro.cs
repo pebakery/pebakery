@@ -209,14 +209,27 @@ namespace PEBakery.Core
                     if (MacroDict.ContainsKey(macroName))
                     {
                         MacroDict.Remove(macroName);
+                        Ini.DeleteKey(addr.Project.MainPlugin.FullPath, "Variables", macroName);
+                        return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
+                    }
+                    else
+                    {
+                        return new LogInfo(LogState.Error, $"Permanent Macro [{macroName}] not found");
+                    }                   
+                }
+                else if (global) // MacroDict
+                {
+                    if (MacroDict.ContainsKey(macroName))
+                    {
+                        MacroDict.Remove(macroName);
                         return new LogInfo(LogState.Success, $"Global Macro [{macroName}] deleted");
                     }
                     else
                     {
                         return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
-                    }                   
+                    }
                 }
-                else
+                else // LocalDict
                 {
                     if (LocalDict.ContainsKey(macroName))
                     {

@@ -132,9 +132,42 @@
                             @foreach (var item in @kv.Value)
                             {
                                 <tr>
-                                    <td class="text-nowrap text-danger">
-                                        <a class="text-danger" href='@string.Format("#error_{0}", @item.Href)'>
+                                    <td class="text-nowrap bg-danger">
+                                        <a class="text-dark" href='@string.Format("#error_{0}", @item.Href)'>
                                             <i class="fa fa-fw fa-remove"></i>@item.State
+                                        </a>
+                                    </td>
+                                    <td class="pb-whitespace">@item.Message</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </section>
+        }
+
+        <!-- WarnSummary -->
+        @if (0 < @Model.WarnCodeDicts.Count)
+        {
+            <section id="warn_summary" class="container-fluid mt-2">
+                <h2 class="mt-2">Errors</h2>
+                @foreach (var kv in @Model.WarnCodeDicts)
+                {
+                    <span class="pb-monospace">@kv.Value.Length Warning in Plugin &#91;@kv.Key.Name&#93; &#40;@kv.Key.Path&#41;</span>
+                    <table class="table table-striped table-responsive table-bordered pb-table-codes">
+                        <thead class="thead-dark text-center">
+                            <tr>
+                                <th class="text-nowrap">State</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in @kv.Value)
+                            {
+                                <tr>
+                                    <td class="text-nowrap bg-warning">
+                                        <a class="text-dark" href='@string.Format("#warn_{0}", @item.Href)'>
+                                            <i class="fa fa-fw fa-warning"></i>@item.State
                                         </a>
                                     </td>
                                     <td class="pb-whitespace">@item.Message</td>
@@ -232,7 +265,7 @@
                             }
                             else if (@item.State == LogState.Warning)
                             {
-                            <tr class="bg-warning">
+                            <tr class="bg-warning" id='@string.Format("warn_{0}", @item.Href)'>
                                 <td class="text-nowrap"><i class="fa fa-fw fa-warning"></i>&#91;@item.State&#93;</td>
                                 <td class="pb-whitespace">@item.Message</td>
                             </tr>

@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace PEBakery.Core
 
     #region Interface Representation Format
     /*
-    <Name>=<Text>,Visibility,Type,X,Y,Width,Height,<Variable>,[Tooltip]
+    <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[Tooltip]
     Visibility : 1 or 0
     Type : PluginInterfaceControlType 0 ~ 14
 
@@ -64,28 +65,25 @@ namespace PEBakery.Core
     Image       = <FileName> 
     TextFile    = <FileName> 
     Button      = Caption 
-    CheckList   = <SectionName>
-                  That section must contains lists, by this format
-                  Ex) <Key>=<IntegerValue> // 0 or 1, checked or not
     WebLabel    = Caption 
     RadioButton = Caption 
     Bevel       = <ComponentName> 
     FileBox     = <Path> // It can be file or directory
     RadioGroup  = Caption 
 
-    <Variable>
+    <OptionalValues>
     TextBox     = <StringValue>
     TextLabel   = <FontSize>,<Style>
                   <Style> : Normal, Bold (in WB082)
                             Italic, Underline, Strike (Added in PEBakery)
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
-    CheckBox    = <BooleanValue>,[SectionToRun]  +[ButtonOptional]
+    CheckBox    = <BooleanValue>,[SectionToRun]  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
-    Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean] +[RunOptional]
+    Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture. or its value is Embedded File name.
     WebLabel    = <StringValue> // URL
     RadioButton = <BooleanValue> +[RunOptional]
-    FileBox     = [FILE] // If file, FILE. If dir, nothing.
+    FileBox     = [FILE|DIR]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
 
@@ -106,6 +104,7 @@ namespace PEBakery.Core
     [Serializable]
     public class UICommand
     {
+        #region Fields
         public string RawLine;
         public SectionAddress Addr;
 
@@ -115,7 +114,9 @@ namespace PEBakery.Core
         public UIType Type;
         public Rect Rect;
         public UIInfo Info;
+        #endregion
 
+        #region Constructors
         public UICommand(string rawLine, SectionAddress addr, string key)
         {
             this.RawLine = rawLine;
@@ -141,7 +142,9 @@ namespace PEBakery.Core
             this.Rect = rect;
             this.Info = info;
         }
+        #endregion
 
+        #region ToString, ForgeRawLine
         public override string ToString()
         {
             return ForgeRawLine(true);
@@ -175,7 +178,9 @@ namespace PEBakery.Core
             b.Append(Info.ForgeRawLine());
             return b.ToString();
         }
+        #endregion
 
+        #region Update
         public void Update()
         {
             Ini.SetKey(Addr.Plugin.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
@@ -198,6 +203,227 @@ namespace PEBakery.Core
                 Ini.SetKeys(fullPath, keys);
             }           
         }
+        #endregion
+
+        #region GetValue, SetValue
+        public string GetValue()
+        {
+            string value = null;
+            switch (Type)
+            {
+                case UIType.TextBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
+                        UIInfo_TextBox info = Info as UIInfo_TextBox;
+
+                        value = info.Value;
+                    }
+                    break;
+                case UIType.NumberBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
+                        UIInfo_NumberBox info = Info as UIInfo_NumberBox;
+
+                        value = info.Value.ToString();
+                    }
+                    break;
+                case UIType.CheckBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
+                        UIInfo_CheckBox info = Info as UIInfo_CheckBox;
+
+                        value = info.Value ? "True" : "False";
+                    }
+                    break;
+                case UIType.ComboBox:
+                    {
+                        value = Text;
+                    }
+                    break;
+                case UIType.RadioButton:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
+                        UIInfo_RadioButton info = Info as UIInfo_RadioButton;
+
+                        value = info.Selected ? "True" : "False";
+                    }
+                    break;
+                case UIType.FileBox:
+                    {
+                        value = Text;
+                    }
+                    break;
+                case UIType.RadioGroup:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
+                        UIInfo_RadioGroup info = Info as UIInfo_RadioGroup;
+
+                        value = info.Selected.ToString();
+                    }
+                    break;
+            }
+
+            return value;
+        }
+
+        public bool SetValue(string newValue, bool update, out List<LogInfo> logs)
+        {
+            logs = new List<LogInfo>(1);
+            bool success = false;
+            switch (Type)
+            {
+                case UIType.TextBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
+                        UIInfo_TextBox uiInfo = Info as UIInfo_TextBox;
+
+                        uiInfo.Value = newValue;
+
+                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        success = true;
+                    }
+                    break;
+                case UIType.NumberBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
+                        UIInfo_NumberBox uiInfo = Info as UIInfo_NumberBox;
+
+                        // WB082 just write string value in case of error, but PEBakery will throw error
+                        if (!NumberHelper.ParseInt32(newValue, out int intVal))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] is not a valid integer"));
+                            return false;
+                        }
+
+                        if (uiInfo.Min <= intVal && intVal <= uiInfo.Max)
+                        {
+                            uiInfo.Value = intVal;
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] should be inside of [{uiInfo.Min}] ~ [{uiInfo.Max}]"));
+                            return false;
+                        }
+
+                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        success = true;
+                    }
+                    break;
+                case UIType.CheckBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
+                        UIInfo_CheckBox uiInfo = Info as UIInfo_CheckBox;
+
+                        if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        {
+                            uiInfo.Value = true;
+
+                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [True]"));
+                            success = true;
+                        }
+                        else if (newValue.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        {
+                            uiInfo.Value = false;
+
+                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [False]"));
+                            success = true;
+                        }
+                        else
+                        { // WB082 just write string value in case of error, but PEBakery will throw error
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] is not a valid boolean value"));
+                            return false;
+                        }
+                    }
+                    break;
+                case UIType.ComboBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_ComboBox));
+                        UIInfo_ComboBox uiInfo = Info as UIInfo_ComboBox;
+
+                        int idx = uiInfo.Items.FindIndex(x => x.Equals(newValue, StringComparison.OrdinalIgnoreCase));
+                        if (idx == -1)
+                        { // Invalid Index
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] not found in item list"));
+                            return false;
+                        }
+
+                        uiInfo.Index = idx;
+                        Text = uiInfo.Items[idx];
+
+                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{Text}]"));
+                        success = true;
+                    }
+                    break;
+                case UIType.RadioButton:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
+                        UIInfo_RadioButton uiInfo = Info as UIInfo_RadioButton;
+
+                        if (newValue.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        {
+                            uiInfo.Selected = true;
+
+                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [True]"));
+                            success = true;
+                        }
+                        else if (newValue.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        {
+                            uiInfo.Selected = false;
+
+                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [False]"));
+                            success = true;
+                        }
+                        else
+                        { // WB082 just write string value, but PEBakery will throw error
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] is not a valid boolean value"));
+                            return false;
+                        }
+                    }
+                    break;
+                case UIType.FileBox:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_FileBox));
+                        UIInfo_FileBox uiInfo = Info as UIInfo_FileBox;
+
+                        Text = newValue;
+
+                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        success = true;
+                    }
+                    break;
+                case UIType.RadioGroup:
+                    {
+                        Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
+                        UIInfo_RadioGroup uiInfo = Info as UIInfo_RadioGroup;
+
+                        if (!NumberHelper.ParseInt32(newValue, out int idx))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] is not a valid integer"));
+                            return false;
+                        }
+
+                        if (0 <= idx && idx < uiInfo.Items.Count)
+                        {
+                            uiInfo.Selected = idx;
+                        }
+                        else
+                        { // Invalid Index
+                            logs.Add(new LogInfo(LogState.Error, $"Index [{newValue}] is invalid"));
+                            return false;
+                        }
+
+                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        success = true;
+                    }
+                    break;
+            }
+
+            if (success && update)
+                Update();
+
+            return success;
+        }
+        #endregion
     }
     #endregion
 
