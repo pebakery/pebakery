@@ -1236,19 +1236,31 @@ namespace PEBakery.Helper
         const long MB = 1024L * 1024L;
         const long KB = 1024L;
 
-        public static string ByteSizeToHumanReadableString(long byteSize)
+        public static string ByteSizeToHumanReadableString(long byteSize, int decPoint = 3)
         {
+            if (decPoint < 0) throw new ArgumentOutOfRangeException("decPoint");
+
+            string formatString = "0";
+            if (0 < decPoint)
+            { // formatString = "0.###"
+                StringBuilder b = new StringBuilder(decPoint + 1);
+                b.Append("0.");
+                for (int i = 0; i < decPoint; i++)
+                    b.Append("#");
+                formatString = b.ToString();
+            }
+            
             string str;
             if (PB <= byteSize)
-                str = $"{((decimal)byteSize / PB):0.###}PB";
+                str = $"{((decimal)byteSize / PB).ToString(formatString)}PB";
             else if (TB <= byteSize)
-                str = $"{((decimal)byteSize / TB):0.###}TB";
+                str = $"{((decimal)byteSize / TB).ToString(formatString)}TB";
             else if (GB <= byteSize)
-                str = $"{((decimal)byteSize / GB):0.###}GB";
+                str = $"{((decimal)byteSize / GB).ToString(formatString)}GB";
             else if (MB <= byteSize)
-                str = $"{((decimal)byteSize / MB):0.###}MB";
+                str = $"{((decimal)byteSize / MB).ToString(formatString)}MB";
             else
-                str = $"{((decimal)byteSize / KB):0.###}KB";
+                str = $"{((decimal)byteSize / KB).ToString(formatString)}KB";
 
             return str;
         }

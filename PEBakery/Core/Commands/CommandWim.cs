@@ -200,7 +200,7 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}min {sec}sec";
+                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}m {sec}s";
                         }
                         else
                         {
@@ -218,7 +218,7 @@ namespace PEBakery.Core.Commands
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
                             int sec = wMsg.EstimatedTimeRemaining.Seconds;
-                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}min {sec}sec";
+                            s.MainViewModel.BuildCommandProgressText = $"{wMsg.PercentComplete}%, Remaing Time : {min}m {sec}s";
                         }
                         else
                         {
