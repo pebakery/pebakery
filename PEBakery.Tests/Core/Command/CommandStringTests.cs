@@ -226,7 +226,7 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region DirPath
+        #region DirPath, Path
         [TestCategory("Command")]
         [TestCategory("CommandString")]
         [TestMethod]
@@ -234,27 +234,15 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32");
-            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32,%Dest%", @"C:\Windows");
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\");
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,C:\Windows\System32,%Dest%", @"C:\Windows\");
             StrFormat_Dest_Template(s, @"StrFormat,DirPath,,%Dest%", string.Empty);
-            StrFormat_Dest_Template(s, @"StrFormat,DirPath,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206");
-            StrFormat_Dest_Template_Error(s, @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
-        }
-        #endregion
-
-        #region Path
-        [TestCategory("Command")]
-        [TestCategory("CommandString")]
-        [TestMethod]
-        public void StrFormat_Path()
-        {
-            EngineState s = EngineTests.CreateEngineState();
-
+            StrFormat_Dest_Template(s, @"StrFormat,DirPath,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206/");
             StrFormat_Dest_Template(s, @"StrFormat,Path,C:\Windows\System32\notepad.exe,%Dest%", @"C:\Windows\System32\");
             StrFormat_Dest_Template(s, @"StrFormat,Path,C:\Windows\System32,%Dest%", @"C:\Windows\");
             StrFormat_Dest_Template(s, @"StrFormat,Path,,%Dest%", string.Empty);
             StrFormat_Dest_Template(s, @"StrFormat,Path,https://github.com/ied206/PEBakery.git,%Dest%", "https://github.com/ied206/");
-            StrFormat_Dest_Template_Error(s, @"StrFormat,Path,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
+            StrFormat_Dest_Template_Error(s, @"StrFormat,DirPath,https://github.com/ied206\PEBakery.git,%Dest%", ErrorCheck.Error);
         }
         #endregion
 

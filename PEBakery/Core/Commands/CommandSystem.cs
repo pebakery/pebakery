@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
@@ -64,7 +64,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
@@ -200,7 +200,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
                         AutoResetEvent resetEvent = null;
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             resetEvent = w.StartReloadPluginWorker();
@@ -219,7 +219,7 @@ namespace PEBakery.Core.Commands
 
                         // Reload Project
                         AutoResetEvent resetEvent = null;
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             resetEvent = w.StartLoadWorker(true);                
@@ -285,7 +285,7 @@ namespace PEBakery.Core.Commands
                                 }
 
                                 // Update MainWindow and redraw Plugin
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
@@ -310,7 +310,7 @@ namespace PEBakery.Core.Commands
                                 }
 
                                 // Update MainWindow.MainTree and redraw Plugin
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 

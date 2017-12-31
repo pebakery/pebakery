@@ -630,7 +630,15 @@ namespace PEBakery.Core
                         logs.AddRange(CommandControl.PackParam(s, cmd));
                         break;
                     #endregion
-                    #region 15 External Macro
+                    #region 15 Wim
+                    case CodeType.WimMount:
+                        logs.AddRange(CommandWim.WimMount(s, cmd));
+                        break;
+                    case CodeType.WimUnmount:
+                        logs.AddRange(CommandWim.WimUnmount(s, cmd));
+                        break;
+                    #endregion
+                    #region 99 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;

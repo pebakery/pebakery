@@ -1597,7 +1597,25 @@ namespace PEBakery.Core
                         return new CodeInfo_PackParam(args[0], args[1], varCount);
                     }
                 #endregion
-                #region 15 External Macro
+                #region 15 Wim
+                case CodeType.WimMount:
+                    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_WimMount(args[0], args[1], args[2]);
+                    }
+                case CodeType.WimUnmount:
+                    { // WimUnmount,<MountDir>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_WimUnmount(args[0]);
+                    }
+                #endregion
+                #region 16 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
                 #endregion

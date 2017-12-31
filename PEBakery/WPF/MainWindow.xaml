@@ -554,6 +554,7 @@
                                 Margin="10, 10, 10, 0"
                                 TextWrapping="Wrap"
                                 Text="{Binding BuildEchoMessage}"/>
+                            <!-- ShellExecute Console Output -->
                             <TextBlock
                                 DockPanel.Dock="Top"
                                 TextAlignment="Left"
@@ -564,7 +565,6 @@
                                 Text="ShellExecute Console Output"/>
                             <TextBox
                                 DockPanel.Dock="Top"
-                                Name="BuildConOutRedirectTextBox"
                                 Margin="10, 10, 10, 10"
                                 Visibility="{Binding BuildConOutRedirectVisibility}"
                                 TextAlignment="Left"
@@ -578,6 +578,30 @@
                                 IsReadOnly="True"
                                 TextChanged="BuildConOutRedirectTextBox_TextChanged"
                                 Text="{Binding BuildConOutRedirect}"/>
+                            <!-- ProgressBar -->
+                            <TextBlock
+                                DockPanel.Dock="Top"
+                                TextAlignment="Left"
+                                Margin="10, 20, 10, 0"
+                                TextWrapping="Wrap"
+                                FontWeight="SemiBold"
+                                Visibility="{Binding BuildCommandProgressVisibility}"
+                                Text="{Binding BuildCommandProgressTitle}"/>
+                            <ProgressBar
+                                DockPanel.Dock="Top"
+                                Margin="10, 7, 10, 0"
+                                Height="20"
+                                Visibility="{Binding BuildCommandProgressVisibility}"
+                                Minimum="0"
+                                Maximum="{Binding BuildCommandProgressMax}"
+                                Value="{Binding BuildCommandProgressValue}" />
+                            <TextBlock
+                                DockPanel.Dock="Top"
+                                TextAlignment="Left"
+                                Margin="10, 3, 10, 0"
+                                TextWrapping="Wrap"
+                                Visibility="{Binding BuildCommandProgressVisibility}"
+                                Text="{Binding BuildCommandProgressText}"/>
                         </DockPanel>
                     </Border>
 
@@ -586,31 +610,25 @@
                         Margin="20, 0, 20, 5"
                         TextAlignment="Left"
                         FontWeight="SemiBold"
-                        Text="Plugin Progress">
-                    </TextBlock>
-
+                        Text="Plugin Progress" />
                     <ProgressBar
                         Grid.Row="2"
                         Margin="20, 0, 20, 10"
                         Minimum="0"
                         Maximum="{Binding BuildPluginProgressBarMax}"
-                        Value="{Binding BuildPluginProgressBarValue}">
-                    </ProgressBar>
-
+                        Value="{Binding BuildPluginProgressBarValue}" />
                     <TextBlock
                         Grid.Row="3"
                         Margin="20, 0, 20, 5"
                         TextAlignment="Left"
                         FontWeight="SemiBold"
-                        Text="Full Progress">
-                    </TextBlock>
+                        Text="Full Progress" />
                     <ProgressBar
                         Grid.Row="4"
                         Margin="20, 0, 20, 10"
                         Minimum="0"
                         Maximum="{Binding BuildFullProgressBarMax}"
-                        Value="{Binding BuildFullProgressBarValue}">
-                    </ProgressBar>
+                        Value="{Binding BuildFullProgressBarValue}" />
                 </Grid>
 
                 <ScrollViewer

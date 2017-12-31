@@ -73,8 +73,10 @@ namespace PEBakery.Core
         // 14 Control
         Set = 1400, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
         GetParam = 1498, PackParam = 1499, // Will be deprecated
-        // 15 External Macro
-        Macro = 1500,
+        // 15 Wim
+        WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
+        // 99 External Macro
+        Macro = 9900,
     }
     #endregion
 
@@ -3784,7 +3786,45 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 15 - Macro
+    #region CodeInfo 15 - WIM
+    [Serializable]
+    public class CodeInfo_WimMount : CodeInfo
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
+        public string SrcWim;
+        public string ImageIndex;
+        public string MountDir;
+
+        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            MountDir = mountDir;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcWim},{ImageIndex},{MountDir}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimUnmount : CodeInfo
+    { // WimUnmount,<MountDir>
+        public string MountDir;
+
+        public CodeInfo_WimUnmount(string mountDir)
+        {
+            MountDir = mountDir;
+        }
+
+        public override string ToString()
+        {
+            return $"{MountDir}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 16 - Macro
     [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {
