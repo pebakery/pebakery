@@ -1164,7 +1164,8 @@ namespace PEBakery.Helper
                         return null;
                 }
 
-                return new VersionEx(arr[0], arr[1], arr[2], arr[3]);
+                try { return new VersionEx(arr[0], arr[1], arr[2], arr[3]); }
+                catch { return null; }
             }
 
             public int CompareTo(VersionEx value)

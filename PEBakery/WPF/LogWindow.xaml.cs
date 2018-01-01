@@ -287,6 +287,9 @@ namespace PEBakery.WPF
 
         public void RefreshBuildLog()
         {
+            LogStatModel.Clear();
+            VariableListModel.Clear();
+
             // Populate SelectBuildEntries
             Application.Current.Dispatcher.Invoke(() =>
             {

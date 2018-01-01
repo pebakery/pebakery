@@ -56,12 +56,18 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.WaitCursor;
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
+                            });
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Wait]"));
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            System.Windows.Forms.Cursor.Current = System.Windows.Forms.Cursors.Default;
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                System.Windows.Input.Mouse.OverrideCursor = null;
+                            });
                             logs.Add(new LogInfo(LogState.Success, "Mouse cursor icon set to [Normal]"));
                         }
                         else
@@ -428,7 +434,7 @@ namespace PEBakery.Core.Commands
             StringBuilder b = new StringBuilder(filePath);
             using (Process proc = new Process())
             {
-                proc.StartInfo.FileName = filePath;
+                proc.StartInfo = new ProcessStartInfo(filePath);
                 if (info.Params != null && info.Params.Equals(string.Empty, StringComparison.Ordinal) == false)
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
@@ -450,18 +456,17 @@ namespace PEBakery.Core.Commands
 
                 bool redirectStandardStream = false;
                 Stopwatch watch = Stopwatch.StartNew();
-                StringBuilder bStdOut = new StringBuilder();
+                StringBuilder bConOut = new StringBuilder();
+                StringBuilder bStdOut = new StringBuilder(); 
                 StringBuilder bStdErr = new StringBuilder();
                 try
                 {
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.Verb = "Open";
                         proc.StartInfo.UseShellExecute = true;
                     }
                     else if (verb.Equals("Hide", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.Verb = "Open";
                         proc.StartInfo.UseShellExecute = false;
                         proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         proc.StartInfo.CreateNoWindow = true;
@@ -477,7 +482,8 @@ namespace PEBakery.Core.Commands
                                 if (e.Data != null)
                                 {
                                     bStdOut.AppendLine(e.Data);
-                                    s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
+                                    bConOut.AppendLine(e.Data);
+                                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 } 
                             };
 
@@ -487,16 +493,16 @@ namespace PEBakery.Core.Commands
                                 if (e.Data != null)
                                 {
                                     bStdErr.AppendLine(e.Data);
-                                    //s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
+                                    bConOut.AppendLine(e.Data);
+                                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 }
                             };
 
-                            s.MainViewModel.BuildStdOutRedirectShow = true;
+                            s.MainViewModel.BuildConOutRedirectShow = true;
                         }
                     }
                     else if (verb.Equals("Min", StringComparison.OrdinalIgnoreCase))
                     {
-                        proc.StartInfo.Verb = "Open";
                         proc.StartInfo.UseShellExecute = true;
                         proc.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
                     }
@@ -513,8 +519,7 @@ namespace PEBakery.Core.Commands
                         s.RunningSubProcess = null;
                         if (redirectStandardStream)
                         {
-                            s.MainViewModel.BuildStdOutRedirect = bStdOut.ToString();
-                            s.MainViewModel.BuildStdErrRedirect = bStdErr.ToString();
+                            s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                             watch.Stop();
                         }
                     };
@@ -568,7 +573,7 @@ namespace PEBakery.Core.Commands
 
                         if (redirectStandardStream)
                         {
-                            string stdout = s.MainViewModel.BuildStdOutRedirect.Trim();
+                            string stdout = bStdOut.ToString().Trim();
                             if (0 < stdout.Length)
                             {
                                 if (stdout.IndexOf('\n') == -1) // No NewLine
@@ -577,7 +582,7 @@ namespace PEBakery.Core.Commands
                                     logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdout}\r\n"));
                             }
                                 
-                            string stderr = s.MainViewModel.BuildStdErrRedirect.Trim();
+                            string stderr = bStdErr.ToString().Trim();
                             if (0 < stderr.Length)
                             {
                                 if (stderr.IndexOf('\n') == -1) // No NewLine
@@ -593,12 +598,11 @@ namespace PEBakery.Core.Commands
                     // Restore PATH environment variable
                     if (pathVarBackup != null)
                         Environment.SetEnvironmentVariable("PATH", pathVarBackup);
+
                     if (redirectStandardStream)
                     {
-                        s.MainViewModel.BuildStdOutRedirect = string.Empty;
-                        s.MainViewModel.BuildStdOutRedirectShow = false;
-                        s.MainViewModel.BuildStdErrRedirect = string.Empty;
-                        s.MainViewModel.BuildStdErrRedirectShow = false;
+                        s.MainViewModel.BuildConOutRedirect = string.Empty;
+                        s.MainViewModel.BuildConOutRedirectShow = false;
                     }
                 }
             }

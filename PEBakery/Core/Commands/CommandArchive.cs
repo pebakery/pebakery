@@ -59,7 +59,8 @@ namespace PEBakery.Core.Commands
 
             if (Directory.Exists(destArchive))
             {
-                throw new ExecuteException($"[{destArchive}] should be a file, not a directory");
+                logs.Add(new LogInfo(LogState.Error, $"[{destArchive}] should be a file, not a directory"));
+                return logs;
             }
             else
             {
@@ -68,7 +69,10 @@ namespace PEBakery.Core.Commands
             }
 
             if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
-                throw new ExecuteException($"Cannot find [{srcPath}]");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Cannot find [{srcPath}]"));
+                return logs;
+            }
 
             bool success;
             switch (arcType)
@@ -77,7 +81,8 @@ namespace PEBakery.Core.Commands
                     success = ArchiveHelper.CompressManagedZip(srcPath, destArchive, compLevel, encoding);
                     break;
                 default:
-                    throw new ExecuteException($"Compressing to [{arcType}] format is not supported");
+                    logs.Add(new LogInfo(LogState.Error, $"Compressing to [{arcType}] format is not supported"));
+                    return logs;
             }
             if (success)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcPath}] compressed to [{destArchive}]"));
@@ -105,12 +110,18 @@ namespace PEBakery.Core.Commands
             }
 
             if (!File.Exists(srcArchive))
-                throw new ExecuteException($"Cannot find [{srcArchive}]");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Cannot find [{srcArchive}]"));
+                return logs;
+            }
 
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
-                    throw new ExecuteException($"[{destDir}] should be a directory, not a file");
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"[{destDir}] should be a directory, not a file"));
+                    return logs;
+                }
                 Directory.CreateDirectory(destDir);
             }
 
@@ -147,7 +158,10 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
-                    throw new ExecuteException($"Path [{destDir}] is file, not a directory");
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"Path [{destDir}] is file, not a directory"));
+                    return logs;
+                }
                 Directory.CreateDirectory(destDir);
             }
 

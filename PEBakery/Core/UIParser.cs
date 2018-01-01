@@ -162,10 +162,10 @@ namespace PEBakery.Core
             return type;
         }
 
-        private static UIInfo ParseUICommandInfo(UIType type, List<string> arguments)
+        private static UIInfo ParseUICommandInfo(UIType type, List<string> fullArgs)
         {
             // Only use fields starting from 8th operand
-            List<string> args = arguments.Skip(6).ToList(); // Remove Text, Visibility, X, Y, width, height
+            List<string> args = fullArgs.Skip(6).ToList(); // Remove Text, Visibility, X, Y, width, height
 
             switch (type)
             {
@@ -285,9 +285,9 @@ namespace PEBakery.Core
                         for (int i = 0; i < cnt; i++)
                             items.Add(args[i]);
 
-                        int idx = items.IndexOf(arguments[0]);
-                        if (idx == -1)
-                            throw new InvalidCommandException($"[{type}] has wrong selected value [{arguments[0]}]");
+                        int idx = items.IndexOf(fullArgs[0]);
+                        if (idx == -1) 
+                            throw new InvalidCommandException($"[{type}] has wrong selected value [{fullArgs[0]}]");
 
                         return new UIInfo_ComboBox(toolTip, items, idx, sectionName, hideProgress);
                     }

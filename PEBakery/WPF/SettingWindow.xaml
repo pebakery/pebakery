@@ -297,7 +297,7 @@
                                     IsEnabled="{Binding Interface_UseCustomEditor}"
                                     Click="Button_CustomEditorPath_Click">
                                     <Button.Content>
-                                        <iconPacks:PackIconFontAwesome Kind="FolderOpen"/>
+                                        <iconPacks:PackIconFontAwesome Kind="FolderOpenSolid"/>
                                     </Button.Content>
                                 </Button>
                                 <TextBox
@@ -342,8 +342,8 @@
                     <CheckBox
                         Margin="15, 15, 15, 0"
                         VerticalContentAlignment="Center"
-                        Content="Display Standard Output When Executing ShellExecute"
-                        IsChecked="{Binding Interface_DisplayShellExecuteStdOut}" />
+                        Content="Display Console Output When Executing ShellExecute"
+                        IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Plugin">
