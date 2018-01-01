@@ -180,7 +180,7 @@ namespace PEBakery.Core.Commands
 
                         s.OnBuildExit = subInfo.Cmd;
 
-                        logs.Add(new LogInfo(LogState.Success, "OnBuildExit event registered"));
+                        logs.Add(new LogInfo(LogState.Success, "OnBuildExit callback registered"));
                     }
                     break;
                 case SystemType.OnScriptExit:
@@ -191,7 +191,7 @@ namespace PEBakery.Core.Commands
 
                         s.OnPluginExit = subInfo.Cmd;
 
-                        logs.Add(new LogInfo(LogState.Success, "OnPluginExit event registered"));
+                        logs.Add(new LogInfo(LogState.Success, "OnPluginExit callback registered"));
                     }
                     break;
                 case SystemType.RefreshInterface:

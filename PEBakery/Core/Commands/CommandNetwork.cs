@@ -195,10 +195,10 @@ namespace PEBakery.Core.Commands
                     }
                     else
                     {
-                        long speed = (long)(e.BytesReceived / totalSec); // Byte per sec
+                        long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
                         string speedStr = NumberHelper.ByteSizeToHumanReadableString((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
 
-                        TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / speed);
+                        TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);
                         int hour = (int)r.TotalHours;
                         int min = r.Minutes;
                         int sec = r.Seconds;
@@ -209,11 +209,16 @@ namespace PEBakery.Core.Commands
                 AutoResetEvent resetEvent = new AutoResetEvent(false);
                 client.DownloadFileCompleted += (object sender, AsyncCompletedEventArgs e) =>
                 {
+                    s.RunningWebClient = null;
+
+                    // Check if error occured
                     if (e.Cancelled || e.Error != null)
                         result = false;
+
                     resetEvent.Set();
                 };
 
+                s.RunningWebClient = client;
                 client.DownloadFileAsync(uri, destPath);
 
                 resetEvent.WaitOne();
