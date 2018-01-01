@@ -26,6 +26,7 @@ AddVariables,<FileName>,<Section>,[GLOBAL]
 When a plugin runs, it automatically adds variables defined in the `[Variables]` section of the plugin. The `AddVariables` command gives you the flexibility to add additional variables stored in other plugins and files and can be used in *script.project* to load variables and macros for the entire project.
 
 ## Related
+[Set](./Set.md), [SetMacro](./SetMacro.md)
 
 ## Examples
 
