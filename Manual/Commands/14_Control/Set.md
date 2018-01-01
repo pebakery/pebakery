@@ -22,7 +22,7 @@ The following flags are mutually exclusive.
 | Flag | Description |
 | --- | --- |
 | GLOBAL | Store the variable in global memory for the lifetime of the build process. This will allow other plugins to reference and/or modify this value. If the `Variable` is already defined the value will be overwritten. |
-| PERMANENT | Permanently stores the value of this variable by writing the definition into script.project's [Variables] section. |
+| PERMANENT | Permanently stores the value of this variable by writing the definition into script.project's [Variables] section. If the `Variable` is already defined the value will be overwritten. |
 
 ## Remarks
 
