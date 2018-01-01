@@ -435,7 +435,7 @@ namespace PEBakery.Core.Commands
             using (Process proc = new Process())
             {
                 proc.StartInfo = new ProcessStartInfo(filePath);
-                if (info.Params != null && info.Params.Equals(string.Empty, StringComparison.Ordinal) == false)
+                if (!string.IsNullOrEmpty(info.Params))
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
                     proc.StartInfo.Arguments = parameters;
@@ -457,8 +457,6 @@ namespace PEBakery.Core.Commands
                 bool redirectStandardStream = false;
                 Stopwatch watch = Stopwatch.StartNew();
                 StringBuilder bConOut = new StringBuilder();
-                StringBuilder bStdOut = new StringBuilder(); 
-                StringBuilder bStdErr = new StringBuilder();
                 try
                 {
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
@@ -481,7 +479,6 @@ namespace PEBakery.Core.Commands
                             {
                                 if (e.Data != null)
                                 {
-                                    bStdOut.AppendLine(e.Data);
                                     bConOut.AppendLine(e.Data);
                                     s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 } 
@@ -492,11 +489,14 @@ namespace PEBakery.Core.Commands
                             {
                                 if (e.Data != null)
                                 {
-                                    bStdErr.AppendLine(e.Data);
                                     bConOut.AppendLine(e.Data);
                                     s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 }
                             };
+
+                            // Without this, XCOPY.exe of Windows 7 will not work properly.
+                            // https://stackoverflow.com/questions/14218642/xcopy-does-not-work-with-useshellexecute-false
+                            proc.StartInfo.RedirectStandardInput = true;
 
                             s.MainViewModel.BuildConOutRedirectShow = true;
                         }
@@ -573,22 +573,13 @@ namespace PEBakery.Core.Commands
 
                         if (redirectStandardStream)
                         {
-                            string stdout = bStdOut.ToString().Trim();
-                            if (0 < stdout.Length)
+                            string conout = bConOut.ToString().Trim();
+                            if (0 < conout.Length)
                             {
-                                if (stdout.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdout}"));
+                                if (conout.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output] {conout}"));
                                 else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdout}\r\n"));
-                            }
-                                
-                            string stderr = bStdErr.ToString().Trim();
-                            if (0 < stderr.Length)
-                            {
-                                if (stderr.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stderr}"));
-                                else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stderr}\r\n"));
+                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output]\r\n{conout}\r\n"));
                             }
                         }
                     }

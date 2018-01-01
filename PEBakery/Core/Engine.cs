@@ -900,13 +900,15 @@ namespace PEBakery.Core
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
+
+        // ErrorOff
         public PluginSection ErrorOffSection = null;
         public int ErrorOffStartLineIdx = -1; // -1 means ErrorOff is turned off
         public int ErrorOffLineCount = 0;
 
         // ShellExecute
         public Process RunningSubProcess = null;
-        // For System,SetLocal
+        // System,SetLocal
         public PluginSection SetLocalSection = null; 
         // WebGet
         public WebClient RunningWebClient = null;
