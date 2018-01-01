@@ -30,7 +30,7 @@ Unless the `GLOBAL` or `PERMANENT` flag are defined the `%Variable%` scope is co
 
 Alternately, Variables can also be defined before execution by placing the definitions in the plugin's `[Variables]` section. See Example 2 for details.
 
-The `Set...,PERMANENT` command should not be used to change interface control values. Use the `InterfaceWrite` command for this purpose.
+The `Set,...,PERMANENT` command should not be used to change interface control values. Use the `InterfaceWrite` command for this purpose.
 
 ## Related
 
