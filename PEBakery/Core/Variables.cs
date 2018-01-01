@@ -253,77 +253,31 @@ namespace PEBakery.Core
 
             return logs;
         }
+        #endregion
+
+        #region UICommandToVariable
+        public LogInfo? UICommandToVariable(UICommand uiCmd, string prefix = null)
+        {
+            string destVar = uiCmd.Key;
+            if (!string.IsNullOrEmpty(prefix))
+                destVar = $"{prefix}_{uiCmd.Key}";
+
+            string value = uiCmd.GetValue();
+            if (value != null)
+                return SetValue(VarsType.Local, destVar, value);
+            else
+                return null;
+        }
 
         public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes, string prefix = null)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(uiCodes.Count);
 
             foreach (UICommand uiCmd in uiCodes)
             {
-                string destVar = uiCmd.Key;
-                if (prefix != null && prefix.Equals(string.Empty, StringComparison.Ordinal) == false)
-                    destVar = $"{prefix}_{uiCmd.Key}";
-                string value = null;
-
-                switch (uiCmd.Type)
-                {
-                    case UIType.TextBox:
-                        {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
-                            UIInfo_TextBox info = uiCmd.Info as UIInfo_TextBox;
-
-                            value = info.Value;
-                        }
-                        break;
-                    case UIType.NumberBox:
-                        {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
-                            UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
-
-                            value = info.Value.ToString();
-                        }
-                        break;
-                    case UIType.CheckBox:
-                        {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
-                            UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
-
-                            value = info.Value ? "True" : "False";
-                        }
-                        break;
-                    case UIType.ComboBox:
-                        {
-                            value = uiCmd.Text;
-                        }
-                        break;
-                    case UIType.RadioButton:
-                        {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
-                            UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;
-
-                            value = info.Selected ? "True" : "False";
-                        }
-                        break;
-                    case UIType.FileBox:
-                        {
-                            value = uiCmd.Text;
-                        }
-                        break;
-                    case UIType.RadioGroup:
-                        {
-                            Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
-                            UIInfo_RadioGroup info = uiCmd.Info as UIInfo_RadioGroup;
-
-                            value = info.Selected.ToString();
-                        }
-                        break;
-                }
-
-                if (value != null)
-                {
-                    // value = StringEscaper.Escape(value, false, true);
-                    logs.Add(SetValue(VarsType.Local, destVar, value));
-                }
+                LogInfo? log = UICommandToVariable(uiCmd, prefix);
+                if (log != null)
+                    logs.Add((LogInfo)log);
             }
 
             return logs;
@@ -772,7 +726,7 @@ namespace PEBakery.Core
 
         public static List<LogInfo> SetVariable(EngineState s, string key, string _value, bool global = false, bool permanent = false, bool expand = true)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
             // WB082 Behavior : Final form (expanded string) is written to varaibles.
             //                  Note that $#p will not be unescaped to %.

@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
 
                 object checkData = subKey.GetValue(valueName);
                 if (checkData != null)
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Registry value [{fullValuePath}] already exists"));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Registry value [{fullValuePath}] already exists"));
 
                 switch (info.ValueType)
                 {

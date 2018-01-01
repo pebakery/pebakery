@@ -37,7 +37,7 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> Visible(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
             CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
@@ -47,7 +47,10 @@ namespace PEBakery.Core.Commands
             if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                 visibility = true;
             else if (visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase) == false)
-                throw new ExecuteException($"Invalid boolean value [{visibilityStr}]");
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Invalid boolean value [{visibilityStr}]"));
+                return logs;
+            }
 
             Plugin p = cmd.Addr.Plugin;
             PluginSection iface = p.GetInterface(out string ifaceSecName);
@@ -65,8 +68,6 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Interface control [{info.InterfaceKey}]'s visibility set to [{visibility}]"));
-
             if (uiCmd.Visibility != visibility)
             {
                 uiCmd.Visibility = visibility;
@@ -81,12 +82,14 @@ namespace PEBakery.Core.Commands
                 });
             }
 
+            logs.Add(new LogInfo(LogState.Success, $"Interface control [{info.InterfaceKey}]'s visibility set to [{visibility}]"));
+
             return logs;
         }
 
         public static List<LogInfo> VisibleOp(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(8);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
@@ -144,6 +147,196 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
+        public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
+        { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface));
+            CodeInfo_ReadInterface info = cmd.Info as CodeInfo_ReadInterface;
+
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string section = StringEscaper.Preprocess(s, info.Section);
+            string key = StringEscaper.Preprocess(s, info.Key);
+
+            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+
+            if (!p.Sections.ContainsKey(section))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                return logs;
+            }
+
+            PluginSection iface = p.Sections[section];
+            List<UICommand> uiCmds = iface.GetUICodes(true);
+            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (uiCmd == null)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                return logs;
+            }
+
+            string destStr;
+            switch (info.Element)
+            {
+                case InterfaceElement.Text:
+                    destStr = uiCmd.Text;
+                    break;
+                case InterfaceElement.Visible:
+                    destStr = uiCmd.Visibility.ToString();
+                    break;
+                case InterfaceElement.PosX:
+                    destStr = ((int)uiCmd.Rect.X).ToString();
+                    break;
+                case InterfaceElement.PosY:
+                    destStr = ((int)uiCmd.Rect.Y).ToString();
+                    break;
+                case InterfaceElement.Width:
+                    destStr = ((int)uiCmd.Rect.Width).ToString();
+                    break;
+                case InterfaceElement.Height:
+                    destStr = ((int)uiCmd.Rect.Height).ToString();
+                    break;
+                case InterfaceElement.Value:
+                    destStr = uiCmd.GetValue();
+                    if (destStr == null)
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"Reading [Value] from [{uiCmd.Type}] is not supported"));
+                        return logs;
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Internal Logic Error at ReadInterface");
+            }
+
+            // Do not expand read values
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, destStr, false, false, false);
+            logs.AddRange(varLogs);
+
+            return logs;
+        }
+
+        public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
+        { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+            List<LogInfo> logs = new List<LogInfo>(2);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface));
+            CodeInfo_WriteInterface info = cmd.Info as CodeInfo_WriteInterface;
+
+            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string section = StringEscaper.Preprocess(s, info.Section);
+            string key = StringEscaper.Preprocess(s, info.Key);
+            string finalValue = StringEscaper.Preprocess(s, info.Value);
+
+            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+
+            if (!p.Sections.ContainsKey(section))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                return logs;
+            }
+
+            PluginSection iface = p.Sections[section];
+            List<UICommand> uiCmds = iface.GetUICodes(true);
+            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (uiCmd == null)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                return logs;
+            }
+
+            switch (info.Element)
+            {
+                case InterfaceElement.Text:
+                    uiCmd.Text = finalValue;
+                    break;
+                case InterfaceElement.Visible:
+                    {
+                        bool visibility = false;
+                        if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
+                            visibility = true;
+                        else if (!finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid boolean value"));
+                            return logs;
+                        }
+
+                        uiCmd.Visibility = visibility;
+                    }
+                    break;
+                case InterfaceElement.PosX:
+                    {
+                        if (!NumberHelper.ParseInt32(finalValue, out int x))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
+                            return logs;
+                        }
+
+                        uiCmd.Rect.X = x;
+                    }
+                    break;
+                case InterfaceElement.PosY:
+                    {
+                        if (!NumberHelper.ParseInt32(finalValue, out int y))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
+                            return logs;
+                        }
+
+                        uiCmd.Rect.Y = y;
+                    }
+                    break;
+                case InterfaceElement.Width:
+                    {
+                        if (!NumberHelper.ParseInt32(finalValue, out int width))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
+                            return logs;
+                        }
+
+                        uiCmd.Rect.Width = width;
+                    }
+                    break;
+                case InterfaceElement.Height:
+                    {
+                        if (!NumberHelper.ParseInt32(finalValue, out int height))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
+                            return logs;
+                        }
+
+                        uiCmd.Rect.Height = height;
+                    }
+                    break;
+                case InterfaceElement.Value:
+                    {
+                        bool success = uiCmd.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                        logs.AddRange(varLogs);
+
+                        if (success == false && varLogs.Count == 0)
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"Wring [Value] to [{uiCmd.Type}] is not supported"));
+                            return logs;
+                        } 
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Internal Logic Error at WriteInterface");
+            }
+
+            // Update uiCmd into file
+            uiCmd.Update();
+
+            // Rerender Plugin
+            Application.Current?.Dispatcher.Invoke(() =>
+            { // Application.Current is null in unit test
+                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
+                    w.DrawPlugin(cmd.Addr.Plugin);
+            });
+
+            return logs;
+        }
+
         public static List<LogInfo> Message(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>();
@@ -187,7 +380,7 @@ namespace PEBakery.Core.Commands
                 if (timeout <= 0)
                     throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");
 
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     CustomMessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image, timeout);
                 });
@@ -270,10 +463,6 @@ namespace PEBakery.Core.Commands
                 {
                     File.Delete(tempFile);
                 }
-
-
-
-                
             }
             else
             { // Text Mode -> Just read with StreamReader
@@ -310,8 +499,8 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFilePath));
-                        UserInputInfo_DirFilePath subInfo = info.SubInfo as UserInputInfo_DirFilePath;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile));
+                        UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
 
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
                         string selectedPath = initPath;
@@ -340,27 +529,33 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                throw new ExecuteException("File path was not chosen by user");
+                                logs.Add(new LogInfo(LogState.Error, "File path was not chosen by user"));
+                                return logs;
                             }
                         }
                         else
                         {
-                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
                             {
-                                ShowNewFolderButton = true,
                                 SelectedPath = initPath,
                             };
-                            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
 
-                            if (result == System.Windows.Forms.DialogResult.OK)
+                            bool failure = false;
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                selectedPath = dialog.SelectedPath;
-                                logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
-                            }
-                            else
-                            {
-                                throw new ExecuteException("Directory path was not chosen by user");
-                            }
+                                if (dialog.ShowDialog(Application.Current.MainWindow))
+                                {
+                                    selectedPath = dialog.SelectedPath;
+                                    logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
+                                }
+                                else
+                                {
+                                    logs.Add(new LogInfo(LogState.Error, "Directory path was not chosen by user"));
+                                    failure = true;
+                                }
+                            });
+                            if (failure)
+                                return logs;
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);

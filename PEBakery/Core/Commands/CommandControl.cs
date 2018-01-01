@@ -51,7 +51,7 @@ namespace PEBakery.Core.Commands
                     if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                         macroCommand = null;
 
-                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent);
+                    LogInfo log = s.Macro.SetMacro(info.VarKey, macroCommand, cmd.Addr, info.Permanent, false);
                     return new List<LogInfo>(1) { log };
                 }
             }
@@ -78,143 +78,12 @@ namespace PEBakery.Core.Commands
                             goto case false;
 
                         List<UICommand> uiCmds = iface.GetUICodes(true);
-                        UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(varKey));
+                        UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
                         if (uiCmd == null)
                             goto case false;
 
-                        bool match = false;
-                        switch (uiCmd.Type)
-                        {
-                            case UIType.TextBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_TextBox));
-                                    UIInfo_TextBox uiInfo = uiCmd.Info as UIInfo_TextBox;
-
-                                    uiInfo.Value = finalValue;
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [{finalValue}]"));
-                                    match = true;
-                                }
-                                break;
-                            case UIType.NumberBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
-                                    UIInfo_NumberBox uiInfo = uiCmd.Info as UIInfo_NumberBox;
-
-                                    // WB082 just write string value in case of error, but PEBakery will throw warning
-                                    if (!NumberHelper.ParseInt32(finalValue, out int intVal))
-                                    {
-                                        logs.Add(new LogInfo(LogState.Warning, $"[{finalValue}] is not valid integer"));
-                                        return logs;
-                                    }
-
-                                    uiInfo.Value = intVal;
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [{finalValue}]"));
-                                    match = true;
-                                }
-                                break;
-                            case UIType.CheckBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
-                                    UIInfo_CheckBox uiInfo = uiCmd.Info as UIInfo_CheckBox;
-
-                                    if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        uiInfo.Value = true;
-
-                                        logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [True]"));
-                                        match = true;
-                                    }
-                                    else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        uiInfo.Value = false;
-
-                                        logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [False]"));
-                                        match = true;
-                                    }
-                                    else
-                                    { // WB082 just write string value in case of error, but PEBakery will throw warning
-                                        logs.Add(new LogInfo(LogState.Warning, $"[{finalValue}] is not valid boolean"));
-                                        return logs;
-                                    }
-                                }
-                                break;
-                            case UIType.ComboBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_ComboBox));
-                                    UIInfo_ComboBox uiInfo = uiCmd.Info as UIInfo_ComboBox;
-
-                                    int idx = uiInfo.Items.FindIndex(x => x.Equals(finalValue, StringComparison.OrdinalIgnoreCase));
-                                    if (idx == -1)
-                                    { // Invalid Index
-                                        logs.Add(new LogInfo(LogState.Warning, $"[{finalValue}] not found in item list"));
-                                        return logs;
-                                    }
-
-                                    uiInfo.Index = idx;
-                                    uiCmd.Text = uiInfo.Items[idx];
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [{uiCmd.Text}]"));
-                                    match = true;
-                                }
-                                break;
-                            case UIType.RadioButton:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
-                                    UIInfo_RadioButton uiInfo = uiCmd.Info as UIInfo_RadioButton;
-
-                                    if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        uiInfo.Selected = true;
-
-                                        logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to true]"));
-                                        match = true;
-                                    }
-                                    else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        uiInfo.Selected = false;
-
-                                        logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [False]"));
-                                        match = true;
-                                    }
-                                    else
-                                    { // WB082 just write string value, but PEBakery will ignore and throw and warning
-                                        logs.Add(new LogInfo(LogState.Warning, $"[{finalValue}] is not valid boolean"));
-                                        return logs;
-                                    }
-                                }
-                                break;
-                            case UIType.FileBox:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_FileBox));
-                                    UIInfo_FileBox uiInfo = uiCmd.Info as UIInfo_FileBox;
-
-                                    uiCmd.Text = finalValue;
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [{finalValue}]"));
-                                    match = true;
-                                }
-                                break;
-                            case UIType.RadioGroup:
-                                {
-                                    Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioGroup));
-                                    UIInfo_RadioGroup uiInfo = uiCmd.Info as UIInfo_RadioGroup;
-
-                                    int idx = uiInfo.Items.FindIndex(x => x.Equals(finalValue, StringComparison.OrdinalIgnoreCase));
-                                    if (idx == -1)
-                                    { // Invalid Index
-                                        logs.Add(new LogInfo(LogState.Warning, $"[{finalValue}] not found in item list"));
-                                        return logs;
-                                    }
-
-                                    uiInfo.Selected = idx;
-
-                                    logs.Add(new LogInfo(LogState.Success, $"Interface [{varKey}] set to [{finalValue}]"));
-                                    match = true;
-                                }
-                                break;
-                        }
+                        bool match = uiCmd.SetValue(finalValue, false, out List<LogInfo> varLogs);
+                        logs.AddRange(varLogs);
 
                         if (match)
                         {
@@ -236,7 +105,7 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
-        { // SetMacro,<MacroName>,<MacroCommand>,[PERMANENT]
+        { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro));
             CodeInfo_SetMacro info = cmd.Info as CodeInfo_SetMacro;
 
@@ -245,7 +114,7 @@ namespace PEBakery.Core.Commands
             if (macroCommand.Equals("NIL", StringComparison.OrdinalIgnoreCase))
                 macroCommand = null;
 
-            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Permanent);
+            LogInfo log = s.Macro.SetMacro(info.MacroName, macroCommand, cmd.Addr, info.Global, info.Permanent);
             return new List<LogInfo>(1) { log };
         }
 

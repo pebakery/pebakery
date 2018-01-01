@@ -1208,7 +1208,7 @@ namespace PEBakery.WPF
             logger.DB.Close();
         }
 
-        private void BuildStdOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void BuildConOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBox textBox = sender as TextBox;
             var focusedBackup = FocusManager.GetFocusedElement(this);
@@ -1557,63 +1557,38 @@ namespace PEBakery.WPF
             }
         }
 
-        private string buildStdOutRedirect = string.Empty;
-        public string BuildStdOutRedirect
+        private string buildConOutRedirect = string.Empty;
+        public string BuildConOutRedirect
         {
-            get => buildStdOutRedirect;
+            get => buildConOutRedirect;
             set
             {
-                buildStdOutRedirect = value;
-                OnPropertyUpdate("BuildStdOutRedirect");
+                buildConOutRedirect = value;
+                OnPropertyUpdate("BuildConOutRedirect");
             }
         }
 
-        public static bool DisplayShellExecuteStdOut = true;
-        private Visibility buildStdOutRedirectVisibility = Visibility.Collapsed;
-        public Visibility BuildStdOutRedirectVisibility
+        public static bool DisplayShellExecuteConOut = true;
+        private Visibility buildConOutRedirectVisibility = Visibility.Collapsed;
+        public Visibility BuildConOutRedirectVisibility
         {
             get
             {
-                if (DisplayShellExecuteStdOut)
-                    return buildStdOutRedirectVisibility;
+                if (DisplayShellExecuteConOut)
+                    return buildConOutRedirectVisibility;
                 else
                     return Visibility.Collapsed;
             }
         }
-        public bool BuildStdOutRedirectShow
+        public bool BuildConOutRedirectShow
         {
             set
             {
                 if (value)
-                    buildStdOutRedirectVisibility = Visibility.Visible;
+                    buildConOutRedirectVisibility = Visibility.Visible;
                 else
-                    buildStdOutRedirectVisibility = Visibility.Collapsed;
-                OnPropertyUpdate("BuildStdOutRedirectVisibility");
-            }
-        }
-
-        private string buildStdErrRedirect = string.Empty;
-        public string BuildStdErrRedirect
-        {
-            get => buildStdErrRedirect;
-            set
-            {
-                buildStdErrRedirect = value;
-                OnPropertyUpdate("BuildStdErrRedirect");
-            }
-        }
-
-        private Visibility buildStdErrRedirectVisibility = Visibility.Collapsed;
-        public Visibility BuildStdErrRedirectVisibility => buildStdErrRedirectVisibility;
-        public bool BuildStdErrRedirectShow
-        {
-            set
-            {
-                if (value)
-                    buildStdErrRedirectVisibility = Visibility.Visible;
-                else
-                    buildStdErrRedirectVisibility = Visibility.Collapsed;
-                OnPropertyUpdate("BuildStdErrRedirectVisibility");
+                    buildConOutRedirectVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildConOutRedirectVisibility");
             }
         }
         #endregion

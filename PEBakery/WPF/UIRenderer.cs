@@ -797,10 +797,23 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Directory
-                    string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
-                    if (Directory.Exists(currentPath) == false)
-                        currentPath = string.Empty;
+                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
+                    string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
+                    if (Directory.Exists(currentPath))
+                        dialog.SelectedPath = currentPath;
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (dialog.ShowDialog(Application.Current.MainWindow))
+                        {
+                            box.Text = dialog.SelectedPath;
+                            if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
+                                box.Text += "\\";
+                        }
+                    });
+
+                    /*
                     System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
                     {
                         ShowNewFolderButton = true,
@@ -813,6 +826,7 @@ namespace PEBakery.WPF
                         if (Directory.Exists(dialog.SelectedPath) && !dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
                             box.Text += "\\";
                     }
+                    */
                 }
             };
 

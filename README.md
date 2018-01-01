@@ -2,26 +2,24 @@
 
 ![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
 
-PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment, compatible with WinBuilder 082.
+PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment.
 
-| Branch    | Build Status                                                                                                                                                                              |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Branch    | Build Status   |
+|-----------|----------------|
 | Master    | [![CI Master Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/master?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/master)    |
 | Develop   | [![CI Develop Branch Build Status](https://ci.appveyor.com/api/projects/status/j3p0v26j7nky0bvu/branch/develop?svg=true)](https://ci.appveyor.com/project/ied206/pebakery/branch/develop) |
 
-PEBakery is new, improved implementation of WinBuilder 082.
-
-PEBakery aims to resolve WinBuilder 082's abandoned bugs, and to be more plugin developer friendly builder.
+PEBakery is compatible with WinBuilder 082.
 
 ## Main Goal
 
-PEBakery's main goal is being able to build [Win10PESE](http://win10se.cwcodes.net/) perfectly.
+PEBakery's main goal is being able to build [Win10PESE](http://win10se.cwcodes.net/) and [MistyPE](http://mistyprojects.co.uk/documents/MistyPE/index.html) perfectly.
 
 ## Disclaimer
 
 - All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
-- PEBakery is not a mature software, it can corrupt your system. I do not provide any warranty, use at your own risk.
 - Even though I did not experienced data corruption while developing, it is highly recommended to backup your files.
+- I do not provide any warranty, use at your own risk. 
 
 ## License
 
@@ -31,17 +29,7 @@ Part of PEBakery is licensed under MIT License and others.
 
 ## Current Status
 
-PEBakery is currently in alpha stage.
-
-### Test of Win10PESE
-
-- Build is near perfect.
-- Built ISO is bootable.
-
-### Test of MistyPE
-
-- Build is near perfect.
-- Built ISO is bootable.
+PEBakery is currently in beta stage.
 
 ### Command Status
 
@@ -50,44 +38,39 @@ PEBakery is currently in alpha stage.
 | File      | 12  | 12          | 12     |
 | Registry  | 8   | 8           | 4      |
 | Text      | 5   | 5           | 5      |
-| Ini       | 8   | 8           | 0      |
+| Ini       | 8   | 8           | 8      |
 | Archive   | 4   | 4           | 4      |
 | Network   | 2   | 2           | 2      |
 | Plugin    | 4   | 4           | 0      |
-| Interface | 7   | 7           | 0      |
+| Interface | 9   | 9           | 2      |
 | Hash      | 5   | 5           | 5      |
 | String    | 33  | 33          | 31     |
 | Math      | 22  | 22          | 22     |
 | System    | 19  | 19          | 0      |
-| Branch    | 26  | 26          | 16     |
-| Control   | 7   | 7           | 7      |
-| All       | 164 | 164         | 107    |
+| Branch    | 26  | 26          | 15     |
+| Control   | 9   | 9           | 7      |
+| WIM       | 8   | 0           | 0      |
+| All       | 172 | 166         | 117    |
 
 ## Help Needed
-
-PEBakery is waiting your contributions!
 
 ### Testing
 
 PEBakery is in alpha stage, it needs a lot of testing.
 
-- Try to build [Win10PESE](http://win10se.cwcodes.net/) with PEBakery and report bugs.
+- Try to build [Win10PESE](http://win10se.cwcodes.net/), [MistyPE](http://mistyprojects.co.uk/documents/MistyPE/index.html) with PEBakery and report bugs.
 - If you are developer, you can contribute by writing unit tests.
-
-### Undocumented WB082 behaviors
-
-WB082 has lots of undocumented behaviors, and it takes time to inspect all of them. As a result, many commands behave different from WB082.
-
-### UI
-
-PEBakery needs more well-designed UI.
 
 ### Documents
 
 PEBakery needs to be documented, especially for plugin developers.
 
 - Design of PEBakery
-- Command Grammar and Usage
+- Command Syntax and Usage
+
+### UI
+
+PEBakery needs more well-designed UI.
 
 ### Optimization
 
@@ -95,7 +78,7 @@ It would be better to have more faster, robust PEBakery.
 
 ### Proposal
 
-Plan PEBakery's future with your own hands!
+Suggestions about which direction PEBakery should go.
 
 - Add Useful Commands
 - New Plugin Format
