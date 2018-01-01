@@ -23,8 +23,8 @@ The following flags are mutually exclusive.
 
 | Flag | Description |
 | --- | --- |
-| GLOBAL | Store the macro in global memory for the lifetime of the build process. This will allow other plugins to reference and/or modify this macro. If the macro is already defined it will be overwritten.  |
-| PERMANENT | Permanently stores the value of this variable by writing the definition into script.project's [Variables] section. |
+| GLOBAL | Store the macro in global memory for the lifetime of the build process. This will allow other plugins to reference and/or modify this macro. If the macro is already defined it will be overwritten. |
+| PERMANENT | Permanently stores the value of this variable by writing the definition into script.project's [Variables] section. If the macro is already defined it will be overwritten. |
 
 ## Remarks
 
