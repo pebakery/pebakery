@@ -1745,7 +1745,7 @@ namespace PEBakery.Core
                         if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
                         else
-                            info = new UserInputInfo_DirFilePath(args[0], args[1]);
+                            info = new UserInputInfo_DirFile(args[0], args[1]);
                     }
                     break;
                 default: // Error

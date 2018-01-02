@@ -1472,9 +1472,9 @@ namespace PEBakery.Core
     #region CodeInfo 08 - Interface
     [Serializable]
     public class CodeInfo_Visible : CodeInfo
-    { // Visible,<%InterfaceKey%>,<Visiblity>
+    { // Visible,<%InterfaceKey%>,<Visibility>
         public string InterfaceKey; // Must start and end with %
-        public string Visibility; // True / False
+        public string Visibility; // True or False
 
         public CodeInfo_Visible(string interfaceKey, string visibility)
         {
@@ -1644,12 +1644,14 @@ namespace PEBakery.Core
     public class UserInputInfo { }
 
     [Serializable]
-    public class UserInputInfo_DirFilePath : UserInputInfo
-    { // UserInput,DirFilePath,<InitPath>,<DestVar>
+    public class UserInputInfo_DirFile : UserInputInfo
+    {
+        // UserInput,Dir,<InitPath>,<DestVar>
+        // UserInput,File,<InitPath>,<DestVar>
         public string InitPath;
         public string DestVar;
 
-        public UserInputInfo_DirFilePath(string initPath, string destVar)
+        public UserInputInfo_DirFile(string initPath, string destVar)
         {
             InitPath = initPath;
             DestVar = destVar;
