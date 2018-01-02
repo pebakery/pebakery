@@ -236,9 +236,9 @@ namespace PEBakery.Core.Commands
                         SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
 
                         string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
-                        SearchOption searchOption = SearchOption.TopDirectoryOnly;
+                        SearchOption searchOption = SearchOption.AllDirectories;
                         if (subInfo.NoRec)
-                            searchOption = SearchOption.AllDirectories;
+                            searchOption = SearchOption.TopDirectoryOnly;
                             
                         // Check wildcard
                         string wildcard = Path.GetFileName(filePath);
