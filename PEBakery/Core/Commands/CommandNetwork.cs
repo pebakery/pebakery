@@ -191,7 +191,7 @@ namespace PEBakery.Core.Commands
                     string total = NumberHelper.ByteSizeToHumanReadableString(e.TotalBytesToReceive, 1);
                     if (totalSec == 0)
                     {
-                        s.MainViewModel.BuildCommandProgressText = $"Total : {total}\r\nReceived : {downloaded}";
+                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
                     }
                     else
                     {
@@ -202,7 +202,7 @@ namespace PEBakery.Core.Commands
                         int hour = (int)r.TotalHours;
                         int min = r.Minutes;
                         int sec = r.Seconds;
-                        s.MainViewModel.BuildCommandProgressText = $"Total : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaing Time : {hour}h {min}m {sec}s";
+                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaing Time : {hour}h {min}m {sec}s";
                     }
                 };
 
@@ -213,7 +213,12 @@ namespace PEBakery.Core.Commands
 
                     // Check if error occured
                     if (e.Cancelled || e.Error != null)
+                    {
                         result = false;
+
+                        if (File.Exists(destPath))
+                            File.Delete(destPath);
+                    }
 
                     resetEvent.Set();
                 };
