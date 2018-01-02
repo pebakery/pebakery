@@ -835,7 +835,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt8(string str, out sbyte value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -853,7 +853,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt8(string str, out byte value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -871,7 +871,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt16(string str, out Int16 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -889,7 +889,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt16(string str, out UInt16 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -907,7 +907,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt32(string str, out Int32 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -925,7 +925,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt32(string str, out UInt32 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -943,7 +943,7 @@ namespace PEBakery.Helper
         /// <returns>Return false if failed</returns>
         public static bool ParseInt64(string str, out Int64 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -961,7 +961,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseUInt64(string str, out UInt64 value)
         {
-            if (str == null || str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -979,7 +979,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseDouble(string str, out double value)
         {
-            if (str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -1003,7 +1003,7 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool ParseDecimal(string str, out decimal value)
         {
-            if (str.Equals(string.Empty, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(str))
             {
                 value = 0;
                 return false;
@@ -1033,7 +1033,7 @@ namespace PEBakery.Helper
             integer = 0;
             real = 0;
 
-            if (str == null || string.Equals(str, string.Empty))
+            if (string.IsNullOrEmpty(str))
                 return ParseStringToNumberType.String;
 
             // base 10 integer - Z
@@ -1236,19 +1236,31 @@ namespace PEBakery.Helper
         const long MB = 1024L * 1024L;
         const long KB = 1024L;
 
-        public static string ByteSizeToHumanReadableString(long byteSize)
+        public static string ByteSizeToHumanReadableString(long byteSize, int decPoint = 3)
         {
+            if (decPoint < 0) throw new ArgumentOutOfRangeException("decPoint");
+
+            string formatString = "0";
+            if (0 < decPoint)
+            { // formatString = "0.###"
+                StringBuilder b = new StringBuilder(decPoint + 1);
+                b.Append("0.");
+                for (int i = 0; i < decPoint; i++)
+                    b.Append("#");
+                formatString = b.ToString();
+            }
+            
             string str;
             if (PB <= byteSize)
-                str = $"{((decimal)byteSize / PB):0.###}PB";
+                str = $"{((decimal)byteSize / PB).ToString(formatString)}PB";
             else if (TB <= byteSize)
-                str = $"{((decimal)byteSize / TB):0.###}TB";
+                str = $"{((decimal)byteSize / TB).ToString(formatString)}TB";
             else if (GB <= byteSize)
-                str = $"{((decimal)byteSize / GB):0.###}GB";
+                str = $"{((decimal)byteSize / GB).ToString(formatString)}GB";
             else if (MB <= byteSize)
-                str = $"{((decimal)byteSize / MB):0.###}MB";
+                str = $"{((decimal)byteSize / MB).ToString(formatString)}MB";
             else
-                str = $"{((decimal)byteSize / KB):0.###}KB";
+                str = $"{((decimal)byteSize / KB).ToString(formatString)}KB";
 
             return str;
         }

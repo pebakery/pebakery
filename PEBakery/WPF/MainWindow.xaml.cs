@@ -1502,6 +1502,7 @@ namespace PEBakery.WPF
             }
         }
 
+        // ProgressBar
         private double buildPluginProgressBarMax = 100;
         public double BuildPluginProgressBarMax
         {
@@ -1557,6 +1558,7 @@ namespace PEBakery.WPF
             }
         }
 
+        // ShellExecute Console Output
         private string buildConOutRedirect = string.Empty;
         public string BuildConOutRedirect
         {
@@ -1589,6 +1591,75 @@ namespace PEBakery.WPF
                 else
                     buildConOutRedirectVisibility = Visibility.Collapsed;
                 OnPropertyUpdate("BuildConOutRedirectVisibility");
+            }
+        }
+
+        // Command Progress
+        private string buildCommandProgressTitle = string.Empty;
+        public string BuildCommandProgressTitle
+        {
+            get => buildCommandProgressTitle;
+            set
+            {
+                buildCommandProgressTitle = value;
+                OnPropertyUpdate("BuildCommandProgressTitle");
+            }
+        }
+
+        private string buildCommandProgressText = string.Empty;
+        public string BuildCommandProgressText
+        {
+            get => buildCommandProgressText;
+            set
+            {
+                buildCommandProgressText = value;
+                OnPropertyUpdate("BuildCommandProgressText");
+            }
+        }
+
+        private double buildCommandProgressMax = 100;
+        public double BuildCommandProgressMax
+        {
+            get => buildCommandProgressMax;
+            set
+            {
+                buildCommandProgressMax = value;
+                OnPropertyUpdate("BuildCommandProgressMax");
+            }
+        }
+
+        private double buildCommandProgressValue = 0;
+        public double BuildCommandProgressValue
+        {
+            get => buildCommandProgressValue;
+            set
+            {
+                buildCommandProgressValue = value;
+                OnPropertyUpdate("BuildCommandProgressValue");
+            }
+        }
+
+        public static bool DisplayCommandProgress = true;
+        private Visibility buildCommandProgressVisibility = Visibility.Collapsed;
+        public Visibility BuildCommandProgressVisibility
+        {
+            get
+            {
+                if (DisplayCommandProgress)
+                    return buildCommandProgressVisibility;
+                else
+                    return Visibility.Collapsed;
+            }
+        }
+        public bool BuildCommandProgressShow
+        {
+            set
+            {
+                if (value)
+                    buildCommandProgressVisibility = Visibility.Visible;
+                else
+                    buildCommandProgressVisibility = Visibility.Collapsed;
+                OnPropertyUpdate("BuildCommandProgressVisibility");
             }
         }
         #endregion

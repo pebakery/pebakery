@@ -1,21 +1,23 @@
 # Visible
 
-Sets the visibility of a interface control.
+**This command has been deprecated and will be removed in a future version. It is recommended that you update your code to use `WriteInterface,Visible` as soon as possible to avoid breaking your plugin.**
+
+Sets the visibility of a UI control.
 
 ## Syntax
 
 ```pebakery
-Visible,<%Key%>,<Boolean>
+Visible,<%Control%>,<Boolean>
 ```
 
 ### Arguments
 
 | Argument | Description |
 | --- | --- |
-| %Key% | The key of the interface control to be modified. |
+| %Control% | The variable representing the interface control to be modified. |
 | Boolean | One of the following values: |
 || True - Show the control. |
-|| False - Hide the controlt. |
+|| False - Hide the control. |
 
 ## Remarks
 
@@ -27,7 +29,7 @@ Changes made to an control's visibility are persistent.
 
 ### Example 1
 
-Sample plugin that will toggle the visibility of a group of elements when the value of a scrollbox changes.
+Sample plugin that will toggle the visibility of a group of controls when the value of a scrollbox changes.
 
 ```pebakery
 [main]

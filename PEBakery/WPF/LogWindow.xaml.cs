@@ -287,12 +287,12 @@ namespace PEBakery.WPF
 
         public void RefreshBuildLog()
         {
-            LogStatModel.Clear();
-            VariableListModel.Clear();
-
-            // Populate SelectBuildEntries
             Application.Current.Dispatcher.Invoke(() =>
             {
+                LogStatModel.Clear();
+                VariableListModel.Clear();
+
+                // Populate SelectBuildEntries
                 SelectBuildEntries.Clear();
                 foreach (DB_BuildInfo b in LogDB.Table<DB_BuildInfo>().OrderByDescending(x => x.StartTime))
                 {

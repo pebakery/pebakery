@@ -187,10 +187,19 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait));
             CodeInfo_Wait info = cmd.Info as CodeInfo_Wait;
 
-            if (NumberHelper.ParseInt32(info.Second, out int second) == false)
-                throw new InvalidCodeCommandException($"Argument [{info.Second}] is not valid number", cmd);
+            if (!NumberHelper.ParseInt32(info.Second, out int second))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Argument [{info.Second}] is not a valid integer"));
+                return logs;
+            }
 
-            Task.Delay(second * 1000).Wait();
+            if (second < 0)
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Argument [{info.Second}] should be larger than 0"));
+                return logs;
+            }
+
+            Task.Delay(TimeSpan.FromSeconds(second)).Wait();
 
             logs.Add(new LogInfo(LogState.Success, $"Slept [{info.Second}] seconds", cmd));
 

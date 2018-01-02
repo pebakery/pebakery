@@ -68,13 +68,15 @@ namespace PEBakery.Core
         Math = 1100,
         // 12 System
         System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
-        // 13 Branch
-        Run = 1300, Exec, Loop, If, Else, Begin, End,
-        // 14 Control
-        Set = 1400, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
-        GetParam = 1498, PackParam = 1499, // Will be deprecated
-        // 15 External Macro
-        Macro = 1500,
+        // 13 Wim
+        WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
+        // 80 Branch
+        Run = 8000, Exec, Loop, If, Else, Begin, End,
+        // 81 Control
+        Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
+        GetParam = 8198, PackParam = 8199, // Will be deprecated
+        // 99 External Macro
+        Macro = 9900,
     }
     #endregion
 
@@ -3471,7 +3473,45 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 13 - Branch
+    #region CodeInfo 13 - WIM
+    [Serializable]
+    public class CodeInfo_WimMount : CodeInfo
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
+        public string SrcWim;
+        public string ImageIndex;
+        public string MountDir;
+
+        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            MountDir = mountDir;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcWim},{ImageIndex},{MountDir}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimUnmount : CodeInfo
+    { // WimUnmount,<MountDir>
+        public string MountDir;
+
+        public CodeInfo_WimUnmount(string mountDir)
+        {
+            MountDir = mountDir;
+        }
+
+        public override string ToString()
+        {
+            return $"{MountDir}";
+        }
+    }
+    #endregion
+
+    #region CodeInfo 80 - Branch
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
@@ -3611,7 +3651,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 14 - Control
+    #region CodeInfo 81 - Control
     [Serializable]
     public class CodeInfo_Set : CodeInfo
     {
@@ -3786,7 +3826,7 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 15 - Macro
+    #region CodeInfo 99 - Macro
     [Serializable]
     public class CodeInfo_Macro : CodeInfo
     {

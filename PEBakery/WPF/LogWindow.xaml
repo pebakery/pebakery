@@ -126,7 +126,7 @@
                                 AlternationCount="2">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Type" Width="60" DisplayMemberBinding="{Binding Item1}" />
+                                        <GridViewColumn Header="Type" Width="70" DisplayMemberBinding="{Binding Item1}" />
                                         <GridViewColumn Header="Count" Width="160" DisplayMemberBinding="{Binding Item2}" />
                                     </GridView>
                                 </ListView.View>
