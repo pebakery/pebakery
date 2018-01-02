@@ -1323,7 +1323,6 @@ namespace PEBakery.Core
                     return ParseCodeInfoMath(rawCode, args);
                 #endregion
                 #region 12 System
-                // 11 System
                 case CodeType.System:
                     return ParseCodeInfoSystem(rawCode, args, addr, lineIdx);
                 case CodeType.ShellExecute:
@@ -1365,7 +1364,25 @@ namespace PEBakery.Core
                         return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
-                #region 13 Branch
+                #region 13 WIM
+                case CodeType.WimMount:
+                    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
+                        const int argCount = 3;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_WimMount(args[0], args[1], args[2]);
+                    }
+                case CodeType.WimUnmount:
+                    { // WimUnmount,<MountDir>
+                        const int argCount = 1;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        return new CodeInfo_WimUnmount(args[0]);
+                    }
+                #endregion
+                #region 80 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
                     { // Run,%PluginFile%,<Section>[,PARAMS]
@@ -1414,7 +1431,7 @@ namespace PEBakery.Core
                 case CodeType.End:
                     return new CodeInfo();
                 #endregion
-                #region 14 Control
+                #region 81 Control
                 case CodeType.Set:
                     { // Set,<VarName>,<VarValue>[,GLOBAL | PERMANENT]
                         const int minArgCount = 2;
@@ -1597,7 +1614,7 @@ namespace PEBakery.Core
                         return new CodeInfo_PackParam(args[0], args[1], varCount);
                     }
                 #endregion
-                #region 15 External Macro
+                #region 99 External Macro
                 case CodeType.Macro:
                     return new CodeInfo_Macro(macroType, args);
                 #endregion

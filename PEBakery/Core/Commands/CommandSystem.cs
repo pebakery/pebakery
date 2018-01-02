@@ -56,7 +56,7 @@ namespace PEBakery.Core.Commands
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
                             });
@@ -64,7 +64,7 @@ namespace PEBakery.Core.Commands
                         }
                         else if (iconStr.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 System.Windows.Input.Mouse.OverrideCursor = null;
                             });
@@ -180,7 +180,7 @@ namespace PEBakery.Core.Commands
 
                         s.OnBuildExit = subInfo.Cmd;
 
-                        logs.Add(new LogInfo(LogState.Success, "OnBuildExit event registered"));
+                        logs.Add(new LogInfo(LogState.Success, "OnBuildExit callback registered"));
                     }
                     break;
                 case SystemType.OnScriptExit:
@@ -191,7 +191,7 @@ namespace PEBakery.Core.Commands
 
                         s.OnPluginExit = subInfo.Cmd;
 
-                        logs.Add(new LogInfo(LogState.Success, "OnPluginExit event registered"));
+                        logs.Add(new LogInfo(LogState.Success, "OnPluginExit callback registered"));
                     }
                     break;
                 case SystemType.RefreshInterface:
@@ -200,7 +200,7 @@ namespace PEBakery.Core.Commands
                         SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
                         AutoResetEvent resetEvent = null;
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             resetEvent = w.StartReloadPluginWorker();
@@ -219,7 +219,7 @@ namespace PEBakery.Core.Commands
 
                         // Reload Project
                         AutoResetEvent resetEvent = null;
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             resetEvent = w.StartLoadWorker(true);                
@@ -285,7 +285,7 @@ namespace PEBakery.Core.Commands
                                 }
 
                                 // Update MainWindow and redraw Plugin
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
@@ -310,7 +310,7 @@ namespace PEBakery.Core.Commands
                                 }
 
                                 // Update MainWindow.MainTree and redraw Plugin
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
@@ -435,7 +435,7 @@ namespace PEBakery.Core.Commands
             using (Process proc = new Process())
             {
                 proc.StartInfo = new ProcessStartInfo(filePath);
-                if (info.Params != null && info.Params.Equals(string.Empty, StringComparison.Ordinal) == false)
+                if (!string.IsNullOrEmpty(info.Params))
                 {
                     string parameters = StringEscaper.Preprocess(s, info.Params);
                     proc.StartInfo.Arguments = parameters;
@@ -457,8 +457,6 @@ namespace PEBakery.Core.Commands
                 bool redirectStandardStream = false;
                 Stopwatch watch = Stopwatch.StartNew();
                 StringBuilder bConOut = new StringBuilder();
-                StringBuilder bStdOut = new StringBuilder(); 
-                StringBuilder bStdErr = new StringBuilder();
                 try
                 {
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
@@ -472,7 +470,7 @@ namespace PEBakery.Core.Commands
                         proc.StartInfo.CreateNoWindow = true;
 
                         // Redirecting standard stream without reading can full buffer, which leads to hang
-                        if (cmd.Type != CodeType.ShellExecuteEx)
+                        if (MainViewModel.DisplayShellExecuteConOut && cmd.Type != CodeType.ShellExecuteEx)
                         {
                             redirectStandardStream = true;
 
@@ -481,7 +479,6 @@ namespace PEBakery.Core.Commands
                             {
                                 if (e.Data != null)
                                 {
-                                    bStdOut.AppendLine(e.Data);
                                     bConOut.AppendLine(e.Data);
                                     s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 } 
@@ -492,11 +489,14 @@ namespace PEBakery.Core.Commands
                             {
                                 if (e.Data != null)
                                 {
-                                    bStdErr.AppendLine(e.Data);
                                     bConOut.AppendLine(e.Data);
                                     s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
                                 }
                             };
+
+                            // Without this, XCOPY.exe of Windows 7 will not work properly.
+                            // https://stackoverflow.com/questions/14218642/xcopy-does-not-work-with-useshellexecute-false
+                            proc.StartInfo.RedirectStandardInput = true;
 
                             s.MainViewModel.BuildConOutRedirectShow = true;
                         }
@@ -573,22 +573,13 @@ namespace PEBakery.Core.Commands
 
                         if (redirectStandardStream)
                         {
-                            string stdout = bStdOut.ToString().Trim();
-                            if (0 < stdout.Length)
+                            string conout = bConOut.ToString().Trim();
+                            if (0 < conout.Length)
                             {
-                                if (stdout.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output] {stdout}"));
+                                if (conout.IndexOf('\n') == -1) // No NewLine
+                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output] {conout}"));
                                 else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Output]\r\n{stdout}\r\n"));
-                            }
-                                
-                            string stderr = bStdErr.ToString().Trim();
-                            if (0 < stderr.Length)
-                            {
-                                if (stderr.IndexOf('\n') == -1) // No NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error] {stderr}"));
-                                else // With NewLine
-                                    logs.Add(new LogInfo(LogState.Success, $"[Standard Error]\r\n{stderr}\r\n"));
+                                    logs.Add(new LogInfo(LogState.Success, $"[Console Output]\r\n{conout}\r\n"));
                             }
                         }
                     }

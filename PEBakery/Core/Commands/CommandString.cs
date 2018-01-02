@@ -183,32 +183,7 @@ namespace PEBakery.Core.Commands
                                 destStr = Path.GetFileName(srcStr);
                                 logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
                             }
-                            else if (type == StrFormatType.DirPath)
-                            { // Does not includes Last Seperator
-                                int bsIdx = srcStr.LastIndexOf('\\');
-                                int sIdx = srcStr.LastIndexOf('/');
-
-                                if (bsIdx != -1 && sIdx != -1)
-                                { // Slash and BackSlash cannot exist at same time
-                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
-                                    return logs;
-                                }
-
-                                if (bsIdx != -1)
-                                { // Normal file path
-                                    destStr = Path.GetDirectoryName(srcStr);
-                                }
-                                else
-                                { // URL
-                                    if (sIdx == -1)
-                                        destStr = string.Empty;
-                                    else
-                                        destStr = srcStr.Substring(0, sIdx);
-                                }
-
-                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
-                            }
-                            else if (type == StrFormatType.Path)
+                            else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
                             { // Includes Last Seperator - Default WB082 Behavior
                                 int bsIdx = srcStr.LastIndexOf('\\');
                                 int sIdx = srcStr.LastIndexOf('/');

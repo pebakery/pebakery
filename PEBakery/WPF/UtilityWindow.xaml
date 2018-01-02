@@ -54,9 +54,13 @@
 
                         <Button
                             Grid.Column="1"
+                            Name="CodeBpxSaveButton"
                             Margin="10, 0, 0, 0"
                             Content="Save"
                             Click="CodeBoxSaveButton_Click">
+                            <Button.InputBindings>
+                                <KeyBinding Key="S" Modifiers="Ctrl" />
+                            </Button.InputBindings>
                         </Button>
 
                         <Button

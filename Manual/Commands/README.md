@@ -14,8 +14,8 @@
 1. [String](./10_String/README.md)
 1. [Math](./11_Math/README.md)
 1. [System](./12_System/README.md)
-1. [Branch](./13_Branch/README.md)
-1. [Control](./14_Control/README.md)
-1. [WIM](./15_WIM/README.md)
+1. [WIM](./13_WIM/README.md)
+1. [Branch](./14_Branch/README.md)
+1. [Control](./15_Control/README.md)
 
 - [Deprecated](./Deprecated.md)

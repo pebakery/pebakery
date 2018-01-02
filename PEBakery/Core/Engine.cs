@@ -31,6 +31,7 @@ using PEBakery.Core.Commands;
 using PEBakery.WPF;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Net;
 
 namespace PEBakery.Core
 {
@@ -180,11 +181,33 @@ namespace PEBakery.Core
                     FinishRunPlugin(s);
 
                     // OnPluginExit event callback
-                    Engine.CheckAndRunCallback(s, ref s.OnPluginExit, FinishEventParam(s), "OnPluginExit");
+                    {
+                        bool bakPassCurrentPluginFlag = s.PassCurrentPluginFlag;
+                        bool bakErrorHalt = s.ErrorHaltFlag;
+                        bool bakUserHalt = s.UserHaltFlag;
+                        bool bakCmdHalt = s.CmdHaltFlag;
+
+                        string eventParam = FinishEventParam(s);
+
+                        // Reset Halt Flags before running OnPluginExit
+                        // Otherwise only first command is executed
+                        s.PassCurrentPluginFlag = false;
+                        s.ErrorHaltFlag = false;
+                        s.UserHaltFlag = false;
+                        s.CmdHaltFlag = false;
+
+                        Engine.CheckAndRunCallback(s, ref s.OnPluginExit, eventParam, "OnPluginExit");
+
+                        s.PassCurrentPluginFlag = bakPassCurrentPluginFlag;
+                        s.ErrorHaltFlag = bakErrorHalt;
+                        s.UserHaltFlag = bakUserHalt;
+                        s.CmdHaltFlag = bakCmdHalt;
+                    }
 
                     if (s.Plugins.Count - 1 <= s.CurrentPluginIdx ||
                         s.RunOnePlugin || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     { // End of Build
+                        bool alertPassCurrentPluginFlag = s.PassCurrentPluginFlag;
                         bool alertErrorHalt = s.ErrorHaltFlag;
                         bool alertUserHalt = s.UserHaltFlag;
                         bool alertCmdHalt = s.CmdHaltFlag;
@@ -199,6 +222,8 @@ namespace PEBakery.Core
                         string eventParam = FinishEventParam(s);
 
                         // Reset Halt Flags before running OnBuildExit
+                        // Otherwise only first command is executed
+                        s.PassCurrentPluginFlag = false;
                         s.ErrorHaltFlag = false;
                         s.UserHaltFlag = false;
                         s.CmdHaltFlag = false;
@@ -208,10 +233,12 @@ namespace PEBakery.Core
 
                         if (alertUserHalt)
                             MessageBox.Show("Build Stopped by User", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
-                        else if (alertCmdHalt)
-                            MessageBox.Show("Build Stopped by Halt Command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
                         else if (alertErrorHalt)
                             MessageBox.Show("Build Stopped by Error", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                        else if (alertCmdHalt)
+                            MessageBox.Show("Build Stopped by Halt Command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
+                        else if (alertPassCurrentPluginFlag)
+                            MessageBox.Show("Build Stopped by Exit Command", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
 
                         break;
                     }
@@ -234,6 +261,8 @@ namespace PEBakery.Core
         {
             if (s.RunningSubProcess != null)
                 s.RunningSubProcess.Kill();
+            if (s.RunningWebClient != null)
+                s.RunningWebClient.CancelAsync();
             s.UserHaltFlag = true;
         }
 
@@ -582,7 +611,15 @@ namespace PEBakery.Core
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
-                    #region 13 Branch
+                    #region 13 Wim
+                    case CodeType.WimMount:
+                        logs.AddRange(CommandWim.WimMount(s, cmd));
+                        break;
+                    case CodeType.WimUnmount:
+                        logs.AddRange(CommandWim.WimUnmount(s, cmd));
+                        break;
+                    #endregion
+                    #region 80 Branch
                     case CodeType.Run:
                     case CodeType.Exec:
                         CommandBranch.RunExec(s, cmd);
@@ -601,7 +638,7 @@ namespace PEBakery.Core
                     case CodeType.End:
                         throw new InternalParserException("CodeParser Error");
                     #endregion
-                    #region 14 Control
+                    #region 81 Control
                     case CodeType.Set:
                         logs.AddRange(CommandControl.Set(s, cmd));
                         break;
@@ -630,7 +667,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandControl.PackParam(s, cmd));
                         break;
                     #endregion
-                    #region 15 External Macro
+                    #region 99 External Macro
                     case CodeType.Macro:
                         CommandMacro.Macro(s, cmd);
                         break;
@@ -645,6 +682,7 @@ namespace PEBakery.Core
             }
             catch (CriticalErrorException)
             { // Stop Building
+                // Currently not used
                 logs.Add(new LogInfo(LogState.CriticalError, "Critical Error!", cmd, curDepth));
                 throw new CriticalErrorException();
             }
@@ -714,10 +752,10 @@ namespace PEBakery.Core
         {
             if (s.UserHaltFlag)
                 return "STOP";
-            else if (s.CmdHaltFlag)
-                return "HALT";
             else if (s.ErrorHaltFlag)
                 return "ERROR";
+            else if (s.CmdHaltFlag || s.PassCurrentPluginFlag)
+                return "COMMAND";
             else
                 return "DONE";
         }
@@ -854,19 +892,26 @@ namespace PEBakery.Core
         public bool ElseFlag = false;
         public bool LoopRunning = false;
         public long LoopCounter = 0;
-        public Process RunningSubProcess = null;
-        public PluginSection SetLocalSection = null; // For System,SetLocal
         public Dictionary<string, string> LocalVarsBackup = null; // For System,SetLocal
         public bool InMacro = false;
-        public bool PassCurrentPluginFlag = false;
-        public bool ErrorHaltFlag = false;
-        public bool CmdHaltFlag = false;
+        public bool PassCurrentPluginFlag = false; // Exit Command
+        public bool ErrorHaltFlag = false; 
+        public bool CmdHaltFlag = false; // Halt Command
         public bool UserHaltFlag = false;
         public long BuildId; // Used in logging
         public long PluginId; // Used in logging
+
+        // ErrorOff
         public PluginSection ErrorOffSection = null;
         public int ErrorOffStartLineIdx = -1; // -1 means ErrorOff is turned off
         public int ErrorOffLineCount = 0;
+
+        // ShellExecute
+        public Process RunningSubProcess = null;
+        // System,SetLocal
+        public PluginSection SetLocalSection = null; 
+        // WebGet
+        public WebClient RunningWebClient = null;
 
         // Options
         public bool LogComment = true; // Used in logging

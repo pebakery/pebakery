@@ -1,6 +1,5 @@
 ﻿/*
     From a snippet http://dotnet-snippets.com/snippet/folderbrowserdialog-with-vista-style/8803
-    Need license clarification
 
     Created by @Koopakiller (http://dotnet-snippets.com/user/koopakiller/6677)
     Modified by Hajin Jang
