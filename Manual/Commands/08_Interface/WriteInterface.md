@@ -280,4 +280,5 @@ WriteInterface,Value,%ScriptFile%,Interface,pFileBox1,D:\PEBakery\Launcher.exe
 // Source : pRadioGroup1=pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,2
 // Result : pRadioGroup1=pRadioGroup1,1,14,20,160,150,60,Option1,Option2,Option3,0
 WriteInterface,Value,%ScriptFile%,Interface,pRadioGroup1,0
+>>>>>>> develop
 ```
