@@ -202,7 +202,7 @@ namespace PEBakery.Core.Commands
                         int hour = (int)r.TotalHours;
                         int min = r.Minutes;
                         int sec = r.Seconds;
-                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaing Time : {hour}h {min}m {sec}s";
+                        s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}\r\nSpeed : {speedStr}\r\nRemaining Time : {hour}h {min}m {sec}s";
                     }
                 };
 

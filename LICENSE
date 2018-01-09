@@ -640,6 +640,10 @@ PEBakery.TreeLib
     MIT License
     https://opensource.org/licenses/MIT
 
+PEBakery.ManagedWimLib
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
+
 PEBakery/Helper.cs 
     MIT License
     https://opensource.org/licenses/MIT

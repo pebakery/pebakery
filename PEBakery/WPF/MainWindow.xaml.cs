@@ -1639,18 +1639,8 @@ namespace PEBakery.WPF
             }
         }
 
-        public static bool DisplayCommandProgress = true;
         private Visibility buildCommandProgressVisibility = Visibility.Collapsed;
-        public Visibility BuildCommandProgressVisibility
-        {
-            get
-            {
-                if (DisplayCommandProgress)
-                    return buildCommandProgressVisibility;
-                else
-                    return Visibility.Collapsed;
-            }
-        }
+        public Visibility BuildCommandProgressVisibility => buildCommandProgressVisibility;
         public bool BuildCommandProgressShow
         {
             set

@@ -1,0 +1,108 @@
+<!--
+ *
+ * WARNING: This MSBuild file requires MSBuild 4.0 features.
+ * 
+ * Based on System.Data.SQLite.Core.targets, written by Joe Mistachkin and David Archer.
+ * Released to the public domain, use at your own risk!
+ *
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+  ******************************************************************************
+  **                          Load Per-User Settings                          **
+  ******************************************************************************
+  -->
+  
+  <!--
+    Create "ManagedWimLib.Precompiled.Exclude" file in project directory 
+    to disable copying precompiled wimlib binaries.
+  -->
+  <PropertyGroup>
+    <WimLibExcludePrecompiled Condition="Exists('$(MSBuildProjectDirectory)\ManagedWimLib.Precompiled.Exclude')">true</WimLibExcludePrecompiled>
+  </PropertyGroup>
+
+ <!--
+  ******************************************************************************
+  **                     ZLib Interop Library Build Items                     **
+  ******************************************************************************
+  -->
+
+  <ItemGroup>
+    <WimLibInteropFiles Condition="'$(WimLibExcludePrecompiled)' != 'true' And 
+                                  '$(MSBuildThisFileDirectory)' != '' And
+                                   HasTrailingSlash('$(MSBuildThisFileDirectory)')"
+                        Include="$(MSBuildThisFileDirectory)Precompiled\**\libwim-15.dll" />
+  </ItemGroup>
+
+  <!--
+  ******************************************************************************
+  **                    ZLib Interop Library Content Items                    **
+  ******************************************************************************
+  -->
+
+  <ItemGroup Condition="'$(WimLibExcludePrecompiled)' != 'true' And 
+                        '@(WimLibInteropFiles)' != ''">
+    <None Include="@(WimLibInteropFiles)">
+      <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+  ******************************************************************************
+  **                    ZLib Interop Library Build Targets                    **
+  ******************************************************************************
+  -->
+
+  <Target Name="CopyWimLibInteropFiles"
+          Condition="'$(CopyWimLibInteropFiles)' != 'false' And
+                     '$(OutDir)' != '' And
+                     HasTrailingSlash('$(OutDir)') And
+                     Exists('$(OutDir)')"
+          Inputs="@(WimLibInteropFiles)"
+          Outputs="@(WimLibInteropFiles -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')">
+    <!--
+        NOTE: Copy "libwim-15.dll" and all related files, for every
+              architecture that we support, to the build output directory.
+    -->
+    <Copy SourceFiles="@(WimLibInteropFiles)"
+          DestinationFiles="@(WimLibInteropFiles -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!--
+  ******************************************************************************
+  -->
+
+  <Target Name="CleanWimLibInteropFiles"
+          Condition="'$(CleanWimLibInteropFiles)' != 'false' And
+                     '$(OutDir)' != '' And
+                     HasTrailingSlash('$(OutDir)') And
+                     Exists('$(OutDir)')">
+    <!--
+        NOTE: Delete "libwim-15.dll" and all related files, for every
+              architecture that we support, from the build output directory.
+    -->
+    <Delete Files="@(WimLibInteropFiles -> '$(OutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+
+  <!--
+  ******************************************************************************
+  **                  ZLib Interop Library Build Properties                   **
+  ******************************************************************************
+  -->
+
+  <PropertyGroup>
+    <PostBuildEventDependsOn>
+      $(PostBuildEventDependsOn);
+      CopyWimLibInteropFiles;
+    </PostBuildEventDependsOn>
+    <BuildDependsOn>
+      $(BuildDependsOn);
+      CopyWimLibInteropFiles;
+    </BuildDependsOn>
+    <CleanDependsOn>
+      $(CleanDependsOn);
+      CleanWimLibInteropFiles;
+    </CleanDependsOn>
+  </PropertyGroup>
+</Project>

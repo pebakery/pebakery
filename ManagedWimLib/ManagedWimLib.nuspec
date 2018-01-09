@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>ManagedWimLib</id>
+    <title>ManagedWimLib</title>
+    <version>1.0.0</version>
+    <owners>ied206</owners>
+    <authors>Eric Biggers, Hajin Jang</authors>
+    <licenseUrl>https://github.com/ied206/ManagedWimLib/blob/master/LICENSE</licenseUrl> 
+    <projectUrl>https://github.com/ied206/ManagedWimLib</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>C# wrapper library for native wimlib.</description>
+    <summary>C# wrapper library for native zlib.</summary>
+    <releaseNotes>- Inital Release</releaseNotes>
+    <copyright>Copyright (c) 2018 Hajin Jang</copyright>
+    <tags>wimlib</tags>
+    <dependencies>
+      <group targetFramework="net45"></group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\ManagedWimLib.dll" target="lib\net45" />
+    <file src="bin\Release\ManagedWimLib.pdb" target="lib\net45" />
+    <file src="Precompiled\x86\wimlib-15.dll" target="build\net45\Precompiled\x86" />
+    <file src="Precompiled\x64\wimlib-15.dll" target="build\net45\Precompiled\x64" />
+    <file src="ManagedWimLib.targets" target="build\net45\ManagedWimLib.targets" />
+  </files>
+</package>
