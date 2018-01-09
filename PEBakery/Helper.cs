@@ -1337,16 +1337,6 @@ namespace PEBakery.Helper
     #endregion
 
     #region RegistryHelper
-    /// <summary>
-    /// Exception used in BakeryEngine::ParseCommand
-    /// </summary>
-    public class InvalidRegistryKeyException : Exception
-    {
-        public InvalidRegistryKeyException() { }
-        public InvalidRegistryKeyException(string message) : base(message) { }
-        public InvalidRegistryKeyException(string message, Exception inner) : base(message, inner) { }
-    }
-
     public static class RegistryHelper
     {
         [DllImport("kernel32.dll")]
