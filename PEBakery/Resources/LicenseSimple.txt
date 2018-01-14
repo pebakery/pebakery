@@ -1,10 +1,24 @@
-﻿-----------------------------------------------------------
+﻿PEBakery
+Copyright (c) 2016-2017 Hajin Jang
+-----------------------------------------------------------
 PEBakery is mainly licensed under GPL Version 3.
-    GNU General Public License Version 3
+
+Some parts of PEBakery is licensed under various license.
+Unless explicit license is specified on a per-file basis,
+the file is licensed under GPL Version 3.
+
+	GNU General Public License Version 3
     https://www.gnu.org/licenses/gpl.txt
 
 -----------------------------------------------------------
-Part of PEBakery is licensed under various license.
+Notice about the source of version 20180103 (Beta 1)
+    
+Potential license issue exists in Beta 1 release.
+Thus Beta 1 cannot be distributed in the form of binary,
+but only in the form of the source.
+
+-----------------------------------------------------------
+Some parts of PEBakery is licensed under various license.
 
 PEBakery.CabLib
     Apache License, Version 2.0
@@ -66,7 +80,7 @@ PEBakery/WPF/Controls/Svg/Donut.xaml
 
 PEBakery/WPF/VistaFolderBrowserDialog
     Derived from a code snippet by @Koopakiller
-	http://dotnet-snippets.com/snippet/folderbrowserdialog-with-vista-style/8803
+    http://dotnet-snippets.com/snippet/folderbrowserdialog-with-vista-style/8803
 
 -----------------------------------------------------------
 PEBakery uses Open Source Software (OSS).
