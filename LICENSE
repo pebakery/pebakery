@@ -1,9 +1,19 @@
 PEBakery
 Copyright (c) 2016-2017 Hajin Jang
 
-Unless indicated otherwise on a per-file basis all source and documentation,
-PEBakery is licensed under the GNU GENERAL PUBLIC LICENSE Version 3.
-  
+PEBakery is mainly licensed under GPL Version 3.
+
+Some parts of PEBakery is licensed under various license.
+Unless explicit license is specified on a per-file basis,
+the file is licensed under GPL Version 3.
+
+-----------------------------------------------------------
+Notice about the source of version 20180103 (Beta 1)
+    
+Potential license issue exists in Beta 1 release.
+Thus Beta 1 cannot be distributed in the form of binary,
+but only in the form of the source.
+
 -------------------------------------------------------------------------------
 					 GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
@@ -626,7 +636,7 @@ Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
 -------------------------------------------------------------------------------
-Portions of PEBakery is licensed under various license.
+Some parts of PEBakery is licensed under various license.
 
 PEBakery.CabLib
     Apache License, Version 2.0
