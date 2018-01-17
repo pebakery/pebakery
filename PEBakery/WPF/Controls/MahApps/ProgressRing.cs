@@ -233,9 +233,8 @@ namespace PEBakery.WPF.Controls
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is double)
+            if (value is double width)
             {
-                var width = (double)value;
                 return width <= 20 ? 20 : width;
             }
 

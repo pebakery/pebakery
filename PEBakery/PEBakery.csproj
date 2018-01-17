@@ -197,6 +197,9 @@
     <Compile Include="Core\Commands\CommandFile.cs" />
     <Compile Include="Exception.cs" />
     <Compile Include="Core\Logger.cs" />
+    <Compile Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml.cs">
+      <DependentUpon>FreeNumberBox.xaml</DependentUpon>
+    </Compile>
     <Compile Include="WPF\Controls\VistaFolderBrowserDialog\VistaFolderBrowserDialog.cs" />
     <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
     <Compile Include="WPF\LogWindow.xaml.cs">
@@ -204,7 +207,6 @@
     </Compile>
     <Compile Include="Core\Macro.cs" />
     <Compile Include="Core\Plugin.cs" />
-    <Compile Include="WPF\Controls\Spinner\SpinnerControl.cs" />
     <Compile Include="Core\PluginCache.cs" />
     <Compile Include="WPF\SettingWindow.xaml.cs">
       <DependentUpon>SettingWindow.xaml</DependentUpon>
@@ -224,6 +226,10 @@
     <Page Include="WPF\Controls\CustomMessageBox\CustomMessageBoxWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="WPF\Controls\Svg\Donut.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -250,27 +256,11 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="WPF\Controls\Spinner\AllBrushes.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="WPF\Controls\Spinner\brush.scroll.down.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="WPF\Controls\Spinner\brush.scroll.up.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="WPF\SettingWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Themes\Generic.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="WPF\Controls\Spinner\SpinnerControl.Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -356,6 +346,7 @@
   <ItemGroup>
     <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
