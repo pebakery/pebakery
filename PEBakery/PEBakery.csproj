@@ -324,6 +324,10 @@
     <None Include="Resources\DonutPng.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ManagedWimLib\ManagedWimLib.csproj">
+      <Project>{73bdca22-081d-489e-95e7-a02a6778bb7c}</Project>
+      <Name>ManagedWimLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PEBakery.CabLib\PEBakery.CabLib.csproj">
       <Project>{d3d90156-0a5c-467b-8dcc-a8a50bfd529c}</Project>
       <Name>PEBakery.CabLib</Name>

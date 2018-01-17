@@ -29,8 +29,8 @@ bld/
 [Oo]bj/
 
 # Do not ignore Precompiled directory
-!/PEBakery/x86/
-!/PEBakery/x64/
+!/ManagedWimLib/Precompiled/x86/
+!/ManagedWimLib/Precompiled/x64/
 
 # Visual Studio 2015 cache/options directory
 .vs/
