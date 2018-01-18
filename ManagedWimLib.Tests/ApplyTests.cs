@@ -1,4 +1,6 @@
 ﻿/*
+    Licensed under LGPLv3
+
     Derived from wimlib's original header files
     Copyright (C) 2012, 2013, 2014 Eric Biggers
 

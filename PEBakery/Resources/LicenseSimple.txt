@@ -1,36 +1,35 @@
 ﻿PEBakery
-Copyright (c) 2016-2017 Hajin Jang
------------------------------------------------------------
-PEBakery is mainly licensed under GPL Version 3.
+Copyright (c) 2016-2018 Hajin Jang
 
-Some parts of PEBakery is licensed under various license.
-Unless explicit license is specified on a per-file basis,
-the file is licensed under GPL Version 3.
+Unless specified, PEBakery is licensed under GPLv3 or any later version. 
+
+Some parts of PEBakery is licensed under various license, specified on a
+per-file basis or LICENSE file placed in a subdirectory.
 
 	GNU General Public License Version 3
     https://www.gnu.org/licenses/gpl.txt
 
 -----------------------------------------------------------
-Notice about the source of version 20180103 (Beta 1)
-    
-Potential license issue exists in Beta 1 release.
-Thus Beta 1 cannot be distributed in the form of binary,
-but only in the form of the source.
-
------------------------------------------------------------
-Some parts of PEBakery is licensed under various license.
+These parts of PEBakery is licensed under various license.
 
 PEBakery.CabLib
+PEBakery.CabLib.Tests
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
 
 PEBakery.IniLib
+PEBakery.IniLib.Tests
     MIT License
     https://opensource.org/licenses/MIT
 
 PEBakery.TreeLib
     MIT License
     https://opensource.org/licenses/MIT
+
+ManagedWimLib
+ManagedWimLib.Tests
+    LGPLv3 License
+    https://www.gnu.org/licenses/lgpl-3.0.en.html
 
 PEBakery/Helper.cs 
     MIT License
@@ -64,12 +63,9 @@ PEBakery/WPF/Controls/MahApps
     Copyright (c) 2016 MahApps
     Derived from https://github.com/MahApps/MahApps.Metro
 
-PEBakery/WPF/Controls/Spinner
-    The Code Project Open License (CPOL) 1.02
-    https://www.codeproject.com/info/cpol10.aspx
-
-    Copyright (c) 2012 Barry Lapthorn
-    https://www.codeproject.com/Articles/315461/A-WPF-Spinner-Custom-Control
+PEBakery/WPF/Controls/FreeNumberBox
+    MIT License
+    https://opensource.org/licenses/MIT
 
 PEBakery/WPF/Controls/Svg/Donut.xaml
     CC BY 3.0 US
@@ -77,10 +73,6 @@ PEBakery/WPF/Controls/Svg/Donut.xaml
 
     Copyright (c) Numero Uno
     https://thenounproject.com/numerouno/
-
-PEBakery/WPF/VistaFolderBrowserDialog
-    Derived from a code snippet by @Koopakiller
-    http://dotnet-snippets.com/snippet/folderbrowserdialog-with-vista-style/8803
 
 -----------------------------------------------------------
 PEBakery uses Open Source Software (OSS).

@@ -200,7 +200,6 @@
     <Compile Include="WPF\Controls\FreeNumberBox\FreeNumberBox.xaml.cs">
       <DependentUpon>FreeNumberBox.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WPF\Controls\VistaFolderBrowserDialog\VistaFolderBrowserDialog.cs" />
     <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
