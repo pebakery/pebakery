@@ -126,13 +126,6 @@ Newtonsoft.Json
     Copyright (c) James Newton-King
     https://github.com/JamesNK/Newtonsoft.Json
 
-Pinvoke.Win32
-    MIT License
-    https://opensource.org/licenses/MIT
-
-    Copyright (c) Andrew Arnott, Mathias Lykkegaard Lorenzen, Julien Roncaglia
-    https://github.com/AArnott/pinvoke
-
 RazorEngine
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
@@ -158,16 +151,4 @@ sqlite-net-pcl
 
     Copyright (c) Krueger Systems, Inc.
     https://github.com/praeclarum/sqlite-net
-
-Svg.Net
-    Microsoft Public License (MS-PL)
-    https://opensource.org/licenses/MS-PL
-
-    https://github.com/vvvv/SVG
-
-Validation
-    Microsoft Public License (MS-PL)
-    https://opensource.org/licenses/MS-PL
-
-    https://github.com/aarnott/Validation
 -----------------------------------------------------------

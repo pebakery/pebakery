@@ -561,8 +561,10 @@ namespace PEBakery.WPF
                 {
                     if (type == ImageHelper.ImageType.Svg)
                     {
-                        ImageHelper.GetSvgSize(ms, out double width, out double height);
-                        image.Source = ImageHelper.SvgToBitmapImage(ms, width, height);
+                        // var (Width, Height) = ImageHelper.GetSvgSize(ms);
+                        // image.Source = ImageHelper.SvgToBitmapImage(ms, Width, Height);
+
+                        image.Source = ImageHelper.SvgToBitmapImage(ms);
                     }
                     else
                     {
