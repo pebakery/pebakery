@@ -310,12 +310,12 @@ namespace PEBakery.Core.Commands
             {
                 if (info.Preserve)
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{filePath}]", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{filePath}]", cmd));
                     return logs;
                 }
                 else
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{filePath}] will be overwritten", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{filePath}] will be overwritten", cmd));
                 }
             }
 
@@ -406,7 +406,7 @@ namespace PEBakery.Core.Commands
             { // No Wildcard
                 string destFullPath = Path.Combine(destDir, Path.GetFileName(srcDir));
                 if (Directory.Exists(destFullPath))
-                    logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destFullPath}] will be overwritten with [{srcDir}]"));
+                    logs.Add(new LogInfo(LogState.Overwrite, $"Directory [{destFullPath}] will be overwritten with [{srcDir}]"));
                 else
                     Directory.CreateDirectory(destFullPath);
 
@@ -416,7 +416,7 @@ namespace PEBakery.Core.Commands
             else
             { // With Wildcard
                 if (Directory.Exists(destDir))
-                    logs.Add(new LogInfo(LogState.Ignore, $"Directory [{destDir}] will be overwritten with [{srcDir}]"));
+                    logs.Add(new LogInfo(LogState.Overwrite, $"Directory [{destDir}] will be overwritten with [{srcDir}]"));
                 else
                     Directory.CreateDirectory(destDir);
 

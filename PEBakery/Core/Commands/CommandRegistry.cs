@@ -588,7 +588,7 @@ namespace PEBakery.Core.Commands
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             if (File.Exists(regFile))
-                logs.Add(new LogInfo(LogState.Warning, $"File [{regFile}] will be overwritten"));
+                logs.Add(new LogInfo(LogState.Overwrite, $"File [{regFile}] will be overwritten"));
 
             using (Process proc = new Process())
             {

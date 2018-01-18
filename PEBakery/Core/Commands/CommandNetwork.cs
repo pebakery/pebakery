@@ -66,7 +66,7 @@ namespace PEBakery.Core.Commands
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, $"File [{downloadTo}] will be overwritten"));
+                        logs.Add(new LogInfo(LogState.Overwrite, $"File [{downloadTo}] will be overwritten"));
                     }
                 }
                 else

@@ -65,7 +65,7 @@ namespace PEBakery.Core.Commands
             else
             {
                 if (File.Exists(destArchive))
-                    logs.Add(new LogInfo(LogState.Warning, $"File [{destArchive}] will be overwritten"));
+                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destArchive}] will be overwritten"));
             }
 
             if (!Directory.Exists(srcPath) && !File.Exists(srcPath))
@@ -190,7 +190,7 @@ namespace PEBakery.Core.Commands
                     }
                     else
                     {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten"));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                     }
                 }
 
@@ -263,12 +263,12 @@ namespace PEBakery.Core.Commands
                 {
                     if (info.Preserve)
                     {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Cannot overwrite [{destPath}]"));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{destPath}]"));
                         return;
                     }
                     else
                     {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] will be overwritten"));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will be overwritten"));
                     }
                 }
             }
@@ -330,7 +330,7 @@ namespace PEBakery.Core.Commands
                                     destFullPath = Path.Combine(destDir, Path.GetFileName(destPath));
 
                                 if (File.Exists(destFullPath))
-                                    logs.Add(new LogInfo(LogState.Warning, $"File [{destFullPath}] already exists, will be overwritten"));
+                                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destFullPath}] already exists, will be overwritten"));
 
                                 try
                                 {
