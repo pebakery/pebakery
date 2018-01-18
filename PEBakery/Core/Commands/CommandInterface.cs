@@ -535,7 +535,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
+                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
                             {
                                 SelectedPath = initPath,
                             };
@@ -543,7 +543,7 @@ namespace PEBakery.Core.Commands
                             bool failure = false;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                if (dialog.ShowDialog(Application.Current.MainWindow))
+                                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                                 {
                                     selectedPath = dialog.SelectedPath;
                                     logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));

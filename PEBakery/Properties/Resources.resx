@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BuildDate" xml:space="preserve">
-    <value>20180103</value>
+    <value>20180119</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="DonutPng" type="System.Resources.ResXFileRef, System.Windows.Forms">
@@ -137,6 +137,6 @@
     <value>..\Resources\SystemLogHtmlTemplate.cshtml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="StringVersion" xml:space="preserve">
-    <value>0.9.2 beta1</value>
+    <value>0.9.2 beta2</value>
   </data>
 </root>

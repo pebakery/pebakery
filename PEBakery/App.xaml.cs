@@ -28,14 +28,14 @@ namespace PEBakery
             else if (e.Args.Length > 0)
                 Args = e.Args;
 
-            // Initialize ZLibWrapper
-            ZLibAssemblyInit();
+            // Initialize zlib and wimlib
+            NativeAssemblyInit();
 
             // Why Properties.Resources is not available in App_Startup?
             // Version = Properties.Resources.EngineVersion;
         }
 
-        void ZLibAssemblyInit()
+        void NativeAssemblyInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string arch;
@@ -45,7 +45,9 @@ namespace PEBakery
                 arch = "x86";
 
             string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+            ManagedWimLib.WimLibNative.AssemblyInit(WimLibDllPath);
         }
 
     }

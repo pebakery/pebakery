@@ -1,9 +1,10 @@
 PEBakery
-Copyright (c) 2016-2017 Hajin Jang
+Copyright (c) 2016-2018 Hajin Jang
 
-Unless indicated otherwise on a per-file basis all source and documentation,
-PEBakery is licensed under the GNU GENERAL PUBLIC LICENSE Version 3.
-  
+Unless specified, PEBakery is licensed under GPLv3 or any later version. 
+
+Some parts of PEBakery is licensed under various license, specified on a
+per-file basis or LICENSE file placed in a subdirectory.
 -------------------------------------------------------------------------------
 					 GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
@@ -626,13 +627,15 @@ Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
 -------------------------------------------------------------------------------
-Portions of PEBakery is licensed under various license.
+Some parts of PEBakery is licensed under various license.
 
 PEBakery.CabLib
+PEBakery.CabLib.Tests
     Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
 
 PEBakery.IniLib
+PEBakery.IniLib.Tests
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -640,7 +643,8 @@ PEBakery.TreeLib
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery.ManagedWimLib
+ManagedWimLib
+ManagedWimLib.Tests
     LGPLv3 License
     https://www.gnu.org/licenses/lgpl-3.0.en.html
 
@@ -669,12 +673,9 @@ PEBakery/WPF/Controls/CustomMessageBox
     Copyright (c) 2013 Evan Wondrasek / Apricity Software LLC
     Derived from https://github.com/evanwon/WPFCustomMessageBox
 
-PEBakery/WPF/Controls/MahApps 
+PEBakery/WPF/Controls/FreeNumberBox
     MIT License
     https://opensource.org/licenses/MIT
-
-    Copyright (c) 2016 MahApps
-    Derived from https://github.com/MahApps/MahApps.Metro
 
 PEBakery/WPF/Controls/Spinner
     The Code Project Open License (CPOL) 1.02
@@ -689,10 +690,6 @@ PEBakery/WPF/Controls/Svg/Donut.xaml
 
     Copyright (c) Numero Uno
     https://thenounproject.com/numerouno/
-
-PEBakery/WPF/VistaFolderBrowserDialog
-    Derived from a code snippet by @Koopakiller
-	http://dotnet-snippets.com/snippet/folderbrowserdialog-with-vista-style/8803
 
 -------------------------------------------------------------------------------
 PEBakery uses Open Source Software (OSS).

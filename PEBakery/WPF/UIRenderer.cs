@@ -258,25 +258,25 @@ namespace PEBakery.WPF
             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_NumberBox));
             UIInfo_NumberBox info = uiCmd.Info as UIInfo_NumberBox;
 
-            SpinnerControl spinner = new SpinnerControl()
+            FreeNumberBox box = new FreeNumberBox()
             {
                 Value = info.Value,
                 FontSize = CalcFontPointScale(),
                 Minimum = info.Min,
                 Maximum = info.Max,
                 DecimalPlaces = 0,
-                Change = info.Interval,
+                IncrementUnit = info.Interval,
                 VerticalContentAlignment = VerticalAlignment.Center,
             };
 
-            spinner.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
+            box.ValueChanged += (object sender, RoutedPropertyChangedEventArgs<decimal> e) =>
             {
                 info.Value = (int)e.NewValue;
                 uiCmd.Update();
             };
 
-            SetToolTip(spinner, info.ToolTip);
-            DrawToCanvas(r, spinner, uiCmd.Rect);
+            SetToolTip(box, info.ToolTip);
+            DrawToCanvas(r, box, uiCmd.Rect);
         }
 
         /// <summary>
@@ -797,7 +797,7 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Directory
-                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
+                    System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
 
                     string currentPath = StringEscaper.Preprocess(variables, uiCmd.Text);
                     if (Directory.Exists(currentPath))
@@ -805,28 +805,13 @@ namespace PEBakery.WPF
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (dialog.ShowDialog(Application.Current.MainWindow))
+                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
                             box.Text = dialog.SelectedPath;
                             if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
                                 box.Text += "\\";
                         }
                     });
-
-                    /*
-                    System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
-                    {
-                        ShowNewFolderButton = true,
-                        SelectedPath = currentPath,   
-                    };
-                    System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-                    if (result == System.Windows.Forms.DialogResult.OK)
-                    {
-                        box.Text = dialog.SelectedPath;
-                        if (Directory.Exists(dialog.SelectedPath) && !dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))
-                            box.Text += "\\";
-                    }
-                    */
                 }
             };
 

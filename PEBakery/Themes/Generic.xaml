@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/PEBakery;component/WPF/Controls/Spinner/SpinnerControl.Generic.xaml"/>
+        <!-- <ResourceDictionary Source="/PEBakery;component/WPF/Controls/FreeNumberBox/FreeNumberBox.xaml"/> -->
         <ResourceDictionary Source="/PEBakery;component/WPF/Controls/MahApps/ProgressRing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>
