@@ -6,7 +6,7 @@ Unless specified, PEBakery is licensed under GPLv3 or any later version.
 Some parts of PEBakery is licensed under various license, specified on a
 per-file basis or LICENSE file placed in a subdirectory.
 -------------------------------------------------------------------------------
-					 GNU GENERAL PUBLIC LICENSE
+                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
@@ -708,7 +708,7 @@ BetterWin32Errors
     
     Copyright (c) Michael Kropat
     https://github.com/mkropat/BetterWin32Errors
-	
+
 ZLibWrapper
     zlib license
     https://opensource.org/licenses/Zlib
@@ -724,12 +724,12 @@ MahApps.Metro.IconPacks
     https://github.com/MahApps/MahApps.Metro.IconPacks
 
 ManagedWimgApi
-	MIT License
+    MIT License
     https://opensource.org/licenses/MIT
 
     Copyright (c) josemesona
     https://github.com/josemesona/ManagedWimgApi
-	
+    
 Newtonsoft.Json
     MIT License
     https://opensource.org/licenses/MIT
@@ -745,11 +745,11 @@ Pinvoke.Win32
     https://github.com/AArnott/pinvoke
 
 RazorEngine
-	Apache License, Version 2.0
+    Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
-	
-	https://github.com/Antaris/RazorEngine
-	
+    
+    https://github.com/Antaris/RazorEngine
+
 SevenZipExtractor
     MIT License
     https://opensource.org/licenses/MIT

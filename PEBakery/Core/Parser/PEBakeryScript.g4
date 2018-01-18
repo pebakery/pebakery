@@ -140,7 +140,7 @@ cmd : (
     cmd_filecopy | cmd_filedelete | cmd_filemove | cmd_filecreateblank | cmd_filesize | cmd_fileversion |
     cmd_dircopy | cmd_dirdelete | cmd_dirmove | cmd_dirmake | cmd_dirsize |
 // 02 CommandRegistry
-	cmd_reghiveload | cmd_reghiveunload | 
+    cmd_reghiveload | cmd_reghiveunload | 
     cmd_regimport | cmd_regexport |
     cmd_regread | cmd_regwrite | cmd_regdelete | cmd_multi |
 // 03 CommandFile

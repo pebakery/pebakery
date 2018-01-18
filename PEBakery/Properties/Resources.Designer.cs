@@ -74,16 +74,16 @@ namespace PEBakery.Properties {
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
         ///&lt;html lang=&quot;ko&quot;&gt;
-        ///	&lt;head&gt;
-        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
-        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
         ///
-        ///		&lt;title&gt;@Model.BuildName&lt;/title&gt;
+        ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
-        ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstra[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstra[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildLogHtmlTemplate {
             get {
@@ -119,7 +119,7 @@ namespace PEBakery.Properties {
         ///Some parts of PEBakery is licensed under various license, specified on a
         ///per-file basis or LICENSE file placed in a subdirectory.
         ///
-        ///	GNU General Public License Version 3
+        ///    GNU General Public License Version 3
         ///    https://www.gnu.org/licenses/gpl.txt
         ///
         ///-----------------------------------------------------------
@@ -149,16 +149,16 @@ namespace PEBakery.Properties {
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
         ///&lt;html lang=&quot;ko&quot;&gt;
-        ///	&lt;head&gt;
-        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
-        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
         ///
-        ///		&lt;title&gt;PEBakery System Log&lt;/title&gt;
+        ///        &lt;title&gt;PEBakery System Log&lt;/title&gt;
         ///
-        ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.boots[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.boots[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string SystemLogHtmlTemplate {
             get {
