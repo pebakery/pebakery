@@ -85,7 +85,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not a valid integer");
                         if (lines <= 0)
-                            throw new ExecuteException($"[{linesStr}] must be positive integer");
+                            throw new ExecuteException($"[{linesStr}] must be a positive integer");
 
                         // +1 to not count ErrorOff itself
                         s.ErrorOffSection = cmd.Addr.Section;
@@ -407,7 +407,7 @@ namespace PEBakery.Core.Commands
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to default state"));
+                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to their default state"));
                     }
                     break;
                 default: // Error

@@ -159,7 +159,7 @@ namespace PEBakery.Core.Commands
             {
                 if (File.Exists(destDir))
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Path [{destDir}] is file, not a directory"));
+                    logs.Add(new LogInfo(LogState.Error, $"Path [{destDir}] is a file, not a directory"));
                     return logs;
                 }
                 Directory.CreateDirectory(destDir);
@@ -185,7 +185,7 @@ namespace PEBakery.Core.Commands
                 { // Check PRESERVE, NOWARN 
                     if (info.Preserve)
                     { // Do nothing
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"[{destPath}] already exists, cannot extract from [{srcCab}]"));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] already exists, skipping extract from [{srcCab}]"));
                         return logs;
                     }
                     else
@@ -245,7 +245,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{srcFile}] not found", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"No files matching wildcard [{srcFile}] were found", cmd));
                 }
             }
 
@@ -263,7 +263,7 @@ namespace PEBakery.Core.Commands
                 {
                     if (info.Preserve)
                     {
-                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{destPath}]"));
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten"));
                         return;
                     }
                     else
@@ -313,7 +313,7 @@ namespace PEBakery.Core.Commands
                             result = cab.ExtractAll(tempDir, out List<string> fileList);
                             if (2 < fileList.Count)
                             { // WB082 behavior : Expand/CopyOrExpand only supports single-file cabinet
-                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain single file"));
+                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] should contain only a single file"));
                                 return;
                             }
                         }
@@ -330,7 +330,7 @@ namespace PEBakery.Core.Commands
                                     destFullPath = Path.Combine(destDir, Path.GetFileName(destPath));
 
                                 if (File.Exists(destFullPath))
-                                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destFullPath}] already exists, will be overwritten"));
+                                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destFullPath}] already exists and will be overwritten"));
 
                                 try
                                 {
@@ -346,7 +346,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             { // Unable to find srcFile
-                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] does not contains [{Path.GetFileName(destPath)}]"));
+                                logs.Add(new LogInfo(LogState.Error, $"Cabinet [{srcFileName}] does not contain [{Path.GetFileName(destPath)}]"));
                             }
                         }
                         else
@@ -361,7 +361,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // Error
-                    logs.Add(new LogInfo(LogState.Error, $"[{srcFile}] nor [{srcCab}] not found"));
+                    logs.Add(new LogInfo(LogState.Error, $"The file [{srcFile}] or [{srcCab}] could not be found"));
                 }
             }
         }

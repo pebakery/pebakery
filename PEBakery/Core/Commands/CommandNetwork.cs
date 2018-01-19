@@ -138,11 +138,11 @@ namespace PEBakery.Core.Commands
                     if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                     {
                         File.Move(tempPath, destPath);
-                        logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{downloadTo}], and its integerity is checked."));
+                        logs.Add(new LogInfo(LogState.Success, $"[{url}] was downloaded to [{downloadTo}] and it's integerity was verified."));
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but it was corrupted"));
+                        logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but the file was corrupted"));
                     }
                 }
                 else

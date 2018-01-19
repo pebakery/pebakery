@@ -84,7 +84,7 @@ namespace PEBakery.Core
             }
             else
             {
-                throw new InvalidCommandException($"Interface control [{rawValue}] does not have name", rawLine);
+                throw new InvalidCommandException($"Interface control [{rawValue}] does not have a name defined", rawLine);
             }
 
             // Parse Arguments
@@ -148,7 +148,7 @@ namespace PEBakery.Core
         {
             // typeStr must be number
             if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled))
-                throw new InvalidCommandException("Only number can be used as UICommand type");
+                throw new InvalidCommandException("Only numbers can be used for UICommand type");
 
             bool failure = false;
             if (Enum.TryParse(typeStr, false, out UIType type) == false)
@@ -441,7 +441,7 @@ namespace PEBakery.Core
                             else if (args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
                                 isFile = false;
                             else
-                                throw new InvalidCommandException($"Argument [{type}] should be one of [file] or [dir]");
+                                throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
                         }
 
                         return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);
@@ -476,7 +476,7 @@ namespace PEBakery.Core
                             items.Add(args[i]);
                         
                         if (NumberHelper.ParseInt32(args[cnt], out int idx) == false)
-                            throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be integer");
+                            throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be an integer");
 
                         return new UIInfo_RadioGroup(GetInfoTooltip(args, args.Count), items, idx, sectionName, showProgress);
                     }

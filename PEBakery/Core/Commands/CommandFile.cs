@@ -72,7 +72,7 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite file [{destFullPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten", cmd));
                             return logs;
                         }
                         else
@@ -91,7 +91,7 @@ namespace PEBakery.Core.Commands
                     {
                         if (info.Preserve)
                         {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite file [{destPath}]", cmd));
+                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten", cmd));
                             return logs;
                         }
                         else
@@ -130,7 +130,7 @@ namespace PEBakery.Core.Commands
                             {
                                 if (info.Preserve)
                                 {
-                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{destFullPath}]", cmd));
+                                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten", cmd));
                                     continue;
                                 }
                                 else
@@ -155,7 +155,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    logs.Add(new LogInfo(LogState.Ignore, $"Files matching wildcard [{srcFile}] not found", cmd));
+                    logs.Add(new LogInfo(LogState.Ignore, $"Files matching wildcard [{srcFile}] were not found", cmd));
                 }
             }
 
@@ -191,7 +191,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{filePath}] not exists"));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"File [{filePath}] does not exist"));
                 }
 
             }
@@ -224,7 +224,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be deleted
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files match wildcard [{filePath}] not found"));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, $"Files matching wildcard [{filePath}] were not found"));
                 }
             }
 
@@ -310,7 +310,7 @@ namespace PEBakery.Core.Commands
             {
                 if (info.Preserve)
                 {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"Cannot overwrite [{filePath}]", cmd));
+                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{filePath}] will not be overwritten", cmd));
                     return logs;
                 }
                 else

@@ -59,7 +59,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{byteSizeStr}] is not a valid integer");
 
                         if (byteSize < 0)
-                            throw new ExecuteException($"[{byteSize}] must be positive integer");
+                            throw new ExecuteException($"[{byteSize}] must be a positive integer");
 
                         string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
 
@@ -119,7 +119,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         if (roundTo < 0)
-                            throw new ExecuteException($"[{roundTo}] must be positive integer");
+                            throw new ExecuteException($"[{roundTo}] must be a positive integer");
 
                         string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
                         if (!NumberHelper.ParseInt64(srcIntStr, out long srcInt))
@@ -281,7 +281,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             throw new ExecuteException($"[{cutLenStr}] is not a valid integer");
                         if (cutLen < 0)
-                            throw new ExecuteException($"[{cutLen}] must be positive integer");
+                            throw new ExecuteException($"[{cutLen}] must be a positive integer");
 
                         string destStr = string.Empty;
                         try
@@ -305,7 +305,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (ArgumentOutOfRangeException)
                         { // Correct WB082 behavior : Not error, but just empty string
-                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not valid index"));
+                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not a valid index"));
                             logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, string.Empty));
                         }
                     }
@@ -321,12 +321,12 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(startPosStr, out int startPos))
                             throw new ExecuteException($"[{startPosStr}] is not a valid integer");
                         if (startPos <= 0)
-                            throw new ExecuteException($"[{startPos}] must be positive integer");
+                            throw new ExecuteException($"[{startPos}] must be a positive integer");
                         string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
                         if (!NumberHelper.ParseInt32(lenStr, out int len))
                             throw new ExecuteException($"[{lenStr}] is not a valid integer");
                         if (len <= 0)
-                            throw new ExecuteException($"[{len}] must be positive integer");
+                            throw new ExecuteException($"[{len}] must be a positive integer");
 
                         // Error handling
                         if (srcStr.Length <= (startPos - 1))
@@ -408,7 +408,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (ArgumentOutOfRangeException)
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid index"));
+                            logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not a valid index"));
                         }
                     }
                     break;
@@ -587,7 +587,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bound [{slices.Length}]"));
+                                logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bounds [{slices.Length}]"));
                             }
                         }
                     }

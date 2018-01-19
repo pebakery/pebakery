@@ -3254,7 +3254,7 @@ namespace PEBakery.Core
                             if (match)
                                 logMessage = $"Variable [{Arg1}] exists";
                             else
-                                logMessage = $"Variable [{Arg1}] does not exists";
+                                logMessage = $"Variable [{Arg1}] does not exist";
                         }
                         else
                         {
@@ -3274,7 +3274,7 @@ namespace PEBakery.Core
                         if (match)
                             logMessage = $"Macro [{macroName}] exists";
                         else
-                            logMessage = $"Macro [{macroName}] does not exists";
+                            logMessage = $"Macro [{macroName}] does not exist";
 
                         if (NotFlag)
                             match = !match;
@@ -3301,14 +3301,14 @@ namespace PEBakery.Core
                             }
 
                             if (match)
-                                logMessage = $"Ping to [{host}] successed";
+                                logMessage = $"[{host}] responded to Ping";
                             else
-                                logMessage = $"Ping to [{host}] failed";
+                                logMessage = $"[{host}] did not respond to Ping";
                         }
                         catch (PingException e)
                         {
                             match = false;
-                            logMessage = $"Error while pinging to [{host}] : [{e.Message}]";
+                            logMessage = $"Error while pinging [{host}] : [{e.Message}]";
                         }
 
                         if (NotFlag)

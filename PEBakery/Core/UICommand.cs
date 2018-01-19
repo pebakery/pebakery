@@ -279,7 +279,7 @@ namespace PEBakery.Core
 
                         uiInfo.Value = newValue;
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                         success = true;
                     }
                     break;
@@ -305,7 +305,7 @@ namespace PEBakery.Core
                             return false;
                         }
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                         success = true;
                     }
                     break;
@@ -318,14 +318,14 @@ namespace PEBakery.Core
                         {
                             uiInfo.Value = true;
 
-                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [True]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [True]"));
                             success = true;
                         }
                         else if (newValue.Equals("False", StringComparison.OrdinalIgnoreCase))
                         {
                             uiInfo.Value = false;
 
-                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [False]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [False]"));
                             success = true;
                         }
                         else
@@ -343,14 +343,14 @@ namespace PEBakery.Core
                         int idx = uiInfo.Items.FindIndex(x => x.Equals(newValue, StringComparison.OrdinalIgnoreCase));
                         if (idx == -1)
                         { // Invalid Index
-                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] not found in item list"));
+                            logs.Add(new LogInfo(LogState.Error, $"[{newValue}] was not found in the item list"));
                             return false;
                         }
 
                         uiInfo.Index = idx;
                         Text = uiInfo.Items[idx];
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{Text}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{Text}]"));
                         success = true;
                     }
                     break;
@@ -363,14 +363,14 @@ namespace PEBakery.Core
                         {
                             uiInfo.Selected = true;
 
-                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [True]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [True]"));
                             success = true;
                         }
                         else if (newValue.Equals("False", StringComparison.OrdinalIgnoreCase))
                         {
                             uiInfo.Selected = false;
 
-                            logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [False]"));
+                            logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [False]"));
                             success = true;
                         }
                         else
@@ -387,7 +387,7 @@ namespace PEBakery.Core
 
                         Text = newValue;
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Interface Control [{Key}] set to [{newValue}]"));
                         success = true;
                     }
                     break;
@@ -412,7 +412,7 @@ namespace PEBakery.Core
                             return false;
                         }
 
-                        logs.Add(new LogInfo(LogState.Success, $"Interface [{Key}] set to [{newValue}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Interface control [{Key}] set to [{newValue}]"));
                         success = true;
                     }
                     break;
