@@ -76,7 +76,7 @@ namespace PEBakery.Core
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
                 {
-                    errorMsg = $"Cannot write into [{path}], [{f}] is write protected directory";
+                    errorMsg = $"Cannot write into [{path}], [{f}] is a write protected directory";
                     return false;
                 }
             }

@@ -241,7 +241,7 @@ namespace PEBakery.Tests.Core.Command
             Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 3, rawCode, ErrorCheck.Success, false, true);
 
             rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex3.jp_"}\",\"%TestBench%\\CommandArchive\\Expand_4\",ex3.jpg,PRESERVE";
-            Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 4, rawCode, ErrorCheck.Warning, true, false);
+            Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 4, rawCode, ErrorCheck.Overwrite, true, false);
 
             rawCode = $"Expand,\"%TestBench%\\CommandArchive\\{"ex3.jp_"}\",\"%TestBench%\\CommandArchive\\Expand_5\",ex3.jpg,PRESERVE,NOWARN";
             Expand_FileTemplate(s, "ex3.jp_", "ex3.jpg", 5, rawCode, ErrorCheck.Success, true, false);

@@ -215,7 +215,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -253,7 +253,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -305,7 +305,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -352,7 +352,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -412,7 +412,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -460,7 +460,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 

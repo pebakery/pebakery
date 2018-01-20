@@ -97,7 +97,7 @@ namespace PEBakery.Core.Commands
                 ms.CopyTo(fs);
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{destDir}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted to [{destDir}]"));
 
             return logs;
         }
@@ -136,7 +136,7 @@ namespace PEBakery.Core.Commands
             proc.StartInfo.Verb = "Open";
             proc.Start();
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted and executed"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted and executed"));
 
             return logs;
         }
@@ -191,7 +191,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{destDir}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] was extracted to [{destDir}]"));
 
             return logs;
         }
@@ -213,7 +213,7 @@ namespace PEBakery.Core.Commands
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{p.FullPath}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{p.FullPath}]", cmd));
             }
             else
             { // With Wildcard
@@ -234,7 +234,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    logs.Add(new LogInfo(LogState.Warning, $"Files match wildcard [{filePath}] not found", cmd));
+                    logs.Add(new LogInfo(LogState.Warning, $"Files matching wildcard [{filePath}] were not found", cmd));
                 }
             }
 
