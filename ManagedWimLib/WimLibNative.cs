@@ -1,4 +1,27 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿/*
+    Licensed under LGPLv3
+
+    Derived from wimlib's original header files
+    Copyright (C) 2012, 2013, 2014 Eric Biggers
+
+    C# Wrapper written by Hajin Jang
+    Copyright (C) 2018 Hajin Jang
+
+    This file is free software; you can redistribute it and/or modify it under
+    the terms of the GNU Lesser General Public License as published by the Free
+    Software Foundation; either version 3 of the License, or (at your option) any
+    later version.
+
+    This file is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+    details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this file; if not, see http://www.gnu.org/licenses/.
+*/
+
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -384,178 +407,178 @@ namespace ManagedWimLib
     public enum WimLibProgressMsg
     {
         /** A WIM image is about to be extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This message is received once per
-         * image for calls to wimlib_extract_image() and
-         * wimlib_extract_image_from_pipe().  */
+            ::wimlib_progress_info.extract.  This message is received once per
+            image for calls to wimlib_extract_image() and
+            wimlib_extract_image_from_pipe().  */
         EXTRACT_IMAGE_BEGIN = 0,
 
         /** One or more file or directory trees within a WIM image is about to
-         * be extracted.  @p info will point to ::wimlib_progress_info.extract.
-         * This message is received only once per wimlib_extract_paths() and
-         * wimlib_extract_pathlist(), since wimlib combines all paths into a
-         * single extraction operation for optimization purposes.  */
+            be extracted.  @p info will point to ::wimlib_progress_info.extract.
+            This message is received only once per wimlib_extract_paths() and
+            wimlib_extract_pathlist(), since wimlib combines all paths into a
+            single extraction operation for optimization purposes.  */
         EXTRACT_TREE_BEGIN = 1,
 
         /** This message may be sent periodically (not for every file) while
-         * files and directories are being created, prior to file data
-         * extraction.  @p info will point to ::wimlib_progress_info.extract.
-         * In particular, the @p current_file_count and @p end_file_count
-         * members may be used to track the progress of this phase of
-         * extraction.  */
+            files and directories are being created, prior to file data
+            extraction.  @p info will point to ::wimlib_progress_info.extract.
+            In particular, the @p current_file_count and @p end_file_count
+            members may be used to track the progress of this phase of
+            extraction.  */
         EXTRACT_FILE_STRUCTURE = 3,
 
         /** File data is currently being extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This is the main message to track
-         * the progress of an extraction operation.  */
+            ::wimlib_progress_info.extract.  This is the main message to track
+            the progress of an extraction operation.  */
         EXTRACT_STREAMS = 4,
 
         /** Starting to read a new part of a split pipable WIM over the pipe.
-         * @p info will point to ::wimlib_progress_info.extract.  */
+            @p info will point to ::wimlib_progress_info.extract.  */
         EXTRACT_SPWM_PART_BEGIN = 5,
 
         /** This message may be sent periodically (not necessarily for every
-         * file) while file and directory metadata is being extracted, following
-         * file data extraction.  @p info will point to
-         * ::wimlib_progress_info.extract.  The @p current_file_count and @p
-         * end_file_count members may be used to track the progress of this
-         * phase of extraction.  */
+            file) while file and directory metadata is being extracted, following
+            file data extraction.  @p info will point to
+            ::wimlib_progress_info.extract.  The @p current_file_count and @p
+            end_file_count members may be used to track the progress of this
+            phase of extraction.  */
         EXTRACT_METADATA = 6,
 
         /** The image has been successfully extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This is paired with
-         * ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.  */
+            ::wimlib_progress_info.extract.  This is paired with
+            ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.  */
         EXTRACT_IMAGE_END = 7,
 
         /** The files or directory trees have been successfully extracted.  @p
-         * info will point to ::wimlib_progress_info.extract.  This is paired
-         * with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.  */
+            info will point to ::wimlib_progress_info.extract.  This is paired
+            with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.  */
         EXTRACT_TREE_END = 8,
 
         /** The directory or NTFS volume is about to be scanned for metadata.
-         * @p info will point to ::wimlib_progress_info.scan.  This message is
-         * received once per call to wimlib_add_image(), or once per capture
-         * source passed to wimlib_add_image_multisource(), or once per add
-         * command passed to wimlib_update_image().  */
+            @p info will point to ::wimlib_progress_info.scan.  This message is
+            received once per call to wimlib_add_image(), or once per capture
+            source passed to wimlib_add_image_multisource(), or once per add
+            command passed to wimlib_update_image().  */
         SCAN_BEGIN = 9,
 
         /** A directory or file has been scanned.  @p info will point to
-         * ::wimlib_progress_info.scan, and its @p cur_path member will be
-         * valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
-         * been specified.  */
+            ::wimlib_progress_info.scan, and its @p cur_path member will be
+            valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
+            been specified.  */
         SCAN_DENTRY = 10,
 
         /** The directory or NTFS volume has been successfully scanned.  @p info
-         * will point to ::wimlib_progress_info.scan.  This is paired with a
-         * previous ::WIMLIB_PROGRESS_MSG_SCAN_BEGIN message, possibly with many
-         * intervening ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY messages.  */
+            will point to ::wimlib_progress_info.scan.  This is paired with a
+            previous ::WIMLIB_PROGRESS_MSG_SCAN_BEGIN message, possibly with many
+            intervening ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY messages.  */
         SCAN_END = 11,
 
         /** File data is currently being written to the WIM.  @p info will point
-         * to ::wimlib_progress_info.write_streams.  This message may be
-         * received many times while the WIM file is being written or appended
-         * to with wimlib_write(), wimlib_overwrite(), or wimlib_write_to_fd().
+            to ::wimlib_progress_info.write_streams.  This message may be
+            received many times while the WIM file is being written or appended
+            to with wimlib_write(), wimlib_overwrite(), or wimlib_write_to_fd().
          */
         WRITE_STREAMS = 12,
 
         /** Per-image metadata is about to be written to the WIM file.  @p info
-         * will not be valid. */
+            will not be valid. */
         WRITE_METADATA_BEGIN = 13,
 
         /** The per-image metadata has been written to the WIM file.  @p info
-         * will not be valid.  This message is paired with a preceding
-         * ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN message.  */
+            will not be valid.  This message is paired with a preceding
+            ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN message.  */
         WRITE_METADATA_END = 14,
 
         /** wimlib_overwrite() has successfully renamed the temporary file to
-         * the original WIM file, thereby committing the changes to the WIM
-         * file.  @p info will point to ::wimlib_progress_info.rename.  Note:
-         * this message is not received if wimlib_overwrite() chose to append to
-         * the WIM file in-place.  */
+            the original WIM file, thereby committing the changes to the WIM
+            file.  @p info will point to ::wimlib_progress_info.rename.  Note:
+            this message is not received if wimlib_overwrite() chose to append to
+            the WIM file in-place.  */
         RENAME = 15,
 
         /** The contents of the WIM file are being checked against the integrity
-         * table.  @p info will point to ::wimlib_progress_info.integrity.  This
-         * message is only received (and may be received many times) when
-         * wimlib_open_wim_with_progress() is called with the
-         * ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY flag.  */
+            table.  @p info will point to ::wimlib_progress_info.integrity.  This
+            message is only received (and may be received many times) when
+            wimlib_open_wim_with_progress() is called with the
+            ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY flag.  */
         VERIFY_INTEGRITY = 16,
 
         /** An integrity table is being calculated for the WIM being written.
-         * @p info will point to ::wimlib_progress_info.integrity.  This message
-         * is only received (and may be received many times) when a WIM file is
-         * being written with the flag ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY.  */
+            @p info will point to ::wimlib_progress_info.integrity.  This message
+            is only received (and may be received many times) when a WIM file is
+            being written with the flag ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY.  */
         CALC_INTEGRITY = 17,
 
         /** A wimlib_split() operation is in progress, and a new split part is
-         * about to be started.  @p info will point to
-         * ::wimlib_progress_info.split.  */
+            about to be started.  @p info will point to
+            ::wimlib_progress_info.split.  */
         SPLIT_BEGIN_PART = 19,
 
         /** A wimlib_split() operation is in progress, and a split part has been
-         * finished. @p info will point to ::wimlib_progress_info.split.  */
+            finished. @p info will point to ::wimlib_progress_info.split.  */
         SPLIT_END_PART = 20,
 
         /** A WIM update command is about to be executed. @p info will point to
-         * ::wimlib_progress_info.update.  This message is received once per
-         * update command when wimlib_update_image() is called with the flag
-         * ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
+            ::wimlib_progress_info.update.  This message is received once per
+            update command when wimlib_update_image() is called with the flag
+            ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
         UPDATE_BEGIN_COMMAND = 21,
 
         /** A WIM update command has been executed. @p info will point to
-         * ::wimlib_progress_info.update.  This message is received once per
-         * update command when wimlib_update_image() is called with the flag
-         * ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
+            ::wimlib_progress_info.update.  This message is received once per
+            update command when wimlib_update_image() is called with the flag
+            ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
         UPDATE_END_COMMAND = 22,
 
         /** A file in the image is being replaced as a result of a
-         * ::wimlib_add_command without ::WIMLIB_ADD_FLAG_NO_REPLACE specified.
-         * @p info will point to ::wimlib_progress_info.replace.  This is only
-         * received when ::WIMLIB_ADD_FLAG_VERBOSE is also specified in the add
-         * command.  */
+            ::wimlib_add_command without ::WIMLIB_ADD_FLAG_NO_REPLACE specified.
+            @p info will point to ::wimlib_progress_info.replace.  This is only
+            received when ::WIMLIB_ADD_FLAG_VERBOSE is also specified in the add
+            command.  */
         REPLACE_FILE_IN_WIM = 23,
 
         /** An image is being extracted with ::WIMLIB_EXTRACT_FLAG_WIMBOOT, and
-         * a file is being extracted normally (not as a "WIMBoot pointer file")
-         * due to it matching a pattern in the <c>[PrepopulateList]</c> section
-         * of the configuration file
-         * <c>/Windows/System32/WimBootCompress.ini</c> in the WIM image.  @p
-         * info will point to ::wimlib_progress_info.wimboot_exclude.  */
+            a file is being extracted normally (not as a "WIMBoot pointer file")
+            due to it matching a pattern in the <c>[PrepopulateList]</c> section
+            of the configuration file
+            <c>/Windows/System32/WimBootCompress.ini</c> in the WIM image.  @p
+            info will point to ::wimlib_progress_info.wimboot_exclude.  */
         WIMBOOT_EXCLUDE = 24,
 
         /** Starting to unmount an image.  @p info will point to
-         * ::wimlib_progress_info.unmount.  */
+            ::wimlib_progress_info.unmount.  */
         UNMOUNT_BEGIN = 25,
 
         /** wimlib has used a file's data for the last time (including all data
-         * streams, if it has multiple).  @p info will point to
-         * ::wimlib_progress_info.done_with_file.  This message is only received
-         * if ::WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES was provided.  */
+            streams, if it has multiple).  @p info will point to
+            ::wimlib_progress_info.done_with_file.  This message is only received
+            if ::WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES was provided.  */
         DONE_WITH_FILE = 26,
 
         /** wimlib_verify_wim() is starting to verify the metadata for an image.
-         * @p info will point to ::wimlib_progress_info.verify_image.  */
+            @p info will point to ::wimlib_progress_info.verify_image.  */
         BEGIN_VERIFY_IMAGE = 27,
 
         /** wimlib_verify_wim() has finished verifying the metadata for an
-         * image.  @p info will point to ::wimlib_progress_info.verify_image.
+            image.  @p info will point to ::wimlib_progress_info.verify_image.
          */
         END_VERIFY_IMAGE = 28,
 
         /** wimlib_verify_wim() is verifying file data integrity.  @p info will
-         * point to ::wimlib_progress_info.verify_streams.  */
+            point to ::wimlib_progress_info.verify_streams.  */
         VERIFY_STREAMS = 29,
 
         /**
-         * The progress function is being asked whether a file should be
-         * excluded from capture or not.  @p info will point to
-         * ::wimlib_progress_info.test_file_exclusion.  This is a bidirectional
-         * message that allows the progress function to set a flag if the file
-         * should be excluded.
+            The progress function is being asked whether a file should be
+            excluded from capture or not.  @p info will point to
+            ::wimlib_progress_info.test_file_exclusion.  This is a bidirectional
+            message that allows the progress function to set a flag if the file
+            should be excluded.
          *
-         * This message is only received if the flag
-         * ::WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION is used.  This method for file
-         * exclusions is independent of the "capture configuration file"
-         * mechanism.
+            This message is only received if the flag
+            ::WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION is used.  This method for file
+            exclusions is independent of the "capture configuration file"
+            mechanism.
          */
         TEST_FILE_EXCLUSION = 30,
 
@@ -1289,7 +1312,7 @@ namespace ManagedWimLib
         /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Treat the
         /// paths to extract as wildcard patterns ("globs") which may contain the
         /// wildcard characters @c ? and @c *.  The @c ? character matches any
-        /// non-path-separator character, whereas the @c * character matches zero or more
+        /// non-path-separator character, whereas the @c    character matches zero or more
         /// non-path-separator characters.  Consequently, each glob may match zero or
         /// more actual paths in the WIM image.
         ///

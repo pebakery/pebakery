@@ -46,7 +46,6 @@ using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using BetterWin32Errors;
-using Svg;
 using MahApps.Metro.IconPacks;
 using System.Windows.Interop;
 using SharpCompress.Common;
@@ -55,6 +54,7 @@ using SharpCompress.Writers;
 using SharpCompress.Readers;
 using PEBakery.CabLib;
 using Microsoft.Win32.SafeHandles;
+using ImageMagick;
 
 namespace PEBakery.Helper
 {
@@ -1757,17 +1757,17 @@ namespace PEBakery.Helper
         {
             type = ImageType.Bmp; // Dummy
             string logoType = Path.GetExtension(path);
-            if (string.Equals(logoType, ".bmp", StringComparison.OrdinalIgnoreCase))
+            if (logoType.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Bmp;
-            else if (string.Equals(logoType, ".jpg", StringComparison.OrdinalIgnoreCase))
+            else if (logoType.Equals(".jpg", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Jpg;
-            else if (string.Equals(logoType, ".png", StringComparison.OrdinalIgnoreCase))
+            else if (logoType.Equals(".png", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Png;
-            else if (string.Equals(logoType, ".gif", StringComparison.OrdinalIgnoreCase))
+            else if (logoType.Equals(".gif", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Gif;
-            else if (string.Equals(logoType, ".ico", StringComparison.OrdinalIgnoreCase))
+            else if (logoType.Equals(".ico", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Ico;
-            else if (string.Equals(logoType, ".svg", StringComparison.OrdinalIgnoreCase))
+            else if (logoType.Equals(".svg", StringComparison.OrdinalIgnoreCase))
                 type = ImageType.Svg;
             else
                 return true;
@@ -1778,6 +1778,7 @@ namespace PEBakery.Helper
         {
             BitmapImage bitmap = new BitmapImage();
             bitmap.BeginInit();
+            bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = new MemoryStream(image);
             bitmap.EndInit();
@@ -1795,6 +1796,23 @@ namespace PEBakery.Helper
             return bitmap;
         }
 
+        public static BitmapImage BitmapToBitmapImage(Bitmap srcBmp)
+        {
+            BitmapImage bitmap = new BitmapImage();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                srcBmp.Save(ms, ImageFormat.Bmp);
+                ms.Position = 0;
+
+                bitmap.BeginInit();
+                bitmap.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = ms;
+                bitmap.EndInit();
+            }
+            return bitmap;
+        }
+
         public static ImageBrush ImageToImageBrush(Stream stream)
         {
             BitmapImage bitmap = ImageToBitmapImage(stream);
@@ -1805,39 +1823,44 @@ namespace PEBakery.Helper
             return brush;
         }
 
+        public static (int Width, int Height) GetSvgSize(Stream stream)
+        {
+            MagickImageInfo info = new MagickImageInfo(stream);
+            return (info.Width, info.Height);
+        }
+
         public static BitmapImage SvgToBitmapImage(Stream stream)
         {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw());
-        }
-
-        public static void GetSvgSize(Stream stream, out double width, out double height)
-        {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            SizeF size = svgDoc.GetDimensions();
-            width = size.Width;
-            height = size.Height;
-        }
-
-        public static BitmapImage SvgToBitmapImage(Stream stream, out double width, out double height)
-        {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            SizeF size = svgDoc.GetDimensions();
-            width = size.Width;
-            height = size.Height;
-            return ImageHelper.ToBitmapImage(svgDoc.Draw());
+            MagickReadSettings settings = new MagickReadSettings()
+            {
+                Format = MagickFormat.Svg,
+            };
+            using (MagickImage image = new MagickImage(stream, settings))
+            {
+                Bitmap bitmap = image.ToBitmap();
+                return ImageHelper.BitmapToBitmapImage(bitmap);
+            }
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
         {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width), (int)Math.Round(height)));
+            return SvgToBitmapImage(stream, (int)Math.Round(width), (int)Math.Round(height));
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
         {
-            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
-            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
+            MagickReadSettings settings = new MagickReadSettings()
+            {
+                Width = width,
+                Height = height,
+                Format = MagickFormat.Svg,
+            };
+
+            using (MagickImage image = new MagickImage(stream, settings))
+            {
+                Bitmap bitmap = image.ToBitmap();
+                return ImageHelper.BitmapToBitmapImage(bitmap);
+            }
         }
 
         public static BitmapImage ToBitmapImage(Bitmap bitmap)
@@ -2067,7 +2090,7 @@ namespace PEBakery.Helper
         [DllImport("comdlg32.dll", CharSet = CharSet.Auto, EntryPoint = "ChooseFont", SetLastError = true)]
         public extern static bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
 
-        public static LogFontWeight FontWeightConvert_WPFToLogFont(FontWeight weight)
+        public static LogFontWeight FontWeightConvert_WPFToLogFont(System.Windows.FontWeight weight)
         {
             if (weight == FontWeights.Thin)
                 return LogFontWeight.FW_THIN;
@@ -2091,7 +2114,7 @@ namespace PEBakery.Helper
                 return LogFontWeight.FW_REGULAR;
         }
 
-        public static FontWeight FontWeightConvert_LogFontToWPF(LogFontWeight enumWeight)
+        public static System.Windows.FontWeight FontWeightConvert_LogFontToWPF(LogFontWeight enumWeight)
         {
             switch (enumWeight)
             {
@@ -2118,7 +2141,7 @@ namespace PEBakery.Helper
             }
         }
 
-        public static FontWeight FontWeightConvert_StringToWPF(string str)
+        public static System.Windows.FontWeight FontWeightConvert_StringToWPF(string str)
         {
             if (str.Equals("Thin", StringComparison.OrdinalIgnoreCase))
                 return FontWeights.Thin;
