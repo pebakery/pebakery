@@ -57,17 +57,20 @@ Launcher
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery/Helper.cs 
+XZNet20/XZ.Net.dll
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery/Resources/Donut.ico
-    CC BY-NC 3.0
-    https://creativecommons.org/licenses/by-nc/3.0/
+    https://github.com/RomanBelkov/XZ.NET
 
-    Copyright (c) PixelKit
-    http://www.pixelkit.com/
-    https://www.iconfinder.com/icons/208267/desert_donut_icon
+XZNet20/liblzma.dll
+XZNet20/liblzma64.dll
+    Public Domain
+    https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
+
+PEBakery/Helper.cs 
+    MIT License
+    https://opensource.org/licenses/MIT
 
 PEBakery/WPF/Controls/AutoSizedGridView
     MIT License
@@ -94,6 +97,8 @@ PEBakery/WPF/Controls/FreeNumberBox
     https://opensource.org/licenses/MIT
 
 PEBakery/WPF/Controls/Svg/Donut.xaml
+PEBakery/Resources/Donut.ico
+Launcher/Donut.ico
     CC BY 3.0 US
     https://creativecommons.org/licenses/by/3.0/us/
 
@@ -131,10 +136,6 @@ MahApps.Metro.IconPacks
 
     Copyright (c) MahApps
     https://github.com/MahApps/MahApps.Metro.IconPacks
-
-Magick.NET
-    Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
 
 ManagedWimgApi
     MIT License
@@ -175,4 +176,11 @@ sqlite-net-pcl
 
     Copyright (c) Krueger Systems, Inc.
     https://github.com/praeclarum/sqlite-net
+
+Svg.Net
+    Microsoft Public License (MS-PL)
+    https://opensource.org/licenses/MS-PL
+
+    https://github.com/vvvv/SVG
+
 -----------------------------------------------------------

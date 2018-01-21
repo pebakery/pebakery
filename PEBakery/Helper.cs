@@ -54,7 +54,7 @@ using SharpCompress.Writers;
 using SharpCompress.Readers;
 using PEBakery.CabLib;
 using Microsoft.Win32.SafeHandles;
-using ImageMagick;
+using Svg;
 
 namespace PEBakery.Helper
 {
@@ -1825,21 +1825,15 @@ namespace PEBakery.Helper
 
         public static (int Width, int Height) GetSvgSize(Stream stream)
         {
-            MagickImageInfo info = new MagickImageInfo(stream);
-            return (info.Width, info.Height);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            SizeF size = svgDoc.GetDimensions();
+            return ((int)size.Width, (int)size.Height);
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream)
         {
-            MagickReadSettings settings = new MagickReadSettings()
-            {
-                Format = MagickFormat.Svg,
-            };
-            using (MagickImage image = new MagickImage(stream, settings))
-            {
-                Bitmap bitmap = image.ToBitmap();
-                return ImageHelper.BitmapToBitmapImage(bitmap);
-            }
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
@@ -1849,18 +1843,8 @@ namespace PEBakery.Helper
 
         public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
         {
-            MagickReadSettings settings = new MagickReadSettings()
-            {
-                Width = width,
-                Height = height,
-                Format = MagickFormat.Svg,
-            };
-
-            using (MagickImage image = new MagickImage(stream, settings))
-            {
-                Bitmap bitmap = image.ToBitmap();
-                return ImageHelper.BitmapToBitmapImage(bitmap);
-            }
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
         }
 
         public static BitmapImage ToBitmapImage(Bitmap bitmap)

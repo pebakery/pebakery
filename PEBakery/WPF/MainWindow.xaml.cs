@@ -193,13 +193,13 @@ namespace PEBakery.WPF
             AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
-            // Set PEBakery Logo
+            // Load PEBakery Logo
             Image image = new Image()
-            {
+            { 
                 UseLayoutRounding = true,
                 Stretch = Stretch.Uniform,
                 StretchDirection = StretchDirection.DownOnly,
-                Source = ImageHelper.ToBitmapImage(Properties.Resources.DonutPng),
+                Source = Application.Current.TryFindResource("DonutSvgImage") as DrawingImage,
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             PluginLogo.Content = image;
