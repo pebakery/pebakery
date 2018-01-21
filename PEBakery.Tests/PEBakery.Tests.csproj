@@ -103,6 +103,10 @@
       <Project>{d6224dce-02d5-4005-88fb-00a8e00cace1}</Project>
       <Name>PEBakery</Name>
     </ProjectReference>
+    <ProjectReference Include="..\XZNet20\XZNet20.csproj">
+      <Project>{98ccec3e-79f8-40d3-9ea9-a4b35aa5405d}</Project>
+      <Name>XZNet20</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

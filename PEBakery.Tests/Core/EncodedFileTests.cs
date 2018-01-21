@@ -47,7 +47,7 @@ namespace PEBakery.Tests.Core
         {
             AttachFile_Template("Type1.jpg", EncodedFile.EncodeMode.Compress); // Type 1
             AttachFile_Template("Type2.7z", EncodedFile.EncodeMode.Raw); // Type 2
-            AttachFile_Template("Type3.txt", EncodedFile.EncodeMode.XZ); // Type 3
+            AttachFile_Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
             AttachFile_Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.Compress);
         }
 
@@ -113,7 +113,7 @@ namespace PEBakery.Tests.Core
         {
             ExtractFile_Template("Type1.jpg"); // Type 1
             ExtractFile_Template("Type2.7z"); // Type 2
-            ExtractFile_Template("Type3.txt"); // Type 3
+            ExtractFile_Template("Type3.pdf"); // Type 3
         }
 
         public void ExtractFile_Template(string fileName)
