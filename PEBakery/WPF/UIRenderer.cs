@@ -57,6 +57,7 @@ namespace PEBakery.WPF
         public const int DefaultFontPoint = 8; // WB082 hard-coded default font point to 8.
         public const double PointToDeviceIndependentPixel = 96f / 72f; // Point - 72DPI, Device Independent Pixel - 96DPI
         public const int MaxDpiScale = 4;
+        public const int MaxUrlDisplayLen = 47;
 
         public static bool IgnoreWidthOfWebLabel = false;
 
@@ -445,12 +446,15 @@ namespace PEBakery.WPF
                     throw new InvalidUICommandException($"Invalid URL [{info.URL}]", uiCmd);
             }
 
+            string toolTip = info.ToolTip;
             if (hasUrl)
             { // Open URL
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
                     Process.Start(info.URL);
                 };
+
+                toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
             }
             else
             { // Open picture with external viewer
@@ -477,7 +481,8 @@ namespace PEBakery.WPF
                 };
             }
 
-            SetToolTip(button, info.ToolTip);
+            SetToolTip(button, toolTip);
+            // SetToolTip(button, info.ToolTip);
             DrawToCanvas(r, button, uiCmd.Rect);
         }
 
@@ -643,7 +648,8 @@ namespace PEBakery.WPF
             };
             block.Inlines.Add(hyperLink);
 
-            SetToolTip(block, info.ToolTip);
+            string toolTip = UIRenderer.AppendUrlToToolTip(info.ToolTip, info.URL);
+            SetToolTip(block, toolTip);
 
             if (IgnoreWidthOfWebLabel)
             {
@@ -959,6 +965,24 @@ namespace PEBakery.WPF
         private static double CalcFontPointScale(double fontPoint = DefaultFontPoint) 
         {
             return fontPoint * PointToDeviceIndependentPixel;
+        }
+
+        private static string AppendUrlToToolTip(string toolTip, string url)
+        {
+            if (url == null)
+            {
+                return toolTip;
+            }
+            else
+            {
+                if (MaxUrlDisplayLen < url.Length)
+                    url = url.Substring(0, MaxUrlDisplayLen) + "...";
+
+                if (toolTip == null)
+                    return url;
+                else
+                    return toolTip + Environment.NewLine + Environment.NewLine + url;
+            }
         }
 
         private static async void RunOneSection(SectionAddress addr, string logMsg, bool hideProgress)

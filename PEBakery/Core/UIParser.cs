@@ -310,7 +310,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         string url = null;
-                        if (args.Count == 1)
+                        if (1 <= args.Count)
                             url = args[0];
 
                         return new UIInfo_Image(GetInfoTooltip(args, maxOpCount), url);
