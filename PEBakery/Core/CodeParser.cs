@@ -1872,6 +1872,7 @@ namespace PEBakery.Core
 
                         // Convert WB Date Format String to .Net Date Format String
                         string formatStr = StrFormat_Date_FormatString(args[1]);
+                        //string formatStr = args[1];
                         if (formatStr == null)
                             throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
@@ -2106,10 +2107,13 @@ namespace PEBakery.Core
             [@"yyyy"] = @"yyyy",
             [@"yy"] = @"yy",
             // Month
-            [@"mmm"] = @"MM",
+            [@"mmmm"] = @"MMMM",
+            [@"mmm"] = @"MMM",
             [@"mm"] = @"MM",
             [@"m"] = @"M",
             // Date
+            [@"dddd"] = @"dddd",
+            [@"ddd"] = @"ddd",
             [@"dd"] = @"dd",
             [@"d"] = @"d",
             // Hour
@@ -2123,10 +2127,12 @@ namespace PEBakery.Core
             [@"s"] = @"s",
             // Millisecond
             [@"zzz"] = @"fff",
+            // AM/PM
+            [@"tt"] = @"tt",
         };
 
-        // Year, Month, Date, Hour, Minute, Second, Millisecond
-        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', };
+        // Year, Month, Date, Hour, Minute, Second, Millisecond, AM/PM
+        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 't', 'z', };
         
         private static string StrFormat_Date_FormatString(string str)
         {
@@ -2173,7 +2179,7 @@ namespace PEBakery.Core
                                 // Ex) yyyy matched -> set matched["yy"] to true along with matched["yyyy"]
                                 string[] keys = matched.Where(x => x.Key[0] == kv.Key[0]).Select(x => x.Key).ToArray();
                                 foreach (var key in keys)
-                                    matched[key] = true;
+                                    matched[key] = false; // Changed to false because it otherwise it breaks formats such as dddd, MMMM dd, yyyy (Monday, January 22, 2018)
 
                                 idx += i;
                             }
