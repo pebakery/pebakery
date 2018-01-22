@@ -677,8 +677,32 @@ namespace PEBakery.WPF
                 BorderBrush = Brushes.Gray,
                 ToolTip = info.ToolTip,
             };
-
             DrawToCanvas(r, bevel, uiCmd.Rect);
+
+            if (!uiCmd.Text.Equals(uiCmd.Key, StringComparison.Ordinal))
+            { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
+                Border textBorder = new Border()
+                {
+                    BorderThickness = new Thickness(CalcFontPointScale() / 3),
+                    BorderBrush = Brushes.White,
+                };
+                TextBlock textBlock = new TextBlock()
+                {
+                    Text = uiCmd.Text,
+                    FontSize = CalcFontPointScale(),
+                    Background = Brushes.White,
+                };
+                textBorder.Child = textBlock;
+
+                Rect blockRect = new Rect()
+                {
+                    X = uiCmd.Rect.X + (CalcFontPointScale() * 2 / 3),
+                    Y = uiCmd.Rect.Y - CalcFontPointScale(),
+                    Width = double.NaN,
+                    Height = double.NaN,
+                };
+                DrawToCanvas(r, textBorder, blockRect);
+            }
         }
 
         /// <summary>
