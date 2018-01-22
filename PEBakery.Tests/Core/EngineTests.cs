@@ -100,15 +100,20 @@ namespace PEBakery.Tests.Core
                 Project project = EngineTests.Project.Clone() as Project;
                 Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
-                return new EngineState(project, logger, model, p);
+                if (p == null)
+                    return new EngineState(project, logger, model, EngineMode.RunAll);
+                else
+                    return new EngineState(project, logger, model, EngineMode.RunOne, p);
             }
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
                 MainViewModel model = new MainViewModel();
-                return new EngineState(Project, Logger, model, p);
+                if (p == null)
+                    return new EngineState(Project, Logger, model, EngineMode.RunAll);
+                else
+                    return new EngineState(Project, Logger, model, EngineMode.RunOne, p);
             }
-            
         }
 
         public static SectionAddress DummySectionAddress()

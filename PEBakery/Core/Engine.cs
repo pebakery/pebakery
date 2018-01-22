@@ -994,7 +994,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case EngineMode.RunMainAndOne:
-                    {
+                    { // Run one script, executing MainScript before it.
                         if (runSingle.Equals(project.MainScript) && entrySection.Equals("Process", StringComparison.Ordinal))
                             goto case EngineMode.RunOne;
 
@@ -1007,7 +1007,7 @@ namespace PEBakery.Core
                     }
                     break;
                 case EngineMode.RunOne:
-                    { // Run only one 
+                    { // Run only one script
                         Scripts = new List<Script>(1) { runSingle };
 
                         CurrentScript = runSingle;
