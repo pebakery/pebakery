@@ -38,7 +38,7 @@ using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
 {
-    public static class CommandPlugin
+    public static class CommandScript
     {
         /*
          * WB082 Behavior
@@ -63,12 +63,12 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractFile));
             CodeInfo_ExtractFile info = cmd.Info as CodeInfo_ExtractFile;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -109,12 +109,12 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAndRun));
             CodeInfo_ExtractAndRun info = cmd.Info as CodeInfo_ExtractAndRun;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Params);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -148,11 +148,11 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ExtractAllFiles));
             CodeInfo_ExtractAllFiles info = cmd.Info as CodeInfo_ExtractAllFiles;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -163,7 +163,7 @@ namespace PEBakery.Core.Commands
             List<string> dirs = p.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
-                throw new ExecuteException($"Directory [{dirName}] not exists in [{pluginFile}]");
+                throw new ExecuteException($"Directory [{dirName}] not exists in [{scriptFile}]");
 
             if (!Directory.Exists(destDir))
             {
@@ -203,11 +203,11 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Encode));
             CodeInfo_Encode info = cmd.Info as CodeInfo_Encode;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)

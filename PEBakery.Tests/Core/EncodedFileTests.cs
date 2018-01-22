@@ -59,7 +59,7 @@ namespace PEBakery.Tests.Core
             string pPath = Path.Combine(dirPath, "EncodeFileTests.script");
             File.Copy(blankPath, pPath, true);
 
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             string originFile = Path.Combine(dirPath, fileName);
             p = EncodedFile.AttachFile(p, "FolderExample", fileName, originFile, encodeMode);
@@ -121,7 +121,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", fileName))
@@ -155,7 +155,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type))
@@ -190,7 +190,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(p, "PEBakeryAlphaMemory.jpg"))

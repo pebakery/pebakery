@@ -141,7 +141,7 @@ namespace PEBakery.Core
 
             // Forge UICommand
             string text = StringEscaper.Unescape(args[0]);
-            bool visibility = string.Equals(args[1], "1", StringComparison.Ordinal);
+            bool visibility = args[1].Equals("1", StringComparison.Ordinal);
             NumberHelper.ParseInt32(args[2], out int x);
             NumberHelper.ParseInt32(args[3], out int y);
             NumberHelper.ParseInt32(args[4], out int width);
@@ -332,7 +332,7 @@ namespace PEBakery.Core
                     { // <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean] +[RunOptional]
                         // Ex)
                         // pButton1 =,1,8,382,47,24,24,Process-OpenDriver_x86,opendir.bmp,False,_Process-OpenDriver_x86,False,_Process-OpenDriver_x86_,False
-                        // Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Plugin"
+                        // Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Script"
                         // OpendirSMFilesButton=,1,8,475,204,24,24,Opendir_SMFiles,opendir.bmp,"__Open Custom .ini Folder"
                         // Button_HiveUnload_Target="HiveUnload: Target + ProjectTemp + MountFolders",1,8,15,17,293,46,HiveUnload_Launch_B,HiveUnload3232.bmp,0,"__UnLoad hives"
                         // Button_Tools_Folder="Open Tools Folder",1,8,98,256,134,25,Open_Tools_Folder

@@ -92,7 +92,7 @@ namespace PEBakery.Tests.Core
         }
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = true, Plugin p = null)
+        public static EngineState CreateEngineState(bool doClone = true, Script p = null)
         {
             // Clone is needed for parallel test execution
             if (doClone)
@@ -113,7 +113,7 @@ namespace PEBakery.Tests.Core
 
         public static SectionAddress DummySectionAddress()
         {
-            return new SectionAddress(Project.MainPlugin, Project.MainPlugin.Sections["Process"]);
+            return new SectionAddress(Project.MainScript, Project.MainScript.Sections["Process"]);
         }
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)

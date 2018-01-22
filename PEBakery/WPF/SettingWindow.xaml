@@ -263,7 +263,7 @@
                         </Grid>
                     </GroupBox>
                     <GroupBox
-                        Header="Scale Factor for Plugin Interface"
+                        Header="Scale Factor for Script Interface"
                         Margin="15, 10, 15, 0"
                         BorderBrush="Gray">
                         <DockPanel Margin="5, 5, 5, 0">
@@ -355,10 +355,10 @@
                         IsChecked="{Binding Interface_DisplayShellExecuteConOut}" />
                 </StackPanel>
             </TabItem>
-            <TabItem Header="Plugin">
+            <TabItem Header="Script">
                 <StackPanel>
                     <GroupBox
-                        Header="Plugin Cache"
+                        Header="Script Cache"
                         Margin="15, 15, 15, 0"
                         BorderBrush="Gray">
                         <StackPanel>
@@ -366,8 +366,8 @@
                                 Margin="5, 5, 5, 0"
                                 VerticalContentAlignment="Center"
                                 VerticalAlignment="Center"
-                                Content="Enable Plugin Cache"
-                                IsChecked="{Binding Plugin_EnableCache}" />
+                                Content="Enable Script Cache"
+                                IsChecked="{Binding Script_EnableCache}" />
                             <DockPanel
                                 Height="25"
                                 Margin="5, 5, 5, 5"
@@ -380,23 +380,23 @@
                                 <TextBlock
                                     Margin="0, 0, 10, 0"
                                     VerticalAlignment="Center"
-                                    Text="{Binding Plugin_CacheState}"/>
+                                    Text="{Binding Script_CacheState}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
                         VerticalContentAlignment="Center"
-                        Content="Auto Convert Plugins to UTF-8"
+                        Content="Auto Convert Scripts to UTF-8"
                         ToolTip="Turning on will break compability with WinBuilder 082."
                         IsEnabled="False"
-                        IsChecked="{Binding Plugin_AutoConvertToUTF8}" />
+                        IsChecked="{Binding Script_AutoConvertToUTF8}" />
                     <CheckBox
                         Margin="15, 15, 15, 0"
                         VerticalContentAlignment="Center"
                         Content="Auto Check Syntax Error"
                         ToolTip="Useful for developers."
-                        IsChecked="{Binding Plugin_AutoSyntaxCheck}" />
+                        IsChecked="{Binding Script_AutoSyntaxCheck}" />
                 </StackPanel>
             </TabItem>
             <TabItem Header="Logging">

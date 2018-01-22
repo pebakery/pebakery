@@ -193,14 +193,13 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.OnScriptExit:
-                case SystemType.OnPluginExit:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnPluginExit));
-                        SystemInfo_OnPluginExit subInfo = info.SubInfo as SystemInfo_OnPluginExit;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnScriptExit));
+                        SystemInfo_OnScriptExit subInfo = info.SubInfo as SystemInfo_OnScriptExit;
 
-                        s.OnPluginExit = subInfo.Cmd;
+                        s.OnScriptExit = subInfo.Cmd;
 
-                        logs.Add(new LogInfo(LogState.Success, "OnPluginExit callback registered"));
+                        logs.Add(new LogInfo(LogState.Success, "OnScriptExit callback registered"));
                     }
                     break;
                 case SystemType.RefreshInterface:
@@ -212,12 +211,12 @@ namespace PEBakery.Core.Commands
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            resetEvent = w.StartReloadPluginWorker();
+                            resetEvent = w.StartReloadScriptWorker();
                         });
                         if (resetEvent != null)
                             resetEvent.WaitOne();
 
-                        logs.Add(new LogInfo(LogState.Success, $"Rerendered plugin [{cmd.Addr.Plugin.Title}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
                     }
                     break;
                 case SystemType.RescanScripts:
@@ -236,7 +235,7 @@ namespace PEBakery.Core.Commands
                         if (resetEvent != null)
                             resetEvent.WaitOne();
 
-                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Plugin.Project.ProjectName}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
                     }
                     break;
                 case SystemType.Load:
@@ -259,7 +258,7 @@ namespace PEBakery.Core.Commands
                             files = FileHelper.GetFilesEx(FileHelper.GetDirNameEx(filePath), wildcard, searchOption);
                             if (files.Length == 0)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
                                 return logs;
                             }
                         }
@@ -267,7 +266,7 @@ namespace PEBakery.Core.Commands
                         { // No wildcard
                             if (!File.Exists(filePath))
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Plugin [{filePath}] does not exist"));
+                                logs.Add(new LogInfo(LogState.Error, $"Script [{filePath}] does not exist"));
                                 return logs;
                             }
 
@@ -279,65 +278,65 @@ namespace PEBakery.Core.Commands
                         { 
                             string pFullPath = Path.GetFullPath(f);
 
-                            // Does this file already exists in project.AllPlugins?
+                            // Does this file already exists in project.AllScripts?
                             Project project = cmd.Addr.Project;
-                            if (project.ContainsPluginByFullPath(pFullPath))
-                            { // Project Tree conatins this plugin, so just refresh it
-                                // RefreshPlugin -> Update Project.AllPlugins
-                                // TODO: Update EngineState.Plugins?
-                                Plugin p = Engine.GetPluginInstance(s, cmd, cmd.Addr.Plugin.FullPath, pFullPath, out bool inCurrentPlugin);
-                                p = s.Project.RefreshPlugin(p);
+                            if (project.ContainsScriptByFullPath(pFullPath))
+                            { // Project Tree conatins this script, so just refresh it
+                                // RefreshScript -> Update Project.AllScripts
+                                // TODO: Update EngineState.Scripts?
+                                Script p = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.FullPath, pFullPath, out bool inCurrentScript);
+                                p = s.Project.RefreshScript(p);
                                 if (p == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh plugin [{pFullPath}]"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{pFullPath}]"));
                                     continue;
                                 }
 
-                                // Update MainWindow and redraw Plugin
+                                // Update MainWindow and redraw Script
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
-                                    w.UpdatePluginTree(project, false);
-                                    if (p.Equals(w.CurMainTree.Plugin))
+                                    w.UpdateScriptTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Script))
                                     {
-                                        w.CurMainTree.Plugin = p;
-                                        w.DrawPlugin(w.CurMainTree.Plugin);
+                                        w.CurMainTree.Script = p;
+                                        w.DrawScript(w.CurMainTree.Script);
                                     }
                                 });
 
-                                logs.Add(new LogInfo(LogState.Success, $"Refreshed plugin [{f}]"));
+                                logs.Add(new LogInfo(LogState.Success, $"Refreshed script [{f}]"));
                                 successCount += 1;
                             }
                             else
-                            { // Add plugins into Project.AllPlugins
-                                Plugin p = cmd.Addr.Project.LoadPluginMonkeyPatch(pFullPath, true, false);
+                            { // Add scripts into Project.AllScripts
+                                Script p = cmd.Addr.Project.LoadScriptMonkeyPatch(pFullPath, true, false);
                                 if (p == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load plugin [{pFullPath}]"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{pFullPath}]"));
                                     continue;
                                 }
 
-                                // Update MainWindow.MainTree and redraw Plugin
+                                // Update MainWindow.MainTree and redraw Script
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
-                                    w.UpdatePluginTree(project, false);
-                                    if (p.Equals(w.CurMainTree.Plugin))
+                                    w.UpdateScriptTree(project, false);
+                                    if (p.Equals(w.CurMainTree.Script))
                                     {
-                                        w.CurMainTree.Plugin = p;
-                                        w.DrawPlugin(w.CurMainTree.Plugin);
+                                        w.CurMainTree.Script = p;
+                                        w.DrawScript(w.CurMainTree.Script);
                                     }
                                 });
 
-                                logs.Add(new LogInfo(LogState.Success, $"Loaded plugin [{f}], added to plugin tree"));
+                                logs.Add(new LogInfo(LogState.Success, $"Loaded script [{f}], added to script tree"));
                                 successCount += 1;
                             }
                         }
 
                         if (1 < files.Length)
-                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] plugins"));
+                            logs.Add(new LogInfo(LogState.Success, $"Refresh or loaded [{successCount}] scripts"));
                     }
                     break;
                 case SystemType.SaveLog:
@@ -407,13 +406,13 @@ namespace PEBakery.Core.Commands
                         varLogs = s.Variables.LoadDefaultGlobalVariables();
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                        // Load Per-Plugin Variables
-                        varLogs = s.Variables.LoadDefaultPluginVariables(cmd.Addr.Plugin);
+                        // Load Per-Script Variables
+                        varLogs = s.Variables.LoadDefaultScriptVariables(cmd.Addr.Script);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                        // Load Per-Plugin Macro
+                        // Load Per-Script Macro
                         s.Macro.ResetLocalMacros();
-                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin, false);
+                        varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Script, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         logs.Add(new LogInfo(LogState.Success, $"Variables are reset to their default state"));

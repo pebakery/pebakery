@@ -127,12 +127,12 @@
                             Width="100"
                             Margin="0, 0, 15, 0"
                             VerticalAlignment="Center"
-                            Text="Select Plugin">
+                            Text="Select Script">
                         </TextBlock>
                         <ComboBox
-                            Name="SelectPluginComboBox"
-                            SelectedIndex="{Binding SelectPluginIndex}"
-                            ItemsSource="{Binding SelectPluginEntries}"
+                            Name="SelectScriptComboBox"
+                            SelectedIndex="{Binding SelectScriptIndex}"
+                            ItemsSource="{Binding SelectScriptEntries}"
                             AlternationCount="2">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>

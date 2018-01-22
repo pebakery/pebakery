@@ -78,7 +78,7 @@ namespace PEBakery.WPF
 
                     m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
 
-                    if (proj.ProjectName.Equals(w.CurMainTree.Plugin.Project.ProjectName, StringComparison.Ordinal))
+                    if (proj.ProjectName.Equals(w.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
                         m.CodeBox_SelectedProjectIndex = i;
                 }
             });
@@ -147,7 +147,7 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref Engine.WorkingLock);
 
                 Project project = m.CodeBox_CurrentProject;
-                Plugin p = project.LoadPluginMonkeyPatch(m.CodeFile);
+                Script p = project.LoadScriptMonkeyPatch(m.CodeFile);
 
                 Logger logger = null;
                 SettingViewModel setting = null;
@@ -177,7 +177,7 @@ namespace PEBakery.WPF
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
 
-                    w.DrawPlugin(w.CurMainTree.Plugin);
+                    w.DrawScript(w.CurMainTree.Script);
 
                     if (w.Setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -205,12 +205,12 @@ namespace PEBakery.WPF
 
             Project project = m.CodeBox_CurrentProject;
 
-            Plugin p = project.MainPlugin;
-            PluginSection section;
-            if (project.MainPlugin.Sections.ContainsKey("Process"))
+            Script p = project.MainScript;
+            ScriptSection section;
+            if (project.MainScript.Sections.ContainsKey("Process"))
                 section = p.Sections["Process"];
             else
-                section = new PluginSection(p, "Process", SectionType.Code, new List<string>(), 1);
+                section = new ScriptSection(p, "Process", SectionType.Code, new List<string>(), 1);
             SectionAddress addr = new SectionAddress(p, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();

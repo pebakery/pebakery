@@ -237,10 +237,10 @@ namespace PEBakery.Core
             Log = log;
         }
     }
-    public class PluginUpdateEventArgs : EventArgs
+    public class ScriptUpdateEventArgs : EventArgs
     {
-        public DB_Plugin Log { get; set; }
-        public PluginUpdateEventArgs(DB_Plugin log) : base()
+        public DB_Script Log { get; set; }
+        public ScriptUpdateEventArgs(DB_Script log) : base()
         {
             Log = log;
         }
@@ -257,7 +257,7 @@ namespace PEBakery.Core
     public delegate void SystemLogUpdateEventHandler(object sender, SystemLogUpdateEventArgs e);
     public delegate void BuildLogUpdateEventHandler(object sender, BuildLogUpdateEventArgs e);
     public delegate void BuildInfoUpdateEventHandler(object sender, BuildInfoUpdateEventArgs e);
-    public delegate void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e);
+    public delegate void ScriptUpdateEventHandler(object sender, ScriptUpdateEventArgs e);
     public delegate void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e);
     #endregion
 
@@ -291,12 +291,12 @@ namespace PEBakery.Core
         private List<DB_BuildLog> BuildLogPool = new List<DB_BuildLog>(4096);
 
         private readonly ConcurrentDictionary<long, DB_BuildInfo> buildDict = new ConcurrentDictionary<long, DB_BuildInfo>();
-        private readonly ConcurrentDictionary<long, Tuple<DB_Plugin, Stopwatch>> pluginDict = new ConcurrentDictionary<long, Tuple<DB_Plugin, Stopwatch>>();
+        private readonly ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>> scriptDict = new ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>>();
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
         public event BuildInfoUpdateEventHandler BuildInfoUpdated;
-        public event PluginUpdateEventHandler PluginUpdated;
+        public event ScriptUpdateEventHandler ScriptUpdated;
         public event VariableUpdateEventHandler VariableUpdated;
 
         public static readonly string LogSeperator = "--------------------------------------------------------------------------------";
@@ -379,13 +379,13 @@ namespace PEBakery.Core
             System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
         }
 
-        public long Build_Plugin_Init(EngineState s, Plugin p, int order)
+        public long Build_Script_Init(EngineState s, Script p, int order)
         {
             if (s.DisableLogger)
                 return 0;
 
             long buildId = s.BuildId;
-            DB_Plugin dbPlugin = new DB_Plugin()
+            DB_Script dbScript = new DB_Script()
             {
                 BuildId = buildId,
                 Level = p.Level,
@@ -394,17 +394,17 @@ namespace PEBakery.Core
                 Path = p.ShortPath,
                 Version = p.Version,
             };
-            DB.Insert(dbPlugin);
-            pluginDict[dbPlugin.Id] = new Tuple<DB_Plugin, Stopwatch>(dbPlugin, Stopwatch.StartNew());
+            DB.Insert(dbScript);
+            scriptDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
 
             // Fire Event
             if (!s.DelayedLogging)
-                PluginUpdated?.Invoke(this, new PluginUpdateEventArgs(dbPlugin));
+                ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
 
-            return dbPlugin.Id;
+            return dbScript.Id;
         }
 
-        public void Build_Plugin_Finish(EngineState s, Dictionary<string, string> localVars)
+        public void Build_Script_Finish(EngineState s, Dictionary<string, string> localVars)
         {
             if (s.DisableLogger)
                 return;
@@ -418,18 +418,18 @@ namespace PEBakery.Core
             if (s.DisableLogger == false)
             {
                 long buildId = s.BuildId;
-                long pluginId = s.PluginId;
+                long scriptId = s.ScriptId;
 
-                // Plugins 
-                pluginDict.TryRemove(pluginId, out Tuple<DB_Plugin, Stopwatch> tuple);
+                // Scripts 
+                scriptDict.TryRemove(scriptId, out Tuple<DB_Script, Stopwatch> tuple);
                 if (tuple == null)
-                    throw new KeyNotFoundException($"Unable to find DB_Plugin Instance, id = {pluginId}");
+                    throw new KeyNotFoundException($"Unable to find DB_Script Instance, id = {scriptId}");
 
-                DB_Plugin dbPlugin = tuple.Item1;
+                DB_Script dbScript = tuple.Item1;
                 Stopwatch watch = tuple.Item2;
                 watch.Stop();
 
-                dbPlugin.ElapsedMilliSec = watch.ElapsedMilliseconds;
+                dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
                 if (localVars != null)
                 {
                     List<DB_Variable> varLogs = new List<DB_Variable>(localVars.Count);
@@ -438,7 +438,7 @@ namespace PEBakery.Core
                         DB_Variable dbVar = new DB_Variable()
                         {
                             BuildId = buildId,
-                            PluginId = pluginId,
+                            ScriptId = scriptId,
                             Type = VarsType.Local,
                             Key = kv.Key,
                             Value = kv.Value,
@@ -451,11 +451,11 @@ namespace PEBakery.Core
                     DB.InsertAll(varLogs);
                 }
 
-                DB.Update(dbPlugin);
+                DB.Update(dbScript);
 
                 // Fire Event
                 if (s.DelayedLogging)
-                    PluginUpdated?.Invoke(this, new PluginUpdateEventArgs(dbPlugin));
+                    ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
             }
         }
         #endregion
@@ -479,7 +479,7 @@ namespace PEBakery.Core
                 {
                     Time = DateTime.UtcNow,
                     BuildId = s.BuildId,
-                    PluginId = s.PluginId,
+                    ScriptId = s.ScriptId,
                     Message = message,
                 };
 
@@ -515,7 +515,7 @@ namespace PEBakery.Core
                 {
                     Time = DateTime.UtcNow,
                     BuildId = s.BuildId,
-                    PluginId = s.PluginId,
+                    ScriptId = s.ScriptId,
                     Depth = log.Depth,
                     State = log.State,
                 };
@@ -575,7 +575,7 @@ namespace PEBakery.Core
                 {
                     Time = DateTime.UtcNow,
                     BuildId = buildId,
-                    PluginId = 0,
+                    ScriptId = 0,
                     Depth = log.Depth,
                     State = log.State,
                 };
@@ -642,7 +642,7 @@ namespace PEBakery.Core
         #endregion
 
         #region LogStartOfSection, LogEndOfSection
-        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, Dictionary<int, string> sectionParam, CodeCommand cmd = null, bool forceLog = false)
+        public void LogStartOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, Dictionary<int, string> sectionParam, CodeCommand cmd = null, bool forceLog = false)
         {
             if (s.DisableLogger)
                 return;
@@ -658,10 +658,10 @@ namespace PEBakery.Core
             if (forceLog && TurnOffOriginalValue)
                 turnOff = false;
 
-            if (logPluginName)
+            if (logScriptName)
                 LogStartOfSection(s, addr.Section.SectionName, depth, sectionParam, cmd);
             else
-                LogStartOfSection(s, addr.Plugin.ShortPath, addr.Section.SectionName, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Script.ShortPath, addr.Section.SectionName, depth, sectionParam, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
@@ -681,12 +681,12 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, paramDict, cmd);
         }
 
-        public void LogStartOfSection(EngineState s, string pluginName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
+        public void LogStartOfSection(EngineState s, string scriptName, string sectionName, int depth, Dictionary<int, string> paramDict = null, CodeCommand cmd = null)
         {
             if (s.DisableLogger)
                 return;
 
-            string msg = $"Processing [{pluginName}]'s Section [{sectionName}]";
+            string msg = $"Processing [{scriptName}]'s Section [{sectionName}]";
             if (cmd == null)
                 Build_Write(s, new LogInfo(LogState.Info, msg, depth));
             else
@@ -695,7 +695,7 @@ namespace PEBakery.Core
             LogSectionParameter(s, depth, paramDict, cmd);
         }
 
-        public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logPluginName, CodeCommand cmd = null, bool forceLog = false)
+        public void LogEndOfSection(EngineState s, SectionAddress addr, int depth, bool logScriptName, CodeCommand cmd = null, bool forceLog = false)
         {
             if (s.DisableLogger)
                 return;
@@ -711,10 +711,10 @@ namespace PEBakery.Core
             if (forceLog && TurnOffOriginalValue)
                 turnOff = false;
 
-            if (logPluginName)
+            if (logScriptName)
                 LogEndOfSection(s, addr.Section.SectionName, depth, cmd);
             else
-                LogEndOfSection(s, addr.Plugin.ShortPath, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(s, addr.Script.ShortPath, addr.Section.SectionName, depth, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
@@ -732,12 +732,12 @@ namespace PEBakery.Core
                 Build_Write(s, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
-        public void LogEndOfSection(EngineState s, string pluginName, string sectionName, int depth, CodeCommand cmd = null)
+        public void LogEndOfSection(EngineState s, string scriptName, string sectionName, int depth, CodeCommand cmd = null)
         {
             if (s.DisableLogger)
                 return;
 
-            string msg = $"End of [{pluginName}]'s Section [{sectionName}]";
+            string msg = $"End of [{scriptName}]'s Section [{sectionName}]";
             if (cmd == null)
                 Build_Write(s, new LogInfo(LogState.Info, msg, depth));
             else
@@ -920,7 +920,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class DB_Plugin
+    public class DB_Script
     {
         [PrimaryKey, AutoIncrement]
         public long Id { get; set; }
@@ -948,7 +948,7 @@ namespace PEBakery.Core
         [Indexed]
         public long BuildId { get; set; }
         [Indexed]
-        public long PluginId { get; set; }
+        public long ScriptId { get; set; }
         public VarsType Type { get; set; }
         [MaxLength(256)]
         public string Key { get; set; }
@@ -969,7 +969,7 @@ namespace PEBakery.Core
         [Indexed]
         public long BuildId { get; set; }
         [Indexed]
-        public long PluginId { get; set; }
+        public long ScriptId { get; set; }
         public int Depth { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]
@@ -1077,7 +1077,7 @@ namespace PEBakery.Core
         {
             CreateTable<DB_SystemLog>();
             CreateTable<DB_BuildInfo>();
-            CreateTable<DB_Plugin>();
+            CreateTable<DB_Script>();
             CreateTable<DB_Variable>();
             CreateTable<DB_BuildLog>();
         }

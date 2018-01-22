@@ -42,17 +42,17 @@ using System.Windows.Threading;
 
 namespace PEBakery.Core
 {
-    #region PluginCache
-    public class PluginCache : SQLiteConnection
+    #region ScriptCache
+    public class ScriptCache : SQLiteConnection
     {
         public static int dbLock = 0;
         private ReaderWriterLockSlim listLock;
 
-        public PluginCache(string path) : base(path)
+        public ScriptCache(string path) : base(path)
         {
             dbLock = 0;
             CreateTable<DB_CacheInfo>();
-            CreateTable<DB_PluginCache>();
+            CreateTable<DB_ScriptCache>();
         }
 
         public async void WaitClose()
@@ -68,8 +68,8 @@ namespace PEBakery.Core
             }
         }
 
-        #region Cache Plugin or Plugins
-        public void CachePlugins(ProjectCollection projects, string baseDir, BackgroundWorker worker)
+        #region Cache Script or Scripts
+        public void CacheScripts(ProjectCollection projects, string baseDir, BackgroundWorker worker)
         {
             try
             {
@@ -85,19 +85,19 @@ namespace PEBakery.Core
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate
-                    var pUniqueList = project.AllPlugins
+                    var pUniqueList = project.AllScripts
                         .GroupBy(x => x.DirectFullPath)
                         .Select(x => x.First());
 
                     listLock = new ReaderWriterLockSlim();
 
-                    DB_PluginCache[] memDB = Table<DB_PluginCache>().ToArray();
-                    List<DB_PluginCache> updateDB = new List<DB_PluginCache>();
+                    DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
+                    List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
                     var tasks = pUniqueList.Select(p =>
                     {
                         return Task.Run(() =>
                         {
-                            bool updated = CachePlugin(p, memDB, updateDB);
+                            bool updated = CacheScript(p, memDB, updateDB);
                             worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
                         });
                     }).ToArray();
@@ -115,7 +115,7 @@ namespace PEBakery.Core
         }
 
         /// <returns>Return true if cache is updated</returns>
-        private bool CachePlugin(Plugin p, DB_PluginCache[] memDB, List<DB_PluginCache> updateDB)
+        private bool CacheScript(Script p, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
         {
             if (memDB == null) throw new ArgumentNullException("memDB");
 
@@ -125,7 +125,7 @@ namespace PEBakery.Core
 
             bool updated = false;
             // int memIdx = 0;
-            DB_PluginCache pCache = null;
+            DB_ScriptCache pCache = null;
 
             // Retrieve Cache
             pCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
@@ -133,7 +133,7 @@ namespace PEBakery.Core
             // Update Cache into updateDB
             if (pCache == null)
             { // Cache not exists
-                pCache = new DB_PluginCache()
+                pCache = new DB_ScriptCache()
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
@@ -183,9 +183,9 @@ namespace PEBakery.Core
                 }
             }
 
-            if (p.Type == PluginType.Link && p.LinkLoaded)
+            if (p.Type == ScriptType.Link && p.LinkLoaded)
             {
-                bool linkUpdated = CachePlugin(p.Link, memDB, updateDB);
+                bool linkUpdated = CacheScript(p.Link, memDB, updateDB);
                 updated = updated || linkUpdated;
             }
 
@@ -248,7 +248,7 @@ namespace PEBakery.Core
         }
     }
 
-    public class DB_PluginCache
+    public class DB_ScriptCache
     {
         [PrimaryKey]
         public int Hash { get; set; }

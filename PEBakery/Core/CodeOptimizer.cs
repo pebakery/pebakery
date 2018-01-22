@@ -45,7 +45,7 @@ namespace PEBakery.Core
      * 
      * TXTAddLine, IniRead, IniWrite, Visible 등이 해당.
      * 
-     * Visible의 경우, 배치 처리할 경우 DrawPlugin의 호출 횟수도 줄일 수 있다.
+     * Visible의 경우, 배치 처리할 경우 DrawScript의 호출 횟수도 줄일 수 있다.
      * 
      */
 

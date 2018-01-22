@@ -61,11 +61,11 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Plugin p = cmd.Addr.Plugin;
-            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            Script p = cmd.Addr.Script;
+            ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -82,12 +82,12 @@ namespace PEBakery.Core.Commands
                 uiCmd.Visibility = visibility;
                 uiCmd.Update();
 
-                // Re-render Plugin
+                // Re-render Script
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                        w.DrawPlugin(cmd.Addr.Plugin);
+                    if (w.CurMainTree.Script == cmd.Addr.Script)
+                        w.DrawScript(cmd.Addr.Script);
                 });
             }
 
@@ -103,11 +103,11 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
-            Plugin p = cmd.Addr.Plugin;
-            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            Script p = cmd.Addr.Script;
+            ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -145,37 +145,37 @@ namespace PEBakery.Core.Commands
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
 
-            // Re-render Plugin
+            // Re-render Script
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                    w.DrawPlugin(cmd.Addr.Plugin);
+                if (w.CurMainTree.Script == cmd.Addr.Script)
+                    w.DrawScript(cmd.Addr.Script);
             });
 
             return logs;
         }
 
         public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface));
             CodeInfo_ReadInterface info = cmd.Info as CodeInfo_ReadInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            PluginSection iface = p.Sections[section];
+            ScriptSection iface = p.Sections[section];
             List<UICommand> uiCmds = iface.GetUICodes(true);
             UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
@@ -225,26 +225,26 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
             List<LogInfo> logs = new List<LogInfo>(2);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface));
             CodeInfo_WriteInterface info = cmd.Info as CodeInfo_WriteInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            PluginSection iface = p.Sections[section];
+            ScriptSection iface = p.Sections[section];
             List<UICommand> uiCmds = iface.GetUICodes(true);
             UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
@@ -335,12 +335,12 @@ namespace PEBakery.Core.Commands
             // Update uiCmd into file
             uiCmd.Update();
 
-            // Rerender Plugin
+            // Rerender Script
             Application.Current?.Dispatcher.Invoke(() =>
             { // Application.Current is null in unit test
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                    w.DrawPlugin(cmd.Addr.Plugin);
+                if (w.CurMainTree.Script == cmd.Addr.Script)
+                    w.DrawScript(cmd.Addr.Script);
             });
 
             return logs;
@@ -378,7 +378,7 @@ namespace PEBakery.Core.Commands
 
             if (info.Timeout == null)
             {
-                MessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image);
+                MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
             }
             else
             {
@@ -391,7 +391,7 @@ namespace PEBakery.Core.Commands
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    CustomMessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image, timeout);
+                    CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
                 });
             }
 
@@ -440,15 +440,15 @@ namespace PEBakery.Core.Commands
                 string tempFile = Path.GetRandomFileName();
                 try
                 {
-                    // Create dummy plugin instance
+                    // Create dummy script instance
                     FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-                    Plugin p = cmd.Addr.Project.LoadPlugin(tempFile, true, false);
+                    Script p = cmd.Addr.Project.LoadScript(tempFile, true, false);
 
-                    // Encode binary file into plugin instance
+                    // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);
                     EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.Compress);
 
-                    // Remove Plugin instance
+                    // Remove Script instance
                     p = null;
 
                     // Read encoded text strings into memory
@@ -585,11 +585,11 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface));
             CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
             if (p.Sections.ContainsKey(interfaceSection))
             {
                 List<UICommand> uiCodes = null;

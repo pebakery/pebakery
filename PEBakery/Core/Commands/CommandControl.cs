@@ -81,8 +81,8 @@ namespace PEBakery.Core.Commands
                         string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
                         #region Set UI
-                        Plugin p = cmd.Addr.Plugin;
-                        PluginSection iface = p.GetInterface(out string sectionName);
+                        Script p = cmd.Addr.Script;
+                        ScriptSection iface = p.GetInterface(out string sectionName);
                         if (iface == null)
                             goto case false;
 
@@ -132,14 +132,14 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddVariables));
             CodeInfo_AddVariables info = cmd.Info as CodeInfo_AddVariables;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath,  pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath,  scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
-                throw new ExecuteException($"Plugin [{pluginFile}] does not have section [{sectionName}]");
+                throw new ExecuteException($"Script [{scriptFile}] does not have section [{sectionName}]");
 
             // Directly read from file
             List<string> lines = Ini.ParseRawSection(p.FullPath, sectionName);
@@ -154,7 +154,7 @@ namespace PEBakery.Core.Commands
             varLogs.AddRange(macroLogs);
 
             if (varLogs.Count == 0) // No variables
-                varLogs.Add(new LogInfo(LogState.Info, $"Plugin [{pluginFile}]'s section [{sectionName}] does not have any variables"));
+                varLogs.Add(new LogInfo(LogState.Info, $"Script [{scriptFile}]'s section [{sectionName}] does not have any variables"));
 
             return varLogs;
         }
@@ -166,7 +166,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit));
             CodeInfo_Exit info = cmd.Info as CodeInfo_Exit;
 
-            s.PassCurrentPluginFlag = true;
+            s.PassCurrentScriptFlag = true;
 
             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, info.Message, cmd));
 

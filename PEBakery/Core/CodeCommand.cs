@@ -93,14 +93,14 @@ namespace PEBakery.Core
     [Serializable]
     public struct SectionAddress
     {
-        public Plugin Plugin;
-        public PluginSection Section;
+        public Script Script;
+        public ScriptSection Section;
 
-        public Project Project => Plugin.Project;
+        public Project Project => Script.Project;
 
-        public SectionAddress(Plugin plugin, PluginSection section)
+        public SectionAddress(Script script, ScriptSection section)
         {
-            this.Plugin = plugin;
+            this.Script = script;
             this.Section = section;
         }
 
@@ -109,7 +109,7 @@ namespace PEBakery.Core
             if (obj is SectionAddress addr)
             {
                 bool result = true;
-                if (Plugin != addr.Plugin || Section != addr.Section)
+                if (Script != addr.Script || Section != addr.Section)
                     result = false;
                 return result;
             }
@@ -129,7 +129,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Plugin.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
+            return Script.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
         }
     }
     #endregion
@@ -1379,18 +1379,18 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 07 - Plugin
+    #region CodeInfo 07 - Script
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
-    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
-        public string PluginFile;
+    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
+        public string ScriptFile;
         public string DirName;
         public string FileName;
         public string DestDir;
 
-        public CodeInfo_ExtractFile(string pluginFile, string dirName, string fileName, string extractTo)
+        public CodeInfo_ExtractFile(string scriptFile, string dirName, string fileName, string extractTo)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FileName = fileName;
             DestDir = extractTo;
@@ -1398,21 +1398,21 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{FileName},{DestDir}";
+            return $"{ScriptFile},{DirName},{FileName},{DestDir}";
         }
     }
 
     [Serializable]
     public class CodeInfo_ExtractAndRun : CodeInfo
-    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName>,[Params]
-        public string PluginFile;
+    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
+        public string ScriptFile;
         public string DirName;
         public string FileName;
         public string[] Params;
 
-        public CodeInfo_ExtractAndRun(string pluginFile, string dirName, string fileName, string[] parameters)
+        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string[] parameters)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FileName = fileName;
             Params = parameters;
@@ -1421,7 +1421,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(DirName);
             b.Append(",");
@@ -1439,41 +1439,41 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ExtractAllFiles : CodeInfo
-    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
-        public string PluginFile;
+    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
+        public string ScriptFile;
         public string DirName;
         public string DestDir;
 
-        public CodeInfo_ExtractAllFiles(string pluginFile, string dirName, string extractTo)
+        public CodeInfo_ExtractAllFiles(string scriptFile, string dirName, string extractTo)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             DestDir = extractTo;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{DestDir}";
+            return $"{ScriptFile},{DirName},{DestDir}";
         }
     }
 
     [Serializable]
     public class CodeInfo_Encode : CodeInfo
-    { // Encode,%PluginFile%,<DirName>,<FileName>
-        public string PluginFile;
+    { // Encode,%ScriptFile%,<DirName>,<FileName>
+        public string ScriptFile;
         public string DirName;
         public string FilePath; // Can have Wildcard
 
-        public CodeInfo_Encode(string pluginFile, string dirName, string filePath)
+        public CodeInfo_Encode(string scriptFile, string dirName, string filePath)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FilePath = filePath;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{FilePath}";
+            return $"{ScriptFile},{DirName},{FilePath}";
         }
     }
     #endregion
@@ -1516,17 +1516,17 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ReadInterface : CodeInfo
-    { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
         public InterfaceElement Element;
-        public string PluginFile;
+        public string ScriptFile;
         public string Section;
         public string Key;
         public string DestVar;
 
-        public CodeInfo_ReadInterface(InterfaceElement element, string pluginFile, string section, string key, string destVar)
+        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar)
         {
             Element = element;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             Section = section;
             Key = key;
             DestVar = destVar;
@@ -1534,23 +1534,23 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{PluginFile},{Section},{Key},{DestVar}";
+            return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
         }
     }
 
     [Serializable]
     public class CodeInfo_WriteInterface : CodeInfo
-    { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
         public InterfaceElement Element;
-        public string PluginFile;
+        public string ScriptFile;
         public string Section;
         public string Key;
         public string Value;
 
-        public CodeInfo_WriteInterface(InterfaceElement element, string pluginFile, string section, string key, string value)
+        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value)
         {
             Element = element;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             Section = section;
             Key = key;
             Value = value;
@@ -1558,7 +1558,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{PluginFile},{Section},{Key},{Value}";
+            return $"{Element},{ScriptFile},{Section},{Key},{Value}";
         }
     }
 
@@ -1694,20 +1694,20 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_AddInterface : CodeInfo
     { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
-        public string PluginFile;
+        public string ScriptFile;
         public string Interface;
         public string Prefix;
 
         public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
         {
-            PluginFile = scriptFile;
+            ScriptFile = scriptFile;
             Interface = interfaceSection;
             Prefix = prefix;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{Interface},{Prefix}";
+            return $"{ScriptFile},{Interface},{Prefix}";
         }
     }
     #endregion
@@ -2573,7 +2573,7 @@ namespace PEBakery.Core
         IsAdmin,
         Log,
         OnBuildExit,
-        OnScriptExit, OnPluginExit,
+        OnScriptExit,
         RefreshInterface,
         LoadAll, RescanScripts, 
         Load,
@@ -2722,18 +2722,18 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class SystemInfo_OnPluginExit : SystemInfo
-    { // System,OnPluginExit,<Command>
+    public class SystemInfo_OnScriptExit : SystemInfo
+    { // System,OnScriptExit,<Command>
         public CodeCommand Cmd;
 
-        public SystemInfo_OnPluginExit(CodeCommand cmd)
+        public SystemInfo_OnScriptExit(CodeCommand cmd)
         {
             Cmd = cmd;
         }
 
         public override string ToString()
         {
-            return $"OnPluginExit,{Cmd}";
+            return $"OnScriptExit,{Cmd}";
         }
     }
 
@@ -3524,13 +3524,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
         public List<string> Parameters;
 
-        public CodeInfo_RunExec(string pluginFile, string sectionName, List<string> parameters)
+        public CodeInfo_RunExec(string scriptFile, string sectionName, List<string> parameters)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Parameters = parameters;
         }
@@ -3538,7 +3538,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
             foreach (string param in Parameters)
@@ -3554,16 +3554,16 @@ namespace PEBakery.Core
     public class CodeInfo_Loop : CodeInfo
     {
         public bool Break;
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
         public string StartIdx;  //  Its type should be int, but set to string because of variable system
         public string EndIdx;   //  Its type should be int, but set to string because of variable system
         public List<string> Parameters;
 
-        public CodeInfo_Loop(string pluginFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
+        public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
         {
             Break = false;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Parameters = parameters;
             StartIdx = startIdx;
@@ -3578,7 +3578,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
             foreach (string param in Parameters)
@@ -3726,13 +3726,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_AddVariables : CodeInfo
     {
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
         public bool Global;
 
-        public CodeInfo_AddVariables(string pluginFile, string sectionName, bool global)
+        public CodeInfo_AddVariables(string scriptFile, string sectionName, bool global)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Global = global;
         }

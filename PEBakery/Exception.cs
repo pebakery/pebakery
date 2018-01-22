@@ -103,13 +103,13 @@ namespace PEBakery.Exceptions
     }
     #endregion
 
-    #region Plugin
+    #region Script
     [Serializable]
-    public class PluginParseException : Exception
+    public class ScriptParseException : Exception
     {
-        public PluginParseException() { }
-        public PluginParseException(string message) : base(message) { }
-        public PluginParseException(string message, Exception inner) : base(message, inner) { }
+        public ScriptParseException() { }
+        public ScriptParseException(string message) : base(message) { }
+        public ScriptParseException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 

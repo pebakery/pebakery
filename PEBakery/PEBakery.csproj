@@ -44,7 +44,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>true</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -153,7 +153,7 @@
     <Compile Include="Core\Commands\CommandInterface.cs" />
     <Compile Include="Core\Commands\CommandMath.cs" />
     <Compile Include="Core\Commands\CommandNetwork.cs" />
-    <Compile Include="Core\Commands\CommandPlugin.cs" />
+    <Compile Include="Core\Commands\CommandScript.cs" />
     <Compile Include="Core\Commands\CommandRegistry.cs" />
     <Compile Include="Core\Commands\CommandString.cs" />
     <Compile Include="Core\Commands\CommandSystem.cs" />
@@ -187,8 +187,8 @@
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Core\Macro.cs" />
-    <Compile Include="Core\Plugin.cs" />
-    <Compile Include="Core\PluginCache.cs" />
+    <Compile Include="Core\Script.cs" />
+    <Compile Include="Core\ScriptCache.cs" />
     <Compile Include="WPF\SettingWindow.xaml.cs">
       <DependentUpon>SettingWindow.xaml</DependentUpon>
     </Compile>

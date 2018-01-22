@@ -1087,10 +1087,9 @@ namespace PEBakery.Core
                         return new CodeInfo_WebGet(url, destPath, hashType, hashDigest);
                     }
                 #endregion
-                #region 07 Plugin
-                // 07 Plugin
+                #region 07 Script
                 case CodeType.ExtractFile:
-                    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
+                    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
                         const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -1098,7 +1097,7 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.ExtractAndRun:
-                    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName> // ,[Params] - deprecated
+                    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName> // ,[Params] - deprecated
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1107,7 +1106,7 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], new string[0]);
                     }
                 case CodeType.ExtractAllFiles:
-                    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
+                    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -1115,7 +1114,7 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
                     }
                 case CodeType.Encode:
-                    { // Encode,%PluginFile%,<DirName>,<FileName>
+                    { // Encode,%ScriptFile%,<DirName>,<FileName>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
@@ -1160,7 +1159,7 @@ namespace PEBakery.Core
                         return new CodeInfo_Visible(interfaceKey, visibility);
                     }
                 case CodeType.ReadInterface:
-                    { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+                    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
                         const int minArgCount = 5;
                         const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1175,7 +1174,7 @@ namespace PEBakery.Core
                         return new CodeInfo_ReadInterface(element, args[1], args[2], args[3], destVar);
                     }
                 case CodeType.WriteInterface:
-                    { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+                    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
                         const int minArgCount = 5;
                         const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1394,12 +1393,12 @@ namespace PEBakery.Core
                 #region 80 Branch
                 case CodeType.Run:
                 case CodeType.Exec:
-                    { // Run,%PluginFile%,<Section>[,PARAMS]
+                    { // Run,%ScriptFile%,<Section>[,PARAMS]
                         const int minArgCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
-                        string pluginFile = args[0];
+                        string scriptFile = args[0];
                         string sectionName = args[1];
 
                         // Get parameters 
@@ -1407,19 +1406,19 @@ namespace PEBakery.Core
                         if (minArgCount < args.Count)
                             parameters.AddRange(args.Skip(minArgCount));
 
-                        return new CodeInfo_RunExec(pluginFile, sectionName, parameters);
+                        return new CodeInfo_RunExec(scriptFile, sectionName, parameters);
                     }
                 case CodeType.Loop:
                     {
                         if (args.Count == 1)
                         { // Loop,BREAK
-                            if (string.Equals(args[0], "BREAK", StringComparison.OrdinalIgnoreCase))
+                            if (args[0].Equals("BREAK", StringComparison.OrdinalIgnoreCase))
                                 return new CodeInfo_Loop(true);
                             else
                                 throw new InvalidCommandException("Invalid form of Command [Loop]", rawCode);
                         }
                         else
-                        { // Loop,%PluginFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+                        { // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
                             const int minArgCount = 4;
                             if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                                 throw new InvalidCommandException($"Command [Loop] must have at least [{minArgCount}] arguments", rawCode);
@@ -1492,7 +1491,7 @@ namespace PEBakery.Core
                         return new CodeInfo_SetMacro(macroName, macroCommand, global, permanent);
                     }
                 case CodeType.AddVariables:
-                    { // AddVariables,%PluginFile%,<Section>[,GLOBAL]
+                    { // AddVariables,%ScriptFile%,<Section>[,GLOBAL]
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -2570,15 +2569,14 @@ namespace PEBakery.Core
                     }
                     break;
                 case SystemType.OnScriptExit:
-                case SystemType.OnPluginExit:
-                    { // System,OnPluginExit,<Command>
+                    { // System,OnScriptExit,<Command>
                         const int minArgCount = 1;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
                             throw new InvalidCommandException($"Command [{type}] must have at least [{minArgCount}] arguments", rawCode);
 
                         CodeCommand embed = ParseStatementFromSlicedArgs(rawCode, args, addr, lineIdx);
 
-                        info = new SystemInfo_OnPluginExit(embed);
+                        info = new SystemInfo_OnScriptExit(embed);
                     }
                     break;
                 case SystemType.RefreshInterface:
@@ -2721,7 +2719,7 @@ namespace PEBakery.Core
 
             int cIdx = 0;
             bool notFlag = false;
-            if (string.Equals(args[0], "Not", StringComparison.OrdinalIgnoreCase))
+            if (args[0].Equals("Not", StringComparison.OrdinalIgnoreCase))
             {
                 notFlag = true;
                 cIdx++;

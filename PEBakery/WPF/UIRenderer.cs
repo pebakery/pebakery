@@ -67,35 +67,35 @@ namespace PEBakery.WPF
         #endregion
 
         #region Constructor
-        public UIRenderer(Canvas canvas, MainWindow window, Plugin plugin, Logger logger, double scale)
+        public UIRenderer(Canvas canvas, MainWindow window, Script script, Logger logger, double scale)
         {
             this.logger = logger;
-            this.variables = plugin.Project.Variables;
+            this.variables = script.Project.Variables;
 
-            // Check if plugin has custom interface section
+            // Check if script has custom interface section
             string interfaceSectionName = "Interface";
-            if (plugin.MainInfo.ContainsKey("Interface")) 
-                interfaceSectionName = plugin.MainInfo["Interface"];
+            if (script.MainInfo.ContainsKey("Interface")) 
+                interfaceSectionName = script.MainInfo["Interface"];
 
-            this.renderInfo = new RenderInfo(canvas, window, logger, plugin, interfaceSectionName, scale);
+            this.renderInfo = new RenderInfo(canvas, window, logger, script, interfaceSectionName, scale);
 
-            if (plugin.Sections.ContainsKey(interfaceSectionName))
+            if (script.Sections.ContainsKey(interfaceSectionName))
             {
                 try
                 {
-                    this.uiCodes = plugin.Sections[interfaceSectionName].GetUICodes(true).Where(x => x.Visibility).ToList();
-                    logger.System_Write(plugin.Sections[interfaceSectionName].LogInfos);
+                    this.uiCodes = script.Sections[interfaceSectionName].GetUICodes(true).Where(x => x.Visibility).ToList();
+                    logger.System_Write(script.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
                 {
                     this.uiCodes = null;
-                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.ShortPath}]"));
                 }
             }
             else
             {
                 this.uiCodes = null;
-                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{plugin.ShortPath}]"));
+                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.ShortPath}]"));
             }
         }
         #endregion
@@ -103,7 +103,7 @@ namespace PEBakery.WPF
         #region Render All
         public void Render()
         {
-            if (uiCodes == null) // This plugin does not have 'Interface' section
+            if (uiCodes == null) // This script does not have 'Interface' section
                 return;
 
             InitCanvas(renderInfo.Canvas);
@@ -312,10 +312,10 @@ namespace PEBakery.WPF
             {
                 checkBox.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
+                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -376,10 +376,10 @@ namespace PEBakery.WPF
             {
                 comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs e) =>
                 {
-                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
+                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - CheckBox [{uiCmd.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -414,7 +414,7 @@ namespace PEBakery.WPF
             Button button;
 
             // double width, height;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
+            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Script, uiCmd.Text))
             {
                 if (ImageHelper.GetImageType(uiCmd.Text, out ImageHelper.ImageType type))
                     return;
@@ -437,16 +437,12 @@ namespace PEBakery.WPF
             }
                 
             bool hasUrl = false;
-            if (info.URL != null && string.Equals(info.URL, string.Empty, StringComparison.Ordinal) == false)
+            if (string.IsNullOrEmpty(info.URL) == false)
             {
-                if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri unused))
-                { // Success
+                if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri _)) // Success
                     hasUrl = true;
-                }
-                else
-                { // Failure
+                else // Failure
                     throw new InvalidUICommandException($"Invalid URL [{info.URL}]", uiCmd);
-                }
             }
 
             if (hasUrl)
@@ -464,7 +460,7 @@ namespace PEBakery.WPF
                         return;
                     string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
 
-                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
+                    using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Script, uiCmd.Text))
                     using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
                     {
                         ms.Position = 0;
@@ -498,7 +494,7 @@ namespace PEBakery.WPF
             UIInfo_TextFile info = uiCmd.Info as UIInfo_TextFile;
 
             TextBox textBox;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, uiCmd.Text))
+            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Script, uiCmd.Text))
             using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
             {
                 textBox = new TextBox()
@@ -538,10 +534,10 @@ namespace PEBakery.WPF
             };
             button.Click += (object sender, RoutedEventArgs e) =>
             {
-                if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                 {
-                    SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                    UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
+                    SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                    UIRenderer.RunOneSection(addr, $"{r.Script.Title} - Button [{uiCmd.Key}]", info.ShowProgress);
                 }
                 else
                 {
@@ -553,7 +549,7 @@ namespace PEBakery.WPF
                 }
             };
 
-            if (info.Picture != null && uiCmd.Addr.Plugin.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
+            if (info.Picture != null && uiCmd.Addr.Script.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
                 if (ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
@@ -566,7 +562,7 @@ namespace PEBakery.WPF
                 };
                 RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
 
-                using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Plugin, info.Picture))
+                using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCmd.Addr.Script, info.Picture))
                 {
                     if (type == ImageHelper.ImageType.Svg)
                     {
@@ -701,7 +697,7 @@ namespace PEBakery.WPF
 
             RadioButton radio = new RadioButton()
             {
-                GroupName = r.Plugin.FullPath,
+                GroupName = r.Script.FullPath,
                 Content = uiCmd.Text,
                 FontSize = fontSize,
                 IsChecked = info.Selected,
@@ -712,10 +708,10 @@ namespace PEBakery.WPF
             {
                 radio.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                    if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                     {
-                        SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                        UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - RadioButton [{uiCmd.Key}]", info.HideProgress);
+                        SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                        UIRenderer.RunOneSection(addr, $"{r.Script.Title} - RadioButton [{uiCmd.Key}]", info.HideProgress);
                     }
                     else
                     {
@@ -862,7 +858,7 @@ namespace PEBakery.WPF
             {
                 RadioButton radio = new RadioButton()
                 {
-                    GroupName = r.Plugin.FullPath + uiCmd.Key,
+                    GroupName = r.Script.FullPath + uiCmd.Key,
                     Content = info.Items[i],
                     Tag = i,
                     FontSize = fontSize,
@@ -881,10 +877,10 @@ namespace PEBakery.WPF
                 {
                     radio.Click += (object sender, RoutedEventArgs e) =>
                     {
-                        if (r.Plugin.Sections.ContainsKey(info.SectionName)) // Only if section exists
+                        if (r.Script.Sections.ContainsKey(info.SectionName)) // Only if section exists
                         {
-                            SectionAddress addr = new SectionAddress(r.Plugin, r.Plugin.Sections[info.SectionName]);
-                            UIRenderer.RunOneSection(addr, $"{r.Plugin.Title} - RadioGroup [{uiCmd.Key}]", info.HideProgress);
+                            SectionAddress addr = new SectionAddress(r.Script, r.Script.Sections[info.SectionName]);
+                            UIRenderer.RunOneSection(addr, $"{r.Script.Title} - RadioGroup [{uiCmd.Key}]", info.HideProgress);
                         }
                         else
                         {
@@ -963,14 +959,14 @@ namespace PEBakery.WPF
                     if (!hideProgress)
                     {
                         w.Model.BuildTree.Children.Clear();
-                        w.PopulateOneTreeView(addr.Plugin, w.Model.BuildTree, w.Model.BuildTree);
+                        w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
                         w.CurBuildTree = null;
                     }
                 });
 
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(addr.Plugin.Project, logger, mainModel, addr.Plugin, addr.Section.SectionName);
+                EngineState s = new EngineState(addr.Script.Project, logger, mainModel, addr.Script, addr.Section.SectionName);
                 s.SetOption(setting);
                 s.DisableLogger = setting.Log_DisableInInterface;
 
@@ -998,7 +994,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.DrawPlugin(w.CurMainTree.Plugin);
+                        w.DrawScript(w.CurMainTree.Script);
                     });
                 }
             }
@@ -1013,16 +1009,16 @@ namespace PEBakery.WPF
         public readonly double MasterScale;
         public readonly Canvas Canvas;
         public readonly MainWindow Window;
-        public readonly Plugin Plugin;
+        public readonly Script Script;
         public readonly string InterfaceSectionName;
         public readonly Logger Logger;
 
-        public RenderInfo(Canvas canvas, MainWindow window, Logger logger, Plugin plugin, string interfaceSectionName, double masterScale)
+        public RenderInfo(Canvas canvas, MainWindow window, Logger logger, Script script, string interfaceSectionName, double masterScale)
         {
             Canvas = canvas;
             Window = window;
             Logger = logger;
-            Plugin = plugin;
+            Script = script;
             InterfaceSectionName = interfaceSectionName;
             MasterScale = masterScale;
         }

@@ -102,7 +102,7 @@
                         Grid.Row="3"
                         VerticalAlignment="Center"
                         FontWeight="Bold"
-                        Text="Plugin Code">
+                        Text="Script Code">
                     </TextBlock>
                     <TextBox 
                         Grid.Row="4"

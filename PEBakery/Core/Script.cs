@@ -41,22 +41,22 @@ using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
-    #region Plugin
+    #region Script
     [Serializable]
-    public class Plugin
+    public class Script
     {
         #region Fields, Properties
         private string fullPath;
         private string shortPath;
         private bool fullyParsed;
-        private bool isMainPlugin;
+        private bool isMainScript;
 
-        private Dictionary<string, PluginSection> sections;
-        private PluginType type;
+        private Dictionary<string, ScriptSection> sections;
+        private ScriptType type;
         [NonSerialized]
         private Project project;
         [NonSerialized]
-        private Plugin link;
+        private Script link;
         [NonSerialized]
         private bool linkLoaded;
         private bool isDirLink = false;
@@ -74,7 +74,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.FullPath;
                 else
                     return fullPath;
@@ -82,11 +82,11 @@ namespace PEBakery.Core
         }
         public string DirectFullPath => fullPath;
         public string ShortPath => shortPath;
-        public Dictionary<string, PluginSection> Sections
+        public Dictionary<string, ScriptSection> Sections
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Sections;
                 else
                     return sections;
@@ -96,7 +96,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.MainInfo;
                 else
                 {
@@ -108,17 +108,17 @@ namespace PEBakery.Core
             }
         }
 
-        public bool IsMainPlugin => isMainPlugin;
+        public bool IsMainScript => isMainScript;
 
-        public PluginType Type => type;
-        public Plugin Link { get => link; set => link = value; }
+        public ScriptType Type => type;
+        public Script Link { get => link; set => link = value; }
         public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
         public bool IsDirLink { get => isDirLink; set => isDirLink = value; }
         public Project Project
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Project;
                 else
                     return project;
@@ -132,7 +132,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Title;
                 else
                     return title;
@@ -142,7 +142,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Author;
                 else
                     return author;
@@ -152,7 +152,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Description;
                 else
                     return description;
@@ -162,7 +162,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Version;
                 else
                     return version;
@@ -172,7 +172,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Level;
                 else
                     return level;
@@ -182,7 +182,7 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == PluginType.Link && linkLoaded)
+                if (type == ScriptType.Link && linkLoaded)
                     return link.Mandatory;
                 else
                     return mandatory;
@@ -197,7 +197,7 @@ namespace PEBakery.Core
                 {
                     selected = value;
                     string valStr = value.ToString();
-                    if (type != PluginType.Directory)
+                    if (type != ScriptType.Directory)
                     {
                         if (sections.ContainsKey("Main"))
                         {
@@ -211,7 +211,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public Plugin(PluginType type, string fullPath, Project project, string projectRoot, int? level, bool isMainPlugin, bool ignoreMain, bool isDirLink)
+        public Script(ScriptType type, string fullPath, Project project, string projectRoot, int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
             this.fullPath = fullPath ?? throw new ArgumentNullException("fullPath");
 
@@ -223,22 +223,22 @@ namespace PEBakery.Core
            
             this.type = type;
             this.project = project ?? throw new ArgumentNullException("project");
-            this.isMainPlugin = isMainPlugin;
+            this.isMainScript = isMainScript;
             this.linkLoaded = false;
             this.isDirLink = isDirLink;
 
-            Debug.Assert(isDirLink ? type != PluginType.Link : true);
+            Debug.Assert(isDirLink ? type != ScriptType.Link : true);
 
             switch (type)
             {
-                case PluginType.Directory:
+                case ScriptType.Directory:
                     {
                         if (level == null)
                             level = 0;
                         List<string> dirInfo = new List<string>();
-                        sections = new Dictionary<string, PluginSection>(StringComparer.OrdinalIgnoreCase)
+                        sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
                         {
-                            ["Main"] = CreatePluginSectionInstance(fullPath, "Main", SectionType.Main, new List<string>(), 1)
+                            ["Main"] = CreateScriptSectionInstance(fullPath, "Main", SectionType.Main, new List<string>(), 1)
                         };
 
                         // Mandatory Entries
@@ -255,15 +255,15 @@ namespace PEBakery.Core
                         this.link = null;
                     }
                     break;
-                case PluginType.Link:
+                case ScriptType.Link:
                     { // Parse only [Main] Section
-                        sections = ParsePlugin();
-                        CheckMainSection(PluginType.Link);
-                        PluginSection mainSection = sections["Main"];
+                        sections = ParseScript();
+                        CheckMainSection(ScriptType.Link);
+                        ScriptSection mainSection = sections["Main"];
 
                         if (mainSection.IniDict.ContainsKey("Link") == false)
                         {
-                            throw new PluginParseException($"Invalid link path in plugin {fullPath}");
+                            throw new ScriptParseException($"Invalid link path in script {fullPath}");
                         }
 
                         if (mainSection.IniDict.ContainsKey("Selected"))
@@ -278,14 +278,14 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case PluginType.Plugin:
+                case ScriptType.Script:
                     {
-                        sections = ParsePlugin();
+                        sections = ParseScript();
                         InspectTypeOfUninspectedCodeSection();
                         if (!ignoreMain)
                         {
-                            CheckMainSection(PluginType.Plugin);
-                            PluginSection mainSection = sections["Main"];
+                            CheckMainSection(ScriptType.Script);
+                            ScriptSection mainSection = sections["Main"];
 
                             // Mandatory Entry
                             this.title = mainSection.IniDict["Title"];
@@ -367,9 +367,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Methods
-        public Dictionary<string, PluginSection> ParsePlugin()
+        public Dictionary<string, ScriptSection> ParseScript()
         {
-            Dictionary<string, PluginSection> dict = new Dictionary<string, PluginSection>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
             Encoding encoding = FileHelper.DetectTextEncoding(fullPath);
             
@@ -392,14 +392,14 @@ namespace PEBakery.Core
                     { // Start of section
                         if (inSection)
                         { // End of section
-                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
 
                         sectionIdx = idx;
                         currentSection = line.Substring(1, line.Length - 2);
                         type = DetectTypeOfSection(currentSection, false);
-                        if (LoadSectionAtPluginLoadTime(type))
+                        if (LoadSectionAtScriptLoadTime(type))
                             loadSection = true;
                         inSection = true;
                     }
@@ -412,7 +412,7 @@ namespace PEBakery.Core
                     { // End of .script
                         if (inSection)
                         {
-                            dict[currentSection] = CreatePluginSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
                     }
@@ -456,16 +456,16 @@ namespace PEBakery.Core
         {
             // OnProcessEntry, OnProcessExit : deprecated, it is not used in WinPESE
             SectionType type;
-            if (string.Equals(sectionName, "Main", StringComparison.OrdinalIgnoreCase))
+            if (sectionName.Equals("Main", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Main;
-            else if (string.Equals(sectionName, "Variables", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals("Variables", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Variables;
-            else if (string.Equals(sectionName, "Interface", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals("Interface", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.Interface;
-            else if (string.Equals(sectionName, "EncodedFolders", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals("EncodedFolders", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFolderList;
-            else if (string.Equals(sectionName, "AuthorEncoded", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(sectionName, "InterfaceEncoded", StringComparison.OrdinalIgnoreCase))
+            else if (sectionName.Equals("AuthorEncoded", StringComparison.OrdinalIgnoreCase)
+                || sectionName.Equals("InterfaceEncoded", StringComparison.OrdinalIgnoreCase))
                 type = SectionType.AttachFileList;
             else if (string.Compare(sectionName, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0) // lazy loading
                 type = SectionType.AttachEncode;
@@ -481,7 +481,7 @@ namespace PEBakery.Core
 
         private void InspectTypeOfUninspectedCodeSection()
         {
-            // Dictionary<string, PluginSection>
+            // Dictionary<string, ScriptSection>
             foreach (var key in sections.Keys)
             {
                 if (sections[key].Type == SectionType.Uninspected)
@@ -501,7 +501,7 @@ namespace PEBakery.Core
             return type;
         }
 
-        private static bool LoadSectionAtPluginLoadTime(SectionType type)
+        private static bool LoadSectionAtScriptLoadTime(SectionType type)
         {
             switch (type)
             {
@@ -517,7 +517,7 @@ namespace PEBakery.Core
             }
         }
 
-        private PluginSection CreatePluginSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines, int lineIdx)
+        private ScriptSection CreateScriptSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
             Dictionary<string, string> sectionKeys;
             switch (type)
@@ -526,34 +526,34 @@ namespace PEBakery.Core
                 case SectionType.Ini:
                 case SectionType.AttachFileList:
                     sectionKeys = Ini.ParseIniLinesIniStyle(lines);
-                    return new PluginSection(this, sectionName, type, sectionKeys, lineIdx); // SectionDataType.IniDict
+                    return new ScriptSection(this, sectionName, type, sectionKeys, lineIdx); // SectionDataType.IniDict
                 case SectionType.Variables:
                 case SectionType.Code:
                 case SectionType.AttachFolderList:
                 case SectionType.Uninspected:
                 case SectionType.Interface:
-                    return new PluginSection(this, sectionName, type, lines, lineIdx); // SectionDataType.Lines
+                    return new ScriptSection(this, sectionName, type, lines, lineIdx); // SectionDataType.Lines
                 case SectionType.AttachEncode: // do not load now
-                    return new PluginSection(this, sectionName, type, false, lineIdx);
+                    return new ScriptSection(this, sectionName, type, false, lineIdx);
                 default:
-                    throw new PluginParseException($"Invalid SectionType [{type}]");
+                    throw new ScriptParseException($"Invalid SectionType [{type}]");
             }
         }
 
-        private void CheckMainSection(PluginType type)
+        private void CheckMainSection(ScriptType type)
         {
             if (sections.ContainsKey("Main") == false)
-                throw new PluginParseException($"[{fullPath}] is invalid, please Add [Main] Section");
+                throw new ScriptParseException($"[{fullPath}] is invalid, please Add [Main] Section");
 
             bool fail = true;
             if (sections["Main"].DataType == SectionDataType.IniDict)
             {
-                if (type == PluginType.Plugin)
+                if (type == ScriptType.Script)
                 {
                     if (sections["Main"].IniDict.ContainsKey("Title"))
                         fail = false;
                 }
-                else if (type == PluginType.Link)
+                else if (type == ScriptType.Link)
                 {
                     if (sections["Main"].IniDict.ContainsKey("Link"))
                         fail = false;
@@ -561,21 +561,21 @@ namespace PEBakery.Core
             }
 
             if (fail)
-                throw new PluginParseException($"[{fullPath}] is invalid, check [Main] Section");
+                throw new ScriptParseException($"[{fullPath}] is invalid, check [Main] Section");
         }
 
-        public static string[] GetDisablePluginPaths(Plugin p, out List<LogInfo> errorLogs)
+        public static string[] GetDisableScriptPaths(Script p, out List<LogInfo> errorLogs)
         {
             errorLogs = new List<LogInfo>();
 
-            if (p.Type == PluginType.Directory || p.isMainPlugin)
+            if (p.Type == ScriptType.Directory || p.isMainScript)
                 return null;
 
             if (p.MainInfo.ContainsKey("Disable") == false)
                 return null;
 
             p.Project.Variables.ResetVariables(VarsType.Local);
-            p.Project.Variables.LoadDefaultPluginVariables(p);
+            p.Project.Variables.LoadDefaultScriptVariables(p);
 
             string rawLine = p.MainInfo["Disable"];
 
@@ -601,7 +601,7 @@ namespace PEBakery.Core
             }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
 
-            // Filter out plugin itself
+            // Filter out script itself
             List<string> filteredPaths = new List<string>(paths.Count);
             foreach (string path in paths)
             {
@@ -617,13 +617,13 @@ namespace PEBakery.Core
             return filteredPaths.ToArray();
         }
 
-        public PluginSection GetInterface(out string sectionName)
+        public ScriptSection GetInterface(out string sectionName)
         {
             sectionName = "Interface";
             if (MainInfo.ContainsKey("Interface"))
                 sectionName = MainInfo["Interface"];
 
-            if (Sections.ContainsKey(sectionName)) // plugin.Sections[secName].GetUICodes(true)
+            if (Sections.ContainsKey(sectionName))
                 return Sections[sectionName];
             else
                 return null;
@@ -633,7 +633,7 @@ namespace PEBakery.Core
         #region Virtual Methods
         public override string ToString()
         {
-            if (type == PluginType.Link)
+            if (type == ScriptType.Link)
                 return sections["Main"].IniDict["Link"];
             else
                 return this.title;
@@ -641,7 +641,7 @@ namespace PEBakery.Core
 
         public override bool Equals(object obj)
         {
-            if (obj is Plugin p)
+            if (obj is Script p)
             {
                 if (this.FullPath.Equals(p.FullPath, StringComparison.OrdinalIgnoreCase))
                     return true;
@@ -663,9 +663,9 @@ namespace PEBakery.Core
     #endregion
 
     #region Enums
-    public enum PluginType
+    public enum ScriptType
     {
-        Plugin, Link, Directory
+        Script, Link, Directory
     }
 
     public enum SelectedState
@@ -706,13 +706,13 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region PluginSection
+    #region ScriptSection
     [Serializable]
-    public class PluginSection
+    public class ScriptSection
     {
         #region Fields and Properties
         // Common Fields
-        private Plugin plugin;
+        private Script script;
         private string sectionName;
         private SectionType type;
         private SectionDataType dataType;
@@ -721,7 +721,7 @@ namespace PEBakery.Core
         private bool loaded;
         private int lineIdx;
 
-        public Plugin Plugin => plugin;
+        public Script Script => script;
         public string SectionName => sectionName;
         public SectionType Type { get => type; set => type = value; }
         public SectionDataType DataType { get => dataType; set => dataType = value; }
@@ -793,24 +793,18 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="pluginPath"></param>
-        /// <param name="sectionName"></param>
-        /// <param name="type"></param>
-        public PluginSection(Plugin plugin, string sectionName, SectionType type)
+        public ScriptSection(Script script, string sectionName, SectionType type)
         {
-            this.plugin = plugin;
+            this.script = script;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SelectDataType(type);
             this.loaded = false;
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, bool load, int lineIdx)
+        public ScriptSection(Script script, string sectionName, SectionType type, bool load, int lineIdx)
         {
-            this.plugin = plugin;
+            this.script = script;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SelectDataType(type);
@@ -820,9 +814,9 @@ namespace PEBakery.Core
                 Load();
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, SectionDataType dataType, bool load, int lineIdx)
+        public ScriptSection(Script script, string sectionName, SectionType type, SectionDataType dataType, bool load, int lineIdx)
         {
-            this.plugin = plugin;
+            this.script = script;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = dataType;
@@ -832,9 +826,9 @@ namespace PEBakery.Core
                 Load();
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, Dictionary<string, string> iniDict, int lineIdx)
+        public ScriptSection(Script script, string sectionName, SectionType type, Dictionary<string, string> iniDict, int lineIdx)
         {
-            this.plugin = plugin;
+            this.script = script;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.IniDict;
@@ -843,9 +837,9 @@ namespace PEBakery.Core
             this.lineIdx = lineIdx;
         }
 
-        public PluginSection(Plugin plugin, string sectionName, SectionType type, List<string> lines, int lineIdx)
+        public ScriptSection(Script script, string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
-            this.plugin = plugin;
+            this.script = script;
             this.sectionName = sectionName;
             this.type = type;
             this.dataType = SectionDataType.Lines;
@@ -858,15 +852,15 @@ namespace PEBakery.Core
         #region Equals, GetHashCode
         public override bool Equals(object obj)
         {
-            PluginSection section = obj as PluginSection;
+            ScriptSection section = obj as ScriptSection;
             return this.Equals(section);
         }
 
-        public bool Equals(PluginSection section)
+        public bool Equals(ScriptSection section)
         {
             if (section == null) throw new ArgumentNullException("section");
 
-            if (plugin.Equals(section.Plugin) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
+            if (script.Equals(section.Script) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
                 return true;
             else
                 return false;
@@ -874,7 +868,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return plugin.GetHashCode() ^ sectionName.GetHashCode();
+            return script.GetHashCode() ^ sectionName.GetHashCode();
         }
         #endregion
 
@@ -907,20 +901,20 @@ namespace PEBakery.Core
                 switch (dataType)
                 {
                     case SectionDataType.IniDict:
-                        iniDict = Ini.ParseIniSectionToDict(plugin.FullPath, SectionName);
+                        iniDict = Ini.ParseIniSectionToDict(script.FullPath, SectionName);
                         break;
                     case SectionDataType.Lines:
                         {
-                            lines = Ini.ParseIniSection(plugin.FullPath, sectionName);
+                            lines = Ini.ParseIniSection(script.FullPath, sectionName);
                             if (convDataType == SectionDataConverted.Codes)
                             {
-                                SectionAddress addr = new SectionAddress(plugin, this);
+                                SectionAddress addr = new SectionAddress(script, this);
                                 codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
                                 logInfos.AddRange(logList);
                             }
                             else if (convDataType == SectionDataConverted.Interfaces)
                             {
-                                SectionAddress addr = new SectionAddress(plugin, this);
+                                SectionAddress addr = new SectionAddress(script, this);
                                 uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
                                 logInfos.AddRange(logList);
                             }
@@ -960,7 +954,7 @@ namespace PEBakery.Core
         {
             if (type == SectionType.Code && dataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(plugin, this);
+                SectionAddress addr = new SectionAddress(script, this);
                 codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logList);
                 logInfos.AddRange(logList);
 
@@ -977,7 +971,7 @@ namespace PEBakery.Core
             if ((type == SectionType.Interface || type == SectionType.Code) &&
                 dataType == SectionDataType.Lines)
             {
-                SectionAddress addr = new SectionAddress(plugin, this);
+                SectionAddress addr = new SectionAddress(script, this);
                 uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
                 logInfos.AddRange(logList);
 
@@ -1016,7 +1010,7 @@ namespace PEBakery.Core
                 if (loaded)
                     return lines;
                 else
-                    return Ini.ParseIniSection(plugin.FullPath, sectionName);
+                    return Ini.ParseIniSection(script.FullPath, sectionName);
             }
             else
             {

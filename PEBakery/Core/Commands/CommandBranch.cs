@@ -51,15 +51,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
-                throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
+                throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
             // Section Parameter
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
@@ -75,7 +75,7 @@ namespace PEBakery.Core.Commands
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
             Dictionary<string, string> fixedVars = null;
@@ -87,12 +87,12 @@ namespace PEBakery.Core.Commands
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
                 localMacros = s.Macro.LocalDict;
 
-                // Load Per-Plugin Variables
+                // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
-                List<LogInfo> varLogs = s.Variables.LoadDefaultPluginVariables(p);
+                List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(p);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                // Load Per-Plugin Macro
+                // Load Per-Script Macro
                 s.Macro.ResetLocalMacros();
                 List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p, false);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
@@ -117,7 +117,7 @@ namespace PEBakery.Core.Commands
             s.CurDepth = depthBackup;
             s.ErrorOffStartLineIdx = errorOffStartLineIdxBackup;
             s.ErrorOffLineCount = erroroffCountBackup;
-            s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
+            s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
         }  
 
         public static void Loop(EngineState s, CodeCommand cmd)
@@ -148,18 +148,18 @@ namespace PEBakery.Core.Commands
                 long loopCount = endIdx - startIdx + 1;
 
                 // Prepare Loop
-                string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+                string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-                Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+                Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exists?
                 if (!p.Sections.ContainsKey(sectionName))
-                    throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
+                    throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
                 string logMessage;
-                if (inCurrentPlugin)
+                if (inCurrentScript)
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
                 else
                     logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";

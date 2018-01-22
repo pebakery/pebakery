@@ -37,7 +37,7 @@ using System.Windows;
 
 namespace PEBakery.Core
 {
-    #region Enum PluginUIControlType
+    #region Enum UIControlType
     public enum UIType
     {
         None = -1,
@@ -63,7 +63,7 @@ namespace PEBakery.Core
     /*
     <Key>=<Text>,Visibility,Type,X,Y,Width,Height,<OptionalValues>,[Tooltip]
     Visibility : 1 or 0
-    Type : PluginInterfaceControlType 0 ~ 14
+    Type : UIControlType 0 ~ 14
 
     <Text>
     TextBox     = Caption
@@ -192,19 +192,19 @@ namespace PEBakery.Core
         #region Update
         public void Update()
         {
-            Ini.SetKey(Addr.Plugin.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
+            Ini.SetKey(Addr.Script.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
         }
         
         public static void Update(List<UICommand> uiCmdList)
         {
             if (0 < uiCmdList.Count)
             {
-                string fullPath = uiCmdList[0].Addr.Plugin.FullPath;
+                string fullPath = uiCmdList[0].Addr.Script.FullPath;
                 List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
                 for (int i = 0; i < uiCmdList.Count; i++)
                 {
                     UICommand uiCmd = uiCmdList[i];
-                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Plugin.FullPath, StringComparison.OrdinalIgnoreCase));
+                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.FullPath, StringComparison.OrdinalIgnoreCase));
 
                     keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
                 }

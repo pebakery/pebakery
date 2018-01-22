@@ -76,16 +76,16 @@ namespace PEBakery.WPF
 
         private void Button_ClearCache_Click(object sender, RoutedEventArgs e)
         {
-            if (PluginCache.dbLock == 0)
+            if (ScriptCache.dbLock == 0)
             {
-                Interlocked.Increment(ref PluginCache.dbLock);
+                Interlocked.Increment(ref ScriptCache.dbLock);
                 try
                 {
                     Model.ClearCacheDB();
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref PluginCache.dbLock);
+                    Interlocked.Decrement(ref ScriptCache.dbLock);
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace PEBakery.WPF
             Model.Project_SourceDirectoryList = new ObservableCollection<string>();
 
             int idx = Model.Project_SelectedIndex;
-            string fullPath = Model.Projects[idx].MainPlugin.FullPath;
+            string fullPath = Model.Projects[idx].MainScript.FullPath;
             Ini.SetKey(fullPath, "Main", "SourceDir", string.Empty);
         }
 
@@ -216,8 +216,8 @@ namespace PEBakery.WPF
         private LogDB logDB;
         public LogDB LogDB { set => logDB = value; }
 
-        private PluginCache cacheDB;
-        public PluginCache CacheDB { set => cacheDB = value; }
+        private ScriptCache cacheDB;
+        public ScriptCache CacheDB { set => cacheDB = value; }
 
         private ProjectCollection projects;
         public ProjectCollection Projects => projects;
@@ -270,7 +270,7 @@ namespace PEBakery.WPF
                 
                 if (0 <= value && value < Project_List.Count)
                 {
-                    string fullPath = projects[value].MainPlugin.FullPath;
+                    string fullPath = projects[value].MainScript.FullPath;
                     IniKey[] keys = new IniKey[]
                     {
                         new IniKey("Main", "SourceDir"),
@@ -366,7 +366,7 @@ namespace PEBakery.WPF
                         b.Append(",");
                         b.Append(Project_SourceDirectoryList[x]);
                     }
-                    Ini.SetKey(project.MainPlugin.FullPath, "Main", "SourceDir", b.ToString());
+                    Ini.SetKey(project.MainScript.FullPath, "Main", "SourceDir", b.ToString());
                 }
                 
                 OnPropertyUpdate("Project_SourceDirectoryIndex");
@@ -382,7 +382,7 @@ namespace PEBakery.WPF
                 if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
                 {
                     Project project = projects[project_SelectedIndex];
-                    string fullPath = project.MainPlugin.FullPath;
+                    string fullPath = project.MainScript.FullPath;
                     Ini.SetKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
@@ -402,7 +402,7 @@ namespace PEBakery.WPF
                 if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
                 {
                     Project project = projects[project_SelectedIndex];
-                    string fullPath = project.MainPlugin.FullPath;
+                    string fullPath = project.MainScript.FullPath;
                     Ini.SetKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
@@ -544,48 +544,48 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Plugin
-        private string plugin_CacheState;
-        public string Plugin_CacheState
+        #region Script
+        private string script_CacheState;
+        public string Script_CacheState
         {
-            get => plugin_CacheState;
+            get => script_CacheState;
             set
             {
-                plugin_CacheState = value;
-                OnPropertyUpdate("Plugin_CacheState");
+                script_CacheState = value;
+                OnPropertyUpdate("Script_CacheState");
             }
         }
 
-        private bool plugin_EnableCache;
-        public bool Plugin_EnableCache
+        private bool script_EnableCache;
+        public bool Script_EnableCache
         {
-            get => plugin_EnableCache;
+            get => script_EnableCache;
             set
             {
-                plugin_EnableCache = value;
-                OnPropertyUpdate("Plugin_EnableCache");
+                script_EnableCache = value;
+                OnPropertyUpdate("Script_EnableCache");
             }
         }
 
-        private bool plugin_AutoConvertToUTF8;
-        public bool Plugin_AutoConvertToUTF8
+        private bool script_AutoConvertToUTF8;
+        public bool Script_AutoConvertToUTF8
         {
-            get => plugin_AutoConvertToUTF8;
+            get => script_AutoConvertToUTF8;
             set
             {
-                plugin_AutoConvertToUTF8 = value;
-                OnPropertyUpdate("Plugin_AutoConvertToUTF8");
+                script_AutoConvertToUTF8 = value;
+                OnPropertyUpdate("Script_AutoConvertToUTF8");
             }
         }
 
-        private bool plugin_AutoSyntaxCheck;
-        public bool Plugin_AutoSyntaxCheck
+        private bool script_AutoSyntaxCheck;
+        public bool Script_AutoSyntaxCheck
         {
-            get => plugin_AutoSyntaxCheck;
+            get => script_AutoSyntaxCheck;
             set
             {
-                plugin_AutoSyntaxCheck = value;
-                OnPropertyUpdate("Plugin_AutoSyntaxCheck");
+                script_AutoSyntaxCheck = value;
+                OnPropertyUpdate("Script_AutoSyntaxCheck");
             }
         }
         #endregion
@@ -798,10 +798,10 @@ namespace PEBakery.WPF
             Interface_UseCustomEditor = false;
             Interface_CustomEditorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "notepad.exe");
 
-            // Plugin
-            Plugin_EnableCache = true;
-            Plugin_AutoConvertToUTF8 = false;
-            Plugin_AutoSyntaxCheck = true;
+            // Script
+            Script_EnableCache = true;
+            Script_AutoConvertToUTF8 = false;
+            Script_AutoSyntaxCheck = true;
 
             // Log
 #if DEBUG
@@ -843,10 +843,10 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "UseCustomEditor"), // Boolean
                 new IniKey("Interface", "CustomEditorPath"), // String
                 new IniKey("Interface", "DisplayShellExecuteConOut"), // Boolean
-                new IniKey("Plugin", "EnableCache"), // Boolean
-                new IniKey("Plugin", "SpeedupLoading"), // Boolean
-                new IniKey("Plugin", "AutoConvertToUTF8"), // Boolean
-                new IniKey("Plugin", "AutoSyntaxCheck"), // Boolean
+                new IniKey("Script", "EnableCache"), // Boolean
+                new IniKey("Script", "SpeedupLoading"), // Boolean
+                new IniKey("Script", "AutoConvertToUTF8"), // Boolean
+                new IniKey("Script", "AutoSyntaxCheck"), // Boolean
                 new IniKey("Log", "DebugLevel"), // Integer
                 new IniKey("Log", "Macro"), // Boolean
                 new IniKey("Log", "Comment"), // Boolean
@@ -873,10 +873,10 @@ namespace PEBakery.WPF
             string str_Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
             string str_Interface_DisplayShellExecuteConOut = dict["Interface_DisplayShellExecuteConOut"];
             string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
-            string str_Plugin_EnableCache = dict["Plugin_EnableCache"];
-            string str_Plugin_SpeedupLoading = dict["Plugin_SpeedupLoading"];
-            string str_Plugin_AutoConvertToUTF8 = dict["Plugin_AutoConvertToUTF8"];
-            string str_Plugin_AutoSyntaxCheck = dict["Plugin_AutoSyntaxCheck"];
+            string str_Script_EnableCache = dict["Script_EnableCache"];
+            string str_Script_SpeedupLoading = dict["Script_SpeedupLoading"];
+            string str_Script_AutoConvertToUTF8 = dict["Script_AutoConvertToUTF8"];
+            string str_Script_AutoSyntaxCheck = dict["Script_AutoSyntaxCheck"];
             string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
             string str_Log_Macro = dict["Log_Macro"];
             string str_Log_Comment = dict["Log_Comment"];
@@ -966,25 +966,25 @@ namespace PEBakery.WPF
                     Interface_DisplayShellExecuteConOut = false;
             }
 
-            // Plugin - EnableCache (Default = True)
-            if (str_Plugin_EnableCache != null)
+            // Script - EnableCache (Default = True)
+            if (str_Script_EnableCache != null)
             {
-                if (str_Plugin_EnableCache.Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Plugin_EnableCache = false;
+                if (str_Script_EnableCache.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Script_EnableCache = false;
             }
 
-            // Plugin - AutoConvertToUTF8 (Default = False)
-            if (str_Plugin_AutoConvertToUTF8 != null)
+            // Script - AutoConvertToUTF8 (Default = False)
+            if (str_Script_AutoConvertToUTF8 != null)
             {
-                if (str_Plugin_AutoConvertToUTF8.Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Plugin_AutoConvertToUTF8 = true;
+                if (str_Script_AutoConvertToUTF8.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Script_AutoConvertToUTF8 = true;
             }
 
-            // Plugin - AutoSyntaxCheck (Default = False)
-            if (str_Plugin_AutoSyntaxCheck != null)
+            // Script - AutoSyntaxCheck (Default = False)
+            if (str_Script_AutoSyntaxCheck != null)
             {
-                if (str_Plugin_AutoSyntaxCheck.Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Plugin_AutoSyntaxCheck = true;
+                if (str_Script_AutoSyntaxCheck.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Script_AutoSyntaxCheck = true;
             }
 
             // Log - DebugLevel (Default = 0)
@@ -1076,9 +1076,9 @@ namespace PEBakery.WPF
                 new IniKey("Interface", "UseCustomEditor", Interface_UseCustomEditor.ToString()),
                 new IniKey("Interface", "CustomEditorPath", Interface_CustomEditorPath),
                 new IniKey("Interface", "DisplayShellExecuteConOut", Interface_DisplayShellExecuteConOut.ToString()),
-                new IniKey("Plugin", "EnableCache", Plugin_EnableCache.ToString()),
-                new IniKey("Plugin", "AutoConvertToUTF8", Plugin_AutoConvertToUTF8.ToString()),
-                new IniKey("Plugin", "AutoSyntaxCheck", Plugin_AutoSyntaxCheck.ToString()),
+                new IniKey("Script", "EnableCache", Script_EnableCache.ToString()),
+                new IniKey("Script", "AutoConvertToUTF8", Script_AutoConvertToUTF8.ToString()),
+                new IniKey("Script", "AutoSyntaxCheck", Script_AutoSyntaxCheck.ToString()),
                 new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
                 new IniKey("Log", "Macro", Log_Macro.ToString()),
                 new IniKey("Log", "Comment", Log_Comment.ToString()),
@@ -1098,7 +1098,7 @@ namespace PEBakery.WPF
         {
             logDB.DeleteAll<DB_SystemLog>();
             logDB.DeleteAll<DB_BuildInfo>();
-            logDB.DeleteAll<DB_Plugin>();
+            logDB.DeleteAll<DB_Script>();
             logDB.DeleteAll<DB_Variable>();
             logDB.DeleteAll<DB_BuildLog>();
 
@@ -1109,7 +1109,7 @@ namespace PEBakery.WPF
         {
             if (cacheDB != null)
             {
-                cacheDB.DeleteAll<DB_PluginCache>();
+                cacheDB.DeleteAll<DB_ScriptCache>();
                 UpdateCacheDBState();
             }
         }
@@ -1125,12 +1125,12 @@ namespace PEBakery.WPF
         {
             if (cacheDB == null)
             {
-                Plugin_CacheState = "Cache not enabled";
+                Script_CacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = cacheDB.Table<DB_PluginCache>().Count();
-                Plugin_CacheState = $"{cacheCount} plugins cached";
+                int cacheCount = cacheDB.Table<DB_ScriptCache>().Count();
+                Script_CacheState = $"{cacheCount} scripts cached";
             }
         }
 

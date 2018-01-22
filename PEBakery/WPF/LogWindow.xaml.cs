@@ -66,7 +66,7 @@ namespace PEBakery.WPF
             m.SelectedTabIndex = selectedTabIndex;
             m.Logger.SystemLogUpdated += SystemLogUpdateEventHandler;
             m.Logger.BuildInfoUpdated += BuildInfoUpdateEventHandler;
-            m.Logger.PluginUpdated += PluginUpdateEventHandler;
+            m.Logger.ScriptUpdated += ScriptUpdateEventHandler;
             m.Logger.BuildLogUpdated += BuildLogUpdateEventHandler;
             m.Logger.VariableUpdated += VariableUpdateEventHandler;
 
@@ -98,9 +98,9 @@ namespace PEBakery.WPF
             if (m.SelectBuildEntries != null &&
                 m.SelectBuildIndex < m.SelectBuildEntries.Count &&
                 m.SelectBuildEntries[m.SelectBuildIndex].Item2 == e.Log.BuildId &&
-                m.SelectPluginEntries != null &&
-                m.SelectPluginIndex < m.SelectPluginEntries.Count &&
-                m.SelectPluginEntries[m.SelectPluginIndex].Item2 == e.Log.PluginId)
+                m.SelectScriptEntries != null &&
+                m.SelectScriptIndex < m.SelectScriptEntries.Count &&
+                m.SelectScriptEntries[m.SelectScriptIndex].Item2 == e.Log.ScriptId)
             {
                 Application.Current.Dispatcher.Invoke(() => 
                 {
@@ -122,9 +122,9 @@ namespace PEBakery.WPF
             }
         }
 
-        public void PluginUpdateEventHandler(object sender, PluginUpdateEventArgs e)
+        public void ScriptUpdateEventHandler(object sender, ScriptUpdateEventArgs e)
         {
-            m.RefreshPlugin(e.Log.BuildId, true);
+            m.RefreshScript(e.Log.BuildId, true);
         }
 
         public void VariableUpdateEventHandler(object sender, VariableUpdateEventArgs e)
@@ -161,7 +161,7 @@ namespace PEBakery.WPF
         {
             m.Logger.SystemLogUpdated -= SystemLogUpdateEventHandler;
             m.Logger.BuildInfoUpdated -= BuildInfoUpdateEventHandler;
-            m.Logger.PluginUpdated -= PluginUpdateEventHandler;
+            m.Logger.ScriptUpdated -= ScriptUpdateEventHandler;
             m.Logger.BuildLogUpdated -= BuildLogUpdateEventHandler;
             m.Logger.VariableUpdated -= VariableUpdateEventHandler;
 
@@ -213,7 +213,7 @@ namespace PEBakery.WPF
                 case 1: // Build Log
                     m.LogDB.DeleteAll<DB_BuildInfo>();
                     m.LogDB.DeleteAll<DB_BuildLog>();
-                    m.LogDB.DeleteAll<DB_Plugin>();
+                    m.LogDB.DeleteAll<DB_Script>();
                     m.LogDB.DeleteAll<DB_Variable>();
                     m.RefreshBuildLog();
                     break;
@@ -277,7 +277,7 @@ namespace PEBakery.WPF
     #region LogListModel
     public class LogStatModel : ObservableCollection<Tuple<LogState, int>> { }
     public class SystemLogListModel : ObservableCollection<DB_SystemLog> { }
-    public class PluginListModel : ObservableCollection<DB_Plugin> { }
+    public class ScriptListModel : ObservableCollection<DB_Script> { }
     public class VariableListModel : ObservableCollection<DB_Variable> { }
     public class BuildLogListModel : ObservableCollection<DB_BuildLog> { }
     #endregion
@@ -330,30 +330,30 @@ namespace PEBakery.WPF
             });
         }
 
-        public void RefreshPlugin(long? buildId, bool showLastPlugin)
+        public void RefreshScript(long? buildId, bool showLastScript)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                SelectPluginEntries.Clear();
+                SelectScriptEntries.Clear();
 
                 if (buildId == null)
                 {  // Clear
-                    SelectPluginIndex = 0;
+                    SelectScriptIndex = 0;
                 }
                 else
                 {
-                    // Populate SelectPluginEntries
-                    SelectPluginEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
-                    var plugins = LogDB.Table<DB_Plugin>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
-                    foreach (DB_Plugin p in plugins)
+                    // Populate SelectScriptEntries
+                    SelectScriptEntries.Add(new Tuple<string, long, long>("Total Summary", -1, (long)buildId));
+                    var scripts = LogDB.Table<DB_Script>().Where(x => x.BuildId == buildId).OrderBy(x => x.Order).ToArray();
+                    foreach (DB_Script p in scripts)
                     {
-                        SelectPluginEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{plugins.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
+                        SelectScriptEntries.Add(new Tuple<string, long, long>($"[{p.Order}/{scripts.Length}] {p.Name} ({p.Path})", p.Id, (long)buildId));
                     }
 
-                    if (showLastPlugin)
-                        SelectPluginIndex = SelectPluginEntries.Count - 1; // Last Plugin, which is just added
+                    if (showLastScript)
+                        SelectScriptIndex = SelectScriptEntries.Count - 1; // Last Script, which is just added
                     else
-                        SelectPluginIndex = 0;
+                        SelectScriptIndex = 0;
                 }
             });
         }
@@ -409,11 +409,11 @@ namespace PEBakery.WPF
                 {
                     long buildId = selectBuildEntries[value].Item2;
 
-                    RefreshPlugin(SelectBuildEntries[value].Item2, false);
+                    RefreshScript(SelectBuildEntries[value].Item2, false);
                 }
                 else
                 {
-                    RefreshPlugin(null, false);
+                    RefreshScript(null, false);
                 }
 
                 OnPropertyUpdate("SelectBuildIndex");
@@ -431,19 +431,19 @@ namespace PEBakery.WPF
             }
         }
 
-        private int selectPluginIndex;
-        public int SelectPluginIndex
+        private int selectScriptIndex;
+        public int SelectScriptIndex
         {
-            get => selectPluginIndex;
+            get => selectScriptIndex;
             set
             {
-                selectPluginIndex = value;
-                if (value != -1 && 0 < selectPluginEntries.Count)
+                selectScriptIndex = value;
+                if (value != -1 && 0 < selectScriptEntries.Count)
                 {
-                    long pluginId = selectPluginEntries[value].Item2;
-                    long buildId = selectPluginEntries[value].Item3;
+                    long scriptId = selectScriptEntries[value].Item2;
+                    long buildId = selectScriptEntries[value].Item3;
 
-                    if (pluginId == -1)
+                    if (scriptId == -1)
                     { // Summary
                         // BuildLog
                         BuildLogListModel buildLogListModel = new BuildLogListModel();
@@ -480,10 +480,10 @@ namespace PEBakery.WPF
                         LogStatModel = stat;
                     }
                     else
-                    { // Per Plugin
+                    { // Per Script
                         // BuildLog
                         BuildLogListModel buildLogListModel = new BuildLogListModel();
-                        foreach (DB_BuildLog b in LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.PluginId == pluginId))
+                        foreach (DB_BuildLog b in LogDB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.ScriptId == scriptId))
                             buildLogListModel.Add(b);
                         BuildLogListModel = buildLogListModel;
 
@@ -496,7 +496,7 @@ namespace PEBakery.WPF
                         foreach (DB_Variable v in vars)
                             vModel.Add(v);
                         vars = LogDB.Table<DB_Variable>()
-                            .Where(x => x.BuildId == buildId && x.PluginId == pluginId && x.Type == VarsType.Local)
+                            .Where(x => x.BuildId == buildId && x.ScriptId == scriptId && x.Type == VarsType.Local)
                             .OrderBy(x => x.Key);
                         foreach (DB_Variable var in vars)
                             vModel.Add(var);
@@ -508,7 +508,7 @@ namespace PEBakery.WPF
                         foreach (LogState state in states)
                         {
                             int count = LogDB.Table<DB_BuildLog>()
-                                .Where(x => x.BuildId == buildId && x.PluginId == pluginId && x.State == state)
+                                .Where(x => x.BuildId == buildId && x.ScriptId == scriptId && x.State == state)
                                 .Count();
 
                             stat.Add(new Tuple<LogState, int>(state, count));
@@ -521,19 +521,19 @@ namespace PEBakery.WPF
                     BuildLogListModel = new BuildLogListModel();
                 }
 
-                OnPropertyUpdate("SelectPluginIndex");
+                OnPropertyUpdate("SelectScriptIndex");
             }
         }
 
-        // Plugin Name, Plugin Id, Build Id
-        private ObservableCollection<Tuple<string, long, long>> selectPluginEntries = new ObservableCollection<Tuple<string, long, long>>();
-        public ObservableCollection<Tuple<string, long, long>> SelectPluginEntries
+        // Script Name, Script Id, Build Id
+        private ObservableCollection<Tuple<string, long, long>> selectScriptEntries = new ObservableCollection<Tuple<string, long, long>>();
+        public ObservableCollection<Tuple<string, long, long>> SelectScriptEntries
         {
-            get => selectPluginEntries;
+            get => selectScriptEntries;
             set
             {
-                selectPluginEntries = value;
-                OnPropertyUpdate("SelectPluginEntries");
+                selectScriptEntries = value;
+                OnPropertyUpdate("SelectScriptEntries");
             }
         }
 

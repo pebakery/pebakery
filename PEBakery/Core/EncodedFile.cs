@@ -97,7 +97,7 @@ namespace PEBakery.Core
     
     [How to improve?]
     - Use LZMA instead of zlib, for better compression rate - DONE
-    - Design more robust plugin format.
+    - Design more robust script format.
     */
 
     // Possible zlib stream header
@@ -114,7 +114,7 @@ namespace PEBakery.Core
             XZ = 0x02, // Type 3 (PEBakery Only)
         }
 
-        public static Plugin AttachFile(Plugin p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.Compress)
         {
             if (p == null) throw new ArgumentNullException("p");
 
@@ -127,21 +127,21 @@ namespace PEBakery.Core
             return Encode(p, dirName, fileName, input, type);
         }
 
-        public static Plugin AttachFile(Plugin p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.Compress)
         {
             if (p == null) throw new ArgumentNullException("p");
 
             return Encode(p, dirName, fileName, srcStream, type);
         }
 
-        public static Plugin AttachFile(Plugin p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.Compress)
         {
             if (p == null) throw new ArgumentNullException("p");
 
             return Encode(p, dirName, fileName, srcBuffer, type);
         }
 
-        public static MemoryStream ExtractFile(Plugin p, string dirName, string fileName)
+        public static MemoryStream ExtractFile(Script p, string dirName, string fileName)
         {
             if (p == null) throw new ArgumentNullException("p");
 
@@ -153,7 +153,7 @@ namespace PEBakery.Core
             return Decode(encoded);
         }
 
-        public static MemoryStream ExtractLogo(Plugin p, out ImageHelper.ImageType type)
+        public static MemoryStream ExtractLogo(Script p, out ImageHelper.ImageType type)
         {
             if (p == null) throw new ArgumentNullException("p");
 
@@ -173,7 +173,7 @@ namespace PEBakery.Core
             return Decode(encoded);
         }
 
-        public static MemoryStream ExtractInterfaceEncoded(Plugin p, string fileName)
+        public static MemoryStream ExtractInterfaceEncoded(Script p, string fileName)
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
@@ -185,7 +185,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Encode, Decode
-        private static Plugin Encode(Plugin p, string dirName, string fileName, byte[] input, EncodeMode mode)
+        private static Script Encode(Script p, string dirName, string fileName, byte[] input, EncodeMode mode)
         {
             using (MemoryStream ms = new MemoryStream(input))
             {
@@ -193,10 +193,10 @@ namespace PEBakery.Core
             }
         }
 
-        private static Plugin Encode(Plugin p, string dirName, string fileName, Stream inputStream, EncodeMode mode)
+        private static Script Encode(Script p, string dirName, string fileName, Stream inputStream, EncodeMode mode)
         {
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
-            if (fileName.Length == 0 || 512 <= fileNameUTF8.Length)
+            if (fileNameUTF8.Length == 0 || 512 <= fileNameUTF8.Length)
                 throw new FileDecodeFailException($"Filename's UTF8 encoded length should be shorter than 512B");
 
             // Check Overwrite
@@ -358,7 +358,7 @@ namespace PEBakery.Core
                 }
             }
 
-            // [Stage 8] Before writing to file, backup original plugin
+            // [Stage 8] Before writing to file, backup original script
             string tempFile = Path.GetTempFileName();
             File.Copy(p.FullPath, tempFile, true);
 
@@ -395,8 +395,8 @@ namespace PEBakery.Core
                 File.Delete(tempFile);
             }
 
-            // [Stage 10] Refresh Plugin
-            return p.Project.RefreshPlugin(p);
+            // [Stage 10] Refresh Script
+            return p.Project.RefreshScript(p);
         }
 
         private static MemoryStream Decode(List<string> encodedList)
@@ -584,7 +584,7 @@ namespace PEBakery.Core
             }
         }
 
-        public EncodedFileInfo(Plugin p, string dirName, string fileName)
+        public EncodedFileInfo(Script p, string dirName, string fileName)
         {
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)

@@ -39,8 +39,8 @@ namespace PEBakery.Core
     public class CodeValidator
     {
         #region Field and Property
-        private Plugin p;
-        private List<PluginSection> visitedSections = new List<PluginSection>();
+        private Script p;
+        private List<ScriptSection> visitedSections = new List<ScriptSection>();
 
         public int CodeSectionCount => p.Sections.Where(x => x.Value.Type == SectionType.Code).Count();
         public int VisitedSectionCount => visitedSections.Count;
@@ -68,7 +68,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public CodeValidator(Plugin p)
+        public CodeValidator(Script p)
         {
             this.p = p ?? throw new ArgumentNullException("p");
         }
@@ -94,7 +94,7 @@ namespace PEBakery.Core
         }
 
         #region ValidateCodeSection
-        private List<LogInfo> ValidateCodeSection(PluginSection section)
+        private List<LogInfo> ValidateCodeSection(ScriptSection section)
         {
             // Already processed, so skip
             if (visitedSections.Contains(section))
@@ -126,16 +126,14 @@ namespace PEBakery.Core
                             { 
                                 // Exception Handling for 1-files.script
                                 // If,ExistSection,%ScriptFile%,Cache_Delete_B,Run,%ScriptFile%,Cache_Delete_B
-                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                    info.Condition.Arg1.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                 {
                                     if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
                                     {
                                         Debug.Assert(info.Embed.Info.GetType() == typeof(CodeInfo_RunExec));
                                         CodeInfo_RunExec subInfo = info.Embed.Info as CodeInfo_RunExec;
 
-                                        if (subInfo.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                            subInfo.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                        if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                         {
                                             if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
                                                 continue;
@@ -162,8 +160,7 @@ namespace PEBakery.Core
                             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
@@ -181,8 +178,7 @@ namespace PEBakery.Core
                                 continue;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
@@ -199,7 +195,7 @@ namespace PEBakery.Core
         #endregion
 
         #region ValidateUISection
-        private List<LogInfo> ValidateUISection(PluginSection section)
+        private List<LogInfo> ValidateUISection(ScriptSection section)
         {
             // Force parsing of code, bypassing caching by section.GetUICodes()
             List<string> lines = section.GetLines();
