@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Exceptions;
@@ -85,7 +94,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not a valid integer");
                         if (lines <= 0)
-                            throw new ExecuteException($"[{linesStr}] must be positive integer");
+                            throw new ExecuteException($"[{linesStr}] must be a positive integer");
 
                         // +1 to not count ErrorOff itself
                         s.ErrorOffSection = cmd.Addr.Section;
@@ -407,7 +416,7 @@ namespace PEBakery.Core.Commands
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Plugin, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to default state"));
+                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to their default state"));
                     }
                     break;
                 default: // Error

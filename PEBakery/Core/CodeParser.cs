@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 // TODO: Full Lexer / Parser and AST!
@@ -2956,7 +2965,7 @@ namespace PEBakery.Core
                         info.Link = newLinkList;
                     }
                     else
-                        throw new InvalidCodeCommandException("Else must be used after If", cmd);
+                        throw new InvalidCodeCommandException("[Else] must be used after [If]", cmd);
                         
                 }
                 else if (cmd.Type != CodeType.Begin && cmd.Type != CodeType.End) // The other operands - just copy
@@ -3009,7 +3018,7 @@ namespace PEBakery.Core
                     // Find proper End
                     int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                     if (endIdx == -1)
-                        throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
+                        throw new InvalidCodeCommandException("[Begin] must be matched with [End]", cmd);
 
                     info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
                     info.LinkParsed = true;
@@ -3018,7 +3027,7 @@ namespace PEBakery.Core
                 }
                 else if (info.Embed.Type == CodeType.Else || info.Embed.Type == CodeType.End) // Cannot come here!
                 {
-                    throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with If", cmd);
+                    throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                 }
                 else // Singleline If
                 {
@@ -3076,7 +3085,7 @@ namespace PEBakery.Core
                         // Find proper End
                         int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                         if (endIdx == -1)
-                            throw new InvalidCodeCommandException("Begin must be matched with End", ifInfo.Embed);
+                            throw new InvalidCodeCommandException("[Begin] must be matched with [End]", ifInfo.Embed);
 
                         ifInfo.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - (codeListIdx + 1)));
                         ifInfo.LinkParsed = true;
@@ -3087,7 +3096,7 @@ namespace PEBakery.Core
                     else if (ifInfo.Embed.Type == CodeType.Else || ifInfo.Embed.Type == CodeType.End) // Cannot come here!
                     {
                         ifInfo.Link.Add(ifInfo.Embed);
-                        throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with If", cmd);
+                        throw new InvalidCodeCommandException($"{info.Embed.Type} cannot be used with [If]", cmd);
                     }
                     else // Singleline If
                     {
@@ -3104,7 +3113,7 @@ namespace PEBakery.Core
                 // Find proper End
                 int endIdx = MatchBeginWithEnd(codeList, codeListIdx + 1);
                 if (endIdx == -1)
-                    throw new InvalidCodeCommandException("Begin must be matched with End", cmd);
+                    throw new InvalidCodeCommandException("[Begin] must be matched with [End]", cmd);
 
                 info.Link.AddRange(codeList.Skip(codeListIdx + 1).Take(endIdx - codeListIdx - 1)); // Remove Begin and End
                 info.LinkParsed = true;
@@ -3115,7 +3124,7 @@ namespace PEBakery.Core
             else if (elseEmbCmd.Type == CodeType.Else || elseEmbCmd.Type == CodeType.End)
             {
                 info.Link.Add(info.Embed);
-                throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with Else", cmd);
+                throw new InvalidCodeCommandException($"{elseEmbCmd.Type} cannot be used with [Else]", cmd);
             }
             else // Normal codes
             {

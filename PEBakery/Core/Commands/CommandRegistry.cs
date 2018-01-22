@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
@@ -239,7 +248,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt32(valueData, out uint valUInt32))
                                 subKey.SetValue(valueName, (int)valUInt32, RegistryValueKind.DWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not valid DWORD");
+                                throw new ExecuteException($"[{valueData}] is not a valid DWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_DWORD [{valueData}]"));
                         }
                         break;
@@ -251,7 +260,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt64(valueData, out ulong valUInt64))
                                 subKey.SetValue(valueName, (long)valUInt64, RegistryValueKind.QWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not valid QWORD");
+                                throw new ExecuteException($"[{valueData}] is not a valid QWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_QWORD [{valueData}]"));
                         }
                         break;
@@ -308,7 +317,7 @@ namespace PEBakery.Core.Commands
                 try
                 {
                     info.HKey.DeleteSubKeyTree(keyPath, true);
-                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] deleted"));
+                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] was deleted"));
                 }
                 catch (ArgumentException)
                 {
@@ -330,7 +339,7 @@ namespace PEBakery.Core.Commands
                     try
                     {
                         subKey.DeleteValue(valueName, true);
-                        logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}\\{valueName}] deleted"));
+                        logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullKeyPath}\\{valueName}] was deleted"));
                     }
                     catch (ArgumentException)
                     {
@@ -423,7 +432,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -450,7 +459,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -475,7 +484,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -516,12 +525,12 @@ namespace PEBakery.Core.Commands
                         {
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnt"));
+                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
                             if (Variables.DetermineType(info.Arg2) == Variables.VarKeyType.None)
-                                throw new ExecuteException($"[{info.Arg2}] is not valid variable name");
+                                throw new ExecuteException($"[{info.Arg2}] is not a valid variable name");
 
                             string idxStr;
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
@@ -588,7 +597,7 @@ namespace PEBakery.Core.Commands
             string fullKeyPath = $"{hKeyStr}\\{keyPath}";
 
             if (File.Exists(regFile))
-                logs.Add(new LogInfo(LogState.Warning, $"File [{regFile}] will be overwritten"));
+                logs.Add(new LogInfo(LogState.Overwrite, $"File [{regFile}] will be overwritten"));
 
             using (Process proc = new Process())
             {
@@ -605,7 +614,7 @@ namespace PEBakery.Core.Commands
                 if (proc.ExitCode == 0) // Success
                     logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullKeyPath}] exported to [{regFile}]"));
                 else // Failure
-                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] cannot be exported"));
+                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] could not be exported"));
             }
 
             return logs;

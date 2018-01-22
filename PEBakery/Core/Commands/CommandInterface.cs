@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Exceptions;
@@ -64,7 +73,7 @@ namespace PEBakery.Core.Commands
             UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] from section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -123,7 +132,7 @@ namespace PEBakery.Core.Commands
                 UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] from section [{ifaceSecName}]"));
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]"));
                     continue;
                 }
 
@@ -171,7 +180,7 @@ namespace PEBakery.Core.Commands
             UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
                 return logs;
             }
 
@@ -240,7 +249,7 @@ namespace PEBakery.Core.Commands
             UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
                 return logs;
             }
 
@@ -314,7 +323,7 @@ namespace PEBakery.Core.Commands
 
                         if (success == false && varLogs.Count == 0)
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"Wring [Value] to [{uiCmd.Type}] is not supported"));
+                            logs.Add(new LogInfo(LogState.Error, $"Writing [Value] to [{uiCmd.Type}] is not supported"));
                             return logs;
                         } 
                     }
@@ -376,9 +385,9 @@ namespace PEBakery.Core.Commands
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
                 
                 if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
-                    throw new ExecuteException($"[{timeoutStr}] is not valid positive integer");
+                    throw new ExecuteException($"[{timeoutStr}] is not a valid positive integer");
                 if (timeout <= 0)
-                    throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");
+                    throw new ExecuteException($"Timeout must be a positive integer [{timeoutStr}]");
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {

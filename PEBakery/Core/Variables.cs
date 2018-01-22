@@ -1,4 +1,31 @@
-﻿using PEBakery.Exceptions;
+﻿/*
+    Copyright (C) 2016-2017 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
+*/
+
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
@@ -716,9 +743,9 @@ namespace PEBakery.Core
         public static LogInfo SetSectionParam(EngineState s, int pIdx, string value)
         {
             if (pIdx <= 0)
-                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be positive integer");
+                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
-                return new LogInfo(LogState.Error, $"Section parameter cannot have circular reference");
+                return new LogInfo(LogState.Error, $"Section parameter cannot have a circular reference");
                 
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
@@ -747,7 +774,7 @@ namespace PEBakery.Core
                 {
                     key = Variables.GetVariableName(s, key);
                     if (key == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{key}], must start and end with %"));
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{key}] must start and end with %"));
 
                     if (permanent)
                     {
@@ -757,14 +784,14 @@ namespace PEBakery.Core
                         {
                             if (Ini.DeleteKey(s.Project.MainPlugin.FullPath, "Variables", $"%{key}%")) // Delete var line
                             {
-                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] deleted"));
+                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             }
                             else
                             {
                                 if (globalResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                                 else if (localResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
                                 else
                                     throw new InternalException("Internal Error at Variables.SetVariable");
                             }
@@ -779,9 +806,9 @@ namespace PEBakery.Core
                         bool globalResult = s.Variables.Delete(VarsType.Global, key);
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult)
-                            logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                            logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                         else if (localResult)
-                            logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
                         else
                             logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }

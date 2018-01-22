@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Core;
@@ -561,8 +570,10 @@ namespace PEBakery.WPF
                 {
                     if (type == ImageHelper.ImageType.Svg)
                     {
-                        ImageHelper.GetSvgSize(ms, out double width, out double height);
-                        image.Source = ImageHelper.SvgToBitmapImage(ms, width, height);
+                        // var (Width, Height) = ImageHelper.GetSvgSize(ms);
+                        // image.Source = ImageHelper.SvgToBitmapImage(ms, Width, Height);
+
+                        image.Source = ImageHelper.SvgToBitmapImage(ms);
                     }
                     else
                     {

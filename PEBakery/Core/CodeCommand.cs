@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System.Collections.Generic;
@@ -3254,7 +3263,7 @@ namespace PEBakery.Core
                             if (match)
                                 logMessage = $"Variable [{Arg1}] exists";
                             else
-                                logMessage = $"Variable [{Arg1}] does not exists";
+                                logMessage = $"Variable [{Arg1}] does not exist";
                         }
                         else
                         {
@@ -3274,7 +3283,7 @@ namespace PEBakery.Core
                         if (match)
                             logMessage = $"Macro [{macroName}] exists";
                         else
-                            logMessage = $"Macro [{macroName}] does not exists";
+                            logMessage = $"Macro [{macroName}] does not exist";
 
                         if (NotFlag)
                             match = !match;
@@ -3301,14 +3310,14 @@ namespace PEBakery.Core
                             }
 
                             if (match)
-                                logMessage = $"Ping to [{host}] successed";
+                                logMessage = $"[{host}] responded to Ping";
                             else
-                                logMessage = $"Ping to [{host}] failed";
+                                logMessage = $"[{host}] did not respond to Ping";
                         }
                         catch (PingException e)
                         {
                             match = false;
-                            logMessage = $"Error while pinging to [{host}] : [{e.Message}]";
+                            logMessage = $"Error while pinging [{host}] : [{e.Message}]";
                         }
 
                         if (NotFlag)

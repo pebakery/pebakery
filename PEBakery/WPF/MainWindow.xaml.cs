@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using MahApps.Metro.IconPacks;
@@ -184,13 +193,13 @@ namespace PEBakery.WPF
             AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
-            // Set PEBakery Logo
+            // Load PEBakery Logo
             Image image = new Image()
-            {
+            { 
                 UseLayoutRounding = true,
                 Stretch = Stretch.Uniform,
                 StretchDirection = StretchDirection.DownOnly,
-                Source = ImageHelper.ToBitmapImage(Properties.Resources.DonutPng),
+                Source = Application.Current.TryFindResource("DonutSvgImage") as DrawingImage,
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             PluginLogo.Content = image;

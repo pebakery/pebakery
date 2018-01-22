@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Exceptions;
@@ -66,7 +75,7 @@ namespace PEBakery.Core.Commands
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, $"File [{downloadTo}] will be overwritten"));
+                        logs.Add(new LogInfo(LogState.Overwrite, $"File [{downloadTo}] will be overwritten"));
                     }
                 }
                 else
@@ -138,11 +147,11 @@ namespace PEBakery.Core.Commands
                     if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                     {
                         File.Move(tempPath, destPath);
-                        logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{downloadTo}], and its integerity is checked."));
+                        logs.Add(new LogInfo(LogState.Success, $"[{url}] was downloaded to [{downloadTo}] and it's integerity was verified."));
                     }
                     else
                     {
-                        logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but it was corrupted"));
+                        logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but the file was corrupted"));
                     }
                 }
                 else

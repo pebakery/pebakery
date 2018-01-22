@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2024
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery", "PEBakery\PEBakery.csproj", "{D6224DCE-02D5-4005-88FB-00A8E00CACE1}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedWimLib", "ManagedWimLib\ManagedWimLib.csproj", "{73BDCA22-081D-489E-95E7-A02A6778BB7C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedWimLib.Tests", "ManagedWimLib.Tests\ManagedWimLib.Tests.csproj", "{5CC90FF4-728C-4C4D-B5A4-A4B27D3DF0C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XZNet20", "XZNet20\XZNet20.csproj", "{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +155,18 @@ Global
 		{5CC90FF4-728C-4C4D-B5A4-A4B27D3DF0C5}.Release|x64.Build.0 = Release|Any CPU
 		{5CC90FF4-728C-4C4D-B5A4-A4B27D3DF0C5}.Release|x86.ActiveCfg = Release|Any CPU
 		{5CC90FF4-728C-4C4D-B5A4-A4B27D3DF0C5}.Release|x86.Build.0 = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|x64.Build.0 = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Debug|x86.Build.0 = Debug|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x64.ActiveCfg = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x64.Build.0 = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x86.ActiveCfg = Release|Any CPU
+		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

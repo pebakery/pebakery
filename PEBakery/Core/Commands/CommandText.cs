@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Exceptions;
@@ -206,7 +215,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -244,7 +253,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -296,7 +305,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -343,7 +352,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -403,7 +412,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 
@@ -451,7 +460,7 @@ namespace PEBakery.Core.Commands
 
             if (File.Exists(fileName) == false)
             {
-                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] not exists"));
+                logs.Add(new LogInfo(LogState.Error, $"File [{fileName}] does not exist"));
                 return logs;
             }
 

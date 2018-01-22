@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using PEBakery.Exceptions;
@@ -88,7 +97,7 @@ namespace PEBakery.Core.Commands
                 ms.CopyTo(fs);
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted to [{destDir}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted to [{destDir}]"));
 
             return logs;
         }
@@ -127,7 +136,7 @@ namespace PEBakery.Core.Commands
             proc.StartInfo.Verb = "Open";
             proc.Start();
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] extracted and executed"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted and executed"));
 
             return logs;
         }
@@ -182,7 +191,7 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] extracted to [{destDir}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Encoded folder [{dirName}] was extracted to [{destDir}]"));
 
             return logs;
         }
@@ -204,7 +213,7 @@ namespace PEBakery.Core.Commands
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
                 EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] encoded into [{p.FullPath}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{p.FullPath}]", cmd));
             }
             else
             { // With Wildcard
@@ -225,7 +234,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No file will be copied
-                    logs.Add(new LogInfo(LogState.Warning, $"Files match wildcard [{filePath}] not found", cmd));
+                    logs.Add(new LogInfo(LogState.Warning, $"Files matching wildcard [{filePath}] were not found", cmd));
                 }
             }
 

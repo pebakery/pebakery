@@ -74,30 +74,20 @@ namespace PEBakery.Properties {
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
         ///&lt;html lang=&quot;ko&quot;&gt;
-        ///	&lt;head&gt;
-        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
-        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
         ///
-        ///		&lt;title&gt;@Model.BuildName&lt;/title&gt;
+        ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
-        ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.bootstra[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;link r[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildLogHtmlTemplate {
             get {
                 return ResourceManager.GetString("BuildLogHtmlTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        /// </summary>
-        internal static System.Drawing.Bitmap DonutPng {
-            get {
-                object obj = ResourceManager.GetObject("DonutPng", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
             }
         }
         
@@ -111,23 +101,19 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   PEBakery
-        ///Copyright (c) 2016-2018 Hajin Jang
+        ///   Unless specified, PEBakery is licensed under GPLv3 or any
+        ///later version with additional permission.
         ///
-        ///Unless specified, PEBakery is licensed under GPLv3 or any later version. 
-        ///
-        ///Some parts of PEBakery is licensed under various license, specified on a
-        ///per-file basis or LICENSE file placed in a subdirectory.
-        ///
-        ///	GNU General Public License Version 3
-        ///    https://www.gnu.org/licenses/gpl.txt
-        ///
+        ///Some parts of PEBakery is licensed under various license,
+        ///specified on a per-file basis or LICENSE file placed in
+        ///a subdirectory.
         ///-----------------------------------------------------------
-        ///These parts of PEBakery is licensed under various license.
+        ///Copyright (C) 2016-2018 Hajin Jang
         ///
-        ///PEBakery.CabLib
-        ///PEBakery.CabLib.Tests
-        ///    Apa[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///PEBakery is free software: you can redistribute it and/or
+        ///modify it under the terms of the GNU General Public License
+        ///as published by the Free Software Foundation, either
+        ///ve[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string LicenseSimple {
             get {
@@ -149,16 +135,16 @@ namespace PEBakery.Properties {
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
         ///&lt;html lang=&quot;ko&quot;&gt;
-        ///	&lt;head&gt;
-        ///		&lt;meta charset=&quot;utf-8&quot;&gt;
-        ///		&lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-        ///		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
-        ///		&lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
+        ///    &lt;head&gt;
+        ///        &lt;meta charset=&quot;utf-8&quot;&gt;
+        ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
+        ///        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, shrink-to-fit=no&quot;&gt;
+        ///        &lt;!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags --&gt;
         ///
-        ///		&lt;title&gt;PEBakery System Log&lt;/title&gt;
+        ///        &lt;title&gt;PEBakery System Log&lt;/title&gt;
         ///
-        ///		&lt;!-- Bootstrap CSS --&gt;
-        ///		&lt;link rel=&quot;stylesheet&quot; href=&quot;https://maxcdn.boots[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;!-- Bootstrap CSS --&gt;
+        ///        &lt;lin[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string SystemLogHtmlTemplate {
             get {

@@ -1,14 +1,36 @@
-﻿PEBakery
-Copyright (c) 2016-2018 Hajin Jang
+﻿Unless specified, PEBakery is licensed under GPLv3 or any
+later version with additional permission.
 
-Unless specified, PEBakery is licensed under GPLv3 or any later version. 
+Some parts of PEBakery is licensed under various license,
+specified on a per-file basis or LICENSE file placed in
+a subdirectory.
+-----------------------------------------------------------
+Copyright (C) 2016-2018 Hajin Jang
 
-Some parts of PEBakery is licensed under various license, specified on a
-per-file basis or LICENSE file placed in a subdirectory.
+PEBakery is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later
+version.
 
-	GNU General Public License Version 3
-    https://www.gnu.org/licenses/gpl.txt
+This program is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+PURPOSE. See the  GNU General Public License for more
+details.
 
+You should have received a copy of the GNU General Public
+License along with this program. If not, see 
+<http://www.gnu.org/licenses/>.
+
+Additional permission under GNU GPL version 3 section 7
+
+If you modify this program, or any covered work, by linking
+or combining it with external libraries, containing parts
+covered by the terms of various license, the licensors of
+this program grant you additional permission to convey the
+resulting work. An external library is a library which is
+not derived from or based on this program. 
 -----------------------------------------------------------
 These parts of PEBakery is licensed under various license.
 
@@ -31,17 +53,24 @@ ManagedWimLib.Tests
     LGPLv3 License
     https://www.gnu.org/licenses/lgpl-3.0.en.html
 
-PEBakery/Helper.cs 
+Launcher
     MIT License
     https://opensource.org/licenses/MIT
 
-PEBakery/Resources/Donut.ico
-    CC BY-NC 3.0
-    https://creativecommons.org/licenses/by-nc/3.0/
+XZNet20/XZ.Net.dll
+    MIT License
+    https://opensource.org/licenses/MIT
 
-    Copyright (c) PixelKit
-    http://www.pixelkit.com/
-    https://www.iconfinder.com/icons/208267/desert_donut_icon
+    https://github.com/RomanBelkov/XZ.NET
+
+XZNet20/liblzma.dll
+XZNet20/liblzma64.dll
+    Public Domain
+    https://git.tukaani.org/?p=xz.git;a=blob;f=COPYING
+
+PEBakery/Helper.cs 
+    MIT License
+    https://opensource.org/licenses/MIT
 
 PEBakery/WPF/Controls/AutoSizedGridView
     MIT License
@@ -68,6 +97,8 @@ PEBakery/WPF/Controls/FreeNumberBox
     https://opensource.org/licenses/MIT
 
 PEBakery/WPF/Controls/Svg/Donut.xaml
+PEBakery/Resources/Donut.ico
+Launcher/Donut.ico
     CC BY 3.0 US
     https://creativecommons.org/licenses/by/3.0/us/
 
@@ -91,7 +122,7 @@ BetterWin32Errors
     
     Copyright (c) Michael Kropat
     https://github.com/mkropat/BetterWin32Errors
-	
+    
 ZLibWrapper
     zlib license
     https://opensource.org/licenses/Zlib
@@ -107,12 +138,12 @@ MahApps.Metro.IconPacks
     https://github.com/MahApps/MahApps.Metro.IconPacks
 
 ManagedWimgApi
-	MIT License
+    MIT License
     https://opensource.org/licenses/MIT
 
     Copyright (c) josemesona
     https://github.com/josemesona/ManagedWimgApi
-	
+    
 Newtonsoft.Json
     MIT License
     https://opensource.org/licenses/MIT
@@ -120,19 +151,12 @@ Newtonsoft.Json
     Copyright (c) James Newton-King
     https://github.com/JamesNK/Newtonsoft.Json
 
-Pinvoke.Win32
-    MIT License
-    https://opensource.org/licenses/MIT
-
-    Copyright (c) Andrew Arnott, Mathias Lykkegaard Lorenzen, Julien Roncaglia
-    https://github.com/AArnott/pinvoke
-
 RazorEngine
-	Apache License, Version 2.0
+    Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
-	
-	https://github.com/Antaris/RazorEngine
-	
+    
+    https://github.com/Antaris/RazorEngine
+
 SevenZipExtractor
     MIT License
     https://opensource.org/licenses/MIT
@@ -159,9 +183,4 @@ Svg.Net
 
     https://github.com/vvvv/SVG
 
-Validation
-    Microsoft Public License (MS-PL)
-    https://opensource.org/licenses/MS-PL
-
-    https://github.com/aarnott/Validation
 -----------------------------------------------------------
