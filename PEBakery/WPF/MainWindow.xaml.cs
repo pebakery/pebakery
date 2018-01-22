@@ -238,14 +238,14 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 // Init ProjectCollection
-                if (setting.Script_EnableCache && scriptCache != null) // Use ScriptCache - Fast speed, more memory
+                if (setting.Script_EnableCache && scriptCache != null) // Use ScriptCache
                 {
                     if (scriptCache.IsGlobalCacheValid(baseDir))
                         projects = new ProjectCollection(baseDir, scriptCache);
                     else // Cache is invalid
                         projects = new ProjectCollection(baseDir, null);
                 }
-                else  // Do not use ScriptCache - Slow speed, less memory
+                else  // Do not use ScriptCache
                 {
                     projects = new ProjectCollection(baseDir, null);
                 }
@@ -852,7 +852,7 @@ namespace PEBakery.WPF
                     PopulateOneTreeView(p, Model.BuildTree, Model.BuildTree);
                     curBuildTree = null;
 
-                    EngineState s = new EngineState(p.Project, logger, Model, p);
+                    EngineState s = new EngineState(p.Project, logger, Model, EngineMode.RunMainAndOne, p);
                     s.SetOption(setting);
 
                     Engine.WorkingEngine = new Engine(s);

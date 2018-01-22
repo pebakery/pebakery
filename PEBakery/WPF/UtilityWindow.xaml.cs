@@ -163,7 +163,7 @@ namespace PEBakery.WPF
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(p.Project, logger, mainModel, p);
+                EngineState s = new EngineState(p.Project, logger, mainModel, EngineMode.RunMainAndOne, p);
                 s.SetOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);

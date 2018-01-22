@@ -966,7 +966,7 @@ namespace PEBakery.WPF
 
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(addr.Script.Project, logger, mainModel, addr.Script, addr.Section.SectionName);
+                EngineState s = new EngineState(addr.Script.Project, logger, mainModel, EngineMode.RunMainAndOne, addr.Script, addr.Section.SectionName);
                 s.SetOption(setting);
                 s.DisableLogger = setting.Log_DisableInInterface;
 

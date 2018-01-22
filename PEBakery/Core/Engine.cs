@@ -88,12 +88,15 @@ namespace PEBakery.Core
             // Init Per-Script Log
             s.ScriptId = s.Logger.Build_Script_Init(s, s.CurrentScript, s.CurrentScriptIdx + 1);
 
+            // Determine EntrySection
+            string entrySection = Engine.GetEntrySection(s);
+
             // Log Script Build Start Message
             string msg;
-            if (s.RunOneScript && s.EntrySection.Equals("Process", StringComparison.OrdinalIgnoreCase) == false)
-                msg = $"Processing Section [{s.EntrySection}] of script [{p.ShortPath}] ({s.CurrentScriptIdx + 1}/{s.Scripts.Count})";
-            else
+            if (s.RunMode == EngineMode.RunAll)
                 msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing script [{p.Title}] ({p.ShortPath})";
+            else
+                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{p.ShortPath}]";
             s.Logger.Build_Write(s, msg);
             s.Logger.Build_Write(s, Logger.LogSeperator);
 
@@ -112,17 +115,18 @@ namespace PEBakery.Core
             s.ProcessedSectionHashes.Clear();
 
             // Set Interface using MainWindow, MainViewModel
-            if (s.RunOneScript)
-                s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(p.Title);
-            else
+            if (s.RunMode == EngineMode.RunAll)
                 s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(p.Title)}";
+            else 
+                s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(p.Title);
+                
             s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(p.Description);
             s.MainViewModel.ScriptVersionText = "v" + p.Version;
             if (MainWindow.ScriptAuthorLenLimit < p.Author.Length)
                 s.MainViewModel.ScriptAuthorText = p.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
             else
                 s.MainViewModel.ScriptAuthorText = p.Author;
-            s.MainViewModel.BuildEchoMessage = $"Processing Section [{s.EntrySection}]...";
+            s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
 
             long allLineCount = 0;
             foreach (var kv in s.CurrentScript.Sections.Where(x => x.Value.Type == SectionType.Code))
@@ -177,9 +181,10 @@ namespace PEBakery.Core
                     ReadyRunScript(s);
 
                     // Run Main Section
-                    if (s.CurrentScript.Sections.ContainsKey(s.EntrySection))
+                    string entrySection = Engine.GetEntrySection(s);
+                    if (s.CurrentScript.Sections.ContainsKey(entrySection))
                     {
-                        ScriptSection mainSection = s.CurrentScript.Sections[s.EntrySection];
+                        ScriptSection mainSection = s.CurrentScript.Sections[entrySection];
                         SectionAddress addr = new SectionAddress(s.CurrentScript, mainSection);
                         s.Logger.LogStartOfSection(s, addr, 0, true, null, null);
                         Engine.RunSection(s, new SectionAddress(s.CurrentScript, mainSection), new List<string>(), 1, false);
@@ -213,8 +218,14 @@ namespace PEBakery.Core
                         s.CmdHaltFlag = bakCmdHalt;
                     }
 
+                    bool runOneScriptExit = false;
+                    if (s.RunMode == EngineMode.RunMainAndOne && s.CurrentScriptIdx != 0)
+                        runOneScriptExit = true;
+                    else if (s.RunMode == EngineMode.RunOne)
+                        runOneScriptExit = true;
+
                     if (s.Scripts.Count - 1 <= s.CurrentScriptIdx ||
-                        s.RunOneScript || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                        runOneScriptExit || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                     { // End of Build
                         bool alertPassCurrentScriptFlag = s.PassCurrentScriptFlag;
                         bool alertErrorHalt = s.ErrorHaltFlag;
@@ -238,7 +249,12 @@ namespace PEBakery.Core
                         s.CmdHaltFlag = false;
 
                         // OnBuildExit event callback
-                        Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
+                        if (s.RunMode == EngineMode.RunAll)
+                        {
+                            // OnBuildExit is not called on script interface control, or codebox
+                            // (which uses EngineMode.RunMainAndOne or EngineMode.RunOne)
+                            Engine.CheckAndRunCallback(s, ref s.OnBuildExit, eventParam, "OnBuildExit", true);
+                        }
 
                         if (alertUserHalt)
                             MessageBox.Show("Build Stopped by User", "Build Halt", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -815,6 +831,17 @@ namespace PEBakery.Core
             }
         }
 
+        public static string GetEntrySection(EngineState s)
+        {
+            string entrySection = "Process";
+            if (s.RunMode == EngineMode.RunMainAndOne && s.CurrentScriptIdx != 0)
+                entrySection = s.RunOneEntrySection;
+            else if (s.RunMode == EngineMode.RunOne)
+                entrySection = s.RunOneEntrySection;
+
+            return entrySection;
+        }
+
         /// <summary>
         /// Get script instance from path string.
         /// </summary>
@@ -865,6 +892,13 @@ namespace PEBakery.Core
     #endregion
 
     #region EngineState
+    public enum EngineMode
+    {
+        RunAll,
+        RunMainAndOne,
+        RunOne,
+    }
+
     public class EngineState
     {
         #region Field and Properties
@@ -873,7 +907,7 @@ namespace PEBakery.Core
         public Variables Variables => Project.Variables;
         public Macro Macro;
         public Logger Logger;
-        public bool RunOneScript;
+        public EngineMode RunMode;
         public MainViewModel MainViewModel;
 
         // Property
@@ -935,10 +969,10 @@ namespace PEBakery.Core
         public CodeCommand OnScriptExit = null;
 
         // Readonly Fields
-        public readonly string EntrySection;
+        public readonly string RunOneEntrySection;
         #endregion
 
-        public EngineState(Project project, Logger logger, MainViewModel mainModel, Script runSingle = null, string entrySection = "Process")
+        public EngineState(Project project, Logger logger, MainViewModel mainModel, EngineMode mode = EngineMode.RunAll, Script runSingle = null, string entrySection = "Process")
         {
             this.Project = project;
             this.Logger = logger;
@@ -946,27 +980,45 @@ namespace PEBakery.Core
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);
 
-            if (runSingle == null)
+            RunMode = mode;
+            switch (RunMode)
             {
-                Scripts = project.ActiveScripts;
+                case EngineMode.RunAll:
+                    { // Run All
+                        Scripts = project.ActiveScripts;
 
-                CurrentScript = Scripts[0]; // Main Script, since its internal level is -256
-                CurrentScriptIdx = 0;
+                        CurrentScript = Scripts[0]; // MainScript
+                        CurrentScriptIdx = 0;
 
-                RunOneScript = false;
-            }
-            else
-            {  // Run only one script
-                Scripts = new List<Script>(1) { runSingle };
+                        RunOneEntrySection = null;
+                    }
+                    break;
+                case EngineMode.RunMainAndOne:
+                    {
+                        if (runSingle.Equals(project.MainScript) && entrySection.Equals("Process", StringComparison.Ordinal))
+                            goto case EngineMode.RunOne;
 
-                CurrentScript = runSingle;
-                CurrentScriptIdx = Scripts.IndexOf(runSingle);
+                        Scripts = new List<Script>(2) { project.MainScript, runSingle };
 
-                RunOneScript = true;
+                        CurrentScript = Scripts[0];
+                        CurrentScriptIdx = 0;
+
+                        RunOneEntrySection = entrySection;
+                    }
+                    break;
+                case EngineMode.RunOne:
+                    { // Run only one 
+                        Scripts = new List<Script>(1) { runSingle };
+
+                        CurrentScript = runSingle;
+                        CurrentScriptIdx = Scripts.IndexOf(runSingle);
+
+                        RunOneEntrySection = entrySection;
+                    }
+                    break;
             }
 
             CurrentSection = null;
-            EntrySection = entrySection;
 
             CurSectionParams = new Dictionary<int, string>();
 
