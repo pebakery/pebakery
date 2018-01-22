@@ -120,7 +120,6 @@ namespace PEBakery.WPF
                         {
                             MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
                             Environment.Exit(1); // Force Shutdown
-                            // Application.Current.Shutdown(1); // Grateful Shutdown
                         }
                         Environment.CurrentDirectory = argBaseDir;
                     }
@@ -193,6 +192,7 @@ namespace PEBakery.WPF
             AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
+            /*
             // Load PEBakery Logo
             Image image = new Image()
             { 
@@ -203,6 +203,10 @@ namespace PEBakery.WPF
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             ScriptLogo.Content = image;
+            */
+
+            // Load CommentProcessing Icon
+            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
 
             // Prepare PEBakery Loading Information
             if (quiet == false)
