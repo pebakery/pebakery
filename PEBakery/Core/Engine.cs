@@ -650,6 +650,7 @@ namespace PEBakery.Core
                         CommandBranch.RunExec(s, cmd);
                         break;
                     case CodeType.Loop:
+                    case CodeType.LoopLetter:
                         CommandBranch.Loop(s, cmd);
                         break;
                     case CodeType.If:
@@ -899,6 +900,13 @@ namespace PEBakery.Core
         RunOne,
     }
 
+    public enum LoopState
+    {
+        Off,
+        OnIndex,
+        OnDriveLetter,
+    }
+
     public class EngineState
     {
         #region Field and Properties
@@ -933,8 +941,9 @@ namespace PEBakery.Core
         public List<int> ProcessedSectionHashes = new List<int>();
         public int CurDepth = 1;
         public bool ElseFlag = false;
-        public bool LoopRunning = false;
+        public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
+        public char LoopLetter = ' ';
         public Dictionary<string, string> LocalVarsBackup = null; // For System,SetLocal
         public bool InMacro = false;
         public bool PassCurrentScriptFlag = false; // Exit Command

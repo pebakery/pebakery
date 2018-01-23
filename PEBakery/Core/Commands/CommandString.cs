@@ -281,8 +281,8 @@ namespace PEBakery.Core.Commands
                         }
                         else if (srcStr.Length == 1 && (type == StrFormatType.Inc || type == StrFormatType.Dec))
                         { // Letter
-                            bool upper = ('A' <= srcStr[0] && srcStr[0] <= 'Z');
-                            bool lower = ('a' <= srcStr[0] && srcStr[0] <= 'z');
+                            bool upper = StringHelper.IsUpperAlphabet(srcStr[0]);
+                            bool lower = StringHelper.IsLowerAlphabet(srcStr[0]);
                             if (upper == false && lower == false)
                             {
                                 logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer nor drive letter"));
@@ -295,7 +295,7 @@ namespace PEBakery.Core.Commands
                             else if (type == StrFormatType.Dec)
                                 dest = (char)(dest - operand);
 
-                            if ((upper && !('A' <= dest && dest <= 'Z')) || (lower && !('a' <= dest && dest <= 'z')))
+                            if ((upper && !StringHelper.IsUpperAlphabet(dest)) || (lower && !StringHelper.IsLowerAlphabet(dest)))
                             {
                                 logs.Add(new LogInfo(LogState.Error, "Result is not a valid drive letter"));
                                 return logs;

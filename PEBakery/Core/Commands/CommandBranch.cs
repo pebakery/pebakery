@@ -127,25 +127,28 @@ namespace PEBakery.Core.Commands
 
             if (info.Break)
             {
-                if (s.LoopRunning)
-                {
-                    s.LoopRunning = false;
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking Loop", cmd, s.CurDepth));
-                }
-                else
+                if (s.LoopState == LoopState.Off)
                 {
                     s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
                 }
+                else
+                {
+                    s.LoopState = LoopState.Off;
+                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking loop", cmd, s.CurDepth));
+
+                    // Reset LoopCounter, to be sure
+                    s.LoopLetter = ' ';
+                    s.LoopCounter = 0;
+                }
+            }
+            else if (s.LoopState != LoopState.Off)
+            { // If loop is already turned on, throw error
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, s.CurDepth));
             }
             else
             {
-                string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
-                if (NumberHelper.ParseInt64(startIdxStr, out long startIdx) == false)
-                    throw new ExecuteException($"Argument [{startIdxStr}] is not a valid integer");
-                string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
-                if (NumberHelper.ParseInt64(endIdxStr, out long endIdx) == false)
-                    throw new ExecuteException($"Argument [{endIdxStr}] is not a valid integer");
-                long loopCount = endIdx - startIdx + 1;
+                string startStr = StringEscaper.Preprocess(s, info.StartIdx);
+                string endStr = StringEscaper.Preprocess(s, info.EndIdx);
 
                 // Prepare Loop
                 string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
@@ -158,6 +161,47 @@ namespace PEBakery.Core.Commands
                 if (!p.Sections.ContainsKey(sectionName))
                     throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
+                // Section Parameter
+                Dictionary<int, string> paramDict = new Dictionary<int, string>();
+                for (int i = 0; i < paramList.Count; i++)
+                    paramDict[i + 1] = paramList[i];
+
+                //
+                long loopCount = 0;
+                long startIdx = 0, endIdx = 0;
+                char startLetter = ' ', endLetter = ' ';
+                switch (cmd.Type)
+                {
+                    case CodeType.Loop:
+                        { // Integer Index
+                            if (!NumberHelper.ParseInt64(startStr, out startIdx))
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                            if (!NumberHelper.ParseInt64(endStr, out endIdx))
+                                throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
+                            loopCount = endIdx - startIdx + 1;
+                        }
+                        break;
+                    case CodeType.LoopLetter:
+                        { // Drive Letter
+                            if (!(startStr.Length == 1 && StringHelper.IsAlphabet(startStr[0])))
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid drive letter");
+                            if (!(endStr.Length == 1 && StringHelper.IsAlphabet(endStr[0])))
+                                throw new ExecuteException($"Argument [{endStr}] is not a valid drive letter");
+
+                            startLetter = char.ToUpper(startStr[0]);
+                            endLetter = char.ToUpper(endStr[0]);
+
+                            if (endLetter < startLetter)
+                                throw new ExecuteException($"StartLetter must be smaller than EndLetter in lexicographic order");
+
+                            loopCount = endLetter - startLetter + 1;
+                        }
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at CommandBranch.Loop");
+                }
+
+                // Log Messages
                 string logMessage;
                 if (inCurrentScript)
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
@@ -165,28 +209,54 @@ namespace PEBakery.Core.Commands
                     logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
-                // Section Parameter
-                Dictionary<int, string> paramDict = new Dictionary<int, string>();
-                for (int i = 0; i < paramList.Count; i++)
-                    paramDict[i + 1] = paramList[i];
-
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
-                for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
-                { // Counter Variable is [#c]
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
-                    s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
+                int loopIdx = 1;
+                switch (cmd.Type)
+                {
+                    case CodeType.Loop:
+                        for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
+                        { // Counter Variable is [#c]
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
-                    int depthBackup = s.CurDepth;
-                    s.LoopRunning = true;
-                    Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
-                    if (s.LoopRunning == false) // Loop,Break
+                            int depthBackup = s.CurDepth;
+                            s.LoopState = LoopState.OnIndex;
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+                            if (s.LoopState == LoopState.Off) // Loop,Break
+                                break;
+                            s.LoopState = LoopState.Off;
+                            s.CurDepth = depthBackup;
+
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            loopIdx += 1;
+                        }
                         break;
-                    s.LoopRunning = false;
-                    s.CurDepth = depthBackup;
+                    case CodeType.LoopLetter:
+                        for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
+                        { // Counter Variable is [#c]
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
+                            int depthBackup = s.CurDepth;
+                            s.LoopState = LoopState.OnDriveLetter;
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+                            if (s.LoopState == LoopState.Off) // Loop,Break
+                                break;
+                            s.LoopState = LoopState.Off;
+                            s.CurDepth = depthBackup;
+
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            loopIdx += 1;
+                        }
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at CommandBranch.Loop");
                 }
+
+                // Reset LoopCounter, to be sure
+                s.LoopLetter = ' ';
+                s.LoopCounter = 0;
             }
         }
 

@@ -80,7 +80,7 @@ namespace PEBakery.Core
         // 13 Wim
         WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
         // 80 Branch
-        Run = 8000, Exec, Loop, If, Else, Begin, End,
+        Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
         GetParam = 8198, PackParam = 8199, // Will be deprecated
@@ -3553,11 +3553,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
+        // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+        // Loop,BREAK
         public bool Break;
         public string ScriptFile;
         public string SectionName;
-        public string StartIdx;  //  Its type should be int, but set to string because of variable system
-        public string EndIdx;   //  Its type should be int, but set to string because of variable system
+        public string StartIdx;
+        public string EndIdx; 
         public List<string> Parameters;
 
         public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
@@ -3581,6 +3583,10 @@ namespace PEBakery.Core
             b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
+            b.Append(",");
+            b.Append(StartIdx);
+            b.Append(",");
+            b.Append(EndIdx);
             foreach (string param in Parameters)
             {
                 b.Append(",");

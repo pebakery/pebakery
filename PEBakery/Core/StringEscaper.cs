@@ -421,8 +421,15 @@ namespace PEBakery.Core
                 str = StringHelper.ReplaceEx(str, "#r", s.SectionReturnValue, StringComparison.Ordinal);
 
             // Escape #c (Loop Counter)
-            if (s.LoopRunning) 
-                str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
+            switch (s.LoopState)
+            {
+                case LoopState.OnIndex:
+                    str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
+                    break;
+                case LoopState.OnDriveLetter:
+                    str = StringHelper.ReplaceEx(str, "#c", s.LoopLetter.ToString(), StringComparison.Ordinal);
+                    break;
+            }              
 
             return str;
         }

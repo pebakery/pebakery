@@ -1409,6 +1409,7 @@ namespace PEBakery.Core
                         return new CodeInfo_RunExec(scriptFile, sectionName, parameters);
                     }
                 case CodeType.Loop:
+                case CodeType.LoopLetter:
                     {
                         if (args.Count == 1)
                         { // Loop,BREAK

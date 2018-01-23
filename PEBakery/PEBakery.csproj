@@ -183,7 +183,6 @@
       <DependentUpon>FreeNumberBox.xaml</DependentUpon>
     </Compile>
     <Compile Include="WPF\Controls\MahApps\ProgressRing.cs" />
-    <Compile Include="WPF\Controls\RectGroupBox.cs" />
     <Compile Include="WPF\LogWindow.xaml.cs">
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
