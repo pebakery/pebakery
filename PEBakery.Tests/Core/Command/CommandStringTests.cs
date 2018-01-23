@@ -188,7 +188,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_3()
         {
-            string rawCode = "StrFormat,Date,%Dest%,yyy-mm-dd_hh:nn:ss.zzz";
+            string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
@@ -200,7 +200,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_4()
         {
-            string rawCode = "StrFormat,Date,%Dest%,yyymdd_hhnnss.zzz";
+            string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
