@@ -2105,6 +2105,7 @@ namespace PEBakery.Core
             // Year
             [@"yyyy"] = @"yyyy",
             [@"yy"] = @"yy",
+            [@"y"] = @"y",
             // Month
             [@"mmmm"] = @"MMMM",
             [@"mmm"] = @"MMM",
@@ -2126,14 +2127,21 @@ namespace PEBakery.Core
             [@"s"] = @"s",
             // Millisecond
             [@"zzz"] = @"fff",
+            [@"zz"] = @"fff",
+            [@"z"] = @"fff",
             // AM/PM
             [@"AM/PM"] = @"tt", 
             [@"am/pm"] = @"tt", // C# only supports uppercase AM/PM in CultureInfo.InvariantCulture
-            [@"tt"] = @"tt",
+            // WB uses 12hr short time for t, 12hr long for tt
+            [@"tt"] = @"H:mm:ss tt",
+            [@"t"] = @"H:mm tt",
+            // Gregorian Era (B.C./A.C.)
+            [@"gg"] = @"gg",
+            [@"g"] = @"gg",
         };
 
-        // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM
-        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', };
+        // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
+        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
         
         private static string StrFormat_Date_FormatString(string str)
         {
