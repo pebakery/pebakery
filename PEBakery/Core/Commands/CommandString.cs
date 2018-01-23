@@ -279,23 +279,29 @@ namespace PEBakery.Core.Commands
 
                             destStr = dest.ToString();
                         }
-                        else if (srcStr.Length == 1 && ('A' <= srcStr[0] && srcStr[0] <= 'Z') || ('a' <= srcStr[0] && srcStr[0] <= 'z'))
+                        else if (srcStr.Length == 1 && (type == StrFormatType.Inc || type == StrFormatType.Dec))
                         { // Letter
+                            bool upper = ('A' <= srcStr[0] && srcStr[0] <= 'Z');
+                            bool lower = ('a' <= srcStr[0] && srcStr[0] <= 'z');
+                            if (upper == false && lower == false)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer nor drive letter"));
+                                return logs;
+                            }
+
                             char dest = srcStr[0];
                             if (type == StrFormatType.Inc)
                                 dest = (char)(dest + operand);
                             else if (type == StrFormatType.Dec)
                                 dest = (char)(dest - operand);
 
-                            if (('A' <= dest && dest <= 'Z') || ('a' <= dest && dest <= 'z'))
+                            if ((upper && !('A' <= dest && dest <= 'Z')) || (lower && !('a' <= dest && dest <= 'z')))
                             {
-                                destStr = dest.ToString();
-                            }
-                            else
-                            {
-                                logs.Add(new LogInfo(LogState.Error, $"Result [{dest}] is not a valid drive letter"));
+                                logs.Add(new LogInfo(LogState.Error, "Result is not a valid drive letter"));
                                 return logs;
                             }
+
+                            destStr = dest.ToString();
                         }
                         else
                         {

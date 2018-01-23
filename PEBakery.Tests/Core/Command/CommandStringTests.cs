@@ -289,8 +289,8 @@ namespace PEBakery.Tests.Core.Command
 
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "15", "35");
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "0x0F", "35");
-            // TODO: WB082 returns 'u', does Win10PESE utliize this case?
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,1", "Y", "Z");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,2", "Y", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "-5", "15");
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,-5", "20", "15");
@@ -307,7 +307,8 @@ namespace PEBakery.Tests.Core.Command
 
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "15", "-5");
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,0x0F", "20", "5");
-            // TODO: WB082 returns 'M', does Win10PESE utliize this case?
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,1", "B", "A");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,2", "B", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "-5", "-25");
