@@ -256,25 +256,54 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic));
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
-                        if (!NumberHelper.ParseInt64(srcStr, out long src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
-
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt64(operandStr, out long operand))
-                            throw new ExecuteException($"[{operandStr}] is not a valid integer");
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{operandStr}] is not a valid integer"));
+                            return logs;
+                        }
 
-                        long dest = src;
-                        if (type == StrFormatType.Inc) // +
-                            dest += operand;
-                        else if (type == StrFormatType.Dec) // -
-                            dest -= operand;
-                        else if (type == StrFormatType.Mult) // *
-                            dest *= operand;
-                        else if (type == StrFormatType.Div) // /
-                            dest /= operand;
+                        string destStr;
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
+                        if (NumberHelper.ParseInt64(srcStr, out long src))
+                        { // Integer (Discouraged - Use Math,Add/Sub/Mul/Div/IntDiv instead)
+                            long dest = src;
+                            if (type == StrFormatType.Inc)
+                                dest += operand;
+                            else if (type == StrFormatType.Dec)
+                                dest -= operand;
+                            else if (type == StrFormatType.Mult)
+                                dest *= operand;
+                            else if (type == StrFormatType.Div)
+                                dest /= operand;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest.ToString());
+                            destStr = dest.ToString();
+                        }
+                        else if (srcStr.Length == 1 && ('A' <= srcStr[0] && srcStr[0] <= 'Z') || ('a' <= srcStr[0] && srcStr[0] <= 'z'))
+                        { // Letter
+                            char dest = srcStr[0];
+                            if (type == StrFormatType.Inc)
+                                dest = (char)(dest + operand);
+                            else if (type == StrFormatType.Dec)
+                                dest = (char)(dest - operand);
+
+                            if (('A' <= dest && dest <= 'Z') || ('a' <= dest && dest <= 'z'))
+                            {
+                                destStr = dest.ToString();
+                            }
+                            else
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"Result [{dest}] is not a valid drive letter"));
+                                return logs;
+                            }
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer"));
+                            return logs;
+                        }
+                        
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
