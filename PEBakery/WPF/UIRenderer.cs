@@ -698,7 +698,7 @@ namespace PEBakery.WPF
                     FontSize = CalcFontPointScale(),
                     Padding = new Thickness(CalcFontPointScale() / 3, 0, CalcFontPointScale() / 3, 0),
                     Background = Brushes.White,
-            };
+                };
                 textBorder.Child = textBlock;
 
                 Rect blockRect = new Rect()
