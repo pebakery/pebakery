@@ -1871,6 +1871,7 @@ namespace PEBakery.Core
 
                         // Convert WB Date Format String to .Net Date Format String
                         string formatStr = StrFormat_Date_FormatString(args[1]);
+                        //string formatStr = args[1];
                         if (formatStr == null)
                             throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
@@ -2128,10 +2129,11 @@ namespace PEBakery.Core
             // AM/PM
             [@"AM/PM"] = @"tt", 
             [@"am/pm"] = @"tt", // C# only supports uppercase AM/PM in CultureInfo.InvariantCulture
+            [@"tt"] = @"tt",
         };
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM
-        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', };
+        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', };
         
         private static string StrFormat_Date_FormatString(string str)
         {
@@ -2149,10 +2151,6 @@ namespace PEBakery.Core
                 }
             }
 
-            // Dictionary<string, bool> matched = new Dictionary<string, bool>(StringComparer.Ordinal);
-            // foreach (var kv in DateFormatStringMap)
-            //    matched[kv.Key] = false;
-
             Dictionary<string, string>[] partialMaps = new Dictionary<string, string>[5];
             for (int i = 0; i < 5; i++)
                 partialMaps[i] = DateFormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
@@ -2168,21 +2166,12 @@ namespace PEBakery.Core
                     if (idx + i <= wbFormatStr.Length)
                     {
                         string token = wbFormatStr.Substring(idx, i);
-                        // foreach (var kv in partialMaps[i - 1].Where(x => matched[x.Key] == false))
                         foreach (var kv in partialMaps[i - 1])
                         {
                             if (token.Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
                             {
                                 b.Append(kv.Value);
                                 processed = true;
-
-                                /*
-                                // Ex) yyyy matched -> set matched["yy"] to true along with matched["yyyy"]
-                                //     But in case of ddd (Mon), it can be used with dd (12).
-                                string[] keys = matched.Where(x => x.Key[0] == kv.Key[0]).Select(x => x.Key).ToArray();
-                                foreach (var key in keys)
-                                    matched[key] = true;
-                                */
 
                                 idx += i;
                                 break;
