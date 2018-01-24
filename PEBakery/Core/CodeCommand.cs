@@ -1857,6 +1857,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
             b.Append(",");
+            // This does not show original format string, but in .Net format string!
             b.Append(StringEscaper.Doublequote(FormatString));
             return b.ToString();
         }

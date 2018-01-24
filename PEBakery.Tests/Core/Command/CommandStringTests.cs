@@ -154,6 +154,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_Date_2();
             StrFormat_Date_3();
             StrFormat_Date_4();
+            StrFormat_Date_5();
         }
 
         public void StrFormat_Date_1()
@@ -208,6 +209,21 @@ namespace PEBakery.Tests.Core.Command
             if (cmd.Type == CodeType.Error) return;
 
             Assert.Fail();
+        }
+
+        public void StrFormat_Date_5()
+        {
+            string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
+            SectionAddress addr = EngineTests.DummySectionAddress();
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
+            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
+
+            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
+            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+
+            Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddhhmmssfff tt", StringComparison.Ordinal));
         }
         #endregion
 

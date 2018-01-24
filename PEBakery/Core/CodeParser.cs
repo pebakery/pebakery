@@ -1872,7 +1872,6 @@ namespace PEBakery.Core
 
                         // Convert WB Date Format String to .Net Date Format String
                         string formatStr = StrFormat_Date_FormatString(args[1]);
-                        //string formatStr = args[1];
                         if (formatStr == null)
                             throw new InvalidCommandException($"Invalid date format string [{args[1]}]", rawCode);
 
@@ -2131,12 +2130,11 @@ namespace PEBakery.Core
             [@"zz"] = @"fff",
             [@"z"] = @"fff",
             // AM/PM
-            [@"AM/PM"] = @"tt", 
             [@"am/pm"] = @"tt", // C# only supports uppercase AM/PM in CultureInfo.InvariantCulture
             // WB uses 12hr short time for t, 12hr long for tt
             [@"tt"] = @"h:mm:ss tt",
             [@"t"] = @"h:mm tt",
-            // Gregorian Era (B.C./A.C.)
+            // Gregorian Era (B.C./A.D.)
             [@"gg"] = @"gg",
             [@"g"] = @"gg",
         };
@@ -2145,7 +2143,7 @@ namespace PEBakery.Core
         private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
         
         private static string StrFormat_Date_FormatString(string str)
-        {
+        { 
             // dd-mmm-yyyy-hh.nn
             // 02-11-2017-13.49
 
@@ -2165,6 +2163,8 @@ namespace PEBakery.Core
                 partialMaps[i] = DateFormatStringMap.Where(kv => kv.Key.Length == i + 1).ToDictionary(kv => kv.Key, kv => kv.Value);
 
             int idx = 0;
+            bool hour12 = false;
+            List<(int, int, string)> hourIdxs = new List<(int, int, string)>(2);
             bool processed = false;
             StringBuilder b = new StringBuilder();
             while (idx < wbFormatStr.Length)
@@ -2181,6 +2181,13 @@ namespace PEBakery.Core
                             {
                                 b.Append(kv.Value);
                                 processed = true;
+
+                                if (kv.Key.Equals("am/pm", StringComparison.OrdinalIgnoreCase))
+                                    hour12 = true;
+                                else if (kv.Key.Equals("hh", StringComparison.OrdinalIgnoreCase))
+                                    hourIdxs.Add((idx, 2, "hh"));
+                                else if (kv.Key.Equals("h", StringComparison.OrdinalIgnoreCase))
+                                    hourIdxs.Add((idx, 1, "h"));
 
                                 idx += i;
                                 break;
@@ -2204,7 +2211,16 @@ namespace PEBakery.Core
                 }
             }
 
-            return b.ToString();
+            string formatStr = b.ToString();
+            if (hour12)
+            {
+                foreach (var (hIdx, len, replace) in hourIdxs)
+                {
+                    formatStr = StringHelper.ReplaceAt(formatStr, hIdx, len, replace);
+                }
+            }
+
+            return formatStr;
         }
         #endregion
 

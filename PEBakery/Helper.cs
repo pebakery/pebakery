@@ -817,6 +817,13 @@ namespace PEBakery.Helper
                 return str;
             }
         }
+
+        public static string ReplaceAt(string str, int index, int length, string newValue)
+        {
+            if (index < 0) throw new ArgumentOutOfRangeException("index");
+            if (length < 0) throw new ArgumentOutOfRangeException("length");
+            return str.Substring(0, index) + newValue + str.Substring(index + length);
+        }
     }
     #endregion
 
