@@ -86,8 +86,8 @@ namespace PEBakery.Core.Commands
                         if (iface == null)
                             goto case false;
 
-                        List<UICommand> uiCmds = iface.GetUICodes(true);
-                        UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
+                        List<UIControl> uiCmds = iface.GetUICtrls(true);
+                        UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(varKey, StringComparison.OrdinalIgnoreCase));
                         if (uiCmd == null)
                             goto case false;
 

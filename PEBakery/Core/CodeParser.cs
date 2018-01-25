@@ -1685,7 +1685,7 @@ namespace PEBakery.Core
                 case 11:
                     return RegistryValueKind.QWord;
                 default:
-                    throw new InvalidCommandException("Invalid UICommand type");
+                    throw new InvalidCommandException($"Invalid registry value type [0x{typeInt:X}]");
             }
         }
 

@@ -69,18 +69,18 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<UICommand> uiCodes = iface.GetUICodes(true);
-            UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
-            if (uiCmd == null)
+            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
+            if (uiCtrl == null)
             {
                 logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]"));
                 return logs;
             }
 
-            if (uiCmd.Visibility != visibility)
+            if (uiCtrl.Visibility != visibility)
             {
-                uiCmd.Visibility = visibility;
-                uiCmd.Update();
+                uiCtrl.Visibility = visibility;
+                uiCtrl.Update();
 
                 // Re-render Script
                 Application.Current.Dispatcher.Invoke(() =>
@@ -111,7 +111,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<UICommand> uiCodes = iface.GetUICodes(true);
+            List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
             List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
             foreach (CodeInfo_Visible info in infoOp.InfoList)
@@ -126,10 +126,10 @@ namespace PEBakery.Core.Commands
                 prepArgs.Add(new Tuple<string, bool>(info.InterfaceKey, visibility));
             }
 
-            List<UICommand> uiCmdList = new List<UICommand>();
+            List<UIControl> uiCmdList = new List<UIControl>();
             foreach (Tuple<string, bool> args in prepArgs)
             {
-                UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
+                UIControl uiCmd = uiCtrls.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                 {
                     logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]"));
@@ -140,7 +140,7 @@ namespace PEBakery.Core.Commands
                 uiCmdList.Add(uiCmd);
             }
 
-            UICommand.Update(uiCmdList);
+            UIControl.Update(uiCmdList);
 
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
@@ -176,8 +176,8 @@ namespace PEBakery.Core.Commands
             }
 
             ScriptSection iface = p.Sections[section];
-            List<UICommand> uiCmds = iface.GetUICodes(true);
-            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            List<UIControl> uiCmds = iface.GetUICtrls(true);
+            UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
                 logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
@@ -245,8 +245,8 @@ namespace PEBakery.Core.Commands
             }
 
             ScriptSection iface = p.Sections[section];
-            List<UICommand> uiCmds = iface.GetUICodes(true);
-            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            List<UIControl> uiCmds = iface.GetUICtrls(true);
+            UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
                 logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
@@ -592,13 +592,13 @@ namespace PEBakery.Core.Commands
             Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
             if (p.Sections.ContainsKey(interfaceSection))
             {
-                List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[interfaceSection].GetUICodes(true); }
-                catch { } // No [Interface] section, or unable to get List<UICommand>
+                List<UIControl> uiCtrls = null;
+                try { uiCtrls = p.Sections[interfaceSection].GetUICtrls(true); }
+                catch { } // No [Interface] section, or unable to get List<UIControl>
 
-                if (uiCodes != null)
+                if (uiCtrls != null)
                 {
-                    List<LogInfo> subLogs = s.Variables.UICommandToVariables(uiCodes, prefix);
+                    List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
                     if (0 < subLogs.Count)
                     {
                         s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));

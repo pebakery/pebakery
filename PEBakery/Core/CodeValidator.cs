@@ -81,7 +81,7 @@ namespace PEBakery.Core
             if (p.Sections.ContainsKey("Process"))
                 logInfos.AddRange(ValidateCodeSection(p.Sections["Process"]));
 
-            // UICodes
+            // UICtrls
             if (p.Sections.ContainsKey("Interface"))
                 logInfos.AddRange(ValidateUISection(p.Sections["Interface"]));
 
@@ -197,16 +197,16 @@ namespace PEBakery.Core
         #region ValidateUISection
         private List<LogInfo> ValidateUISection(ScriptSection section)
         {
-            // Force parsing of code, bypassing caching by section.GetUICodes()
+            // Force parsing of code, bypassing caching by section.GetUICtrls()
             List<string> lines = section.GetLines();
             SectionAddress addr = new SectionAddress(p, section);
-            List<UICommand> uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
+            List<UIControl> uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
 
-            foreach (UICommand uiCmd in uiCodes)
+            foreach (UIControl uiCmd in uiCtrls)
             {
                 switch (uiCmd.Type)
                 {
-                    case UIType.CheckBox:
+                    case UIControlType.CheckBox:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
                             UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
@@ -218,7 +218,7 @@ namespace PEBakery.Core
                             }
                         }
                         break;
-                    case UIType.Button:
+                    case UIControlType.Button:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Button));
                             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
@@ -230,7 +230,7 @@ namespace PEBakery.Core
                             }
                         }
                         break;
-                    case UIType.RadioButton:
+                    case UIControlType.RadioButton:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
                             UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;

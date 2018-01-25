@@ -13,7 +13,7 @@ namespace PEBakery.Tests.Core.Command
     public class CommandInterfaceTests
     {
         #region Const String
-        private const string TestSuite_Interface = "08_Interface";
+        private const string TestSuite_Interface = "Interface";
         private const string SrcDir = "Src";
         private const string DestDir_ReadInterface = "Dest_ReadInterface";
         private const string DestDir_WriteInterface = "Dest_WriteInterface";

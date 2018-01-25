@@ -258,13 +258,13 @@ namespace PEBakery.Core
             ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface != null)
             {
-                List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[ifaceSecName].GetUICodes(true); }
-                catch { } // No [Interface] section, or unable to get List<UICommand>
+                List<UIControl> uiCtrls = null;
+                try { uiCtrls = p.Sections[ifaceSecName].GetUICtrls(true); }
+                catch { } // No [Interface] section, or unable to get List<UIControl>
 
-                if (uiCodes != null)
+                if (uiCtrls != null)
                 {
-                    List<LogInfo> subLogs = UICommandToVariables(uiCodes);
+                    List<LogInfo> subLogs = UIControlToVariables(uiCtrls);
                     if (0 < subLogs.Count)
                     {
                         logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSecName}]", 0));
@@ -279,8 +279,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region UICommandToVariable
-        public LogInfo? UICommandToVariable(UICommand uiCmd, string prefix = null)
+        #region UIControlToVariable
+        public LogInfo? UIControlToVariable(UIControl uiCmd, string prefix = null)
         {
             string destVar = uiCmd.Key;
             if (!string.IsNullOrEmpty(prefix))
@@ -293,13 +293,13 @@ namespace PEBakery.Core
                 return null;
         }
 
-        public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes, string prefix = null)
+        public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string prefix = null)
         {
-            List<LogInfo> logs = new List<LogInfo>(uiCodes.Count);
+            List<LogInfo> logs = new List<LogInfo>(uiCtrls.Count);
 
-            foreach (UICommand uiCmd in uiCodes)
+            foreach (UIControl uiCmd in uiCtrls)
             {
-                LogInfo? log = UICommandToVariable(uiCmd, prefix);
+                LogInfo? log = UIControlToVariable(uiCmd, prefix);
                 if (log != null)
                     logs.Add((LogInfo)log);
             }

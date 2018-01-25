@@ -702,7 +702,7 @@ namespace PEBakery.Core
         // They have [Lines] & [Codes], or [Lines] & [Interfaces] as data.
         None = 0,
         Codes = 1, // List<Command>
-        Interfaces = 2, // List<UICommand>
+        Interfaces = 2, // List<UIControl>
     }
     #endregion
 
@@ -780,14 +780,14 @@ namespace PEBakery.Core
 
         // Interface-Type Section
         [NonSerialized]
-        private List<UICommand> uiCodes;
-        public List<UICommand> UICodes
+        private List<UIControl> uiCtrls;
+        public List<UIControl> UICtrls
         {
             get
             {
                 if (!loaded)
                     Load();
-                return uiCodes;
+                return uiCtrls;
             }
         }
         #endregion
@@ -915,7 +915,7 @@ namespace PEBakery.Core
                             else if (convDataType == SectionDataConverted.Interfaces)
                             {
                                 SectionAddress addr = new SectionAddress(script, this);
-                                uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
+                                uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
                                 logInfos.AddRange(logList);
                             }
                         }
@@ -941,7 +941,7 @@ namespace PEBakery.Core
                         if (convDataType == SectionDataConverted.Codes)
                             codes = null;
                         else if (convDataType == SectionDataConverted.Interfaces)
-                            uiCodes = null;
+                            uiCtrls = null;
                         break;
                     default:
                         throw new InternalException($"Invalid SectionType {type}");
@@ -966,13 +966,13 @@ namespace PEBakery.Core
             }
         }
 
-        public void ConvertLineToUICodeSection(List<string> lines)
+        public void ConvertLineToUICtrlSection(List<string> lines)
         {
             if ((type == SectionType.Interface || type == SectionType.Code) &&
                 dataType == SectionDataType.Lines)
             {
                 SectionAddress addr = new SectionAddress(script, this);
-                uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
+                uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logList);
                 logInfos.AddRange(logList);
 
                 convDataType = SectionDataConverted.Interfaces;
@@ -1068,16 +1068,16 @@ namespace PEBakery.Core
             }
         }
 
-        public List<UICommand> GetUICodes()
+        public List<UIControl> GetUICtrls()
         {
             if (dataType == SectionDataType.Lines &&
                 convDataType == SectionDataConverted.Interfaces)
             {
-                return UICodes; // this.UICodes for Load()
+                return UICtrls; // this.UICtrls for Load()
             }
             else
             {
-                throw new InternalException("GetUICodes must be used with SectionDataType.Interfaces");
+                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
             }
         }
 
@@ -1086,21 +1086,21 @@ namespace PEBakery.Core
         /// </summary>
         /// <param name="convert"></param>
         /// <returns></returns>
-        public List<UICommand> GetUICodes(bool convert)
+        public List<UIControl> GetUICtrls(bool convert)
         {
             if (dataType == SectionDataType.Lines &&
                 convDataType == SectionDataConverted.Interfaces)
             {
-                return UICodes; // this.UICodes for Load()
+                return UICtrls; // this.UICtrls for Load()
             }
             else if (convert && dataType == SectionDataType.Lines)
             { // SectionDataType.Codes for custom interface section
-                ConvertLineToUICodeSection(Lines); // this.Lines for Load()
-                return uiCodes;
+                ConvertLineToUICtrlSection(Lines); // this.Lines for Load()
+                return uiCtrls;
             }
             else
             {
-                throw new InternalException("GetUICodes must be used with SectionDataType.Interfaces");
+                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
             }
         }
         #endregion

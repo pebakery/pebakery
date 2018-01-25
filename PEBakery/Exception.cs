@@ -36,7 +36,7 @@ using System.Runtime.Serialization;
 
 namespace PEBakery.Exceptions
 {
-    #region CodeCommandException, UICommandException
+    #region CodeCommandException, UIControlException
     public class CodeCommandException : Exception
     {
         private CodeCommand cmd;
@@ -48,15 +48,15 @@ namespace PEBakery.Exceptions
         public CodeCommandException(string message, Exception inner) : base(message, inner) { }
     }
 
-    public class UICommandException : Exception
+    public class UIControlException : Exception
     {
-        private UICommand uiCmd;
-        public UICommand UICmd { get => uiCmd; }
-        public UICommandException() { }
-        public UICommandException(string message) : base(message) { }
-        public UICommandException(UICommand uiCmd) { this.uiCmd = uiCmd; }
-        public UICommandException(string message, UICommand uiCmd) : base(message) { this.uiCmd = uiCmd; }
-        public UICommandException(string message, Exception inner) : base(message, inner) { }
+        private UIControl uiCmd;
+        public UIControl UICtrl { get => uiCmd; }
+        public UIControlException() { }
+        public UIControlException(string message) : base(message) { }
+        public UIControlException(UIControl uiCmd) { this.uiCmd = uiCmd; }
+        public UIControlException(string message, UIControl uiCmd) : base(message) { this.uiCmd = uiCmd; }
+        public UIControlException(string message, Exception inner) : base(message, inner) { }
     }
     #endregion
 
@@ -73,13 +73,13 @@ namespace PEBakery.Exceptions
     }
 
 
-    public class InvalidUICommandException : UICommandException
+    public class InvalidUIControlException : UIControlException
     {
-        public InvalidUICommandException() { }
-        public InvalidUICommandException(string message) : base(message) { }
-        public InvalidUICommandException(UICommand uiCmd) : base(uiCmd) { }
-        public InvalidUICommandException(string message, UICommand uiCmd) : base(message, uiCmd) { }
-        public InvalidUICommandException(string message, Exception inner) : base(message, inner) { }
+        public InvalidUIControlException() { }
+        public InvalidUIControlException(string message) : base(message) { }
+        public InvalidUIControlException(UIControl uiCmd) : base(uiCmd) { }
+        public InvalidUIControlException(string message, UIControl uiCmd) : base(message, uiCmd) { }
+        public InvalidUIControlException(string message, Exception inner) : base(message, inner) { }
     }
 
     public class InvalidCodeCommandException : CodeCommandException

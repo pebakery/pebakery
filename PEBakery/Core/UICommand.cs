@@ -38,7 +38,7 @@ using System.Windows;
 namespace PEBakery.Core
 {
     #region Enum UIControlType
-    public enum UIType
+    public enum UIControlType
     {
         None = -1,
         TextBox = 0,
@@ -109,9 +109,9 @@ namespace PEBakery.Core
     */
     #endregion
 
-    #region UICommand
+    #region UIControl
     [Serializable]
-    public class UICommand
+    public class UIControl
     {
         #region Fields
         public string RawLine;
@@ -120,13 +120,13 @@ namespace PEBakery.Core
         public string Key;
         public string Text;
         public bool Visibility;
-        public UIType Type;
+        public UIControlType Type;
         public Rect Rect;
         public UIInfo Info;
         #endregion
 
         #region Constructors
-        public UICommand(string rawLine, SectionAddress addr, string key)
+        public UIControl(string rawLine, SectionAddress addr, string key)
         {
             this.RawLine = rawLine;
             this.Addr = addr;
@@ -134,12 +134,12 @@ namespace PEBakery.Core
             this.Key = key;
             this.Text = string.Empty;
             this.Visibility = false;
-            this.Type = UIType.None;
+            this.Type = UIControlType.None;
             this.Rect = new Rect(0, 0, 0, 0);
 
         }
 
-        public UICommand(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIType type, Rect rect, UIInfo info)
+        public UIControl(string rawLine, SectionAddress addr, string key, string text, bool visibility, UIControlType type, Rect rect, UIInfo info)
         {
             this.RawLine = rawLine;
             this.Addr = addr;
@@ -195,7 +195,7 @@ namespace PEBakery.Core
             Ini.SetKey(Addr.Script.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
         }
         
-        public static void Update(List<UICommand> uiCmdList)
+        public static void Update(List<UIControl> uiCmdList)
         {
             if (0 < uiCmdList.Count)
             {
@@ -203,7 +203,7 @@ namespace PEBakery.Core
                 List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
                 for (int i = 0; i < uiCmdList.Count; i++)
                 {
-                    UICommand uiCmd = uiCmdList[i];
+                    UIControl uiCmd = uiCmdList[i];
                     Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.FullPath, StringComparison.OrdinalIgnoreCase));
 
                     keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
@@ -220,7 +220,7 @@ namespace PEBakery.Core
             string value = null;
             switch (Type)
             {
-                case UIType.TextBox:
+                case UIControlType.TextBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
                         UIInfo_TextBox info = Info as UIInfo_TextBox;
@@ -228,7 +228,7 @@ namespace PEBakery.Core
                         value = info.Value;
                     }
                     break;
-                case UIType.NumberBox:
+                case UIControlType.NumberBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
                         UIInfo_NumberBox info = Info as UIInfo_NumberBox;
@@ -236,7 +236,7 @@ namespace PEBakery.Core
                         value = info.Value.ToString();
                     }
                     break;
-                case UIType.CheckBox:
+                case UIControlType.CheckBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
                         UIInfo_CheckBox info = Info as UIInfo_CheckBox;
@@ -244,12 +244,12 @@ namespace PEBakery.Core
                         value = info.Value ? "True" : "False";
                     }
                     break;
-                case UIType.ComboBox:
+                case UIControlType.ComboBox:
                     {
                         value = Text;
                     }
                     break;
-                case UIType.RadioButton:
+                case UIControlType.RadioButton:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
                         UIInfo_RadioButton info = Info as UIInfo_RadioButton;
@@ -257,12 +257,12 @@ namespace PEBakery.Core
                         value = info.Selected ? "True" : "False";
                     }
                     break;
-                case UIType.FileBox:
+                case UIControlType.FileBox:
                     {
                         value = Text;
                     }
                     break;
-                case UIType.RadioGroup:
+                case UIControlType.RadioGroup:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
                         UIInfo_RadioGroup info = Info as UIInfo_RadioGroup;
@@ -281,7 +281,7 @@ namespace PEBakery.Core
             bool success = false;
             switch (Type)
             {
-                case UIType.TextBox:
+                case UIControlType.TextBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_TextBox));
                         UIInfo_TextBox uiInfo = Info as UIInfo_TextBox;
@@ -292,7 +292,7 @@ namespace PEBakery.Core
                         success = true;
                     }
                     break;
-                case UIType.NumberBox:
+                case UIControlType.NumberBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_NumberBox));
                         UIInfo_NumberBox uiInfo = Info as UIInfo_NumberBox;
@@ -318,7 +318,7 @@ namespace PEBakery.Core
                         success = true;
                     }
                     break;
-                case UIType.CheckBox:
+                case UIControlType.CheckBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_CheckBox));
                         UIInfo_CheckBox uiInfo = Info as UIInfo_CheckBox;
@@ -344,7 +344,7 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case UIType.ComboBox:
+                case UIControlType.ComboBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_ComboBox));
                         UIInfo_ComboBox uiInfo = Info as UIInfo_ComboBox;
@@ -363,7 +363,7 @@ namespace PEBakery.Core
                         success = true;
                     }
                     break;
-                case UIType.RadioButton:
+                case UIControlType.RadioButton:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_RadioButton));
                         UIInfo_RadioButton uiInfo = Info as UIInfo_RadioButton;
@@ -389,7 +389,7 @@ namespace PEBakery.Core
                         }
                     }
                     break;
-                case UIType.FileBox:
+                case UIControlType.FileBox:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_FileBox));
                         UIInfo_FileBox uiInfo = Info as UIInfo_FileBox;
@@ -400,7 +400,7 @@ namespace PEBakery.Core
                         success = true;
                     }
                     break;
-                case UIType.RadioGroup:
+                case UIControlType.RadioGroup:
                     {
                         Debug.Assert(Info.GetType() == typeof(UIInfo_RadioGroup));
                         UIInfo_RadioGroup uiInfo = Info as UIInfo_RadioGroup;

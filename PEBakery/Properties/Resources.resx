@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BuildDate" xml:space="preserve">
-    <value>20180122</value>
+    <value>20180125</value>
   </data>
   <data name="EngineVersion" xml:space="preserve">
     <value>92</value>
@@ -134,6 +134,6 @@
     <value>..\Resources\SystemLogHtmlTemplate.cshtml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="StringVersion" xml:space="preserve">
-    <value>0.9.2 beta3</value>
+    <value>0.9.3 beta3</value>
   </data>
 </root>
