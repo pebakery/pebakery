@@ -123,7 +123,7 @@ namespace PEBakery.Tests.Core
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, rawCode, type, check, out CodeCommand dummy);
+            return Eval(s, rawCode, type, check, out _);
         }
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)

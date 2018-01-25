@@ -2252,6 +2252,7 @@ namespace PEBakery.Core
         Ceil, Floor, Round, 
         Abs,
         Pow,
+        Hex,
     }
 
     [Serializable]
@@ -2330,18 +2331,18 @@ namespace PEBakery.Core
 
         public string DestVar;
         public string Src;
-        public uint Size;
+        public uint BitSize;
 
-        public MathInfo_IntegerSignedness(string destVar, string src, uint size)
+        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
             Src = src;
-            Size = size;
+            BitSize = bitSize;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{Size}";
+            return $"{DestVar},{Src},{BitSize}";
         }
     }
 
@@ -2416,18 +2417,18 @@ namespace PEBakery.Core
     { // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
         public string DestVar;
         public string Src; // Should be unsigned
-        public uint Size;
+        public uint BitSize; // Optional
 
-        public MathInfo_BitNot(string destVar, string src, uint size)
+        public MathInfo_BitNot(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
             Src = src;
-            Size = size;
+            BitSize = bitSize;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{Size}";
+            return $"{DestVar},{Src},{BitSize}";
         }
     }
 
@@ -2438,22 +2439,22 @@ namespace PEBakery.Core
         public string Src;
         public string LeftRight;
         public string Shift;
-        public uint Size;
-        public bool Unsigned;
+        public uint BitSize; // Optional, [8|16|32|64]
+        public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint size, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint botSoze, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
             LeftRight = leftRight;
             Shift = shift;
-            Size = size;
+            BitSize = botSoze;
             Unsigned = _unsigned;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{LeftRight},{Shift},{Size},{Unsigned}";
+            return $"{DestVar},{Src},{LeftRight},{Shift},{BitSize},{Unsigned}";
         }
     }
 
@@ -2516,6 +2517,32 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{DestVar},{Base},{Power}";
+        }
+    }
+
+    [Serializable]
+    public class MathInfo_Hex : MathInfo
+    { // Math,Hex,<DestVar>,<Integer>,[BitSize]
+        public string DestVar;
+        public string Integer;
+        public uint BitSize; // Optional, [8|16|32|64]
+
+        public MathInfo_Hex(string destVar, string integer, uint bitSize)
+        {
+            DestVar = destVar;
+            Integer = integer;
+            BitSize = bitSize;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            b.Append(",");
+            b.Append(Integer);
+            b.Append(",");
+            b.Append(BitSize);
+            return b.ToString();
         }
     }
     #endregion

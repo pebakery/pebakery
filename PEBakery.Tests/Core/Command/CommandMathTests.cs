@@ -347,7 +347,7 @@ namespace PEBakery.Tests.Core.Command
         {
             EngineState s = EngineTests.CreateEngineState();
 
-            // Abs
+            // Pow
             Math_Template(s, "Math,Pow,%Dest%,10,2", "100");
             Math_Template(s, "Math,Pow,%Dest%,0x10,2", "256");
             Math_Template(s, "Math,Pow,%Dest%,1.2,2", "1.44");
@@ -355,6 +355,52 @@ namespace PEBakery.Tests.Core.Command
             // Test Error
             Math_Template_Error(s, "Math,Pow,Dest,3,2", ErrorCheck.ParserError);
             Math_Template_Error(s, "Math,Pow,%Dest%,3", ErrorCheck.ParserError);
+        }
+        #endregion
+
+        #region Hex
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandMath")]
+        public void Math_Hex()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            // 8bit
+            Math_Template(s, "Math,Hex,%Dest%,15,8", "0F");
+            Math_Template(s, "Math,Hex,%Dest%,0x0F,8", "0F");
+            Math_Template(s, "Math,Hex,%Dest%,-1,8", "FF");
+            Math_Template(s, "Math,Hex,%Dest%,255,8", "FF");
+
+            // 16bit
+            Math_Template(s, "Math,Hex,%Dest%,15,16", "000F");
+            Math_Template(s, "Math,Hex,%Dest%,0x0F,16", "000F");
+            Math_Template(s, "Math,Hex,%Dest%,-1,16", "FFFF");
+            Math_Template(s, "Math,Hex,%Dest%,255,16", "00FF");
+
+            // 32bit
+            Math_Template(s, "Math,Hex,%Dest%,15,32", "0000000F");
+            Math_Template(s, "Math,Hex,%Dest%,0x0F,32", "0000000F");
+            Math_Template(s, "Math,Hex,%Dest%,-1,32", "FFFFFFFF");
+            Math_Template(s, "Math,Hex,%Dest%,255,32", "000000FF");
+
+            // 32bit (default)
+            Math_Template(s, "Math,Hex,%Dest%,15", "0000000F");
+            Math_Template(s, "Math,Hex,%Dest%,0x0F", "0000000F");
+            Math_Template(s, "Math,Hex,%Dest%,-1", "FFFFFFFF");
+            Math_Template(s, "Math,Hex,%Dest%,255", "000000FF");
+
+            // 64bit
+            Math_Template(s, "Math,Hex,%Dest%,15,64", "000000000000000F");
+            Math_Template(s, "Math,Hex,%Dest%,0x0F,64", "000000000000000F");
+            Math_Template(s, "Math,Hex,%Dest%,-1,64", "FFFFFFFFFFFFFFFF");
+            Math_Template(s, "Math,Hex,%Dest%,255,64", "00000000000000FF");
+
+            // Test Error
+            Math_Template_Error(s, "Math,Hex,%Dest%", ErrorCheck.ParserError);
+            Math_Template_Error(s, "Math,Hex,%Dest%,256,9", ErrorCheck.ParserError);
+            Math_Template_Error(s, "Math,Hex,%Dest%,256,9,12", ErrorCheck.ParserError);
+            Math_Template_Error(s, "Math,Hex,%Dest%,256,8", ErrorCheck.Error);
         }
         #endregion
 

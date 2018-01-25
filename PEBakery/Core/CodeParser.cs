@@ -2245,7 +2245,7 @@ namespace PEBakery.Core
 
                         const int argCount = 3;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2258,7 +2258,7 @@ namespace PEBakery.Core
                     { // Math,IntDiv,<QuotientVar>,<RemainderVar>,<Src1>,<Src2>
                         const int argCount = 4;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
                         
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2273,7 +2273,7 @@ namespace PEBakery.Core
                     { // Math,Neg,<DestVar>,<Src>
                         const int argCount = 2;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2291,29 +2291,29 @@ namespace PEBakery.Core
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        uint size = 32;
+                        uint bitSize = 32;
                         if (args.Count == maxArgCount)
                         {
                             string sizeStr = args[maxArgCount - 1];
                             if (sizeStr.Equals("8", StringComparison.Ordinal))
-                                size = 8;
+                                bitSize = 8;
                             else if (sizeStr.Equals("16", StringComparison.Ordinal))
-                                size = 16;
+                                bitSize = 16;
                             else if (sizeStr.Equals("32", StringComparison.Ordinal))
-                                size = 32;
+                                bitSize = 32;
                             else if (sizeStr.Equals("64", StringComparison.Ordinal))
-                                size = 64;
+                                bitSize = 64;
                             else
-                                throw new InvalidCommandException($"Size must be one of [8, 16, 32, 64]", rawCode);
+                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
-                        info = new MathInfo_IntegerSignedness(args[0], args[1], size);
+                        info = new MathInfo_IntegerSignedness(args[0], args[1], bitSize);
                     }
                     break;
                 case MathType.BoolAnd:
@@ -2326,7 +2326,7 @@ namespace PEBakery.Core
 
                         const int argCount = 3;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2339,7 +2339,7 @@ namespace PEBakery.Core
                     { // Math,BoolNot,<DestVar>,<Src>
                         const int argCount = 2;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2358,7 +2358,7 @@ namespace PEBakery.Core
 
                         const int argCount = 3;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2372,29 +2372,29 @@ namespace PEBakery.Core
                         const int minArgCount = 2;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
 
-                        uint size = 32;
+                        uint bitSize = 32;
                         if (args.Count == maxArgCount)
                         {
                             string sizeStr = args[maxArgCount - 1];
                             if (sizeStr.Equals("8", StringComparison.Ordinal))
-                                size = 8;
+                                bitSize = 8;
                             else if (sizeStr.Equals("16", StringComparison.Ordinal))
-                                size = 16;
+                                bitSize = 16;
                             else if (sizeStr.Equals("32", StringComparison.Ordinal))
-                                size = 32;
+                                bitSize = 32;
                             else if (sizeStr.Equals("64", StringComparison.Ordinal))
-                                size = 64;
+                                bitSize = 64;
                             else
-                                throw new InvalidCommandException($"Size must be one of [8, 16, 32, 64]", rawCode);
+                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
-                        info = new MathInfo_BitNot(args[0], args[1], size);
+                        info = new MathInfo_BitNot(args[0], args[1], bitSize);
                     }
                     break;
                 case MathType.BitShift:
@@ -2402,7 +2402,7 @@ namespace PEBakery.Core
                         const int minArgCount = 4;
                         const int maxArgCount = 6;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         // Check DestVar
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
@@ -2440,7 +2440,7 @@ namespace PEBakery.Core
 
                         const int argCount = 3;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
@@ -2452,7 +2452,7 @@ namespace PEBakery.Core
                     { // Math,Abs,<DestVar>,<Src>
                         const int argCount = 2;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
@@ -2464,12 +2464,42 @@ namespace PEBakery.Core
                     { // Math,Pow,<DestVar>,<Base>,<Power>
                         const int argCount = 3;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [Math,{type}] must have [{argCount}] arguments", rawCode);
 
                         if (Variables.DetermineType(args[0]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[0]}] is not a valid variable name", rawCode);
                         else
                             info = new MathInfo_Pow(args[0], args[1], args[2]);
+                    }
+                    break;
+                case MathType.Hex:
+                    { // Math,Hex,<DestVar>,<Integer>,[BitSize]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [Math,{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string destVar = args[0];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        uint bitSize = 32;
+                        if (args.Count == 3)
+                        {
+                            string sizeStr = args[2];
+                            if (sizeStr.Equals("8", StringComparison.Ordinal))
+                                bitSize = 8;
+                            else if (sizeStr.Equals("16", StringComparison.Ordinal))
+                                bitSize = 16;
+                            else if (sizeStr.Equals("32", StringComparison.Ordinal))
+                                bitSize = 32;
+                            else if (sizeStr.Equals("64", StringComparison.Ordinal))
+                                bitSize = 64;
+                            else
+                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
+                        }
+
+                        info = new MathInfo_Hex(destVar, args[1], bitSize);
                     }
                     break;
                 // Error

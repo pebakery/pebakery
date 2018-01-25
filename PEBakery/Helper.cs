@@ -879,6 +879,7 @@ namespace PEBakery.Helper
             }
         }
 
+        #region ParseInt / ParseUInt
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
@@ -1070,6 +1071,101 @@ namespace PEBakery.Helper
                 return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
             }
         }
+        #endregion
+
+        #region ParseSignedToUInt
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt8(string str, out byte value)
+        {
+            if (NumberHelper.ParseUInt8(str, out byte uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt8(str, out sbyte sInt))
+            {
+                value = (byte)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt16(string str, out ushort value)
+        {
+            if (NumberHelper.ParseUInt16(str, out ushort uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt16(str, out short sInt))
+            {
+                value = (ushort)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt32(string str, out uint value)
+        {
+            if (NumberHelper.ParseUInt32(str, out uint uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt32(str, out int sInt))
+            {
+                value = (uint)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt64(string str, out ulong value)
+        {
+            if (NumberHelper.ParseUInt64(str, out ulong uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt64(str, out long sInt))
+            {
+                value = (ulong)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+        #endregion
 
         /// <summary>
         /// Parse string to int or decimal

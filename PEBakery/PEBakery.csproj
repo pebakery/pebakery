@@ -193,7 +193,7 @@
       <DependentUpon>SettingWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Core\StringEscaper.cs" />
-    <Compile Include="Core\UICommand.cs" />
+    <Compile Include="Core\UIControl.cs" />
     <Compile Include="Core\UIParser.cs" />
     <Compile Include="WPF\UIRenderer.cs" />
     <Compile Include="Core\Variables.cs" />

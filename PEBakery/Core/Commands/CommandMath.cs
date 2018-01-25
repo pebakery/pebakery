@@ -77,7 +77,7 @@ namespace PEBakery.Core.Commands
                         else if (type == MathType.Div)
                             destInt = src1 / src2;
                         else
-                            throw new InternalException($"Internal Logic Error");
+                            throw new InternalException($"Internal Logic Error at Math,Arithmetic");
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString()));
                     }
@@ -146,7 +146,7 @@ namespace PEBakery.Core.Commands
                         string destStr;
                         if (info.Type == MathType.ToSign)
                         { // Unsigned int to signed int
-                            switch (subInfo.Size)
+                            switch (subInfo.BitSize)
                             {
                                 case 8:
                                     {
@@ -181,12 +181,12 @@ namespace PEBakery.Core.Commands
                                     }
                                     break;
                                 default:
-                                    throw new InternalException($"Internal Logic Error");
+                                    throw new InternalException($"Internal Logic Error at Math,ToSign");
                             }
                         }
                         else
                         { // Signed int to unsigned int
-                            switch (subInfo.Size)
+                            switch (subInfo.BitSize)
                             {
                                 case 8:
                                     {
@@ -221,7 +221,7 @@ namespace PEBakery.Core.Commands
                                     }
                                     break;
                                 default:
-                                    throw new InternalException($"Internal Logic Error");
+                                    throw new InternalException($"Internal Logic Error at Math,ToUnsign");
                             }
                         }
 
@@ -258,7 +258,7 @@ namespace PEBakery.Core.Commands
                         else if (type == MathType.BoolXor)
                             dest = src1 ^ src2;
                         else
-                            throw new InternalException($"Internal Logic Error");
+                            throw new InternalException($"Internal Logic Error at Math,BoolLogicOper");
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
                     }
@@ -302,7 +302,7 @@ namespace PEBakery.Core.Commands
                         else if (type == MathType.BitXor)
                             dest = src1 ^ src2;
                         else
-                            throw new InternalException($"Internal Logic Error");
+                            throw new InternalException($"Internal Logic Error at Math,BitLogicOper");
 
                         string destStr = dest.ToString();
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -316,7 +316,7 @@ namespace PEBakery.Core.Commands
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         string destStr;
 
-                        switch (subInfo.Size)
+                        switch (subInfo.BitSize)
                         {
                             case 8:
                                 {
@@ -351,7 +351,7 @@ namespace PEBakery.Core.Commands
                                 }
                                 break;
                             default:
-                                throw new InternalException($"Internal Logic Error");
+                                throw new InternalException($"Internal Logic Error at Math,BitNot");
                         }
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -376,7 +376,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{leftRightStr}] must be one of [Left, Right]");
 
                         string destStr;
-                        switch (subInfo.Size)
+                        switch (subInfo.BitSize)
                         {
                             case 8:
                                 {
@@ -431,7 +431,7 @@ namespace PEBakery.Core.Commands
                                 }
                                 break;
                             default:
-                                throw new InternalException($"Internal Logic Error");
+                                throw new InternalException($"Internal Logic Error at Math,BitShift");
                         }
 
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destStr));
@@ -505,6 +505,43 @@ namespace PEBakery.Core.Commands
 
                         decimal dest = NumberHelper.DecimalPower(_base, power);
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
+                    }
+                    break;
+                case MathType.Hex:
+                    {
+                        Debug.Assert(info.SubInfo.GetType() == typeof(MathInfo_Hex));
+                        MathInfo_Hex subInfo = info.SubInfo as MathInfo_Hex;
+
+                        string intStr = StringEscaper.Preprocess(s, subInfo.Integer);
+                        string dest;
+                        switch (subInfo.BitSize)
+                        {
+                            case 8:
+                                if (!NumberHelper.ParseSignedUInt8(intStr, out byte u8))
+                                    throw new ExecuteException($"[{intStr}] is not a valid 8bit integer");
+                                dest = u8.ToString("X2");
+                                break;
+                            case 16:
+                                if (!NumberHelper.ParseSignedUInt16(intStr, out ushort u16))
+                                    throw new ExecuteException($"[{intStr}] is not a valid 16bit integer");
+                                dest = u16.ToString("X4");
+                                break;
+                            case 32:
+                                if (!NumberHelper.ParseSignedUInt32(intStr, out uint u32))
+                                    throw new ExecuteException($"[{intStr}] is not a valid 32bit integer");
+                                dest = u32.ToString("X8");
+                                break;
+                            case 64:
+                                if (!NumberHelper.ParseSignedUInt64(intStr, out ulong u64))
+                                    throw new ExecuteException($"[{intStr}] is not a valid 64bit integer");
+                                dest = u64.ToString("X16");
+                                break;
+                            default:
+                                throw new InternalException($"Internal Logic Error at Math,Hex");
+                        }
+
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest);
+                        logs.AddRange(varLogs);
                     }
                     break;
                 default: // Error
