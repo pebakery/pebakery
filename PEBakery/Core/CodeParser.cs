@@ -1336,12 +1336,10 @@ namespace PEBakery.Core
                 case CodeType.ShellExecute:
                 case CodeType.ShellExecuteEx:
                 case CodeType.ShellExecuteDelete:
-                case CodeType.ShellExecuteSlow:
                     {
                         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
                         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
                         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-                        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
                         const int minArgCount = 2;
                         const int maxArgCount = 5;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))

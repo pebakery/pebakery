@@ -533,9 +533,6 @@ namespace PEBakery.Core.Commands
                     };
                     proc.Start();
 
-                    if (cmd.Type == CodeType.ShellExecuteSlow)
-                        proc.PriorityClass = ProcessPriorityClass.BelowNormal;
-
                     if (redirectStandardStream)
                     {
                         proc.BeginOutputReadLine();
@@ -546,7 +543,6 @@ namespace PEBakery.Core.Commands
                     switch (cmd.Type)
                     {
                         case CodeType.ShellExecute:
-                        case CodeType.ShellExecuteSlow:
                             proc.WaitForExit();
                             logs.Add(new LogInfo(LogState.Success, $"Executed [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;

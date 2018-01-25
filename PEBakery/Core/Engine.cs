@@ -632,7 +632,6 @@ namespace PEBakery.Core
                     case CodeType.ShellExecute:
                     case CodeType.ShellExecuteEx:
                     case CodeType.ShellExecuteDelete:
-                    case CodeType.ShellExecuteSlow:
                         logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion

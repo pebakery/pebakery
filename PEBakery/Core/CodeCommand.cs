@@ -76,7 +76,7 @@ namespace PEBakery.Core
         // 11 Math
         Math = 1100,
         // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
+        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 13 Wim
         WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
         // 80 Branch
@@ -2806,7 +2806,6 @@ namespace PEBakery.Core
         // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
         // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
         public string Action;
         public string FilePath;
         public string Params; // Optional
