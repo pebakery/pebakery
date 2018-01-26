@@ -3512,37 +3512,41 @@ namespace PEBakery.Core
     #region CodeInfo 13 - WIM
     [Serializable]
     public class CodeInfo_WimMount : CodeInfo
-    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
         public string SrcWim;
         public string ImageIndex;
         public string MountDir;
+        public string MountOption;
 
-        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir)
+        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir, string mountOption)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
             MountDir = mountDir;
+            MountOption = mountOption;
         }
 
         public override string ToString()
         {
-            return $"{SrcWim},{ImageIndex},{MountDir}";
+            return $"{SrcWim},{ImageIndex},{MountDir},{MountOption}";
         }
     }
 
     [Serializable]
     public class CodeInfo_WimUnmount : CodeInfo
-    { // WimUnmount,<MountDir>
+    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
         public string MountDir;
+        public string UnmountOption;
 
-        public CodeInfo_WimUnmount(string mountDir)
+        public CodeInfo_WimUnmount(string mountDir, string unmountOption)
         {
             MountDir = mountDir;
+            UnmountOption = unmountOption;
         }
 
         public override string ToString()
         {
-            return $"{MountDir}";
+            return $"{MountDir},{UnmountOption}";
         }
     }
     #endregion

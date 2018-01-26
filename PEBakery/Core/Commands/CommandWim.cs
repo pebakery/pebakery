@@ -51,6 +51,17 @@ namespace PEBakery.Core.Commands
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
             string mountDir = StringEscaper.Preprocess(s, info.MountDir);
+            string mountOptionStr = StringEscaper.Preprocess(s, info.MountOption);
+
+            // Mount Option
+            bool readwrite;
+            if (mountOptionStr.Equals("READONLY", StringComparison.OrdinalIgnoreCase)) readwrite = false;
+            else if (mountOptionStr.Equals("READWRITE", StringComparison.OrdinalIgnoreCase)) readwrite = true;
+            else
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Invalid mount option [{mountOptionStr}]"));
+                return logs;
+            }
 
             // Check srcWim
             if (!File.Exists(srcWim))
@@ -88,7 +99,7 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Unable to get information of [{srcWim}]\r\nError Code [0x{e.ErrorCode:X8}]\r\nNative Error Code [0x{e.NativeErrorCode:X8}]\r\n"));
+                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get information of [{srcWim}]"));
                 return logs;
             }
 
@@ -105,18 +116,29 @@ namespace PEBakery.Core.Commands
             }
 
             // Mount Wim
+            WimFileAccess accessFlag = WimFileAccess.Mount | WimFileAccess.Read;
+            WimMountImageOptions mountFlag = WimMountImageOptions.ReadOnly;
+            if (readwrite)
+            {
+                accessFlag |= WimFileAccess.Write;
+                mountFlag = WimMountImageOptions.None;
+            }
+
             try
             {
                 using (WimHandle hWim = WimgApi.CreateFile(srcWim,
-                    WimFileAccess.Mount | WimFileAccess.Read,
+                    accessFlag,
                     WimCreationDisposition.OpenExisting,
                     WimCreateFileOptions.None,
                     WimCompressionType.None))
                 {
+                    
                     WimgApi.SetTemporaryPath(hWim, Path.GetTempPath());
-                    WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+
                     try
                     {
+                        WimgApi.RegisterMessageCallback(hWim, WimgApiCallback);
+
                         using (WimHandle hImage = WimgApi.LoadImage(hWim, imageIndex))
                         {
                             s.MainViewModel.BuildCommandProgressTitle = "WimMount Progress";
@@ -125,8 +147,13 @@ namespace PEBakery.Core.Commands
                             s.MainViewModel.BuildCommandProgressShow = true;
 
                             // Mount Wim
-                            WimgApi.MountImage(hImage, mountDir, WimMountImageOptions.ReadOnly);
+                            WimgApi.MountImage(hImage, mountDir, mountFlag);
                         }
+                    }
+                    catch (Win32Exception e)
+                    {
+                        logs.Add(CommandWim.LogWimgApiException(e, $"Unable to mount [{srcWim}]"));
+                        return logs;
                     }
                     finally
                     {
@@ -140,10 +167,10 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Unable to mount [{srcWim}]\r\nError Code [0x{e.ErrorCode:X8}]\r\nNative Error Code [0x{e.NativeErrorCode:X8}]\r\n"));
+                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to open [{srcWim}]"));
                 return logs;
             }
-
+       
             logs.Add(new LogInfo(LogState.Success, $"[{srcWim}]'s image [{imageIndex}] mounted to [{mountDir}]"));
             return logs;
         }
@@ -156,6 +183,18 @@ namespace PEBakery.Core.Commands
             CodeInfo_WimUnmount info = cmd.Info as CodeInfo_WimUnmount;
 
             string mountDir = StringEscaper.Preprocess(s, info.MountDir);
+            string unmountOptionStr = StringEscaper.Preprocess(s, info.UnmountOption);
+
+            bool commit;
+            if (unmountOptionStr.Equals("DISCARD", StringComparison.OrdinalIgnoreCase))
+                commit = false;
+            else if (unmountOptionStr.Equals("COMMIT", StringComparison.OrdinalIgnoreCase))
+                commit = true;
+            else
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Invalid unmount option [{unmountOptionStr}]"));
+                return logs;
+            }
 
             // Check MountDir 
             if (!Directory.Exists(mountDir))
@@ -170,7 +209,7 @@ namespace PEBakery.Core.Commands
             WimHandle hImage = null;
             try
             {
-                hWim = WimgApi.GetMountedImageHandle(mountDir, true, out hImage);
+                hWim = WimgApi.GetMountedImageHandle(mountDir, !commit, out hImage);
 
                 WimMountInfo wimInfo = WimgApi.GetMountedImageInfoFromHandle(hImage);
                 Debug.Assert(wimInfo.MountPath.Equals(mountDir, StringComparison.OrdinalIgnoreCase));
@@ -183,9 +222,34 @@ namespace PEBakery.Core.Commands
                 s.MainViewModel.BuildCommandProgressShow = true;
 
                 try
-                { // Unmount
-                    WimgApi.UnmountImage(hImage);
-                    logs.Add(new LogInfo(LogState.Success, $"Unmounted [{wimInfo.Path}]'s image [{wimInfo.ImageIndex}] from [{mountDir}]"));
+                {
+                    // Commit 
+                    if (commit)
+                    {
+                        try
+                        {
+                            WimgApi.CommitImageHandle(hImage, false, WimCommitImageOptions.None);
+                        }
+                        catch (Win32Exception e)
+                        {
+                            logs.Add(CommandWim.LogWimgApiException(e, $"Unable to commit [{mountDir}] into [{wimInfo.Path}]"));
+                            return logs;
+                        }
+
+                        logs.Add(new LogInfo(LogState.Success, $"Commited [{mountDir}] into [{wimInfo.Path}]'s index [{wimInfo.ImageIndex}]"));
+                    }
+
+                    // Unmount
+                    try
+                    {
+                        WimgApi.UnmountImage(hImage);
+                        logs.Add(new LogInfo(LogState.Success, $"Unmounted [{wimInfo.Path}]'s image [{wimInfo.ImageIndex}] from [{mountDir}]"));
+                    }
+                    catch (Win32Exception e)
+                    {
+                        logs.Add(CommandWim.LogWimgApiException(e, $"Unable to unmount [{mountDir}]"));
+                        return logs;
+                    }
                 }
                 finally
                 { // Finalize Command Progress Report
@@ -198,13 +262,13 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Unable to unmount [{mountDir}]\r\nError Code [0x{e.ErrorCode:X8}]\r\nNative Error Code [0x{e.NativeErrorCode:X8}]\r\n"));
+                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get mounted wim information from [{mountDir}]"));
                 return logs;
             }
             finally
             {
-                hWim?.Close();
                 hImage?.Close();
+                hWim?.Close();
             }
 
             return logs;
@@ -222,7 +286,7 @@ namespace PEBakery.Core.Commands
                         WimMessageProgress wMsg = (WimMessageProgress)msg;
 
                         s.MainViewModel.BuildCommandProgressValue = wMsg.PercentComplete;
-                        
+
                         if (0 < wMsg.EstimatedTimeRemaining.TotalSeconds)
                         {
                             int min = (int)wMsg.EstimatedTimeRemaining.TotalMinutes;
@@ -256,6 +320,11 @@ namespace PEBakery.Core.Commands
             }
 
             return WimMessageResult.Success;
+        }
+
+        private static LogInfo LogWimgApiException(Win32Exception e, string msg)
+        {
+            return new LogInfo(LogState.Error, $"{msg}\r\nError Code [0x{e.ErrorCode:X8}]\r\nNative Error Code [0x{e.NativeErrorCode:X8}]\r\n");
         }
         #endregion
     }

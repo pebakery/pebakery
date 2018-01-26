@@ -1372,20 +1372,20 @@ namespace PEBakery.Core
                 #endregion
                 #region 13 WIM
                 case CodeType.WimMount:
-                    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
-                        const int argCount = 3;
+                    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
+                        const int argCount = 4;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        return new CodeInfo_WimMount(args[0], args[1], args[2]);
+                        return new CodeInfo_WimMount(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.WimUnmount:
-                    { // WimUnmount,<MountDir>
-                        const int argCount = 1;
+                    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
+                        const int argCount = 2;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
-                        return new CodeInfo_WimUnmount(args[0]);
+                        return new CodeInfo_WimUnmount(args[0], args[1]);
                     }
                 #endregion
                 #region 80 Branch
