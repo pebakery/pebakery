@@ -186,8 +186,14 @@ namespace PEBakery.Core
             b.Append(Rect.Width);
             b.Append(",");
             b.Append(Rect.Height);
-            b.Append(",");
-            b.Append(Info.ForgeRawLine());
+
+            string optionalArgs = Info.ForgeRawLine();
+            if (0 < optionalArgs.Length) // Only if optionalArgs is not empty
+            {
+                b.Append(",");
+                b.Append(optionalArgs);
+            }
+
             return b.ToString();
         }
         #endregion
@@ -855,10 +861,10 @@ namespace PEBakery.Core
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
-        public int FontSize;
-        public UIInfo_BevelCaption_Style Style;
+        public int? FontSize;
+        public UIInfo_BevelCaption_Style? Style;
 
-        public UIInfo_Bevel(string tooltip, int fontSize, UIInfo_BevelCaption_Style style)
+        public UIInfo_Bevel(string tooltip, int? fontSize, UIInfo_BevelCaption_Style? style)
             : base(tooltip)
         {
             this.FontSize = fontSize;
@@ -867,12 +873,23 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(FontSize);
-            builder.Append(",");
-            builder.Append(Style.ToString());
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            StringBuilder b = new StringBuilder();
+            if (FontSize != null)
+            {
+                b.Append(FontSize);
+                if (Style != null)
+                {
+                    b.Append(",");
+                    b.Append(Style.ToString());
+                }
+            }
+            else
+            {
+                if (Style != null)
+                    b.Append(Style.ToString());
+            }
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()

@@ -687,6 +687,14 @@ namespace PEBakery.WPF
 
             if (!uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
+                int fontSize = DefaultFontPoint;
+                if (info.FontSize != null)
+                    fontSize = (int) info.FontSize;
+
+                UIInfo_BevelCaption_Style style = UIInfo_BevelCaption_Style.Normal;
+                if (info.Style != null)
+                    style = (UIInfo_BevelCaption_Style)info.Style;
+
                 Border textBorder = new Border()
                 {
                     BorderThickness = new Thickness(CalcFontPointScale() / 3), // Don't use info.FontSize for border thickness. It throws off X Pos.
@@ -695,8 +703,8 @@ namespace PEBakery.WPF
                 TextBlock textBlock = new TextBlock()
                 {
                     Text = uiCtrl.Text,
-                    FontSize = CalcFontPointScale(info.FontSize),
-                    Padding = new Thickness(CalcFontPointScale(info.FontSize) / 3, 0, CalcFontPointScale(info.FontSize) / 3, 0),
+                    FontSize = CalcFontPointScale(fontSize),
+                    Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
                     Background = Brushes.White,
                 };
                 textBorder.Child = textBlock;
@@ -705,8 +713,8 @@ namespace PEBakery.WPF
 
                 Rect blockRect = new Rect()
                 {
-                    X = uiCtrl.Rect.X + (CalcFontPointScale(info.FontSize) / 3),
-                    Y = uiCtrl.Rect.Y - CalcFontPointScale(info.FontSize),
+                    X = uiCtrl.Rect.X + (CalcFontPointScale(fontSize) / 3),
+                    Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
                     Width = double.NaN,
                     Height = double.NaN,
                 };
