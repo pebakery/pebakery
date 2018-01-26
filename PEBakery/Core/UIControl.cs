@@ -68,7 +68,7 @@ namespace PEBakery.Core
     <Text>
     TextBox     = Caption
     TextLabel   = Caption 
-    NumberBox   = <ComponentName> 
+    NumberBox   = <ControlName> 
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
     Image       = <FileName> 
@@ -76,7 +76,7 @@ namespace PEBakery.Core
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
-    Bevel       = <ComponentName> 
+    Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatability with scripts built in wb editor. )
     FileBox     = <Path> // It can be file or directory
     RadioGroup  = Caption 
 
@@ -88,9 +88,12 @@ namespace PEBakery.Core
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
     CheckBox    = <BooleanValue>,[SectionToRun]  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
+    Image       = <StringValue> // URL
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture. or its value is Embedded File name.
     WebLabel    = <StringValue> // URL
+    TextLabel   = <FontSize>,<Style>
+                  <Style> : Normal, Bold
     RadioButton = <BooleanValue> +[RunOptional]
     FileBox     = [FILE|DIR]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]

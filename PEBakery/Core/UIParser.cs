@@ -442,7 +442,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        int fontSize = 8; // FIXME: Don't hardcode font size here
+                        int fontSize = PEBakery.WPF.UIRenderer.DefaultFontPoint;
                         UIInfo_BevelCaption_Style style = UIInfo_BevelCaption_Style.Normal;
 
                         if (1 <= args.Count)
