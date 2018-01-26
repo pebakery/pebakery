@@ -52,11 +52,14 @@ namespace PEBakery.Core
                 {
                     UIControl uiCtrl = ParseUIControl(lines, addr, ref i);
                     
-                    // Check if interface control's key is duplicated
-                    if (uiCtrls.Count(x => x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)) == 0)
-                        uiCtrls.Add(ParseUIControl(lines, addr, ref i));
-                    else
-                        errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})")); 
+                    if (uiCtrl != null)
+                    {
+                        // Check if interface control's key is duplicated
+                        if (uiCtrls.Count(x => x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)) == 0)
+                            uiCtrls.Add(ParseUIControl(lines, addr, ref i));
+                        else
+                            errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})"));
+                    }
                 }
                 catch (InvalidUIControlException e)
                 {
@@ -82,11 +85,11 @@ namespace PEBakery.Core
 
             // Check if rawCode is Empty
             if (rawLine.Equals(string.Empty))
-                return new UIControl(rawLine, addr, string.Empty);
+                return null;
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawLine.StartsWith("//") || rawLine.StartsWith("#") || rawLine.StartsWith(";"))
-                return new UIControl(rawLine, addr, string.Empty);
+                return null;
 
             // Find key of interface control
             string key = string.Empty;
