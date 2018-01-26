@@ -844,18 +844,32 @@ namespace PEBakery.Core
 
     }
 
+    public enum UIInfo_BevelCaption_Style
+    {
+        Normal, Bold
+    }
+
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
-        public UIInfo_Bevel(string tooltip)
+        public int FontSize;
+        public UIInfo_BevelCaption_Style Style;
+
+        public UIInfo_Bevel(string tooltip, int fontSize, UIInfo_BevelCaption_Style style)
             : base(tooltip)
         {
-
+            this.FontSize = fontSize;
+            this.Style = style;
         }
 
         public override string ForgeRawLine()
         {
-            return base.ForgeRawLine();
+            StringBuilder builder = new StringBuilder();
+            builder.Append(FontSize);
+            builder.Append(",");
+            builder.Append(Style.ToString());
+            builder.Append(base.ForgeRawLine());
+            return builder.ToString();
         }
 
         public override string ToString()

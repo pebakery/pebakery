@@ -438,11 +438,22 @@ namespace PEBakery.Core
                 case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 0;
-                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
+                        const int maxOpCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount));
+                        int fontSize = 8; // FIXME: Don't hardcode font size here
+                        UIInfo_BevelCaption_Style style = UIInfo_BevelCaption_Style.Normal;
+
+                        if (1 <= args.Count)
+                            NumberHelper.ParseInt32(args[0], out fontSize);
+                        if (2 <= args.Count)
+                        {
+                            if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                                style = UIInfo_BevelCaption_Style.Bold;
+                        }
+
+                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
                 #endregion
                 #region FileBox

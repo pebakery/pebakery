@@ -689,22 +689,24 @@ namespace PEBakery.WPF
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 Border textBorder = new Border()
                 {
-                    BorderThickness = new Thickness(CalcFontPointScale() / 3),
+                    BorderThickness = new Thickness(CalcFontPointScale() / 3), // Don't use info.FontSize for border thickness. It throws off X Pos.
                     BorderBrush = Brushes.Transparent,
                 };
                 TextBlock textBlock = new TextBlock()
                 {
                     Text = uiCtrl.Text,
-                    FontSize = CalcFontPointScale(),
-                    Padding = new Thickness(CalcFontPointScale() / 3, 0, CalcFontPointScale() / 3, 0),
+                    FontSize = CalcFontPointScale(info.FontSize),
+                    Padding = new Thickness(CalcFontPointScale(info.FontSize) / 3, 0, CalcFontPointScale(info.FontSize) / 3, 0),
                     Background = Brushes.White,
                 };
                 textBorder.Child = textBlock;
+                if (info.Style == UIInfo_BevelCaption_Style.Bold)
+                    textBlock.FontWeight = FontWeights.Bold;
 
                 Rect blockRect = new Rect()
                 {
-                    X = uiCtrl.Rect.X + (CalcFontPointScale() * 2 / 3),
-                    Y = uiCtrl.Rect.Y - CalcFontPointScale(),
+                    X = uiCtrl.Rect.X + (CalcFontPointScale(info.FontSize) / 3),
+                    Y = uiCtrl.Rect.Y - CalcFontPointScale(info.FontSize),
                     Width = double.NaN,
                     Height = double.NaN,
                 };
