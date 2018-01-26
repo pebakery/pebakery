@@ -59,7 +59,9 @@ namespace PEBakery.WPF
         public const int MaxDpiScale = 4;
         public const int MaxUrlDisplayLen = 47;
 
+        // Compatibility Option
         public static bool IgnoreWidthOfWebLabel = false;
+        public static bool DisableBevelCaption = false;
 
         private readonly RenderInfo renderInfo;
         private readonly List<UIControl> uiCtrls;
@@ -685,7 +687,8 @@ namespace PEBakery.WPF
             };
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
-            if (!uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
+            if (DisableBevelCaption == false &&
+                !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
                 int fontSize = DefaultFontPoint;
                 if (info.FontSize != null)
