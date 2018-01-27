@@ -92,10 +92,10 @@ namespace PEBakery.Core
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture. or its value is Embedded File name.
     WebLabel    = <StringValue> // URL
-    TextLabel   = <FontSize>,<Style>
-                  <Style> : Normal, Bold
     RadioButton = <BooleanValue> +[RunOptional]
     FileBox     = [FILE|DIR]
+    Bevel       = <FontSize>,<Style> (Added in PEBakery)
+                  <Style> : Normal, Bold
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
                   // IntegerIndex : selected index, starting from 0
 
@@ -108,7 +108,6 @@ namespace PEBakery.Core
 
     [Tooltip]
     <StringValue> : Tooltip to show when mousehover event, always start with __
-
     */
     #endregion
 
@@ -187,12 +186,15 @@ namespace PEBakery.Core
             b.Append(",");
             b.Append(Rect.Height);
 
+            b.Append(Info.ForgeRawLine());
+            /*
             string optionalArgs = Info.ForgeRawLine();
             if (0 < optionalArgs.Length) // Only if optionalArgs is not empty
             {
                 b.Append(",");
                 b.Append(optionalArgs);
             }
+            */
 
             return b.ToString();
         }
@@ -488,10 +490,11 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(StringEscaper.QuoteEscape(Value));
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            StringBuilder b = new StringBuilder();
+            b.Append(",");
+            b.Append(StringEscaper.QuoteEscape(Value));
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()
@@ -520,12 +523,13 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(FontSize);
-            builder.Append(",");
-            builder.Append(Style.ToString());
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString(); 
+            StringBuilder b = new StringBuilder();
+            b.Append(",");
+            b.Append(FontSize);
+            b.Append(",");
+            b.Append(Style.ToString());
+            b.Append(base.ForgeRawLine());
+            return b.ToString(); 
         }
 
         public override string ToString()
@@ -554,6 +558,7 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append(",");
             builder.Append(Value);
             builder.Append(",");
             builder.Append(Min);
@@ -590,18 +595,18 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             if (Value)
-                b.Append("True");
+                b.Append(",True");
             else
-                b.Append("False");
+                b.Append(",False");
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
-                b.Append("_,");
+                b.Append("_");
                 if (HideProgress)
-                    b.Append("True");
+                    b.Append(",True");
                 else
-                    b.Append("False");
+                    b.Append(",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -635,19 +640,20 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < Items.Count - 1; i++)
             {
-                b.Append(StringEscaper.QuoteEscape(Items[i]));
                 b.Append(",");
+                b.Append(StringEscaper.QuoteEscape(Items[i]));
             }
+            b.Append(",");
             b.Append(StringEscaper.QuoteEscape(Items.Last()));
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
-                b.Append("_,");
+                b.Append("_");
                 if (HideProgress)
-                    b.Append("True");
+                    b.Append(",True");
                 else
-                    b.Append("False");
+                    b.Append(",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -672,10 +678,11 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(URL);
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            StringBuilder b = new StringBuilder();
+            b.Append(",");
+            b.Append(URL);
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()
@@ -722,20 +729,20 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(SectionName);
-            builder.Append(",");
+            StringBuilder b = new StringBuilder();
+            b.Append(",");
+            b.Append(SectionName);
+            b.Append(",");
             if (Picture != null)
-                builder.Append(Picture);
+                b.Append(Picture);
             else
-                builder.Append("0");
-            builder.Append(",");
+                b.Append("0");
             if (ShowProgress)
-                builder.Append("True");
+                b.Append(",True");
             else
-                builder.Append("False");
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+                b.Append(",False");
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
 
             /*
             StringBuilder builder = new StringBuilder();
@@ -801,10 +808,11 @@ namespace PEBakery.Core
 
         public override string ForgeRawLine()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(StringEscaper.Escape(URL));
-            builder.Append(base.ForgeRawLine());
-            return builder.ToString();
+            StringBuilder b = new StringBuilder();
+            b.Append(",");
+            b.Append(StringEscaper.Escape(URL));
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()
@@ -831,16 +839,17 @@ namespace PEBakery.Core
         public override string ForgeRawLine()
         {
             StringBuilder b = new StringBuilder();
+            b.Append(",");
             b.Append(Selected);
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
-                b.Append("_,");
+                b.Append("_");
                 if (HideProgress)
-                    b.Append("True");
+                    b.Append(",True");
                 else
-                    b.Append("False");
+                    b.Append(",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -876,17 +885,13 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             if (FontSize != null)
             {
+                b.Append(",");
                 b.Append(FontSize);
                 if (Style != null)
                 {
                     b.Append(",");
                     b.Append(Style.ToString());
                 }
-            }
-            else
-            {
-                if (Style != null)
-                    b.Append(Style.ToString());
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
@@ -913,9 +918,9 @@ namespace PEBakery.Core
         {
             StringBuilder b = new StringBuilder();
             if (IsFile)
-                b.Append("file");
+                b.Append(",file");
             else
-                b.Append("dir");
+                b.Append(",dir");
             b.Append(base.ForgeRawLine());
             return b.ToString();
         }
@@ -948,19 +953,20 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < Items.Count; i++)
             {
-                b.Append(StringEscaper.QuoteEscape(Items[i]));
                 b.Append(",");
+                b.Append(StringEscaper.QuoteEscape(Items[i]));
             }
+            b.Append(",");
             b.Append(Selected);
             if (SectionName != null)
             {
                 b.Append(",_");
                 b.Append(SectionName);
-                b.Append("_,");
+                b.Append("_");
                 if (HideProgress)
-                    b.Append("True");
+                    b.Append(",True");
                 else
-                    b.Append("False");
+                    b.Append(",False");
             }
             b.Append(base.ForgeRawLine());
             return b.ToString();
