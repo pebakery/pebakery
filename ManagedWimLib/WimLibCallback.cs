@@ -1,24 +1,19 @@
 ﻿/*
-    Licensed under LGPLv3
+    Copyright (C) 2017-2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    Derived from wimlib's original header files
-    Copyright (C) 2012, 2013, 2014 Eric Biggers
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    C# Wrapper written by Hajin Jang
-    Copyright (C) 2018 Hajin Jang
-
-    This file is free software; you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License as published by the Free
-    Software Foundation; either version 3 of the License, or (at your option) any
-    later version.
-
-    This file is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
-    details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this file; if not, see http://www.gnu.org/licenses/.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
@@ -55,12 +50,12 @@ namespace ManagedWimLib
             switch (msgType)
             {
                 case WimLibProgressMsg.WRITE_STREAMS:
-                    pInfo = (WimLibProgressInfoWriteStreams)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoWriteStreams));
+                    pInfo = (WimLibProgressInfo_WriteStreams)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_WriteStreams));
                     break;
                 case WimLibProgressMsg.SCAN_BEGIN:
                 case WimLibProgressMsg.SCAN_DENTRY:
                 case WimLibProgressMsg.SCAN_END:
-                    pInfo = (WimLibProgressInfoScan)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoScan));
+                    pInfo = (WimLibProgressInfo_Scan)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Scan));
                     break;
                 case WimLibProgressMsg.EXTRACT_SPWM_PART_BEGIN:
                 case WimLibProgressMsg.EXTRACT_IMAGE_BEGIN:
@@ -70,50 +65,51 @@ namespace ManagedWimLib
                 case WimLibProgressMsg.EXTRACT_METADATA:
                 case WimLibProgressMsg.EXTRACT_TREE_END:
                 case WimLibProgressMsg.EXTRACT_IMAGE_END:
-                    pInfo = (WimLibProgressInfoExtract) Marshal.PtrToStructure(info, typeof(WimLibProgressInfoExtract));
+                    pInfo = (WimLibProgressInfo_Extract) Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Extract));
                     break;
                 case WimLibProgressMsg.RENAME:
-                    pInfo = (WimLibProgressInfoRename)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoRename));
+                    pInfo = (WimLibProgressInfo_Rename)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Rename));
                     break;
                 case WimLibProgressMsg.UPDATE_BEGIN_COMMAND:
                 case WimLibProgressMsg.UPDATE_END_COMMAND:
-                    pInfo = (WimLibProgressInfoUpdate)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoUpdate));
+                    pInfo = (WimLibProgressInfo_Update)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Update));
                     break;
                 case WimLibProgressMsg.VERIFY_INTEGRITY:
                 case WimLibProgressMsg.CALC_INTEGRITY:
-                    pInfo = (WimLibProgressInfoIntegrity)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoIntegrity));
+                    pInfo = (WimLibProgressInfo_Integrity)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Integrity));
                     break;
                 case WimLibProgressMsg.SPLIT_BEGIN_PART:
                 case WimLibProgressMsg.SPLIT_END_PART:
-                    pInfo = (WimLibProgressInfoSplit)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoSplit));
+                    pInfo = (WimLibProgressInfo_Split)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Split));
                     break;
                 case WimLibProgressMsg.REPLACE_FILE_IN_WIM:
-                    pInfo = (WimLibProgressInfoReplace)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoReplace));
+                    pInfo = (WimLibProgressInfo_Replace)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Replace));
                     break;
                 case WimLibProgressMsg.WIMBOOT_EXCLUDE:
-                    pInfo = (WimLibProgressInfoWimbootExclude)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoWimbootExclude));
+                    pInfo = (WimLibProgressInfo_WimbootExclude)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_WimbootExclude));
                     break;
                 case WimLibProgressMsg.UNMOUNT_BEGIN:
-                    pInfo = (WimLibProgressInfoUnmount)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoUnmount));
+                    pInfo = (WimLibProgressInfo_Unmount)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Unmount));
                     break;
                 case WimLibProgressMsg.DONE_WITH_FILE:
-                    pInfo = (WimLibProgressInfoDoneWithFile)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoDoneWithFile));
+                    pInfo = (WimLibProgressInfo_DoneWithFile)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_DoneWithFile));
                     break;
                 case WimLibProgressMsg.BEGIN_VERIFY_IMAGE:
                 case WimLibProgressMsg.END_VERIFY_IMAGE:
-                    pInfo = (WimLibProgressInfoVerifyImage)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoVerifyImage));
+                    pInfo = (WimLibProgressInfo_VerifyImage)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_VerifyImage));
                     break;
                 case WimLibProgressMsg.VERIFY_STREAMS:
-                    pInfo = (WimLibProgressInfoVerifyStreams)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoVerifyStreams));
+                    pInfo = (WimLibProgressInfo_VerifyStreams)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_VerifyStreams));
                     break;
                 case WimLibProgressMsg.TEST_FILE_EXCLUSION:
-                    pInfo = (WimLibProgressInfoTestFileExclusion)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoTestFileExclusion));
+                    pInfo = (WimLibProgressInfo_TestFileExclusion)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_TestFileExclusion));
                     break;
                 case WimLibProgressMsg.HANDLE_ERROR:
-                    pInfo = (WimLibProgressInfoHandleError)Marshal.PtrToStructure(info, typeof(WimLibProgressInfoHandleError));
+                    pInfo = (WimLibProgressInfo_HandleError)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_HandleError));
                     break;
                 default:
-                    throw new InvalidOperationException($"Invalid WimLibProgressMsg [{msgType}]");
+                    // Some messages only denotes Start and End, they do not have info structure.
+                    return WimLibProgressStatus.CONTINUE;
             }
 
             return _callback(msgType, pInfo, _userData);
@@ -126,7 +122,7 @@ namespace ManagedWimLib
     /// the primary message for tracking the progress of writing a WIM file.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoWriteStreams
+    public struct WimLibProgressInfo_WriteStreams
     {
         /// <summary>
         /// An upper bound on the number of bytes of file data that will
@@ -186,7 +182,7 @@ namespace ManagedWimLib
     /// ::SCAN_END.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoScan
+    public struct WimLibProgressInfo_Scan
     {
         /// <summary>
         /// Dentry scan status, valid on
@@ -231,16 +227,16 @@ namespace ManagedWimLib
         /// to the file or block device that contains the NTFS volume
         /// being scanned. 
         /// </summary>
-        private IntPtr ptrSource;
-        public string Source => Marshal.PtrToStringUni(ptrSource);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Source;
         /// <summary>
         /// Path to the file (or directory) that has been scanned, valid
         /// on ::SCAN_DENTRY.  When capturing an NTFS
         /// volume with ::WIMLIB_ADD_FLAG_NTFS, this path will be
         /// relative to the root of the NTFS volume. 
         /// </summary>
-        private IntPtr ptrCurPath;
-        public string CurPath => Marshal.PtrToStringUni(ptrCurPath);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string CurPath;
         /// <summary>
         /// Dentry scan status, valid on
         /// ::SCAN_DENTRY. 
@@ -258,8 +254,8 @@ namespace ManagedWimLib
         /// WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK, this is the
         /// target of the absolute symbolic link or junction.
         /// </summary>
-        private IntPtr ptrWimTargetPathSymlinkTarget;
-        public string WimTargetPathSymlinkTarget => Marshal.PtrToStringUni(ptrWimTargetPathSymlinkTarget);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string WimTargetPathSymlinkTarget;
         /// <summary>
         /// The number of directories scanned so far, not counting
         /// excluded/unsupported files.
@@ -298,7 +294,7 @@ namespace ManagedWimLib
     /// necessarily file-by-file.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoExtract
+    public struct WimLibProgressInfo_Extract
     {
         /// <summary>
         /// The 1-based index of the image from which files are being
@@ -314,25 +310,25 @@ namespace ManagedWimLib
         /// has a backing file, then this is an absolute path to that
         /// backing file.  Otherwise, this is @c NULL.
         /// </summary>
-        private IntPtr ptrWimFileName;    
-        public string WimFileName => Marshal.PtrToStringUni(ptrWimFileName);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string WimFileName;
         /// <summary>
         /// Name of the image from which files are being extracted, or
         /// the empty string if the image is unnamed.
         /// </summary>
-        private IntPtr ptrImageName;
-        public string ImageName => Marshal.PtrToStringUni(ptrImageName);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string ImageName;
         /// <summary>
         /// Path to the directory or NTFS volume to which the files are
         /// being extracted.
         /// </summary>
-        private IntPtr ptrTarget;
-        public string Target => Marshal.PtrToStringUni(ptrTarget);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Target;
         /// <summary>
         /// Reserved.
         /// </summary>
-        private IntPtr ptrReserved;
-        public string Reserved => Marshal.PtrToStringUni(ptrReserved);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Reserved;
         /// <summary>
         /// he number of bytes of file data that will be extracted. 
         /// </summary>
@@ -402,19 +398,19 @@ namespace ManagedWimLib
     /// Valid on messages ::RENAME.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoRename
+    public struct WimLibProgressInfo_Rename
     {
         /// <summary>
         /// Name of the temporary file that the WIM was written to.
         /// </summary>
-        private IntPtr ptrFrom;
-        public string From => Marshal.PtrToStringUni(ptrFrom);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string From;
         /// <summary>
         /// Name of the original WIM file to which the temporary file is
         /// being renamed.
         /// </summary>
-        private IntPtr ptrTo;
-        public string To => Marshal.PtrToStringUni(ptrTo);
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string To;
     }
 
     /// <summary>
@@ -422,7 +418,7 @@ namespace ManagedWimLib
     /// ::UPDATE_END_COMMAND.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoUpdate
+    public struct WimLibProgressInfo_Update
     {
         /// <summary>
         /// Specification of an update to perform on a WIM image.
@@ -563,7 +559,7 @@ namespace ManagedWimLib
     /// ::CALC_INTEGRITY.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoIntegrity
+    public struct WimLibProgressInfo_Integrity
     {
         /// <summary>
         /// The number of bytes in the WIM file that are covered by
@@ -603,7 +599,7 @@ namespace ManagedWimLib
     /// ::SPLIT_END_PART.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoSplit
+    public struct WimLibProgressInfo_Split
     {
         /// <summary>
         /// Total size of the original WIM's file and metadata resources
@@ -643,7 +639,7 @@ namespace ManagedWimLib
     /// Valid on messages ::REPLACE_FILE_IN_WIM
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoReplace
+    public struct WimLibProgressInfo_Replace
     {
         /// <summary>
         /// Path to the file in the image that is being replaced
@@ -656,7 +652,7 @@ namespace ManagedWimLib
     /// Valid on messages ::WIMBOOT_EXCLUDE 
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoWimbootExclude
+    public struct WimLibProgressInfo_WimbootExclude
     {
         /// <summary>
         /// Path to the file in the image
@@ -674,7 +670,7 @@ namespace ManagedWimLib
     /// Valid on messages ::UNMOUNT_BEGIN.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoUnmount
+    public struct WimLibProgressInfo_Unmount
     {
         /// <summary>
         /// Path to directory being unmounted
@@ -705,7 +701,7 @@ namespace ManagedWimLib
     /// Valid on messages ::DONE_WITH_FILE.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoDoneWithFile
+    public struct WimLibProgressInfo_DoneWithFile
     {
         /// <summary>
         /// Path to the file whose data has been written to the WIM file,
@@ -734,7 +730,7 @@ namespace ManagedWimLib
     /// ::END_VERIFY_IMAGE. 
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoVerifyImage
+    public struct WimLibProgressInfo_VerifyImage
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         public string WimFile;
@@ -746,7 +742,7 @@ namespace ManagedWimLib
     /// Valid on messages ::VERIFY_STREAMS.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoVerifyStreams
+    public struct WimLibProgressInfo_VerifyStreams
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         public string WimFile;
@@ -760,7 +756,7 @@ namespace ManagedWimLib
     /// Valid on messages ::TEST_FILE_EXCLUSION.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoTestFileExclusion
+    public struct WimLibProgressInfo_TestFileExclusion
     {
         /// <summary>
         /// Path to the file for which exclusion is being tested.
@@ -789,7 +785,7 @@ namespace ManagedWimLib
     /// Valid on messages ::HANDLE_ERROR. 
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WimLibProgressInfoHandleError
+    public struct WimLibProgressInfo_HandleError
     {
         /// <summary>
         /// Path to the file for which the error occurred, or NULL if

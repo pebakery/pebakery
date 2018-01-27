@@ -1,24 +1,19 @@
 ﻿/*
-    Licensed under LGPLv3
+    Copyright (C) 2017-2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    Derived from wimlib's original header files
-    Copyright (C) 2012, 2013, 2014 Eric Biggers
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    C# Wrapper written by Hajin Jang
-    Copyright (C) 2018 Hajin Jang
-
-    This file is free software; you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License as published by the Free
-    Software Foundation; either version 3 of the License, or (at your option) any
-    later version.
-
-    This file is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
-    details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this file; if not, see http://www.gnu.org/licenses/.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
@@ -36,7 +31,6 @@ namespace ManagedWimLib.Tests
         #region Apply
         [TestMethod]
         [TestCategory("WimLib")]
-        [TestCategory("WimLib_Apply")]
         public void Apply()
         {
             Apply_Template("XPRESS.wim");
@@ -57,7 +51,7 @@ namespace ManagedWimLib.Tests
                     wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
                 }
 
-                TestHelper.CheckSample01(destDir);
+                TestHelper.CheckSrc01(destDir);
             }
             finally
             {
@@ -70,7 +64,6 @@ namespace ManagedWimLib.Tests
         #region ApplyProgress
         [TestMethod]
         [TestCategory("WimLib")]
-        [TestCategory("WimLib_Apply")]
         public void ApplyProgress()
         {
             ApplyProgress_Template("XPRESS.wim");
@@ -89,12 +82,12 @@ namespace ManagedWimLib.Tests
             {
                 case WimLibProgressMsg.EXTRACT_STREAMS:
                     { // Extract of one file
-                        WimLibProgressInfoExtract m = (WimLibProgressInfoExtract) info;
+                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract) info;
                         Assert.IsNotNull(m);
 
                         tested.Set();
 
-                        Console.WriteLine($"Extract {m.CompletedBytes * 100 / m.TotalBytes}%");
+                        Console.WriteLine($"Extracting {m.WimFileName} ({m.CompletedBytes * 100 / m.TotalBytes}%)");
                     }
                     break;
                 default:
@@ -117,8 +110,7 @@ namespace ManagedWimLib.Tests
                 }
 
                 Assert.IsTrue(tested.Value);
-
-                TestHelper.CheckSample01(destDir);
+                TestHelper.CheckSrc01(destDir);
             }
             finally
             {

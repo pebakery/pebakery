@@ -1,11 +1,4 @@
-Derived from wimlib's original header files
-Copyright (C) 2012, 2013, 2014 Eric Biggers
-
-C# Wrapper written by Hajin Jang
-Copyright (C) 2018 Hajin Jang
---------------------------------------------------------------------------
-
-					  GNU LESSER GENERAL PUBLIC LICENSE
+ 		              GNU LESSER GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>

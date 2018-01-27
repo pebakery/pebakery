@@ -1,24 +1,19 @@
 ﻿/*
-    Licensed under LGPLv3
+    Copyright (C) 2017-2018 Hajin Jang
+    Licensed under GPL 3.0
+ 
+    PEBakery is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    Derived from wimlib's original header files
-    Copyright (C) 2012, 2013, 2014 Eric Biggers
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-    C# Wrapper written by Hajin Jang
-    Copyright (C) 2018 Hajin Jang
-
-    This file is free software; you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License as published by the Free
-    Software Foundation; either version 3 of the License, or (at your option) any
-    later version.
-
-    This file is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
-    details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this file; if not, see http://www.gnu.org/licenses/.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using Microsoft.Win32.SafeHandles;
@@ -154,7 +149,7 @@ namespace ManagedWimLib
 
             // Set WimStructSize, value of wimlib 1.12 (mingw)
             if (IntPtr.Size == 8) // 64
-                WimStructSize = 0x1B8; 
+                WimStructSize = 0x1B8;
             else if (IntPtr.Size == 4) // 32
                 WimStructSize = 0x190;
             else
@@ -192,11 +187,14 @@ namespace ManagedWimLib
             GlobalCleanup = (wimlib_global_cleanup)GetFuncPtr("wimlib_global_cleanup", typeof(wimlib_global_cleanup));
             OpenWim = (wimlib_open_wim)GetFuncPtr("wimlib_open_wim", typeof(wimlib_open_wim));
             OpenWimWithProgress = (wimlib_open_wim_with_progress)GetFuncPtr("wimlib_open_wim_with_progress", typeof(wimlib_open_wim_with_progress));
+            CreateNewWim = (wimlib_create_new_wim)GetFuncPtr("wimlib_create_new_wim", typeof(wimlib_create_new_wim));
             Free = (wimlib_free)GetFuncPtr("wimlib_free", typeof(wimlib_free));
             GetErrorString = (wimlib_get_error_string)GetFuncPtr("wimlib_get_error_string", typeof(wimlib_get_error_string));
             RegisterProgressFunction = (wimlib_register_progress_function_delegate)GetFuncPtr("wimlib_register_progress_function", typeof(wimlib_register_progress_function_delegate));
             ExtractImage = (wimlib_extract_image)GetFuncPtr("wimlib_extract_image", typeof(wimlib_extract_image));
             Overwrite = (wimlib_overwrite)GetFuncPtr("wimlib_overwrite", typeof(wimlib_overwrite));
+            AddImage = (wimlib_add_image)GetFuncPtr("wimlib_add_image", typeof(wimlib_add_image));
+            Write = (wimlib_write)GetFuncPtr("wimlib_write", typeof(wimlib_write));
         }
 
         private static void ResetFuntions()
@@ -205,11 +203,13 @@ namespace ManagedWimLib
             GlobalCleanup = null;
             OpenWim = null;
             OpenWimWithProgress = null;
+            CreateNewWim = null;
             Free = null;
             GetErrorString = null;
             RegisterProgressFunction = null;
             ExtractImage = null;
             Overwrite = null;
+            Write = null;
         }
         #endregion
 
@@ -222,6 +222,7 @@ namespace ManagedWimLib
         #endregion
 
         #region WimLib Function Pointer
+        #region GlobalInit, GlobalCleanup
         /// <summary>
         /// Initialization function for wimlib.  Call before using any other wimlib
         /// function (except possibly wimlib_set_print_errors()).  If not done manually,
@@ -246,8 +247,9 @@ namespace ManagedWimLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void wimlib_global_cleanup();
         internal static wimlib_global_cleanup GlobalCleanup;
+        #endregion
 
-
+        #region OpenWim, CreateNewWim, Callback, Free, GetErrorString
         /// <summary>
         /// Open a WIM file and create a ::WIMStruct for it.
         /// </summary>
@@ -266,6 +268,40 @@ namespace ManagedWimLib
             WimLibOpenFlags open_flags,
             out IntPtr wim_ret);
         internal static wimlib_open_wim OpenWim;
+
+        /// <summary>
+        /// Create a ::WIMStruct which initially contains no images and is not backed by
+        /// an on-disk file.
+        /// </summary>
+        /// <param name="ctype">
+        /// The "output compression type" to assign to the ::WIMStruct.  This is the
+        /// compression type that will be used if the ::WIMStruct is later persisted
+        /// to an on-disk file using wimlib_write().
+        /// 
+        /// This choice is not necessarily final.  If desired, it can still be
+        /// changed at any time before wimlib_write() is called, using
+        /// wimlib_set_output_compression_type().  In addition, if you wish to use a
+        /// non-default compression chunk size, then you will need to call
+        /// wimlib_set_output_chunk_size().
+        /// </param>
+        /// <param name="wim_ret">
+        /// On success, a pointer to the new ::WIMStruct is written to the memory
+        /// location pointed to by this parameter.  This ::WIMStruct must be freed
+        /// using using wimlib_free() when finished with it.
+        /// </param>
+        /// <returns>
+        /// return 0 on success; a ::wimlib_error_code value on failure.
+        ///
+        /// @retval ::WIMLIB_ERR_INVALID_COMPRESSION_TYPE
+        /// @p ctype was not a supported compression type.
+        /// @retval ::WIMLIB_ERR_NOMEM
+        /// Insufficient memory to allocate a new ::WIMStruct.
+        /// </returns>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_create_new_wim(
+            WimLibCompressionType ctype,
+            out IntPtr wim_ret);
+        internal static wimlib_create_new_wim CreateNewWim;
 
         /// <summary>
         /// @ingroup G_creating_and_opening_wims
@@ -338,7 +374,9 @@ namespace ManagedWimLib
         [return: MarshalAs(UnmanagedType.LPWStr)]
         internal delegate string wimlib_get_error_string(WimLibErrorCode code);
         internal static wimlib_get_error_string GetErrorString;
+        #endregion
 
+        #region Leftover Functions
         /// <summary>
         /// Extract an image, or all images, from a ::WIMStruct.
         ///
@@ -395,7 +433,232 @@ namespace ManagedWimLib
             WimLibWriteFlags write_flags,
             uint numThreads);
         internal static wimlib_overwrite Overwrite;
+
+        /// <summary>
+        /// Add an image to a ::WIMStruct from an on-disk directory tree or NTFS volume.
+        ///
+        /// The directory tree or NTFS volume is scanned immediately to load the dentry
+        /// tree into memory, and file metadata is read.  However, actual file data may
+        /// not be read until the ::WIMStruct is persisted to disk using wimlib_write()
+        /// or wimlib_overwrite().
+        ///
+        /// See the documentation for the @b wimlib-imagex program for more information
+        /// about the "normal" capture mode versus the NTFS capture mode (entered by
+        /// providing the flag ::WIMLIB_ADD_FLAG_NTFS).
+        ///
+        /// Note that no changes are committed to disk until wimlib_write() or
+        /// wimlib_overwrite() is called.
+        /// </summary>
+        /// <param name="wim">
+        /// Pointer to the ::WIMStruct to which to add the image.
+        /// </param>
+        /// <param name="source">
+        /// A path to a directory or unmounted NTFS volume that will be captured as
+        /// a WIM image.
+        /// </param>
+        /// <param name="name">
+        /// Name to give the new image.  If @c NULL or empty, the new image is given
+        /// no name.  If nonempty, it must specify a name that does not already
+        /// exist in @p wim.
+        /// </param>
+        /// <param name="config_file">
+        /// Path to capture configuration file, or @c NULL.  This file may specify,
+        /// among other things, which files to exclude from capture.  See the
+        /// documentation for <b>wimcapture</b> (<b>--config</b> option) for details
+        /// of the file format.  If @c NULL, the default capture configuration will
+        /// be used.  Ordinarily, the default capture configuration will result in
+        /// no files being excluded from capture purely based on name; however, the
+        /// ::WIMLIB_ADD_FLAG_WINCONFIG and ::WIMLIB_ADD_FLAG_WIMBOOT flags modify
+        /// the default.
+        /// </param>
+        /// <param name="add_flags">
+        /// Bitwise OR of flags prefixed with WIMLIB_ADD_FLAG.
+        /// </param>
+        /// <returns>
+        /// 0 on success; a ::wimlib_error_code value on failure.
+        /// </returns>
+        /// <remarks>
+        /// This function is implemented by calling wimlib_add_empty_image(), then
+        /// calling wimlib_update_image() with a single "add" command, so any error code
+        /// returned by wimlib_add_empty_image() may be returned, as well as any error
+        /// codes returned by wimlib_update_image() other than ones documented as only
+        /// being returned specifically by an update involving delete or rename commands.
+        ///
+        /// If a progress function is registered with @p wim, then it will receive the
+        /// messages ::WIMLIB_PROGRESS_MSG_SCAN_BEGIN and ::WIMLIB_PROGRESS_MSG_SCAN_END.
+        /// In addition, if ::WIMLIB_ADD_FLAG_VERBOSE is specified in @p add_flags, it
+        /// will receive ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY.
+        /// </remarks>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_add_image(
+            IntPtr wim,
+            [MarshalAs(UnmanagedType.LPWStr)] string source,
+            [MarshalAs(UnmanagedType.LPWStr)] string name,
+            [MarshalAs(UnmanagedType.LPWStr)] string config_file,
+            WimLibAddFlags add_flags);
+        internal static wimlib_add_image AddImage;
+
+        /// <summary>
+        /// Persist a ::WIMStruct to a new on-disk WIM file.
+        ///
+        /// This brings in file data from any external locations, such as directory trees
+        /// or NTFS volumes scanned with wimlib_add_image(), or other WIM files via
+        /// wimlib_export_image(), and incorporates it into a new on-disk WIM file.
+        ///
+        /// By default, the new WIM file is written as stand-alone.  Using the
+        /// ::WIMLIB_WRITE_FLAG_SKIP_EXTERNAL_WIMS flag, a "delta" WIM can be written
+        /// instead.  However, this function cannot directly write a "split" WIM; use
+        /// wimlib_split() for that.
+        /// </summary>
+        /// <param name="wim">
+        /// Pointer to the ::WIMStruct being persisted.
+        /// </param>
+        /// <param name="path">
+        /// The path to the on-disk file to write.
+        /// </param>
+        /// <param name="image">
+        /// Normally, specify ::WIMLIB_ALL_IMAGES here.  This indicates that all
+        /// images are to be included in the new on-disk WIM file.  If for some
+        /// reason you only want to include a single image, specify the 1-based
+        /// index of that image instead.
+        /// </param>
+        /// <param name="write_flags">
+        /// Bitwise OR of flags prefixed with @c WIMLIB_WRITE_FLAG.
+        /// </param>
+        /// <param name="num_threads">
+        /// The number of threads to use for compressing data, or 0 to have the
+        /// library automatically choose an appropriate number.
+        /// </param>
+        /// <returns>
+        /// 0 on success; a ::wimlib_error_code value on failure.
+        /// 
+        /// @retval ::WIMLIB_ERR_CONCURRENT_MODIFICATION_DETECTED
+        /// A file that had previously been scanned for inclusion in the WIM was
+        /// concurrently modified.
+        /// @retval ::WIMLIB_ERR_INVALID_IMAGE
+        /// @p image did not exist in @p wim.
+        /// @retval ::WIMLIB_ERR_INVALID_RESOURCE_HASH
+        /// A file, stored in another WIM, which needed to be written was corrupt.
+        /// @retval ::WIMLIB_ERR_INVALID_PARAM
+        /// @p path was not a nonempty string, or invalid flags were passed.
+        /// @retval ::WIMLIB_ERR_OPEN
+        /// Failed to open the output WIM file for writing, or failed to open a file
+        /// whose data needed to be included in the WIM.
+        /// @retval ::WIMLIB_ERR_READ
+        /// Failed to read data that needed to be included in the WIM.
+        /// @retval ::WIMLIB_ERR_RESOURCE_NOT_FOUND
+        /// A file data blob that needed to be written could not be found in the
+        /// blob lookup table of @p wim.  See @ref G_nonstandalone_wims.
+        /// @retval ::WIMLIB_ERR_WRITE
+        /// An error occurred when trying to write data to the new WIM file.
+        /// </returns>
+        /// <remarks>
+        /// This function can additionally return ::WIMLIB_ERR_DECOMPRESSION,
+        /// ::WIMLIB_ERR_INVALID_METADATA_RESOURCE, ::WIMLIB_ERR_METADATA_NOT_FOUND,
+        /// ::WIMLIB_ERR_READ, or ::WIMLIB_ERR_UNEXPECTED_END_OF_FILE, all of which
+        /// indicate failure (for different reasons) to read the data from a WIM file.
+        ///
+        /// If a progress function is registered with @p wim, then it will receive the
+        /// messages ::WIMLIB_PROGRESS_MSG_WRITE_STREAMS,
+        /// ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN, and
+        /// ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_END.
+        /// </remarks>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_write(
+            IntPtr wim,
+            [MarshalAs(UnmanagedType.LPWStr)] string path,
+            int image,
+            WimLibWriteFlags write_flags,
+            uint num_threads);
+        internal static wimlib_write Write;
         #endregion
+        #endregion
+    }
+    #endregion
+
+    #region Enum CompressionType
+    /// <summary>
+    /// Specifies a compression type.
+    ///
+    /// A WIM file has a default compression type, indicated by its file header.
+    /// Normally, each resource in the WIM file is compressed with this compression
+    /// type.  However, resources may be stored as uncompressed; for example, wimlib
+    /// may do so if a resource does not compress to less than its original size.  In
+    /// addition, a WIM with the new version number of 3584, or "ESD file", might
+    /// contain solid resources with different compression types.
+    /// </summary>
+    public enum WimLibCompressionType
+    {
+        /// <summary>
+        /// No compression.
+        ///
+        /// This is a valid argument to wimlib_create_new_wim() and
+        /// wimlib_set_output_compression_type(), but not to the functions in the
+        /// compression API such as wimlib_create_compressor().
+        /// </summary>
+        NONE = 0,
+        /// <summary>
+        /// The XPRESS compression format.  This format combines Lempel-Ziv
+        /// factorization with Huffman encoding.  Compression and decompression
+        /// are both fast.  This format supports chunk sizes that are powers of 2
+        /// between <c>2^12</c> and <c>2^16</c>, inclusively.
+        ///
+        /// wimlib's XPRESS compressor will, with the default settings, usually
+        /// produce a better compression ratio, and work more quickly, than the
+        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).
+        /// Non-default compression levels are also supported.  For example,
+        /// level 80 will enable two-pass optimal parsing, which is significantly
+        /// slower but usually improves compression by several percent over the
+        /// default level of 50.
+        ///
+        /// If using wimlib_create_compressor() to create an XPRESS compressor
+        /// directly, the @p max_block_size parameter may be any positive value
+        /// up to and including <c>2^16</c>.
+        /// </summary>
+        XPRESS = 1,
+        /// <summary>
+        /// The LZX compression format.  This format combines Lempel-Ziv
+        /// factorization with Huffman encoding, but with more features and
+        /// complexity than XPRESS.  Compression is slow to somewhat fast,
+        /// depending on the settings.  Decompression is fast but slower than
+        /// XPRESS.  This format supports chunk sizes that are powers of 2
+        /// between <c>2^15</c> and <c>2^21</c>, inclusively.  Note: chunk sizes
+        /// other than <c>2^15</c> are not compatible with the Microsoft
+        /// implementation.
+        ///
+        /// wimlib's LZX compressor will, with the default settings, usually
+        /// produce a better compression ratio, and work more quickly, than the
+        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).
+        /// Non-default compression levels are also supported.  For example,
+        /// level 20 will provide fast compression, almost as fast as XPRESS.
+        ///
+        /// If using wimlib_create_compressor() to create an LZX compressor
+        /// directly, the @p max_block_size parameter may be any positive value
+        /// up to and including <c>2^21</c>.
+        /// </summary>
+        LZX = 2,
+        /// <summary>
+        /// The LZMS compression format.  This format combines Lempel-Ziv
+        /// factorization with adaptive Huffman encoding and range coding.
+        /// Compression and decompression are both fairly slow.  This format
+        /// supports chunk sizes that are powers of 2 between <c>2^15</c> and
+        /// <c>2^30</c>, inclusively.  This format is best used for large chunk
+        /// sizes.  Note: LZMS compression is only compatible with wimlib v1.6.0
+        /// and later, WIMGAPI Windows 8 and later, and DISM Windows 8.1 and
+        /// later.  Also, chunk sizes larger than <c>2^26</c> are not compatible
+        /// with the Microsoft implementation.
+        ///
+        /// wimlib's LZMS compressor will, with the default settings, usually
+        /// produce a better compression ratio, and work more quickly, than the
+        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).  There is
+        /// limited support for non-default compression levels, but compression
+        /// will be noticeably faster if you choose a level < 35.
+        ///
+        /// If using wimlib_create_compressor() to create an LZMS compressor
+        /// directly, the @p max_block_size parameter may be any positive value
+        /// up to and including <c>2^30</c>.
+        /// </summary>
+        LZMS = 3,
     }
     #endregion
 
@@ -407,178 +670,178 @@ namespace ManagedWimLib
     public enum WimLibProgressMsg
     {
         /** A WIM image is about to be extracted.  @p info will point to
-            ::wimlib_progress_info.extract.  This message is received once per
-            image for calls to wimlib_extract_image() and
-            wimlib_extract_image_from_pipe().  */
+         * ::wimlib_progress_info.extract.  This message is received once per
+         * image for calls to wimlib_extract_image() and
+         * wimlib_extract_image_from_pipe().  */
         EXTRACT_IMAGE_BEGIN = 0,
 
         /** One or more file or directory trees within a WIM image is about to
-            be extracted.  @p info will point to ::wimlib_progress_info.extract.
-            This message is received only once per wimlib_extract_paths() and
-            wimlib_extract_pathlist(), since wimlib combines all paths into a
-            single extraction operation for optimization purposes.  */
+         * be extracted.  @p info will point to ::wimlib_progress_info.extract.
+         * This message is received only once per wimlib_extract_paths() and
+         * wimlib_extract_pathlist(), since wimlib combines all paths into a
+         * single extraction operation for optimization purposes.  */
         EXTRACT_TREE_BEGIN = 1,
 
         /** This message may be sent periodically (not for every file) while
-            files and directories are being created, prior to file data
-            extraction.  @p info will point to ::wimlib_progress_info.extract.
-            In particular, the @p current_file_count and @p end_file_count
-            members may be used to track the progress of this phase of
-            extraction.  */
+         * files and directories are being created, prior to file data
+         * extraction.  @p info will point to ::wimlib_progress_info.extract.
+         * In particular, the @p current_file_count and @p end_file_count
+         * members may be used to track the progress of this phase of
+         * extraction.  */
         EXTRACT_FILE_STRUCTURE = 3,
 
         /** File data is currently being extracted.  @p info will point to
-            ::wimlib_progress_info.extract.  This is the main message to track
-            the progress of an extraction operation.  */
+         * ::wimlib_progress_info.extract.  This is the main message to track
+         * the progress of an extraction operation.  */
         EXTRACT_STREAMS = 4,
 
         /** Starting to read a new part of a split pipable WIM over the pipe.
-            @p info will point to ::wimlib_progress_info.extract.  */
+         * @p info will point to ::wimlib_progress_info.extract.  */
         EXTRACT_SPWM_PART_BEGIN = 5,
 
         /** This message may be sent periodically (not necessarily for every
-            file) while file and directory metadata is being extracted, following
-            file data extraction.  @p info will point to
-            ::wimlib_progress_info.extract.  The @p current_file_count and @p
-            end_file_count members may be used to track the progress of this
-            phase of extraction.  */
+         * file) while file and directory metadata is being extracted, following
+         * file data extraction.  @p info will point to
+         * ::wimlib_progress_info.extract.  The @p current_file_count and @p
+         * end_file_count members may be used to track the progress of this
+         * phase of extraction.  */
         EXTRACT_METADATA = 6,
 
         /** The image has been successfully extracted.  @p info will point to
-            ::wimlib_progress_info.extract.  This is paired with
-            ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.  */
+         * ::wimlib_progress_info.extract.  This is paired with
+         * ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.  */
         EXTRACT_IMAGE_END = 7,
 
         /** The files or directory trees have been successfully extracted.  @p
-            info will point to ::wimlib_progress_info.extract.  This is paired
-            with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.  */
+         * info will point to ::wimlib_progress_info.extract.  This is paired
+         * with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.  */
         EXTRACT_TREE_END = 8,
 
         /** The directory or NTFS volume is about to be scanned for metadata.
-            @p info will point to ::wimlib_progress_info.scan.  This message is
-            received once per call to wimlib_add_image(), or once per capture
-            source passed to wimlib_add_image_multisource(), or once per add
-            command passed to wimlib_update_image().  */
+         * @p info will point to ::wimlib_progress_info.scan.  This message is
+         * received once per call to wimlib_add_image(), or once per capture
+         * source passed to wimlib_add_image_multisource(), or once per add
+         * command passed to wimlib_update_image().  */
         SCAN_BEGIN = 9,
 
         /** A directory or file has been scanned.  @p info will point to
-            ::wimlib_progress_info.scan, and its @p cur_path member will be
-            valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
-            been specified.  */
+         * ::wimlib_progress_info.scan, and its @p cur_path member will be
+         * valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
+         * been specified.  */
         SCAN_DENTRY = 10,
 
         /** The directory or NTFS volume has been successfully scanned.  @p info
-            will point to ::wimlib_progress_info.scan.  This is paired with a
-            previous ::WIMLIB_PROGRESS_MSG_SCAN_BEGIN message, possibly with many
-            intervening ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY messages.  */
+         * will point to ::wimlib_progress_info.scan.  This is paired with a
+         * previous ::WIMLIB_PROGRESS_MSG_SCAN_BEGIN message, possibly with many
+         * intervening ::WIMLIB_PROGRESS_MSG_SCAN_DENTRY messages.  */
         SCAN_END = 11,
 
         /** File data is currently being written to the WIM.  @p info will point
-            to ::wimlib_progress_info.write_streams.  This message may be
-            received many times while the WIM file is being written or appended
-            to with wimlib_write(), wimlib_overwrite(), or wimlib_write_to_fd().
+         * to ::wimlib_progress_info.write_streams.  This message may be
+         * received many times while the WIM file is being written or appended
+         * to with wimlib_write(), wimlib_overwrite(), or wimlib_write_to_fd().
          */
         WRITE_STREAMS = 12,
 
         /** Per-image metadata is about to be written to the WIM file.  @p info
-            will not be valid. */
+         * will not be valid. */
         WRITE_METADATA_BEGIN = 13,
 
         /** The per-image metadata has been written to the WIM file.  @p info
-            will not be valid.  This message is paired with a preceding
-            ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN message.  */
+         * will not be valid.  This message is paired with a preceding
+         * ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN message.  */
         WRITE_METADATA_END = 14,
 
         /** wimlib_overwrite() has successfully renamed the temporary file to
-            the original WIM file, thereby committing the changes to the WIM
-            file.  @p info will point to ::wimlib_progress_info.rename.  Note:
-            this message is not received if wimlib_overwrite() chose to append to
-            the WIM file in-place.  */
+         * the original WIM file, thereby committing the changes to the WIM
+         * file.  @p info will point to ::wimlib_progress_info.rename.  Note:
+         * this message is not received if wimlib_overwrite() chose to append to
+         * the WIM file in-place.  */
         RENAME = 15,
 
         /** The contents of the WIM file are being checked against the integrity
-            table.  @p info will point to ::wimlib_progress_info.integrity.  This
-            message is only received (and may be received many times) when
-            wimlib_open_wim_with_progress() is called with the
-            ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY flag.  */
+         * table.  @p info will point to ::wimlib_progress_info.integrity.  This
+         * message is only received (and may be received many times) when
+         * wimlib_open_wim_with_progress() is called with the
+         * ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY flag.  */
         VERIFY_INTEGRITY = 16,
 
         /** An integrity table is being calculated for the WIM being written.
-            @p info will point to ::wimlib_progress_info.integrity.  This message
-            is only received (and may be received many times) when a WIM file is
-            being written with the flag ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY.  */
+         * @p info will point to ::wimlib_progress_info.integrity.  This message
+         * is only received (and may be received many times) when a WIM file is
+         * being written with the flag ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY.  */
         CALC_INTEGRITY = 17,
 
         /** A wimlib_split() operation is in progress, and a new split part is
-            about to be started.  @p info will point to
-            ::wimlib_progress_info.split.  */
+         * about to be started.  @p info will point to
+         * ::wimlib_progress_info.split.  */
         SPLIT_BEGIN_PART = 19,
 
         /** A wimlib_split() operation is in progress, and a split part has been
-            finished. @p info will point to ::wimlib_progress_info.split.  */
+         * finished. @p info will point to ::wimlib_progress_info.split.  */
         SPLIT_END_PART = 20,
 
         /** A WIM update command is about to be executed. @p info will point to
-            ::wimlib_progress_info.update.  This message is received once per
-            update command when wimlib_update_image() is called with the flag
-            ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
+         * ::wimlib_progress_info.update.  This message is received once per
+         * update command when wimlib_update_image() is called with the flag
+         * ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
         UPDATE_BEGIN_COMMAND = 21,
 
         /** A WIM update command has been executed. @p info will point to
-            ::wimlib_progress_info.update.  This message is received once per
-            update command when wimlib_update_image() is called with the flag
-            ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
+         * ::wimlib_progress_info.update.  This message is received once per
+         * update command when wimlib_update_image() is called with the flag
+         * ::WIMLIB_UPDATE_FLAG_SEND_PROGRESS.  */
         UPDATE_END_COMMAND = 22,
 
         /** A file in the image is being replaced as a result of a
-            ::wimlib_add_command without ::WIMLIB_ADD_FLAG_NO_REPLACE specified.
-            @p info will point to ::wimlib_progress_info.replace.  This is only
-            received when ::WIMLIB_ADD_FLAG_VERBOSE is also specified in the add
-            command.  */
+         * ::wimlib_add_command without ::WIMLIB_ADD_FLAG_NO_REPLACE specified.
+         * @p info will point to ::wimlib_progress_info.replace.  This is only
+         * received when ::WIMLIB_ADD_FLAG_VERBOSE is also specified in the add
+         * command.  */
         REPLACE_FILE_IN_WIM = 23,
 
         /** An image is being extracted with ::WIMLIB_EXTRACT_FLAG_WIMBOOT, and
-            a file is being extracted normally (not as a "WIMBoot pointer file")
-            due to it matching a pattern in the <c>[PrepopulateList]</c> section
-            of the configuration file
-            <c>/Windows/System32/WimBootCompress.ini</c> in the WIM image.  @p
-            info will point to ::wimlib_progress_info.wimboot_exclude.  */
+         * a file is being extracted normally (not as a "WIMBoot pointer file")
+         * due to it matching a pattern in the <c>[PrepopulateList]</c> section
+         * of the configuration file
+         * <c>/Windows/System32/WimBootCompress.ini</c> in the WIM image.  @p
+         * info will point to ::wimlib_progress_info.wimboot_exclude.  */
         WIMBOOT_EXCLUDE = 24,
 
         /** Starting to unmount an image.  @p info will point to
-            ::wimlib_progress_info.unmount.  */
+         * ::wimlib_progress_info.unmount.  */
         UNMOUNT_BEGIN = 25,
 
         /** wimlib has used a file's data for the last time (including all data
-            streams, if it has multiple).  @p info will point to
-            ::wimlib_progress_info.done_with_file.  This message is only received
-            if ::WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES was provided.  */
+         * streams, if it has multiple).  @p info will point to
+         * ::wimlib_progress_info.done_with_file.  This message is only received
+         * if ::WIMLIB_WRITE_FLAG_SEND_DONE_WITH_FILE_MESSAGES was provided.  */
         DONE_WITH_FILE = 26,
 
         /** wimlib_verify_wim() is starting to verify the metadata for an image.
-            @p info will point to ::wimlib_progress_info.verify_image.  */
+         * @p info will point to ::wimlib_progress_info.verify_image.  */
         BEGIN_VERIFY_IMAGE = 27,
 
         /** wimlib_verify_wim() has finished verifying the metadata for an
-            image.  @p info will point to ::wimlib_progress_info.verify_image.
+         * image.  @p info will point to ::wimlib_progress_info.verify_image.
          */
         END_VERIFY_IMAGE = 28,
 
         /** wimlib_verify_wim() is verifying file data integrity.  @p info will
-            point to ::wimlib_progress_info.verify_streams.  */
+         * point to ::wimlib_progress_info.verify_streams.  */
         VERIFY_STREAMS = 29,
 
         /**
-            The progress function is being asked whether a file should be
-            excluded from capture or not.  @p info will point to
-            ::wimlib_progress_info.test_file_exclusion.  This is a bidirectional
-            message that allows the progress function to set a flag if the file
-            should be excluded.
+         * The progress function is being asked whether a file should be
+         * excluded from capture or not.  @p info will point to
+         * ::wimlib_progress_info.test_file_exclusion.  This is a bidirectional
+         * message that allows the progress function to set a flag if the file
+         * should be excluded.
          *
-            This message is only received if the flag
-            ::WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION is used.  This method for file
-            exclusions is independent of the "capture configuration file"
-            mechanism.
+         * This message is only received if the flag
+         * ::WIMLIB_ADD_FLAG_TEST_FILE_EXCLUSION is used.  This method for file
+         * exclusions is independent of the "capture configuration file"
+         * mechanism.
          */
         TEST_FILE_EXCLUSION = 30,
 
@@ -1312,7 +1575,7 @@ namespace ManagedWimLib
         /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Treat the
         /// paths to extract as wildcard patterns ("globs") which may contain the
         /// wildcard characters @c ? and @c *.  The @c ? character matches any
-        /// non-path-separator character, whereas the @c    character matches zero or more
+        /// non-path-separator character, whereas the @c * character matches zero or more
         /// non-path-separator characters.  Consequently, each glob may match zero or
         /// more actual paths in the WIM image.
         ///

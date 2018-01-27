@@ -332,6 +332,7 @@
   <ItemGroup>
     <None Include="Resources\SystemLogHtmlTemplate.cshtml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
