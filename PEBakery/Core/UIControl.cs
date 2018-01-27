@@ -68,7 +68,7 @@ namespace PEBakery.Core
     <Text>
     TextBox     = Caption
     TextLabel   = Caption 
-    NumberBox   = <ComponentName> 
+    NumberBox   = <ControlName> 
     CheckBox    = Caption 
     ComboBox    = <SelectedItem> // no number, name of item
     Image       = <FileName> 
@@ -76,7 +76,7 @@ namespace PEBakery.Core
     Button      = Caption 
     WebLabel    = Caption 
     RadioButton = Caption 
-    Bevel       = <ComponentName> 
+    Bevel       = Caption // If set to <ControlName> caption will be hidden. (For compatability with scripts built in wb editor. )
     FileBox     = <Path> // It can be file or directory
     RadioGroup  = Caption 
 
@@ -88,9 +88,12 @@ namespace PEBakery.Core
     NumberBox   = <IntegerValue>,<Min>,<Max>,<IncrementUnit>
     CheckBox    = <BooleanValue>,[SectionToRun]  +[RunOptional]
     ComboBox    = <StringValue1>,<StringValue2>, ... ,<StringValueN>
+    Image       = <StringValue> // URL
     Button      = <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean]  +[RunOptional]
                   [Picture] - 0 if no picture. or its value is Embedded File name.
     WebLabel    = <StringValue> // URL
+    TextLabel   = <FontSize>,<Style>
+                  <Style> : Normal, Bold
     RadioButton = <BooleanValue> +[RunOptional]
     FileBox     = [FILE|DIR]
     RadioGroup  = <StringValue1>,<StringValue2>, ... ,<StringValueN>,<IntegerIndex>  +[RunOptional]
@@ -183,8 +186,14 @@ namespace PEBakery.Core
             b.Append(Rect.Width);
             b.Append(",");
             b.Append(Rect.Height);
-            b.Append(",");
-            b.Append(Info.ForgeRawLine());
+
+            string optionalArgs = Info.ForgeRawLine();
+            if (0 < optionalArgs.Length) // Only if optionalArgs is not empty
+            {
+                b.Append(",");
+                b.Append(optionalArgs);
+            }
+
             return b.ToString();
         }
         #endregion
@@ -844,18 +853,43 @@ namespace PEBakery.Core
 
     }
 
+    public enum UIInfo_BevelCaption_Style
+    {
+        Normal, Bold
+    }
+
     [Serializable]
     public class UIInfo_Bevel : UIInfo
     {
-        public UIInfo_Bevel(string tooltip)
+        public int? FontSize;
+        public UIInfo_BevelCaption_Style? Style;
+
+        public UIInfo_Bevel(string tooltip, int? fontSize, UIInfo_BevelCaption_Style? style)
             : base(tooltip)
         {
-
+            this.FontSize = fontSize;
+            this.Style = style;
         }
 
         public override string ForgeRawLine()
         {
-            return base.ForgeRawLine();
+            StringBuilder b = new StringBuilder();
+            if (FontSize != null)
+            {
+                b.Append(FontSize);
+                if (Style != null)
+                {
+                    b.Append(",");
+                    b.Append(Style.ToString());
+                }
+            }
+            else
+            {
+                if (Style != null)
+                    b.Append(Style.ToString());
+            }
+            b.Append(base.ForgeRawLine());
+            return b.ToString();
         }
 
         public override string ToString()

@@ -487,6 +487,11 @@
                         VerticalContentAlignment="Center"
                         Content="Ignore Width of WebLabel"
                         IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
+                    <CheckBox
+                        Margin="15, 15, 15, 0"
+                        VerticalContentAlignment="Center"
+                        Content="Disable Bevel Caption"
+                        IsChecked="{Binding Compat_DisableBevelCaption}" />
                 </StackPanel>
             </TabItem>
         </TabControl>

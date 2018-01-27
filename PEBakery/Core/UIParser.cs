@@ -211,7 +211,9 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        NumberHelper.ParseInt32(args[0], out int fontSize);
+                        if (!NumberHelper.ParseInt32(args[0], out int fontSize))
+                            throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
+
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
                         if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Bold;
@@ -441,11 +443,29 @@ namespace PEBakery.Core
                 case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 0;
-                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
+                        const int maxOpCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount));
+                        int? fontSize = null;
+                        UIInfo_BevelCaption_Style? style = null;
+
+                        if (1 <= args.Count)
+                        {
+                            if (!NumberHelper.ParseInt32(args[0], out int fontSizeVal))
+                                throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
+                            fontSize = fontSizeVal;
+                        }
+                            
+                        if (2 <= args.Count)
+                        {
+                            if (args[1].Equals("Normal", StringComparison.OrdinalIgnoreCase))
+                                style = UIInfo_BevelCaption_Style.Normal;
+                            else if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                                style = UIInfo_BevelCaption_Style.Bold;
+                        }
+
+                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
                 #endregion
                 #region FileBox

@@ -59,7 +59,9 @@ namespace PEBakery.WPF
         public const int MaxDpiScale = 4;
         public const int MaxUrlDisplayLen = 47;
 
+        // Compatibility Option
         public static bool IgnoreWidthOfWebLabel = false;
+        public static bool DisableBevelCaption = false;
 
         private readonly RenderInfo renderInfo;
         private readonly List<UIControl> uiCtrls;
@@ -685,26 +687,37 @@ namespace PEBakery.WPF
             };
             DrawToCanvas(r, bevel, uiCtrl.Rect);
 
-            if (!uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
+            if (DisableBevelCaption == false &&
+                !uiCtrl.Text.Equals(uiCtrl.Key, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(uiCtrl.Text))
             { // PEBakery Extension - see https://github.com/pebakery/pebakery/issues/34
+                int fontSize = DefaultFontPoint;
+                if (info.FontSize != null)
+                    fontSize = (int) info.FontSize;
+
+                UIInfo_BevelCaption_Style style = UIInfo_BevelCaption_Style.Normal;
+                if (info.Style != null)
+                    style = (UIInfo_BevelCaption_Style)info.Style;
+
                 Border textBorder = new Border()
                 {
-                    BorderThickness = new Thickness(CalcFontPointScale() / 3),
+                    BorderThickness = new Thickness(CalcFontPointScale() / 3), // Don't use info.FontSize for border thickness. It throws off X Pos.
                     BorderBrush = Brushes.Transparent,
                 };
                 TextBlock textBlock = new TextBlock()
                 {
                     Text = uiCtrl.Text,
-                    FontSize = CalcFontPointScale(),
-                    Padding = new Thickness(CalcFontPointScale() / 3, 0, CalcFontPointScale() / 3, 0),
+                    FontSize = CalcFontPointScale(fontSize),
+                    Padding = new Thickness(CalcFontPointScale(fontSize) / 3, 0, CalcFontPointScale(fontSize) / 3, 0),
                     Background = Brushes.White,
                 };
                 textBorder.Child = textBlock;
+                if (info.Style == UIInfo_BevelCaption_Style.Bold)
+                    textBlock.FontWeight = FontWeights.Bold;
 
                 Rect blockRect = new Rect()
                 {
-                    X = uiCtrl.Rect.X + (CalcFontPointScale() * 2 / 3),
-                    Y = uiCtrl.Rect.Y - CalcFontPointScale(),
+                    X = uiCtrl.Rect.X + (CalcFontPointScale(fontSize) / 3),
+                    Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
                     Width = double.NaN,
                     Height = double.NaN,
                 };

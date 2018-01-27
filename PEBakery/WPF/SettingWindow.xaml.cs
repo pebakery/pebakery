@@ -760,6 +760,17 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("Compat_IgnoreWidthOfWebLabel");
             }
         }
+
+        private bool compat_DisableBevelCaption;
+        public bool Compat_DisableBevelCaption
+        {
+            get => compat_DisableBevelCaption;
+            set
+            {
+                compat_DisableBevelCaption = value;
+                OnPropertyUpdate("Compat_DisableBevelCaption");
+            }
+        }
         #endregion
 
         #region Utility
@@ -771,6 +782,7 @@ namespace PEBakery.WPF
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
+            UIRenderer.DisableBevelCaption = this.Compat_DisableBevelCaption;
             MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
         }
 
@@ -820,6 +832,7 @@ namespace PEBakery.WPF
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
             Compat_IgnoreWidthOfWebLabel = true;
+            Compat_DisableBevelCaption = true;
         }
 
         public void ReadFromFile()
@@ -858,6 +871,7 @@ namespace PEBakery.WPF
                 new IniKey("Compat", "LegacyBranchCondition"), // Boolean
                 new IniKey("Compat", "RegWriteLegacy"), // Boolean
                 new IniKey("Compat", "IgnoreWidthOfWebLabel"), // Boolean
+                new IniKey("Compat", "DisableBevelCaption"), // Boolean
             }; 
             keys = Ini.GetKeys(settingFile, keys);
 
@@ -887,6 +901,7 @@ namespace PEBakery.WPF
             string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
             string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
             string str_Compat_IgnoreWidthOfWebLabel = dict["Compat_IgnoreWidthOfWebLabel"];
+            string str_Compat_DisableBevelCaption = dict["Compat_DisableBevelCaption"];
 
             // Project
             if (dict["Project_DefaultProject"] != null)
@@ -1059,6 +1074,13 @@ namespace PEBakery.WPF
                 if (str_Compat_IgnoreWidthOfWebLabel.Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_IgnoreWidthOfWebLabel = false;
             }
+
+            // Compatibility - DisableBevelCaption (Default = True)
+            if (str_Compat_DisableBevelCaption != null)
+            {
+                if (str_Compat_DisableBevelCaption.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_DisableBevelCaption = false;
+            }
         }
 
         public void WriteToFile()
@@ -1090,6 +1112,7 @@ namespace PEBakery.WPF
                 new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
                 new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
                 new IniKey("Compat", "IgnoreWidthOfWebLabel", Compat_IgnoreWidthOfWebLabel.ToString()),
+                new IniKey("Compat", "DisableBevelCaption", Compat_DisableBevelCaption.ToString()),
             };
             Ini.SetKeys(settingFile, keys);
         }
