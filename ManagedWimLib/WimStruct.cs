@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -201,6 +202,16 @@ namespace ManagedWimLib
                 ManagedCallback = null;
                 WimLibNative.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
             }
+        }
+
+        public WimInfo GetWimInfo()
+        {
+            // This function always return 0, so no need to check exception
+            IntPtr infoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WimInfo)));
+            WimLibNative.GetWimInfo(Ptr, infoPtr);
+            WimInfo info = (WimInfo) Marshal.PtrToStructure(infoPtr, typeof(WimInfo));
+
+            return info;
         }
 
         /// <summary>

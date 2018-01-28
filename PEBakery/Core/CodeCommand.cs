@@ -3549,6 +3549,113 @@ namespace PEBakery.Core
             return $"{MountDir},{UnmountOption}";
         }
     }
+
+    [Serializable]
+    public class CodeInfo_WimApply : CodeInfo
+    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
+        // Unstable Command
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestDir;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
+
+        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, bool check, bool noAcl, bool noAttrib)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestDir = destDir;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestDir);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimCapture : CodeInfo
+    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
+        // Unstable Command
+        public string SrcDir;
+        public string DestWim;
+        public string Compress; // [NONE|XPRESS|LZX|LZMS]
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimCapture(string srcDir, string destWim, string compress,
+            string imageName, string imageDesc, string wimFlags,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+            Compress = compress;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+            b.Append(",");
+            b.Append(Compress);
+
+            if (ImageName != null)
+            {
+                b.Append("ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (WimFlags != null)
+            {
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 80 - Branch

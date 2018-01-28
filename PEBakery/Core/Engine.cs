@@ -642,6 +642,12 @@ namespace PEBakery.Core
                     case CodeType.WimUnmount:
                         logs.AddRange(CommandWim.WimUnmount(s, cmd));
                         break;
+                    case CodeType.WimApply:
+                        logs.AddRange(CommandWim.WimApply(s, cmd));
+                        break;
+                    case CodeType.WimCapture:
+                        // logs.AddRange(CommandWim.WimCapture(s, cmd));
+                        break;
                     #endregion
                     #region 80 Branch
                     case CodeType.Run:

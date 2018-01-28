@@ -1387,6 +1387,67 @@ namespace PEBakery.Core
 
                         return new CodeInfo_WimUnmount(args[0], args[1]);
                     }
+                case CodeType.WimApply:
+                    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 6;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool check = false;
+                        bool noAcl = false;
+                        bool noAttrib = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                                check = true;
+                            else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                                noAcl = true;
+                            else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
+                                noAttrib = true;
+                        }  
+
+                        return new CodeInfo_WimApply(args[0], args[1], args[2], check, noAcl, noAttrib);
+                    }
+                case CodeType.WimCapture:
+                    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 9;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string imageName = null;
+                        string imageDesc = null;
+                        string wimFlags = null;
+                        bool boot = false;
+                        bool check = false;
+                        bool noAcl = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            const string ImageNameKey = "ImageName=";
+                            const string ImageDescKey = "ImageDesc=";
+                            const string WimFlagsKey = "Flags=";
+
+                            string arg = args[i];
+                            if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
+                                imageName = arg.Substring(ImageNameKey.Length);
+                            else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
+                                imageDesc = arg.Substring(ImageDescKey.Length);
+                            else if (arg.StartsWith(WimFlagsKey, StringComparison.OrdinalIgnoreCase))
+                                wimFlags = arg.Substring(WimFlagsKey.Length);
+                            else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
+                                boot = true;
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                                check = true;
+                            else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                                noAcl = true;
+                        }
+
+                        return new CodeInfo_WimCapture(args[0], args[1], args[2], imageName, imageDesc, wimFlags, boot, check, noAcl);
+                    }
                 #endregion
                 #region 80 Branch
                 case CodeType.Run:

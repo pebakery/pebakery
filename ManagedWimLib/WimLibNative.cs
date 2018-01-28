@@ -195,6 +195,7 @@ namespace ManagedWimLib
             Overwrite = (wimlib_overwrite)GetFuncPtr("wimlib_overwrite", typeof(wimlib_overwrite));
             AddImage = (wimlib_add_image)GetFuncPtr("wimlib_add_image", typeof(wimlib_add_image));
             Write = (wimlib_write)GetFuncPtr("wimlib_write", typeof(wimlib_write));
+            GetWimInfo = (wimlib_get_wim_info)GetFuncPtr("wimlib_get_wim_info", typeof(wimlib_get_wim_info));
         }
 
         private static void ResetFuntions()
@@ -210,6 +211,7 @@ namespace ManagedWimLib
             ExtractImage = null;
             Overwrite = null;
             Write = null;
+            GetWimInfo = null;
         }
         #endregion
 
@@ -376,7 +378,27 @@ namespace ManagedWimLib
         internal static wimlib_get_error_string GetErrorString;
         #endregion
 
-        #region Leftover Functions
+        #region Other Functions
+        /// <summary>
+        /// Get basic information about a WIM file.
+        /// </summary>
+        /// <param name="wim">
+        /// Pointer to the ::WIMStruct to query.  This need not represent a
+        /// standalone WIM (e.g. it could represent part of a split WIM).
+        /// </param>
+        /// <param name="info">
+        /// A ::wimlib_wim_info structure that will be filled in with information
+        /// about the WIM file.
+        /// </param>
+        /// <returns>
+        /// return 0
+        /// </returns>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_get_wim_info(
+            IntPtr wim,
+            IntPtr info);
+        internal static wimlib_get_wim_info GetWimInfo;
+
         /// <summary>
         /// Extract an image, or all images, from a ::WIMStruct.
         ///
@@ -571,6 +593,13 @@ namespace ManagedWimLib
             WimLibWriteFlags write_flags,
             uint num_threads);
         internal static wimlib_write Write;
+        #endregion
+
+        #region Utility
+        internal static bool GetBitField(uint bitField, int bitShift)
+        {
+            return (bitField & (1 << bitShift)) != 0;
+        }
         #endregion
         #endregion
     }
@@ -1635,6 +1664,102 @@ namespace ManagedWimLib
         /// 32768 byte chunks.
         /// </summary>
         COMPACT_LZX = 0x08000000,
+    }
+    #endregion
+
+    #region Struct WimInfo
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WimInfo
+    {
+        /// <summary>
+        /// The globally unique identifier for this WIM.  (Note: all parts of a split WIM normally have identical GUIDs.)
+        /// </summary>
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] Guid;
+        /// <summary>
+        /// The number of images in this WIM file.
+        /// </summary>
+        public uint ImageCount;
+        /// <summary>
+        /// The 1-based index of the bootable image in this WIM file, or 0 if no image is bootable.
+        /// </summary>
+        public uint BootIndex;
+        /// <summary>
+        /// The version of the WIM file format used in this WIM file.
+        /// </summary>
+        public uint WimVersion;
+        /// <summary>
+        /// The default compression chunk size of resources in this WIM file.
+        /// </summary>
+        public uint ChunkSize;
+        /// <summary>
+        /// For split WIMs, the 1-based index of this part within the split WIM; otherwise 1.
+        /// </summary>
+        public ushort PartNumber;
+        /// <summary>
+        /// For split WIMs, the total number of parts in the split WIM; otherwise 1.
+        /// </summary>
+        public ushort TotalParts;
+        /// <summary>
+        /// The default compression type of resources in this WIM file, as one of the ::wimlib_compression_type constants.
+        /// </summary>
+        public int CompressionType;
+        /// <summary>
+        /// The size of this WIM file in bytes, excluding the XML data and integrity table.
+        /// </summary>
+        public ulong TotalBytes;
+
+        /// <summary>
+        /// Bit 0 - 9 : Information Flags
+        /// Bit 10 - 31 : Reserved
+        /// </summary>
+        private uint BitMask;
+
+        /// <summary>
+        /// 1 iff this WIM file has an integrity table.
+        /// </summary>
+        public bool HasIntegrityTable => WimLibNative.GetBitField(BitMask, 0);
+        /// <summary>
+        /// 1 iff this info struct is for a ::WIMStruct that has a backing file.
+        /// </summary>
+        public bool OpenedFromFile => WimLibNative.GetBitField(BitMask, 1);
+        /// <summary>
+        /// 1 iff this WIM file is considered readonly for any reason (e.g. the
+        /// "readonly" header flag is set, or this is part of a split WIM, or
+        /// filesystem permissions deny writing)
+        /// </summary>
+        public bool IsReadonly => WimLibNative.GetBitField(BitMask, 2);
+        /// <summary>
+        /// 1 iff the "reparse point fix" flag is set in this WIM's header
+        /// </summary>
+        public bool HasRpfix => WimLibNative.GetBitField(BitMask, 3);
+        /// <summary>
+        /// 1 iff the "readonly" flag is set in this WIM's header
+        /// </summary>
+        public bool IsMarkedReadonly => WimLibNative.GetBitField(BitMask, 4);
+        /// <summary>
+        /// 1 iff the "spanned" flag is set in this WIM's header
+        /// </summary>
+        public bool Spanned => WimLibNative.GetBitField(BitMask, 5);
+        /// <summary>
+        /// 1 iff the "write in progress" flag is set in this WIM's header
+        /// </summary>
+        public bool WriteInProgress => WimLibNative.GetBitField(BitMask, 6);
+        /// <summary>
+        /// 1 iff the "metadata only" flag is set in this WIM's header
+        /// </summary>
+        public bool MetadataOnly => WimLibNative.GetBitField(BitMask, 7);
+        /// <summary>
+        /// 1 iff the "resource only" flag is set in this WIM's header
+        /// </summary>
+        public bool ResourceOnly => WimLibNative.GetBitField(BitMask, 8);
+        /// <summary>
+        /// 1 iff this WIM file is pipable (see ::WIMLIB_WRITE_FLAG_PIPABLE).
+        /// </summary>
+        public bool Pipable => WimLibNative.GetBitField(BitMask, 9);
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
+        private uint[] Reserved;
     }
     #endregion
 

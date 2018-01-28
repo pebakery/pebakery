@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using ManagedWimLib;
 using Microsoft.Wim;
 using PEBakery.Helper;
 using System;
@@ -325,6 +326,125 @@ namespace PEBakery.Core.Commands
         private static LogInfo LogWimgApiException(Win32Exception e, string msg)
         {
             return new LogInfo(LogState.Error, $"{msg}\r\nError Code [0x{e.ErrorCode:X8}]\r\nNative Error Code [0x{e.NativeErrorCode:X8}]\r\n");
+        }
+        #endregion
+
+        #region WimLib - WimApply, WimCapture
+        public static List<LogInfo> WimApply(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimApply));
+            CodeInfo_WimApply info = cmd.Info as CodeInfo_WimApply;
+
+            string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
+
+            // Check SrcWim
+            if (!File.Exists(srcWim))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
+                return logs;
+            }
+
+            // Check DestDir
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            if (!Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.DEFAULT;
+            if (info.CheckFlag)
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+            if (info.NoAclFlag)
+                extractFlags |= WimLibExtractFlags.NO_ACLS;
+            if (info.NoAttribFlag)
+                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+
+            // Check imageIndex
+            try
+            {
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimLibProgressCallback, s))
+                {
+                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+                    uint imageCount = wimInfo.ImageCount;
+
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
+                        return logs;
+                    }
+
+                    if (!(1 <= imageIndex && imageIndex <= imageCount))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{imageCount}]"));
+                        return logs;
+                    }
+
+                    // Apply Wim
+                    // https://wimlib.net/man1/wimapply.html
+                    // https://wimlib.net/git/?p=wimlib;a=blob;f=programs/imagex.c;h=a10ac488fdfbc4bb66949fdeae18a3193f253890;hb=HEAD#l1672
+                    s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = wimInfo.TotalBytes;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.ExtractImage(imageIndex, destDir, extractFlags);
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            
+
+            return logs;
+        }
+
+        private static WimLibProgressStatus WimLibProgressCallback(WimLibProgressMsg msg, object info, object progctx)
+        {
+            EngineState s = progctx as EngineState;
+            Debug.Assert(s != null);
+
+            switch (msg)
+            {
+                case WimLibProgressMsg.EXTRACT_STREAMS:
+                    { // Apply : Extract of one file
+                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+
+                        ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
+                        s.MainViewModel.BuildCommandProgressValue = m.CompletedBytes;
+                        s.MainViewModel.BuildCommandProgressText = $"Applying or Extracting {m.WimFileName} ({percentComplete}%)";
+                    }
+                    break;
+                default:
+                    break;
+            }
+            return WimLibProgressStatus.CONTINUE;
+        }
+
+        private static LogInfo LogWimLibException(WimLibException e)
+        {
+            return new LogInfo(LogState.Error, $"{e.ErrorMsg}\r\nError Code [0x{e.ErrorCode:X8}]\r\n");
         }
         #endregion
     }
