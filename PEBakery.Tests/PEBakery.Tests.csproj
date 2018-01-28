@@ -87,6 +87,7 @@
     <Compile Include="Core\Command\CommandStringTests.cs" />
     <Compile Include="Core\CodeParserTests.cs" />
     <Compile Include="Core\Command\CommandTextTests.cs" />
+    <Compile Include="Core\Command\CommandWimTests.cs" />
     <Compile Include="Core\EncodedFileTests.cs" />
     <Compile Include="Core\EngineTests.cs" />
     <Compile Include="Core\Parser\CodeParserExTests.cs" />
@@ -95,6 +96,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ManagedWimLib\ManagedWimLib.csproj">
+      <Project>{73bdca22-081d-489e-95e7-a02a6778bb7c}</Project>
+      <Name>ManagedWimLib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PEBakery.IniLib\PEBakery.IniLib.csproj">
       <Project>{03434187-acfc-497d-a86a-8dbeda80c21c}</Project>
       <Name>PEBakery.IniLib</Name>

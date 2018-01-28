@@ -64,16 +64,15 @@ namespace PEBakery.Tests.Core
             // Should be only one project named TestSuite
             Project = projects.Projects[0];
 
-            // Init ZLibAssembly
-            ZLibAssemblyInit();
+            // Init NativeAssembly
+            NativeAssemblyInit();
 
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
-            
         }
 
-        private static void ZLibAssemblyInit()
+        private static void NativeAssemblyInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string arch;
@@ -81,8 +80,12 @@ namespace PEBakery.Tests.Core
                 arch = "x64";
             else
                 arch = "x86";
+
             string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+
+            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            ManagedWimLib.WimLibNative.AssemblyInit(WimLibDllPath);
         }
 
         [AssemblyCleanup]
