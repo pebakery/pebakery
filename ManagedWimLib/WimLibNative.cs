@@ -1703,7 +1703,8 @@ namespace ManagedWimLib
         /// <summary>
         /// The default compression type of resources in this WIM file, as one of the ::wimlib_compression_type constants.
         /// </summary>
-        public int CompressionType;
+        private int CompressionTypeInt;
+        public WimLibCompressionType CompressionType => (WimLibCompressionType)CompressionTypeInt;
         /// <summary>
         /// The size of this WIM file in bytes, excluding the XML data and integrity table.
         /// </summary>
