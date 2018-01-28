@@ -371,10 +371,9 @@ namespace PEBakery.Core.Commands
             // Check imageIndex
             try
             {
-                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimLibProgressCallback, s))
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyProgress, s))
                 {
                     ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
-                    uint imageCount = wimInfo.ImageCount;
 
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                     {
@@ -382,9 +381,9 @@ namespace PEBakery.Core.Commands
                         return logs;
                     }
 
-                    if (!(1 <= imageIndex && imageIndex <= imageCount))
+                    if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
                     {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{imageCount}]"));
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
                         return logs;
                     }
 
@@ -393,7 +392,7 @@ namespace PEBakery.Core.Commands
                     // https://wimlib.net/git/?p=wimlib;a=blob;f=programs/imagex.c;h=a10ac488fdfbc4bb66949fdeae18a3193f253890;hb=HEAD#l1672
                     s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
-                    s.MainViewModel.BuildCommandProgressMax = wimInfo.TotalBytes;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
                     s.MainViewModel.BuildCommandProgressShow = true;
 
                     try
@@ -415,28 +414,48 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            
-
             return logs;
         }
 
-        private static WimLibProgressStatus WimLibProgressCallback(WimLibProgressMsg msg, object info, object progctx)
+        private static WimLibProgressStatus WimApplyProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
 
+            // EXTRACT_IMAGE_BEGIN
+            // EXTRACT_FILE_STRUCTURE (Stage 1)
+            // EXTRACT_STREAMS (Stage 2)
+            // EXTRACT_METADATA (Stage 3)
+            // EXTRACT_IMAGE_END
+
             switch (msg)
             {
-                case WimLibProgressMsg.EXTRACT_STREAMS:
-                    { // Apply : Extract of one file
+                case WimLibProgressMsg.EXTRACT_FILE_STRUCTURE:
+                    {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
-                        ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
-                        s.MainViewModel.BuildCommandProgressValue = m.CompletedBytes;
-                        s.MainViewModel.BuildCommandProgressText = $"Applying or Extracting {m.WimFileName} ({percentComplete}%)";
+                        ulong percentComplete = (m.CurrentFileCount * 25 / m.EndFileCount);
+                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                        s.MainViewModel.BuildCommandProgressText = $"Stage 1 ({percentComplete}%)";
                     }
                     break;
-                default:
+                case WimLibProgressMsg.EXTRACT_STREAMS:
+                    {
+                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+
+                        ulong percentComplete = 50 + (m.CompletedBytes * 50 / m.TotalBytes);
+                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                        s.MainViewModel.BuildCommandProgressText = $"Stage 2 ({percentComplete}%)";
+                    }
+                    break;
+                case WimLibProgressMsg.EXTRACT_METADATA:
+                    {
+                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+
+                        ulong percentComplete = 75 + (m.CurrentFileCount * 25 / m.EndFileCount);
+                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                        s.MainViewModel.BuildCommandProgressText = $"Stage 3 ({percentComplete}%)";
+                    }
                     break;
             }
             return WimLibProgressStatus.CONTINUE;
