@@ -3553,7 +3553,6 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WimApply : CodeInfo
     { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
-        // Unstable Command
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
@@ -3592,7 +3591,6 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WimCapture : CodeInfo
     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
-        // Unstable Command
         public string SrcDir;
         public string DestWim;
         public string Compress; // [NONE|XPRESS|LZX|LZMS]
@@ -3645,6 +3643,76 @@ namespace PEBakery.Core
             {
                 b.Append("WimFlags=");
                 b.Append(WimFlags);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimAppend : CodeInfo
+    { // WimCapture,<SrcDir>,<DestWim>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[DELTAFROM=INT],[BOOT],[CHECK],[NOACL]
+        public string SrcDir;
+        public string DestWim;
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public string DeltaFrom; // Optional, for Delta Wim (like install.wim)
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimAppend(string srcDir, string destWim,
+            string imageName, string imageDesc, string wimFlags, string deltaFrom,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+            DeltaFrom = deltaFrom;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+
+            if (ImageName != null)
+            {
+                b.Append("ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (WimFlags != null)
+            {
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
+            }
+            if (DeltaFrom != null)
+            {
+                b.Append("UpdateOf=");
+                b.Append(DeltaFrom);
             }
 
             if (BootFlag)

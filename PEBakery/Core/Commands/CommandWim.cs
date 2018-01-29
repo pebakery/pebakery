@@ -329,7 +329,7 @@ namespace PEBakery.Core.Commands
         }
         #endregion
 
-        #region WimLib - WimApply, WimCapture
+        #region WimLib - WimApply
         public static List<LogInfo> WimApply(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -368,13 +368,14 @@ namespace PEBakery.Core.Commands
             if (info.NoAttribFlag)
                 extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
 
-            // Check imageIndex
+            
             try
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyProgress, s))
                 {
                     ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
 
+                    // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                     {
                         logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
@@ -387,9 +388,7 @@ namespace PEBakery.Core.Commands
                         return logs;
                     }
 
-                    // Apply Wim
-                    // https://wimlib.net/man1/wimapply.html
-                    // https://wimlib.net/git/?p=wimlib;a=blob;f=programs/imagex.c;h=a10ac488fdfbc4bb66949fdeae18a3193f253890;hb=HEAD#l1672
+                    // Apply to disk
                     s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
                     s.MainViewModel.BuildCommandProgressMax = 100;
@@ -436,33 +435,44 @@ namespace PEBakery.Core.Commands
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
-                        ulong percentComplete = (m.CurrentFileCount * 10 / m.EndFileCount);
-                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                        s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Creating files ({percentComplete}%)";
+                        if (0 < m.EndFileCount)
+                        {
+                            ulong percentComplete = (m.CurrentFileCount * 10 / m.EndFileCount);
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Creating files ({percentComplete}%)";
+                        }
                     }
                     break;
                 case WimLibProgressMsg.EXTRACT_STREAMS:
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
-                        ulong percentComplete = 10 + (m.CompletedBytes * 80 / m.TotalBytes);
-                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                        s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Extracting file data ({percentComplete}%)";
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = 10 + (m.CompletedBytes * 80 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Extracting file data ({percentComplete}%)";
+                        }
                     }
                     break;
                 case WimLibProgressMsg.EXTRACT_METADATA:
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
-                        ulong percentComplete = 90 + (m.CurrentFileCount * 10 / m.EndFileCount);
-                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                        s.MainViewModel.BuildCommandProgressText = $"[Stage 3] Applying metadata to files ({percentComplete}%)";
+                        if (0 < m.EndFileCount)
+                        {
+                            ulong percentComplete = 90 + (m.CurrentFileCount * 10 / m.EndFileCount);
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 3] Applying metadata to files ({percentComplete}%)";
+                        }
                     }
                     break;
             }
             return WimLibProgressStatus.CONTINUE;
         }
+        #endregion
 
+        #region WimLib - WimCapture, WimAppend
         public static List<LogInfo> WimCapture(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -473,12 +483,6 @@ namespace PEBakery.Core.Commands
             string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
             string destWim = StringEscaper.Preprocess(s, info.DestWim);
             string compStr = StringEscaper.Preprocess(s, info.Compress);
-
-            string imageName;
-            if (info.ImageName != null)
-                imageName = StringEscaper.Preprocess(s, info.ImageName);
-            else
-                imageName = Path.GetFileName(Path.GetFullPath(srcDir));
 
             // Check SrcDir
             if (!Directory.Exists(srcDir))
@@ -527,12 +531,23 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            // Check imageIndex
+            // Set ImageName
+            string imageName;
+            if (info.ImageName != null)
+                imageName = StringEscaper.Preprocess(s, info.ImageName);
+            else
+            {
+                imageName = Path.GetFileName(Path.GetFullPath(srcDir));
+                if (string.IsNullOrWhiteSpace(imageName))
+                    imageName = "PEBakery"; // Default dummy wim image name
+            }
+
+            // Capture from disk
             try
             {
                 using (Wim wim = Wim.CreateNewWim(compType))
                 {
-                    wim.RegisterCallback(WimCaptureProgress, s);
+                    wim.RegisterCallback(WimCaptureAppendProgress, s);
 
                     wim.AddImage(srcDir, imageName, null, addFlags);
                     if (info.ImageDesc != null)
@@ -547,9 +562,6 @@ namespace PEBakery.Core.Commands
                         wim.SetImageFlags(1, wimFlags);
                     }
 
-                    // Apply Wim
-                    // https://wimlib.net/man1/wimapply.html
-                    // https://wimlib.net/git/?p=wimlib;a=blob;f=programs/imagex.c;h=a10ac488fdfbc4bb66949fdeae18a3193f253890;hb=HEAD#l1672
                     s.MainViewModel.BuildCommandProgressTitle = "WimCapture Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
                     s.MainViewModel.BuildCommandProgressMax = 100;
@@ -579,7 +591,134 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibProgressStatus WimCaptureProgress(WimLibProgressMsg msg, object info, object progctx)
+        public static List<LogInfo> WimAppend(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimAppend));
+            CodeInfo_WimAppend info = cmd.Info as CodeInfo_WimAppend;
+
+            string srcDir = StringEscaper.Preprocess(s, info.SrcDir);
+            string destWim = StringEscaper.Preprocess(s, info.DestWim);
+
+            // Check SrcDir
+            if (!Directory.Exists(srcDir))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"Directory [{srcDir}] does not exist"));
+                return logs;
+            }
+
+            // Check DestWim
+            if (StringEscaper.PathSecurityCheck(destWim, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
+            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
+            WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.FILE_PATHS_UNNEEDED;
+            if (info.BootFlag)
+                addFlags |= WimLibAddFlags.BOOT;
+            if (info.NoAclFlag)
+                addFlags |= WimLibAddFlags.NO_ACLS;
+            if (info.CheckFlag)
+            {
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+            }
+
+            // Set ImageName
+            string imageName;
+            if (info.ImageName != null)
+                imageName = StringEscaper.Preprocess(s, info.ImageName);
+            else
+            {
+                imageName = Path.GetFileName(Path.GetFullPath(srcDir));
+                if (string.IsNullOrWhiteSpace(imageName))
+                    imageName = "PEBakery"; // Default dummy wim image name
+            }
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(destWim, openFlags))
+                {
+                    wim.RegisterCallback(WimCaptureAppendProgress, s);
+
+                    // Check if image name is duplicated
+                    if (wim.IsImageNameInUse(imageName))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"Image name [{imageName}] is already in use"));
+                        return logs;
+                    }
+
+                    // Add Image
+                    wim.AddImage(srcDir, imageName, null, addFlags);
+                    if (info.ImageDesc != null)
+                    {
+                        string imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
+                        wim.SetImageDescription(1, imageDesc);
+                    }
+                    if (info.WimFlags != null)
+                    {
+                        string wimFlags = StringEscaper.Preprocess(s, info.WimFlags);
+                        wim.SetImageFlags(1, wimFlags);
+                    }
+
+                    // Set Delta Wim Append (Optional)
+                    if (info.DeltaFrom != null)
+                    {
+                        // Get ImageCount
+                        ManagedWimLib.WimInfo wInfo = wim.GetWimInfo();
+                        uint imageCount = wInfo.ImageCount;
+
+                        string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaFrom);
+                        if (!NumberHelper.ParseInt32(deltaIndexStr, out int deltaIndex))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{deltaIndexStr}] is not a valid a positive integer"));
+                            return logs;
+                        }
+                        if (!(1 <= deltaIndex && deltaIndex <= imageCount))
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{deltaIndex}] must be [1] ~ [{imageCount}]"));
+                            return logs;
+                        }
+
+                        wim.ReferenceTemplateImage((int)imageCount, deltaIndex);
+                    }
+
+                    // Appned to Wim
+                    s.MainViewModel.BuildCommandProgressTitle = "WimAppend Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.OverWrite(writeFlags, (uint)Environment.ProcessorCount);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Appended [{srcDir}] into [{destWim}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+
+        private static WimLibProgressStatus WimCaptureAppendProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -602,12 +741,13 @@ namespace PEBakery.Core.Commands
                     {
                         WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
 
-                        ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
-                        s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                        s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Archiving file data ({percentComplete}%)";
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Archiving file data ({percentComplete}%)";
+                        }
                     }
-                    break;
-                default:
                     break;
             }
             return WimLibProgressStatus.CONTINUE;

@@ -1452,6 +1452,49 @@ namespace PEBakery.Core
 
                         return new CodeInfo_WimCapture(args[0], args[1], args[2], imageName, imageDesc, wimFlags, boot, check, noAcl);
                     }
+                case CodeType.WimAppend:
+                    { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[UPDATEOF=STR],[BOOT],[CHECK],[NOACL]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 9;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string imageName = null;
+                        string imageDesc = null;
+                        string wimFlags = null;
+                        string deltaFrom = null;
+                        bool boot = false;
+                        bool check = false;
+                        bool noAcl = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            const string ImageNameKey = "ImageName=";
+                            const string ImageDescKey = "ImageDesc=";
+                            const string WimFlagsKey = "Flags=";
+                            const string DeltaFromKey = "DeltaFrom=";
+
+                            string arg = args[i];
+                            if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
+                                imageName = arg.Substring(ImageNameKey.Length);
+                            else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
+                                imageDesc = arg.Substring(ImageDescKey.Length);
+                            else if (arg.StartsWith(WimFlagsKey, StringComparison.OrdinalIgnoreCase))
+                                wimFlags = arg.Substring(WimFlagsKey.Length);
+                            else if (arg.StartsWith(DeltaFromKey, StringComparison.OrdinalIgnoreCase))
+                                deltaFrom = arg.Substring(DeltaFromKey.Length);
+                            else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
+                                boot = true;
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                                check = true;
+                            else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                                noAcl = true;
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_WimAppend(args[0], args[1], imageName, imageDesc, wimFlags, deltaFrom, boot, check, noAcl);
+                    }
                 #endregion
                 #region 80 Branch
                 case CodeType.Run:

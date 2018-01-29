@@ -398,6 +398,68 @@ namespace ManagedWimLib
         }
 
         /// <summary>
+        /// Commit a ::WIMStruct to disk, updating its backing file.
+        ///
+        /// There are several alternative ways in which changes may be committed:
+        ///
+        ///   1. Full rebuild: write the updated WIM to a temporary file, then rename the
+        /// temporary file to the original.
+        ///   2. Appending: append updates to the new original WIM file, then overwrite
+        /// its header such that those changes become visible to new readers.
+        ///   3. Compaction: normally should not be used; see
+        /// ::WIMLIB_WRITE_FLAG_UNSAFE_COMPACT for details.
+        ///
+        /// Append mode is often much faster than a full rebuild, but it wastes some
+        /// amount of space due to leaving "holes" in the WIM file.  Because of the
+        /// greater efficiency, wimlib_overwrite() normally defaults to append mode.
+        /// However, ::WIMLIB_WRITE_FLAG_REBUILD can be used to explicitly request a full
+        /// rebuild.  In addition, if wimlib_delete_image() has been used on the
+        /// ::WIMStruct, then the default mode switches to rebuild mode, and
+        /// ::WIMLIB_WRITE_FLAG_SOFT_DELETE can be used to explicitly request append
+        /// mode.
+        ///
+        /// If this function completes successfully, then no more functions can be called
+        /// on the ::WIMStruct other than wimlib_free().  If you need to continue using
+        /// the WIM file, you must use wimlib_open_wim() to open a new ::WIMStruct for
+        /// it.
+        /// </summary>
+        /// <param name="wim">Pointer to a ::WIMStruct to commit to its backing file.</param>
+        /// <param name="write_flags">Bitwise OR of relevant flags prefixed with WIMLIB_WRITE_FLAG.</param>
+        /// <param name="num_threads">
+        /// The number of threads to use for compressing data, or 0 to have the
+        /// library automatically choose an appropriate number.
+        /// </param>
+        /// <returns>
+        /// return 0 on success; a ::wimlib_error_code value on failure.  This function
+        /// may return most error codes returned by wimlib_write() as well as the
+        /// following error codes:
+        ///
+        /// @retval ::WIMLIB_ERR_ALREADY_LOCKED
+        /// Another process is currently modifying the WIM file.
+        /// @retval ::WIMLIB_ERR_NO_FILENAME
+        /// @p wim is not backed by an on-disk file.  In other words, it is a
+        /// ::WIMStruct created by wimlib_create_new_wim() rather than
+        /// wimlib_open_wim().
+        /// @retval ::WIMLIB_ERR_RENAME
+        /// The temporary file to which the WIM was written could not be renamed to
+        /// the original file.
+        /// @retval ::WIMLIB_ERR_WIM_IS_READONLY
+        /// The WIM file is considered read-only because of any of the reasons
+        /// mentioned in the documentation for the ::WIMLIB_OPEN_FLAG_WRITE_ACCESS
+        /// flag.
+        ///
+        /// If a progress function is registered with @p wim, then it will receive the
+        /// messages ::WIMLIB_PROGRESS_MSG_WRITE_STREAMS,
+        /// ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_BEGIN, and
+        /// ::WIMLIB_PROGRESS_MSG_WRITE_METADATA_END.
+        /// </returns>
+        public void OverWrite(WimLibWriteFlags writeFlags, uint numThreads)
+        {
+            WimLibErrorCode ret = WimLibNative.OverWrite(Ptr, writeFlags, numThreads);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
         /// Since wimlib v1.8.3: add, modify, or remove a per-image property from the
         /// WIM's XML document.  This is an alternative to wimlib_set_image_name(),
         /// wimlib_set_image_descripton(), and wimlib_set_image_flags() which allows
@@ -450,6 +512,133 @@ namespace ManagedWimLib
         public void SetImageName(int image, string name)
         {
             SetImageProperty(image, "NAME", name);
+        }
+
+        /// <summary>
+        /// Determine if an image name is already used by some image in the WIM.
+        /// </summary>
+        /// <param name="name">The name to check.</param>
+        /// <returns>
+        /// @c true if there is already an image in @p wim named @p name; @c false
+        /// if there is no image named @p name in @p wim.If @p name is @c NULL or
+        /// the empty string, then @c false is returned.
+        /// </returns>
+        public bool IsImageNameInUse(string name)
+        {
+            return WimLibNative.IsImageNameInUse(Ptr, name);
+        }
+
+        /// <summary>
+        /// Declare that a newly added image is mostly the same as a prior image, but
+        /// captured at a later point in time, possibly with some modifications in the
+        /// intervening time.  This is designed to be used in incremental backups of the
+        /// same filesystem or directory tree.
+        ///
+        /// This function compares the metadata of the directory tree of the newly added
+        /// image against that of the old image.  Any files that are present in both the
+        /// newly added image and the old image and have timestamps that indicate they
+        /// haven't been modified are deemed not to have been modified and have their
+        /// checksums copied from the old image.  Because of this and because WIM uses
+        /// single-instance streams, such files need not be read from the filesystem when
+        /// the WIM is being written or overwritten.  Note that these unchanged files
+        /// will still be "archived" and will be logically present in the new image; the
+        /// optimization is that they don't need to actually be read from the filesystem
+        /// because the WIM already contains them.
+        ///
+        /// This function is provided to optimize incremental backups.  The resulting WIM
+        /// file will still be the same regardless of whether this function is called.
+        /// (This is, however, assuming that timestamps have not been manipulated or
+        /// unmaintained as to trick this function into thinking a file has not been
+        /// modified when really it has.  To partly guard against such cases, other
+        /// metadata such as file sizes will be checked as well.)
+        ///
+        /// This function must be called after adding the new image (e.g. with
+        /// wimlib_add_image()), but before writing the updated WIM file (e.g. with
+        /// wimlib_overwrite()).
+        /// </summary>
+        /// <param name="new_image">The 1-based index in @p wim of the newly added image.</param>
+        /// <param name="template_image">The 1-based index in @p template_wim of the template image.</param>
+        /// <returns>return 0 on success; a ::wimlib_error_code value on failure.
+        /// 
+        /// @retval ::WIMLIB_ERR_INVALID_IMAGE
+        /// @p new_image does not exist in @p wim or @p template_image does not
+        /// exist in @p template_wim.
+        /// @retval ::WIMLIB_ERR_METADATA_NOT_FOUND
+        /// At least one of @p wim and @p template_wim does not contain image
+        /// metadata; for example, one of them represents a non-first part of a
+        /// split WIM.
+        /// @retval ::WIMLIB_ERR_INVALID_PARAM
+        /// Identical values were provided for the template and new image; or @p
+        /// new_image specified an image that had not been modified since opening
+        /// the WIM.
+        ///
+        /// This function can additionally return ::WIMLIB_ERR_DECOMPRESSION,
+        /// ::WIMLIB_ERR_INVALID_METADATA_RESOURCE, ::WIMLIB_ERR_METADATA_NOT_FOUND,
+        /// ::WIMLIB_ERR_READ, or ::WIMLIB_ERR_UNEXPECTED_END_OF_FILE, all of which
+        /// indicate failure (for different reasons) to read the metadata resource for
+        /// the template image.
+        /// </returns>
+        public void ReferenceTemplateImage(int newImage, int templateImage)
+        {
+            WimLibErrorCode ret = WimLibNative.ReferenceTemplateImage(Ptr, newImage, Ptr, templateImage, 0);
+            WimLibException.CheckWimLibError(ret);
+        }
+        
+        /// <summary>
+        /// Declare that a newly added image is mostly the same as a prior image, but
+        /// captured at a later point in time, possibly with some modifications in the
+        /// intervening time.  This is designed to be used in incremental backups of the
+        /// same filesystem or directory tree.
+        ///
+        /// This function compares the metadata of the directory tree of the newly added
+        /// image against that of the old image.  Any files that are present in both the
+        /// newly added image and the old image and have timestamps that indicate they
+        /// haven't been modified are deemed not to have been modified and have their
+        /// checksums copied from the old image.  Because of this and because WIM uses
+        /// single-instance streams, such files need not be read from the filesystem when
+        /// the WIM is being written or overwritten.  Note that these unchanged files
+        /// will still be "archived" and will be logically present in the new image; the
+        /// optimization is that they don't need to actually be read from the filesystem
+        /// because the WIM already contains them.
+        ///
+        /// This function is provided to optimize incremental backups.  The resulting WIM
+        /// file will still be the same regardless of whether this function is called.
+        /// (This is, however, assuming that timestamps have not been manipulated or
+        /// unmaintained as to trick this function into thinking a file has not been
+        /// modified when really it has.  To partly guard against such cases, other
+        /// metadata such as file sizes will be checked as well.)
+        ///
+        /// This function must be called after adding the new image (e.g. with
+        /// wimlib_add_image()), but before writing the updated WIM file (e.g. with
+        /// wimlib_overwrite()).
+        /// </summary>
+        /// <param name="new_image">The 1-based index in @p wim of the newly added image.</param>
+        /// <param name="template_wim">Pointer to the ::WIMStruct containing the template image.  This can be, but does not have to be, the same ::WIMStruct as @p wim.</param>
+        /// <param name="template_image">The 1-based index in @p template_wim of the template image.</param>
+        /// <returns>return 0 on success; a ::wimlib_error_code value on failure.
+        /// 
+        /// @retval ::WIMLIB_ERR_INVALID_IMAGE
+        /// @p new_image does not exist in @p wim or @p template_image does not
+        /// exist in @p template_wim.
+        /// @retval ::WIMLIB_ERR_METADATA_NOT_FOUND
+        /// At least one of @p wim and @p template_wim does not contain image
+        /// metadata; for example, one of them represents a non-first part of a
+        /// split WIM.
+        /// @retval ::WIMLIB_ERR_INVALID_PARAM
+        /// Identical values were provided for the template and new image; or @p
+        /// new_image specified an image that had not been modified since opening
+        /// the WIM.
+        ///
+        /// This function can additionally return ::WIMLIB_ERR_DECOMPRESSION,
+        /// ::WIMLIB_ERR_INVALID_METADATA_RESOURCE, ::WIMLIB_ERR_METADATA_NOT_FOUND,
+        /// ::WIMLIB_ERR_READ, or ::WIMLIB_ERR_UNEXPECTED_END_OF_FILE, all of which
+        /// indicate failure (for different reasons) to read the metadata resource for
+        /// the template image.
+        /// </returns>
+        public void ReferenceTemplateImage(int newImage, Wim template, int templateImage)
+        {
+            WimLibErrorCode ret = WimLibNative.ReferenceTemplateImage(Ptr, newImage, template.Ptr, templateImage, 0);
+            WimLibException.CheckWimLibError(ret);
         }
         #endregion
     }
