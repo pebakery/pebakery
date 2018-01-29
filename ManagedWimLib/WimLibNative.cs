@@ -1,19 +1,24 @@
 ﻿/*
+    Licensed under LGPLv3
+
+    Derived from wimlib's original header files
+    Copyright (C) 2012, 2013, 2014 Eric Biggers
+
+    C# Wrapper written by Hajin Jang
     Copyright (C) 2017-2018 Hajin Jang
-    Licensed under GPL 3.0
- 
-    PEBakery is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This file is free software; you can redistribute it and/or modify it under
+    the terms of the GNU Lesser General Public License as published by the Free
+    Software Foundation; either version 3 of the License, or (at your option) any
+    later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    This file is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+    details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this file; if not, see http://www.gnu.org/licenses/.
 */
 
 using Microsoft.Win32.SafeHandles;
@@ -113,6 +118,9 @@ namespace ManagedWimLib
 
         internal static SafeLibraryHandle hModule = null;
         public static bool Loaded => (hModule != null);
+
+        public const int NoImage = 0;
+        public const int AllImages = -1;
         #endregion
 
         #region AssemblyInit, AssemblyCleanup
@@ -196,6 +204,7 @@ namespace ManagedWimLib
             AddImage = (wimlib_add_image)GetFuncPtr("wimlib_add_image", typeof(wimlib_add_image));
             Write = (wimlib_write)GetFuncPtr("wimlib_write", typeof(wimlib_write));
             GetWimInfo = (wimlib_get_wim_info)GetFuncPtr("wimlib_get_wim_info", typeof(wimlib_get_wim_info));
+            SetImageProperty = (wimlib_set_image_property)GetFuncPtr("wimlib_set_image_property", typeof(wimlib_set_image_property));
         }
 
         private static void ResetFuntions()
@@ -212,6 +221,7 @@ namespace ManagedWimLib
             Overwrite = null;
             Write = null;
             GetWimInfo = null;
+            SetImageProperty = null;
         }
         #endregion
 
@@ -593,6 +603,48 @@ namespace ManagedWimLib
             WimLibWriteFlags write_flags,
             uint num_threads);
         internal static wimlib_write Write;
+
+        /// <summary>
+        /// Since wimlib v1.8.3: add, modify, or remove a per-image property from the
+        /// WIM's XML document.  This is an alternative to wimlib_set_image_name(),
+        /// wimlib_set_image_descripton(), and wimlib_set_image_flags() which allows
+        /// manipulating any simple string property.
+        /// </summary>
+        /// <param name="wim">Pointer to the ::WIMStruct for the WIM.</param>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="property_name">
+        /// The name of the image property in the same format documented for wimlib_get_image_property().
+        /// 
+        /// Note: if creating a new element using a bracketed index such as
+        /// "WINDOWS/LANGUAGES/LANGUAGE[2]", the highest index that can be specified
+        /// is one greater than the number of existing elements with that same name,
+        /// excluding the index.  That means that if you are adding a list of new
+        /// elements, they must be added sequentially from the first index (1) to
+        /// the last index (n).
+        /// </param>
+        /// <param name="property_value">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <returns>
+        /// return 0 on success; a ::wimlib_error_code value on failure.
+        /// 
+        /// @retval ::WIMLIB_ERR_IMAGE_NAME_COLLISION
+        /// The user requested to set the image name (the <tt>NAME</tt> property),
+        /// but another image in the WIM already had the requested name.
+        /// @retval ::WIMLIB_ERR_INVALID_IMAGE
+        /// @p image does not exist in @p wim.
+        /// @retval ::WIMLIB_ERR_INVALID_PARAM
+        /// @p property_name has an unsupported format, or @p property_name included
+        /// a bracketed index that was too high.
+        /// </returns>
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_set_image_property(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.LPWStr)] string property_name,
+            [MarshalAs(UnmanagedType.LPWStr)] string property_value);
+        internal static wimlib_set_image_property SetImageProperty;
         #endregion
 
         #region Utility
@@ -698,65 +750,85 @@ namespace ManagedWimLib
     /// </summary>
     public enum WimLibProgressMsg
     {
-        /** A WIM image is about to be extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This message is received once per
-         * image for calls to wimlib_extract_image() and
-         * wimlib_extract_image_from_pipe().  */
+        /// <summary>
+        /// A WIM image is about to be extracted.  @p info will point to
+        /// ::wimlib_progress_info.extract.  This message is received once per
+        /// image for calls to wimlib_extract_image() and
+        /// wimlib_extract_image_from_pipe().
+        /// </summary>
         EXTRACT_IMAGE_BEGIN = 0,
 
-        /** One or more file or directory trees within a WIM image is about to
-         * be extracted.  @p info will point to ::wimlib_progress_info.extract.
-         * This message is received only once per wimlib_extract_paths() and
-         * wimlib_extract_pathlist(), since wimlib combines all paths into a
-         * single extraction operation for optimization purposes.  */
+        /// <summary>
+        /// One or more file or directory trees within a WIM image is about to
+        /// be extracted.  @p info will point to ::wimlib_progress_info.extract.
+        /// This message is received only once per wimlib_extract_paths() and
+        /// wimlib_extract_pathlist(), since wimlib combines all paths into a
+        /// single extraction operation for optimization purposes.
+        /// </summary>
         EXTRACT_TREE_BEGIN = 1,
 
-        /** This message may be sent periodically (not for every file) while
-         * files and directories are being created, prior to file data
-         * extraction.  @p info will point to ::wimlib_progress_info.extract.
-         * In particular, the @p current_file_count and @p end_file_count
-         * members may be used to track the progress of this phase of
-         * extraction.  */
+        /// <summary>
+        /// This message may be sent periodically (not for every file) while
+        /// files and directories are being created, prior to file data
+        /// extraction.  @p info will point to ::wimlib_progress_info.extract.
+        /// In particular, the @p current_file_count and @p end_file_count
+        /// members may be used to track the progress of this phase of
+        /// extraction.
+        /// </summary>
         EXTRACT_FILE_STRUCTURE = 3,
 
-        /** File data is currently being extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This is the main message to track
-         * the progress of an extraction operation.  */
+        /// <summary>
+        /// File data is currently being extracted.  @p info will point to
+        /// ::wimlib_progress_info.extract.  This is the main message to track
+        /// the progress of an extraction operation.
+        /// </summary>
         EXTRACT_STREAMS = 4,
 
-        /** Starting to read a new part of a split pipable WIM over the pipe.
-         * @p info will point to ::wimlib_progress_info.extract.  */
+        /// <summary>
+        /// Starting to read a new part of a split pipable WIM over the pipe.
+        /// @p info will point to ::wimlib_progress_info.extract.
+        /// </summary>
         EXTRACT_SPWM_PART_BEGIN = 5,
 
-        /** This message may be sent periodically (not necessarily for every
-         * file) while file and directory metadata is being extracted, following
-         * file data extraction.  @p info will point to
-         * ::wimlib_progress_info.extract.  The @p current_file_count and @p
-         * end_file_count members may be used to track the progress of this
-         * phase of extraction.  */
+        /// <summary>
+        /// This message may be sent periodically (not necessarily for every
+        /// file) while file and directory metadata is being extracted, following
+        /// file data extraction.  @p info will point to
+        /// ::wimlib_progress_info.extract.  The @p current_file_count and @p
+        /// end_file_count members may be used to track the progress of this
+        /// phase of extraction.
+        /// </summary>
         EXTRACT_METADATA = 6,
 
-        /** The image has been successfully extracted.  @p info will point to
-         * ::wimlib_progress_info.extract.  This is paired with
-         * ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.  */
+        /// <summary>
+        /// The image has been successfully extracted.  @p info will point to
+        /// ::wimlib_progress_info.extract.  This is paired with
+        /// ::WIMLIB_PROGRESS_MSG_EXTRACT_IMAGE_BEGIN.
+        /// </summary>
         EXTRACT_IMAGE_END = 7,
 
-        /** The files or directory trees have been successfully extracted.  @p
-         * info will point to ::wimlib_progress_info.extract.  This is paired
-         * with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.  */
+        /// <summary>
+        /// The files or directory trees have been successfully extracted.  @p
+        /// info will point to ::wimlib_progress_info.extract.  This is paired
+        /// with ::WIMLIB_PROGRESS_MSG_EXTRACT_TREE_BEGIN.
+        /// </summary>
         EXTRACT_TREE_END = 8,
 
-        /** The directory or NTFS volume is about to be scanned for metadata.
-         * @p info will point to ::wimlib_progress_info.scan.  This message is
-         * received once per call to wimlib_add_image(), or once per capture
-         * source passed to wimlib_add_image_multisource(), or once per add
-         * command passed to wimlib_update_image().  */
+        /// <summary>
+        /// The directory or NTFS volume is about to be scanned for metadata.
+        /// @p info will point to ::wimlib_progress_info.scan.  This message is
+        /// received once per call to wimlib_add_image(), or once per capture
+        /// source passed to wimlib_add_image_multisource(), or once per add
+        /// command passed to wimlib_update_image().
+        /// </summary>
         SCAN_BEGIN = 9,
 
-        /** A directory or file has been scanned.  @p info will point to
-         * ::wimlib_progress_info.scan, and its @p cur_path member will be
-         * valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
-         * been specified.  */
+        /// <summary>
+        /// A directory or file has been scanned.  @p info will point to
+        /// ::wimlib_progress_info.scan, and its @p cur_path member will be
+        /// valid.  This message is only sent if ::WIMLIB_ADD_FLAG_VERBOSE has
+        /// been specified.
+        /// </summary>
         SCAN_DENTRY = 10,
 
         /** The directory or NTFS volume has been successfully scanned.  @p info

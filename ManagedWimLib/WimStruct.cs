@@ -1,19 +1,24 @@
 ﻿/*
+    Licensed under LGPLv3
+
+    Derived from wimlib's original header files
+    Copyright (C) 2012, 2013, 2014 Eric Biggers
+
+    C# Wrapper written by Hajin Jang
     Copyright (C) 2017-2018 Hajin Jang
-    Licensed under GPL 3.0
- 
-    PEBakery is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    This file is free software; you can redistribute it and/or modify it under
+    the terms of the GNU Lesser General Public License as published by the Free
+    Software Foundation; either version 3 of the License, or (at your option) any
+    later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    This file is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+    details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this file; if not, see http://www.gnu.org/licenses/.
 */
 
 using System;
@@ -204,12 +209,17 @@ namespace ManagedWimLib
             }
         }
 
+        /// <summary>
+        /// Get basic information about a WIM file.
+        /// </summary>
+        /// <returns>Return 0</returns>
         public WimInfo GetWimInfo()
         {
             // This function always return 0, so no need to check exception
             IntPtr infoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WimInfo)));
             WimLibNative.GetWimInfo(Ptr, infoPtr);
             WimInfo info = (WimInfo) Marshal.PtrToStructure(infoPtr, typeof(WimInfo));
+            Marshal.FreeHGlobal(infoPtr);
 
             return info;
         }
@@ -385,6 +395,61 @@ namespace ManagedWimLib
         {
             WimLibErrorCode ret = WimLibNative.Write(Ptr, path, image, writeFlags, numThreads);
             WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Since wimlib v1.8.3: add, modify, or remove a per-image property from the
+        /// WIM's XML document.  This is an alternative to wimlib_set_image_name(),
+        /// wimlib_set_image_descripton(), and wimlib_set_image_flags() which allows
+        /// manipulating any simple string property.
+        /// </summary>
+        /// <param name="wim">Pointer to the ::WIMStruct for the WIM.</param>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="property_name">
+        /// The name of the image property in the same format documented for wimlib_get_image_property().
+        /// 
+        /// Note: if creating a new element using a bracketed index such as
+        /// "WINDOWS/LANGUAGES/LANGUAGE[2]", the highest index that can be specified
+        /// is one greater than the number of existing elements with that same name,
+        /// excluding the index.  That means that if you are adding a list of new
+        /// elements, they must be added sequentially from the first index (1) to
+        /// the last index (n).
+        /// </param>
+        /// <param name="property_value">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <returns>
+        /// return 0 on success; a ::wimlib_error_code value on failure.
+        /// 
+        /// @retval ::WIMLIB_ERR_IMAGE_NAME_COLLISION
+        /// The user requested to set the image name (the <tt>NAME</tt> property),
+        /// but another image in the WIM already had the requested name.
+        /// @retval ::WIMLIB_ERR_INVALID_IMAGE
+        /// @p image does not exist in @p wim.
+        /// @retval ::WIMLIB_ERR_INVALID_PARAM
+        /// @p property_name has an unsupported format, or @p property_name included
+        /// a bracketed index that was too high.
+        /// </returns>
+        public void SetImageProperty(int image, string propertyName, string propertyValue)
+        {
+            WimLibErrorCode ret = WimLibNative.SetImageProperty(Ptr, image, propertyName, propertyValue);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        public void SetImageDescription(int image, string description)
+        {
+            SetImageProperty(image, "DESCRIPTION", description);
+        }
+
+        public void SetImageFlags(int image, string flags)
+        {
+            SetImageProperty(image, "FLAGS", flags);
+        }
+
+        public void SetImageName(int image, string name)
+        {
+            SetImageProperty(image, "NAME", name);
         }
         #endregion
     }

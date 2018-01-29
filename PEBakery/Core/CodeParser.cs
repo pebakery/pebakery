@@ -1407,6 +1407,8 @@ namespace PEBakery.Core
                                 noAcl = true;
                             else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
                                 noAttrib = true;
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }  
 
                         return new CodeInfo_WimApply(args[0], args[1], args[2], check, noAcl, noAttrib);
@@ -1444,6 +1446,8 @@ namespace PEBakery.Core
                                 check = true;
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                                 noAcl = true;
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }
 
                         return new CodeInfo_WimCapture(args[0], args[1], args[2], imageName, imageDesc, wimFlags, boot, check, noAcl);
