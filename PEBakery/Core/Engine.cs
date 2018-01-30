@@ -625,17 +625,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandMath.Math(s, cmd));
                         break;
                     #endregion
-                    #region 12 System
-                    case CodeType.System:
-                        logs.AddRange(CommandSystem.SystemCmd(s, cmd));
-                        break;
-                    case CodeType.ShellExecute:
-                    case CodeType.ShellExecuteEx:
-                    case CodeType.ShellExecuteDelete:
-                        logs.AddRange(CommandSystem.ShellExecute(s, cmd));
-                        break;
-                    #endregion
-                    #region 13 Wim
+                    #region 12 Wim
                     case CodeType.WimMount:
                         logs.AddRange(CommandWim.WimMount(s, cmd));
                         break;
@@ -647,15 +637,23 @@ namespace PEBakery.Core
                     case CodeType.WimApply:
                         logs.AddRange(CommandWim.WimApply(s, cmd));
                         break;
+                    case CodeType.WimExtract:
+                        logs.AddRange(CommandWim.WimExtract(s, cmd));
+                        break;
+                    case CodeType.WimExtractOp:
+                        break;
+                    case CodeType.WimExtractList:
+                        logs.AddRange(CommandWim.WimExtractList(s, cmd));
+                        break;
                     case CodeType.WimCapture:
                         logs.AddRange(CommandWim.WimCapture(s, cmd));
                         break;
                     case CodeType.WimAppend:
                         logs.AddRange(CommandWim.WimAppend(s, cmd));
                         break;
-                    case CodeType.WimExtract:
-                        break;
                     case CodeType.WimOptimize:
+                        break;
+                    case CodeType.WimExport:
                         break;
                     #endregion
                     #region 80 Branch
@@ -705,6 +703,16 @@ namespace PEBakery.Core
                         break;
                     case CodeType.PackParam:
                         logs.AddRange(CommandControl.PackParam(s, cmd));
+                        break;
+                    #endregion
+                    #region 82 System
+                    case CodeType.System:
+                        logs.AddRange(CommandSystem.SystemCmd(s, cmd));
+                        break;
+                    case CodeType.ShellExecute:
+                    case CodeType.ShellExecuteEx:
+                    case CodeType.ShellExecuteDelete:
+                        logs.AddRange(CommandSystem.ShellExecute(s, cmd));
                         break;
                     #endregion
                     #region 99 External Macro

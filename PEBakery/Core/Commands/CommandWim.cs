@@ -329,7 +329,7 @@ namespace PEBakery.Core.Commands
         }
         #endregion
 
-        #region WimLib - WimApply
+        #region WimLib - WimApply, WimExtract
         public static List<LogInfo> WimApply(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -371,7 +371,7 @@ namespace PEBakery.Core.Commands
             
             try
             {
-                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyProgress, s))
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
                     ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
 
@@ -398,7 +398,7 @@ namespace PEBakery.Core.Commands
                     {
                         wim.ExtractImage(imageIndex, destDir, extractFlags);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Applied [{srcWim}]'s image [{imageIndex}] to [{destDir}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Applied [{srcWim}:{imageIndex}] to [{destDir}]"));
                     }
                     finally
                     { // Finalize Command Progress Report
@@ -418,7 +418,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibProgressStatus WimApplyProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static WimLibProgressStatus WimApplyExtractProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -428,7 +428,6 @@ namespace PEBakery.Core.Commands
             // EXTRACT_STREAMS (Stage 2)
             // EXTRACT_METADATA (Stage 3)
             // EXTRACT_IMAGE_END
-
             switch (msg)
             {
                 case WimLibProgressMsg.EXTRACT_FILE_STRUCTURE:
@@ -469,6 +468,201 @@ namespace PEBakery.Core.Commands
                     break;
             }
             return WimLibProgressStatus.CONTINUE;
+        }
+        #endregion
+
+        #region WimExtract, WimExtractOp, WimExtractList
+        public static List<LogInfo> WimExtract(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtract));
+            CodeInfo_WimExtract info = cmd.Info as CodeInfo_WimExtract;
+
+            string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
+            string extractPath = StringEscaper.Preprocess(s, info.ExtractPath);
+
+            // Check SrcWim
+            if (!File.Exists(srcWim))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
+                return logs;
+            }
+
+            // Check DestDir
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            if (!Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | 
+                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB |
+                WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            if (info.CheckFlag)
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+            if (info.NoAclFlag)
+                extractFlags |= WimLibExtractFlags.NO_ACLS;
+            if (info.NoAttribFlag)
+                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
+                {
+                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+
+                    // Check imageIndex
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
+                        return logs;
+                    }
+                    if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
+                        return logs;
+                    }
+
+                    // Extract file(s)
+                    s.MainViewModel.BuildCommandProgressTitle = "WimExtract Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.ExtractPath(imageIndex, destDir, extractPath, extractFlags);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Extracted [{extractPath}] to [{destDir}] from [{srcWim}:{imageIndex}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> WimExtractList(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtractList));
+            CodeInfo_WimExtractList info = cmd.Info as CodeInfo_WimExtractList;
+
+            string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string destDir = StringEscaper.Preprocess(s, info.DestDir);
+            string listFilePath = StringEscaper.Preprocess(s, info.ListFile);
+
+            // Check SrcWim
+            if (!File.Exists(srcWim))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
+                return logs;
+            }
+
+            // Check DestDir
+            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
+
+            if (!Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX |
+                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB |
+                WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            if (info.CheckFlag)
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+            if (info.NoAclFlag)
+                extractFlags |= WimLibExtractFlags.NO_ACLS;
+            if (info.NoAttribFlag)
+                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+
+            // Check ListFile
+            if (!File.Exists(listFilePath))
+            {
+                logs.Add(new LogInfo(LogState.Error, $"ListFile [{listFilePath}] does not exist"));
+                return logs;
+            }
+
+            // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE
+            string unicodeListFile = Path.GetTempFileName();
+            try
+            {
+                FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
+
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
+                {
+                    ManagedWimLib.WimInfo wimInfo = wim.GetWimInfo();
+
+                    // Check imageIndex
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
+                        return logs;
+                    }
+                    if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
+                    {
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
+                        return logs;
+                    }
+
+                    // Extract file(s)
+                    s.MainViewModel.BuildCommandProgressTitle = "WimExtractList Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+            finally
+            {
+                File.Delete(unicodeListFile);
+            }
+
+            return logs;
         }
         #endregion
 
@@ -539,7 +733,10 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                    imageName = "PEBakery"; // Default dummy wim image name
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"Unable to set proper image name automatically"));
+                    return logs;
+                }
             }
 
             // Capture from disk
@@ -637,7 +834,10 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                    imageName = "PEBakery"; // Default dummy wim image name
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"Unable to set proper image name automatically"));
+                    return logs;
+                }
             }
 
             try
@@ -667,13 +867,13 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Set Delta Wim Append (Optional)
-                    if (info.DeltaFrom != null)
+                    if (info.DeltaIndex != null)
                     {
                         // Get ImageCount
                         ManagedWimLib.WimInfo wInfo = wim.GetWimInfo();
                         uint imageCount = wInfo.ImageCount;
 
-                        string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaFrom);
+                        string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaIndex);
                         if (!NumberHelper.ParseInt32(deltaIndexStr, out int deltaIndex))
                         {
                             logs.Add(new LogInfo(LogState.Error, $"[{deltaIndexStr}] is not a valid a positive integer"));
@@ -755,7 +955,7 @@ namespace PEBakery.Core.Commands
 
         private static LogInfo LogWimLibException(WimLibException e)
         {
-            return new LogInfo(LogState.Error, $"{e.ErrorMsg}\r\nError Code [0x{e.ErrorCode:X8}]\r\n");
+            return new LogInfo(LogState.Error, $"[{e.ErrorCode}] {e.ErrorMsg}");
         }
         #endregion
     }

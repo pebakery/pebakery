@@ -38,6 +38,7 @@ using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using PEBakery.IniLib;
+using System.Diagnostics;
 
 namespace PEBakery.Core
 {
@@ -75,15 +76,16 @@ namespace PEBakery.Core
         StrFormat = 1000,
         // 11 Math
         Math = 1100,
-        // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
-        // 13 Wim
-        WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
+        // 12 Wim
+        WimMount = 1200, WimUnmount, WimInfo, WimApply, WimExtract, WimExtractList, WimCapture, WimAppend, WimOptimize, WimExport,
+        WimExtractOp = 1280,
         // 80 Branch
         Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
         GetParam = 8198, PackParam = 8199, // Will be deprecated
+        // 82 System
+        System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 99 External Macro
         Macro = 9900,
     }
@@ -184,6 +186,7 @@ namespace PEBakery.Core
             CodeType.INIDeleteSectionOp,
             CodeType.INIWriteTextLineOp,
             CodeType.VisibleOp,
+            CodeType.WimExtractOp,
         };
     }
     #endregion
@@ -2571,304 +2574,322 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 12 - System
+    #region CodeInfo 12 - WIM
     [Serializable]
-    public class CodeInfo_System : CodeInfo
-    {
-        public SystemType Type;
-        public SystemInfo SubInfo;
+    public class CodeInfo_WimMount : CodeInfo
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
+        public string SrcWim;
+        public string ImageIndex;
+        public string MountDir;
+        public string MountOption;
 
-        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir, string mountOption)
         {
-            Type = type;
-            SubInfo = subInfo;
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            MountDir = mountDir;
+            MountOption = mountOption;
         }
 
         public override string ToString()
         {
-            return $"{Type},{SubInfo.ToString()}";
+            return $"{SrcWim},{ImageIndex},{MountDir},{MountOption}";
         }
     }
 
-    #region SystemType, SystemInfo
-    public enum SystemType
-    {
-        Cursor,
-        ErrorOff,
-        GetEnv,
-        GetFreeDrive,
-        GetFreeSpace,
-        IsAdmin,
-        Log,
-        OnBuildExit,
-        OnScriptExit,
-        RefreshInterface,
-        LoadAll, RescanScripts, 
-        Load,
-        SaveLog,
-        SetLocal, EndLocal, 
-        // Deprecated, WB082 Compability Shim
-        HasUAC, 
-        FileRedirect, 
-        RegRedirect,
-        RebuildVars,
-    }
-
     [Serializable]
-    public class SystemInfo { }
+    public class CodeInfo_WimUnmount : CodeInfo
+    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
+        public string MountDir;
+        public string UnmountOption;
 
-    [Serializable]
-    public class SystemInfo_Cursor : SystemInfo
-    { // System,Cursor,<IconKind>
-        public string IconKind;
-
-        public SystemInfo_Cursor(string iconKind)
+        public CodeInfo_WimUnmount(string mountDir, string unmountOption)
         {
-            IconKind = iconKind;
+            MountDir = mountDir;
+            UnmountOption = unmountOption;
         }
 
         public override string ToString()
         {
-            return $"Cursor,{IconKind}";
+            return $"{MountDir},{UnmountOption}";
         }
     }
 
     [Serializable]
-    public class SystemInfo_ErrorOff : SystemInfo
-    { // System,ErrorOff,[Lines]
-        public string Lines;
+    public class CodeInfo_WimApply : CodeInfo
+    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestDir;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
 
-        public SystemInfo_ErrorOff(string lines = "1")
+        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, bool check, bool noAcl, bool noAttrib)
         {
-            Lines = lines;
-        }
-
-        public override string ToString()
-        {
-            return $"ErrorOff,{Lines}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_GetEnv : SystemInfo
-    { // System,GetEnv,<EnvVarName>,<DestVar>
-        public string EnvVarName;
-        public string DestVar;
-
-        public SystemInfo_GetEnv(string envVarName, string destVar)
-        {
-            EnvVarName = envVarName;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"GetEnv,{EnvVarName},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_GetFreeDrive : SystemInfo
-    { // System,GetFreeDrive,<DestVar>
-        public string DestVar;
-
-        public SystemInfo_GetFreeDrive(string destVar)
-        {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"GetFreeDrive,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_GetFreeSpace : SystemInfo
-    { // System,GetFreeSpace,<Path>,<DestVar>
-        public string Path;
-        public string DestVar;
-
-        public SystemInfo_GetFreeSpace(string path, string destVar)
-        {
-            Path = path;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"GetFreeDrive,{Path},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_HasUAC : SystemInfo
-    { // System,HasUAC,<DestVar>
-        public string DestVar;
-
-        public SystemInfo_HasUAC(string destVar)
-        {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"HasUAC,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_IsAdmin : SystemInfo
-    { // System,IsAdmin,<DestVar>
-        public string DestVar;
-
-        public SystemInfo_IsAdmin(string destVar)
-        {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"IsAdmin,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_OnBuildExit : SystemInfo
-    { // System,OnBuildExit,<Command>
-        public CodeCommand Cmd;
-
-        public SystemInfo_OnBuildExit(CodeCommand cmd)
-        {
-            Cmd = cmd;
-        }
-
-        public override string ToString()
-        {
-            return $"OnBuildExit,{Cmd}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_OnScriptExit : SystemInfo
-    { // System,OnScriptExit,<Command>
-        public CodeCommand Cmd;
-
-        public SystemInfo_OnScriptExit(CodeCommand cmd)
-        {
-            Cmd = cmd;
-        }
-
-        public override string ToString()
-        {
-            return $"OnScriptExit,{Cmd}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_RefreshInterface : SystemInfo
-    { // System,RefreshInterface
-        public SystemInfo_RefreshInterface() { }
-        public override string ToString() { return "RefreshInterface"; }
-    }
-
-    [Serializable]
-    public class SystemInfo_LoadAll : SystemInfo
-    {
-        // System,LoadAll
-        // System,RescanScripts
-        public SystemInfo_LoadAll() { }
-        public override string ToString() { return "LoadAll"; }
-    }
-
-    [Serializable]
-    public class SystemInfo_Load : SystemInfo
-    { // System,Load,<FilePath>,[NOREC]
-        public string FilePath;
-        public bool NoRec;
-
-        public SystemInfo_Load(string filePath, bool noRec)
-        {
-            FilePath = filePath;
-            NoRec = noRec;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder(8);
-            b.Append("Load");
-            if (FilePath != null)
-            {
-                b.Append(",");
-                b.Append(FilePath);
-                if (NoRec)
-                    b.Append(",NOREC");
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_SaveLog : SystemInfo
-    { // System,SaveLog,<DestPath>,[LogFormat]
-        public string DestPath;
-        public string LogFormat;
-
-        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
-        {
-            DestPath = destPath;
-            LogFormat = logFormat;
-        }
-
-        public override string ToString()
-        {
-            return $"SaveLog,{DestPath},{LogFormat}";
-        }
-    }
-    #endregion
-
-    [Serializable]
-    public class CodeInfo_ShellExecute : CodeInfo
-    {
-        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
-        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        public string Action;
-        public string FilePath;
-        public string Params; // Optional
-        public string WorkDir; // Optional
-        public string ExitOutVar; // Optional
-
-        public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
-        {
-            Action = action;
-            FilePath = filePath;
-            Params = parameters;
-            WorkDir = workDir;
-            ExitOutVar = exitOutVar;
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestDir = destDir;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(Action);
+            b.Append(SrcWim);
             b.Append(",");
-            b.Append(FilePath);
-            if (Params != null)
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestDir);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtract : CodeInfo
+    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[CHECK],[NOACL],[NOATTRIB]
+        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractList
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestDir;
+        public string ExtractPath; 
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
+
+        public CodeInfo_WimExtract(string srcWim, string imageIndex, string destDir, string extractPath, bool check, bool noAcl, bool noAttrib)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestDir = destDir;
+            ExtractPath = extractPath;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestDir);
+            b.Append(",");
+            b.Append(ExtractPath);
+            b.Append(",");
+            b.Append(DestDir);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtractList : CodeInfo
+    { // WimExtractList,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestDir;
+        public string ListFile;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
+
+        public CodeInfo_WimExtractList(string srcWim, string imageIndex, string destDir, string listFile, bool check, bool noAcl, bool noAttrib)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestDir = destDir;
+            ListFile = listFile;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestDir);
+            b.Append(",");
+            b.Append(ListFile);
+            b.Append(",");
+            b.Append(DestDir);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtractOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WimExtract> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
+        }
+
+        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimCapture : CodeInfo
+    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[BOOT],[CHECK],[NOACL]
+        public string SrcDir;
+        public string DestWim;
+        public string Compress; // [NONE|XPRESS|LZX|LZMS]
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimCapture(string srcDir, string destWim, string compress,
+            string imageName, string imageDesc, string wimFlags,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+            Compress = compress;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+            b.Append(",");
+            b.Append(Compress);
+
+            if (ImageName != null)
             {
-                b.Append(",");
-                b.Append(Params);
+                b.Append("ImageName=");
+                b.Append(ImageName);
             }
-            if (WorkDir != null)
+            if (ImageDesc != null)
             {
-                b.Append(",");
-                b.Append(WorkDir);
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
             }
-            if (ExitOutVar != null)
+            if (WimFlags != null)
             {
-                b.Append(",");
-                b.Append(ExitOutVar);
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
             }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimAppend : CodeInfo
+    { // WimCapture,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
+        public string SrcDir;
+        public string DestWim;
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public string DeltaIndex; // Optional, for Delta Wim (like install.wim)
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimAppend(string srcDir, string destWim,
+            string imageName, string imageDesc, string wimFlags, string deltaIndex,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+            DeltaIndex = deltaIndex;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+
+            if (ImageName != null)
+            {
+                b.Append("ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (WimFlags != null)
+            {
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
+            }
+            if (DeltaIndex != null)
+            {
+                b.Append("DeltaIndex=");
+                b.Append(DeltaIndex);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
             return b.ToString();
         }
     }
@@ -3040,7 +3061,7 @@ namespace PEBakery.Core
                                     if (Type == BranchConditionType.Smaller && !NotFlag ||
                                         Type == BranchConditionType.SmallerEqual && !NotFlag ||
                                         Type == BranchConditionType.Bigger && NotFlag ||
-                                        Type == BranchConditionType.BiggerEqual && NotFlag || 
+                                        Type == BranchConditionType.BiggerEqual && NotFlag ||
                                         Type == BranchConditionType.Equal && NotFlag ||
                                         Type == BranchConditionType.EqualX && NotFlag)
                                         match = true;
@@ -3393,7 +3414,7 @@ namespace PEBakery.Core
 
                         if (autoTimeout)
                         {
-                            MessageBoxResult result = MessageBoxResult.None; 
+                            MessageBoxResult result = MessageBoxResult.None;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
@@ -3504,223 +3525,6 @@ namespace PEBakery.Core
                     b.Append(Arg2);
                     break;
             }
-            return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 13 - WIM
-    [Serializable]
-    public class CodeInfo_WimMount : CodeInfo
-    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
-        public string SrcWim;
-        public string ImageIndex;
-        public string MountDir;
-        public string MountOption;
-
-        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir, string mountOption)
-        {
-            SrcWim = srcWim;
-            ImageIndex = imageIndex;
-            MountDir = mountDir;
-            MountOption = mountOption;
-        }
-
-        public override string ToString()
-        {
-            return $"{SrcWim},{ImageIndex},{MountDir},{MountOption}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimUnmount : CodeInfo
-    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
-        public string MountDir;
-        public string UnmountOption;
-
-        public CodeInfo_WimUnmount(string mountDir, string unmountOption)
-        {
-            MountDir = mountDir;
-            UnmountOption = unmountOption;
-        }
-
-        public override string ToString()
-        {
-            return $"{MountDir},{UnmountOption}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimApply : CodeInfo
-    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
-        public string SrcWim;
-        public string ImageIndex;
-        public string DestDir;
-        public bool CheckFlag;
-        public bool NoAclFlag;
-        public bool NoAttribFlag;
-
-        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, bool check, bool noAcl, bool noAttrib)
-        {
-            SrcWim = srcWim;
-            ImageIndex = imageIndex;
-            DestDir = destDir;
-            CheckFlag = check;
-            NoAclFlag = noAcl;
-            NoAttribFlag = noAttrib;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcWim);
-            b.Append(",");
-            b.Append(ImageIndex);
-            b.Append(",");
-            b.Append(DestDir);
-            if (CheckFlag)
-                b.Append(",CHECK");
-            if (NoAclFlag)
-                b.Append(",NOACL");
-            if (NoAttribFlag)
-                b.Append(",NOATTRIB");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimCapture : CodeInfo
-    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
-        public string SrcDir;
-        public string DestWim;
-        public string Compress; // [NONE|XPRESS|LZX|LZMS]
-        public string ImageName; // Optional
-        public string ImageDesc; // Optional
-        public string WimFlags; // Optional
-        public bool BootFlag; // Optional Flag
-        public bool CheckFlag; // Optional Flag
-        public bool NoAclFlag; // Optional Flag
-
-        public CodeInfo_WimCapture(string srcDir, string destWim, string compress,
-            string imageName, string imageDesc, string wimFlags,
-            bool boot, bool check, bool noAcl)
-        {
-            SrcDir = srcDir;
-            DestWim = destWim;
-            Compress = compress;
-
-            // Optional argument
-            ImageName = imageName;
-            ImageDesc = imageDesc;
-            WimFlags = wimFlags;
-
-            // Flags
-            BootFlag = boot;
-            CheckFlag = check;
-            NoAclFlag = noAcl;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcDir);
-            b.Append(",");
-            b.Append(DestWim);
-            b.Append(",");
-            b.Append(Compress);
-
-            if (ImageName != null)
-            {
-                b.Append("ImageName=");
-                b.Append(ImageName);
-            }
-            if (ImageDesc != null)
-            {
-                b.Append("ImageDesc=");
-                b.Append(ImageDesc);
-            }
-            if (WimFlags != null)
-            {
-                b.Append("WimFlags=");
-                b.Append(WimFlags);
-            }
-
-            if (BootFlag)
-                b.Append(",BOOT");
-            if (CheckFlag)
-                b.Append(",CHECK");
-            if (NoAclFlag)
-                b.Append(",NOACL");
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimAppend : CodeInfo
-    { // WimCapture,<SrcDir>,<DestWim>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[DELTAFROM=INT],[BOOT],[CHECK],[NOACL]
-        public string SrcDir;
-        public string DestWim;
-        public string ImageName; // Optional
-        public string ImageDesc; // Optional
-        public string WimFlags; // Optional
-        public string DeltaFrom; // Optional, for Delta Wim (like install.wim)
-        public bool BootFlag; // Optional Flag
-        public bool CheckFlag; // Optional Flag
-        public bool NoAclFlag; // Optional Flag
-
-        public CodeInfo_WimAppend(string srcDir, string destWim,
-            string imageName, string imageDesc, string wimFlags, string deltaFrom,
-            bool boot, bool check, bool noAcl)
-        {
-            SrcDir = srcDir;
-            DestWim = destWim;
-
-            // Optional argument
-            ImageName = imageName;
-            ImageDesc = imageDesc;
-            WimFlags = wimFlags;
-            DeltaFrom = deltaFrom;
-
-            // Flags
-            BootFlag = boot;
-            CheckFlag = check;
-            NoAclFlag = noAcl;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            b.Append(SrcDir);
-            b.Append(",");
-            b.Append(DestWim);
-
-            if (ImageName != null)
-            {
-                b.Append("ImageName=");
-                b.Append(ImageName);
-            }
-            if (ImageDesc != null)
-            {
-                b.Append("ImageDesc=");
-                b.Append(ImageDesc);
-            }
-            if (WimFlags != null)
-            {
-                b.Append("WimFlags=");
-                b.Append(WimFlags);
-            }
-            if (DeltaFrom != null)
-            {
-                b.Append("UpdateOf=");
-                b.Append(DeltaFrom);
-            }
-
-            if (BootFlag)
-                b.Append(",BOOT");
-            if (CheckFlag)
-                b.Append(",CHECK");
-            if (NoAclFlag)
-                b.Append(",NOACL");
             return b.ToString();
         }
     }
@@ -4043,6 +3847,309 @@ namespace PEBakery.Core
         public CodeInfo_Beep(BeepType type)
         {
             Type = type;
+        }
+    }
+    #endregion
+
+    #region CodeInfo 82 - System
+    [Serializable]
+    public class CodeInfo_System : CodeInfo
+    {
+        public SystemType Type;
+        public SystemInfo SubInfo;
+
+        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo.ToString()}";
+        }
+    }
+
+    #region SystemType, SystemInfo
+    public enum SystemType
+    {
+        Cursor,
+        ErrorOff,
+        GetEnv,
+        GetFreeDrive,
+        GetFreeSpace,
+        IsAdmin,
+        Log,
+        OnBuildExit,
+        OnScriptExit,
+        RefreshInterface,
+        LoadAll, RescanScripts,
+        Load,
+        SaveLog,
+        SetLocal, EndLocal,
+        // Deprecated, WB082 Compability Shim
+        HasUAC,
+        FileRedirect,
+        RegRedirect,
+        RebuildVars,
+    }
+
+    [Serializable]
+    public class SystemInfo { }
+
+    [Serializable]
+    public class SystemInfo_Cursor : SystemInfo
+    { // System,Cursor,<IconKind>
+        public string IconKind;
+
+        public SystemInfo_Cursor(string iconKind)
+        {
+            IconKind = iconKind;
+        }
+
+        public override string ToString()
+        {
+            return $"Cursor,{IconKind}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_ErrorOff : SystemInfo
+    { // System,ErrorOff,[Lines]
+        public string Lines;
+
+        public SystemInfo_ErrorOff(string lines = "1")
+        {
+            Lines = lines;
+        }
+
+        public override string ToString()
+        {
+            return $"ErrorOff,{Lines}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetEnv : SystemInfo
+    { // System,GetEnv,<EnvVarName>,<DestVar>
+        public string EnvVarName;
+        public string DestVar;
+
+        public SystemInfo_GetEnv(string envVarName, string destVar)
+        {
+            EnvVarName = envVarName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetEnv,{EnvVarName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeDrive : SystemInfo
+    { // System,GetFreeDrive,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_GetFreeDrive(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeSpace : SystemInfo
+    { // System,GetFreeSpace,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public SystemInfo_GetFreeSpace(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{Path},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_HasUAC : SystemInfo
+    { // System,HasUAC,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_HasUAC(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"HasUAC,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_IsAdmin : SystemInfo
+    { // System,IsAdmin,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_IsAdmin(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"IsAdmin,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnBuildExit : SystemInfo
+    { // System,OnBuildExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnBuildExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnBuildExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnScriptExit : SystemInfo
+    { // System,OnScriptExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnScriptExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnScriptExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_RefreshInterface : SystemInfo
+    { // System,RefreshInterface
+        public SystemInfo_RefreshInterface() { }
+        public override string ToString() { return "RefreshInterface"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_LoadAll : SystemInfo
+    {
+        // System,LoadAll
+        // System,RescanScripts
+        public SystemInfo_LoadAll() { }
+        public override string ToString() { return "LoadAll"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_Load : SystemInfo
+    { // System,Load,<FilePath>,[NOREC]
+        public string FilePath;
+        public bool NoRec;
+
+        public SystemInfo_Load(string filePath, bool noRec)
+        {
+            FilePath = filePath;
+            NoRec = noRec;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder(8);
+            b.Append("Load");
+            if (FilePath != null)
+            {
+                b.Append(",");
+                b.Append(FilePath);
+                if (NoRec)
+                    b.Append(",NOREC");
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_SaveLog : SystemInfo
+    { // System,SaveLog,<DestPath>,[LogFormat]
+        public string DestPath;
+        public string LogFormat;
+
+        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        {
+            DestPath = destPath;
+            LogFormat = logFormat;
+        }
+
+        public override string ToString()
+        {
+            return $"SaveLog,{DestPath},{LogFormat}";
+        }
+    }
+    #endregion
+
+    [Serializable]
+    public class CodeInfo_ShellExecute : CodeInfo
+    {
+        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
+        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        public string Action;
+        public string FilePath;
+        public string Params; // Optional
+        public string WorkDir; // Optional
+        public string ExitOutVar; // Optional
+
+        public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
+        {
+            Action = action;
+            FilePath = filePath;
+            Params = parameters;
+            WorkDir = workDir;
+            ExitOutVar = exitOutVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Action);
+            b.Append(",");
+            b.Append(FilePath);
+            if (Params != null)
+            {
+                b.Append(",");
+                b.Append(Params);
+            }
+            if (WorkDir != null)
+            {
+                b.Append(",");
+                b.Append(WorkDir);
+            }
+            if (ExitOutVar != null)
+            {
+                b.Append(",");
+                b.Append(ExitOutVar);
+            }
+            return b.ToString();
         }
     }
     #endregion

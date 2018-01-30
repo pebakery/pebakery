@@ -153,6 +153,16 @@ namespace PEBakery.Helper
                 return 0;
         }
 
+        public static void ConvertTextFileToEncoding(string srcFile, string destFile, Encoding destEnc)
+        {
+            Encoding srcEnc = FileHelper.DetectTextEncoding(srcFile);
+            using (StreamReader r = new StreamReader(srcFile, srcEnc))
+            using (StreamWriter w = new StreamWriter(destFile, false, destEnc))
+            {
+                w.Write(r.ReadToEnd());
+            }
+        }
+
         /// <summary>
         /// Read program's version from assembly
         /// </summary>

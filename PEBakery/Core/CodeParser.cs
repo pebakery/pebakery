@@ -1330,47 +1330,7 @@ namespace PEBakery.Core
                 case CodeType.Math:
                     return ParseCodeInfoMath(rawCode, args);
                 #endregion
-                #region 12 System
-                case CodeType.System:
-                    return ParseCodeInfoSystem(rawCode, args, addr, lineIdx);
-                case CodeType.ShellExecute:
-                case CodeType.ShellExecuteEx:
-                case CodeType.ShellExecuteDelete:
-                    {
-                        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-                        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
-                        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-                        const int minArgCount = 2;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        if (type == CodeType.ShellExecuteEx && args.Count == 5)
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string parameters = null;
-                        string workDir = null;
-                        string exitOutVar = null;
-                        switch (args.Count)
-                        {
-                            case 3:
-                                parameters = args[2];
-                                break;
-                            case 4:
-                                parameters = args[2];
-                                workDir = args[3];
-                                break;
-                            case 5:
-                                parameters = args[2];
-                                workDir = args[3];
-                                exitOutVar = args[4];
-                                break;
-                        }
-
-                        return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
-                    }
-                #endregion
-                #region 13 WIM
+                #region 12 WIM
                 case CodeType.WimMount:
                     { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
                         const int argCount = 4;
@@ -1413,6 +1373,86 @@ namespace PEBakery.Core
 
                         return new CodeInfo_WimApply(args[0], args[1], args[2], check, noAcl, noAttrib);
                     }
+                case CodeType.WimExtract:
+                    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[CHECK],[NOACL],[NOATTRIB]
+                        const int minArgCount = 4;
+                        const int maxArgCount = 7;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool check = false;
+                        bool noAcl = false;
+                        bool noAttrib = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                check = true;
+                            }
+                            else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAcl)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                noAcl = true;
+                            }
+                            else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAttrib)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                noAttrib = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], check, noAcl, noAttrib);
+                    }
+                case CodeType.WimExtractList:
+                    { // WimExtractList,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
+                        const int minArgCount = 4;
+                        const int maxArgCount = 7;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool check = false;
+                        bool noAcl = false;
+                        bool noAttrib = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                check = true;
+                            }
+                            else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAcl)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                noAcl = true;
+                            }
+                            else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAttrib)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                noAttrib = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_WimExtractList(args[0], args[1], args[2], args[3], check, noAcl, noAttrib);
+                    }
                 case CodeType.WimCapture:
                     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
                         const int minArgCount = 3;
@@ -1453,7 +1493,7 @@ namespace PEBakery.Core
                         return new CodeInfo_WimCapture(args[0], args[1], args[2], imageName, imageDesc, wimFlags, boot, check, noAcl);
                     }
                 case CodeType.WimAppend:
-                    { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[UPDATEOF=STR],[BOOT],[CHECK],[NOACL]
+                    { // WimAppend,<SrcDir>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=STR],[BOOT],[CHECK],[NOACL]
                         const int minArgCount = 2;
                         const int maxArgCount = 9;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1472,7 +1512,7 @@ namespace PEBakery.Core
                             const string ImageNameKey = "ImageName=";
                             const string ImageDescKey = "ImageDesc=";
                             const string WimFlagsKey = "Flags=";
-                            const string DeltaFromKey = "DeltaFrom=";
+                            const string DeltaIndexKey = "DeltaIndex=";
 
                             string arg = args[i];
                             if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
@@ -1481,8 +1521,8 @@ namespace PEBakery.Core
                                 imageDesc = arg.Substring(ImageDescKey.Length);
                             else if (arg.StartsWith(WimFlagsKey, StringComparison.OrdinalIgnoreCase))
                                 wimFlags = arg.Substring(WimFlagsKey.Length);
-                            else if (arg.StartsWith(DeltaFromKey, StringComparison.OrdinalIgnoreCase))
-                                deltaFrom = arg.Substring(DeltaFromKey.Length);
+                            else if (arg.StartsWith(DeltaIndexKey, StringComparison.OrdinalIgnoreCase))
+                                deltaFrom = arg.Substring(DeltaIndexKey.Length);
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                                 boot = true;
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
@@ -1727,6 +1767,46 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_PackParam(args[0], args[1], varCount);
+                    }
+                #endregion
+                #region 82 System
+                case CodeType.System:
+                    return ParseCodeInfoSystem(rawCode, args, addr, lineIdx);
+                case CodeType.ShellExecute:
+                case CodeType.ShellExecuteEx:
+                case CodeType.ShellExecuteDelete:
+                    {
+                        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+                        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
+                        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        if (type == CodeType.ShellExecuteEx && args.Count == 5)
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string parameters = null;
+                        string workDir = null;
+                        string exitOutVar = null;
+                        switch (args.Count)
+                        {
+                            case 3:
+                                parameters = args[2];
+                                break;
+                            case 4:
+                                parameters = args[2];
+                                workDir = args[3];
+                                break;
+                            case 5:
+                                parameters = args[2];
+                                workDir = args[3];
+                                exitOutVar = args[4];
+                                break;
+                        }
+
+                        return new CodeInfo_ShellExecute(args[0], args[1], parameters, workDir, exitOutVar);
                     }
                 #endregion
                 #region 99 External Macro
