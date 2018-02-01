@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplyTests.cs" />
+    <Compile Include="AppendTests.cs" />
     <Compile Include="ExtractTests.cs" />
     <Compile Include="CaptureTests.cs" />
     <Compile Include="GetWimInfoTest.cs" />

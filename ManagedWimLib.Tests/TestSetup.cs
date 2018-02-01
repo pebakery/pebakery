@@ -97,6 +97,23 @@ namespace ManagedWimLib.Tests
             Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
             Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
         }
+
+        public static void CheckAppend01(string dir)
+        {
+            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));
+
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "A.txt")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "A.txt")).Length == 1);
+
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "X.txt")));
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
+        }
     }
     #endregion
 
