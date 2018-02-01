@@ -68,7 +68,7 @@ namespace PEBakery.Core
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
         Visible = 800, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
-        VisibleOp = 880,
+        VisibleOp = 880, ReadInterfaceOp, WriteInterfaceOp,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
         Hash = 900,
@@ -78,7 +78,7 @@ namespace PEBakery.Core
         Math = 1100,
         // 12 Wim
         WimMount = 1200, WimUnmount, WimInfo, WimApply, WimExtract, WimExtractList, WimCapture, WimAppend, WimOptimize, WimExport,
-        WimExtractOp = 1280,
+        WimInfoOp = 1280, WimExtractOp,
         // 80 Branch
         Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
@@ -186,6 +186,9 @@ namespace PEBakery.Core
             CodeType.INIDeleteSectionOp,
             CodeType.INIWriteTextLineOp,
             CodeType.VisibleOp,
+            CodeType.ReadInterfaceOp,
+            CodeType.WriteInterfaceOp,
+            CodeType.WimInfoOp,
             CodeType.WimExtractOp,
         };
     }
@@ -2612,6 +2615,28 @@ namespace PEBakery.Core
         public override string ToString()
         {
             return $"{MountDir},{UnmountOption}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimInfo : CodeInfo
+    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>
+        public string SrcWim;
+        public string ImageIndex;
+        public string Key;
+        public string DestVar;
+
+        public CodeInfo_WimInfo(string srcWim, string imageIndex, string key, string destVar)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            Key = key;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"{SrcWim},{ImageIndex},{Key},{DestVar}";
         }
     }
 

@@ -13,6 +13,40 @@ namespace PEBakery.Tests.Core.Command
     [TestClass]
     public class CommandWimTests
     {
+        #region WimInfo
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimInfo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSrcDir = Path.Combine("%TestBench%", "CommandWim");
+            string srcDir = StringEscaper.Preprocess(s, pbSrcDir);
+
+            // Global Information
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,0,ImageCount,%Dest%", "1");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\XPRESS.wim,0,Compression,%Dest%", "XPRESS");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,0,Compression,%Dest%", "LZX");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZMS.wim,0,Compression,%Dest%", "LZMS");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\BootLZX.wim,0,BootIndex,%Dest%", "1");
+
+            // Per-Image Information
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Name,%Dest%", "Sample");
+        }
+
+        public void Info_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.WimInfo, check);
+
+            if (check == ErrorCheck.Success || check == ErrorCheck.Warning)
+            {
+                string dest = s.Variables["Dest"];
+                Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+            }
+        }
+        #endregion
+
         #region WimApply
         [TestMethod]
         [TestCategory("Command")]

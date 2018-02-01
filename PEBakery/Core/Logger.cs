@@ -195,6 +195,21 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region LogErrorMessage
+        /// <summary>
+        /// Wrapper for one-line error terminate
+        /// </summary>
+        /// <param name="logs"></param>
+        /// <param name="msg"></param>
+        /// <returns></returns>
+        public static List<LogInfo> LogErrorMessage(List<LogInfo> logs, string msg)
+        {
+            logs.Add(new LogInfo(LogState.Error, msg));
+            return logs;
+        }
+        #endregion
+
+        #region ToString
         public override string ToString()
         {
             if (Command != null)
@@ -209,6 +224,7 @@ namespace PEBakery.Core
                 return $"[{State}] {Message}";
             }
         }
+        #endregion
     }
     #endregion
 

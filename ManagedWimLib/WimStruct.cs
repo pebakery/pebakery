@@ -578,6 +578,66 @@ namespace ManagedWimLib
         }
         #endregion
 
+        #region GetImageProperty, GetImageDescription, GetImageName
+        /// <summary>
+        /// Since wimlib v1.8.3: get a per-image property from the WIM's XML document.
+        /// </summary>
+        /// <remarks>
+        /// This is an alternative to wimlib_get_image_name() and
+        /// wimlib_get_image_description() which allows getting any simple string
+        /// property.
+        /// </remarks>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="property_name">
+        /// The name of the image property, for example "NAME", "DESCRIPTION", or
+        /// "TOTALBYTES".  The name can contain forward slashes to indicate a nested
+        /// XML element; for example, "WINDOWS/VERSION/BUILD" indicates the BUILD
+        /// element nested within the VERSION element nested within the WINDOWS
+        /// element.  Since wimlib v1.9.0, a bracketed number can be used to
+        /// indicate one of several identically-named elements; for example,
+        /// "WINDOWS/LANGUAGES/LANGUAGE[2]" indicates the second "LANGUAGE" element
+        /// nested within the "WINDOWS/LANGUAGES" element.  Note that element names
+        /// are case sensitive.
+        /// </param>
+        /// <returns>
+        /// The property's value as a ::wimlib_tchar string, or @c NULL if there is
+        /// no such property. 
+        /// </returns>
+        public string GetImageProperty(int image, string propertyName)
+        {
+            IntPtr ptr = WimLibNative.GetImageProperty(Ptr, image, propertyName);
+            return Marshal.PtrToStringUni(ptr);
+        }
+
+        /// <summary>
+        /// Get the description of the specified image.
+        /// Equivalent to GetImageProperty(image, "DESCRIPTION")
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        public string GetImageDescription(int image)
+        {
+            return GetImageProperty(image, "DESCRIPTION");
+        }
+
+        /// <summary>
+        /// Get the name of the specified image.
+        /// Equivalent to GetImageProperty(image, "NAME")
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <remarks>
+        /// GetImageName() will return an empty string if the image is unnamed
+        /// whereas GetImageProperty() may return null in that case.
+        /// </remarks>
+        public string GetImageName(int image)
+        {
+            string str = GetImageProperty(image, "NAME");
+            if (str == null)
+                return string.Empty;
+            else
+                return str;
+        }
+        #endregion
+
         #region IsImageNameInUse
         /// <summary>
         /// Determine if an image name is already used by some image in the WIM.

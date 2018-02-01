@@ -633,6 +633,9 @@ namespace PEBakery.Core
                         logs.AddRange(CommandWim.WimUnmount(s, cmd));
                         break;
                     case CodeType.WimInfo:
+                        logs.AddRange(CommandWim.WimInfo(s, cmd));
+                        break;
+                    case CodeType.WimInfoOp:
                         break;
                     case CodeType.WimApply:
                         logs.AddRange(CommandWim.WimApply(s, cmd));

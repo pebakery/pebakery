@@ -1347,6 +1347,19 @@ namespace PEBakery.Core
 
                         return new CodeInfo_WimUnmount(args[0], args[1]);
                     }
+                case CodeType.WimInfo:
+                    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        // Check DestVar
+                        string destVar = args[3];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not a valid variable name", rawCode);
+
+                        return new CodeInfo_WimInfo(args[0], args[1], args[2], destVar);
+                    }
                 case CodeType.WimApply:
                     { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 3;

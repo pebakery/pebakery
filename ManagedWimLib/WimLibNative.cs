@@ -210,6 +210,7 @@ namespace ManagedWimLib
             SetImageProperty = (wimlib_set_image_property)GetFuncPtr("wimlib_set_image_property", typeof(wimlib_set_image_property));
             IsImageNameInUse = (wimlib_image_name_in_use)GetFuncPtr("wimlib_image_name_in_use", typeof(wimlib_image_name_in_use));
             ReferenceTemplateImage = (wimlib_reference_template_image)GetFuncPtr("wimlib_reference_template_image", typeof(wimlib_reference_template_image));
+            GetImageProperty = (wimlib_get_image_property)GetFuncPtr("wimlib_get_image_property", typeof(wimlib_get_image_property));
         }
 
         private static void ResetFuntions()
@@ -231,6 +232,7 @@ namespace ManagedWimLib
             SetImageProperty = null;
             IsImageNameInUse = null;
             ReferenceTemplateImage = null;
+            GetImageProperty = null;
         }
         #endregion
 
@@ -380,7 +382,7 @@ namespace ManagedWimLib
         internal static wimlib_overwrite OverWrite;
         #endregion
 
-        #region SetImageProperty, SetImageName, SetImageDescription, SetImageFlags
+        #region SetImageProperty, GetImageProperty
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate WimLibErrorCode wimlib_set_image_property(
             IntPtr wim,
@@ -389,6 +391,15 @@ namespace ManagedWimLib
             [MarshalAs(UnmanagedType.LPWStr)] string property_value);
         internal static wimlib_set_image_property SetImageProperty;
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate IntPtr wimlib_get_image_property(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.LPWStr)] string property_name);
+        internal static wimlib_get_image_property GetImageProperty;
+        #endregion
+
+        #region IsImageNameInUse, ReferenceTemplateImage
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate bool wimlib_image_name_in_use(
             IntPtr wim,
@@ -430,29 +441,12 @@ namespace ManagedWimLib
     {
         /// <summary>
         /// No compression.
-        ///
-        /// This is a valid argument to wimlib_create_new_wim() and
-        /// wimlib_set_output_compression_type(), but not to the functions in the
-        /// compression API such as wimlib_create_compressor().
         /// </summary>
         NONE = 0,
         /// <summary>
         /// The XPRESS compression format.  This format combines Lempel-Ziv
         /// factorization with Huffman encoding.  Compression and decompression
-        /// are both fast.  This format supports chunk sizes that are powers of 2
-        /// between <c>2^12</c> and <c>2^16</c>, inclusively.
-        ///
-        /// wimlib's XPRESS compressor will, with the default settings, usually
-        /// produce a better compression ratio, and work more quickly, than the
-        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).
-        /// Non-default compression levels are also supported.  For example,
-        /// level 80 will enable two-pass optimal parsing, which is significantly
-        /// slower but usually improves compression by several percent over the
-        /// default level of 50.
-        ///
-        /// If using wimlib_create_compressor() to create an XPRESS compressor
-        /// directly, the @p max_block_size parameter may be any positive value
-        /// up to and including <c>2^16</c>.
+        /// are both fast. 
         /// </summary>
         XPRESS = 1,
         /// <summary>
@@ -460,42 +454,13 @@ namespace ManagedWimLib
         /// factorization with Huffman encoding, but with more features and
         /// complexity than XPRESS.  Compression is slow to somewhat fast,
         /// depending on the settings.  Decompression is fast but slower than
-        /// XPRESS.  This format supports chunk sizes that are powers of 2
-        /// between <c>2^15</c> and <c>2^21</c>, inclusively.  Note: chunk sizes
-        /// other than <c>2^15</c> are not compatible with the Microsoft
-        /// implementation.
-        ///
-        /// wimlib's LZX compressor will, with the default settings, usually
-        /// produce a better compression ratio, and work more quickly, than the
-        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).
-        /// Non-default compression levels are also supported.  For example,
-        /// level 20 will provide fast compression, almost as fast as XPRESS.
-        ///
-        /// If using wimlib_create_compressor() to create an LZX compressor
-        /// directly, the @p max_block_size parameter may be any positive value
-        /// up to and including <c>2^21</c>.
+        /// XPRESS.
         /// </summary>
         LZX = 2,
         /// <summary>
         /// The LZMS compression format.  This format combines Lempel-Ziv
         /// factorization with adaptive Huffman encoding and range coding.
-        /// Compression and decompression are both fairly slow.  This format
-        /// supports chunk sizes that are powers of 2 between <c>2^15</c> and
-        /// <c>2^30</c>, inclusively.  This format is best used for large chunk
-        /// sizes.  Note: LZMS compression is only compatible with wimlib v1.6.0
-        /// and later, WIMGAPI Windows 8 and later, and DISM Windows 8.1 and
-        /// later.  Also, chunk sizes larger than <c>2^26</c> are not compatible
-        /// with the Microsoft implementation.
-        ///
-        /// wimlib's LZMS compressor will, with the default settings, usually
-        /// produce a better compression ratio, and work more quickly, than the
-        /// implementation in Microsoft's WIMGAPI (as of Windows 8.1).  There is
-        /// limited support for non-default compression levels, but compression
-        /// will be noticeably faster if you choose a level &lt; 35.
-        ///
-        /// If using wimlib_create_compressor() to create an LZMS compressor
-        /// directly, the @p max_block_size parameter may be any positive value
-        /// up to and including <c>2^30</c>.
+        /// Compression and decompression are both fairly slow.
         /// </summary>
         LZMS = 3,
     }
@@ -1537,21 +1502,19 @@ namespace ManagedWimLib
         /// </summary>
         public ushort TotalParts;
         /// <summary>
-        /// The default compression type of resources in this WIM file, as one of the ::wimlib_compression_type constants.
+        /// The default compression type of resources in this WIM file, as WimLibCompressionType enum.
         /// </summary>
-        private int CompressionTypeInt;
         public WimLibCompressionType CompressionType => (WimLibCompressionType)CompressionTypeInt;
+        private int CompressionTypeInt;
         /// <summary>
         /// The size of this WIM file in bytes, excluding the XML data and integrity table.
         /// </summary>
         public ulong TotalBytes;
-
         /// <summary>
         /// Bit 0 - 9 : Information Flags
         /// Bit 10 - 31 : Reserved
         /// </summary>
         private uint BitMask;
-
         /// <summary>
         /// 1 iff this WIM file has an integrity table.
         /// </summary>

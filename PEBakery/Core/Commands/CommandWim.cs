@@ -329,6 +329,71 @@ namespace PEBakery.Core.Commands
         }
         #endregion
 
+        #region WimLib - WimInfo
+        public static List<LogInfo> WimInfo(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimInfo));
+            CodeInfo_WimInfo info = cmd.Info as CodeInfo_WimInfo;
+
+            string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string key = StringEscaper.Preprocess(s, info.Key);
+
+            // Check SrcWim
+            if (!File.Exists(srcWim))
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(srcWim, WimLibOpenFlags.DEFAULT))
+                {
+                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+
+                    // Check imageIndex
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(0 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [0] or [1] ~ [{wi.ImageCount}]");
+
+                    string dest;
+                    if (imageIndex == 0)
+                    { // Generic Wim Information
+                        if (key.Equals("ImageCount", StringComparison.OrdinalIgnoreCase))
+                            dest = wi.ImageCount.ToString();
+                        else if (key.Equals("BootIndex", StringComparison.OrdinalIgnoreCase))
+                            dest = wi.BootIndex.ToString(); // 0 -> No Boot Index (follow wimlib convention)
+                        else if (key.Equals("Compression", StringComparison.OrdinalIgnoreCase))
+                            dest = wi.CompressionType.ToString(); // NONE, LZX, XPRESS, LZMS
+                        else
+                            return LogInfo.LogErrorMessage(logs, $"Invalid property key [{key}]");
+                    }
+                    else
+                    { // Per image information
+                        // Arg <Key> follows wimlib conventetion, more precisely wimlib_get_image_property().
+                        // wimlib_get_image_property() is case sensitive, so use ToUpper() since most property key is uppercase.
+                        // Ex) Name, Description
+                        // To query non-standard property such as "Major Version", extract xml with wimlib-imagex first and inspect hierarchy.
+                        // Ex) Major Version => WINDOWS/VERSION/MAJOR
+                        dest = wim.GetImageProperty(imageIndex, key.ToUpper());
+                        if (dest == null)
+                            return LogInfo.LogErrorMessage(logs, $"Invalid property key [{key}]");
+                    }
+
+                    logs.AddRange(Variables.SetVariable(s, info.DestVar, dest));
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+        #endregion
+
         #region WimLib - WimApply, WimExtract
         public static List<LogInfo> WimApply(EngineState s, CodeCommand cmd)
         {
