@@ -503,7 +503,7 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | 
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX |
                 WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB |
                 WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
@@ -609,10 +609,10 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE
             string unicodeListFile = Path.GetTempFileName();
             try
             {
+                // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE)
                 FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
 
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))

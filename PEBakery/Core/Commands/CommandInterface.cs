@@ -446,7 +446,7 @@ namespace PEBakery.Core.Commands
 
                     // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);
-                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.Compress);
+                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
 
                     // Remove Script instance
                     p = null;

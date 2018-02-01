@@ -70,7 +70,7 @@ namespace ManagedWimLib
                 case WimLibProgressMsg.EXTRACT_METADATA:
                 case WimLibProgressMsg.EXTRACT_TREE_END:
                 case WimLibProgressMsg.EXTRACT_IMAGE_END:
-                    pInfo = (WimLibProgressInfo_Extract) Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Extract));
+                    pInfo = (WimLibProgressInfo_Extract)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Extract));
                     break;
                 case WimLibProgressMsg.RENAME:
                     pInfo = (WimLibProgressInfo_Rename)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Rename));

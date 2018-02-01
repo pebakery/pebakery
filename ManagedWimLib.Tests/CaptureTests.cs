@@ -45,10 +45,10 @@ namespace ManagedWimLib.Tests
             Capture_Template(WimLibCompressionType.LZX, "LZX.wim");
             Capture_Template(WimLibCompressionType.LZMS, "LZMS.wim");
 
-            Capture_Template(WimLibCompressionType.NONE, "NONE.wim", WimLibAddFlags.WIMBOOT);
-            Capture_Template(WimLibCompressionType.XPRESS, "XPRESS.wim", WimLibAddFlags.WIMBOOT);
-            Capture_Template(WimLibCompressionType.LZX, "LZX.wim", WimLibAddFlags.WIMBOOT);
-            Capture_Template(WimLibCompressionType.LZMS, "LZMS.wim", WimLibAddFlags.WIMBOOT);
+            Capture_Template(WimLibCompressionType.NONE, "NONE.wim", WimLibAddFlags.BOOT);
+            Capture_Template(WimLibCompressionType.XPRESS, "XPRESS.wim", WimLibAddFlags.BOOT);
+            Capture_Template(WimLibCompressionType.LZX, "LZX.wim", WimLibAddFlags.BOOT);
+            Capture_Template(WimLibCompressionType.LZMS, "LZMS.wim", WimLibAddFlags.BOOT);
         }
 
         public void Capture_Template(WimLibCompressionType compType, string wimFileName, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)

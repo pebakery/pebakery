@@ -1493,7 +1493,7 @@ namespace PEBakery.Core
                         return new CodeInfo_WimCapture(args[0], args[1], args[2], imageName, imageDesc, wimFlags, boot, check, noAcl);
                     }
                 case CodeType.WimAppend:
-                    { // WimAppend,<SrcDir>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=STR],[BOOT],[CHECK],[NOACL]
+                    { // WimAppend,<SrcDir>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
                         const int minArgCount = 2;
                         const int maxArgCount = 9;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))

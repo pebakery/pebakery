@@ -45,10 +45,10 @@ namespace PEBakery.Tests.Core
         [TestCategory("EncodedFile")]
         public void EncodedFile_AttachFile()
         {
-            AttachFile_Template("Type1.jpg", EncodedFile.EncodeMode.Compress); // Type 1
+            AttachFile_Template("Type1.jpg", EncodedFile.EncodeMode.ZLib); // Type 1
             AttachFile_Template("Type2.7z", EncodedFile.EncodeMode.Raw); // Type 2
             AttachFile_Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
-            AttachFile_Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.Compress);
+            AttachFile_Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.ZLib);
         }
 
         public void AttachFile_Template(string fileName, EncodedFile.EncodeMode encodeMode)

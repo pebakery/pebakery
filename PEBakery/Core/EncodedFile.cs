@@ -109,12 +109,13 @@ namespace PEBakery.Core
         #region Wrapper Methods
         public enum EncodeMode : byte
         {
-            Compress = 0x00, // Type 1 
+            ZLib = 0x00, // Type 1
             Raw = 0x01, // Type 2
             XZ = 0x02, // Type 3 (PEBakery Only)
+            Zopfli = 0xFF, // Compatible with Type 1, better compression rate but much slower compression.
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (p == null) throw new ArgumentNullException("p");
 
@@ -127,14 +128,14 @@ namespace PEBakery.Core
             return Encode(p, dirName, fileName, input, type);
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
             if (p == null) throw new ArgumentNullException("p");
 
             return Encode(p, dirName, fileName, srcStream, type);
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.Compress)
+        public static Script AttachFile(Script p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
         {
             if (p == null) throw new ArgumentNullException("p");
 
@@ -216,7 +217,7 @@ namespace PEBakery.Core
                 // [Stage 1] Compress file with zlib
                 switch (mode)
                 {
-                    case EncodeMode.Compress:
+                    case EncodeMode.ZLib:
                         {
                             using (ZLibStream zs = new ZLibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
@@ -235,6 +236,20 @@ namespace PEBakery.Core
                             {
                                 inputStream.CopyTo(xzs);
                             }
+                        }
+                        break;
+                    case EncodeMode.Zopfli:
+                        {
+                            /*
+                            using LibZopfliSharp;
+                            using (ZopfliStream zs = new ZopfliStream(bodyStream, ZopfliFormat.ZOPFLI_FORMAT_ZLIB, true))
+                            {
+                                inputStream.CopyTo(zs);
+                            }
+                            */
+
+                            // Set mode to ZLib, for compatibility of footers
+                            mode = EncodeMode.ZLib;
                         }
                         break;
                     default:
@@ -257,7 +272,7 @@ namespace PEBakery.Core
                     BitConverter.GetBytes(inputStream.Length).CopyTo(rawFooter, 0x200);
                     switch (mode)
                     {
-                        case EncodeMode.Compress: // Type 1
+                        case EncodeMode.ZLib: // Type 1
                         case EncodeMode.XZ: // Type 3
                             // 0x208 - 0x20F : 8B -> Length of zlibed body, in little endian
                             BitConverter.GetBytes(bodyStream.Length).CopyTo(rawFooter, 0x208);
@@ -282,7 +297,7 @@ namespace PEBakery.Core
                     // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
                     switch (mode)
                     {
-                        case EncodeMode.Compress: // Type 1
+                        case EncodeMode.ZLib: // Type 1
                             rawFooter[0x225] = (byte)CompressionLevel.Level6;
                             break;
                         case EncodeMode.Raw: // Type 2
@@ -481,7 +496,7 @@ namespace PEBakery.Core
             // [Stage 6] Validate first footer
             switch ((EncodeMode)compMode)
             {
-                case EncodeMode.Compress: // Type 1, zlib
+                case EncodeMode.ZLib: // Type 1, zlib
                     {
                         if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
                             throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
@@ -513,7 +528,7 @@ namespace PEBakery.Core
             MemoryStream rawBodyStream = new MemoryStream(); // This stream should be alive even after this method returns
             switch ((EncodeMode)compMode)
             {
-                case EncodeMode.Compress: // Type 1, zlib
+                case EncodeMode.ZLib: // Type 1, zlib
                     {
                         using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
                         using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
@@ -677,7 +692,7 @@ namespace PEBakery.Core
             // [Stage 6] Validate first footer
             if (compMode == 0)
             {
-                this.Mode = EncodedFile.EncodeMode.Compress;
+                this.Mode = EncodedFile.EncodeMode.ZLib;
                 if (compLevel < 1 || 9 < compLevel)
                     this.FirstFooterValid = false;
                 if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
@@ -703,7 +718,7 @@ namespace PEBakery.Core
             // [Stage 7] Decompress body
             switch ((EncodedFile.EncodeMode) compMode)
             {
-                case EncodedFile.EncodeMode.Compress:
+                case EncodedFile.EncodeMode.ZLib:
                     {
                         this.RawBodyStream = new MemoryStream();
 
