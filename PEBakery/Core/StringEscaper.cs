@@ -129,21 +129,27 @@ namespace PEBakery.Core
                                 switch (ch2)
                                 {
                                     case 'c': // #$c -> [,]
+                                    case 'C':
                                         b.Append(',');
                                         break;
                                     case 'p': // #$p -> [%]
+                                    case 'P':
                                         b.Append('%');
                                         break;
                                     case 'q': // #$q -> ["]
+                                    case 'Q':
                                         b.Append('"');
                                         break;
                                     case 's': // #$s -> [ ]
+                                    case 'S':
                                         b.Append(' ');
                                         break;
                                     case 't': // #$t -> [   ]
+                                    case 'T':
                                         b.Append('\t');
                                         break;
                                     case 'x': // #$x -> [\r\n]
+                                    case 'X':
                                         b.Append("\r\n");
                                         break;
                                     default: // No escape
