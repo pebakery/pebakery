@@ -72,7 +72,7 @@ namespace ManagedWimLib.Tests
                 string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
                 using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
                 {
-                    wim.ExtractPaths(1, destDir, paths, paths.Length, WimLibExtractFlags.GLOB_PATHS);
+                    wim.ExtractPaths(1, destDir, paths, WimLibExtractFlags.GLOB_PATHS);
                 }
 
                 foreach (string path in paths.Select(x => x.TrimStart('\\')))
