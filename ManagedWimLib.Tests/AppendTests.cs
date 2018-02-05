@@ -72,7 +72,7 @@ namespace ManagedWimLib.Tests
                     if (delta)
                         wim.ReferenceTemplateImage(2, 1);
 
-                    wim.OverWrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured
@@ -153,7 +153,7 @@ namespace ManagedWimLib.Tests
                     if (delta)
                         wim.ReferenceTemplateImage(2, 1);
 
-                    wim.OverWrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured

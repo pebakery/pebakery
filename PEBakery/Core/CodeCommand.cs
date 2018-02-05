@@ -77,8 +77,9 @@ namespace PEBakery.Core
         // 11 Math
         Math = 1100,
         // 12 Wim
-        WimMount = 1200, WimUnmount, WimInfo, WimApply, WimExtract, WimExtractList, WimCapture, WimAppend, WimOptimize, WimExport,
-        WimInfoOp = 1280, WimExtractOp,
+        WimMount = 1200, WimUnmount,
+        WimInfo, WimApply, WimExtract, WimExtractBulk, WimCapture, WimAppend, WimPathAdd, WimPathDelete, WimPathRename, WimOptimize, WimExport,
+        WimExtractOp = 1280, WimPathOp,
         // 80 Branch
         Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
@@ -188,8 +189,8 @@ namespace PEBakery.Core
             CodeType.VisibleOp,
             CodeType.ReadInterfaceOp,
             CodeType.WriteInterfaceOp,
-            CodeType.WimInfoOp,
             CodeType.WimExtractOp,
+            CodeType.WimPathOp,
         };
     }
     #endregion
@@ -2724,8 +2725,8 @@ namespace PEBakery.Core
     }
 
     [Serializable]
-    public class CodeInfo_WimExtractList : CodeInfo
-    { // WimExtractList,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
+    public class CodeInfo_WimExtractBulk : CodeInfo
+    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
@@ -2734,7 +2735,7 @@ namespace PEBakery.Core
         public bool NoAclFlag;
         public bool NoAttribFlag;
 
-        public CodeInfo_WimExtractList(string srcWim, string imageIndex, string destDir, string listFile, bool check, bool noAcl, bool noAttrib)
+        public CodeInfo_WimExtractBulk(string srcWim, string imageIndex, string destDir, string listFile, bool check, bool noAcl, bool noAttrib)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
@@ -2851,7 +2852,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimAppend : CodeInfo
-    { // WimCapture,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
+    { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
         public string SrcDir;
         public string DestWim;
         public string ImageName; // Optional
@@ -2915,6 +2916,184 @@ namespace PEBakery.Core
                 b.Append(",CHECK");
             if (NoAclFlag)
                 b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathAdd : CodeInfo
+    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD],[NOACL],[PRESERVE]
+        // Note : If <SrcPath> is a file, <DestPath> must be a file. If <SrcPath> is a dir, <DestPath> must be a directory.
+        //        It is different from standard PEBakery dest path convention, because it follows wimlib-imagex update convention.
+        public string WimFile;
+        public string ImageIndex;
+        public string SrcPath;
+        public string DestPath;
+        public bool RebuildFlag;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool PreserveFlag;
+
+        public CodeInfo_WimPathAdd(string wimFile, string imageIndex,
+            string srcPath, string destPath,
+            bool rebuildFlag, bool checkFlag, bool noAclFlag, bool preserveFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathAdd Specific
+            SrcPath = srcPath;
+            DestPath = destPath;
+
+            // Optional Flags
+            RebuildFlag = rebuildFlag;
+            CheckFlag = checkFlag;
+            NoAclFlag = noAclFlag;
+            PreserveFlag = preserveFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestPath);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            if (CheckFlag)
+                b.Append(",NOACL");
+            if (CheckFlag)
+                b.Append(",PRESERVE");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathDelete : CodeInfo
+    { // WimPathDelete,<WimFile>,<ImageIndex>,<Path>,[CHECK],[REBUILD]
+        public string WimFile;
+        public string ImageIndex;
+        public string Path;
+        public bool RebuildFlag;
+        public bool CheckFlag;
+
+        public CodeInfo_WimPathDelete(string wimFile, string imageIndex, string path, bool rebuildFlag, bool checkFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathDelete Specific
+            Path = path;
+
+            // Optional Flags
+            RebuildFlag = rebuildFlag;
+            CheckFlag = checkFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(Path);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathRename : CodeInfo
+    { // WimPathRename,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD]
+        public string WimFile;
+        public string ImageIndex;
+        public string SrcPath;
+        public string DestPath;
+        public bool RebuildFlag;
+        public bool CheckFlag;
+
+        public CodeInfo_WimPathRename(string wimFile, string imageIndex, string srcPath, string destPath, bool rebuildFlag, bool checkFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathDelete Specific
+            SrcPath = srcPath;
+            DestPath = destPath;
+
+            // Optional Flags
+            RebuildFlag = rebuildFlag;
+            CheckFlag = checkFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestPath);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimOptimize : CodeInfo
+    { // WimOptimize,<WimFile>,[RECOMPRESS[=STR]],[CHECK|NOCHECK]
+        public string WimFile;
+        public string Recompress; // [NONE|XPRESS|LZX|LZMS]
+        public bool? CheckFlag; // Optional Flag
+
+        public CodeInfo_WimOptimize(string wimFile, string recompress, bool? checkFlag)
+        {
+            WimFile = wimFile;
+            // Optional Argument
+            Recompress = recompress;
+            // Flags
+            CheckFlag = checkFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            if (Recompress != null)
+            {
+                if (Recompress.Length == 0)
+                {
+                    b.Append(",RECOMPRESS");
+                }
+                else
+                {
+                    b.Append(",RECOMPRESS=");
+                    b.Append(Recompress);
+                }
+            }
+            if (CheckFlag != null)
+            {
+                b.Append(",");
+                b.Append(CheckFlag);
+            }
             return b.ToString();
         }
     }

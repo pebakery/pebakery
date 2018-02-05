@@ -163,6 +163,18 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region WimUpdateAdd
+        #endregion
+
+        #region WimUpdateDelete
+        #endregion
+
+        #region WimUpdateRename
+        #endregion
+
+        #region WimOptimize
+        #endregion
+
         #region Utility
         public static void CheckWimSrc01(string dir)
         {

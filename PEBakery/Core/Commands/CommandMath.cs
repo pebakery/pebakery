@@ -90,8 +90,7 @@ namespace PEBakery.Core.Commands
                         string srcStr1 = StringEscaper.Preprocess(s, subInfo.Src1);
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
                         
-                        if (srcStr1.StartsWith("-", StringComparison.Ordinal) ||
-                            srcStr2.StartsWith("-", StringComparison.Ordinal))
+                        if (srcStr1.StartsWith("-", StringComparison.Ordinal) || srcStr2.StartsWith("-", StringComparison.Ordinal))
                         { // Signed
                             if (!NumberHelper.ParseInt64(srcStr1, out long src1))
                                 throw new ExecuteException($"[{srcStr1}] is not a valid integer");

@@ -303,9 +303,9 @@ namespace ManagedWimLib
         /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractPaths(int image, string target, IEnumerable<string> paths, int numPaths, WimLibExtractFlags extractFlags)
+        public void ExtractPaths(int image, string target, IEnumerable<string> paths, WimLibExtractFlags extractFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ExtractPaths(Ptr, image, target, paths.ToArray(), new IntPtr(numPaths), extractFlags);
+            WimLibErrorCode ret = WimLibNative.ExtractPaths(Ptr, image, target, paths.ToArray(), new IntPtr(paths.Count()), extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -425,6 +425,85 @@ namespace ManagedWimLib
         }
         #endregion
 
+        #region UpdateImage
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="cmds"></param>
+        /// <param name="updateFlags"></param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void UpdateImage(int image, UpdateCommand cmd, WimLibUpdateFlags updateFlags)
+        {
+            WimLibErrorCode ret;
+            switch (cmd.Op)
+            {
+                case WimLibUpdateOp.ADD:
+                    ret = WimLibNative.UpdateImageAdd(Ptr, image, new UpdateAddCommand[] { cmd.AddCmd }, new IntPtr(1), updateFlags);
+                    break;
+                case WimLibUpdateOp.DELETE:
+                    ret = WimLibNative.UpdateImageDelete(Ptr, image, new UpdateDeleteCommand[] { cmd.DeleteCmd }, new IntPtr(1), updateFlags);
+                    break;
+                case WimLibUpdateOp.RENAME:
+                    ret = WimLibNative.UpdateImageRename(Ptr, image, new UpdateRenameCommand[] { cmd.RenameCmd }, new IntPtr(1), updateFlags);
+                    break;
+                default:
+                    throw new ArgumentException("cmd");
+            }
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="cmds"></param>
+        /// <param name="updateFlags"></param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void UpdateImage(int image, IEnumerable<UpdateCommand> cmds, WimLibUpdateFlags updateFlags)
+        {
+            foreach (UpdateCommand cmd in cmds)
+            {
+                UpdateImage(image, cmd, updateFlags);
+            }
+        }
+        #endregion
+
+        #region SetOutputCompressionType, SetOutputPackCompressionType
+        /// <summary>
+        /// Set a ::WIMStruct's output compression type.  This is the compression type
+        /// that will be used for writing non-solid resources in subsequent calls to
+        /// wimlib_write() or wimlib_overwrite().
+        /// </summary>
+        /// <param name="compType">
+        /// The compression type to set.  If this compression type is incompatible
+        /// with the current output chunk size, then the output chunk size will be
+        /// reset to the default for the new compression type.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void SetOutputCompressionType(WimLibCompressionType compType)
+        {
+            WimLibErrorCode ret = WimLibNative.SetOutputCompressionType(Ptr, compType);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Similar to wimlib_set_output_compression_type(), but set the compression type
+        /// for writing solid resources.  This cannot be ::WIMLIB_COMPRESSION_TYPE_NONE.
+        /// </summary>
+        /// <param name="compType">
+        /// The compression type to set.  If this compression type is incompatible
+        /// with the current output chunk size, then the output chunk size will be
+        /// reset to the default for the new compression type.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void SetOutputPackCompressionType(WimLibCompressionType compType)
+        {
+            WimLibErrorCode ret = WimLibNative.SetOutputPackCompressionType(Ptr, compType);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
         #region Write, OverWrite
         /// <summary>
         /// Persist a ::WIMStruct to a new on-disk WIM file.
@@ -499,9 +578,9 @@ namespace ManagedWimLib
         /// it.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void OverWrite(WimLibWriteFlags writeFlags, uint numThreads)
+        public void Overwrite(WimLibWriteFlags writeFlags, uint numThreads)
         {
-            WimLibErrorCode ret = WimLibNative.OverWrite(Ptr, writeFlags, numThreads);
+            WimLibErrorCode ret = WimLibNative.Overwrite(Ptr, writeFlags, numThreads);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion

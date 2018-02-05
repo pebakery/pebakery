@@ -133,7 +133,7 @@ namespace PEBakery.Core.Commands
                     WimCreateFileOptions.None,
                     WimCompressionType.None))
                 {
-                    
+
                     WimgApi.SetTemporaryPath(hWim, Path.GetTempPath());
 
                     try
@@ -171,7 +171,7 @@ namespace PEBakery.Core.Commands
                 logs.Add(CommandWim.LogWimgApiException(e, $"Unable to open [{srcWim}]"));
                 return logs;
             }
-       
+
             logs.Add(new LogInfo(LogState.Success, $"[{srcWim}]'s image [{imageIndex}] mounted to [{mountDir}]"));
             return logs;
         }
@@ -394,7 +394,7 @@ namespace PEBakery.Core.Commands
         }
         #endregion
 
-        #region WimLib - WimApply, WimExtract
+        #region WimLib - WimApply
         public static List<LogInfo> WimApply(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -408,17 +408,11 @@ namespace PEBakery.Core.Commands
 
             // Check SrcWim
             if (!File.Exists(srcWim))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
 
             // Check DestDir
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(destDir))
                 Directory.CreateDirectory(destDir);
@@ -433,7 +427,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAttribFlag)
                 extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
 
-            
+
             try
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
@@ -442,16 +436,9 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
-                        return logs;
-                    }
-
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
-                        return logs;
-                    }
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
 
                     // Apply to disk
                     s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
@@ -536,7 +523,7 @@ namespace PEBakery.Core.Commands
         }
         #endregion
 
-        #region WimExtract, WimExtractOp, WimExtractList
+        #region WimLib - WimExtract, WimExtractOp, WimExtractBulk
         public static List<LogInfo> WimExtract(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
@@ -551,17 +538,11 @@ namespace PEBakery.Core.Commands
 
             // Check SrcWim
             if (!File.Exists(srcWim))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
 
             // Check DestDir
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(destDir))
                 Directory.CreateDirectory(destDir);
@@ -586,15 +567,9 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
-                        return logs;
-                    }
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
-                        return logs;
-                    }
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
 
                     // Extract file(s)
                     s.MainViewModel.BuildCommandProgressTitle = "WimExtract Progress";
@@ -626,12 +601,12 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        public static List<LogInfo> WimExtractList(EngineState s, CodeCommand cmd)
+        public static List<LogInfo> WimExtractBulk(EngineState s, CodeCommand cmd)
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtractList));
-            CodeInfo_WimExtractList info = cmd.Info as CodeInfo_WimExtractList;
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExtractBulk));
+            CodeInfo_WimExtractBulk info = cmd.Info as CodeInfo_WimExtractBulk;
 
             string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
             string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
@@ -640,17 +615,11 @@ namespace PEBakery.Core.Commands
 
             // Check SrcWim
             if (!File.Exists(srcWim))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
 
             // Check DestDir
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(destDir))
                 Directory.CreateDirectory(destDir);
@@ -658,8 +627,7 @@ namespace PEBakery.Core.Commands
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
             WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX |
-                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB |
-                WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB;
             if (info.CheckFlag)
                 openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
@@ -669,10 +637,7 @@ namespace PEBakery.Core.Commands
 
             // Check ListFile
             if (!File.Exists(listFilePath))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"ListFile [{listFilePath}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"ListFile [{listFilePath}] does not exist");
 
             string unicodeListFile = Path.GetTempFileName();
             try
@@ -745,17 +710,11 @@ namespace PEBakery.Core.Commands
 
             // Check SrcDir
             if (!Directory.Exists(srcDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{srcDir}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Directory [{srcDir}] does not exist");
 
             // Check DestWim
             if (StringEscaper.PathSecurityCheck(destWim, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
@@ -785,10 +744,7 @@ namespace PEBakery.Core.Commands
                 compType = WimLibCompressionType.LZMS;
             }
             else
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Invalid Compression Type [{compStr}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{compStr}]");
 
             // Set ImageName
             string imageName;
@@ -798,10 +754,7 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Unable to set proper image name automatically"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Unable to set proper image name automatically");
             }
 
             // Capture from disk
@@ -809,7 +762,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.CreateNewWim(compType))
                 {
-                    wim.RegisterCallback(WimCaptureAppendProgress, s);
+                    wim.RegisterCallback(WimWriteProgress, s);
 
                     wim.AddImage(srcDir, imageName, null, addFlags);
                     if (info.ImageDesc != null)
@@ -865,17 +818,11 @@ namespace PEBakery.Core.Commands
 
             // Check SrcDir
             if (!Directory.Exists(srcDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{srcDir}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Directory [{srcDir}] does not exist");
 
             // Check DestWim
             if (StringEscaper.PathSecurityCheck(destWim, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
@@ -899,24 +846,18 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Unable to set proper image name automatically"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Unable to set proper image name automatically");
             }
 
             try
             {
                 using (Wim wim = Wim.OpenWim(destWim, openFlags))
                 {
-                    wim.RegisterCallback(WimCaptureAppendProgress, s);
+                    wim.RegisterCallback(WimWriteProgress, s);
 
                     // Check if image name is duplicated
                     if (wim.IsImageNameInUse(imageName))
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"Image name [{imageName}] is already in use"));
-                        return logs;
-                    }
+                        return LogInfo.LogErrorMessage(logs, $"Image name [{imageName}] is already in use");
 
                     // Add Image
                     wim.AddImage(srcDir, imageName, null, addFlags);
@@ -940,15 +881,9 @@ namespace PEBakery.Core.Commands
 
                         string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaIndex);
                         if (!NumberHelper.ParseInt32(deltaIndexStr, out int deltaIndex))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{deltaIndexStr}] is not a valid a positive integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{deltaIndexStr}] is not a valid a positive integer");
                         if (!(1 <= deltaIndex && deltaIndex <= imageCount))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{deltaIndex}] must be [1] ~ [{imageCount}]"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{deltaIndex}] must be [1] ~ [{imageCount}]");
 
                         wim.ReferenceTemplateImage((int)imageCount, deltaIndex);
                     }
@@ -961,7 +896,7 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        wim.OverWrite(writeFlags, (uint)Environment.ProcessorCount);
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
 
                         logs.Add(new LogInfo(LogState.Success, $"Appended [{srcDir}] into [{destWim}]"));
                     }
@@ -983,7 +918,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibProgressStatus WimCaptureAppendProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static WimLibProgressStatus WimWriteProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -1021,6 +956,329 @@ namespace PEBakery.Core.Commands
         private static LogInfo LogWimLibException(WimLibException e)
         {
             return new LogInfo(LogState.Error, $"[{e.ErrorCode}] {e.ErrorMsg}");
+        }
+        #endregion
+
+        #region WimLib - WimPathAdd, WimPathDelete, WimPathRemove
+        public static List<LogInfo> WimPathAdd(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathAdd));
+            CodeInfo_WimPathAdd info = cmd.Info as CodeInfo_WimPathAdd;
+
+            string wimFile = StringEscaper.Preprocess(s, info.WimFile);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Check wimFile
+            if (!File.Exists(wimFile))
+                return LogInfo.LogErrorMessage(logs, $"File [{wimFile}] does not exist");
+            if (StringEscaper.PathSecurityCheck(wimFile, out string errorMsg) == false)
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
+            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
+            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
+            WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.VERBOSE | WimLibAddFlags.EXCLUDE_VERBOSE;
+            if (info.CheckFlag)
+            {
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+            }
+            if (info.RebuildFlag)
+                writeFlags |= WimLibWriteFlags.REBUILD;
+            if (info.NoAclFlag)
+                addFlags |= WimLibAddFlags.NO_ACLS;
+            if (info.PreserveFlag)
+                addFlags |= WimLibAddFlags.NO_REPLACE;
+            
+            try
+            {
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                {
+                    wim.RegisterCallback(WimWriteProgress, s);
+
+                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
+
+                    UpdateCommand addCmd = UpdateCommand.Add(srcPath, destPath, null, addFlags);
+                    wim.UpdateImage(imageIndex, addCmd, updateFlags);
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimPathAdd Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Added [{srcPath}] into [{wimFile}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> WimPathDelete(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathDelete));
+            CodeInfo_WimPathDelete info = cmd.Info as CodeInfo_WimPathDelete;
+
+            string wimFile = StringEscaper.Preprocess(s, info.WimFile);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string path = StringEscaper.Preprocess(s, info.Path);
+
+            // Check wimFile
+            if (!File.Exists(wimFile))
+                return LogInfo.LogErrorMessage(logs, $"File [{wimFile}] does not exist");
+            if (StringEscaper.PathSecurityCheck(wimFile, out string errorMsg) == false)
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
+            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
+            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
+            WimLibDeleteFlags deleteFlags = WimLibDeleteFlags.RECURSIVE;
+            if (info.CheckFlag)
+            {
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+            }
+            if (info.RebuildFlag)
+                writeFlags |= WimLibWriteFlags.REBUILD;
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                {
+                    wim.RegisterCallback(WimWriteProgress, s);
+
+                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
+
+                    UpdateCommand deleteCmd = UpdateCommand.Delete(path, deleteFlags);
+                    wim.UpdateImage(imageIndex, deleteCmd, updateFlags);
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimPathDelete Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+
+                        logs.Add(new LogInfo(LogState.Success, $"[{path}] deleted from [{wimFile}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+
+        public static List<LogInfo> WimPathRename(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimPathRename));
+            CodeInfo_WimPathRename info = cmd.Info as CodeInfo_WimPathRename;
+
+            string wimFile = StringEscaper.Preprocess(s, info.WimFile);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string srcPath = StringEscaper.Preprocess(s, info.SrcPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
+
+            // Check wimFile
+            if (!File.Exists(wimFile))
+                return LogInfo.LogErrorMessage(logs, $"File [{wimFile}] does not exist");
+            if (StringEscaper.PathSecurityCheck(wimFile, out string errorMsg) == false)
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
+            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
+            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
+            if (info.CheckFlag)
+            {
+                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+            }
+            if (info.RebuildFlag)
+                writeFlags |= WimLibWriteFlags.REBUILD;
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                {
+                    wim.RegisterCallback(WimWriteProgress, s);
+
+                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
+
+                    UpdateCommand renCmd = UpdateCommand.Rename(srcPath, destPath);
+                    wim.UpdateImage(imageIndex, renCmd, updateFlags);
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimPathRename Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Renamed [{srcPath}] into [{destPath}] in [{wimFile}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+        #endregion
+
+        #region WimLib - WimOptimize
+        public static List<LogInfo> WimOptimize(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimOptimize));
+            CodeInfo_WimOptimize info = cmd.Info as CodeInfo_WimOptimize;
+
+            string wimFile = StringEscaper.Preprocess(s, info.WimFile);
+
+            // Check SrcWim
+            if (!File.Exists(wimFile))
+                return LogInfo.LogErrorMessage(logs, $"File [{wimFile}] does not exist");
+            if (StringEscaper.PathSecurityCheck(wimFile, out string errorMsg) == false)
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // Set Flags
+            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
+            WimLibWriteFlags writeFlags = WimLibWriteFlags.REBUILD;
+            WimLibCompressionType? compType = null;
+            if (info.Recompress != null)
+            {
+                writeFlags |= WimLibWriteFlags.RECOMPRESS;
+
+                string recompStr = StringEscaper.Preprocess(s, info.Recompress);
+                if (recompStr.Length != 0)
+                {
+                    writeFlags |= WimLibWriteFlags.RECOMPRESS;
+
+                    // Set Compression Type
+                    if (recompStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
+                        compType = WimLibCompressionType.NONE;
+                    else if (recompStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
+                        compType = WimLibCompressionType.XPRESS;
+                    else if (recompStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
+                        compType = WimLibCompressionType.LZX;
+                    else if (recompStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        writeFlags |= WimLibWriteFlags.SOLID;
+                        compType = WimLibCompressionType.LZMS;
+                    }
+                    else
+                        return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{recompStr}]");
+                }
+            }
+
+            if (info.CheckFlag == true)
+                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+            else if (info.CheckFlag == false)
+                writeFlags |= WimLibWriteFlags.NO_CHECK_INTEGRITY;
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                {
+                    wim.RegisterCallback(WimApplyExtractProgress, s);
+
+                    if (compType != null)
+                        wim.SetOutputCompressionType((WimLibCompressionType)compType);
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimOptimize Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        long before = new FileInfo(wimFile).Length;
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+                        long after = new FileInfo(wimFile).Length;
+
+                        string beforeStr = NumberHelper.ByteSizeToHumanReadableString(before);
+                        string afterStr = NumberHelper.ByteSizeToHumanReadableString(after);
+                        logs.Add(new LogInfo(LogState.Success, $"Optimized [{wimFile}] from {beforeStr} to {afterStr}"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
         }
         #endregion
     }
