@@ -420,20 +420,20 @@ namespace PEBakery.Core
 
             // Escape #a (Current Argument Count)
             if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceEx(str, "#a", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#a)", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
 
             // Escape #r (Return Value)
             if (str.IndexOf("#r", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceEx(str, "#r", s.SectionReturnValue, StringComparison.Ordinal);
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#r)", s.SectionReturnValue, StringComparison.Ordinal);
 
             // Escape #c (Loop Counter)
             switch (s.LoopState)
             {
                 case LoopState.OnIndex:
-                    str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopCounter.ToString(), StringComparison.Ordinal);
                     break;
                 case LoopState.OnDriveLetter:
-                    str = StringHelper.ReplaceEx(str, "#c", s.LoopLetter.ToString(), StringComparison.Ordinal);
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopLetter.ToString(), StringComparison.Ordinal);
                     break;
             }              
 

@@ -372,7 +372,6 @@ namespace PEBakery.Core
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
             Encoding encoding = FileHelper.DetectTextEncoding(fullPath);
-            
             using (StreamReader reader = new StreamReader(fullPath, encoding))
             {
                 int idx = 0;

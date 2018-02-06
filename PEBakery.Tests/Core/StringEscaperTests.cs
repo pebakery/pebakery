@@ -252,6 +252,7 @@ namespace PEBakery.Tests.Core
             ExpandSectionParams_4();
             ExpandSectionParams_5();
             ExpandSectionParams_6();
+            ExpandSectionParams_7();
         }
 
         public void ExpandSectionParams_1()
@@ -260,9 +261,9 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            string src = "%A% ##1 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% World";
+            string comp = "%A% ##1 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -271,9 +272,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            string src = "%A% ##2 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% World";
+            string comp = "%A% ##2 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -340,6 +341,17 @@ namespace PEBakery.Tests.Core
             string dest = StringEscaper.ExpandVariables(s, src);
             string comp = "Hello ";
 
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public void ExpandSectionParams_7()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            s.SectionReturnValue = "TEST";
+
+            string src = "##1 ##a ##r #r";
+            string dest = StringEscaper.ExpandSectionParams(s, src);
+            string comp = "##1 ##a ##r TEST";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion

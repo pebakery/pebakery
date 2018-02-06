@@ -828,6 +828,41 @@ namespace PEBakery.Helper
             }
         }
 
+        public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
+        {
+            MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled);
+            if (0 < matches.Count)
+            {
+                int idx = 0;
+                StringBuilder b = new StringBuilder();
+                for (int x = 0; x < matches.Count; x++)
+                {
+                    if (x == 0)
+                    {
+                        b.Append(str.Substring(0, matches[0].Index));
+                    }
+                    else
+                    {
+                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                        int endOffset = matches[x].Index - startOffset;
+                        b.Append(str.Substring(startOffset, endOffset));
+                    }
+
+                    b.Append(newValue);
+
+                    if (x + 1 == matches.Count)
+                    {
+                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                    }
+                }
+                return b.ToString();
+            }
+            else
+            {
+                return str;
+            }
+        }
+
         public static string ReplaceAt(string str, int index, int length, string newValue)
         {
             if (index < 0) throw new ArgumentOutOfRangeException("index");
