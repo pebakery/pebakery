@@ -302,7 +302,7 @@ namespace PEBakery.Core
             macroType = null;
 
             // There must be no number in yypeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
             bool isMacro = false;
@@ -2101,7 +2101,7 @@ namespace PEBakery.Core
         public static RegMultiType ParseRegMultiType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -2120,7 +2120,7 @@ namespace PEBakery.Core
         #region ParseInterfaceElement
         public static InterfaceElement ParseInterfaceElement(string str)
         {
-            if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -2176,7 +2176,7 @@ namespace PEBakery.Core
         public static UserInputType ParseUserInputType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -2494,7 +2494,7 @@ namespace PEBakery.Core
         public static StrFormatType ParseStrFormatType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -2924,7 +2924,7 @@ namespace PEBakery.Core
         public static MathType ParseMathType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -3145,7 +3145,7 @@ namespace PEBakery.Core
         public static SystemType ParseSystemType(string typeStr)
         {
             // There must be no number in typeStr
-            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
@@ -3164,8 +3164,8 @@ namespace PEBakery.Core
         #region ParseCodeInfoIf, ForgeIfEmbedCommand
         public static bool StringContainsVariable(string str)
         {
-            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled); // ABC%Joveler%
-            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled); // #1
+            MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
+            bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
             bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
             bool sectionParamCountMatch = (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1); // #a
             bool sectionReturnValueMatch = (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1); // #r
@@ -3297,7 +3297,7 @@ namespace PEBakery.Core
                 }
                 else if (condStr.Equals("Question", StringComparison.OrdinalIgnoreCase))
                 {
-                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled);
+                    Match m = Regex.Match(args[cIdx + 2], @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                     if (m.Success)
                     {
                         cond = new BranchCondition(BranchConditionType.Question, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);

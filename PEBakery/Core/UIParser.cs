@@ -170,7 +170,7 @@ namespace PEBakery.Core
         public static UIControlType ParseControlType(string typeStr)
         {
             // typeStr must be number
-            if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled))
+            if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException("Only numbers can be used for interface control type");
 
             bool failure = false;

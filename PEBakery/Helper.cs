@@ -723,7 +723,7 @@ namespace PEBakery.Helper
             if (str.Length % 2 == 1)
                 return false;
 
-            if (Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 return true;
             else
                 return false;
@@ -731,7 +731,7 @@ namespace PEBakery.Helper
 
         public static bool IsUpperAlphabet(string str)
         {
-            if (Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 return true;
             else
                 return false;
@@ -748,7 +748,7 @@ namespace PEBakery.Helper
         public static bool IsLowerAlphabet(string str)
         {
             str = str.Trim();
-            if (Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 return true;
             else
                 return false;
@@ -764,7 +764,7 @@ namespace PEBakery.Helper
 
         public static bool IsAlphabet(string str)
         {
-            if (Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 return true;
             else
                 return false;
@@ -830,10 +830,9 @@ namespace PEBakery.Helper
 
         public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
         {
-            MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled);
+            MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (0 < matches.Count)
             {
-                int idx = 0;
                 StringBuilder b = new StringBuilder();
                 for (int x = 0; x < matches.Count; x++)
                 {
@@ -1228,7 +1227,7 @@ namespace PEBakery.Helper
                 return ParseStringToNumberType.String;
 
             // base 10 integer - Z
-            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1236,7 +1235,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // base 16 integer - Z
-            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1244,7 +1243,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // real number - R
-            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled))
+            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out real))
                     return ParseStringToNumberType.Decimal;

@@ -53,7 +53,7 @@ namespace PEBakery.Core.Commands
             if (varType == Variables.VarKeyType.None)
             {
                 // Check Macro
-                if (Regex.Match(info.VarKey, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                if (Regex.Match(info.VarKey, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                 {
                     string macroCommand = StringEscaper.Preprocess(s, info.VarValue);
 

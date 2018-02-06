@@ -110,7 +110,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                             macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
@@ -133,7 +133,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                             macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
@@ -185,7 +185,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success == false) // Macro Name Validation
                         {
                             logs.Add(new LogInfo(LogState.Error, $"Invalid local macro name [{kv.Key}]"));
                             continue;
@@ -219,7 +219,7 @@ namespace PEBakery.Core
 
         public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool global, bool permanent)
         {
-            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success == false) // Macro Name Validation
                 return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
 
             if (macroCommand != null)

@@ -237,7 +237,7 @@ namespace PEBakery.Core.Commands
                         string dirPath = StringEscaper.Preprocess(s, subInfo.DirPath).Trim();
                         string fileName = StringEscaper.Preprocess(s, subInfo.FileName).Trim();
 
-                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled))
+                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                             dirPath = dirPath + @"\";
 
                         string destStr = Path.Combine(dirPath, fileName);
@@ -463,7 +463,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
-                        Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
+                        Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                         string destStr;
                         if (match.Success)
                             destStr = srcStr.Substring(0, match.Index);

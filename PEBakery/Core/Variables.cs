@@ -537,7 +537,7 @@ namespace PEBakery.Core
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 StringBuilder b = new StringBuilder();
-                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
+                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
@@ -702,7 +702,7 @@ namespace PEBakery.Core
 
         public static int GetSectionParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled);
+            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
@@ -721,9 +721,9 @@ namespace PEBakery.Core
         public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
         public static VarKeyType DetermineType(string key)
         {
-            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled).Success) // Ex) %A%
+            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
+            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
                 return VarKeyType.ReturnValue;
