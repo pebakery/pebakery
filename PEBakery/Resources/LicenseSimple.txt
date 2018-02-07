@@ -53,6 +53,15 @@ ManagedWimLib.Tests
     LGPLv3 License
     https://www.gnu.org/licenses/lgpl-3.0.en.html
 
+Ookii.Dialogs.Wpf
+    The 3-Clause BSD License
+    https://opensource.org/licenses/BSD-3-Clause
+
+    Copyright (c) Sven Groot (Ookii.org) 2009
+    http://www.ookii.org/Software/Dialogs/
+    Updated by Vladimir Svyatski (@vsvyatski)
+    https://github.com/vsvyatski/ookii.dialogs
+
 Launcher
     MIT License
     https://opensource.org/licenses/MIT

@@ -46,6 +46,7 @@ using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
 {
@@ -848,7 +849,7 @@ namespace PEBakery.WPF
                 }
                 else
                 { // Directory
-                    System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+                    VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
 
                     string currentPath = StringEscaper.Preprocess(variables, uiCtrl.Text);
                     if (Directory.Exists(currentPath))
@@ -856,7 +857,7 @@ namespace PEBakery.WPF
 
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        if (dialog.ShowDialog(r.Window) == true)
                         {
                             box.Text = dialog.SelectedPath;
                             if (!dialog.SelectedPath.EndsWith("\\", StringComparison.Ordinal))

@@ -76,7 +76,7 @@ namespace PEBakery.Core
     0x210 - 0x21F : 16B -> Null-padded
     0x220 - 0x223 : 4B  -> CRC32 of Raw File
     0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01)
-    0x225         : 1B  -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
+    0x225         : 1B  -> Compress Level (Type 1, 3 : 01 ~ 09, Type 2 : 00)
 
     [FinalFooter]
     Not compressed, 36Byte (0x24)
@@ -95,9 +95,10 @@ namespace PEBakery.Core
     0x18 : Decompress by WB082 is unaffected by this value
     0x1C : When changed, WB082 thinks the encoded file is corrupted
     
-    [How to improve?]
-    - Use LZMA instead of zlib, for better compression rate - DONE
-    - Design more robust script format.
+    [Improvement Points]
+    - Use LZMA instead of zlib, for ultimate compression rate - DONE
+    - Zopfli support in place of zlib, for better compression rate with compability with WB082
+    - Design more robust script format. 
     */
 
     // Possible zlib stream header

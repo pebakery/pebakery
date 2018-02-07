@@ -48,6 +48,7 @@ using System.Threading;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
 using PEBakery.WPF.Controls;
+using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.WPF
 {
@@ -117,11 +118,11 @@ namespace PEBakery.WPF
 
         private void Button_SourceDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog();
             if (0 < Model.Project_SourceDirectoryList.Count)
                 dialog.SelectedPath = Model.Project_SourceDirectoryList[Model.Project_SourceDirectoryIndex];
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog(this) == true)
             {
                 bool exist = false;
                 for (int i = 0; i < Model.Project_SourceDirectoryList.Count; i++)
@@ -161,12 +162,12 @@ namespace PEBakery.WPF
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
             {
                 SelectedPath = Model.Project_TargetDirectory,
             };
 
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dialog.ShowDialog(this) == true)
             {
                 Model.Project_TargetDirectory = dialog.SelectedPath;
             }

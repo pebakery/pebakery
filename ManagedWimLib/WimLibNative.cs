@@ -216,6 +216,7 @@ namespace ManagedWimLib
             UpdateImageAdd = (wimlib_update_image_add)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_add));
             UpdateImageDelete = (wimlib_update_image_delete)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_delete));
             UpdateImageRename = (wimlib_update_image_rename)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_rename));
+            ReferenceResourceFiles = (wimlib_reference_resource_files)GetFuncPtr("wimlib_reference_resource_files", typeof(wimlib_reference_resource_files));
         }
 
         private static void ResetFuntions()
@@ -243,6 +244,7 @@ namespace ManagedWimLib
             UpdateImageAdd = null;
             UpdateImageDelete = null;
             UpdateImageRename = null;
+            ReferenceResourceFiles = null;
         }
         #endregion
 
@@ -452,7 +454,7 @@ namespace ManagedWimLib
         internal static wimlib_get_image_property GetImageProperty;
         #endregion
 
-        #region IsImageNameInUse, ReferenceTemplateImage
+        #region IsImageNameInUse, ReferenceTemplateImage, ReferenceResourceFiles
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate bool wimlib_image_name_in_use(
             IntPtr wim,
@@ -467,6 +469,15 @@ namespace ManagedWimLib
             int template_image,
             int flags);
         internal static wimlib_reference_template_image ReferenceTemplateImage;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_reference_resource_files(
+            IntPtr wim,
+            string[] resource_wimfiles_or_globs,
+            uint count,
+            WimLibRefFlags ref_flags,
+            WimLibOpenFlags open_flags);
+        internal static wimlib_reference_resource_files ReferenceResourceFiles;
         #endregion
         #endregion
 
@@ -1557,6 +1568,27 @@ namespace ManagedWimLib
     }
     #endregion
 
+    #region Enum RefFlags
+    [Flags]
+    public enum WimLibRefFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// For wimlib_reference_resource_files(), enable shell-style filename globbing.
+        /// Ignored by wimlib_reference_resources().
+        /// </summary>
+        GLOB_ENABLE = 0x00000001,
+        /// <summary>
+        /// For wimlib_reference_resource_files(), issue an error (WIMLIB_ERR_GLOB_HAD_NO_MATCHES) if a glob did not match any files. 
+        /// The default behavior without this flag is to issue no error at that point, but then attempt to open
+        /// the glob as a literal path, which of course will fail anyway if no file exists at that path. 
+        /// No effect if WIMLIB_REF_FLAG_GLOB_ENABLE is not also specified.
+        /// Ignored by wimlib_reference_resources().
+        /// </summary>
+        GLOB_ERR_ON_NOMATCH = 0x00000002,
+    }
+    #endregion
+
     #region Struct WimInfo
     [StructLayout(LayoutKind.Sequential)]
     public struct WimInfo
@@ -1792,25 +1824,25 @@ namespace ManagedWimLib
     };
     #endregion
 
-#region WimLibException
-public class WimLibException : Exception
-{
-    public string ErrorMsg;
-    public WimLibErrorCode ErrorCode;
-
-    public WimLibException(WimLibErrorCode errorCode)
-        : base($"Error Code {errorCode}" + Environment.NewLine + WimLibNative.GetErrorString(errorCode))
+    #region WimLibException
+    public class WimLibException : Exception
     {
-        this.ErrorMsg = WimLibNative.GetErrorString(errorCode);
-        this.ErrorCode = errorCode;
-    }
+        public string ErrorMsg;
+        public WimLibErrorCode ErrorCode;
 
-    public static void CheckWimLibError(WimLibErrorCode ret)
-    {
-        if (ret != WimLibErrorCode.SUCCESS)
-            throw new WimLibException(ret);
+        public WimLibException(WimLibErrorCode errorCode)
+            : base($"Error Code {errorCode}" + Environment.NewLine + WimLibNative.GetErrorString(errorCode))
+        {
+            this.ErrorMsg = WimLibNative.GetErrorString(errorCode);
+            this.ErrorCode = errorCode;
+        }
+
+        public static void CheckWimLibError(WimLibErrorCode ret)
+        {
+            if (ret != WimLibErrorCode.SUCCESS)
+                throw new WimLibException(ret);
+        }
     }
-}
-#endregion
+    #endregion
 }
 

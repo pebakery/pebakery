@@ -39,6 +39,7 @@ using System.Globalization;
 using PEBakery.WPF.Controls;
 using System.IO;
 using PEBakery.Helper;
+using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.Core.Commands
 {
@@ -544,7 +545,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
                             {
                                 SelectedPath = initPath,
                             };
@@ -552,7 +553,9 @@ namespace PEBakery.Core.Commands
                             bool failure = false;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                                MainWindow w = Application.Current.MainWindow as MainWindow;
+
+                                if (dialog.ShowDialog(w) == true)
                                 {
                                     selectedPath = dialog.SelectedPath;
                                     logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));

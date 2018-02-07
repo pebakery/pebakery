@@ -2141,7 +2141,7 @@ namespace PEBakery.Core
         {
             const int minArgCount = 3;
             if (CodeParser.CheckInfoArgumentCount(args, minArgCount, -1))
-                throw new InvalidCommandException($"Command [StrFormat] must have at least [{minArgCount}] arguments", rawCode);
+                throw new InvalidCommandException($"Command [UserInput] must have at least [{minArgCount}] arguments", rawCode);
 
             UserInputType type = ParseUserInputType(args[0]);
             UserInputInfo info;
@@ -2158,7 +2158,7 @@ namespace PEBakery.Core
                         // UserInput,FilePath,<Path>,<DestVar>
                         const int argCount = 2;
                         if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [StrFormat,{type}] must have [{argCount}] arguments", rawCode);
+                            throw new InvalidCommandException($"Command [UserInput,{type}] must have [{argCount}] arguments", rawCode);
 
                         if (Variables.DetermineType(args[1]) == Variables.VarKeyType.None)
                             throw new InvalidCommandException($"[{args[1]}] is not valid variable name", rawCode);
@@ -2167,7 +2167,7 @@ namespace PEBakery.Core
                     }
                     break;
                 default: // Error
-                    throw new InternalParserException($"Wrong StrFormatType [{type}]");
+                    throw new InternalParserException($"Wrong UserInputType [{type}]");
             }
 
             return new CodeInfo_UserInput(type, info);

@@ -504,7 +504,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region Write, OverWrite
+        #region Write, Overwrite
         /// <summary>
         /// Persist a ::WIMStruct to a new on-disk WIM file.
         /// </summary>
@@ -733,7 +733,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region ReferenceTemplateImage
+        #region ReferenceTemplateImage, ReferenceResourceFiles
         /// <summary>
         /// Declare that a newly added image is mostly the same as a prior image, but
         /// captured at a later point in time, possibly with some modifications in the
@@ -809,6 +809,8 @@ namespace ManagedWimLib
             WimLibErrorCode ret = WimLibNative.ReferenceTemplateImage(Ptr, newImage, template.Ptr, templateImage, 0);
             WimLibException.CheckWimLibError(ret);
         }
+
+        
         #endregion
         #endregion
     }

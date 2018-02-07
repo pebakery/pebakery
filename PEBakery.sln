@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2024
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PEBakery", "PEBakery\PEBakery.csproj", "{D6224DCE-02D5-4005-88FB-00A8E00CACE1}"
 EndProject
@@ -24,6 +24,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManagedWimLib.Tests", "ManagedWimLib.Tests\ManagedWimLib.Tests.csproj", "{5CC90FF4-728C-4C4D-B5A4-A4B27D3DF0C5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XZNet20", "XZNet20\XZNet20.csproj", "{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ookii.Dialogs.Wpf", "Ookii.Dialogs.Wpf\Ookii.Dialogs.Wpf.csproj", "{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -167,6 +169,18 @@ Global
 		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x64.Build.0 = Release|Any CPU
 		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x86.ActiveCfg = Release|Any CPU
 		{98CCEC3E-79F8-40D3-9EA9-A4B35AA5405D}.Release|x86.Build.0 = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|x64.Build.0 = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Debug|x86.Build.0 = Debug|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|x64.ActiveCfg = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|x64.Build.0 = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|x86.ActiveCfg = Release|Any CPU
+		{D01B1D20-8F5B-4834-8E5C-C7EC6DD587D4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
