@@ -2643,19 +2643,21 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimApply : CodeInfo
-    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
+    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
+        public string Split;
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool NoAttribFlag;
 
-        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, bool check, bool noAcl, bool noAttrib)
+        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, string split, bool check, bool noAcl, bool noAttrib)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
             DestDir = destDir;
+            Split = split;
             CheckFlag = check;
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
@@ -2669,6 +2671,11 @@ namespace PEBakery.Core
             b.Append(ImageIndex);
             b.Append(",");
             b.Append(DestDir);
+            if (Split != null)
+            {
+                b.Append(",");
+                b.Append(Split);
+            }
             if (CheckFlag)
                 b.Append(",CHECK");
             if (NoAclFlag)
@@ -2681,22 +2688,24 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimExtract : CodeInfo
-    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[CHECK],[NOACL],[NOATTRIB]
-        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractList
+    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractBulk
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
-        public string ExtractPath; 
+        public string ExtractPath;
+        public string Split;
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool NoAttribFlag;
 
-        public CodeInfo_WimExtract(string srcWim, string imageIndex, string destDir, string extractPath, bool check, bool noAcl, bool noAttrib)
+        public CodeInfo_WimExtract(string srcWim, string imageIndex, string destDir, string extractPath, string split, bool check, bool noAcl, bool noAttrib)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
             DestDir = destDir;
             ExtractPath = extractPath;
+            Split = split;
             CheckFlag = check;
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
@@ -2714,6 +2723,11 @@ namespace PEBakery.Core
             b.Append(ExtractPath);
             b.Append(",");
             b.Append(DestDir);
+            if (Split != null)
+            {
+                b.Append(",");
+                b.Append(Split);
+            }
             if (CheckFlag)
                 b.Append(",CHECK");
             if (NoAclFlag)
@@ -2726,21 +2740,23 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimExtractBulk : CodeInfo
-    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
+    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[Split=],[CHECK],[NOACL],[NOATTRIB]
         public string SrcWim;
         public string ImageIndex;
         public string DestDir;
         public string ListFile;
+        public string Split;
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool NoAttribFlag;
 
-        public CodeInfo_WimExtractBulk(string srcWim, string imageIndex, string destDir, string listFile, bool check, bool noAcl, bool noAttrib)
+        public CodeInfo_WimExtractBulk(string srcWim, string imageIndex, string destDir, string listFile, string split, bool check, bool noAcl, bool noAttrib)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
             DestDir = destDir;
             ListFile = listFile;
+            Split = split;
             CheckFlag = check;
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
@@ -2758,6 +2774,11 @@ namespace PEBakery.Core
             b.Append(ListFile);
             b.Append(",");
             b.Append(DestDir);
+            if (Split != null)
+            {
+                b.Append(",");
+                b.Append(Split);
+            }
             if (CheckFlag)
                 b.Append(",CHECK");
             if (NoAclFlag)

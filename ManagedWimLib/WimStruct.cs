@@ -810,7 +810,67 @@ namespace ManagedWimLib
             WimLibException.CheckWimLibError(ret);
         }
 
-        
+        /// <summary>
+        /// Reference file data from other WIM files or split WIM parts. 
+        /// This function can be used on WIMs that are not standalone, such as split or "delta" WIMs,
+        /// to load additional file data before calling a function such as wimlib_extract_image() that requires the file data to be present.
+        /// </summary>
+        /// <remarks>
+        /// In the case of split WIMs, instance of WimStruct should be the
+        /// first part, since only the first part contains the metadata resources.
+        /// In the case of delta WIMs, this should be the delta WIM rather than the
+        /// WIM on which it is based.
+        /// </remarks>
+        /// <param name="resourceWimFiles">
+        /// A path to WIM file and/or split WIM parts to reference.
+        /// Alternatively, when WimLibRefFlag.GLOB_ENABLE is specified in refFlags, these are treated as globs rather than literal paths.
+        /// That is, using this function you can specify zero or more globs, each of which expands to one or more literal paths.
+        /// </param>
+        /// <param name="refFlags">
+        /// Bitwise OR of ::WIMLIB_REF_FLAG_GLOB_ENABLE and/or
+        /// ::WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH.
+        /// </param>
+        /// <param name="openFlags">
+        /// Additional open flags, such as ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY, to
+        /// pass to internal calls to wimlib_open_wim() on the reference files.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void ReferenceResourceFile(string resourceWimFile, WimLibRefFlags refFlags, WimLibOpenFlags openFlags)
+        {
+            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[] { resourceWimFile }, 1u, refFlags, openFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Reference file data from other WIM files or split WIM parts. 
+        /// This function can be used on WIMs that are not standalone, such as split or "delta" WIMs,
+        /// to load additional file data before calling a function such as wimlib_extract_image() that requires the file data to be present.
+        /// </summary>
+        /// <remarks>
+        /// In the case of split WIMs, instance of WimStruct should be the
+        /// first part, since only the first part contains the metadata resources.
+        /// In the case of delta WIMs, this should be the delta WIM rather than the
+        /// WIM on which it is based.
+        /// </remarks>
+        /// <param name="resourceWimFiles">
+        /// Array of paths to WIM files and/or split WIM parts to reference.
+        /// Alternatively, when WimLibRefFlag.GLOB_ENABLE is specified in refFlags, these are treated as globs rather than literal paths.
+        /// That is, using this function you can specify zero or more globs, each of which expands to one or more literal paths.
+        /// </param>
+        /// <param name="refFlags">
+        /// Bitwise OR of ::WIMLIB_REF_FLAG_GLOB_ENABLE and/or
+        /// ::WIMLIB_REF_FLAG_GLOB_ERR_ON_NOMATCH.
+        /// </param>
+        /// <param name="openFlags">
+        /// Additional open flags, such as ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY, to
+        /// pass to internal calls to wimlib_open_wim() on the reference files.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibRefFlags refFlags, WimLibOpenFlags openFlags)
+        {
+            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
         #endregion
         #endregion
     }

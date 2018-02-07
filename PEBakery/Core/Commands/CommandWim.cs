@@ -427,7 +427,6 @@ namespace PEBakery.Core.Commands
             if (info.NoAttribFlag)
                 extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
 
-
             try
             {
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
@@ -439,6 +438,15 @@ namespace PEBakery.Core.Commands
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
+
+                    // Process split wim
+                    if (info.Split != null)
+                    {
+                        string splitWim = StringEscaper.Preprocess(s, info.Split);
+
+                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                    }
 
                     // Apply to disk
                     s.MainViewModel.BuildCommandProgressTitle = "WimApply Progress";
@@ -571,6 +579,15 @@ namespace PEBakery.Core.Commands
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
 
+                    // Process split wim
+                    if (info.Split != null)
+                    {
+                        string splitWim = StringEscaper.Preprocess(s, info.Split);
+
+                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                    }
+
                     // Extract file(s)
                     s.MainViewModel.BuildCommandProgressTitle = "WimExtract Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;
@@ -642,7 +659,7 @@ namespace PEBakery.Core.Commands
             string unicodeListFile = Path.GetTempFileName();
             try
             {
-                // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE)
+                // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE ListFile)
                 FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
 
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
@@ -659,6 +676,15 @@ namespace PEBakery.Core.Commands
                     {
                         logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]"));
                         return logs;
+                    }
+
+                    // Process split wim
+                    if (info.Split != null)
+                    {
+                        string splitWim = StringEscaper.Preprocess(s, info.Split);
+
+                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                     }
 
                     // Extract file(s)
@@ -717,7 +743,6 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
             WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
             WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.FILE_PATHS_UNNEEDED;
             if (info.BootFlag)
@@ -725,10 +750,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAclFlag)
                 addFlags |= WimLibAddFlags.NO_ACLS;
             if (info.CheckFlag)
-            {
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
                 writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
-            }
 
             // Set Compression Type
             WimLibCompressionType compType = WimLibCompressionType.NONE;
@@ -833,10 +855,7 @@ namespace PEBakery.Core.Commands
             if (info.NoAclFlag)
                 addFlags |= WimLibAddFlags.NO_ACLS;
             if (info.CheckFlag)
-            {
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
                 writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
-            }
 
             // Set ImageName
             string imageName;
@@ -984,10 +1003,7 @@ namespace PEBakery.Core.Commands
             WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
             WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.VERBOSE | WimLibAddFlags.EXCLUDE_VERBOSE;
             if (info.CheckFlag)
-            {
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
                 writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
-            }
             if (info.RebuildFlag)
                 writeFlags |= WimLibWriteFlags.REBUILD;
             if (info.NoAclFlag)
@@ -1062,10 +1078,7 @@ namespace PEBakery.Core.Commands
             WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
             WimLibDeleteFlags deleteFlags = WimLibDeleteFlags.RECURSIVE;
             if (info.CheckFlag)
-            {
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
                 writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
-            }
             if (info.RebuildFlag)
                 writeFlags |= WimLibWriteFlags.REBUILD;
 
@@ -1136,10 +1149,7 @@ namespace PEBakery.Core.Commands
             WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
             WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
             if (info.CheckFlag)
-            {
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
                 writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
-            }
             if (info.RebuildFlag)
                 writeFlags |= WimLibWriteFlags.REBUILD;
 

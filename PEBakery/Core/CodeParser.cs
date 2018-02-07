@@ -1361,12 +1361,13 @@ namespace PEBakery.Core
                         return new CodeInfo_WimInfo(args[0], args[1], args[2], destVar);
                     }
                 case CodeType.WimApply:
-                    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[CHECK],[NOACL],[NOATTRIB]
+                    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 3;
-                        const int maxArgCount = 6;
+                        const int maxArgCount = 7;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
+                        string split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1374,25 +1375,46 @@ namespace PEBakery.Core
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
+
+                            const string SplitKey = "Split=";
+                            if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (split != null)
+                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                split = arg.Substring(SplitKey.Length);
+                            }
                             if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
                                 check = true;
+                            }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAcl)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
                                 noAcl = true;
+                            }
                             else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noAttrib)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
                                 noAttrib = true;
+                            }
                             else
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                         }  
 
-                        return new CodeInfo_WimApply(args[0], args[1], args[2], check, noAcl, noAttrib);
+                        return new CodeInfo_WimApply(args[0], args[1], args[2], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtract:
-                    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[CHECK],[NOACL],[NOATTRIB]
+                    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 4;
                         const int maxArgCount = 7;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
+                        string split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1400,7 +1422,15 @@ namespace PEBakery.Core
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
-                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+
+                            const string SplitKey = "Split=";
+                            if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (split != null)
+                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                split = arg.Substring(SplitKey.Length);
+                            }
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
                                     throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
@@ -1424,7 +1454,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], check, noAcl, noAttrib);
+                        return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtractBulk:
                     { // WimExtractBulk,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
@@ -1433,6 +1463,7 @@ namespace PEBakery.Core
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
+                        string split = null;
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
@@ -1440,7 +1471,15 @@ namespace PEBakery.Core
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
-                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+
+                            const string SplitKey = "Split=";
+                            if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (split != null)
+                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                split = arg.Substring(SplitKey.Length);
+                            }
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
                                     throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
@@ -1464,7 +1503,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], check, noAcl, noAttrib);
+                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimCapture:
                     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
@@ -2102,7 +2141,7 @@ namespace PEBakery.Core
         {
             // There must be no number in typeStr
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
+                throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
             bool invalid = false;
             if (Enum.TryParse(typeStr, true, out RegMultiType type) == false)
