@@ -1383,7 +1383,7 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
                                 split = arg.Substring(SplitKey.Length);
                             }
-                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
                                     throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
