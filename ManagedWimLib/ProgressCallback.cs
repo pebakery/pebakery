@@ -40,7 +40,7 @@ namespace ManagedWimLib
         private readonly WimLibCallback _callback;
         private readonly object _userData;
 
-        internal WimLibNative.ProgressFunc NativeFunc { get; private set; }
+        internal WimLibNative.NativeProgressFunc NativeFunc { get; private set; }
 
         public ManagedWimLibCallback(WimLibCallback callback, object userData)
         {

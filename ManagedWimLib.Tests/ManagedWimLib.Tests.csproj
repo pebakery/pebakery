@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="ApplyTests.cs" />
     <Compile Include="AppendTests.cs" />
+    <Compile Include="DirTests.cs" />
     <Compile Include="ExtractTests.cs" />
     <Compile Include="CaptureTests.cs" />
     <Compile Include="GetWimInfoTest.cs" />

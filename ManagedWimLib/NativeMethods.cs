@@ -290,12 +290,12 @@ namespace ManagedWimLib
             [MarshalAs(UnmanagedType.LPWStr)] string wim_file,
             WimLibOpenFlags open_flags,
             out IntPtr wim_ret,
-            [MarshalAs(UnmanagedType.FunctionPtr)] ProgressFunc progfunc,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeProgressFunc progfunc,
             IntPtr progctx);
         internal static wimlib_open_wim_with_progress OpenWimWithProgress;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate WimLibProgressStatus ProgressFunc(
+        internal delegate WimLibProgressStatus NativeProgressFunc(
             WimLibProgressMsg msg_type,
             IntPtr info,
             IntPtr progctx);
@@ -303,7 +303,7 @@ namespace ManagedWimLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate void wimlib_register_progress_function_delegate(
             IntPtr wim,
-            [MarshalAs(UnmanagedType.FunctionPtr)] ProgressFunc progfunc,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeProgressFunc progfunc,
             IntPtr progctx);
         internal static wimlib_register_progress_function_delegate RegisterProgressFunction;
 
@@ -487,7 +487,7 @@ namespace ManagedWimLib
 
         #region IterateDirTree, IterateLookupTable
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int IterateDirTreeCallback(
+        internal delegate int NativeIterateDirTreeCallback(
             DirEntry dentry,
             IntPtr progctx);
 
@@ -496,13 +496,13 @@ namespace ManagedWimLib
             IntPtr wim,
             int image,
             [MarshalAs(UnmanagedType.LPWStr)] string path,
-            WimLibIterateDirTreeFlags flags,
-            [MarshalAs(UnmanagedType.FunctionPtr)] IterateDirTreeCallback cb,
+            WimLibIterateFlags flags,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeIterateDirTreeCallback cb,
             IntPtr user_ctx);
         internal static wimlib_iterate_dir_tree IterateDirTree;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int IterateLookupTableCallback(
+        internal delegate int NativeIterateLookupTableCallback(
             ResourceEntry resoure,
             IntPtr progctx);
 
@@ -510,7 +510,7 @@ namespace ManagedWimLib
         internal delegate WimLibErrorCode wimlib_iterate_lookup_table(
             IntPtr wim,
             int image,
-            [MarshalAs(UnmanagedType.FunctionPtr)] IterateLookupTableCallback cb,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeIterateLookupTableCallback cb,
             IntPtr user_ctx);
         internal static wimlib_iterate_lookup_table IterateLookupTable;
         #endregion
@@ -1626,7 +1626,7 @@ namespace ManagedWimLib
 
     #region Enum IterateDirTreeFlags
     [Flags]
-    public enum WimLibIterateDirTreeFlags : uint
+    public enum WimLibIterateFlags : uint
     {
         DEFAULT = 0x00000000,
         /// <summary>
@@ -2021,13 +2021,11 @@ namespace ManagedWimLib
         {
             get
             {
-                List<StreamEntry> streams = new List<StreamEntry>((int)NumNamedStreams);
+                StreamEntry[] streams = new StreamEntry[NumNamedStreams];
                 for (int i = 0; i < NumNamedStreams; i++)
-                {
-                    StreamEntry entry = (StreamEntry)Marshal.PtrToStructure(IntPtr.Add(StreamsArr, i), typeof(StreamEntry));
-                    streams.Add(entry);
-                }
-                return streams.ToArray();
+                    streams[i] = (StreamEntry)Marshal.PtrToStructure(IntPtr.Add(StreamsArr, i), typeof(StreamEntry));
+
+                return streams;
             }
         }
         private IntPtr StreamsArr;

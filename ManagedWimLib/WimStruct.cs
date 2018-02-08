@@ -887,7 +887,7 @@ namespace ManagedWimLib
         /// <param name="path">
         /// Path in the image at which to do the iteration.
         /// </param>
-        /// <param name="dirFlags">
+        /// <param name="iterateFlags">
         /// Bitwise OR of flags prefixed with WIMLIB_ITERATE_DIR_TREE_FLAG.
         /// </param>
         /// <param name="callback">
@@ -897,9 +897,11 @@ namespace ManagedWimLib
         /// An extra parameter that will always be passed to the callback function.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void IterateDirTree(int image, string path, WimLibIterateDirTreeFlags dirFlags, ManagedIterateDirTreeCallback callback, object userData)
+        public void IterateDirTree(int image, string path, WimLibIterateFlags iterateFlags, IterateDirTreeCallback callback, object userData)
         {
-            WimLibErrorCode ret = WimLibNative.IterateDirTree(Ptr, image, path, dirFlags, callback.NativeFunc, IntPtr.Zero);
+            ManagedIterateDirTreeCallback cb = new ManagedIterateDirTreeCallback(callback, userData);
+
+            WimLibErrorCode ret = WimLibNative.IterateDirTree(Ptr, image, path, iterateFlags, cb.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -911,9 +913,11 @@ namespace ManagedWimLib
         /// <param name="callback">A callback function that will receive each blob.</param>
         /// <param name="userData">An extra parameter that will always be passed to the callback function</param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void IterateLookupTable(ManagedIterateLookupTableCallback callback, object userData)
+        public void IterateLookupTable(IterateLookupTableCallback callback, object userData)
         {
-            WimLibErrorCode ret = WimLibNative.IterateLookupTable(Ptr, 0, callback.NativeFunc, IntPtr.Zero);
+            ManagedIterateLookupTableCallback cb = new ManagedIterateLookupTableCallback(callback, userData);
+
+            WimLibErrorCode ret = WimLibNative.IterateLookupTable(Ptr, 0, cb.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
