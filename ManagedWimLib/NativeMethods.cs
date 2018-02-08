@@ -217,6 +217,8 @@ namespace ManagedWimLib
             UpdateImageDelete = (wimlib_update_image_delete)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_delete));
             UpdateImageRename = (wimlib_update_image_rename)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_rename));
             ReferenceResourceFiles = (wimlib_reference_resource_files)GetFuncPtr("wimlib_reference_resource_files", typeof(wimlib_reference_resource_files));
+            IterateDirTree = (wimlib_iterate_dir_tree)GetFuncPtr("wimlib_iterate_dir_tree", typeof(wimlib_iterate_dir_tree));
+            IterateLookupTable = (wimlib_iterate_lookup_table)GetFuncPtr("wimlib_iterate_lookup_table", typeof(wimlib_iterate_lookup_table));
         }
 
         private static void ResetFuntions()
@@ -245,6 +247,8 @@ namespace ManagedWimLib
             UpdateImageDelete = null;
             UpdateImageRename = null;
             ReferenceResourceFiles = null;
+            IterateDirTree = null;
+            IterateLookupTable = null;
         }
         #endregion
 
@@ -291,7 +295,7 @@ namespace ManagedWimLib
         internal static wimlib_open_wim_with_progress OpenWimWithProgress;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate WimLibProgressStatus ProgressFunc(
+        internal delegate WimLibProgressStatus ProgressFunc(
             WimLibProgressMsg msg_type,
             IntPtr info,
             IntPtr progctx);
@@ -377,6 +381,7 @@ namespace ManagedWimLib
         #endregion
 
         #region UpdateImage
+        // TODO : How to pinvoke unions perfectly?
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate WimLibErrorCode wimlib_update_image_add(
             IntPtr wim,
@@ -475,9 +480,39 @@ namespace ManagedWimLib
             IntPtr wim,
             string[] resource_wimfiles_or_globs,
             uint count,
-            WimLibRefFlags ref_flags,
+            WimLibReferenceFlags ref_flags,
             WimLibOpenFlags open_flags);
         internal static wimlib_reference_resource_files ReferenceResourceFiles;
+        #endregion
+
+        #region IterateDirTree, IterateLookupTable
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate int IterateDirTreeCallback(
+            DirEntry dentry,
+            IntPtr progctx);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_iterate_dir_tree(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.LPWStr)] string path,
+            WimLibIterateDirTreeFlags flags,
+            [MarshalAs(UnmanagedType.FunctionPtr)] IterateDirTreeCallback cb,
+            IntPtr user_ctx);
+        internal static wimlib_iterate_dir_tree IterateDirTree;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate int IterateLookupTableCallback(
+            ResourceEntry resoure,
+            IntPtr progctx);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate WimLibErrorCode wimlib_iterate_lookup_table(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.FunctionPtr)] IterateLookupTableCallback cb,
+            IntPtr user_ctx);
+        internal static wimlib_iterate_lookup_table IterateLookupTable;
         #endregion
         #endregion
 
@@ -1568,9 +1603,9 @@ namespace ManagedWimLib
     }
     #endregion
 
-    #region Enum RefFlags
+    #region Enum ReferenceFlags
     [Flags]
-    public enum WimLibRefFlags : uint
+    public enum WimLibReferenceFlags : uint
     {
         DEFAULT = 0x00000000,
         /// <summary>
@@ -1586,6 +1621,31 @@ namespace ManagedWimLib
         /// Ignored by wimlib_reference_resources().
         /// </summary>
         GLOB_ERR_ON_NOMATCH = 0x00000002,
+    }
+    #endregion
+
+    #region Enum IterateDirTreeFlags
+    [Flags]
+    public enum WimLibIterateDirTreeFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// For wimlib_iterate_dir_tree(): Iterate recursively on children rather than just on the specified path.
+        /// </summary>
+        RECURSIVE = 0x00000001,
+        /// <summary>
+        /// For wimlib_iterate_dir_tree(): Don't iterate on the file or directory itself;
+        /// only its children (in the case of a non-empty directory)
+        /// </summary>
+        CHILDREN = 0x00000002,
+        /// <summary>
+        /// Return ::WIMLIB_ERR_RESOURCE_NOT_FOUND if any file data blobs needed to fill
+        /// in the ::wimlib_resource_entry's for the iteration cannot be found in the
+        /// blob lookup table of the ::WIMStruct.  The default behavior without this flag
+        /// is to fill in the @ref wimlib_resource_entry::sha1_hash "sha1_hash" and set
+        /// the @ref wimlib_resource_entry::is_missing "is_missing" flag.
+        /// </summary>
+        RESOURCES_NEEDED = 0x00000004,
     }
     #endregion
 
@@ -1635,52 +1695,52 @@ namespace ManagedWimLib
         /// Bit 0 - 9 : Information Flags
         /// Bit 10 - 31 : Reserved
         /// </summary>
-        private uint BitMask;
+        private uint bitFlag;
         /// <summary>
         /// 1 iff this WIM file has an integrity table.
         /// </summary>
-        public bool HasIntegrityTable => WimLibNative.GetBitField(BitMask, 0);
+        public bool HasIntegrityTable => WimLibNative.GetBitField(bitFlag, 0);
         /// <summary>
         /// 1 iff this info struct is for a ::WIMStruct that has a backing file.
         /// </summary>
-        public bool OpenedFromFile => WimLibNative.GetBitField(BitMask, 1);
+        public bool OpenedFromFile => WimLibNative.GetBitField(bitFlag, 1);
         /// <summary>
         /// 1 iff this WIM file is considered readonly for any reason (e.g. the
         /// "readonly" header flag is set, or this is part of a split WIM, or
         /// filesystem permissions deny writing)
         /// </summary>
-        public bool IsReadonly => WimLibNative.GetBitField(BitMask, 2);
+        public bool IsReadonly => WimLibNative.GetBitField(bitFlag, 2);
         /// <summary>
         /// 1 iff the "reparse point fix" flag is set in this WIM's header
         /// </summary>
-        public bool HasRpfix => WimLibNative.GetBitField(BitMask, 3);
+        public bool HasRpfix => WimLibNative.GetBitField(bitFlag, 3);
         /// <summary>
         /// 1 iff the "readonly" flag is set in this WIM's header
         /// </summary>
-        public bool IsMarkedReadonly => WimLibNative.GetBitField(BitMask, 4);
+        public bool IsMarkedReadonly => WimLibNative.GetBitField(bitFlag, 4);
         /// <summary>
         /// 1 iff the "spanned" flag is set in this WIM's header
         /// </summary>
-        public bool Spanned => WimLibNative.GetBitField(BitMask, 5);
+        public bool Spanned => WimLibNative.GetBitField(bitFlag, 5);
         /// <summary>
         /// 1 iff the "write in progress" flag is set in this WIM's header
         /// </summary>
-        public bool WriteInProgress => WimLibNative.GetBitField(BitMask, 6);
+        public bool WriteInProgress => WimLibNative.GetBitField(bitFlag, 6);
         /// <summary>
         /// 1 iff the "metadata only" flag is set in this WIM's header
         /// </summary>
-        public bool MetadataOnly => WimLibNative.GetBitField(BitMask, 7);
+        public bool MetadataOnly => WimLibNative.GetBitField(bitFlag, 7);
         /// <summary>
         /// 1 iff the "resource only" flag is set in this WIM's header
         /// </summary>
-        public bool ResourceOnly => WimLibNative.GetBitField(BitMask, 8);
+        public bool ResourceOnly => WimLibNative.GetBitField(bitFlag, 8);
         /// <summary>
         /// 1 iff this WIM file is pipable (see ::WIMLIB_WRITE_FLAG_PIPABLE).
         /// </summary>
-        public bool Pipable => WimLibNative.GetBitField(BitMask, 9);
+        public bool Pipable => WimLibNative.GetBitField(bitFlag, 9);
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 9)]
-        private uint[] Reserved;
+        private uint[] reserved;
     }
     #endregion
 
@@ -1822,6 +1882,383 @@ namespace ManagedWimLib
         /// </summary>
         RENAME = 2,
     };
+    #endregion
+
+    #region Struct DirEnty
+    /// <summary>
+    /// Structure passed to the wimlib_iterate_dir_tree() callback function.
+    /// Roughly, the information about a "file" in the WIM image --- but really a
+    /// directory entry ("dentry") because hard links are allowed.  The
+    /// hard_link_group_id field can be used to distinguish actual file inodes.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct DirEntry
+    {
+        /// <summary>
+        /// Name of the file, or NULL if this file is unnamed. Only the root directory of an image will be unnamed.
+        /// </summary>
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string FileName;
+        /// <summary>
+        /// 8.3 name (or "DOS name", or "short name") of this file; or NULL if this file has no such name.
+        /// </summary>
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string DosName;
+        /// <summary>
+        /// Full path to this file within the image.  Path separators will be ::WIMLIB_WIM_PATH_SEPARATOR.
+        /// </summary>
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string FullPath;
+        /// <summary>
+        /// Depth of this directory entry, where 0 is the root, 1 is the root's children, ..., etc.
+        /// </summary>
+        public ulong Depth => (ulong)DepthVal.ToInt64();
+        private IntPtr DepthVal; // size_t
+        /// <summary>
+        /// Pointer to the security descriptor for this file, in Windows 
+        /// SECURITY_DESCRIPTOR_RELATIVE format, or NULL if this file has no
+        /// security descriptor.
+        /// </summary>
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string SecurityDescriptor;
+        /// <summary>
+        /// Size of the above security descriptor, in bytes. 
+        /// </summary>
+        public ulong SecurityDescriptorSize => (ulong)SecurityDescriptorSizeVal.ToInt64();
+        private IntPtr SecurityDescriptorSizeVal; // size_t
+        /// <summary>
+        /// File attributes, such as whether the file is a directory or not.
+        /// These are the "standard" Windows FILE_ATTRIBUTE_* values, although in
+        /// wimlib.h they are defined as WIMLIB_FILE_ATTRIBUTE_* for convenience
+        /// on other platforms.
+        /// </summary>
+        public WimLibFileAttribute Attributes;
+        /// <summary>
+        /// If the file is a reparse point (FILE_ATTRIBUTE_REPARSE_POINT set in
+        /// the attributes), this will give the reparse tag.  This tells you
+        /// whether the reparse point is a symbolic link, junction point, or some
+        /// other, more unusual kind of reparse point.
+        /// </summary>
+        public WimLibReparseTag ReparseTag;
+        /// <summary>
+        /// Number of links to this file's inode (hard links).
+        ///
+        /// Currently, this will always be 1 for directories.  However, it can be
+        /// greater than 1 for nondirectory files.
+        /// </summary>
+        public uint NumLinks;
+        /// <summary>
+        /// Number of named data streams this file has.  Normally 0.
+        /// </summary>
+        public uint NumNamedStreams;
+        /// <summary>
+        /// Time this file was created.
+        /// </summary>
+        public DateTime CreationTime => TimeSpecToDateTime(CreationTimeVal, CreationTimeHigh);
+        private WimTimeSpec CreationTimeVal;
+        /// <summary>
+        /// Time this file was last written to.
+        /// </summary>
+        public DateTime LastWriteTime => TimeSpecToDateTime(LastWriteTimeVal, LastWriteTimeHigh);
+        private WimTimeSpec LastWriteTimeVal;
+        /// <summary>
+        /// Time this file was last accessed.
+        /// </summary>
+        public DateTime LastAccessTime => TimeSpecToDateTime(LastAccessTimeVal, LastAccessTimeHigh);
+        private WimTimeSpec LastAccessTimeVal;
+        /// <summary>
+        /// The UNIX user ID of this file.  This is a wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixUserId;
+        /// <summary>
+        /// The UNIX group ID of this file.  This is a wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixGroupId;
+        /// <summary>
+        /// The UNIX mode of this file.  This is a wimlib extension.
+        ///
+        /// If this field is 0, then @p unix_uid, @p unix_gid, @p unix_mode, and
+        /// @p unix_rdev are all unknown (fields are not present in the WIM
+        /// image).
+        /// </summary>
+        public uint UnixMode;
+        /// <summary>
+        /// The UNIX device ID (major and minor number) of this file.  This is a
+        /// wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixRootDevice;
+        /// <summary>
+        /// The object ID of this file, if any.  Only valid if object_id.object_id is not all zeroes.
+        /// </summary>
+        public WimObjectId ObjectId;
+        private int CreationTimeHigh;
+        private int LastWriteTimeHigh;
+        private int LastAccessTimeHigh;
+        private int Reserved2;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        private ulong[] Reserved;
+        /// <summary>
+        /// Variable-length array of streams that make up this file.
+        ///
+        /// The first entry will always exist and will correspond to the unnamed
+        /// data stream (default file contents), so it will have <c>stream_name
+        /// == NULL</c>.  Alternatively, for reparse point files, the first entry
+        /// will correspond to the reparse data stream.  Alternatively, for
+        /// encrypted files, the first entry will correspond to the encrypted
+        /// data.
+        ///
+        /// Then, following the first entry, there be @p num_named_streams
+        /// additional entries that specify the named data streams, if any, each
+        /// of which will have <c>stream_name != NULL</c>.
+        /// </summary>
+        public StreamEntry[] Streams
+        {
+            get
+            {
+                List<StreamEntry> streams = new List<StreamEntry>((int)NumNamedStreams);
+                for (int i = 0; i < NumNamedStreams; i++)
+                {
+                    StreamEntry entry = (StreamEntry)Marshal.PtrToStructure(IntPtr.Add(StreamsArr, i), typeof(StreamEntry));
+                    streams.Add(entry);
+                }
+                return streams.ToArray();
+            }
+        }
+        private IntPtr StreamsArr;
+
+        private static DateTime TimeSpecToDateTime(WimTimeSpec ts, int high)
+        {
+            // C# DateTime has a resolution of 100ns
+            DateTime genesis = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            genesis.AddSeconds(ts.UnixEpoch);
+            genesis.AddTicks(ts.NanoSeconds / 100);
+
+            // wimlib provide high 32bit seperately if timespec.tv_sec is only 32bit
+            if (IntPtr.Size == 4)
+            {
+                long high64 = (long)high << 32;
+                genesis.AddSeconds(high64);
+            }
+
+            return genesis;
+        }
+    }
+
+    public enum WimLibFileAttribute : uint
+    {
+        READONLY = 0x00000001,
+        HIDDEN = 0x00000002,
+        SYSTEM = 0x00000004,
+        DIRECTORY = 0x00000010,
+        ARCHIVE = 0x00000020,
+        DEVICE = 0x00000040,
+        NORMAL = 0x00000080,
+        TEMPORARY = 0x00000100,
+        SPARSE_FILE = 0x00000200,
+        REPARSE_POINT = 0x00000400,
+        COMPRESSED = 0x00000800,
+        OFFLINE = 0x00001000,
+        NOT_CONTENT_INDEXED = 0x00002000,
+        ENCRYPTED = 0x00004000,
+        VIRTUAL = 0x00010000,
+    }
+
+    public enum WimLibReparseTag : uint
+    {
+        RESERVED_ZERO = 0x00000000,
+        RESERVED_ONE = 0x00000001,
+        MOUNT_POINT = 0xA0000003,
+        HSM = 0xC0000004,
+        HSM2 = 0x80000006,
+        DRIVER_EXTENDER = 0x80000005,
+        SIS = 0x80000007,
+        DFS = 0x8000000A,
+        DFSR = 0x80000012,
+        FILTER_MANAGER = 0x8000000B,
+        WOF = 0x80000017,
+        SYMLINK = 0xA000000C,
+    }
+    #endregion
+
+    #region Struct WimTimeSpec
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WimTimeSpec
+    {
+        /// <summary>
+        /// Seconds since start of UNIX epoch (January 1, 1970)
+        /// </summary>
+        public long UnixEpoch => UnixEpochVal.ToInt64();
+        private IntPtr UnixEpochVal; // int64_t in 64bit, int32_t in 32bit
+        /// <summary>
+        /// Nanoseconds (0-999999999)
+        /// </summary>
+        public int NanoSeconds;
+    }
+    #endregion
+
+    #region Struct WimObjectId
+    /// <summary>
+    /// Since wimlib v1.9.1: an object ID, which is an extra piece of metadata that
+    /// may be associated with a file on NTFS filesystems.  See:
+    /// https://msdn.microsoft.com/en-us/library/windows/desktop/aa363997(v=vs.85).aspx
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WimObjectId
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] ObjectId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] BirthVolumeId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] BirthObjectId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+        public byte[] DomainId;
+    }
+    #endregion
+
+    #region Struct ResourceEntry
+    /// <summary>
+    /// Information about a "blob", which is a fixed length sequence of binary data.
+    /// Each nonempty stream of each file in a WIM image is associated with a blob.
+    /// Blobs are deduplicated within a WIM file.
+    /// </summary>
+    /// <remarks>
+    /// TODO: this struct needs to be renamed, and perhaps made into a union since
+    /// there are several cases.  I'll try to list them below:
+    ///
+    /// 1. The blob is "missing", meaning that it is referenced by hash but not
+    ///    actually present in the WIM file.  In this case we only know the
+    ///    sha1_hash.  This case can only occur with wimlib_iterate_dir_tree(), never
+    ///    wimlib_iterate_lookup_table().
+    ///
+    /// 2. Otherwise we know the sha1_hash, the uncompressed_size, the
+    ///    reference_count, and the is_metadata flag.  In addition:
+    ///
+    ///    A. If the blob is located in a non-solid WIM resource, then we also know
+    ///       the compressed_size and offset.
+    ///
+    ///    B. If the blob is located in a solid WIM resource, then we also know the
+    ///       offset, raw_resource_offset_in_wim, raw_resource_compressed_size, and
+    ///       raw_resource_uncompressed_size.  But the "offset" is actually the
+    ///       offset in the uncompressed solid resource rather than the offset from
+    ///       the beginning of the WIM file.
+    ///
+    ///    C. If the blob is *not* located in any type of WIM resource, then we don't
+    ///       know any additional information.
+    ///
+    /// Unknown or irrelevant fields are left zeroed.
+    /// </remarks>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct ResourceEntry
+    {
+        /// <summary>
+        /// If this blob is not missing, then this is the uncompressed size of this blob in bytes.
+        /// </summary>
+        ulong UncompressedSize;
+        /// <summary>
+        /// If this blob is located in a non-solid WIM resource, then this is the compressed size of that resource. 
+        /// </summary>
+        ulong CompressedSize;
+        /// <summary>
+        /// If this blob is located in a non-solid WIM resource, then this is
+        /// the offset of that resource within the WIM file containing it.  If
+        /// this blob is located in a solid WIM resource, then this is the offset
+        /// of this blob within that solid resource when uncompressed.
+        /// </summary>
+        ulong Offset;
+        /// <summary>
+        /// The SHA-1 message digest of the blob's uncompressed contents.
+        /// </summary>
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20)]
+        public byte[] SHA1;
+        /// <summary>
+        /// If this blob is located in a WIM resource, then this is the part
+        /// number of the WIM file containing it.
+        /// </summary>
+        uint PartNumber;
+        /// <summary>
+        /// If this blob is not missing, then this is the number of times this
+        /// blob is referenced over all images in the WIM.  This number is not
+        /// guaranteed to be correct.
+        /// </summary>
+        uint ReferenceCount;
+        /// <summary>
+        /// Bit 0 - 6 : Bool Flags
+        /// Bit 7 - 31 : Reserved
+        /// </summary>
+        private uint bitFlag;
+        /// <summary>
+        /// 1 iff this blob is located in a non-solid compressed WIM resource.
+        /// </summary>
+        public bool IsCompressed => WimLibNative.GetBitField(bitFlag, 0);
+        /// <summary>
+        /// 1 iff this blob contains the metadata for an image. 
+        /// </summary>
+        public bool IsMetadata => WimLibNative.GetBitField(bitFlag, 1);
+        public bool IsFree => WimLibNative.GetBitField(bitFlag, 2);
+        public bool IsSpanned => WimLibNative.GetBitField(bitFlag, 3);
+        /// <summary>
+        /// 1 iff a blob with this hash was not found in the blob lookup table
+        /// of the ::WIMStruct.  This normally implies a missing call to
+        /// wimlib_reference_resource_files() or wimlib_reference_resources().
+        /// </summary>
+        public bool IsMissing => WimLibNative.GetBitField(bitFlag, 4);
+        /// <summary>
+        /// 1 iff this blob is located in a solid resource.
+        /// </summary>
+        public bool Packed => WimLibNative.GetBitField(bitFlag, 5);
+        /// <summary>
+        /// If this blob is located in a solid WIM resource, then this is the
+        /// offset of that solid resource within the WIM file containing it.
+        /// </summary>
+        public ulong RawResourceOffsetInWim;
+        /// <summary>
+        /// If this blob is located in a solid WIM resource, then this is the
+        /// compressed size of that solid resource.
+        /// </summary>
+        public ulong RawResourceCompressedSize;
+        /// <summary>
+        /// If this blob is located in a solid WIM resource, then this is the
+        /// uncompressed size of that solid resource.
+        /// </summary>
+        public ulong RawResourceUncompressedSize;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+        private ulong[] reserved;
+    }
+    #endregion
+
+    #region Struct StreamEntry
+    /// <summary>
+    /// Information about a stream of a particular file in the WIM.
+    ///
+    /// Normally, only WIM images captured from NTFS filesystems will have multiple
+    /// streams per file.  In practice, this is a rarely used feature of the
+    /// filesystem.
+    ///
+    /// TODO: the library now explicitly tracks stream types, which allows it to have
+    /// multiple unnamed streams (e.g. both a reparse point stream and unnamed data
+    /// stream).  However, this isn't yet exposed by wimlib_iterate_dir_tree().
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct StreamEntry
+    {
+        /// <summary>
+        /// Name of the stream, or NULL if the stream is unnamed.
+        /// </summary>
+        public string StreamName;
+        /// <summary>
+        /// Info about this stream's data, such as its hash and size if known.
+        /// </summary>
+        public ResourceEntry Resource;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
+        private ulong[] Reserved;
+    }
     #endregion
 
     #region WimLibException

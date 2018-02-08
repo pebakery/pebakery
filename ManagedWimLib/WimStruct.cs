@@ -35,7 +35,7 @@ namespace ManagedWimLib
     { // Wrapper of WimStruct and API
         #region Field
         public IntPtr Ptr { get; private set; }
-        public ManagedWimLibCallback ManagedCallback;
+        private ManagedWimLibCallback managedCallback;
         #endregion
 
         #region Const
@@ -185,12 +185,12 @@ namespace ManagedWimLib
         {
             if (callback != null)
             { // RegisterCallback
-                ManagedCallback = new ManagedWimLibCallback(callback, userData);
-                WimLibNative.RegisterProgressFunction(Ptr, ManagedCallback.NativeFunc, IntPtr.Zero);
+                managedCallback = new ManagedWimLibCallback(callback, userData);
+                WimLibNative.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
             }
             else
             { // Delete callback
-                ManagedCallback = null;
+                managedCallback = null;
                 WimLibNative.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
             }
         }
@@ -835,7 +835,7 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFile(string resourceWimFile, WimLibRefFlags refFlags, WimLibOpenFlags openFlags)
+        public void ReferenceResourceFile(string resourceWimFile, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[] { resourceWimFile }, 1u, refFlags, openFlags);
             WimLibException.CheckWimLibError(ret);
@@ -866,9 +866,54 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibRefFlags refFlags, WimLibOpenFlags openFlags)
+        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region IterateDirTree, IterateLookupTable
+        /// <summary>
+        /// Iterate through a file or directory tree in a WIM image.  By specifying
+        /// appropriate flags and a callback function, you can get the attributes of a
+        /// file in the image, get a directory listing, or even get a listing of the
+        /// entire image.
+        /// </summary>
+        /// <param name="image">
+        /// The 1-based index of the image that contains the files or directories to
+        /// iterate over, or ::WIMLIB_ALL_IMAGES to iterate over all images.
+        /// </param>
+        /// <param name="path">
+        /// Path in the image at which to do the iteration.
+        /// </param>
+        /// <param name="dirFlags">
+        /// Bitwise OR of flags prefixed with WIMLIB_ITERATE_DIR_TREE_FLAG.
+        /// </param>
+        /// <param name="callback">
+        /// A callback function that will receive each directory entry.
+        /// </param>
+        /// <param name="userData">
+        /// An extra parameter that will always be passed to the callback function.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void IterateDirTree(int image, string path, WimLibIterateDirTreeFlags dirFlags, ManagedIterateDirTreeCallback callback, object userData)
+        {
+            WimLibErrorCode ret = WimLibNative.IterateDirTree(Ptr, image, path, dirFlags, callback.NativeFunc, IntPtr.Zero);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Iterate through the blob lookup table of a ::WIMStruct.  This can be used to
+        /// directly get a listing of the unique "blobs" contained in a WIM file, which
+        /// are deduplicated over all images.
+        /// </summary>
+        /// <param name="callback">A callback function that will receive each blob.</param>
+        /// <param name="userData">An extra parameter that will always be passed to the callback function</param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void IterateLookupTable(ManagedIterateLookupTableCallback callback, object userData)
+        {
+            WimLibErrorCode ret = WimLibNative.IterateLookupTable(Ptr, 0, callback.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion

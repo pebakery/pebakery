@@ -30,14 +30,17 @@ using System.Threading.Tasks;
 
 namespace ManagedWimLib
 {
+    #region WimLibCallback delegate
     public delegate WimLibProgressStatus WimLibCallback(WimLibProgressMsg msg, object info, object progctx);
+    #endregion
 
-    public class ManagedWimLibCallback
+    #region ManagedWimLibCallback
+    internal class ManagedWimLibCallback
     {
         private readonly WimLibCallback _callback;
         private readonly object _userData;
 
-        public WimLibNative.ProgressFunc NativeFunc { get; private set; }
+        internal WimLibNative.ProgressFunc NativeFunc { get; private set; }
 
         public ManagedWimLibCallback(WimLibCallback callback, object userData)
         {
@@ -45,10 +48,10 @@ namespace ManagedWimLib
             _userData = userData;
 
             // Avoid GC by keeping ref here
-            NativeFunc = Callback;
+            NativeFunc = NativeCallback;
         }
 
-        private WimLibProgressStatus Callback(WimLibProgressMsg msgType, IntPtr info, IntPtr progctx)
+        private WimLibProgressStatus NativeCallback(WimLibProgressMsg msgType, IntPtr info, IntPtr progctx)
         {
             object pInfo = null;
 
@@ -120,6 +123,7 @@ namespace ManagedWimLib
             return _callback(msgType, pInfo, _userData);
         }
     }
+    #endregion
 
     #region WimLibProgressInfo
     /// <summary>
@@ -419,8 +423,7 @@ namespace ManagedWimLib
     }
 
     /// <summary>
-    /// Valid on messages ::UPDATE_BEGIN_COMMAND and
-    /// ::UPDATE_END_COMMAND.
+    /// Valid on messages UPDATE_BEGIN_COMMAND and UPDATE_END_COMMAND.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct WimLibProgressInfo_Update

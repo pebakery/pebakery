@@ -444,7 +444,7 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
                         wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                     }
 
@@ -584,7 +584,7 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
                         wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                     }
 
@@ -683,7 +683,7 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibRefFlags refFlags = WimLibRefFlags.GLOB_ENABLE | WimLibRefFlags.GLOB_ERR_ON_NOMATCH;
+                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
                         wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                     }
 

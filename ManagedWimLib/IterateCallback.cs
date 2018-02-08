@@ -1,0 +1,69 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ManagedWimLib
+{
+    #region IterateDirTreeCallback
+    /// <summary>
+    /// Type of a callback function to wimlib_iterate_dir_tree().  Must return 0 on success.
+    /// </summary>
+    public delegate int IterateDirTreeCallback(DirEntry dentry, object userData);
+
+    public class ManagedIterateDirTreeCallback
+    {
+        private readonly IterateDirTreeCallback _callback;
+        private readonly object _userData;
+
+        internal WimLibNative.IterateDirTreeCallback NativeFunc { get; private set; }
+
+        public ManagedIterateDirTreeCallback(IterateDirTreeCallback callback, object userData)
+        {
+            _callback = callback ?? throw new ArgumentNullException("callback");
+            _userData = userData;
+
+            // Avoid GC by keeping ref here
+            NativeFunc = NativeCallback;
+        }
+
+        private int NativeCallback(DirEntry dentry, IntPtr user_ctx)
+        {
+            return _callback(dentry, _userData);
+        }
+    }
+    #endregion
+
+    #region IterateLookupTableCallback
+    /// <summary>
+    /// Type of a callback function to wimlib_iterate_lookup_table().  Must return 0 on success.
+    /// </summary>
+    public delegate int IterateLookupTableCallback(ResourceEntry resoure, object user_ctx);
+
+    public class ManagedIterateLookupTableCallback
+    {
+        private readonly IterateLookupTableCallback _callback;
+        private readonly object _userData;
+
+        internal WimLibNative.IterateLookupTableCallback NativeFunc { get; private set; }
+
+        public ManagedIterateLookupTableCallback(IterateLookupTableCallback callback, object userData)
+        {
+            _callback = callback ?? throw new ArgumentNullException("callback");
+            _userData = userData;
+
+            // Avoid GC by keeping ref here
+            NativeFunc = NativeCallback;
+        }
+
+        private int NativeCallback(ResourceEntry resoure, IntPtr user_ctx)
+        {
+            return _callback(resoure, _userData);
+        }
+    }
+    #endregion
+
+
+}

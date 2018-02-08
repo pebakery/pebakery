@@ -39,6 +39,7 @@ using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using PEBakery.IniLib;
 using System.Diagnostics;
+using ManagedWimLib;
 
 namespace PEBakery.Core
 {
@@ -3128,6 +3129,7 @@ namespace PEBakery.Core
         Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual,
         // Existance
         // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
+        // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
         ExistFile,
         ExistDir,
         ExistSection,
@@ -3136,6 +3138,8 @@ namespace PEBakery.Core
         ExistRegMulti,
         ExistVar,
         ExistMacro,
+        ExistWimFile,
+        ExistWimDir,
         // ETC
         Ping, Online, Question,
         // Deprecated
@@ -3199,6 +3203,8 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistSection:
                 case BranchConditionType.ExistRegSection:
                 case BranchConditionType.ExistRegSubKey:
+                case BranchConditionType.ExistWimFile:
+                case BranchConditionType.ExistWimDir:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     break;
@@ -3557,6 +3563,46 @@ namespace PEBakery.Core
                             logMessage = $"Macro [{macroName}] exists";
                         else
                             logMessage = $"Macro [{macroName}] does not exist";
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistWimFile:
+                    {
+                        string wimFile = StringEscaper.Preprocess(s, Arg1);
+                        string filePath = StringEscaper.Preprocess(s, Arg2);
+
+                        if (File.Exists(wimFile))
+                        {
+                            try
+                            {
+                                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                {
+                                    logMessage = $"File [{filePath}] exists in [{wimFile}]";
+                                    // logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
+                                }
+                            }
+                            catch (WimLibException e)
+                            {
+                                logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                            }
+                        }
+                        else
+                        {
+                            logMessage = $"Wim [{wimFile}] does not exist";
+                        }
+
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.ExistWimDir:
+                    {
+                        string wimFile = StringEscaper.Preprocess(s, Arg1);
+                        string dirPath = StringEscaper.Preprocess(s, Arg2);
+
+                        logMessage = $"Not Implemented";
 
                         if (NotFlag)
                             match = !match;
