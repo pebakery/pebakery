@@ -3138,8 +3138,9 @@ namespace PEBakery.Core
         ExistRegMulti,
         ExistVar,
         ExistMacro,
-        ExistWimFile,
-        ExistWimDir,
+        WimExistIndex,
+        WimExistFile,
+        WimExistDir,
         // ETC
         Ping, Online, Question,
         // Deprecated
@@ -3203,8 +3204,7 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistSection:
                 case BranchConditionType.ExistRegSection:
                 case BranchConditionType.ExistRegSubKey:
-                case BranchConditionType.ExistWimFile:
-                case BranchConditionType.ExistWimDir:
+                case BranchConditionType.WimExistIndex:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     break;
@@ -3222,6 +3222,8 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistRegKey:
                 case BranchConditionType.ExistRegValue:
                 case BranchConditionType.Question: // can have 1 or 3 argument
+                case BranchConditionType.WimExistFile:
+                case BranchConditionType.WimExistDir:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
@@ -3568,41 +3570,191 @@ namespace PEBakery.Core
                             match = !match;
                     }
                     break;
-                case BranchConditionType.ExistWimFile:
+                case BranchConditionType.WimExistIndex:
                     {
                         string wimFile = StringEscaper.Preprocess(s, Arg1);
-                        string filePath = StringEscaper.Preprocess(s, Arg2);
+                        string imageIndexStr = StringEscaper.Preprocess(s, Arg2);
 
-                        if (File.Exists(wimFile))
-                        {
-                            try
-                            {
-                                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
-                                {
-                                    logMessage = $"File [{filePath}] exists in [{wimFile}]";
-                                    // logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
-                                }
-                            }
-                            catch (WimLibException e)
-                            {
-                                logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
-                            }
-                        }
+                        if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                        else if (imageIndex < 1)
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
                         else
                         {
-                            logMessage = $"Wim [{wimFile}] does not exist";
+                            if (File.Exists(wimFile))
+                            {
+                                try
+                                {
+                                    using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                    {
+                                        WimInfo wi = wim.GetWimInfo();
+                                        if (imageIndex <= wi.ImageCount)
+                                        {
+                                            match = true;
+                                            logMessage = $"ImageIndex [{imageIndex}] exists in [{wimFile}]";
+                                        }
+                                        else
+                                        {
+                                            logMessage = $"ImageIndex [{imageIndex}] does not exist in [{wimFile}]";
+                                        }
+                                    }
+                                }
+                                catch (WimLibException e)
+                                {
+                                    logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                }
+                            }
+                            else
+                            {
+                                logMessage = $"Wim [{wimFile}] does not exist";
+                            }
                         }
 
                         if (NotFlag)
                             match = !match;
                     }
                     break;
-                case BranchConditionType.ExistWimDir:
+                case BranchConditionType.WimExistFile:
                     {
                         string wimFile = StringEscaper.Preprocess(s, Arg1);
-                        string dirPath = StringEscaper.Preprocess(s, Arg2);
+                        string imageIndexStr = StringEscaper.Preprocess(s, Arg2);
+                        string filePath = StringEscaper.Preprocess(s, Arg3);
 
-                        logMessage = $"Not Implemented";
+                        if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                        else if (imageIndex < 1)
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                        else
+                        {
+                            if (File.Exists(wimFile))
+                            {
+                                try
+                                {
+                                    using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                    {
+                                        bool isFile = false;
+                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        {
+                                            if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) == 0)
+                                                isFile = true;
+
+                                            return 0;
+                                        }
+
+                                        try
+                                        {
+                                            wim.IterateDirTree(imageIndex, filePath, WimLibIterateFlags.DEFAULT, WimExistFileCallback, null);
+
+                                            if (isFile)
+                                            {
+                                                match = true;
+                                                logMessage = $"File [{filePath}] exists in [{wimFile}]";
+                                            }
+                                            else
+                                            {
+                                                logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
+                                            }
+                                        }
+                                        catch (WimLibException e)
+                                        {
+                                            switch (e.ErrorCode)
+                                            {
+                                                case WimLibErrorCode.INVALID_IMAGE:
+                                                    logMessage = $"File [{filePath}] does not have image index [{imageIndex}]";
+                                                    break;
+                                                case WimLibErrorCode.PATH_DOES_NOT_EXIST:
+                                                    logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
+                                                    break;
+                                                default:
+                                                    logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (WimLibException e)
+                                {
+                                    logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                }
+                            }
+                            else
+                            {
+                                logMessage = $"Wim [{wimFile}] does not exist";
+                            }
+                        }
+                        
+                        if (NotFlag)
+                            match = !match;
+                    }
+                    break;
+                case BranchConditionType.WimExistDir:
+                    {
+                        string wimFile = StringEscaper.Preprocess(s, Arg1);
+                        string imageIndexStr = StringEscaper.Preprocess(s, Arg2);
+                        string dirPath = StringEscaper.Preprocess(s, Arg3);
+
+                        if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                        else if (imageIndex < 1)
+                            logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                        else
+                        {
+                            if (File.Exists(wimFile))
+                            {
+                                try
+                                {
+                                    using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                    {
+                                        bool isDir = false;
+                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        {
+                                            if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) != 0)
+                                                isDir = true;
+
+                                            return 0;
+                                        }
+
+                                        try
+                                        {
+                                            wim.IterateDirTree(imageIndex, dirPath, WimLibIterateFlags.DEFAULT, WimExistFileCallback, null);
+
+                                            if (isDir)
+                                            {
+                                                match = true;
+                                                logMessage = $"Dir [{dirPath}] exists in [{wimFile}]";
+                                            }
+                                            else
+                                            {
+                                                logMessage = $"Dir [{dirPath}] does not exist in [{wimFile}]";
+                                            }
+                                        }
+                                        catch (WimLibException e)
+                                        {
+                                            switch (e.ErrorCode)
+                                            {
+                                                case WimLibErrorCode.INVALID_IMAGE:
+                                                    logMessage = $"Dir [{dirPath}] does not have image index [{imageIndex}]";
+                                                    break;
+                                                case WimLibErrorCode.PATH_DOES_NOT_EXIST:
+                                                    logMessage = $"Dir [{dirPath}] does not exist in [{wimFile}]";
+                                                    break;
+                                                default:
+                                                    logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (WimLibException e)
+                                {
+                                    logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                }
+                            }
+                            else
+                            {
+                                logMessage = $"Wim [{wimFile}] does not exist";
+                            }
+                        }
 
                         if (NotFlag)
                             match = !match;
@@ -3798,6 +3950,28 @@ namespace PEBakery.Core
             }
             return b.ToString();
         }
+
+        #region IsValueChecked
+        internal class IsValueChecked
+        {
+            public bool Value = false;
+
+            public IsValueChecked(bool initValue)
+            {
+                Value = initValue;
+            }
+
+            public void Set()
+            {
+                Value = true;
+            }
+
+            public void Reset()
+            {
+                Value = false;
+            }
+        }
+        #endregion
     }
     #endregion
 

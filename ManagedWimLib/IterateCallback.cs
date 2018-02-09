@@ -22,7 +22,7 @@ namespace ManagedWimLib
 
         public ManagedIterateDirTreeCallback(IterateDirTreeCallback callback, object userData)
         {
-            _callback = callback ?? throw new ArgumentNullException("callback");
+            _callback = callback;
             _userData = userData;
 
             // Avoid GC by keeping ref here
@@ -31,7 +31,10 @@ namespace ManagedWimLib
 
         private int NativeCallback(DirEntry dentry, IntPtr user_ctx)
         {
-            return _callback(dentry, _userData);
+            if (_callback != null)
+                return _callback(dentry, _userData);
+            else
+                return 0;
         }
     }
     #endregion
@@ -51,16 +54,19 @@ namespace ManagedWimLib
 
         public ManagedIterateLookupTableCallback(IterateLookupTableCallback callback, object userData)
         {
-            _callback = callback ?? throw new ArgumentNullException("callback");
+            _callback = callback;
             _userData = userData;
 
             // Avoid GC by keeping ref here
             NativeFunc = NativeCallback;
         }
 
-        private int NativeCallback(ResourceEntry resoure, IntPtr user_ctx)
+        private int NativeCallback(ResourceEntry resource, IntPtr user_ctx)
         {
-            return _callback(resoure, _userData);
+            if (_callback != null)
+                return _callback(resource, _userData);
+            else
+                return 0;
         }
     }
     #endregion

@@ -3324,6 +3324,21 @@ namespace PEBakery.Core
                     cond = new BranchCondition(BranchConditionType.ExistMacro, notFlag, args[cIdx + 1]);
                     embIdx = cIdx + 2;
                 }
+                else if (condStr.Equals("WimExistIndex", StringComparison.OrdinalIgnoreCase))
+                {
+                    cond = new BranchCondition(BranchConditionType.WimExistIndex, notFlag, args[cIdx + 1], args[cIdx + 2]);
+                    embIdx = cIdx + 3;
+                }
+                else if (condStr.Equals("WimExistFile", StringComparison.OrdinalIgnoreCase))
+                {
+                    cond = new BranchCondition(BranchConditionType.WimExistFile, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                    embIdx = cIdx + 4;
+                }
+                else if (condStr.Equals("WimExistDir", StringComparison.OrdinalIgnoreCase))
+                {
+                    cond = new BranchCondition(BranchConditionType.WimExistDir, notFlag, args[cIdx + 1], args[cIdx + 2], args[cIdx + 3]);
+                    embIdx = cIdx + 4;
+                }
                 else if (condStr.Equals("Ping", StringComparison.OrdinalIgnoreCase))
                 {
                     cond = new BranchCondition(BranchConditionType.Ping, notFlag, args[cIdx + 1]);
