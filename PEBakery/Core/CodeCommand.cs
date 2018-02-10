@@ -3250,6 +3250,8 @@ namespace PEBakery.Core
             }
         }
 
+        #region Check - Disabled
+        /*
         /// <summary>
         /// Return true if matched
         /// </summary>
@@ -3894,6 +3896,8 @@ namespace PEBakery.Core
             }
             return match;
         }
+        */
+        #endregion
 
         public override string ToString()
         {
