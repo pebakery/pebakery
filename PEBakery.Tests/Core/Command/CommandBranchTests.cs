@@ -29,7 +29,7 @@ namespace PEBakery.Tests.Core.Command
             File.Delete(invalid);
 
             cond = new BranchCondition(type, false, kernel32);
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
@@ -60,7 +60,7 @@ namespace PEBakery.Tests.Core.Command
             File.Delete(invalid);
 
             cond = new BranchCondition(type, false, winDir);
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
@@ -99,7 +99,7 @@ namespace PEBakery.Tests.Core.Command
                 }
 
                 cond = new BranchCondition(type, false, tempPath, "Hello");
-                Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+                Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
                 cond = new BranchCondition(type, false, tempPath, "PEBakery");
                 Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
@@ -133,7 +133,7 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
@@ -160,7 +160,7 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
@@ -193,7 +193,7 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
@@ -230,7 +230,7 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.SetValue(VarsType.Fixed, "L", "ocal");
 
             cond = new BranchCondition(type, false, "%F%");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%G%");
             Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%L%");
@@ -274,7 +274,7 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.SetValue(VarsType.Local, "Tails", "Sonic");
 
             cond = new BranchCondition(type, false, "대한");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "민국");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "Sonic");
@@ -302,6 +302,113 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
+        #region WimExistIndex
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistIndex()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistIndex;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "0");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "2");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "3");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "4");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "0");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "2");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "3");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "4");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},0,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},1,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},2,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},3,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},4,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},0,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},1,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},2,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},3,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},4,Set,%Dest%,T", "T");
+        }
+        #endregion
+
+        /*
+        // Disabled due to issue in MSTest
+        #region WimExistFile
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistFile()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistFile;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "B");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "1", "A.txt");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "B");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "T");
+        }
+        #endregion
+
+        #region WimExistDir
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistDir()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistDir;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "B");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "1", "A.txt");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "B");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
+        }
+        #endregion
+    */
         #region Equal, NotEqual (!=)
         [TestMethod]
         [TestCategory("Command")]
@@ -314,7 +421,7 @@ namespace PEBakery.Tests.Core.Command
 
             // Equal
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
             Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "a", "A");
