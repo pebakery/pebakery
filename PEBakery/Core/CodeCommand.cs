@@ -3950,28 +3950,6 @@ namespace PEBakery.Core
             }
             return b.ToString();
         }
-
-        #region IsValueChecked
-        internal class IsValueChecked
-        {
-            public bool Value = false;
-
-            public IsValueChecked(bool initValue)
-            {
-                Value = initValue;
-            }
-
-            public void Set()
-            {
-                Value = true;
-            }
-
-            public void Reset()
-            {
-                Value = false;
-            }
-        }
-        #endregion
     }
     #endregion
 

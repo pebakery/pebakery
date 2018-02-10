@@ -1919,8 +1919,16 @@ namespace ManagedWimLib
         /// SECURITY_DESCRIPTOR_RELATIVE format, or NULL if this file has no
         /// security descriptor.
         /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string SecurityDescriptor;
+        public byte[] SecurityDescriptor
+        {
+            get
+            {
+                byte[] buf = new byte[SecurityDescriptorSize];
+                Marshal.Copy(SecurityDescriptorPtr, buf, 0, SecurityDescriptorSizeVal.ToInt32());
+                return buf;
+            }
+        }
+        public IntPtr SecurityDescriptorPtr;
         /// <summary>
         /// Size of the above security descriptor, in bytes. 
         /// </summary>
@@ -2003,6 +2011,10 @@ namespace ManagedWimLib
         private int Reserved2;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         private ulong[] Reserved;
+        /*
+        // TODO : Unable to handle this correctly!
+        //        Any contributions are welcome.
+        //
         /// <summary>
         /// Variable-length array of streams that make up this file.
         ///
@@ -2021,6 +2033,9 @@ namespace ManagedWimLib
         {
             get
             {
+                // IntPtr ptr = IntPtr.Zero;
+                // Marshal.StructureToPtr(this, ptr, true);
+
                 StreamEntry[] streams = new StreamEntry[NumNamedStreams];
                 for (int i = 0; i < NumNamedStreams; i++)
                     streams[i] = (StreamEntry)Marshal.PtrToStructure(IntPtr.Add(StreamsArr, i), typeof(StreamEntry));
@@ -2029,6 +2044,7 @@ namespace ManagedWimLib
             }
         }
         private IntPtr StreamsArr;
+        */
 
         private static DateTime TimeSpecToDateTime(WimTimeSpec ts, int high)
         {
