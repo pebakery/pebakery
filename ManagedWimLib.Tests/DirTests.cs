@@ -49,7 +49,7 @@ namespace ManagedWimLib.Tests
             DirProgress_Template("BootXPRESS.wim");
         }
 
-        public WimLibProgressStatus DirProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public WimLibCallbackStatus DirProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -69,7 +69,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public int IterateDirTree_Callback(DirEntry dentry, object userData)

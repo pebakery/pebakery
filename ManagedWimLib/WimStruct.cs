@@ -837,7 +837,7 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceResourceFile(string resourceWimFile, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[] { resourceWimFile }, 1u, refFlags, openFlags);
+            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
             WimLibException.CheckWimLibError(ret);
         }
 

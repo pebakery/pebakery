@@ -109,7 +109,7 @@ namespace ManagedWimLib.Tests
             ExtractProgress_Template("BootLZX.wim", @"\ACDE.txt");
         }
 
-        public WimLibProgressStatus ExtractProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public WimLibCallbackStatus ExtractProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -129,7 +129,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public void ExtractProgress_Template(string fileName, string target)

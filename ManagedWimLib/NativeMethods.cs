@@ -219,6 +219,7 @@ namespace ManagedWimLib
             ReferenceResourceFiles = (wimlib_reference_resource_files)GetFuncPtr("wimlib_reference_resource_files", typeof(wimlib_reference_resource_files));
             IterateDirTree = (wimlib_iterate_dir_tree)GetFuncPtr("wimlib_iterate_dir_tree", typeof(wimlib_iterate_dir_tree));
             IterateLookupTable = (wimlib_iterate_lookup_table)GetFuncPtr("wimlib_iterate_lookup_table", typeof(wimlib_iterate_lookup_table));
+            GetVersionPtr = (wimlib_get_version)GetFuncPtr("wimlib_get_version", typeof(wimlib_get_version));
         }
 
         private static void ResetFuntions()
@@ -249,6 +250,7 @@ namespace ManagedWimLib
             ReferenceResourceFiles = null;
             IterateDirTree = null;
             IterateLookupTable = null;
+            GetVersionPtr = null;
         }
         #endregion
 
@@ -295,7 +297,7 @@ namespace ManagedWimLib
         internal static wimlib_open_wim_with_progress OpenWimWithProgress;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate WimLibProgressStatus NativeProgressFunc(
+        internal delegate WimLibCallbackStatus NativeProgressFunc(
             WimLibProgressMsg msg_type,
             IntPtr info,
             IntPtr progctx);
@@ -475,9 +477,11 @@ namespace ManagedWimLib
             int flags);
         internal static wimlib_reference_template_image ReferenceTemplateImage;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_reference_resource_files(
             IntPtr wim,
+            // Surprisingly, using this explicit MarshalAs throws SEHException.
+            // [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
             string[] resource_wimfiles_or_globs,
             uint count,
             WimLibReferenceFlags ref_flags,
@@ -487,7 +491,7 @@ namespace ManagedWimLib
 
         #region IterateDirTree, IterateLookupTable
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int NativeIterateDirTreeCallback(
+        internal delegate WimLibCallbackStatus NativeIterateDirTreeCallback(
             DirEntry dentry,
             IntPtr progctx);
 
@@ -502,7 +506,7 @@ namespace ManagedWimLib
         internal static wimlib_iterate_dir_tree IterateDirTree;
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate int NativeIterateLookupTableCallback(
+        internal delegate WimLibCallbackStatus NativeIterateLookupTableCallback(
             ResourceEntry resoure,
             IntPtr progctx);
 
@@ -513,6 +517,55 @@ namespace ManagedWimLib
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeIterateLookupTableCallback cb,
             IntPtr user_ctx);
         internal static wimlib_iterate_lookup_table IterateLookupTable;
+        #endregion
+
+        #region GetVersion
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate uint wimlib_get_version();
+        /// <summary>
+        /// Return the version of wimlib as a 32-bit number whose top 12 bits contain the
+        /// major version, the next 10 bits contain the minor version, and the low 10
+        /// bits contain the patch version.
+        /// </summary>
+        /// <remarks>
+        /// In other words, the returned value is equal to ((WIMLIB_MAJOR_VERSION &lt;&lt;
+        /// 20) | (WIMLIB_MINOR_VERSION &lt;&lt; 10) | WIMLIB_PATCH_VERSION) for the
+        /// corresponding header file.
+        /// </remarks>
+        internal static wimlib_get_version GetVersionPtr;
+        /// <summary>
+        /// Return the version of wimlib as a Version instance.
+        /// Major, Minor and Build (Patch) properties will be populated.
+        /// </summary>
+        public static Version GetVersion()
+        {
+            if (!WimLibNative.Loaded)
+                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+
+            uint dword = GetVersionPtr();
+            ushort major = (ushort)(dword >> 20);
+            ushort minor = (ushort)((dword % (1 << 20)) >> 10);
+            ushort patch = (ushort)(dword % (1 << 10));
+
+            return new Version(major, minor, patch);
+        }
+
+        /// <summary>
+        /// Return the version of wimlib as a Tuple.
+        /// Tuple's items will be populated in a order of Major, Minor, and Patch.
+        /// </summary>
+        public static Tuple<ushort, ushort, ushort> GetVersionTuple()
+        {
+            if (!WimLibNative.Loaded)
+                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+
+            uint dword = GetVersionPtr();
+            ushort major = (ushort)(dword >> 20);
+            ushort minor = (ushort)((dword % (1 << 20)) >> 10);
+            ushort patch = (ushort)(dword % (1 << 10));
+
+            return new Tuple<ushort, ushort, ushort>(major, minor, patch);
+        }
         #endregion
         #endregion
 
@@ -804,7 +857,7 @@ namespace ManagedWimLib
     /// (::wimlib_progress_msg) indicated in the first argument to the progress
     /// function.
     /// </summary>
-    public enum WimLibProgressStatus
+    public enum WimLibCallbackStatus : int
     {
         /// <summary>
         /// The operation should be continued.  This is the normal return value.
@@ -1189,7 +1242,7 @@ namespace ManagedWimLib
 
     #region Enum OpenFlags
     [Flags]
-    public enum WimLibOpenFlags : uint
+    public enum WimLibOpenFlags : int
     {
         DEFAULT = 0x00000000,
         /// <summary>
@@ -1605,7 +1658,7 @@ namespace ManagedWimLib
 
     #region Enum ReferenceFlags
     [Flags]
-    public enum WimLibReferenceFlags : uint
+    public enum WimLibReferenceFlags : int
     {
         DEFAULT = 0x00000000,
         /// <summary>
@@ -1962,17 +2015,17 @@ namespace ManagedWimLib
         /// <summary>
         /// Time this file was created.
         /// </summary>
-        public DateTime CreationTime => TimeSpecToDateTime(CreationTimeVal, CreationTimeHigh);
+        public DateTime CreationTime => CreationTimeVal.ToDateTime(CreationTimeHigh);
         private WimTimeSpec CreationTimeVal;
         /// <summary>
         /// Time this file was last written to.
         /// </summary>
-        public DateTime LastWriteTime => TimeSpecToDateTime(LastWriteTimeVal, LastWriteTimeHigh);
+        public DateTime LastWriteTime => LastWriteTimeVal.ToDateTime(LastWriteTimeHigh);
         private WimTimeSpec LastWriteTimeVal;
         /// <summary>
         /// Time this file was last accessed.
         /// </summary>
-        public DateTime LastAccessTime => TimeSpecToDateTime(LastAccessTimeVal, LastAccessTimeHigh);
+        public DateTime LastAccessTime => LastAccessTimeVal.ToDateTime(LastAccessTimeHigh);
         private WimTimeSpec LastAccessTimeVal;
         /// <summary>
         /// The UNIX user ID of this file.  This is a wimlib extension.
@@ -2045,23 +2098,6 @@ namespace ManagedWimLib
         }
         private IntPtr StreamsArr;
         */
-
-        private static DateTime TimeSpecToDateTime(WimTimeSpec ts, int high)
-        {
-            // C# DateTime has a resolution of 100ns
-            DateTime genesis = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            genesis.AddSeconds(ts.UnixEpoch);
-            genesis.AddTicks(ts.NanoSeconds / 100);
-
-            // wimlib provide high 32bit seperately if timespec.tv_sec is only 32bit
-            if (IntPtr.Size == 4)
-            {
-                long high64 = (long)high << 32;
-                genesis.AddSeconds(high64);
-            }
-
-            return genesis;
-        }
     }
 
     public enum WimLibFileAttribute : uint
@@ -2113,6 +2149,23 @@ namespace ManagedWimLib
         /// Nanoseconds (0-999999999)
         /// </summary>
         public int NanoSeconds;
+
+        internal DateTime ToDateTime(int high)
+        {
+            // C# DateTime has a resolution of 100ns
+            DateTime genesis = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            genesis.AddSeconds(this.UnixEpoch);
+            genesis.AddTicks(this.NanoSeconds / 100);
+
+            // wimlib provide high 32bit seperately if timespec.tv_sec is only 32bit
+            if (IntPtr.Size == 4)
+            {
+                long high64 = (long)high << 32;
+                genesis.AddSeconds(high64);
+            }
+
+            return genesis;
+        }
     }
     #endregion
 

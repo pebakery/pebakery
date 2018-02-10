@@ -478,7 +478,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibProgressStatus WimApplyExtractProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static WimLibCallbackStatus WimApplyExtractProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -527,7 +527,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
         #endregion
 
@@ -937,7 +937,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibProgressStatus WimWriteProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static WimLibCallbackStatus WimWriteProgress(WimLibProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -969,7 +969,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         private static LogInfo LogWimLibException(WimLibException e)

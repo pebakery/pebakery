@@ -109,7 +109,7 @@ namespace ManagedWimLib.Tests
             AppendProgress_Template("BootLZX.wim", true, WimLibAddFlags.BOOT);
         }
 
-        public WimLibProgressStatus AppendProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public WimLibCallbackStatus AppendProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -129,7 +129,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public void AppendProgress_Template(string wimFileName, bool delta, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)

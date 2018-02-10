@@ -99,7 +99,7 @@ namespace ManagedWimLib.Tests
             CaptureProgress_Template(WimLibCompressionType.LZMS, "LZMS.wim", WimLibAddFlags.WIMBOOT);
         }
 
-        public WimLibProgressStatus CaptureProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public WimLibCallbackStatus CaptureProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -119,7 +119,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public void CaptureProgress_Template(WimLibCompressionType compType, string wimFileName, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)

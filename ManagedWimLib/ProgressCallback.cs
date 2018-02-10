@@ -31,7 +31,7 @@ using System.Threading.Tasks;
 namespace ManagedWimLib
 {
     #region WimLibCallback delegate
-    public delegate WimLibProgressStatus WimLibCallback(WimLibProgressMsg msg, object info, object progctx);
+    public delegate WimLibCallbackStatus WimLibCallback(WimLibProgressMsg msg, object info, object progctx);
     #endregion
 
     #region ManagedWimLibCallback
@@ -51,7 +51,7 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
-        private WimLibProgressStatus NativeCallback(WimLibProgressMsg msgType, IntPtr info, IntPtr progctx)
+        private WimLibCallbackStatus NativeCallback(WimLibProgressMsg msgType, IntPtr info, IntPtr progctx)
         {
             object pInfo = null;
 
@@ -117,7 +117,7 @@ namespace ManagedWimLib
                     break;
                 default:
                     // Some messages only denotes Start and End, they do not have info structure.
-                    return WimLibProgressStatus.CONTINUE;
+                    return WimLibCallbackStatus.CONTINUE;
             }
 
             return _callback(msgType, pInfo, _userData);

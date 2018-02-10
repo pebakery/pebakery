@@ -6,12 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ManagedWimLib
-{
+{ 
     #region IterateDirTreeCallback
     /// <summary>
     /// Type of a callback function to wimlib_iterate_dir_tree().  Must return 0 on success.
     /// </summary>
-    public delegate int IterateDirTreeCallback(DirEntry dentry, object userData);
+    public delegate WimLibCallbackStatus IterateDirTreeCallback(DirEntry dentry, object userData);
 
     public class ManagedIterateDirTreeCallback
     {
@@ -29,7 +29,7 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
-        private int NativeCallback(DirEntry dentry, IntPtr user_ctx)
+        private WimLibCallbackStatus NativeCallback(DirEntry dentry, IntPtr user_ctx)
         {
             if (_callback != null)
                 return _callback(dentry, _userData);
@@ -43,7 +43,7 @@ namespace ManagedWimLib
     /// <summary>
     /// Type of a callback function to wimlib_iterate_lookup_table().  Must return 0 on success.
     /// </summary>
-    public delegate int IterateLookupTableCallback(ResourceEntry resoure, object user_ctx);
+    public delegate WimLibCallbackStatus IterateLookupTableCallback(ResourceEntry resoure, object user_ctx);
 
     public class ManagedIterateLookupTableCallback
     {
@@ -61,7 +61,7 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
-        private int NativeCallback(ResourceEntry resource, IntPtr user_ctx)
+        private WimLibCallbackStatus NativeCallback(ResourceEntry resource, IntPtr user_ctx)
         {
             if (_callback != null)
                 return _callback(resource, _userData);

@@ -78,7 +78,7 @@ namespace ManagedWimLib.Tests
             ApplyProgress_Template("BootXPRESS.wim");
         }
 
-        public WimLibProgressStatus ApplyProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public WimLibCallbackStatus ApplyProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -98,7 +98,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibProgressStatus.CONTINUE;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public void ApplyProgress_Template(string fileName)

@@ -3633,12 +3633,12 @@ namespace PEBakery.Core
                                     using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
                                     {
                                         bool isFile = false;
-                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        WimLibCallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
                                         {
                                             if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) == 0)
                                                 isFile = true;
 
-                                            return 0;
+                                            return WimLibCallbackStatus.CONTINUE;
                                         }
 
                                         try
@@ -3706,12 +3706,12 @@ namespace PEBakery.Core
                                     using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
                                     {
                                         bool isDir = false;
-                                        int WimExistFileCallback(DirEntry dentry, object userData)
+                                        WimLibCallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
                                         {
                                             if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) != 0)
                                                 isDir = true;
 
-                                            return 0;
+                                            return WimLibCallbackStatus.CONTINUE;
                                         }
 
                                         try
