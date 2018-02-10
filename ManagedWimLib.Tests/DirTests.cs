@@ -72,14 +72,14 @@ namespace ManagedWimLib.Tests
             return WimLibCallbackStatus.CONTINUE;
         }
 
-        public int IterateDirTree_Callback(DirEntry dentry, object userData)
+        public WimLibCallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
         {
             List<string> entries = userData as List<string>;
 
             entries.Add(dentry.FullPath);
             Console.WriteLine(dentry.FullPath);
 
-            return 0;
+            return WimLibCallbackStatus.CONTINUE;
         }
 
         public void DirProgress_Template(string fileName)
