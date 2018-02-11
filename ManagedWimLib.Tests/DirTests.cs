@@ -38,7 +38,7 @@ namespace ManagedWimLib.Tests
         // TODO: Enable unit test
         // Strange enough, Wim.IterateDirTree kills process because of FatalExecutionEngineError.
         // But that function works well in real apps, which is very confusing.
-        // [TestMethod]
+        [TestMethod]
         [TestCategory("WimLib")]
         public void DirProgress()
         {
@@ -47,29 +47,6 @@ namespace ManagedWimLib.Tests
             DirProgress_Template("LZMS.wim");
             DirProgress_Template("BootLZX.wim");
             DirProgress_Template("BootXPRESS.wim");
-        }
-
-        public WimLibCallbackStatus DirProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
-        {
-            CallbackTested tested = progctx as CallbackTested;
-            Assert.IsNotNull(tested);
-
-            switch (msg)
-            {
-                case WimLibProgressMsg.EXTRACT_STREAMS:
-                    { // Extract of one file
-                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
-                        Assert.IsNotNull(m);
-
-                        tested.Set();
-
-                        Console.WriteLine($"Extracting {m.WimFileName} ({m.CompletedBytes * 100 / m.TotalBytes}%)");
-                    }
-                    break;
-                default:
-                    break;
-            }
-            return WimLibCallbackStatus.CONTINUE;
         }
 
         public WimLibCallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
@@ -84,26 +61,15 @@ namespace ManagedWimLib.Tests
 
         public void DirProgress_Template(string fileName)
         {
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            try
-            {
-                CallbackTested tested = new CallbackTested(false);
-                List<string> entries = new List<string>();
+            List<string> entries = new List<string>();
 
-                string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT, DirProgress_Callback, tested))
-                {
-                    wim.IterateDirTree(1, @"\", WimLibIterateFlags.DEFAULT, IterateDirTree_Callback, entries);
-                }
-
-                Assert.IsTrue(tested.Value);
-                // TestHelper.CheckSrc01(destDir);
-            }
-            finally
+            string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
+            using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
             {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
+                wim.IterateDirTree(1, @"\", WimLibIterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
             }
+
+            TestHelper.CheckList_Src01(entries);
         }
         #endregion
     }

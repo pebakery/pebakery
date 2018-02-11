@@ -22,6 +22,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ManagedWimLib;
@@ -65,7 +66,7 @@ namespace ManagedWimLib.Tests
             return path;
         }
 
-        public static void CheckSrc01(string dir)
+        public static void CheckDir_Src01(string dir)
         {
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD")));
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD", "Z")));
@@ -98,7 +99,30 @@ namespace ManagedWimLib.Tests
             Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
         }
 
-        public static void CheckAppend01(string dir)
+        public static void CheckList_Src01(List<string> files)
+        {
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "Z"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABDE"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABDE", "Z"), StringComparer.Ordinal));
+
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ACDE.txt"), StringComparer.Ordinal));
+
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "A.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "B.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "C.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "D.ini"), StringComparer.Ordinal));
+
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "Z", "X.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABCD", "Z", "Y.ini"), StringComparer.Ordinal));
+
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABDE", "A.txt"), StringComparer.Ordinal));
+
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABDE", "Z", "X.txt"), StringComparer.Ordinal));
+            Assert.IsTrue(files.Contains(Path.Combine(@"\ABDE", "Z", "Y.ini"), StringComparer.Ordinal));
+        }
+
+        public static void CheckAppend_Src01(string dir)
         {
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));

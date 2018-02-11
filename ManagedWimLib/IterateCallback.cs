@@ -29,12 +29,16 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
-        private WimLibCallbackStatus NativeCallback(DirEntry dentry, IntPtr user_ctx)
+        private WimLibCallbackStatus NativeCallback(IntPtr entry_ptr, IntPtr user_ctx)
         {
+            WimLibCallbackStatus ret = WimLibCallbackStatus.CONTINUE;
             if (_callback != null)
-                return _callback(dentry, _userData);
-            else
-                return 0;
+            {
+                DirEntry dentry = (DirEntry)Marshal.PtrToStructure(entry_ptr, typeof(DirEntry));
+                ret = _callback(dentry, _userData);
+            }
+
+            return ret;
         }
     }
     #endregion
@@ -61,12 +65,16 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
-        private WimLibCallbackStatus NativeCallback(ResourceEntry resource, IntPtr user_ctx)
+        private WimLibCallbackStatus NativeCallback(IntPtr entry_ptr, IntPtr user_ctx)
         {
+            WimLibCallbackStatus ret = WimLibCallbackStatus.CONTINUE;
             if (_callback != null)
-                return _callback(resource, _userData);
-            else
-                return 0;
+            {
+                ResourceEntry resource = (ResourceEntry)Marshal.PtrToStructure(entry_ptr, typeof(ResourceEntry));
+                ret = _callback(resource, _userData);
+            }
+
+            return ret;
         }
     }
     #endregion

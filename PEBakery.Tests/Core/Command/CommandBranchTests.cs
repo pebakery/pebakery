@@ -351,7 +351,7 @@ namespace PEBakery.Tests.Core.Command
 
         // Disabled due to issue in MSTest
         #region WimExistFile
-        // [TestMethod]
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void Branch_IfWimExistFile()
@@ -380,7 +380,7 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region WimExistDir
-        // [TestMethod]
+        [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void Branch_IfWimExistDir()

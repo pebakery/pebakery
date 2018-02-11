@@ -491,7 +491,7 @@ namespace ManagedWimLib
         #region IterateDirTree, IterateLookupTable
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibCallbackStatus NativeIterateDirTreeCallback(
-            DirEntry dentry,
+            IntPtr dentry,
             IntPtr progctx);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
@@ -506,7 +506,7 @@ namespace ManagedWimLib
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibCallbackStatus NativeIterateLookupTableCallback(
-            ResourceEntry resoure,
+            IntPtr resoure,
             IntPtr progctx);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
@@ -631,7 +631,6 @@ namespace ManagedWimLib
         /// wimlib_extract_image_from_pipe().
         /// </summary>
         EXTRACT_IMAGE_BEGIN = 0,
-
         /// <summary>
         /// One or more file or directory trees within a WIM image is about to
         /// be extracted.  @p info will point to ::wimlib_progress_info.extract.
@@ -2012,6 +2011,16 @@ namespace ManagedWimLib
         /// </summary>
         public uint NumNamedStreams;
         /// <summary>
+        /// A unique identifier for this file's inode.  However, as a special
+        /// case, if the inode only has a single link (@p num_links == 1), this
+        /// value may be 0.
+        ///
+        /// Note: if a WIM image is captured from a filesystem, this value is not
+        /// guaranteed to be the same as the original number of the inode on the
+        /// filesystem.
+        /// </summary>
+        public ulong HardLinkGroupId;
+        /// <summary>
         /// Time this file was created.
         /// </summary>
         public DateTime CreationTime => CreationTimeVal.ToDateTime(CreationTimeHigh);
@@ -2056,7 +2065,6 @@ namespace ManagedWimLib
         /// <summary>
         /// The object ID of this file, if any.  Only valid if object_id.object_id is not all zeroes.
         /// </summary>
-        [MarshalAs(UnmanagedType.Struct)]
         public WimObjectId ObjectId;
         private int CreationTimeHigh;
         private int LastWriteTimeHigh;

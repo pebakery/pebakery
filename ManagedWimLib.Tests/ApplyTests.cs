@@ -56,7 +56,7 @@ namespace ManagedWimLib.Tests
                     wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
                 }
 
-                TestHelper.CheckSrc01(destDir);
+                TestHelper.CheckDir_Src01(destDir);
             }
             finally
             {
@@ -115,7 +115,7 @@ namespace ManagedWimLib.Tests
                 }
 
                 Assert.IsTrue(tested.Value);
-                TestHelper.CheckSrc01(destDir);
+                TestHelper.CheckDir_Src01(destDir);
             }
             finally
             {

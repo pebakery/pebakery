@@ -81,7 +81,7 @@ namespace ManagedWimLib.Tests
                     wim.ExtractImage(2, destDir, WimLibExtractFlags.DEFAULT);
                 }
 
-                TestHelper.CheckAppend01(destDir);
+                TestHelper.CheckAppend_Src01(destDir);
             }
             finally
             {
@@ -163,7 +163,7 @@ namespace ManagedWimLib.Tests
                 }
 
                 Assert.IsTrue(tested.Value);
-                TestHelper.CheckAppend01(destDir);
+                TestHelper.CheckAppend_Src01(destDir);
             }
             finally
             {
