@@ -1640,16 +1640,16 @@ namespace PEBakery.Core
                         return new CodeInfo_WimAppend(args[0], args[1], imageName, imageDesc, wimFlags, deltaFrom, boot, check, noAcl);
                     }
                 case CodeType.WimPathAdd:
-                    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD],[NOACL],[PRESERVE]
+                    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[NOACL],[PRESERVE],[REBUILD]
                         const int minArgCount = 4;
                         const int maxArgCount = 8;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
                         bool check = false;
-                        bool rebuild = false;
                         bool noAcl = false;
                         bool preserve = false;
+                        bool rebuild = false;
 
                         for (int i = minArgCount; i < args.Count; i++)
                         {
@@ -1659,12 +1659,6 @@ namespace PEBakery.Core
                                 if (check)
                                     throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
                                 check = true;
-                            }
-                            else if (arg.Equals("REBUILD", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (rebuild)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
-                                rebuild = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1678,13 +1672,19 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
                                 preserve = true;
                             }
+                            else if (arg.Equals("REBUILD", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (rebuild)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                rebuild = true;
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_WimPathAdd(args[0], args[1], args[2], args[3], check, rebuild, noAcl, preserve);
+                        return new CodeInfo_WimPathAdd(args[0], args[1], args[2], args[3], check, noAcl, preserve, rebuild);
                     }
                 case CodeType.WimPathDelete:
                     { // WimPathDelete,<WimFile>,<ImageIndex>,<Path>,[CHECK],[REBUILD]
