@@ -480,9 +480,7 @@ namespace ManagedWimLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_reference_resource_files(
             IntPtr wim,
-            // Surprisingly, using this explicit MarshalAs throws SEHException.
-            // [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)]
-            string[] resource_wimfiles_or_globs,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] resource_wimfiles_or_globs,
             uint count,
             WimLibReferenceFlags ref_flags,
             WimLibOpenFlags open_flags);
@@ -490,12 +488,12 @@ namespace ManagedWimLib
         #endregion
 
         #region IterateDirTree, IterateLookupTable
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibCallbackStatus NativeIterateDirTreeCallback(
             DirEntry dentry,
             IntPtr progctx);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_iterate_dir_tree(
             IntPtr wim,
             int image,
@@ -505,12 +503,12 @@ namespace ManagedWimLib
             IntPtr user_ctx);
         internal static wimlib_iterate_dir_tree IterateDirTree;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibCallbackStatus NativeIterateLookupTableCallback(
             ResourceEntry resoure,
             IntPtr progctx);
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_iterate_lookup_table(
             IntPtr wim,
             int image,
@@ -1965,8 +1963,8 @@ namespace ManagedWimLib
         /// <summary>
         /// Depth of this directory entry, where 0 is the root, 1 is the root's children, ..., etc.
         /// </summary>
-        public ulong Depth => (ulong)DepthVal.ToInt64();
-        private IntPtr DepthVal; // size_t
+        public ulong Depth => DepthVal.ToUInt64();
+        private UIntPtr DepthVal; // size_t
         /// <summary>
         /// Pointer to the security descriptor for this file, in Windows 
         /// SECURITY_DESCRIPTOR_RELATIVE format, or NULL if this file has no
@@ -1977,7 +1975,7 @@ namespace ManagedWimLib
             get
             {
                 byte[] buf = new byte[SecurityDescriptorSize];
-                Marshal.Copy(SecurityDescriptorPtr, buf, 0, SecurityDescriptorSizeVal.ToInt32());
+                Marshal.Copy(SecurityDescriptorPtr, buf, 0, (int)SecurityDescriptorSizeVal.ToUInt32());
                 return buf;
             }
         }
@@ -1985,8 +1983,8 @@ namespace ManagedWimLib
         /// <summary>
         /// Size of the above security descriptor, in bytes. 
         /// </summary>
-        public ulong SecurityDescriptorSize => (ulong)SecurityDescriptorSizeVal.ToInt64();
-        private IntPtr SecurityDescriptorSizeVal; // size_t
+        public ulong SecurityDescriptorSize => SecurityDescriptorSizeVal.ToUInt64();
+        private UIntPtr SecurityDescriptorSizeVal; // size_t
         /// <summary>
         /// File attributes, such as whether the file is a directory or not.
         /// These are the "standard" Windows FILE_ATTRIBUTE_* values, although in
@@ -2057,6 +2055,7 @@ namespace ManagedWimLib
         /// <summary>
         /// The object ID of this file, if any.  Only valid if object_id.object_id is not all zeroes.
         /// </summary>
+        [MarshalAs(UnmanagedType.Struct)]
         public WimObjectId ObjectId;
         private int CreationTimeHigh;
         private int LastWriteTimeHigh;

@@ -349,10 +349,9 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        /*
         // Disabled due to issue in MSTest
         #region WimExistFile
-        [TestMethod]
+        // [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void Branch_IfWimExistFile()
@@ -381,7 +380,7 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region WimExistDir
-        [TestMethod]
+        // [TestMethod]
         [TestCategory("Command")]
         [TestCategory("CommandBranch")]
         public void Branch_IfWimExistDir()
@@ -408,7 +407,7 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
         }
         #endregion
-    */
+
         #region Equal, NotEqual (!=)
         [TestMethod]
         [TestCategory("Command")]
