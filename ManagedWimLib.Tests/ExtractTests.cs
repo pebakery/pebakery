@@ -45,11 +45,12 @@ namespace ManagedWimLib.Tests
             ExtractPath_Template("LZMS.wim", @"\ABDE\Z\Y.ini");
             ExtractPath_Template("BootXPRESS.wim", @"\?CDE.txt");
             ExtractPath_Template("BootLZX.wim", @"\ACDE.txt");
+            ExtractPath_Template("Split.swm", @"\가", "Split*.swm");
         }
 
-        public void ExtractPath_Template(string fileName, string path)
+        public void ExtractPath_Template(string fileName, string path, string split = null)
         {
-            ExtractPaths_Template(fileName, new string[] { path });
+            ExtractPaths_Template(fileName, new string[] { path }, split);
         }
 
         [TestMethod]
@@ -64,14 +65,21 @@ namespace ManagedWimLib.Tests
             ExtractPaths_Template("BootLZX.wim", paths);
         }
 
-        public void ExtractPaths_Template(string fileName, string[] paths)
+        public void ExtractPaths_Template(string fileName, string[] paths, string split = null)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
+                string srcDir = Path.Combine(TestSetup.BaseDir, "Samples");
+                string wimFile = Path.Combine(srcDir, fileName);
                 using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
                 {
+                    if (split != null)
+                    {
+                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                        wim.ReferenceResourceFile(Path.Combine(srcDir, split), refFlags, WimLibOpenFlags.DEFAULT);
+                    }
+
                     wim.ExtractPaths(1, destDir, paths, WimLibExtractFlags.GLOB_PATHS);
                 }
 

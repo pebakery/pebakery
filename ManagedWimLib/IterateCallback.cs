@@ -55,7 +55,7 @@ namespace ManagedWimLib
         private readonly object _userData;
 
         internal WimLibNative.NativeIterateLookupTableCallback NativeFunc { get; private set; }
-
+        
         public ManagedIterateLookupTableCallback(IterateLookupTableCallback callback, object userData)
         {
             _callback = callback;

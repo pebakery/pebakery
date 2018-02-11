@@ -1408,7 +1408,7 @@ namespace PEBakery.Core
                         return new CodeInfo_WimApply(args[0], args[1], args[2], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtract:
-                    { // WimExtract,<SrcWim>,<ImageIndex>,<DestDir>,<ExtractPath>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
+                    { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 4;
                         const int maxArgCount = 7;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1457,7 +1457,7 @@ namespace PEBakery.Core
                         return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtractBulk:
-                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<DestDir>,<ListFile>,[CHECK],[NOACL],[NOATTRIB]
+                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
                         const int minArgCount = 4;
                         const int maxArgCount = 7;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))

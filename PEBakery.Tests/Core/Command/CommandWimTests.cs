@@ -83,7 +83,7 @@ namespace PEBakery.Tests.Core.Command
                 EngineTests.Eval(s, rawCode, CodeType.WimApply, check);
                 if (check == ErrorCheck.Success)
                 {
-                    CheckWimSrc01(destDir);
+                    CheckDir_Src01(destDir);
                 }
             }
             finally
@@ -91,6 +91,170 @@ namespace PEBakery.Tests.Core.Command
                 if (Directory.Exists(destDir))
                     Directory.Delete(destDir, true);
             }        
+        }
+        #endregion
+
+        #region WimExtract
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimExtract()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\XPRESS.wim,1,\ACDE.txt,{pbDestDir}", destDir, new string[] { "ACDE.txt" });
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\ABCD\Z,{pbDestDir}", destDir, new string[]
+            {
+                Path.Combine("Z", "X.txt"),
+                Path.Combine("Z", "Y.ini"),
+            });
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZMS.wim,1,\ABCD\*.txt,{pbDestDir}", destDir, new string[]
+            {
+                "A.txt",
+                "B.txt",
+                "C.txt",
+            });
+
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\BootXPRESS.wim,1,\ABDE\A.txt,{pbDestDir},NOATTRIB", destDir, new string[] 
+            {
+                "A.txt",
+            });
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\BootLZX.wim,1,\ABDE\A.txt,{pbDestDir},CHECK,NOATTRIB", destDir, new string[]
+            {
+                "A.txt",
+            });
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\BootLZX.wim,1,\ABDE\A.txt,{pbDestDir},CHECK,NOACL,NOATTRIB", destDir, new string[]
+            {
+                "A.txt",
+            });
+
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", destDir, new string[0]);
+
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\Split.swm,1,\나,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
+            { // Unicode test with Korean letter
+                "나",
+            });
+
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\ACDE.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+        }
+
+        public void Extract_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
+        {
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                EngineTests.Eval(s, rawCode, CodeType.WimExtract, check);
+                if (check == ErrorCheck.Success)
+                {
+                    if (compFiles.Length == 0)
+                    {
+                        DirectoryInfo di = new DirectoryInfo(destDir);
+                        Assert.IsTrue(di.GetFiles().Length == 0);
+                    }
+                    else
+                    {
+                        foreach (string f in compFiles)
+                            Assert.IsTrue(File.Exists(Path.Combine(destDir, f)));
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+        #endregion
+
+        #region WimExtractBulk
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimExtractBulk()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[] { "ACDE.txt" });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                Path.Combine("ABCD", "Z", "X.txt"),
+                Path.Combine("ABCD", "Z", "Y.ini"),
+            });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZMS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                Path.Combine("ABCD", "A.txt"),
+                Path.Combine("ABCD", "B.txt"),
+                Path.Combine("ABCD", "C.txt"),
+            });
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\BootXPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},NOATTRIB", destDir, new string[]
+            {
+                Path.Combine("ABDE", "A.txt"),
+            });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\BootLZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOATTRIB", destDir, new string[]
+            {
+                Path.Combine("ABDE", "A.txt"),
+            });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\BootLZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOACL,NOATTRIB", destDir, new string[]
+            {
+                Path.Combine("ABDE", "A.txt"),
+            });
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\Split.swm,1,{pbDestDir}\ListFile.txt,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
+            { // Unicode test with Korean letter
+                "나",
+            });
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,2,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+        }
+
+        public void ExtractBulk_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
+        {
+            Directory.CreateDirectory(destDir);
+            string listFile = Path.Combine(destDir, "ListFile.txt");
+            try
+            {
+                if (compFiles != null)
+                {
+                    using (StreamWriter w = new StreamWriter(listFile, false, Encoding.Unicode))
+                    {
+                        for (int i = 0; i < compFiles.Length; i++)
+                            w.WriteLine(@"\" + compFiles[i]);
+                    }
+                }
+
+                EngineTests.Eval(s, rawCode, CodeType.WimExtractBulk, check);
+                if (check == ErrorCheck.Success)
+                {
+                    if (compFiles.Length == 0)
+                    {
+                        DirectoryInfo di = new DirectoryInfo(destDir);
+                        Assert.IsTrue(di.GetFiles().Length == 1); // 1 for listfile
+                    }
+                    else
+                    {
+                        foreach (string f in compFiles)
+                            Assert.IsTrue(File.Exists(Path.Combine(destDir, f)));
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+                if (File.Exists(listFile))
+                    File.Delete(listFile);
+            }
         }
         #endregion
 
@@ -150,7 +314,7 @@ namespace PEBakery.Tests.Core.Command
                         wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
                     }
 
-                    CheckWimSrc01(destDir);
+                    CheckDir_Src01(destDir);
                 }
             }
             finally
@@ -163,20 +327,26 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region WimUpdateAdd
+        #region WimAppend
         #endregion
 
-        #region WimUpdateDelete
+        #region WimDelete
         #endregion
 
-        #region WimUpdateRename
+        #region WimPathAdd
+        #endregion
+
+        #region WimPathDelete
+        #endregion
+
+        #region WimPathRename
         #endregion
 
         #region WimOptimize
         #endregion
 
         #region Utility
-        public static void CheckWimSrc01(string dir)
+        public static void CheckDir_Src01(string dir)
         {
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD")));
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD", "Z")));

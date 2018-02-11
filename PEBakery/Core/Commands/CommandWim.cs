@@ -444,8 +444,15 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
-                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        try
+                        {
+                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        }
+                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        {
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                        }
                     }
 
                     // Apply to disk
@@ -557,8 +564,7 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX |
-                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB |
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | WimLibExtractFlags.GLOB_PATHS | 
                 WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
                 openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
@@ -584,8 +590,15 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
-                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        try
+                        {
+                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        }
+                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        {
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                        }
                     }
 
                     // Extract file(s)
@@ -596,6 +609,7 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
+                        // Ignore GLOB_HAD_NO_MATCHES
                         wim.ExtractPath(imageIndex, destDir, extractPath, extractFlags);
 
                         logs.Add(new LogInfo(LogState.Success, $"Extracted [{extractPath}] to [{destDir}] from [{srcWim}:{imageIndex}]"));
@@ -643,8 +657,7 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX |
-                WimLibExtractFlags.GLOB_PATHS | WimLibExtractFlags.STRICT_GLOB;
+            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | WimLibExtractFlags.GLOB_PATHS;
             if (info.CheckFlag)
                 openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
@@ -683,8 +696,15 @@ namespace PEBakery.Core.Commands
                     {
                         string splitWim = StringEscaper.Preprocess(s, info.Split);
 
-                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
-                        wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        try
+                        {
+                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
+                        }
+                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        {
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                        }
                     }
 
                     // Extract file(s)
@@ -695,10 +715,12 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
+                        // Ignore GLOB_HAD_NO_MATCHES
                         wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
 
                         logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
                     }
+                    // catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES) { }
                     finally
                     { // Finalize Command Progress Report
                         s.MainViewModel.BuildCommandProgressShow = false;

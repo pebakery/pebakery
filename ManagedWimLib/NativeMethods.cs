@@ -61,8 +61,9 @@ namespace ManagedWimLib
     #region PinnedObject, PinnedArray
     internal class PinnedObject : IDisposable
     {
-        internal GCHandle hObject;
-        internal object _object;
+        private GCHandle hObject;
+        private object _object;
+        public IntPtr Ptr => hObject.AddrOfPinnedObject();
 
         public PinnedObject(object _object)
         {
@@ -72,39 +73,58 @@ namespace ManagedWimLib
 
         ~PinnedObject()
         {
-            hObject.Free();
+            Dispose(false);
         }
 
         public void Dispose()
         {
-            hObject.Free();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (hObject.IsAllocated)
+                    hObject.Free();
+            }
         }
     }
 
     internal class PinnedArray : IDisposable
     {
-        internal GCHandle hBuffer;
-        internal Array buffer;
+        private GCHandle hArray;
+        public Array Array;
+        public IntPtr Ptr => hArray.AddrOfPinnedObject();
 
-        public IntPtr this[int idx] => Marshal.UnsafeAddrOfPinnedArrayElement(buffer, idx);
+        public IntPtr this[int idx] => Marshal.UnsafeAddrOfPinnedArrayElement(Array, idx);
         public static implicit operator IntPtr(PinnedArray fixedArray) => fixedArray[0];
 
-        public PinnedArray(Array buffer)
+        public PinnedArray(Array array)
         {
-            this.buffer = buffer;
-            hBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            this.Array = array;
+            hArray = GCHandle.Alloc(array, GCHandleType.Pinned);
         }
 
         ~PinnedArray()
         {
-            hBuffer.Free();
+            Dispose(false);
         }
 
         public void Dispose()
         {
-            hBuffer.Free();
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (hArray.IsAllocated)
+                    hArray.Free();
+            }
         }
     }
     #endregion
@@ -477,7 +497,7 @@ namespace ManagedWimLib
             int flags);
         internal static wimlib_reference_template_image ReferenceTemplateImage;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_reference_resource_files(
             IntPtr wim,
             // [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] resource_wimfiles_or_globs,

@@ -837,19 +837,23 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceResourceFile(string resourceWimFile, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
-            //WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
-            // WimLibException.CheckWimLibError(ret);
-
-            IntPtr strPtr = Marshal.StringToHGlobalUni(resourceWimFile);
-
-            try
+            /*
+            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
+            WimLibException.CheckWimLibError(ret);
+            */
+            
+            IntPtr[] arr = new IntPtr[1] { Marshal.StringToHGlobalUni(resourceWimFile) };
+            using (PinnedArray pinned = new PinnedArray(arr))
             {
-                WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new IntPtr[1] { strPtr }, 1u, refFlags, openFlags);
-                WimLibException.CheckWimLibError(ret);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(strPtr);
+                try
+                {
+                    WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, arr, 1u, refFlags, openFlags);
+                    WimLibException.CheckWimLibError(ret);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(arr[0]);
+                }
             }
         }
 
@@ -880,19 +884,28 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
-            List<IntPtr> arr = new List<IntPtr>(resourceWimFiles.Count());
-            foreach (string f in resourceWimFiles)
-                arr.Add(Marshal.StringToHGlobalUni(f));
+            /*
+            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
+            WimLibException.CheckWimLibError(ret);
+            */
 
-            try
+            string[] strArr = resourceWimFiles.ToArray();
+            IntPtr[] ptrArr = new IntPtr[strArr.Length];
+            for (int i = 0; i < strArr.Length; i++)
+                ptrArr[i] = Marshal.StringToHGlobalUni(strArr[i]);
+
+            using (PinnedArray pinned = new PinnedArray(ptrArr))
             {
-                WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, arr.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
-                WimLibException.CheckWimLibError(ret);
-            }
-            finally
-            {
-                for (int i = 0; i < arr.Count; i++)
-                    Marshal.FreeHGlobal(arr[i]);
+                try
+                {
+                    WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, ptrArr, (uint)ptrArr.Length, refFlags, openFlags);
+                    WimLibException.CheckWimLibError(ret);
+                }
+                finally
+                {
+                    for (int i = 0; i < ptrArr.Length; i++)
+                        Marshal.FreeHGlobal(ptrArr[i]);
+                }
             }
         }
         #endregion
