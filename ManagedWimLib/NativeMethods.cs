@@ -477,10 +477,11 @@ namespace ManagedWimLib
             int flags);
         internal static wimlib_reference_template_image ReferenceTemplateImage;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate WimLibErrorCode wimlib_reference_resource_files(
             IntPtr wim,
-            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] resource_wimfiles_or_globs,
+            // [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] resource_wimfiles_or_globs,
+            [MarshalAs(UnmanagedType.LPArray)] IntPtr[] resource_wimfiles_or_globs,
             uint count,
             WimLibReferenceFlags ref_flags,
             WimLibOpenFlags open_flags);

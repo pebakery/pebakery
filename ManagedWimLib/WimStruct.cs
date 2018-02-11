@@ -837,8 +837,20 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceResourceFile(string resourceWimFile, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
-            WimLibException.CheckWimLibError(ret);
+            //WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
+            // WimLibException.CheckWimLibError(ret);
+
+            IntPtr strPtr = Marshal.StringToHGlobalUni(resourceWimFile);
+
+            try
+            {
+                WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new IntPtr[1] { strPtr }, 1u, refFlags, openFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(strPtr);
+            }
         }
 
         /// <summary>
@@ -868,8 +880,20 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
-            WimLibException.CheckWimLibError(ret);
+            List<IntPtr> arr = new List<IntPtr>(resourceWimFiles.Count());
+            foreach (string f in resourceWimFiles)
+                arr.Add(Marshal.StringToHGlobalUni(f));
+
+            try
+            {
+                WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, arr.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            finally
+            {
+                for (int i = 0; i < arr.Count; i++)
+                    Marshal.FreeHGlobal(arr[i]);
+            }
         }
         #endregion
 
