@@ -2944,21 +2944,21 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimPathAdd : CodeInfo
-    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD],[NOACL],[PRESERVE]
+    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[NOACL],[PRESERVE],[REBUILD]
         // Note : If <SrcPath> is a file, <DestPath> must be a file. If <SrcPath> is a dir, <DestPath> must be a dir.
         //        It is different from standard PEBakery dest path convention, because it follows wimlib-imagex update convention.
         public string WimFile;
         public string ImageIndex;
         public string SrcPath;
         public string DestPath;
-        public bool RebuildFlag;
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool PreserveFlag;
+        public bool RebuildFlag;
 
         public CodeInfo_WimPathAdd(string wimFile, string imageIndex,
             string srcPath, string destPath,
-            bool rebuildFlag, bool checkFlag, bool noAclFlag, bool preserveFlag)
+            bool checkFlag, bool noAclFlag, bool preserveFlag, bool rebuildFlag)
         {
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
@@ -2969,10 +2969,10 @@ namespace PEBakery.Core
             DestPath = destPath;
 
             // Optional Flags
-            RebuildFlag = rebuildFlag;
             CheckFlag = checkFlag;
             NoAclFlag = noAclFlag;
             PreserveFlag = preserveFlag;
+            RebuildFlag = rebuildFlag;
         }
 
         public override string ToString()
@@ -2987,12 +2987,12 @@ namespace PEBakery.Core
             b.Append(DestPath);
             if (CheckFlag)
                 b.Append(",CHECK");
-            if (RebuildFlag)
-                b.Append(",REBUILD");
             if (CheckFlag)
                 b.Append(",NOACL");
             if (CheckFlag)
                 b.Append(",PRESERVE");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
             return b.ToString();
         }
     }
@@ -3003,10 +3003,10 @@ namespace PEBakery.Core
         public string WimFile;
         public string ImageIndex;
         public string Path;
-        public bool RebuildFlag;
         public bool CheckFlag;
+        public bool RebuildFlag;
 
-        public CodeInfo_WimPathDelete(string wimFile, string imageIndex, string path, bool rebuildFlag, bool checkFlag)
+        public CodeInfo_WimPathDelete(string wimFile, string imageIndex, string path, bool checkFlag, bool rebuildFlag)
         {
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
@@ -3016,8 +3016,8 @@ namespace PEBakery.Core
             Path = path;
 
             // Optional Flags
-            RebuildFlag = rebuildFlag;
             CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
         }
 
         public override string ToString()
@@ -3043,10 +3043,10 @@ namespace PEBakery.Core
         public string ImageIndex;
         public string SrcPath;
         public string DestPath;
-        public bool RebuildFlag;
         public bool CheckFlag;
+        public bool RebuildFlag;
 
-        public CodeInfo_WimPathRename(string wimFile, string imageIndex, string srcPath, string destPath, bool rebuildFlag, bool checkFlag)
+        public CodeInfo_WimPathRename(string wimFile, string imageIndex, string srcPath, string destPath, bool checkFlag, bool rebuildFlag)
         {
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
@@ -3057,8 +3057,8 @@ namespace PEBakery.Core
             DestPath = destPath;
 
             // Optional Flags
-            RebuildFlag = rebuildFlag;
             CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
         }
 
         public override string ToString()
