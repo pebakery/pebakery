@@ -41,9 +41,9 @@ namespace ManagedWimLib.Tests
             BaseDir = Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", "..");
 
             if (IntPtr.Size == 8)
-                WimLibNative.AssemblyInit(Path.Combine("x64", "libwim-15.dll"));
+                NativeMethods.AssemblyInit(Path.Combine("x64", "libwim-15.dll"));
             else if (IntPtr.Size == 4)
-                WimLibNative.AssemblyInit(Path.Combine("x86", "libwim-15.dll"));
+                NativeMethods.AssemblyInit(Path.Combine("x86", "libwim-15.dll"));
             else
                 throw new PlatformNotSupportedException();
         }
@@ -51,7 +51,7 @@ namespace ManagedWimLib.Tests
         [AssemblyCleanup]
         public static void Cleanup()
         {
-            WimLibNative.AssemblyCleanup();
+            NativeMethods.AssemblyCleanup();
         }
     }
 

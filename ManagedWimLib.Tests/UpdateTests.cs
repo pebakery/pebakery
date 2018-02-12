@@ -56,14 +56,14 @@ namespace ManagedWimLib.Tests
 
             RunUpdateTest("XPRESS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, WimLibAddFlags.DEFAULT),
-                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, WimLibAddFlags.DEFAULT),
+                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
+                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
             });
 
             RunUpdateTest("LZX.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Delete("ACDE.txt", WimLibDeleteFlags.DEFAULT),
-                UpdateCommand.Delete("ABCD", WimLibDeleteFlags.RECURSIVE),
+                UpdateCommand.Delete("ACDE.txt", DeleteFlags.DEFAULT),
+                UpdateCommand.Delete("ABCD", DeleteFlags.RECURSIVE),
             });
 
             RunUpdateTest("LZMS.wim", new UpdateCommand[2]
@@ -73,13 +73,13 @@ namespace ManagedWimLib.Tests
             });
         }
 
-        public WimLibCallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
+        public CallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
         {
             List<string> entries = userData as List<string>;
 
             entries.Add(dentry.FullPath);
 
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         public void Update_Template(string fileName, UpdateCommand[] cmds)
@@ -93,36 +93,36 @@ namespace ManagedWimLib.Tests
                 string destWimFile = Path.Combine(destDir, fileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.WRITE_ACCESS))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.WRITE_ACCESS))
                 {
-                    wim.UpdateImage(1, cmds, WimLibUpdateFlags.SEND_PROGRESS);
+                    wim.UpdateImage(1, cmds, UpdateFlags.SEND_PROGRESS);
 
-                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 List<string> entries = new List<string>();
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
                 {
-                    wim.IterateDirTree(1, @"\", WimLibIterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
+                    wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
                 }
 
                 foreach (UpdateCommand cmd in cmds)
                 {
                     switch (cmd.Op)
                     {
-                        case WimLibUpdateOp.ADD:
+                        case UpdateOp.ADD:
                             {
                                 var add = cmd.AddCommand;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", add.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
-                        case WimLibUpdateOp.DELETE:
+                        case UpdateOp.DELETE:
                             {
                                 var del = cmd.DeleteCommand;
                                 Assert.IsFalse(entries.Contains(Path.Combine(@"\", del.WimPath), StringComparer.Ordinal));
                             }
                             break;
-                        case WimLibUpdateOp.RENAME:
+                        case UpdateOp.RENAME:
                             {
                                 var ren = cmd.RenameCommand;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", ren.WimTargetPath), StringComparer.Ordinal));
@@ -161,14 +161,14 @@ namespace ManagedWimLib.Tests
 
             RunUpdateTest("XPRESS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, WimLibAddFlags.DEFAULT),
-                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, WimLibAddFlags.DEFAULT),
+                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
+                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
             });
 
             RunUpdateTest("LZX.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Delete("ACDE.txt", WimLibDeleteFlags.DEFAULT),
-                UpdateCommand.Delete("ABCD", WimLibDeleteFlags.RECURSIVE),
+                UpdateCommand.Delete("ACDE.txt", DeleteFlags.DEFAULT),
+                UpdateCommand.Delete("ABCD", DeleteFlags.RECURSIVE),
             });
 
             RunUpdateTest("LZMS.wim", new UpdateCommand[2]
@@ -178,7 +178,7 @@ namespace ManagedWimLib.Tests
             });
         }
 
-        public WimLibCallbackStatus UpdateProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public CallbackStatus UpdateProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
@@ -186,8 +186,8 @@ namespace ManagedWimLib.Tests
             Console.WriteLine(msg);
             switch (msg)
             {
-                case WimLibProgressMsg.UPDATE_BEGIN_COMMAND:
-                case WimLibProgressMsg.UPDATE_END_COMMAND:
+                case ProgressMsg.UPDATE_BEGIN_COMMAND:
+                case ProgressMsg.UPDATE_END_COMMAND:
                     {
                         WimLibProgressInfo_Update m = (WimLibProgressInfo_Update)info;
 
@@ -197,19 +197,19 @@ namespace ManagedWimLib.Tests
                         UpdateCommand cmd = m.Command;
                         switch (cmd.Op)
                         {
-                            case WimLibUpdateOp.ADD:
+                            case UpdateOp.ADD:
                                 {
                                     var add = cmd.AddCommand;
                                     Console.WriteLine($"ADD [{add.FsSourcePath}] -> [{add.WimTargetPath}]");
                                 }
                                 break;
-                            case WimLibUpdateOp.DELETE:
+                            case UpdateOp.DELETE:
                                 {
                                     var del = cmd.DeleteCommand;
                                     Console.WriteLine($"DELETE [{del.WimPath}]");
                                 }
                                 break;
-                            case WimLibUpdateOp.RENAME:
+                            case UpdateOp.RENAME:
                                 {
                                     var ren = cmd.RenameCommand;
                                     Console.WriteLine($"RENAME [{ren.WimSourcePath}] -> [{ren.WimTargetPath}]");
@@ -221,7 +221,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         public void UpdateProgress_Template(string fileName, UpdateCommand[] cmds)
@@ -236,17 +236,17 @@ namespace ManagedWimLib.Tests
                 string destWimFile = Path.Combine(destDir, fileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.WRITE_ACCESS, UpdateProgress_Callback, tested))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.WRITE_ACCESS, UpdateProgress_Callback, tested))
                 {
-                    wim.UpdateImage(1, cmds, WimLibUpdateFlags.SEND_PROGRESS);
+                    wim.UpdateImage(1, cmds, UpdateFlags.SEND_PROGRESS);
 
-                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 List<string> entries = new List<string>();
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
                 {
-                    wim.IterateDirTree(1, @"\", WimLibIterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
+                    wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
                 }
 
                 Assert.IsTrue(tested.Value);
@@ -254,19 +254,19 @@ namespace ManagedWimLib.Tests
                 {
                     switch (cmd.Op)
                     {
-                        case WimLibUpdateOp.ADD:
+                        case UpdateOp.ADD:
                             {
                                 var add = cmd.AddCommand;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", add.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
-                        case WimLibUpdateOp.DELETE:
+                        case UpdateOp.DELETE:
                             {
                                 var del = cmd.DeleteCommand;
                                 Assert.IsFalse(entries.Contains(Path.Combine(@"\", del.WimPath), StringComparer.Ordinal));
                             }
                             break;
-                        case WimLibUpdateOp.RENAME:
+                        case UpdateOp.RENAME:
                             {
                                 var ren = cmd.RenameCommand;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", ren.WimTargetPath), StringComparer.Ordinal));

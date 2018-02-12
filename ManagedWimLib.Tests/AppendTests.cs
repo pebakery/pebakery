@@ -43,17 +43,17 @@ namespace ManagedWimLib.Tests
             Append_Template("XPRESS.wim", false);
             Append_Template("LZX.wim", false);
             Append_Template("LZMS.wim", false);
-            Append_Template("XPRESS.wim", false, WimLibAddFlags.BOOT);
-            Append_Template("BootLZX.wim", false, WimLibAddFlags.BOOT);
+            Append_Template("XPRESS.wim", false, AddFlags.BOOT);
+            Append_Template("BootLZX.wim", false, AddFlags.BOOT);
 
             Append_Template("XPRESS.wim", true);
             Append_Template("LZX.wim", true);
             Append_Template("LZMS.wim", true);
-            Append_Template("XPRESS.wim", true, WimLibAddFlags.BOOT);
-            Append_Template("BootLZX.wim", true, WimLibAddFlags.BOOT);
+            Append_Template("XPRESS.wim", true, AddFlags.BOOT);
+            Append_Template("BootLZX.wim", true, AddFlags.BOOT);
         }
 
-        public void Append_Template(string wimFileName, bool delta, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)
+        public void Append_Template(string wimFileName, bool delta, AddFlags addFlags = AddFlags.DEFAULT)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -65,20 +65,20 @@ namespace ManagedWimLib.Tests
                 string destWimFile = Path.Combine(destDir, wimFileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.WRITE_ACCESS))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.WRITE_ACCESS))
                 {
                     wim.AddImage(srcDir, "AppendTest", null, addFlags);
 
                     if (delta)
                         wim.ReferenceTemplateImage(2, 1);
 
-                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractImage(2, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(2, destDir, ExtractFlags.DEFAULT);
                 }
 
                 TestHelper.CheckAppend_Src01(destDir);
@@ -99,24 +99,24 @@ namespace ManagedWimLib.Tests
             AppendProgress_Template("XPRESS.wim", false);
             AppendProgress_Template("LZX.wim", false);
             AppendProgress_Template("LZMS.wim", false);
-            AppendProgress_Template("XPRESS.wim", false, WimLibAddFlags.BOOT);
-            AppendProgress_Template("BootLZX.wim", false, WimLibAddFlags.BOOT);
+            AppendProgress_Template("XPRESS.wim", false, AddFlags.BOOT);
+            AppendProgress_Template("BootLZX.wim", false, AddFlags.BOOT);
 
             AppendProgress_Template("XPRESS.wim", true);
             AppendProgress_Template("LZX.wim", true);
             AppendProgress_Template("LZMS.wim", true);
-            AppendProgress_Template("XPRESS.wim", true, WimLibAddFlags.BOOT);
-            AppendProgress_Template("BootLZX.wim", true, WimLibAddFlags.BOOT);
+            AppendProgress_Template("XPRESS.wim", true, AddFlags.BOOT);
+            AppendProgress_Template("BootLZX.wim", true, AddFlags.BOOT);
         }
 
-        public WimLibCallbackStatus AppendProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public CallbackStatus AppendProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
 
             switch (msg)
             {
-                case WimLibProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WRITE_STREAMS:
                     { // Extract of one file
                         WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
                         Assert.IsNotNull(m);
@@ -129,10 +129,10 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
-        public void AppendProgress_Template(string wimFileName, bool delta, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)
+        public void AppendProgress_Template(string wimFileName, bool delta, AddFlags addFlags = AddFlags.DEFAULT)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -145,7 +145,7 @@ namespace ManagedWimLib.Tests
                 string destWimFile = Path.Combine(destDir, wimFileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.WRITE_ACCESS))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.WRITE_ACCESS))
                 {
                     wim.RegisterCallback(AppendProgress_Callback, tested);
                     wim.AddImage(srcDir, "AppendTest", null, addFlags);
@@ -153,13 +153,13 @@ namespace ManagedWimLib.Tests
                     if (delta)
                         wim.ReferenceTemplateImage(2, 1);
 
-                    wim.Overwrite(WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured
-                using (Wim wim = Wim.OpenWim(destWimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractImage(2, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(2, destDir, ExtractFlags.DEFAULT);
                 }
 
                 Assert.IsTrue(tested.Value);

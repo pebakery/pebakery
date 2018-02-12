@@ -642,7 +642,7 @@ namespace PEBakery.Core.Commands
                                 {
                                     try
                                     {
-                                        using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                                         {
                                             WimInfo wi = wim.GetWimInfo();
                                             if (imageIndex <= wi.ImageCount)
@@ -687,20 +687,20 @@ namespace PEBakery.Core.Commands
                                 {
                                     try
                                     {
-                                        using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                                         {
                                             bool isFile = false;
-                                            WimLibCallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
+                                            CallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
                                             {
-                                                if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) == 0)
+                                                if ((dentry.Attributes & FileAttribute.DIRECTORY) == 0)
                                                     isFile = true;
 
-                                                return WimLibCallbackStatus.CONTINUE;
+                                                return CallbackStatus.CONTINUE;
                                             }
 
                                             try
                                             {
-                                                wim.IterateDirTree(imageIndex, filePath, WimLibIterateFlags.DEFAULT, WimExistFileCallback, null);
+                                                wim.IterateDirTree(imageIndex, filePath, IterateFlags.DEFAULT, WimExistFileCallback, null);
 
                                                 if (isFile)
                                                 {
@@ -716,10 +716,10 @@ namespace PEBakery.Core.Commands
                                             {
                                                 switch (e.ErrorCode)
                                                 {
-                                                    case WimLibErrorCode.INVALID_IMAGE:
+                                                    case ErrorCode.INVALID_IMAGE:
                                                         logMessage = $"File [{filePath}] does not have image index [{imageIndex}]";
                                                         break;
-                                                    case WimLibErrorCode.PATH_DOES_NOT_EXIST:
+                                                    case ErrorCode.PATH_DOES_NOT_EXIST:
                                                         logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
                                                         break;
                                                     default:
@@ -760,20 +760,20 @@ namespace PEBakery.Core.Commands
                                 {
                                     try
                                     {
-                                        using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                                         {
                                             bool isDir = false;
-                                            WimLibCallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
+                                            CallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
                                             {
-                                                if ((dentry.Attributes & WimLibFileAttribute.DIRECTORY) != 0)
+                                                if ((dentry.Attributes & FileAttribute.DIRECTORY) != 0)
                                                     isDir = true;
 
-                                                return WimLibCallbackStatus.CONTINUE;
+                                                return CallbackStatus.CONTINUE;
                                             }
 
                                             try
                                             {
-                                                wim.IterateDirTree(imageIndex, dirPath, WimLibIterateFlags.DEFAULT, WimExistFileCallback, null);
+                                                wim.IterateDirTree(imageIndex, dirPath, IterateFlags.DEFAULT, WimExistFileCallback, null);
 
                                                 if (isDir)
                                                 {
@@ -789,10 +789,10 @@ namespace PEBakery.Core.Commands
                                             {
                                                 switch (e.ErrorCode)
                                                 {
-                                                    case WimLibErrorCode.INVALID_IMAGE:
+                                                    case ErrorCode.INVALID_IMAGE:
                                                         logMessage = $"Dir [{dirPath}] does not have image index [{imageIndex}]";
                                                         break;
-                                                    case WimLibErrorCode.PATH_DOES_NOT_EXIST:
+                                                    case ErrorCode.PATH_DOES_NOT_EXIST:
                                                         logMessage = $"Dir [{dirPath}] does not exist in [{wimFile}]";
                                                         break;
                                                     default:

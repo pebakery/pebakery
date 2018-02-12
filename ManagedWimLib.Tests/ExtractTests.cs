@@ -72,15 +72,15 @@ namespace ManagedWimLib.Tests
             {
                 string srcDir = Path.Combine(TestSetup.BaseDir, "Samples");
                 string wimFile = Path.Combine(srcDir, fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
                     if (split != null)
                     {
-                        const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
-                        wim.ReferenceResourceFile(Path.Combine(srcDir, split), refFlags, WimLibOpenFlags.DEFAULT);
+                        const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                        wim.ReferenceResourceFile(Path.Combine(srcDir, split), refFlags, OpenFlags.DEFAULT);
                     }
 
-                    wim.ExtractPaths(1, destDir, paths, WimLibExtractFlags.GLOB_PATHS);
+                    wim.ExtractPaths(1, destDir, paths, ExtractFlags.GLOB_PATHS);
                 }
 
                 foreach (string path in paths.Select(x => x.TrimStart('\\')))
@@ -117,14 +117,14 @@ namespace ManagedWimLib.Tests
             ExtractProgress_Template("BootLZX.wim", @"\ACDE.txt");
         }
 
-        public WimLibCallbackStatus ExtractProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public CallbackStatus ExtractProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
 
             switch (msg)
             {
-                case WimLibProgressMsg.EXTRACT_STREAMS:
+                case ProgressMsg.EXTRACT_STREAMS:
                     { // Extract of one file
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
                         Assert.IsNotNull(m);
@@ -137,7 +137,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         public void ExtractProgress_Template(string fileName, string target)
@@ -148,9 +148,9 @@ namespace ManagedWimLib.Tests
                 CallbackTested tested = new CallbackTested(false);
 
                 string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT, ExtractProgress_Callback, tested))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT, ExtractProgress_Callback, tested))
                 {
-                    wim.ExtractPath(1, destDir, target, WimLibExtractFlags.GLOB_PATHS);
+                    wim.ExtractPath(1, destDir, target, ExtractFlags.GLOB_PATHS);
                 }
 
                 Assert.IsTrue(tested.Value);
@@ -203,9 +203,9 @@ namespace ManagedWimLib.Tests
                 }
 
                 string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractPathList(1, destDir, listFile, WimLibExtractFlags.GLOB_PATHS);
+                    wim.ExtractPathList(1, destDir, listFile, ExtractFlags.GLOB_PATHS);
                 }
 
                 foreach (string path in paths.Select(x => x.TrimStart('\\')))

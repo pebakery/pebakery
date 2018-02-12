@@ -49,14 +49,14 @@ namespace ManagedWimLib.Tests
             Dir_Template("BootXPRESS.wim");
         }
 
-        public WimLibCallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
+        public CallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
         {
             List<string> entries = userData as List<string>;
 
             entries.Add(dentry.FullPath);
             Console.WriteLine(dentry.FullPath);
 
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         public void Dir_Template(string fileName)
@@ -64,9 +64,9 @@ namespace ManagedWimLib.Tests
             List<string> entries = new List<string>();
 
             string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-            using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+            using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
             {
-                wim.IterateDirTree(1, @"\", WimLibIterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
+                wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
             }
 
             TestHelper.CheckList_Src01(entries);

@@ -1639,6 +1639,33 @@ namespace PEBakery.Core
 
                         return new CodeInfo_WimAppend(args[0], args[1], imageName, imageDesc, wimFlags, deltaFrom, boot, check, noAcl);
                     }
+                case CodeType.WimDelete:
+                    { // WimDelete,<SrcWim>,<ImageIndex>,[CHECK]
+                        const int minArgCount = 2;
+                        const int maxArgCount = 3;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        bool check = false;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            string arg = args[i];
+
+                            if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                check = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                            }
+                        }
+
+                        return new CodeInfo_WimDelete(args[0], args[1], check);
+                    }
                 case CodeType.WimPathAdd:
                     { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[NOACL],[PRESERVE],[REBUILD]
                         const int minArgCount = 4;

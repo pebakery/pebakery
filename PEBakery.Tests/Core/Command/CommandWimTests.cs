@@ -295,10 +295,10 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void Capture_Template(EngineState s, string rawCode, string destDir, string destWim, ErrorCheck check = ErrorCheck.Success)
+        public void Capture_Template(EngineState s, string rawCode, string destDir, string wimFileName, ErrorCheck check = ErrorCheck.Success)
         {
             string applyDir = Path.Combine(destDir, "CaptureApply");
-            string wimFile = Path.Combine(destDir, destWim);
+            string wimFile = Path.Combine(destDir, wimFileName);
 
             Directory.CreateDirectory(applyDir);
             try
@@ -309,12 +309,12 @@ namespace PEBakery.Tests.Core.Command
                     Assert.IsTrue(File.Exists(wimFile));
 
                     // Try applying
-                    using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                    using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                     {
-                        wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
+                        wim.ExtractImage(1, applyDir, ExtractFlags.DEFAULT);
                     }
 
-                    CheckDir_Src01(destDir);
+                    CheckDir_Src01(applyDir);
                 }
             }
             finally
@@ -328,18 +328,318 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region WimAppend
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimAppend()
+        { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim", sampleDir, destDir, "XPRESS.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim", sampleDir, destDir, "LZX.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim", sampleDir, destDir, "LZMS.wim");
+
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim,BOOT", sampleDir, destDir, "XPRESS.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim,NOACL", sampleDir, destDir, "LZX.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim,CHECK", sampleDir, destDir, "LZMS.wim");
+
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,TRASH", sampleDir, destDir, "LZX.wim", ErrorCheck.ParserError);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,LZX,TRASH", sampleDir, destDir, "LZX.wim", ErrorCheck.ParserError);
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+
+        public void Append_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string applyDir = Path.Combine(destDir, "AppendApply");
+            string srcWim = Path.Combine(srcDir, wimFileName);
+            string destWim = Path.Combine(destDir, wimFileName);
+
+            Directory.CreateDirectory(applyDir);
+            try
+            {
+                File.Copy(srcWim, destWim, true);
+
+                uint srcImageCount;
+                using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                {
+                    WimInfo wi = wim.GetWimInfo();
+                    srcImageCount = wi.ImageCount;
+                }
+
+                EngineTests.Eval(s, rawCode, CodeType.WimAppend, check);
+                if (check == ErrorCheck.Success)
+                {
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    {
+                        WimInfo wi = wim.GetWimInfo();
+                        Assert.IsTrue(wi.ImageCount == (srcImageCount + 1));
+
+                        wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.DEFAULT);
+                    }
+
+                    CheckDir_Src03(applyDir);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(applyDir))
+                    Directory.Delete(applyDir, true);
+                if (File.Exists(destWim))
+                    File.Delete(destWim);
+            }
+        }
         #endregion
 
         #region WimDelete
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimDelete()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            Delete_Template(s, $@"WimDelete,{pbDestDir}\MultiImage.wim,1", sampleDir, destDir, "MultiImage.wim");
+            Delete_Template(s, $@"WimDelete,{pbDestDir}\MultiImage.wim,3,CHECK", sampleDir, destDir, "MultiImage.wim");
+            
+            Delete_Template(s, $@"WimDelete,{pbDestDir}\MultiImage.wim,3,TRASH", sampleDir, destDir, "MultiImage.wim", ErrorCheck.ParserError);
+            Delete_Template(s, $@"WimDelete,{pbDestDir}\MultiImage.wim,4", sampleDir, destDir, "MultiImage.wim", ErrorCheck.Error);
+        }
+
+        public void Delete_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                string srcWim = Path.Combine(srcDir, wimFileName);
+                string destWim = Path.Combine(destDir, wimFileName);
+                File.Copy(srcWim, destWim, true);
+
+                uint srcImageCount;
+                using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                {
+                    WimInfo wi = wim.GetWimInfo();
+                    srcImageCount = wi.ImageCount;
+                }
+
+                EngineTests.Eval(s, rawCode, CodeType.WimDelete, check);
+                if (check == ErrorCheck.Success)
+                {
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    {
+                        WimInfo wi = wim.GetWimInfo();
+                        Assert.IsTrue(wi.ImageCount == (srcImageCount - 1));
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
         #endregion
 
         #region WimPathAdd
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimPathAdd()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            PathAdd_Template(s, $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\가,\다", sampleDir, destDir, "LZX.wim", @"\다");
+            PathAdd_Template(s, $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03,\,CHECK", sampleDir, destDir, "LZX.wim", @"\");
+            PathAdd_Template(s, $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\나,\ACDE.txt,PRESERVE", sampleDir, destDir,
+                "LZX.wim", null, ErrorCheck.Error);
+
+            PathAdd_Template(s, $@"WimPathAdd,{pbDestDir}\LZX.wim,1,{pbSampleDir}\Src03\나,\ACDE.txt,TRASH", sampleDir, destDir, 
+                "LZX.wim", null, ErrorCheck.ParserError);
+            PathAdd_Template(s, $@"WimPathAdd,{pbDestDir}\LZX.wim,2,{pbSampleDir}\Src03\나,\ACDE.txt", sampleDir, destDir, 
+                "LZX.wim", null, ErrorCheck.Error);
+        }
+
+        public void PathAdd_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, string comp,
+            ErrorCheck check = ErrorCheck.Success)
+        {
+            string srcWim = Path.Combine(srcDir, wimFileName);
+            string destWim = Path.Combine(destDir, wimFileName);
+
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                File.Copy(srcWim, destWim, true);
+
+                EngineTests.Eval(s, rawCode, CodeType.WimPathAdd, check);
+                if (check == ErrorCheck.Success)
+                {
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    {
+                        bool found = false;
+                        CallbackStatus ExistCallback(DirEntry dentry, object userData)
+                        {
+                            found = true;
+                            return CallbackStatus.CONTINUE;
+                        }
+
+                        wim.IterateDirTree(1, comp, IterateFlags.DEFAULT, ExistCallback, null);
+                        Assert.IsTrue(found);
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
         #endregion
 
         #region WimPathDelete
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimPathDelete()
+        { // WimPathDelete,<WimFile>,<ImageIndex>,<Path>,[CHECK],[REBUILD]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt", sampleDir, destDir, "LZX.wim", @"\ACDE.txt");
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ABCD,CHECK", sampleDir, destDir, "LZX.wim", @"\ABCD");
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ABDE,REBUILD", sampleDir, destDir, "LZX.wim", @"\ABDE");
+
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\ACDE.txt,TRASH", sampleDir, destDir,
+                "LZX.wim", null, ErrorCheck.ParserError);
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,2,\ACDE.txt", sampleDir, destDir,
+                "LZX.wim", null, ErrorCheck.Error);
+            PathDelete_Template(s, $@"WimPathDelete,{pbDestDir}\LZX.wim,1,\NONEXIST", sampleDir, destDir,
+                "LZX.wim", null, ErrorCheck.Error);
+        }
+
+        public void PathDelete_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, string comp,
+            ErrorCheck check = ErrorCheck.Success)
+        {
+            string srcWim = Path.Combine(srcDir, wimFileName);
+            string destWim = Path.Combine(destDir, wimFileName);
+
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                File.Copy(srcWim, destWim, true);
+
+                EngineTests.Eval(s, rawCode, CodeType.WimPathDelete, check);
+                if (check == ErrorCheck.Success)
+                {
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    {
+                        bool deleted = false;
+                        CallbackStatus DeletedCallback(DirEntry dentry, object userData) { return CallbackStatus.CONTINUE; }
+                        try { wim.IterateDirTree(1, comp, IterateFlags.DEFAULT, DeletedCallback, null); }
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST) { deleted = true; }
+
+                        Assert.IsTrue(deleted);
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
         #endregion
 
         #region WimPathRename
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimPathRename()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            PathAddRename_Template(s, $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ACDE.txt,\평창,CHECK", sampleDir, destDir, 
+                "LZX.wim", @"\ACDE.txt", @"\평창");
+            PathAddRename_Template(s, $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABDE,\RENAME,REBUILD", sampleDir, destDir,
+                "LZX.wim", @"\ABDE", @"\RENAME");
+            PathAddRename_Template(s, $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ABCD,\Z", sampleDir, destDir,
+                "LZX.wim", @"\ABCD", @"\Z");
+
+            PathAddRename_Template(s, $@"WimPathRename,{pbDestDir}\LZX.wim,1,\ERROR,\DUMMY,TRASH", sampleDir, destDir,
+                "LZX.wim", null, null, ErrorCheck.ParserError);
+            PathAddRename_Template(s, $@"WimPathRename,{pbDestDir}\LZX.wim,2,\없음,\DUMMY", sampleDir, destDir,
+                "LZX.wim", null, null, ErrorCheck.Error);
+        }
+
+        public void PathAddRename_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, 
+            string originalName, string newName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string srcWim = Path.Combine(srcDir, wimFileName);
+            string destWim = Path.Combine(destDir, wimFileName);
+
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                File.Copy(srcWim, destWim, true);
+
+                EngineTests.Eval(s, rawCode, CodeType.WimPathRename, check);
+                if (check == ErrorCheck.Success)
+                {
+                    using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
+                    {
+                        bool found = false;
+                        CallbackStatus ExistCallback(DirEntry dentry, object userData)
+                        {
+                            found = true;
+                            return CallbackStatus.CONTINUE;
+                        }
+                        wim.IterateDirTree(1, newName, IterateFlags.DEFAULT, ExistCallback, null);
+                        Assert.IsTrue(found);
+
+                        bool deleted = false;
+                        CallbackStatus DeleteCallback(DirEntry dentry, object userData) { return CallbackStatus.CONTINUE; }
+                        try { wim.IterateDirTree(1, originalName, IterateFlags.DEFAULT, DeleteCallback, null); }
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST) { deleted = true; }
+                        Assert.IsTrue(deleted);
+                    }
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
         #endregion
 
         #region WimOptimize
@@ -377,6 +677,27 @@ namespace PEBakery.Tests.Core.Command
             Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
             Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
             Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
+        }
+
+        public static void CheckDir_Src02_1(string dir)
+        {
+            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "A.txt")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "A.txt")).Length == 1);
+
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.txt")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.txt")).Length == 1);
+        }
+
+        public static void CheckDir_Src03(string dir)
+        {
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "가")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "가")).Length == 1024 * 1024);
+            Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
+            Assert.IsTrue(new FileInfo(Path.Combine(dir, "나")).Length == 1024 * 1024);
         }
         #endregion
     }

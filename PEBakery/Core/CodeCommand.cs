@@ -79,7 +79,8 @@ namespace PEBakery.Core
         Math = 1100,
         // 12 Wim
         WimMount = 1200, WimUnmount,
-        WimInfo, WimApply, WimExtract, WimExtractBulk, WimCapture, WimAppend, WimPathAdd, WimPathDelete, WimPathRename, WimOptimize, WimExport,
+        WimInfo, WimApply, WimExtract, WimExtractBulk, WimCapture, WimAppend, WimDelete,
+        WimPathAdd, WimPathDelete, WimPathRename, WimOptimize, WimExport,
         WimExtractOp = 1280, WimPathOp,
         // 80 Branch
         Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
@@ -2938,6 +2939,34 @@ namespace PEBakery.Core
                 b.Append(",CHECK");
             if (NoAclFlag)
                 b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimDelete : CodeInfo
+    { // WimDelete,<SrcWim>,<ImageIndex>,[CHECK]
+        public string SrcWim;
+        public string ImageIndex; 
+        public bool CheckFlag; // Optional Flag
+
+        public CodeInfo_WimDelete(string srcWim, string imageIndex, bool check)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+
+            // Flags
+            CheckFlag = check;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            if (CheckFlag)
+                b.Append(",CHECK");
             return b.ToString();
         }
     }

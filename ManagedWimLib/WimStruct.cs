@@ -46,8 +46,8 @@ namespace ManagedWimLib
         #region Constructor (private)
         private Wim(IntPtr ptr)
         {
-            if (!WimLibNative.Loaded)
-                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
 
             Ptr = ptr;
         }
@@ -72,7 +72,7 @@ namespace ManagedWimLib
                 if (Ptr != IntPtr.Zero)
                 {
                     RegisterCallback(null);
-                    WimLibNative.Free(Ptr);
+                    NativeMethods.Free(Ptr);
                     Ptr = IntPtr.Zero;
                 }
             }
@@ -91,13 +91,13 @@ namespace ManagedWimLib
         ///	when finished with it.
         ///	</returns>
         ///	<exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim OpenWim(string wimFile, WimLibOpenFlags openFlags)
+        public static Wim OpenWim(string wimFile, OpenFlags openFlags)
         {
-            if (!WimLibNative.Loaded)
-                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
 
-            WimLibErrorCode ret = WimLibNative.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
-            if (ret != WimLibErrorCode.SUCCESS)
+            ErrorCode ret = NativeMethods.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
+            if (ret != ErrorCode.SUCCESS)
                 throw new WimLibException(ret);
 
             return new Wim(wimPtr);
@@ -122,12 +122,12 @@ namespace ManagedWimLib
         ///	when finished with it.
         ///	</returns>
         ///	<exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim OpenWim(string wimFile, WimLibOpenFlags openFlags, WimLibCallback callback = null, object userData = null)
+        public static Wim OpenWim(string wimFile, OpenFlags openFlags, WimLibCallback callback = null, object userData = null)
         {
-            if (!WimLibNative.Loaded)
-                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
 
-            WimLibErrorCode ret = WimLibNative.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
+            ErrorCode ret = NativeMethods.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
 
             Wim wim = new Wim(wimPtr);
@@ -154,12 +154,12 @@ namespace ManagedWimLib
         /// wimlib_set_output_chunk_size().
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim CreateNewWim(WimLibCompressionType compType)
+        public static Wim CreateNewWim(CompressionType compType)
         {
-            if (!WimLibNative.Loaded)
-                throw new InvalidOperationException(WimLibNative.InitFirstErrorMsg);
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
 
-            WimLibErrorCode ret = WimLibNative.CreateNewWim(compType, out IntPtr wimPtr);
+            ErrorCode ret = NativeMethods.CreateNewWim(compType, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
 
             return new Wim(wimPtr);
@@ -186,12 +186,12 @@ namespace ManagedWimLib
             if (callback != null)
             { // RegisterCallback
                 managedCallback = new ManagedWimLibCallback(callback, userData);
-                WimLibNative.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
+                NativeMethods.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
             }
             else
             { // Delete callback
                 managedCallback = null;
-                WimLibNative.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
+                NativeMethods.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
             }
         }
         #endregion
@@ -207,7 +207,7 @@ namespace ManagedWimLib
             IntPtr infoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WimInfo)));
             try
             {
-                WimLibNative.GetWimInfo(Ptr, infoPtr);
+                NativeMethods.GetWimInfo(Ptr, infoPtr);
                 return (WimInfo)Marshal.PtrToStructure(infoPtr, typeof(WimInfo));
             }
             finally
@@ -252,9 +252,9 @@ namespace ManagedWimLib
         /// NTFS-3G extraction mode.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractImage(int image, string target, WimLibExtractFlags extractFlags)
+        public void ExtractImage(int image, string target, ExtractFlags extractFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ExtractImage(Ptr, image, target, extractFlags);
+            ErrorCode ret = NativeMethods.ExtractImage(Ptr, image, target, extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -303,9 +303,9 @@ namespace ManagedWimLib
         /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractPaths(int image, string target, IEnumerable<string> paths, WimLibExtractFlags extractFlags)
+        public void ExtractPaths(int image, string target, IEnumerable<string> paths, ExtractFlags extractFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ExtractPaths(Ptr, image, target, paths.ToArray(), new IntPtr(paths.Count()), extractFlags);
+            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, paths.ToArray(), new IntPtr(paths.Count()), extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -350,9 +350,9 @@ namespace ManagedWimLib
         /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractPath(int image, string target, string path, WimLibExtractFlags extractFlags)
+        public void ExtractPath(int image, string target, string path, ExtractFlags extractFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ExtractPaths(Ptr, image, target, new string[1] { path }, new IntPtr(1), extractFlags);
+            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, new string[1] { path }, new IntPtr(1), extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -368,9 +368,9 @@ namespace ManagedWimLib
         /// stripped if present.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractPathList(int image, string target, string pathListFile, WimLibExtractFlags extractFlags)
+        public void ExtractPathList(int image, string target, string pathListFile, ExtractFlags extractFlags)
         {
-            WimLibErrorCode ret = WimLibNative.ExtractPathList(Ptr, image, target, pathListFile, extractFlags);
+            ErrorCode ret = NativeMethods.ExtractPathList(Ptr, image, target, pathListFile, extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
@@ -418,9 +418,27 @@ namespace ManagedWimLib
         /// wimlib_overwrite() is called.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void AddImage(string source, string name, string configFile, WimLibAddFlags addFlags)
+        public void AddImage(string source, string name, string configFile, AddFlags addFlags)
         {
-            WimLibErrorCode ret = WimLibNative.AddImage(Ptr, source, name, configFile, addFlags);
+            ErrorCode ret = NativeMethods.AddImage(Ptr, source, name, configFile, addFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region DeleteImage
+        /// <summary>
+        /// Delete an image, or all images, from a ::WIMStruct.
+        /// </summary>
+        /// <remarks>
+        /// Note that no changes are committed to disk until wimlib_write() or wimlib_overwrite() is called.
+        /// </remarks>
+        /// <param name="image">
+        /// The 1-based index of the image to delete, or WIMLIB_ALL_IMAGES to delete all images.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void DeleteImage(int image)
+        {
+            ErrorCode ret = NativeMethods.DeleteImage(Ptr, image);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
@@ -433,40 +451,21 @@ namespace ManagedWimLib
         /// <param name="cmds">UpdateCommand that specify the update operations to perform.</param>
         /// <param name="updateFlags">Number of commands in @p cmds.</param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void UpdateImage(int image, UpdateCommand cmd, WimLibUpdateFlags updateFlags)
+        public void UpdateImage(int image, UpdateCommand cmd, UpdateFlags updateFlags)
         {
-            WimLibErrorCode ret;
+            ErrorCode ret;
             switch (IntPtr.Size)
             {
                 case 4:
-                    ret = WimLibNative.UpdateImage32(Ptr, image, new UpdateCommand32[] { cmd.Cmd32 }, 1u, updateFlags);
+                    ret = NativeMethods.UpdateImage32(Ptr, image, new UpdateCommand32[] { cmd.Cmd32 }, 1u, updateFlags);
                     break;
                 case 8:
-                    ret = WimLibNative.UpdateImage64(Ptr, image, new UpdateCommand64[] { cmd.Cmd64 }, 1u, updateFlags);
+                    ret = NativeMethods.UpdateImage64(Ptr, image, new UpdateCommand64[] { cmd.Cmd64 }, 1u, updateFlags);
                     break;
                 default:
                     throw new PlatformNotSupportedException();
             }
             WimLibException.CheckWimLibError(ret);
-
-            /*
-            WimLibErrorCode ret;
-            switch (cmd.Op)
-            {
-                case WimLibUpdateOp.ADD:
-                    ret = WimLibNative.UpdateImageAdd(Ptr, image, new UpdateAddCommand[] { cmd.AddCmd }, new IntPtr(1), updateFlags);
-                    break;
-                case WimLibUpdateOp.DELETE:
-                    ret = WimLibNative.UpdateImageDelete(Ptr, image, new UpdateDeleteCommand[] { cmd.DeleteCmd }, new IntPtr(1), updateFlags);
-                    break;
-                case WimLibUpdateOp.RENAME:
-                    ret = WimLibNative.UpdateImageRename(Ptr, image, new UpdateRenameCommand[] { cmd.RenameCmd }, new IntPtr(1), updateFlags);
-                    break;
-                default:
-                    throw new ArgumentException("cmd");
-            }
-            WimLibException.CheckWimLibError(ret);
-            */
         }
 
         /// <summary>
@@ -482,109 +481,23 @@ namespace ManagedWimLib
         /// Number of commands in @p cmds.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void UpdateImage(int image, IEnumerable<UpdateCommand> cmds, WimLibUpdateFlags updateFlags)
+        public void UpdateImage(int image, IEnumerable<UpdateCommand> cmds, UpdateFlags updateFlags)
         {
-            WimLibErrorCode ret;
+            ErrorCode ret;
             switch (IntPtr.Size)
             {
                 case 4:
                     UpdateCommand32[] cmds32 = cmds.Select(x => x.Cmd32).ToArray();
-                    ret = WimLibNative.UpdateImage32(Ptr, image, cmds32, (uint)cmds32.Length, updateFlags);
+                    ret = NativeMethods.UpdateImage32(Ptr, image, cmds32, (uint)cmds32.Length, updateFlags);
                     break;
                 case 8:
                     UpdateCommand64[] cmds64 = cmds.Select(x => x.Cmd64).ToArray();
-                    ret = WimLibNative.UpdateImage64(Ptr, image, cmds64, (ulong)cmds64.Length, updateFlags);
+                    ret = NativeMethods.UpdateImage64(Ptr, image, cmds64, (ulong)cmds64.Length, updateFlags);
                     break;
                 default:
                     throw new PlatformNotSupportedException();
             }
             WimLibException.CheckWimLibError(ret);
-
-            /*
-            int size = UpdateCommand.StructSize;
-            List<IntPtr> ptrs = new List<IntPtr>(cmds.Count());
-            
-            try
-            {
-                foreach (UpdateCommand cmd in cmds)
-                {
-                    IntPtr ptr = Marshal.AllocHGlobal(size);
-                    switch (cmd.Op)
-                    {
-                        case WimLibUpdateOp.ADD:
-                            Marshal.StructureToPtr(cmd.AddCmd, ptr, false);
-                            break;
-                        case WimLibUpdateOp.DELETE:
-                            Marshal.StructureToPtr(cmd.DeleteCmd, ptr, false);
-                            break;
-                        case WimLibUpdateOp.RENAME:
-                            Marshal.StructureToPtr(cmd.RenameCmd, ptr, false);
-                            break;
-                        default:
-                            throw new ArgumentException("cmds");
-                    }
-                    ptrs.Add(ptr);
-                }
-
-                IntPtr[] ptrArr = ptrs.ToArray();
-                using (PinnedArray pinned = new PinnedArray(ptrArr))
-                {
-                    WimLibErrorCode ret = WimLibNative.UpdateImage(Ptr, image, ptrArr, new IntPtr(ptrs.Count), updateFlags);
-                    WimLibException.CheckWimLibError(ret);
-                }
-            }
-            finally
-            {
-                foreach (IntPtr ptr in ptrs)
-                {
-                    if (ptr != IntPtr.Zero)
-                        Marshal.FreeHGlobal(ptr);
-                }
-            }
-            */
-
-            /*
-            // Please note the order of cmds will not be keeped, for performance optimiztaion.
-            UpdateCommand[] cmdArr = cmds.ToArray();
-            List<UpdateAddCommand> adds = new List<UpdateAddCommand>(cmdArr.Length);
-            List<UpdateDeleteCommand> dels = new List<UpdateDeleteCommand>(cmdArr.Length);
-            List<UpdateRenameCommand> rens = new List<UpdateRenameCommand>(cmdArr.Length);
-            for (int i = 0; i < cmdArr.Length; i++)
-            {
-                UpdateCommand cmd = cmdArr[i];
-                switch (cmd.Op)
-                {
-                    case WimLibUpdateOp.ADD:
-                        adds.Add(cmd.AddCmd);
-                        break;
-                    case WimLibUpdateOp.DELETE:
-                        dels.Add(cmd.DeleteCmd);
-                        break;
-                    case WimLibUpdateOp.RENAME:
-                        rens.Add(cmd.RenameCmd);
-                        break;
-                    default:
-                        throw new ArgumentException("cmds");
-                }
-            }
-
-            WimLibErrorCode ret;
-            if (0 < adds.Count)
-            {
-                ret = WimLibNative.UpdateImageAdd(Ptr, image, adds.ToArray(), new IntPtr(adds.Count), updateFlags);
-                WimLibException.CheckWimLibError(ret);
-            }
-            if (0 < dels.Count)
-            {
-                ret = WimLibNative.UpdateImageDelete(Ptr, image, dels.ToArray(), new IntPtr(dels.Count), updateFlags);
-                WimLibException.CheckWimLibError(ret);
-            }
-            if (0 < rens.Count)
-            {
-                ret = WimLibNative.UpdateImageRename(Ptr, image, rens.ToArray(), new IntPtr(rens.Count), updateFlags);
-                WimLibException.CheckWimLibError(ret);
-            }
-            */
         }
         #endregion
 
@@ -600,9 +513,9 @@ namespace ManagedWimLib
         /// reset to the default for the new compression type.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void SetOutputCompressionType(WimLibCompressionType compType)
+        public void SetOutputCompressionType(CompressionType compType)
         {
-            WimLibErrorCode ret = WimLibNative.SetOutputCompressionType(Ptr, compType);
+            ErrorCode ret = NativeMethods.SetOutputCompressionType(Ptr, compType);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -616,9 +529,9 @@ namespace ManagedWimLib
         /// reset to the default for the new compression type.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void SetOutputPackCompressionType(WimLibCompressionType compType)
+        public void SetOutputPackCompressionType(CompressionType compType)
         {
-            WimLibErrorCode ret = WimLibNative.SetOutputPackCompressionType(Ptr, compType);
+            ErrorCode ret = NativeMethods.SetOutputPackCompressionType(Ptr, compType);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
@@ -657,9 +570,9 @@ namespace ManagedWimLib
         /// wimlib_split() for that.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void Write(string path, int image, WimLibWriteFlags writeFlags, uint numThreads)
+        public void Write(string path, int image, WriteFlags writeFlags, uint numThreads)
         {
-            WimLibErrorCode ret = WimLibNative.Write(Ptr, path, image, writeFlags, numThreads);
+            ErrorCode ret = NativeMethods.Write(Ptr, path, image, writeFlags, numThreads);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -697,9 +610,9 @@ namespace ManagedWimLib
         /// it.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void Overwrite(WimLibWriteFlags writeFlags, uint numThreads)
+        public void Overwrite(WriteFlags writeFlags, uint numThreads)
         {
-            WimLibErrorCode ret = WimLibNative.Overwrite(Ptr, writeFlags, numThreads);
+            ErrorCode ret = NativeMethods.Overwrite(Ptr, writeFlags, numThreads);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
@@ -726,7 +639,7 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void SetImageProperty(int image, string propertyName, string propertyValue)
         {
-            WimLibErrorCode ret = WimLibNative.SetImageProperty(Ptr, image, propertyName, propertyValue);
+            ErrorCode ret = NativeMethods.SetImageProperty(Ptr, image, propertyName, propertyValue);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -803,7 +716,7 @@ namespace ManagedWimLib
         /// </returns>
         public string GetImageProperty(int image, string propertyName)
         {
-            IntPtr ptr = WimLibNative.GetImageProperty(Ptr, image, propertyName);
+            IntPtr ptr = NativeMethods.GetImageProperty(Ptr, image, propertyName);
             return Marshal.PtrToStringUni(ptr);
         }
 
@@ -848,7 +761,7 @@ namespace ManagedWimLib
         /// </returns>
         public bool IsImageNameInUse(string name)
         {
-            return WimLibNative.IsImageNameInUse(Ptr, name);
+            return NativeMethods.IsImageNameInUse(Ptr, name);
         }
         #endregion
 
@@ -887,7 +800,7 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceTemplateImage(int newImage, int templateImage)
         {
-            WimLibErrorCode ret = WimLibNative.ReferenceTemplateImage(Ptr, newImage, Ptr, templateImage, 0);
+            ErrorCode ret = NativeMethods.ReferenceTemplateImage(Ptr, newImage, Ptr, templateImage, 0);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -925,7 +838,7 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ReferenceTemplateImage(int newImage, Wim template, int templateImage)
         {
-            WimLibErrorCode ret = WimLibNative.ReferenceTemplateImage(Ptr, newImage, template.Ptr, templateImage, 0);
+            ErrorCode ret = NativeMethods.ReferenceTemplateImage(Ptr, newImage, template.Ptr, templateImage, 0);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -954,7 +867,7 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFile(string resourceWimFile, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
+        public void ReferenceResourceFile(string resourceWimFile, ReferenceFlags refFlags, OpenFlags openFlags)
         {
             /*
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
@@ -966,7 +879,7 @@ namespace ManagedWimLib
             {
                 try
                 {
-                    WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, arr, 1u, refFlags, openFlags);
+                    ErrorCode ret = NativeMethods.ReferenceResourceFiles(Ptr, arr, 1u, refFlags, openFlags);
                     WimLibException.CheckWimLibError(ret);
                 }
                 finally
@@ -1001,7 +914,7 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, WimLibReferenceFlags refFlags, WimLibOpenFlags openFlags)
+        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, ReferenceFlags refFlags, OpenFlags openFlags)
         {
             /*
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);
@@ -1017,7 +930,7 @@ namespace ManagedWimLib
             {
                 try
                 {
-                    WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, ptrArr, (uint)ptrArr.Length, refFlags, openFlags);
+                    ErrorCode ret = NativeMethods.ReferenceResourceFiles(Ptr, ptrArr, (uint)ptrArr.Length, refFlags, openFlags);
                     WimLibException.CheckWimLibError(ret);
                 }
                 finally
@@ -1053,11 +966,11 @@ namespace ManagedWimLib
         /// An extra parameter that will always be passed to the callback function.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void IterateDirTree(int image, string path, WimLibIterateFlags iterateFlags, IterateDirTreeCallback callback, object userData)
+        public void IterateDirTree(int image, string path, IterateFlags iterateFlags, IterateDirTreeCallback callback, object userData)
         {
             ManagedIterateDirTreeCallback cb = new ManagedIterateDirTreeCallback(callback, userData);
 
-            WimLibErrorCode ret = WimLibNative.IterateDirTree(Ptr, image, path, iterateFlags, cb.NativeFunc, IntPtr.Zero);
+            ErrorCode ret = NativeMethods.IterateDirTree(Ptr, image, path, iterateFlags, cb.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -1073,7 +986,7 @@ namespace ManagedWimLib
         {
             ManagedIterateLookupTableCallback cb = new ManagedIterateLookupTableCallback(callback, userData);
 
-            WimLibErrorCode ret = WimLibNative.IterateLookupTable(Ptr, 0, cb.NativeFunc, IntPtr.Zero);
+            ErrorCode ret = NativeMethods.IterateLookupTable(Ptr, 0, cb.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
         #endregion

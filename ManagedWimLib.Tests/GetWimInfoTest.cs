@@ -38,17 +38,17 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void GetWimInfo()
         {
-            GetWimInfo_Template("XPRESS.wim", WimLibCompressionType.XPRESS, false);
-            GetWimInfo_Template("LZX.wim", WimLibCompressionType.LZX, false);
-            GetWimInfo_Template("LZMS.wim", WimLibCompressionType.LZMS, false);
-            GetWimInfo_Template("BootXPRESS.wim", WimLibCompressionType.XPRESS, true);
-            GetWimInfo_Template("BootLZX.wim", WimLibCompressionType.LZX, true);
+            GetWimInfo_Template("XPRESS.wim", CompressionType.XPRESS, false);
+            GetWimInfo_Template("LZX.wim", CompressionType.LZX, false);
+            GetWimInfo_Template("LZMS.wim", CompressionType.LZMS, false);
+            GetWimInfo_Template("BootXPRESS.wim", CompressionType.XPRESS, true);
+            GetWimInfo_Template("BootLZX.wim", CompressionType.LZX, true);
         }
 
-        public void GetWimInfo_Template(string fileName, WimLibCompressionType compType, bool boot)
+        public void GetWimInfo_Template(string fileName, CompressionType compType, bool boot)
         {
             string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-            using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+            using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
             {
                 WimInfo info = wim.GetWimInfo();
 

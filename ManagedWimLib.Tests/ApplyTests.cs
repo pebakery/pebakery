@@ -51,9 +51,9 @@ namespace ManagedWimLib.Tests
             try
             {
                 string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(1, destDir, ExtractFlags.DEFAULT);
                 }
 
                 TestHelper.CheckDir_Src01(destDir);
@@ -78,14 +78,14 @@ namespace ManagedWimLib.Tests
             ApplyProgress_Template("BootXPRESS.wim");
         }
 
-        public WimLibCallbackStatus ApplyProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public CallbackStatus ApplyProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
 
             switch (msg)
             {
-                case WimLibProgressMsg.EXTRACT_STREAMS:
+                case ProgressMsg.EXTRACT_STREAMS:
                     { // Extract of one file
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract) info;
                         Assert.IsNotNull(m);
@@ -98,7 +98,7 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         public void ApplyProgress_Template(string fileName)
@@ -109,9 +109,9 @@ namespace ManagedWimLib.Tests
                 CallbackTested tested = new CallbackTested(false);
 
                 string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT, ApplyProgress_Callback, tested))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT, ApplyProgress_Callback, tested))
                 {
-                    wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(1, destDir, ExtractFlags.DEFAULT);
                 }
 
                 Assert.IsTrue(tested.Value);

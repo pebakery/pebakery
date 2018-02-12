@@ -40,18 +40,18 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void Capture()
         {
-            Capture_Template(WimLibCompressionType.NONE, "NONE.wim");
-            Capture_Template(WimLibCompressionType.XPRESS, "XPRESS.wim");
-            Capture_Template(WimLibCompressionType.LZX, "LZX.wim");
-            Capture_Template(WimLibCompressionType.LZMS, "LZMS.wim");
+            Capture_Template(CompressionType.NONE, "NONE.wim");
+            Capture_Template(CompressionType.XPRESS, "XPRESS.wim");
+            Capture_Template(CompressionType.LZX, "LZX.wim");
+            Capture_Template(CompressionType.LZMS, "LZMS.wim");
 
-            Capture_Template(WimLibCompressionType.NONE, "NONE.wim", WimLibAddFlags.BOOT);
-            Capture_Template(WimLibCompressionType.XPRESS, "XPRESS.wim", WimLibAddFlags.BOOT);
-            Capture_Template(WimLibCompressionType.LZX, "LZX.wim", WimLibAddFlags.BOOT);
-            Capture_Template(WimLibCompressionType.LZMS, "LZMS.wim", WimLibAddFlags.BOOT);
+            Capture_Template(CompressionType.NONE, "NONE.wim", AddFlags.BOOT);
+            Capture_Template(CompressionType.XPRESS, "XPRESS.wim", AddFlags.BOOT);
+            Capture_Template(CompressionType.LZX, "LZX.wim", AddFlags.BOOT);
+            Capture_Template(CompressionType.LZMS, "LZMS.wim", AddFlags.BOOT);
         }
 
-        public void Capture_Template(WimLibCompressionType compType, string wimFileName, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)
+        public void Capture_Template(CompressionType compType, string wimFileName, AddFlags addFlags = AddFlags.DEFAULT)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -64,13 +64,13 @@ namespace ManagedWimLib.Tests
                 using (Wim wim = Wim.CreateNewWim(compType))
                 {
                     wim.AddImage(srcDir, "UnitTest", null, addFlags);
-                    wim.Write(wimFile, Wim.AllImages, WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Write(wimFile, Wim.AllImages, WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(1, destDir, ExtractFlags.DEFAULT);
                 }
 
                 TestHelper.CheckDir_Src01(destDir);
@@ -88,25 +88,25 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void CaptureProgress()
         {
-            CaptureProgress_Template(WimLibCompressionType.NONE, "NONE.wim");
-            CaptureProgress_Template(WimLibCompressionType.XPRESS, "XPRESS.wim");
-            CaptureProgress_Template(WimLibCompressionType.LZX, "LZX.wim");
-            CaptureProgress_Template(WimLibCompressionType.LZMS, "LZMS.wim");
+            CaptureProgress_Template(CompressionType.NONE, "NONE.wim");
+            CaptureProgress_Template(CompressionType.XPRESS, "XPRESS.wim");
+            CaptureProgress_Template(CompressionType.LZX, "LZX.wim");
+            CaptureProgress_Template(CompressionType.LZMS, "LZMS.wim");
 
-            CaptureProgress_Template(WimLibCompressionType.NONE, "NONE.wim", WimLibAddFlags.WIMBOOT);
-            CaptureProgress_Template(WimLibCompressionType.XPRESS, "XPRESS.wim", WimLibAddFlags.WIMBOOT);
-            CaptureProgress_Template(WimLibCompressionType.LZX, "LZX.wim", WimLibAddFlags.WIMBOOT);
-            CaptureProgress_Template(WimLibCompressionType.LZMS, "LZMS.wim", WimLibAddFlags.WIMBOOT);
+            CaptureProgress_Template(CompressionType.NONE, "NONE.wim", AddFlags.WIMBOOT);
+            CaptureProgress_Template(CompressionType.XPRESS, "XPRESS.wim", AddFlags.WIMBOOT);
+            CaptureProgress_Template(CompressionType.LZX, "LZX.wim", AddFlags.WIMBOOT);
+            CaptureProgress_Template(CompressionType.LZMS, "LZMS.wim", AddFlags.WIMBOOT);
         }
 
-        public WimLibCallbackStatus CaptureProgress_Callback(WimLibProgressMsg msg, object info, object progctx)
+        public CallbackStatus CaptureProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
 
             switch (msg)
             {
-                case WimLibProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WRITE_STREAMS:
                     { // Extract of one file
                         WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
                         Assert.IsNotNull(m);
@@ -119,10 +119,10 @@ namespace ManagedWimLib.Tests
                 default:
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
-        public void CaptureProgress_Template(WimLibCompressionType compType, string wimFileName, WimLibAddFlags addFlags = WimLibAddFlags.DEFAULT)
+        public void CaptureProgress_Template(CompressionType compType, string wimFileName, AddFlags addFlags = AddFlags.DEFAULT)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -137,13 +137,13 @@ namespace ManagedWimLib.Tests
                 {
                     wim.RegisterCallback(CaptureProgress_Callback, tested);
                     wim.AddImage(srcDir, "UnitTest", null, addFlags);
-                    wim.Write(wimFile, Wim.AllImages, WimLibWriteFlags.DEFAULT, Wim.DefaultThreads);
+                    wim.Write(wimFile, Wim.AllImages, WriteFlags.DEFAULT, Wim.DefaultThreads);
                 }
 
                 // Apply it, to test if wim was successfully captured
-                using (Wim wim = Wim.OpenWim(wimFile, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
                 {
-                    wim.ExtractImage(1, destDir, WimLibExtractFlags.DEFAULT);
+                    wim.ExtractImage(1, destDir, ExtractFlags.DEFAULT);
                 }
 
                 Assert.IsTrue(tested.Value);

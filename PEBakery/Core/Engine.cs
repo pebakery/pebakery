@@ -652,6 +652,9 @@ namespace PEBakery.Core
                     case CodeType.WimAppend:
                         logs.AddRange(CommandWim.WimAppend(s, cmd));
                         break;
+                    case CodeType.WimDelete:
+                        logs.AddRange(CommandWim.WimDelete(s, cmd));
+                        break;
                     case CodeType.WimPathAdd:
                         logs.AddRange(CommandWim.WimPathAdd(s, cmd));
                         break;
@@ -662,6 +665,7 @@ namespace PEBakery.Core
                         logs.AddRange(CommandWim.WimPathRename(s, cmd));
                         break;
                     case CodeType.WimOptimize:
+                        logs.AddRange(CommandWim.WimOptimize(s, cmd));
                         break;
                     case CodeType.WimExport:
                         break;

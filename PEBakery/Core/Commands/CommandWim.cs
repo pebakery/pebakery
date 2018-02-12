@@ -27,6 +27,7 @@
 
 using ManagedWimLib;
 using Microsoft.Wim;
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -347,7 +348,7 @@ namespace PEBakery.Core.Commands
 
             try
             {
-                using (Wim wim = Wim.OpenWim(srcWim, WimLibOpenFlags.DEFAULT))
+                using (Wim wim = Wim.OpenWim(srcWim, OpenFlags.DEFAULT))
                 {
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
 
@@ -418,14 +419,14 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.DEFAULT;
+            OpenFlags openFlags = OpenFlags.DEFAULT;
+            ExtractFlags extractFlags = ExtractFlags.DEFAULT;
             if (info.CheckFlag)
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
-                extractFlags |= WimLibExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
-                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
 
             try
             {
@@ -446,10 +447,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
                         }
@@ -485,7 +486,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibCallbackStatus WimApplyExtractProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimApplyExtractProgress(ProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -497,7 +498,7 @@ namespace PEBakery.Core.Commands
             // EXTRACT_IMAGE_END
             switch (msg)
             {
-                case WimLibProgressMsg.EXTRACT_FILE_STRUCTURE:
+                case ProgressMsg.EXTRACT_FILE_STRUCTURE:
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
@@ -509,7 +510,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case WimLibProgressMsg.EXTRACT_STREAMS:
+                case ProgressMsg.EXTRACT_STREAMS:
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
@@ -521,7 +522,7 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
-                case WimLibProgressMsg.EXTRACT_METADATA:
+                case ProgressMsg.EXTRACT_METADATA:
                     {
                         WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
 
@@ -534,7 +535,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
         #endregion
 
@@ -563,15 +564,15 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | WimLibExtractFlags.GLOB_PATHS | 
-                WimLibExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            OpenFlags openFlags = OpenFlags.DEFAULT;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | 
+                ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
-                extractFlags |= WimLibExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
-                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
 
             try
             {
@@ -592,10 +593,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
                         }
@@ -656,14 +657,14 @@ namespace PEBakery.Core.Commands
                 Directory.CreateDirectory(destDir);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.DEFAULT;
-            WimLibExtractFlags extractFlags = WimLibExtractFlags.NORPFIX | WimLibExtractFlags.GLOB_PATHS;
+            OpenFlags openFlags = OpenFlags.DEFAULT;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS;
             if (info.CheckFlag)
-                openFlags |= WimLibOpenFlags.CHECK_INTEGRITY;
+                openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
-                extractFlags |= WimLibExtractFlags.NO_ACLS;
+                extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
-                extractFlags |= WimLibExtractFlags.NO_ATTRIBUTES;
+                extractFlags |= ExtractFlags.NO_ATTRIBUTES;
 
             // Check ListFile
             if (!File.Exists(listFilePath))
@@ -698,10 +699,10 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const WimLibReferenceFlags refFlags = WimLibReferenceFlags.GLOB_ENABLE | WimLibReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
-                        catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES)
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
                             return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
                         }
@@ -765,27 +766,27 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
-            WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.FILE_PATHS_UNNEEDED;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.FILE_PATHS_UNNEEDED;
             if (info.BootFlag)
-                addFlags |= WimLibAddFlags.BOOT;
+                addFlags |= AddFlags.BOOT;
             if (info.NoAclFlag)
-                addFlags |= WimLibAddFlags.NO_ACLS;
+                addFlags |= AddFlags.NO_ACLS;
             if (info.CheckFlag)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
 
             // Set Compression Type
-            WimLibCompressionType compType = WimLibCompressionType.NONE;
+            CompressionType compType = CompressionType.NONE;
             if (compStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                compType = WimLibCompressionType.NONE;
+                compType = CompressionType.NONE;
             else if (compStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
-                compType = WimLibCompressionType.XPRESS;
+                compType = CompressionType.XPRESS;
             else if (compStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
-                compType = WimLibCompressionType.LZX;
+                compType = CompressionType.LZX;
             else if (compStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
             {
-                writeFlags |= WimLibWriteFlags.SOLID;
-                compType = WimLibCompressionType.LZMS;
+                writeFlags |= WriteFlags.SOLID;
+                compType = CompressionType.LZMS;
             }
             else
                 return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{compStr}]");
@@ -828,7 +829,7 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        wim.Write(destWim, WimLibNative.AllImages, writeFlags, (uint)Environment.ProcessorCount);
+                        wim.Write(destWim, WimLibConst.AllImages, writeFlags, (uint)Environment.ProcessorCount);
 
                         logs.Add(new LogInfo(LogState.Success, $"Captured [{srcDir}] into [{destWim}]"));
                     }
@@ -869,15 +870,15 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
-            WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.FILE_PATHS_UNNEEDED;
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.FILE_PATHS_UNNEEDED;
             if (info.BootFlag)
-                addFlags |= WimLibAddFlags.BOOT;
+                addFlags |= AddFlags.BOOT;
             if (info.NoAclFlag)
-                addFlags |= WimLibAddFlags.NO_ACLS;
+                addFlags |= AddFlags.NO_ACLS;
             if (info.CheckFlag)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
 
             // Set ImageName
             string imageName;
@@ -959,7 +960,7 @@ namespace PEBakery.Core.Commands
             return logs;
         }
 
-        private static WimLibCallbackStatus WimWriteProgress(WimLibProgressMsg msg, object info, object progctx)
+        private static CallbackStatus WimWriteProgress(ProgressMsg msg, object info, object progctx)
         {
             EngineState s = progctx as EngineState;
             Debug.Assert(s != null);
@@ -971,14 +972,14 @@ namespace PEBakery.Core.Commands
 
             switch (msg)
             {
-                case WimLibProgressMsg.SCAN_BEGIN:
+                case ProgressMsg.SCAN_BEGIN:
                     {
                         WimLibProgressInfo_Scan m = (WimLibProgressInfo_Scan)info;
 
                         s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Scanning {m.Source}...";
                     }
                     break;
-                case WimLibProgressMsg.WRITE_STREAMS:
+                case ProgressMsg.WRITE_STREAMS:
                     {
                         WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
 
@@ -986,17 +987,106 @@ namespace PEBakery.Core.Commands
                         {
                             ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
                             s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Archiving file data ({percentComplete}%)";
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Writing... ({percentComplete}%)";
                         }
                     }
                     break;
             }
-            return WimLibCallbackStatus.CONTINUE;
+            return CallbackStatus.CONTINUE;
         }
 
         private static LogInfo LogWimLibException(WimLibException e)
         {
             return new LogInfo(LogState.Error, $"[{e.ErrorCode}] {e.ErrorMsg}");
+        }
+        #endregion
+
+        #region WimLib - WimDelete
+        public static List<LogInfo> WimDelete(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimDelete));
+            CodeInfo_WimDelete info = cmd.Info as CodeInfo_WimDelete;
+
+            string srcWim = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+
+            // Check SrcWim
+            if (!File.Exists(srcWim))
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
+
+            // Set Flags
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            if (info.CheckFlag)
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+
+            try
+            {
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimDeleteProgress, s))
+                {
+                    ManagedWimLib.WimInfo wi = wim.GetWimInfo();
+
+                    // Check imageIndex
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
+
+                    wim.DeleteImage(imageIndex);
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimDelete Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+
+                        logs.Add(new LogInfo(LogState.Success, $"Deleted index [{imageIndex}] from [{srcWim}]"));
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+
+        private static CallbackStatus WimDeleteProgress(ProgressMsg msg, object info, object progctx)
+        {
+            EngineState s = progctx as EngineState;
+            Debug.Assert(s != null);
+
+            // WRITE_STREAMS 
+            switch (msg)
+            {
+                case ProgressMsg.WRITE_STREAMS:
+                    {
+                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"Writing... ({percentComplete}%)";
+                        }
+                    }
+                    break;
+            }
+            return CallbackStatus.CONTINUE;
         }
         #endregion
 
@@ -1020,25 +1110,23 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
-            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
-            WimLibAddFlags addFlags = WimLibAddFlags.WINCONFIG | WimLibAddFlags.VERBOSE | WimLibAddFlags.EXCLUDE_VERBOSE;
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            AddFlags addFlags = AddFlags.WINCONFIG | AddFlags.VERBOSE | AddFlags.EXCLUDE_VERBOSE;
             if (info.CheckFlag)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
             if (info.RebuildFlag)
-                writeFlags |= WimLibWriteFlags.REBUILD;
+                writeFlags |= WriteFlags.REBUILD;
             if (info.NoAclFlag)
-                addFlags |= WimLibAddFlags.NO_ACLS;
+                addFlags |= AddFlags.NO_ACLS;
             if (info.PreserveFlag)
-                addFlags |= WimLibAddFlags.NO_REPLACE;
+                addFlags |= AddFlags.NO_REPLACE;
             
             try
             {
-                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    wim.RegisterCallback(WimWriteProgress, s);
-
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
@@ -1095,21 +1183,19 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
-            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
-            WimLibDeleteFlags deleteFlags = WimLibDeleteFlags.RECURSIVE;
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
+            DeleteFlags deleteFlags = DeleteFlags.RECURSIVE;
             if (info.CheckFlag)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
             if (info.RebuildFlag)
-                writeFlags |= WimLibWriteFlags.REBUILD;
+                writeFlags |= WriteFlags.REBUILD;
 
             try
             {
-                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    wim.RegisterCallback(WimWriteProgress, s);
-
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
@@ -1167,20 +1253,18 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
-            WimLibUpdateFlags updateFlags = WimLibUpdateFlags.SEND_PROGRESS;
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.DEFAULT;
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            UpdateFlags updateFlags = UpdateFlags.SEND_PROGRESS;
+            WriteFlags writeFlags = WriteFlags.DEFAULT;
             if (info.CheckFlag)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
             if (info.RebuildFlag)
-                writeFlags |= WimLibWriteFlags.REBUILD;
+                writeFlags |= WriteFlags.REBUILD;
 
             try
             {
-                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
                 {
-                    wim.RegisterCallback(WimWriteProgress, s);
-
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
@@ -1218,6 +1302,62 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        private static CallbackStatus WimPathProgress(ProgressMsg msg, object info, object progctx)
+        {
+            EngineState s = progctx as EngineState;
+            Debug.Assert(s != null);
+
+            // UPDATE_BEGIN_COMMAND
+            // SCAN_BEGIN
+            // SCAN_END
+            // UPDATE_END_COMMAND
+            // WRITE_STREAMS
+
+            switch (msg)
+            {
+                case ProgressMsg.UPDATE_END_COMMAND:
+                    {
+                        WimLibProgressInfo_Update m = (WimLibProgressInfo_Update)info;
+
+                        UpdateCommand upCmd = m.Command;
+                        string str;
+                        switch (upCmd.Op)
+                        {
+                            case UpdateOp.ADD:
+                                var add = upCmd.AddCommand;
+                                str = $"[Stage 1] Adding {add.FsSourcePath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                break;
+                            case UpdateOp.DELETE:
+                                var del = upCmd.DeleteCommand;
+                                str = $"[Stage 1] Deleting {del.WimPath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                break;
+                            case UpdateOp.RENAME:
+                                var ren = upCmd.RenameCommand;
+                                str = $"[Stage 1] Renaming {ren.WimSourcePath} to {ren.WimTargetPath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                break;
+                            default:
+                                throw new InternalException("Internal Logic Error at WimPathProgress");
+                        }
+
+                        s.MainViewModel.BuildCommandProgressText = str;
+                    }
+                    break;
+                case ProgressMsg.WRITE_STREAMS:
+                    {
+                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = m.CompletedBytes * 100 / m.TotalBytes;
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Writing... ({percentComplete}%)";
+                        }
+                    }
+                    break;
+            }
+            return CallbackStatus.CONTINUE;
+        }
         #endregion
 
         #region WimLib - WimOptimize
@@ -1237,29 +1377,29 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Set Flags
-            WimLibOpenFlags openFlags = WimLibOpenFlags.WRITE_ACCESS;
-            WimLibWriteFlags writeFlags = WimLibWriteFlags.REBUILD;
-            WimLibCompressionType? compType = null;
+            OpenFlags openFlags = OpenFlags.WRITE_ACCESS;
+            WriteFlags writeFlags = WriteFlags.REBUILD;
+            CompressionType? compType = null;
             if (info.Recompress != null)
             {
-                writeFlags |= WimLibWriteFlags.RECOMPRESS;
+                writeFlags |= WriteFlags.RECOMPRESS;
 
                 string recompStr = StringEscaper.Preprocess(s, info.Recompress);
                 if (recompStr.Length != 0)
                 {
-                    writeFlags |= WimLibWriteFlags.RECOMPRESS;
+                    writeFlags |= WriteFlags.RECOMPRESS;
 
                     // Set Compression Type
                     if (recompStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                        compType = WimLibCompressionType.NONE;
+                        compType = CompressionType.NONE;
                     else if (recompStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
-                        compType = WimLibCompressionType.XPRESS;
+                        compType = CompressionType.XPRESS;
                     else if (recompStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
-                        compType = WimLibCompressionType.LZX;
+                        compType = CompressionType.LZX;
                     else if (recompStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
                     {
-                        writeFlags |= WimLibWriteFlags.SOLID;
-                        compType = WimLibCompressionType.LZMS;
+                        writeFlags |= WriteFlags.SOLID;
+                        compType = CompressionType.LZMS;
                     }
                     else
                         return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{recompStr}]");
@@ -1267,9 +1407,9 @@ namespace PEBakery.Core.Commands
             }
 
             if (info.CheckFlag == true)
-                writeFlags |= WimLibWriteFlags.CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
             else if (info.CheckFlag == false)
-                writeFlags |= WimLibWriteFlags.NO_CHECK_INTEGRITY;
+                writeFlags |= WriteFlags.NO_CHECK_INTEGRITY;
 
             try
             {
@@ -1278,7 +1418,7 @@ namespace PEBakery.Core.Commands
                     wim.RegisterCallback(WimApplyExtractProgress, s);
 
                     if (compType != null)
-                        wim.SetOutputCompressionType((WimLibCompressionType)compType);
+                        wim.SetOutputCompressionType((CompressionType)compType);
 
                     s.MainViewModel.BuildCommandProgressTitle = "WimOptimize Progress";
                     s.MainViewModel.BuildCommandProgressText = string.Empty;

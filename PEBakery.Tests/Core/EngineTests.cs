@@ -85,7 +85,7 @@ namespace PEBakery.Tests.Core
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
 
             string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            ManagedWimLib.WimLibNative.AssemblyInit(WimLibDllPath);
+            ManagedWimLib.NativeMethods.AssemblyInit(WimLibDllPath);
         }
 
         [AssemblyCleanup]
