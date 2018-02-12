@@ -643,6 +643,55 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region WimOptimize
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandWim")]
+        public void Wim_WimOptimize()
+        { // WimOptimize,<WimFile>,[RECOMPRESS[=STR]],[CHECK|NOCHECK]
+            EngineState s = EngineTests.CreateEngineState();
+
+            string pbSampleDir = Path.Combine("%TestBench%", "CommandWim");
+            string sampleDir = StringEscaper.Preprocess(s, pbSampleDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string pbDestDir = StringEscaper.Escape(destDir);
+
+            Directory.CreateDirectory(destDir);
+            try
+            {
+                Optimize_Template(s, $@"WimOptimize,{pbDestDir}\ToOptimize.wim", sampleDir, destDir, "ToOptimize.wim");
+                Optimize_Template(s, $@"WimOptimize,{pbDestDir}\ToOptimize.wim,CHECK", sampleDir, destDir, "ToOptimize.wim");
+                Optimize_Template(s, $@"WimOptimize,{pbDestDir}\ToOptimize.wim,RECOMPRESS=LZMS", sampleDir, destDir, "ToOptimize.wim");
+            }
+            finally
+            {
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+            }
+        }
+
+        public void Optimize_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, ErrorCheck check = ErrorCheck.Success)
+        {
+            string srcWim = Path.Combine(srcDir, wimFileName);
+            string destWim = Path.Combine(destDir, wimFileName);
+
+            try
+            {
+                File.Copy(srcWim, destWim, true);
+                long oldSize = new FileInfo(destWim).Length;
+
+                EngineTests.Eval(s, rawCode, CodeType.WimOptimize, check);
+                if (check == ErrorCheck.Success)
+                {
+                    long newSize = new FileInfo(destWim).Length;
+                    Assert.IsTrue(newSize < oldSize);
+                }
+            }
+            finally
+            {
+                if (File.Exists(destWim))
+                    File.Delete(destWim);
+            }
+        }
         #endregion
 
         #region Utility
