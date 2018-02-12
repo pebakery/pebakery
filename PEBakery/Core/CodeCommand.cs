@@ -2945,7 +2945,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WimPathAdd : CodeInfo
     { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD],[NOACL],[PRESERVE]
-        // Note : If <SrcPath> is a file, <DestPath> must be a file. If <SrcPath> is a dir, <DestPath> must be a directory.
+        // Note : If <SrcPath> is a file, <DestPath> must be a file. If <SrcPath> is a dir, <DestPath> must be a dir.
         //        It is different from standard PEBakery dest path convention, because it follows wimlib-imagex update convention.
         public string WimFile;
         public string ImageIndex;

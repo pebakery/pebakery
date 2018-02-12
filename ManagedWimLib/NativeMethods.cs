@@ -25,6 +25,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
@@ -233,9 +234,11 @@ namespace ManagedWimLib
             GetImageProperty = (wimlib_get_image_property)GetFuncPtr("wimlib_get_image_property", typeof(wimlib_get_image_property));
             SetOutputCompressionType = (wimlib_set_output_compression_type)GetFuncPtr("wimlib_set_output_compression_type", typeof(wimlib_set_output_compression_type));
             SetOutputPackCompressionType = (wimlib_set_output_pack_compression_type)GetFuncPtr("wimlib_set_output_pack_compression_type", typeof(wimlib_set_output_pack_compression_type));
-            UpdateImageAdd = (wimlib_update_image_add)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_add));
-            UpdateImageDelete = (wimlib_update_image_delete)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_delete));
-            UpdateImageRename = (wimlib_update_image_rename)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_rename));
+            // UpdateImageAdd = (wimlib_update_image_add)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_add));
+            // UpdateImageDelete = (wimlib_update_image_delete)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_delete));
+            // UpdateImageRename = (wimlib_update_image_rename)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_rename));
+            UpdateImage32 = (wimlib_update_image_32)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_32));
+            UpdateImage64 = (wimlib_update_image_64)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_64));
             ReferenceResourceFiles = (wimlib_reference_resource_files)GetFuncPtr("wimlib_reference_resource_files", typeof(wimlib_reference_resource_files));
             IterateDirTree = (wimlib_iterate_dir_tree)GetFuncPtr("wimlib_iterate_dir_tree", typeof(wimlib_iterate_dir_tree));
             IterateLookupTable = (wimlib_iterate_lookup_table)GetFuncPtr("wimlib_iterate_lookup_table", typeof(wimlib_iterate_lookup_table));
@@ -264,9 +267,11 @@ namespace ManagedWimLib
             GetImageProperty = null;
             SetOutputCompressionType = null;
             SetOutputPackCompressionType = null;
-            UpdateImageAdd = null;
-            UpdateImageDelete = null;
-            UpdateImageRename = null;
+            // UpdateImageAdd = null;
+            // UpdateImageDelete = null;
+            // UpdateImageRename = null;
+            UpdateImage32 = null;
+            UpdateImage64 = null;
             ReferenceResourceFiles = null;
             IterateDirTree = null;
             IterateLookupTable = null;
@@ -403,33 +408,53 @@ namespace ManagedWimLib
         #endregion
 
         #region UpdateImage
+        /*
         // TODO : How to pinvoke unions perfectly?
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_update_image_add(
             IntPtr wim,
             int image,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] UpdateAddCommand[] cmds,
-            IntPtr num_cmds,
+            IntPtr num_cmds, // size_t
             WimLibUpdateFlags update_flags);
         internal static wimlib_update_image_add UpdateImageAdd;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_update_image_delete(
             IntPtr wim,
             int image,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] UpdateDeleteCommand[] cmds,
-            IntPtr num_cmds,
+            IntPtr num_cmds, // size_t
             WimLibUpdateFlags update_flags);
         internal static wimlib_update_image_delete UpdateImageDelete;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         internal delegate WimLibErrorCode wimlib_update_image_rename(
             IntPtr wim,
             int image,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] UpdateRenameCommand[] cmds,
-            IntPtr num_cmds,
+            IntPtr num_cmds, // size_t
             WimLibUpdateFlags update_flags);
         internal static wimlib_update_image_rename UpdateImageRename;
+        */
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        internal delegate WimLibErrorCode wimlib_update_image_32(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] UpdateCommand32[] cmds,
+            uint num_cmds,
+            WimLibUpdateFlags update_flags);
+        internal static wimlib_update_image_32 UpdateImage32;
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        internal delegate WimLibErrorCode wimlib_update_image_64(
+            IntPtr wim,
+            int image,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] UpdateCommand64[] cmds,
+            ulong num_cmds,
+            WimLibUpdateFlags update_flags);
+        internal static wimlib_update_image_64 UpdateImage64;
         #endregion
 
         #region SetOutputCompressionType, SetOutputPackCompressionType
@@ -1650,7 +1675,6 @@ namespace ManagedWimLib
     [Flags]
     public enum WimLibUpdateFlags : uint
     {
-        DEFAULT = 0x00000000,
         /// <summary>
         /// Send WIMLIB_PROGRESS_MSG_UPDATE_BEGIN_COMMAND and WIMLIB_PROGRESS_MSG_UPDATE_END_COMMAND messages.
         /// </summary>
@@ -1816,12 +1840,551 @@ namespace ManagedWimLib
     #endregion
 
     #region Struct UpdateCommand 
+    [Flags]
+    public enum WimLibUpdateOp : uint
+    {
+        /// <summary>
+        /// Add a new file or directory tree to the image.
+        /// </summary>
+        ADD = 0,
+        /// <summary>
+        /// Delete a file or directory tree from the image.
+        /// </summary>
+        DELETE = 1,
+        /// <summary>
+        /// Rename a file or directory tree in the image.
+        /// </summary>
+        RENAME = 2,
+    };
+
+    #region UpdateCommand
+    public class UpdateCommand : IDisposable
+    {
+        #region Struct UpdateCommand
+        internal UpdateCommand32 Cmd32;
+        internal UpdateCommand64 Cmd64;
+        public static int Size
+        {
+            get
+            {
+                switch (IntPtr.Size)
+                {
+                    case 4:
+                        return Marshal.SizeOf(typeof(UpdateCommand32));
+                    case 8:
+                        return Marshal.SizeOf(typeof(UpdateCommand64));
+                    default:
+                        throw new PlatformNotSupportedException();
+                }
+            }
+        }
+        #endregion
+
+        #region Properties
+        public WimLibUpdateOp Op
+        {
+            get
+            {
+                switch (IntPtr.Size)
+                {
+                    case 4:
+                        return Cmd32.Op;
+                    case 8:
+                        return Cmd64.Op;
+                    default:
+                        throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
+        public UpdateAddCommand AddCommand
+        {
+            get
+            {
+                switch (IntPtr.Size)
+                {
+                    case 4:
+                        return new UpdateAddCommand(Cmd32.AddFsSourcePath, Cmd32.AddWimTargetPath, Cmd32.AddConfigFile, Cmd32.AddFlags);
+                    case 8:
+                        return new UpdateAddCommand(Cmd64.AddFsSourcePath, Cmd64.AddWimTargetPath, Cmd64.AddConfigFile, Cmd64.AddFlags);
+                    default:
+                        throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
+        public UpdateDeleteCommand DeleteCommand
+        {
+            get
+            {
+                switch (IntPtr.Size)
+                {
+                    case 4:
+                        return new UpdateDeleteCommand(Cmd32.DelWimPath, Cmd32.DeleteFlags);
+                    case 8:
+                        return new UpdateDeleteCommand(Cmd64.DelWimPath, Cmd64.DeleteFlags);
+                    default:
+                        throw new PlatformNotSupportedException();
+                }
+            }
+        }
+
+        public UpdateRenameCommand RenameCommand
+        {
+            get
+            {
+                switch (IntPtr.Size)
+                {
+                    case 4:
+                        return new UpdateRenameCommand(Cmd32.RenWimSourcePath, Cmd32.RenWimTargetPath);
+                    case 8:
+                        return new UpdateRenameCommand(Cmd64.RenWimSourcePath, Cmd64.RenWimTargetPath);
+                    default:
+                        throw new PlatformNotSupportedException();
+                }
+            }
+        }
+        #endregion
+
+        #region Constructor in private
+        private UpdateCommand() { }
+        #endregion
+
+        #region Disposable Pattern
+        ~UpdateCommand()
+        {
+            this.Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Cmd32.Free();
+                Cmd64.Free();
+            }
+        }
+        #endregion
+
+        #region AddCommand, DeleteCommand, RenameCommand
+        public static UpdateCommand Add(string fsSourcePath, string wimTargetPath, string configFile, WimLibAddFlags addFlags)
+        {
+            UpdateCommand cmd = new UpdateCommand();
+            switch (IntPtr.Size)
+            {
+                case 4:
+                    cmd.Cmd32 = new UpdateCommand32()
+                    {
+                        Op = WimLibUpdateOp.ADD,
+                        AddFsSourcePath = fsSourcePath,
+                        AddWimTargetPath = wimTargetPath,
+                        AddConfigFile = configFile,
+                        AddFlags = addFlags,
+                    };
+                    break;
+                case 8:
+                    cmd.Cmd64 = new UpdateCommand64()
+                    {
+                        Op = WimLibUpdateOp.ADD,
+                        AddFsSourcePath = fsSourcePath,
+                        AddWimTargetPath = wimTargetPath,
+                        AddConfigFile = configFile,
+                        AddFlags = addFlags,
+                    };
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+
+            return cmd;
+        }
+
+        public static UpdateCommand Delete(string wimPath, WimLibDeleteFlags deleteFlags)
+        {
+            UpdateCommand cmd = new UpdateCommand();
+            switch (IntPtr.Size)
+            {
+                case 4:
+                    cmd.Cmd32 = new UpdateCommand32()
+                    {
+                        Op = WimLibUpdateOp.DELETE,
+                        DelWimPath = wimPath,
+                        DeleteFlags = deleteFlags,
+                    };
+                    break;
+                case 8:
+                    cmd.Cmd64 = new UpdateCommand64()
+                    {
+                        Op = WimLibUpdateOp.DELETE,
+                        DelWimPath = wimPath,
+                        DeleteFlags = deleteFlags,
+                    };
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+
+            return cmd;
+        }
+
+        public static UpdateCommand Rename(string wimSourcePath, string wimTargetPath)
+        {
+            UpdateCommand cmd = new UpdateCommand();
+            switch (IntPtr.Size)
+            {
+                case 4:
+                    cmd.Cmd32 = new UpdateCommand32()
+                    {
+                        Op = WimLibUpdateOp.RENAME,
+                        RenWimSourcePath = wimSourcePath,
+                        RenWimTargetPath = wimTargetPath,
+                    };
+                    break;
+                case 8:
+                    cmd.Cmd64 = new UpdateCommand64()
+                    {
+                        Op = WimLibUpdateOp.RENAME,
+                        RenWimSourcePath = wimSourcePath,
+                        RenWimTargetPath = wimTargetPath,
+                    };
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+
+            return cmd;
+        }
+        #endregion
+
+        public class UpdateAddCommand
+        {
+            /// <summary>
+            /// Filesystem path to the file or directory tree to add.
+            /// </summary>
+            public string FsSourcePath;
+            /// <summary>
+            /// Destination path in the image.  To specify the root directory of the image, use WIMLIB_WIM_ROOT_PATH.
+            /// </summary>
+            public string WimTargetPath;
+            /// <summary>
+            /// Path to capture configuration file to use, or null if not specified.
+            /// </summary>
+            public string ConfigFile;
+            /// <summary>
+            /// Bitwise OR of WimLibAddFlags.
+            /// </summary>
+            public WimLibAddFlags AddFlags;
+
+            public UpdateAddCommand(string fsSourcePath, string wimTargetPath, string configFile, WimLibAddFlags addFlags)
+            {
+                FsSourcePath = fsSourcePath;
+                WimTargetPath = wimTargetPath;
+                ConfigFile = configFile;
+                AddFlags = addFlags;
+            }
+        }
+
+        public class UpdateDeleteCommand
+        {
+            /// <summary>
+            /// The path to the file or directory within the image to delete.
+            /// </summary>
+            public string WimPath;
+            /// <summary>
+            /// Bitwise OR of WimLibDeleteFlags.
+            /// </summary>
+            public WimLibDeleteFlags DeleteFlags;
+
+            public UpdateDeleteCommand(string wimPath, WimLibDeleteFlags deleteFlags)
+            {
+                WimPath = wimPath;
+                DeleteFlags = deleteFlags;
+            }
+        }
+
+        public class UpdateRenameCommand
+        {
+            /// <summary>
+            /// The path to the source file or directory within the image.
+            /// </summary>
+            public string WimSourcePath;
+            /// <summary>
+            /// The path to the destination file or directory within the image.
+            /// </summary>
+            public string WimTargetPath;
+
+            public UpdateRenameCommand(string wimSourcePath, string wimTargetPath)
+            {
+                WimSourcePath = wimSourcePath;
+                WimTargetPath = wimTargetPath;
+            }
+        }
+    }
+    #endregion
+
+    #region UpdateCommand32
+    [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    public struct UpdateCommand32
+    {
+        [FieldOffset(0)]
+        public WimLibUpdateOp Op;
+
+        #region UpdateAddCommand
+        /// <summary>
+        /// Filesystem path to the file or directory tree to add.
+        /// </summary>
+        [FieldOffset(4)]
+        private IntPtr AddFsSourcePathPtr;
+        public string AddFsSourcePath
+        {
+            get => Marshal.PtrToStringUni(AddFsSourcePathPtr);
+            set => UpdatePtr(ref AddFsSourcePathPtr, value);
+        }
+        /// <summary>
+        /// Destination path in the image.  To specify the root directory of the image, use WIMLIB_WIM_ROOT_PATH.
+        /// </summary>
+        [FieldOffset(8)]
+        private IntPtr AddWimTargetPathPtr;
+        public string AddWimTargetPath
+        {
+            get => Marshal.PtrToStringUni(AddWimTargetPathPtr);
+            set => UpdatePtr(ref AddWimTargetPathPtr, value);
+        }
+        /// <summary>
+        /// Path to capture configuration file to use, or null if not specified.
+        /// </summary>
+        [FieldOffset(12)]
+        private IntPtr AddConfigFilePtr;
+        public string AddConfigFile
+        {
+            get => Marshal.PtrToStringUni(AddConfigFilePtr);
+            set => UpdatePtr(ref AddConfigFilePtr, value);
+        }
+        /// <summary>
+        /// Bitwise OR of WimLibAddFlags.
+        /// </summary>
+        [FieldOffset(16)]
+        public WimLibAddFlags AddFlags;
+        #endregion
+
+        #region UpdateDeleteCommand
+        /// <summary>
+        /// The path to the file or directory within the image to delete.
+        /// </summary>
+        [FieldOffset(4)]
+        private IntPtr DelWimPathPtr;
+        public string DelWimPath
+        {
+            get => Marshal.PtrToStringUni(DelWimPathPtr);
+            set => UpdatePtr(ref DelWimPathPtr, value);
+        }
+        /// <summary>
+        /// Bitwise OR of WimLibDeleteFlags.
+        /// </summary>
+        [FieldOffset(8)]
+        public WimLibDeleteFlags DeleteFlags;
+        #endregion
+
+        #region UpdateRenameCommand
+        /// <summary>
+        /// The path to the source file or directory within the image.
+        /// </summary>
+        [FieldOffset(4)]
+        private IntPtr RenWimSourcePathPtr;
+        public string RenWimSourcePath
+        {
+            get => Marshal.PtrToStringUni(RenWimSourcePathPtr);
+            set => UpdatePtr(ref RenWimSourcePathPtr, value);
+        }
+        /// <summary>
+        /// The path to the destination file or directory within the image.
+        /// </summary>
+        [FieldOffset(8)]
+        private IntPtr RenWimTargetPathPtr;
+        public string RenWimTargetPath
+        {
+            get => Marshal.PtrToStringUni(RenWimTargetPathPtr);
+            set => UpdatePtr(ref RenWimTargetPathPtr, value);
+        }
+        /// <summary>
+        /// Reserved; set to 0. 
+        /// </summary>
+        [FieldOffset(12)]
+        private int RenameFlags;
+        #endregion
+
+        #region Free
+        public void Free()
+        {
+            FreePtr(ref AddFsSourcePathPtr);
+            FreePtr(ref AddWimTargetPathPtr);
+            FreePtr(ref AddConfigFilePtr);
+            FreePtr(ref DelWimPathPtr);
+            FreePtr(ref RenWimSourcePathPtr);
+            FreePtr(ref RenWimTargetPathPtr);
+        }
+
+        internal void FreePtr(ref IntPtr ptr)
+        {
+            if (ptr != IntPtr.Zero)
+                Marshal.FreeHGlobal(ptr);
+            ptr = IntPtr.Zero;
+        }
+
+        internal void UpdatePtr(ref IntPtr ptr, string str)
+        {
+            FreePtr(ref ptr);
+            ptr = Marshal.StringToHGlobalUni(str);
+        }
+        #endregion
+    }
+    #endregion
+
+    #region UpdateCommand64
+    [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    public struct UpdateCommand64
+    {
+        [FieldOffset(0)]
+        public WimLibUpdateOp Op;
+
+        #region UpdateAddCommand
+        /// <summary>
+        /// Filesystem path to the file or directory tree to add.
+        /// </summary>
+        [FieldOffset(8)]
+        private IntPtr AddFsSourcePathPtr;
+        public string AddFsSourcePath
+        {
+            get => Marshal.PtrToStringUni(AddFsSourcePathPtr);
+            set => UpdatePtr(ref AddFsSourcePathPtr, value);
+        }
+        /// <summary>
+        /// Destination path in the image.  To specify the root directory of the image, use WIMLIB_WIM_ROOT_PATH.
+        /// </summary>
+        [FieldOffset(16)]
+        private IntPtr AddWimTargetPathPtr;
+        public string AddWimTargetPath
+        {
+            get => Marshal.PtrToStringUni(AddWimTargetPathPtr);
+            set => UpdatePtr(ref AddWimTargetPathPtr, value);
+        }
+        /// <summary>
+        /// Path to capture configuration file to use, or null if not specified.
+        /// </summary>
+        [FieldOffset(24)]
+        private IntPtr AddConfigFilePtr;
+        public string AddConfigFile
+        {
+            get => Marshal.PtrToStringUni(AddConfigFilePtr);
+            set => UpdatePtr(ref AddConfigFilePtr, value);
+        }
+        /// <summary>
+        /// Bitwise OR of WimLibAddFlags.
+        /// </summary>
+        [FieldOffset(32)]
+        public WimLibAddFlags AddFlags;
+        #endregion
+
+        #region UpdateDeleteCommand
+        /// <summary>
+        /// The path to the file or directory within the image to delete.
+        /// </summary>
+        [FieldOffset(8)]
+        private IntPtr DelWimPathPtr;
+        public string DelWimPath
+        {
+            get => Marshal.PtrToStringUni(DelWimPathPtr);
+            set => UpdatePtr(ref DelWimPathPtr, value);
+        }
+        /// <summary>
+        /// Bitwise OR of WimLibDeleteFlags.
+        /// </summary>
+        [FieldOffset(16)]
+        public WimLibDeleteFlags DeleteFlags;
+        #endregion
+
+        #region UpdateRenameCommand
+        /// <summary>
+        /// The path to the source file or directory within the image.
+        /// </summary>
+        [FieldOffset(8)]
+        private IntPtr RenWimSourcePathPtr;
+        public string RenWimSourcePath
+        {
+            get => Marshal.PtrToStringUni(RenWimSourcePathPtr);
+            set => UpdatePtr(ref RenWimSourcePathPtr, value);
+        }
+        /// <summary>
+        /// The path to the destination file or directory within the image.
+        /// </summary>
+        [FieldOffset(16)]
+        private IntPtr RenWimTargetPathPtr;
+        public string RenWimTargetPath
+        {
+            get => Marshal.PtrToStringUni(RenWimTargetPathPtr);
+            set => UpdatePtr(ref RenWimTargetPathPtr, value);
+        }
+        /// <summary>
+        /// Reserved; set to 0. 
+        /// </summary>
+        [FieldOffset(24)]
+        private int RenameFlags;
+        #endregion
+
+        #region Free
+        public void Free()
+        {
+            FreePtr(ref AddFsSourcePathPtr);
+            FreePtr(ref AddWimTargetPathPtr);
+            FreePtr(ref AddConfigFilePtr);
+            FreePtr(ref DelWimPathPtr);
+            FreePtr(ref RenWimSourcePathPtr);
+            FreePtr(ref RenWimTargetPathPtr);
+        }
+
+        internal void FreePtr(ref IntPtr ptr)
+        {
+            if (ptr != IntPtr.Zero)
+                Marshal.FreeHGlobal(ptr);
+            ptr = IntPtr.Zero;
+        }
+
+        internal void UpdatePtr(ref IntPtr ptr, string str)
+        {
+            FreePtr(ref ptr);
+            ptr = Marshal.StringToHGlobalUni(str);
+        }
+        #endregion
+    }
+    #endregion
+    #endregion
+
+    #region Struct UpdateCommand (Legacy)
+    /*
     public class UpdateCommand
     {
         public WimLibUpdateOp Op;
-        internal UpdateAddCommand AddCmd;
-        internal UpdateDeleteCommand DeleteCmd;
-        internal UpdateRenameCommand RenameCmd;
+        public UpdateAddCommand AddCmd;
+        public UpdateDeleteCommand DeleteCmd;
+        public UpdateRenameCommand RenameCmd;
+        public static int StructSize
+        {
+            get
+            {
+                return new int[3]
+                {
+                    Marshal.SizeOf(typeof(UpdateAddCommand)),
+                    Marshal.SizeOf(typeof(UpdateDeleteCommand)),
+                    Marshal.SizeOf(typeof(UpdateRenameCommand)),
+                }.Max();
+            }
+        }
 
         private UpdateCommand() { }
 
@@ -1852,107 +2415,7 @@ namespace ManagedWimLib
             };
         }
     }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct UpdateAddCommand
-    {
-        public WimLibUpdateOp Op;
-        /// <summary>
-        /// Filesystem path to the file or directory tree to add.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string FsSourcePath;
-        /// <summary>
-        /// Destination path in the image.  To specify the root directory of the image, use WIMLIB_WIM_ROOT_PATH.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string WimTargetPath;
-        /// <summary>
-        /// Path to capture configuration file to use, or null if not specified.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string ConfigFile;
-        /// <summary>
-        /// Bitwise OR of WimLibAddFlags.
-        /// </summary>
-        public WimLibAddFlags AddFlags;
-
-        public UpdateAddCommand(string fsSourcePath, string wimTargetPath, string configFile, WimLibAddFlags addFlags)
-        {
-            Op = WimLibUpdateOp.ADD;
-            FsSourcePath = fsSourcePath;
-            WimTargetPath = wimTargetPath;
-            ConfigFile = configFile;
-            AddFlags = addFlags;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct UpdateDeleteCommand
-    {
-        public WimLibUpdateOp Op;
-        /// <summary>
-        /// The path to the file or directory within the image to delete.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string WimPath;
-        /// <summary>
-        /// Bitwise OR of WimLibDeleteFlags.
-        /// </summary>
-        public WimLibDeleteFlags DeleteFlags;
-
-        public UpdateDeleteCommand(string wimPath, WimLibDeleteFlags deleteFlags)
-        {
-            Op = WimLibUpdateOp.DELETE;
-            WimPath = wimPath;
-            DeleteFlags = deleteFlags;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct UpdateRenameCommand
-    {
-        public WimLibUpdateOp Op;
-        /// <summary>
-        /// The path to the source file or directory within the image.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string WimSourcePath;
-        /// <summary>
-        /// The path to the destination file or directory within the image.
-        /// </summary>
-        [MarshalAs(UnmanagedType.LPWStr)]
-        public string WimTargetPath;
-        /// <summary>
-        /// Reserved; set to 0. 
-        /// </summary>
-        private int RenameFlags;
-
-        public UpdateRenameCommand(string wimSourcePath, string wimTargetPath)
-        {
-            Op = WimLibUpdateOp.RENAME;
-            WimSourcePath = wimSourcePath;
-            WimTargetPath = wimTargetPath;
-            RenameFlags = 0;
-        }
-    }
-
-    [Flags]
-    public enum WimLibUpdateOp : uint
-    {
-        /// <summary>
-        /// Add a new file or directory tree to the image.
-        /// </summary>
-        ADD = 0,
-        /// <summary>
-        /// Delete a file or directory tree from the image.
-        /// </summary>
-        DELETE = 1,
-        /// <summary>
-        /// Rename a file or directory tree in the image.
-        /// </summary>
-        RENAME = 2,
-    };
+    */
     #endregion
 
     #region Struct DirEnty

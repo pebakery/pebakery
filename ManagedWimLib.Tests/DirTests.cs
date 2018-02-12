@@ -40,13 +40,13 @@ namespace ManagedWimLib.Tests
         // But that function works well in real apps, which is very confusing.
         [TestMethod]
         [TestCategory("WimLib")]
-        public void DirProgress()
+        public void Dir()
         {
-            DirProgress_Template("XPRESS.wim");
-            DirProgress_Template("LZX.wim");
-            DirProgress_Template("LZMS.wim");
-            DirProgress_Template("BootLZX.wim");
-            DirProgress_Template("BootXPRESS.wim");
+            Dir_Template("XPRESS.wim");
+            Dir_Template("LZX.wim");
+            Dir_Template("LZMS.wim");
+            Dir_Template("BootLZX.wim");
+            Dir_Template("BootXPRESS.wim");
         }
 
         public WimLibCallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
@@ -59,7 +59,7 @@ namespace ManagedWimLib.Tests
             return WimLibCallbackStatus.CONTINUE;
         }
 
-        public void DirProgress_Template(string fileName)
+        public void Dir_Template(string fileName)
         {
             List<string> entries = new List<string>();
 

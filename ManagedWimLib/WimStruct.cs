@@ -427,14 +427,29 @@ namespace ManagedWimLib
 
         #region UpdateImage
         /// <summary>
-        /// 
+        /// Update a WIM image by adding, deleting, and/or renaming files or directories.
         /// </summary>
-        /// <param name="image"></param>
-        /// <param name="cmds"></param>
-        /// <param name="updateFlags"></param>
+        /// <param name="image">The 1-based index of the image to update.</param>
+        /// <param name="cmds">UpdateCommand that specify the update operations to perform.</param>
+        /// <param name="updateFlags">Number of commands in @p cmds.</param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void UpdateImage(int image, UpdateCommand cmd, WimLibUpdateFlags updateFlags)
         {
+            WimLibErrorCode ret;
+            switch (IntPtr.Size)
+            {
+                case 4:
+                    ret = WimLibNative.UpdateImage32(Ptr, image, new UpdateCommand32[] { cmd.Cmd32 }, 1u, updateFlags);
+                    break;
+                case 8:
+                    ret = WimLibNative.UpdateImage64(Ptr, image, new UpdateCommand64[] { cmd.Cmd64 }, 1u, updateFlags);
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
+            WimLibException.CheckWimLibError(ret);
+
+            /*
             WimLibErrorCode ret;
             switch (cmd.Op)
             {
@@ -451,21 +466,125 @@ namespace ManagedWimLib
                     throw new ArgumentException("cmd");
             }
             WimLibException.CheckWimLibError(ret);
+            */
         }
 
         /// <summary>
-        /// 
+        /// Update a WIM image by adding, deleting, and/or renaming files or directories.
         /// </summary>
-        /// <param name="image"></param>
-        /// <param name="cmds"></param>
-        /// <param name="updateFlags"></param>
+        /// <param name="image">
+        /// The 1-based index of the image to update.
+        /// </param>
+        /// <param name="cmds">
+        /// An array of UpdateCommand's that specify the update operations to perform.
+        /// </param>
+        /// <param name="updateFlags">
+        /// Number of commands in @p cmds.
+        /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void UpdateImage(int image, IEnumerable<UpdateCommand> cmds, WimLibUpdateFlags updateFlags)
         {
-            foreach (UpdateCommand cmd in cmds)
+            WimLibErrorCode ret;
+            switch (IntPtr.Size)
             {
-                UpdateImage(image, cmd, updateFlags);
+                case 4:
+                    UpdateCommand32[] cmds32 = cmds.Select(x => x.Cmd32).ToArray();
+                    ret = WimLibNative.UpdateImage32(Ptr, image, cmds32, (uint)cmds32.Length, updateFlags);
+                    break;
+                case 8:
+                    UpdateCommand64[] cmds64 = cmds.Select(x => x.Cmd64).ToArray();
+                    ret = WimLibNative.UpdateImage64(Ptr, image, cmds64, (ulong)cmds64.Length, updateFlags);
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
             }
+            WimLibException.CheckWimLibError(ret);
+
+            /*
+            int size = UpdateCommand.StructSize;
+            List<IntPtr> ptrs = new List<IntPtr>(cmds.Count());
+            
+            try
+            {
+                foreach (UpdateCommand cmd in cmds)
+                {
+                    IntPtr ptr = Marshal.AllocHGlobal(size);
+                    switch (cmd.Op)
+                    {
+                        case WimLibUpdateOp.ADD:
+                            Marshal.StructureToPtr(cmd.AddCmd, ptr, false);
+                            break;
+                        case WimLibUpdateOp.DELETE:
+                            Marshal.StructureToPtr(cmd.DeleteCmd, ptr, false);
+                            break;
+                        case WimLibUpdateOp.RENAME:
+                            Marshal.StructureToPtr(cmd.RenameCmd, ptr, false);
+                            break;
+                        default:
+                            throw new ArgumentException("cmds");
+                    }
+                    ptrs.Add(ptr);
+                }
+
+                IntPtr[] ptrArr = ptrs.ToArray();
+                using (PinnedArray pinned = new PinnedArray(ptrArr))
+                {
+                    WimLibErrorCode ret = WimLibNative.UpdateImage(Ptr, image, ptrArr, new IntPtr(ptrs.Count), updateFlags);
+                    WimLibException.CheckWimLibError(ret);
+                }
+            }
+            finally
+            {
+                foreach (IntPtr ptr in ptrs)
+                {
+                    if (ptr != IntPtr.Zero)
+                        Marshal.FreeHGlobal(ptr);
+                }
+            }
+            */
+
+            /*
+            // Please note the order of cmds will not be keeped, for performance optimiztaion.
+            UpdateCommand[] cmdArr = cmds.ToArray();
+            List<UpdateAddCommand> adds = new List<UpdateAddCommand>(cmdArr.Length);
+            List<UpdateDeleteCommand> dels = new List<UpdateDeleteCommand>(cmdArr.Length);
+            List<UpdateRenameCommand> rens = new List<UpdateRenameCommand>(cmdArr.Length);
+            for (int i = 0; i < cmdArr.Length; i++)
+            {
+                UpdateCommand cmd = cmdArr[i];
+                switch (cmd.Op)
+                {
+                    case WimLibUpdateOp.ADD:
+                        adds.Add(cmd.AddCmd);
+                        break;
+                    case WimLibUpdateOp.DELETE:
+                        dels.Add(cmd.DeleteCmd);
+                        break;
+                    case WimLibUpdateOp.RENAME:
+                        rens.Add(cmd.RenameCmd);
+                        break;
+                    default:
+                        throw new ArgumentException("cmds");
+                }
+            }
+
+            WimLibErrorCode ret;
+            if (0 < adds.Count)
+            {
+                ret = WimLibNative.UpdateImageAdd(Ptr, image, adds.ToArray(), new IntPtr(adds.Count), updateFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            if (0 < dels.Count)
+            {
+                ret = WimLibNative.UpdateImageDelete(Ptr, image, dels.ToArray(), new IntPtr(dels.Count), updateFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            if (0 < rens.Count)
+            {
+                ret = WimLibNative.UpdateImageRename(Ptr, image, rens.ToArray(), new IntPtr(rens.Count), updateFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            */
         }
         #endregion
 

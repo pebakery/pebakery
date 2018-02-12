@@ -80,7 +80,37 @@ namespace ManagedWimLib
                     break;
                 case WimLibProgressMsg.UPDATE_BEGIN_COMMAND:
                 case WimLibProgressMsg.UPDATE_END_COMMAND:
-                    pInfo = (WimLibProgressInfo_Update)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Update));
+                    switch (IntPtr.Size)
+                    {
+                        case 4:
+                            WimLibProgressInfo_Update32 s32 = (WimLibProgressInfo_Update32)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Update32));
+                            pInfo = new WimLibProgressInfo_Update()
+                            {
+                                Command = UpdateCommand.Add(
+                                    s32.Command.AddFsSourcePath,
+                                    s32.Command.AddWimTargetPath,
+                                    s32.Command.AddConfigFile,
+                                    s32.Command.AddFlags),
+                                CompletedCommands = s32.CompletedCommands,
+                                TotalCommands = s32.TotalCommands,
+                            };
+                            break;
+                        case 8:
+                            WimLibProgressInfo_Update64 s64 = (WimLibProgressInfo_Update64)Marshal.PtrToStructure(info, typeof(WimLibProgressInfo_Update64));
+                            pInfo = new WimLibProgressInfo_Update()
+                            {
+                                Command = UpdateCommand.Add(
+                                    s64.Command.AddFsSourcePath,
+                                    s64.Command.AddWimTargetPath,
+                                    s64.Command.AddConfigFile,
+                                    s64.Command.AddFlags),
+                                CompletedCommands = s64.CompletedCommands,
+                                TotalCommands = s64.TotalCommands,
+                            };
+                            break;
+                        default:
+                            throw new PlatformNotSupportedException();
+                    }                   
                     break;
                 case WimLibProgressMsg.VERIFY_INTEGRITY:
                 case WimLibProgressMsg.CALC_INTEGRITY:
@@ -194,25 +224,24 @@ namespace ManagedWimLib
     public struct WimLibProgressInfo_Scan
     {
         /// <summary>
-        /// Dentry scan status, valid on
-        /// ::SCAN_DENTRY.
+        /// Dentry scan status, valid on SCAN_DENTRY.
         /// </summary>
-        public enum WimLibScanStatus : uint
+        public enum WimLibScanDentryStatus : uint
         {
             /// <summary>
             /// File looks okay and will be captured.
             /// </summary>
-            WIMLIB_SCAN_DENTRY_OK = 0,
+            OK = 0,
             /// <summary>
             /// File is being excluded from capture due to the
             /// capture configuration.
             /// </summary>
-            WIMLIB_SCAN_DENTRY_EXCLUDED = 1,
+            EXCLUDED = 1,
             /// <summary>
             /// File is being excluded from capture due to being of
             /// an unsupported type. 
             /// </summary>
-            WIMLIB_SCAN_DENTRY_UNSUPPORTED = 2,
+            UNSUPPORTED = 2,
             /// <summary>
             /// The file is an absolute symbolic link or junction
             /// that points into the capture directory, and
@@ -220,14 +249,14 @@ namespace ManagedWimLib
             /// being adjusted.  (Reparse point fixups can be
             /// disabled with the flag ::WIMLIB_ADD_FLAG_NORPFIX.)
             /// </summary>
-            WIMLIB_SCAN_DENTRY_FIXED_SYMLINK = 3,
+            FIXED_SYMLINK = 3,
             /// <summary>
             /// Reparse-point fixups are enabled, but the file is an
             /// absolute symbolic link or junction that does
             /// <b>not</b> point into the capture directory, so its
             /// target is <b>not</b> being adjusted.
             /// </summary>
-            WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK = 4,
+            NOT_FIXED_SYMLINK = 4,
         }
 
         /// <summary>
@@ -250,7 +279,7 @@ namespace ManagedWimLib
         /// Dentry scan status, valid on
         /// ::SCAN_DENTRY. 
         /// </summary>
-        public WimLibScanStatus Status;
+        public WimLibScanDentryStatus Status;
         /// <summary>
         /// - wim_target_path
         /// Target path in the image.  Only valid on messages
@@ -425,141 +454,63 @@ namespace ManagedWimLib
     /// <summary>
     /// Valid on messages UPDATE_BEGIN_COMMAND and UPDATE_END_COMMAND.
     /// </summary>
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct WimLibProgressInfo_Update
     {
         /// <summary>
-        /// Specification of an update to perform on a WIM image.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public class WimLibUpdateCommand
-        {
-            public WimLibUpdateOp Op;
-            private IntPtr ptrCmd;
-
-            public WimLibCommand GetCommand()
-            {
-                switch (Op)
-                {
-                    case WimLibUpdateOp.WIMLIB_UPDATE_OP_ADD:
-                        return (WimLibAddCommand) Marshal.PtrToStructure(ptrCmd, typeof(WimLibAddCommand));
-                    case WimLibUpdateOp.WIMLIB_UPDATE_OP_DELETE:
-                        return (WimLibDeleteCommand)Marshal.PtrToStructure(ptrCmd, typeof(WimLibDeleteCommand));
-                    case WimLibUpdateOp.WIMLIB_UPDATE_OP_RENAME:
-                        return (WimLibRenameCommand)Marshal.PtrToStructure(ptrCmd, typeof(WimLibRenameCommand));
-                    default:
-                        throw new InvalidOperationException("Wrong WimLibUpdateOp");
-                }
-            }
-        }
-
-        /// <summary>
-        /// The specific type of update to perform.
-        /// </summary>
-        public enum WimLibUpdateOp : uint
-        {
-            /// <summary>
-            /// Add a new file or directory tree to the image. 
-            /// </summary>
-            WIMLIB_UPDATE_OP_ADD = 0,
-            /// <summary>
-            /// Delete a file or directory tree from the image.
-            /// </summary>
-            WIMLIB_UPDATE_OP_DELETE = 1,
-            /// <summary>
-            /// Rename a file or directory tree in the image.
-            /// </summary>
-            WIMLIB_UPDATE_OP_RENAME = 2,
-        };
-
-        [StructLayout(LayoutKind.Sequential)]
-        public class WimLibCommand { }
-
-        /// <summary>
-        /// Data for a ::WIMLIB_UPDATE_OP_ADD operation.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public class WimLibAddCommand : WimLibCommand
-        {
-            /// <summary>
-            /// Filesystem path to the file or directory tree to add.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string FsSourcePath;
-            /// <summary>
-            /// Destination path in the image.  To specify the root directory of the
-            /// image, use ::WIMLIB_WIM_ROOT_PATH.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string WimTargetPath;
-            /// <summary>
-            /// Path to capture configuration file to use, or @c NULL if not
-            /// specified.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string ConfigFile;
-            /// <summary>
-            /// Bitwise OR of WIMLIB_ADD_FLAG_* flags.
-            /// </summary>
-            public int AddFlags;
-        };
-
-        /// <summary>
-        /// Data for a ::WIMLIB_UPDATE_OP_DELETE operation.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public class WimLibDeleteCommand : WimLibCommand
-        {
-            /// <summary>
-            /// The path to the file or directory within the image to delete.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string WimPath;
-
-            /** Bitwise OR of WIMLIB_DELETE_FLAG_* flags.  */
-            int DeleteFlags;
-        };
-
-        /// <summary>
-        /// Data for a ::WIMLIB_UPDATE_OP_RENAME operation.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        public class WimLibRenameCommand : WimLibCommand
-        {
-            /// <summary>
-            /// The path to the source file or directory within the image.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string WimSourcePath;
-            /// <summary>
-            /// The path to the destination file or directory within the image.
-            /// </summary>
-            [MarshalAs(UnmanagedType.LPWStr)]
-            public string WimTargetPath;
-            /// <summary>
-            /// Reserved; set to 0.
-            /// </summary>
-            int RenameFlags;
-        };
-
-        /// <summary>
         /// Name of the temporary file that the WIM was written to.
         /// </summary>
-        private IntPtr ptrCommand;
-        public WimLibUpdateCommand Command => (WimLibUpdateCommand) Marshal.PtrToStructure(ptrCommand, typeof(WimLibUpdateCommand));
+        public UpdateCommand Command;
         /// <summary>
         /// Number of update commands that have been completed so far.
-        /// 
-        /// Use value of UIntPtr, this is not a memory address.
         /// </summary>
-        public UIntPtr CompletedCommands;
+        public ulong CompletedCommands;
         /// <summary>
         /// Number of update commands that are being executed as part of
         /// this call to wimlib_update_image().
-        /// 
-        /// Use value of UIntPtr, this is not a memory address.
         /// </summary>
-        public UIntPtr TotalCommands;
+        public ulong TotalCommands;
+    }
+
+    /// <summary>
+    /// Valid on messages UPDATE_BEGIN_COMMAND and UPDATE_END_COMMAND.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct WimLibProgressInfo_Update32
+    {
+        /// <summary>
+        /// Name of the temporary file that the WIM was written to.
+        /// </summary>
+        public UpdateCommand32 Command;
+        /// <summary>
+        /// Number of update commands that have been completed so far.
+        /// </summary>
+        public uint CompletedCommands;
+        /// <summary>
+        /// Number of update commands that are being executed as part of
+        /// this call to wimlib_update_image().
+        /// </summary>
+        public uint TotalCommands;
+    }
+
+    /// <summary>
+    /// Valid on messages UPDATE_BEGIN_COMMAND and UPDATE_END_COMMAND.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct WimLibProgressInfo_Update64
+    {
+        /// <summary>
+        /// Name of the temporary file that the WIM was written to.
+        /// </summary>
+        public UpdateCommand64 Command;
+        /// <summary>
+        /// Number of update commands that have been completed so far.
+        /// </summary>
+        public ulong CompletedCommands;
+        /// <summary>
+        /// Number of update commands that are being executed as part of
+        /// this call to wimlib_update_image().
+        /// </summary>
+        public ulong TotalCommands;
     }
 
     /// <summary>
