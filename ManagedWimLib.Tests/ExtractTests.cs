@@ -76,7 +76,7 @@ namespace ManagedWimLib.Tests
                 {
                     if (split != null)
                     {
-                        const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                        const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
                         wim.ReferenceResourceFile(Path.Combine(srcDir, split), refFlags, OpenFlags.DEFAULT);
                     }
 

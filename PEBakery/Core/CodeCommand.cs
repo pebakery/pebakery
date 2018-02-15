@@ -3110,9 +3110,9 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimOptimize : CodeInfo
-    { // WimOptimize,<WimFile>,[RECOMPRESS[=STR]],[CHECK|NOCHECK]
+    { // WimOptimize,<WimFile>,[Recomp=STR],[CHECK|NOCHECK]
         public string WimFile;
-        public string Recompress; // [NONE|XPRESS|LZX|LZMS]
+        public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
         public bool? CheckFlag; // Optional Flag
 
         public CodeInfo_WimOptimize(string wimFile, string recompress, bool? checkFlag)
@@ -3130,20 +3130,92 @@ namespace PEBakery.Core
             b.Append(WimFile);
             if (Recompress != null)
             {
-                if (Recompress.Length == 0)
-                {
-                    b.Append(",RECOMPRESS");
-                }
-                else
-                {
-                    b.Append(",RECOMPRESS=");
-                    b.Append(Recompress);
-                }
+                b.Append(",");
+                b.Append(Recompress);
             }
             if (CheckFlag != null)
             {
-                b.Append(",");
-                b.Append(CheckFlag);
+                if (CheckFlag == true)
+                    b.Append(",CHECK");
+                else
+                    b.Append(",NOCHECK");
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region WimExport
+    [Serializable]
+    public class CodeInfo_WimExport : CodeInfo
+    { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Split=STR],[Recomp=STR],[BOOT],[CHECK|NOCHECK]
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestWim;
+        public string ImageName; // Optional.
+        public string ImageDesc; // Optional
+        public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
+        public string Split;  // Optional
+        public bool BootFlag; // Optional Flag
+        public bool? CheckFlag; // Optional Flag
+
+        public CodeInfo_WimExport(string srcWim, string imageIndex, string destWim,
+            string imageName, string imageDesc, string split, string recompress,
+            bool boot, bool? check)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestWim = destWim;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            Split = split;
+            Recompress = recompress;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestWim);
+
+            if (ImageName != null)
+            {
+                b.Append(",ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append(",ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (Split != null)
+            {
+                b.Append(",Split=");
+                b.Append(Split);
+            }
+            if (Recompress != null)
+            {
+                b.Append(",Recomp=");
+                b.Append(Recompress);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag != null)
+            {
+                if (CheckFlag == true)
+                    b.Append(",CHECK");
+                else
+                    b.Append(",NOCHECK");
             }
             return b.ToString();
         }

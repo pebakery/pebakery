@@ -107,12 +107,8 @@ namespace ManagedWimLib
         /// Same as OpenWim(), but allows specifying a progress function and progress context.  
         /// </summary>
         /// <remarks>
-        /// If successful, the progress function will be registered in
-        /// the newly open ::WIMStruct, as if by an automatic call to
-        /// wimlib_register_progress_function().  In addition, if
-        /// ::WIMLIB_OPEN_FLAG_CHECK_INTEGRITY is specified in @p open_flags, then the
-        /// progress function will receive ::WIMLIB_PROGRESS_MSG_VERIFY_INTEGRITY
-        /// messages while checking the WIM file's integrity.
+        /// If successful, the progress function will be registered in the newly open WIMStruct,
+        /// as if by an automatic call to Wim.RegisterCallback().
         /// </remarks>
         /// <param name="wimFile">The path to the WIM file to open.</param>
         /// <param name="openFlags">Bitwise OR of flags prefixed with WIMLIB_OPEN_FLAG.</param>
@@ -122,7 +118,7 @@ namespace ManagedWimLib
         ///	when finished with it.
         ///	</returns>
         ///	<exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim OpenWim(string wimFile, OpenFlags openFlags, WimLibCallback callback = null, object userData = null)
+        public static Wim OpenWim(string wimFile, OpenFlags openFlags, WimLibCallback callback, object userData = null)
         {
             if (!NativeMethods.Loaded)
                 throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
@@ -131,7 +127,6 @@ namespace ManagedWimLib
             WimLibException.CheckWimLibError(ret);
 
             Wim wim = new Wim(wimPtr);
-
             if (callback != null)
                 wim.RegisterCallback(callback, userData);
 
@@ -142,19 +137,13 @@ namespace ManagedWimLib
         /// Create a ::WIMStruct which initially contains no images and is not backed by
         /// an on-disk file.
         /// </summary>
-        /// <param name="ctype">
+        /// <param name="compType">
         /// The "output compression type" to assign to the ::WIMStruct.  This is the
         /// compression type that will be used if the ::WIMStruct is later persisted
         /// to an on-disk file using wimlib_write().
-        /// 
-        /// This choice is not necessarily final.  If desired, it can still be
-        /// changed at any time before wimlib_write() is called, using
-        /// wimlib_set_output_compression_type().  In addition, if you wish to use a
-        /// non-default compression chunk size, then you will need to call
-        /// wimlib_set_output_chunk_size().
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim CreateNewWim(CompressionType compType)
+        public static Wim CreateNewWim(CompressionType compType, WimLibCallback callback = null, object userData = null)
         {
             if (!NativeMethods.Loaded)
                 throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
@@ -162,7 +151,11 @@ namespace ManagedWimLib
             ErrorCode ret = NativeMethods.CreateNewWim(compType, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
 
-            return new Wim(wimPtr);
+            Wim wim = new Wim(wimPtr);
+            if (callback != null)
+                wim.RegisterCallback(callback, userData);
+
+            return wim;
         }
         #endregion
 
@@ -501,6 +494,44 @@ namespace ManagedWimLib
         }
         #endregion
 
+        #region ExportImage
+        /// <summary>
+        /// Export an image, or all images, from a WIMStruct into another WIMStruct.
+        ///
+        /// Specifically, if the destination WIMStruct contains n images, then
+        /// the source image(s) will be appended, in order, starting at destination index n + 1
+        /// By default, all image metadata will be exported verbatim, but certain changes can be made by passing appropriate parameters.
+        /// </summary>
+        /// <param name="srcImage">The 1-based index of the image from src_wim to export, or WIMLIB_ALL_IMAGES</param>
+        /// <param name="destWim">The WIMStruct to which to export the images.</param>
+        /// <param name="destName">
+        /// For single-image exports, the name to give the exported image in destWim.
+        /// If left null, the name from srcWim is used.
+        /// For WimLibConst.AllImages exports, this parameter must be left null; in that case, the names are all taken from src_wim.
+        /// This parameter is overridden by ExportFlags.NO_NAMES.</param>
+        /// <param name="destDescription">
+        /// For single-image exports, the description to give the exported image in the new WIM file.
+        /// If left null, the description from src_wim is used.
+        /// For WimLib.ALL_IMAGES exports, this parameter must be left null; in that case, the description are all taken from src_wim.
+        /// This parameter is overridden by ExportFlags.NO_DESCRIPTIONS.
+        /// </param>
+        /// <param name="exportFlags">Bitwise OR of flags with ExportFlag.</param>
+        /// <remarks>
+        /// Wim.ExportImage() is only an in-memory operation; no changes are
+        /// committed to disk until Wim.Write() or Wim.Overwrite() is called.
+        /// 
+        /// A limitation of the current implementation of Wim.ExportImage() is that
+        /// the directory tree of a source or destination image cannot be updated
+        /// following an export until one of the two images has been freed from memory.
+        /// </remarks>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void ExportImage(int srcImage, Wim destWim, string destName, string destDescription, ExportFlags exportFlags)
+        {
+            ErrorCode ret = NativeMethods.ExportImage(Ptr, srcImage, destWim.Ptr, destName, destDescription, exportFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
         #region SetOutputCompressionType, SetOutputPackCompressionType
         /// <summary>
         /// Set a ::WIMStruct's output compression type.  This is the compression type
@@ -711,13 +742,15 @@ namespace ManagedWimLib
         /// are case sensitive.
         /// </param>
         /// <returns>
-        /// The property's value as a ::wimlib_tchar string, or @c NULL if there is
-        /// no such property. 
+        /// The property's value as a  string, or NULL if there is no such property. 
         /// </returns>
         public string GetImageProperty(int image, string propertyName)
         {
             IntPtr ptr = NativeMethods.GetImageProperty(Ptr, image, propertyName);
-            return Marshal.PtrToStringUni(ptr);
+            if (ptr == IntPtr.Zero)
+                return null;
+            else
+                return Marshal.PtrToStringUni(ptr);
         }
 
         /// <summary>
@@ -867,7 +900,7 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFile(string resourceWimFile, ReferenceFlags refFlags, OpenFlags openFlags)
+        public void ReferenceResourceFile(string resourceWimFile, RefFlags refFlags, OpenFlags openFlags)
         {
             /*
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, new string[1] { resourceWimFile }, 1u, refFlags, openFlags);
@@ -914,7 +947,7 @@ namespace ManagedWimLib
         /// pass to internal calls to wimlib_open_wim() on the reference files.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, ReferenceFlags refFlags, OpenFlags openFlags)
+        public void ReferenceResourceFiles(IEnumerable<string> resourceWimFiles, RefFlags refFlags, OpenFlags openFlags)
         {
             /*
             WimLibErrorCode ret = WimLibNative.ReferenceResourceFiles(Ptr, resourceWimFiles.ToArray(), (uint)resourceWimFiles.Count(), refFlags, openFlags);

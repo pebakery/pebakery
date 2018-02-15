@@ -57,33 +57,23 @@ namespace PEBakery.Core.Commands
 
             // Mount Option
             bool readwrite;
-            if (mountOptionStr.Equals("READONLY", StringComparison.OrdinalIgnoreCase)) readwrite = false;
-            else if (mountOptionStr.Equals("READWRITE", StringComparison.OrdinalIgnoreCase)) readwrite = true;
+            if (mountOptionStr.Equals("READONLY", StringComparison.OrdinalIgnoreCase))
+                readwrite = false;
+            else if (mountOptionStr.Equals("READWRITE", StringComparison.OrdinalIgnoreCase))
+                readwrite = true;
             else
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Invalid mount option [{mountOptionStr}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Invalid mount option [{mountOptionStr}]");
 
             // Check srcWim
             if (!File.Exists(srcWim))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{srcWim}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWim}] does not exist");
 
             // Check MountDir 
             if (StringEscaper.PathSecurityCheck(mountDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(mountDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{mountDir}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Directory [{mountDir}] does not exist");
 
             // Check imageIndex
             int imageCount = 0;
@@ -193,17 +183,11 @@ namespace PEBakery.Core.Commands
             else if (unmountOptionStr.Equals("COMMIT", StringComparison.OrdinalIgnoreCase))
                 commit = true;
             else
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Invalid unmount option [{unmountOptionStr}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Invalid unmount option [{unmountOptionStr}]");
 
             // Check MountDir 
             if (!Directory.Exists(mountDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{mountDir}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Directory [{mountDir}] does not exist");
 
             // Unmount Wim
             // https://msdn.microsoft.com/ko-kr/library/windows/desktop/dd834953.aspx
@@ -447,7 +431,7 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
@@ -534,6 +518,17 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
+                case ProgressMsg.CALC_INTEGRITY:
+                    {
+                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressText = $"Calculating integrity... ({percentComplete}%)";
+                        }
+                    }
+                    break;
             }
             return CallbackStatus.CONTINUE;
         }
@@ -565,8 +560,7 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | 
-                ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
                 openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
@@ -593,7 +587,7 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
@@ -699,7 +693,7 @@ namespace PEBakery.Core.Commands
 
                         try
                         {
-                            const ReferenceFlags refFlags = ReferenceFlags.GLOB_ENABLE | ReferenceFlags.GLOB_ERR_ON_NOMATCH;
+                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
                             wim.ReferenceResourceFile(splitWim, refFlags, openFlags);
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
@@ -991,6 +985,17 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
+                case ProgressMsg.CALC_INTEGRITY:
+                    {
+                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressText = $"Calculating integrity... ({percentComplete}%)";
+                        }
+                    }
+                    break;
             }
             return CallbackStatus.CONTINUE;
         }
@@ -1024,8 +1029,10 @@ namespace PEBakery.Core.Commands
 
             try
             {
-                using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimDeleteProgress, s))
+                using (Wim wim = Wim.OpenWim(srcWim, openFlags))
                 {
+                    wim.RegisterCallback(WimDeleteProgress, s);
+
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
 
                     // Check imageIndex
@@ -1085,6 +1092,17 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
+                case ProgressMsg.CALC_INTEGRITY:
+                    {
+                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressText = $"Calculating integrity... ({percentComplete}%)";
+                        }
+                    }
+                    break;
             }
             return CallbackStatus.CONTINUE;
         }
@@ -1125,8 +1143,10 @@ namespace PEBakery.Core.Commands
             
             try
             {
-                using (Wim wim = Wim.OpenWim(wimFile, openFlags, WimPathProgress, s))
+                using (Wim wim = Wim.OpenWim(wimFile, openFlags))
                 {
+                    wim.RegisterCallback(WimPathProgress, s);
+
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
@@ -1355,6 +1375,17 @@ namespace PEBakery.Core.Commands
                         }
                     }
                     break;
+                case ProgressMsg.CALC_INTEGRITY:
+                    {
+                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressText = $"Calculating integrity... ({percentComplete}%)";
+                        }
+                    }
+                    break;
             }
             return CallbackStatus.CONTINUE;
         }
@@ -1382,28 +1413,26 @@ namespace PEBakery.Core.Commands
             CompressionType? compType = null;
             if (info.Recompress != null)
             {
+                string recompStr = StringEscaper.Preprocess(s, info.Recompress);
+
                 writeFlags |= WriteFlags.RECOMPRESS;
 
-                string recompStr = StringEscaper.Preprocess(s, info.Recompress);
-                if (recompStr.Length != 0)
+                // Set Compression Type
+                // NONE, XPRESS, LZX, LZMS : Recompress file with specified algorithm
+                // KEEP : Recompress file with current compresssoin algorithm
+                if (recompStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
+                    compType = CompressionType.NONE;
+                else if (recompStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
+                    compType = CompressionType.XPRESS;
+                else if (recompStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
+                    compType = CompressionType.LZX;
+                else if (recompStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
                 {
-                    writeFlags |= WriteFlags.RECOMPRESS;
-
-                    // Set Compression Type
-                    if (recompStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
-                        compType = CompressionType.NONE;
-                    else if (recompStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
-                        compType = CompressionType.XPRESS;
-                    else if (recompStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
-                        compType = CompressionType.LZX;
-                    else if (recompStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
-                    {
-                        writeFlags |= WriteFlags.SOLID;
-                        compType = CompressionType.LZMS;
-                    }
-                    else
-                        return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{recompStr}]");
+                    writeFlags |= WriteFlags.SOLID;
+                    compType = CompressionType.LZMS;
                 }
+                else if (!recompStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase)) 
+                    return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{recompStr}]");
             }
 
             if (info.CheckFlag == true)
@@ -1415,7 +1444,7 @@ namespace PEBakery.Core.Commands
             {
                 using (Wim wim = Wim.OpenWim(wimFile, openFlags))
                 {
-                    wim.RegisterCallback(WimApplyExtractProgress, s);
+                    wim.RegisterCallback(WimSimpleWriteProgress, s);
 
                     if (compType != null)
                         wim.SetOutputCompressionType((CompressionType)compType);
@@ -1451,6 +1480,201 @@ namespace PEBakery.Core.Commands
             }
 
             return logs;
+        }
+        #endregion
+
+        #region WimLib - WimExport
+        public static List<LogInfo> WimExport(EngineState s, CodeCommand cmd)
+        {
+            List<LogInfo> logs = new List<LogInfo>(1);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WimExport));
+            CodeInfo_WimExport info = cmd.Info as CodeInfo_WimExport;
+
+            string srcWimPath = StringEscaper.Preprocess(s, info.SrcWim);
+            string imageIndexStr = StringEscaper.Preprocess(s, info.ImageIndex);
+            string destWimPath = StringEscaper.Preprocess(s, info.DestWim);
+            string imageName = null;
+            if (info.ImageName != null)
+                imageName = StringEscaper.Preprocess(s, info.ImageName);
+            string imageDesc = null;
+            if (info.ImageDesc != null)
+                imageDesc = StringEscaper.Preprocess(s, info.ImageDesc);
+
+            // Check SrcWim
+            if (!File.Exists(srcWimPath))
+                return LogInfo.LogErrorMessage(logs, $"File [{srcWimPath}] does not exist");
+
+            // Check DestWim
+            if (StringEscaper.PathSecurityCheck(destWimPath, out string errorMsg) == false)
+                return LogInfo.LogErrorMessage(logs, errorMsg);
+
+            // Set Flags
+            WriteFlags writeFlags = WriteFlags.REBUILD;
+            ExportFlags exportFlags = ExportFlags.GIFT;
+
+            if (info.BootFlag)
+                exportFlags |= ExportFlags.BOOT;
+            if (info.CheckFlag == true)
+                writeFlags |= WriteFlags.CHECK_INTEGRITY;
+            else if (info.CheckFlag == false)
+                writeFlags |= WriteFlags.NO_CHECK_INTEGRITY;
+
+            try
+            {
+                using (Wim srcWim = Wim.OpenWim(srcWimPath, OpenFlags.DEFAULT))
+                {
+                    ManagedWimLib.WimInfo wi = srcWim.GetWimInfo();
+
+                    // Check imageIndex
+                    if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                    if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
+
+                    // Process split wim
+                    if (info.Split != null)
+                    {
+                        string splitWim = StringEscaper.Preprocess(s, info.Split);
+
+                        try
+                        {
+                            const RefFlags refFlags = RefFlags.GLOB_ENABLE | RefFlags.GLOB_ERR_ON_NOMATCH;
+                            srcWim.ReferenceResourceFile(splitWim, refFlags, OpenFlags.DEFAULT);
+                        }
+                        catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
+                        {
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                        }
+                    }
+
+                    s.MainViewModel.BuildCommandProgressTitle = "WimExport Progress";
+                    s.MainViewModel.BuildCommandProgressText = string.Empty;
+                    s.MainViewModel.BuildCommandProgressMax = 100;
+                    s.MainViewModel.BuildCommandProgressShow = true;
+
+                    try
+                    {
+                        if (File.Exists(destWimPath))
+                        { // Append to existing wim file
+                            // Set Compression Type
+                            // Use of compress argument [NONE|XPRESS|LZX|LZMS] is prohibitted
+                            if (info.Recompress != null)
+                            {
+                                string compStr = StringEscaper.Preprocess(s, info.Recompress);
+                                if (!compStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
+                                    return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]");
+
+                                writeFlags |= WriteFlags.RECOMPRESS;
+                            }
+
+                            uint destWimCount;
+                            using (Wim destWim = Wim.OpenWim(destWimPath, OpenFlags.WRITE_ACCESS))
+                            {
+                                destWim.RegisterCallback(WimSimpleWriteProgress, s);
+
+                                // Get destWim's imageCount
+                                ManagedWimLib.WimInfo dwi = destWim.GetWimInfo();
+                                destWimCount = dwi.ImageCount;
+
+                                srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
+                                
+                                destWim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
+                            }
+
+                            
+                            logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into wim [{destWimPath}:{destWimCount + 1}]"));
+                        }
+                        else
+                        { // Create new wim file
+                            CompressionType compType = wi.CompressionType;
+                            if (info.Recompress != null)
+                            {
+                                string compStr = StringEscaper.Preprocess(s, info.Recompress);
+
+                                // Set Compression Type
+                                // Use of compress argument [KEEP] is prohibitted
+                                if (compStr.Equals("NONE", StringComparison.OrdinalIgnoreCase))
+                                    compType = CompressionType.NONE;
+                                else if (compStr.Equals("XPRESS", StringComparison.OrdinalIgnoreCase))
+                                    compType = CompressionType.XPRESS;
+                                else if (compStr.Equals("LZX", StringComparison.OrdinalIgnoreCase))
+                                    compType = CompressionType.LZX;
+                                else if (compStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
+                                    compType = CompressionType.LZMS;
+                                else
+                                    return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]");
+
+                                if (compType == CompressionType.LZMS)
+                                    writeFlags |= WriteFlags.SOLID;
+                                writeFlags |= WriteFlags.RECOMPRESS;
+                            }
+
+                            using (Wim destWim = Wim.CreateNewWim(compType))
+                            {
+                                destWim.RegisterCallback(WimSimpleWriteProgress, s);
+
+                                srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
+
+                                destWim.Write(destWimPath, WimLibConst.AllImages, writeFlags, (uint)Environment.ProcessorCount);
+                            }
+
+                            logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into new wim file {destWimPath}"));
+                        }
+                    }
+                    finally
+                    { // Finalize Command Progress Report
+                        s.MainViewModel.BuildCommandProgressShow = false;
+                        s.MainViewModel.BuildCommandProgressTitle = "Progress";
+                        s.MainViewModel.BuildCommandProgressText = string.Empty;
+                        s.MainViewModel.BuildCommandProgressValue = 0;
+                    }
+                }
+            }
+            catch (WimLibException e)
+            {
+                logs.Add(CommandWim.LogWimLibException(e));
+                return logs;
+            }
+
+            return logs;
+        }
+        #endregion
+
+        #region WimLib - WimSimpleWriteProgress
+        private static CallbackStatus WimSimpleWriteProgress(ProgressMsg msg, object info, object progctx)
+        {
+            EngineState s = progctx as EngineState;
+            Debug.Assert(s != null);
+
+            // WRITE_STREAMS 
+            switch (msg)
+            {
+                case ProgressMsg.WRITE_STREAMS:
+                    {
+                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressValue = percentComplete;
+                            s.MainViewModel.BuildCommandProgressText = $"Writing... ({percentComplete}%)";
+                        }
+                    }
+                    break;
+                case ProgressMsg.CALC_INTEGRITY:
+                    {
+                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+
+                        if (0 < m.TotalBytes)
+                        {
+                            ulong percentComplete = (m.CompletedBytes * 100 / m.TotalBytes);
+                            s.MainViewModel.BuildCommandProgressText = $"Calculating integrity... ({percentComplete}%)";
+                        }
+                    }
+                    break;
+            }
+            return CallbackStatus.CONTINUE;
         }
         #endregion
     }

@@ -1780,7 +1780,7 @@ namespace PEBakery.Core
                         return new CodeInfo_WimPathRename(args[0], args[1], args[2], args[3], check, rebuild);
                     }
                 case CodeType.WimOptimize:
-                    { // WimOptimize,<WimFile>,[RECOMPRESS[=STR]],[CHECK|NOCHECK]
+                    { // WimOptimize,<WimFile>,[Recomp=STR],[CHECK|NOCHECK]
                         const int minArgCount = 1;
                         const int maxArgCount = 3;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
@@ -1791,20 +1791,14 @@ namespace PEBakery.Core
 
                         for (int i = minArgCount; i < args.Count; i++)
                         {
-                            const string RecompressKey = "Recompress=";
+                            const string RecompKey = "Recomp=";
 
                             string arg = args[i];
-                            if (arg.StartsWith(RecompressKey, StringComparison.OrdinalIgnoreCase))
+                            if (arg.StartsWith(RecompKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (recompress != null)
-                                    throw new InvalidCommandException($"Argument <Recompress> cannot be duplicated", rawCode);
-                                recompress = arg.Substring(RecompressKey.Length);
-                            }
-                            else if (arg.Equals("Recompress", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (recompress != null)
-                                    throw new InvalidCommandException($"Argument <Recompress> cannot be duplicated", rawCode);
-                                recompress = string.Empty;
+                                    throw new InvalidCommandException($"Argument <Recomp> cannot be duplicated", rawCode);
+                                recompress = arg.Substring(RecompKey.Length);
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
@@ -1823,6 +1817,76 @@ namespace PEBakery.Core
                         }
 
                         return new CodeInfo_WimOptimize(args[0], recompress, check);
+                    }
+                case CodeType.WimExport:
+                    { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Split=STR],[Recomp=STR],[BOOT],[CHECK|NOCHECK]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 9;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string imageName = null;
+                        string imageDesc = null;
+                        string split = null;
+                        string recompress = null;
+                        bool boot = false;
+                        bool? check = null;
+
+                        for (int i = minArgCount; i < args.Count; i++)
+                        {
+                            const string ImageNameKey = "ImageName=";
+                            const string ImageDescKey = "ImageDesc=";
+                            const string SplitKey = "Split=";
+                            const string RecompKey = "Recomp=";
+
+                            string arg = args[i];
+                            if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (imageName != null)
+                                    throw new InvalidCommandException($"Argument <ImageName> cannot be duplicated", rawCode);
+                                imageName = arg.Substring(ImageNameKey.Length);
+                            }
+                            else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (imageDesc != null)
+                                    throw new InvalidCommandException($"Argument <ImageDesc> cannot be duplicated", rawCode);
+                                imageDesc = arg.Substring(ImageDescKey.Length);
+                            }
+                            else if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (split != null)
+                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                split = arg.Substring(SplitKey.Length);
+                            }
+                            else if (arg.StartsWith(RecompKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (recompress != null)
+                                    throw new InvalidCommandException($"Argument <Recomp> cannot be duplicated", rawCode);
+                                recompress = arg.Substring(RecompKey.Length);
+                            }
+                            else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (boot != false)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                boot = true;
+                            }
+                            else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check != null)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                check = true;
+                            }
+                            else if (arg.Equals("NOCHECK", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (check != null)
+                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                check = false;
+                            }
+                            else
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
+                        }
+
+                        return new CodeInfo_WimExport(args[0], args[1], args[2], imageName, imageDesc, split, recompress, boot, check);
                     }
                 #endregion
                 #region 80 Branch

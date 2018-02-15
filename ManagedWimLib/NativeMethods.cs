@@ -247,6 +247,7 @@ namespace ManagedWimLib
             IterateLookupTable = (wimlib_iterate_lookup_table)GetFuncPtr("wimlib_iterate_lookup_table", typeof(wimlib_iterate_lookup_table));
             GetVersionPtr = (wimlib_get_version)GetFuncPtr("wimlib_get_version", typeof(wimlib_get_version));
             DeleteImage = (wimlib_delete_image)GetFuncPtr("wimlib_delete_image", typeof(wimlib_delete_image));
+            ExportImage = (wimlib_export_image)GetFuncPtr("wimlib_export_image", typeof(wimlib_export_image));
         }
 
         private static void ResetFuntions()
@@ -278,6 +279,7 @@ namespace ManagedWimLib
             IterateLookupTable = null;
             GetVersionPtr = null;
             DeleteImage = null;
+            ExportImage = null;
         }
         #endregion
 
@@ -437,6 +439,18 @@ namespace ManagedWimLib
         internal static wimlib_update_image_64 UpdateImage64;
         #endregion
 
+        #region ExportImage
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate ErrorCode wimlib_export_image(
+            IntPtr src_wim,
+            int src_image,
+            IntPtr dest_wim,
+            [MarshalAs(UnmanagedType.LPWStr)] string dest_name,
+            [MarshalAs(UnmanagedType.LPWStr)] string dest_description,
+            ExportFlags export_flags);
+        internal static wimlib_export_image ExportImage;
+        #endregion
+
         #region SetOutputCompressionType, SetOutputPackCompressionType
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate ErrorCode wimlib_set_output_compression_type(
@@ -508,7 +522,7 @@ namespace ManagedWimLib
             // [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] resource_wimfiles_or_globs,
             [MarshalAs(UnmanagedType.LPArray)] IntPtr[] resource_wimfiles_or_globs,
             uint count,
-            ReferenceFlags ref_flags,
+            RefFlags ref_flags,
             OpenFlags open_flags);
         internal static wimlib_reference_resource_files ReferenceResourceFiles;
         #endregion
@@ -591,6 +605,8 @@ namespace ManagedWimLib
             return new Tuple<ushort, ushort, ushort>(major, minor, patch);
         }
         #endregion
+
+        
         #endregion
 
         #region Utility
@@ -1050,46 +1066,28 @@ namespace ManagedWimLib
     }
     #endregion
 
-    #region Enum InitFlags
+    #region Enum IterateFlags
     [Flags]
-    public enum InitFlags : uint
+    public enum IterateFlags : uint
     {
         DEFAULT = 0x00000000,
         /// <summary>
-        /// Windows-only: do not attempt to acquire additional privileges (currently
-        /// SeBackupPrivilege, SeRestorePrivilege, SeSecurityPrivilege,
-        /// SeTakeOwnershipPrivilege, and SeManageVolumePrivilege) when initializing the
-        /// library.  This flag is intended for the case where the calling program
-        /// manages these privileges itself.  Note: by default, no error is issued if
-        /// privileges cannot be acquired, although related errors may be reported later,
-        /// depending on if the operations performed actually require additional
-        /// privileges or not.
+        /// For wimlib_iterate_dir_tree(): Iterate recursively on children rather than just on the specified path.
         /// </summary>
-        DONT_ACQUIRE_PRIVILEGES = 0x00000002,
+        RECURSIVE = 0x00000001,
         /// <summary>
-        /// Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
-        /// return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
-        /// to read all possible data and metadata for a capture operation could not be
-        /// acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES.
+        /// For wimlib_iterate_dir_tree(): Don't iterate on the file or directory itself;
+        /// only its children (in the case of a non-empty directory)
         /// </summary>
-        STRICT_CAPTURE_PRIVILEGES = 0x00000004,
+        CHILDREN = 0x00000002,
         /// <summary>
-        /// Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
-        /// return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
-        /// to restore all possible data and metadata for an apply operation could not be
-        /// acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES.
+        /// Return ::WIMLIB_ERR_RESOURCE_NOT_FOUND if any file data blobs needed to fill
+        /// in the ::wimlib_resource_entry's for the iteration cannot be found in the
+        /// blob lookup table of the ::WIMStruct.  The default behavior without this flag
+        /// is to fill in the @ref wimlib_resource_entry::sha1_hash "sha1_hash" and set
+        /// the @ref wimlib_resource_entry::is_missing "is_missing" flag.
         /// </summary>
-        STRICT_APPLY_PRIVILEGES = 0x00000008,
-        /// <summary>
-        /// Default to interpreting WIM paths case sensitively (default on UNIX-like
-        /// systems).
-        /// </summary>
-        DEFAULT_CASE_SENSITIVE = 0x00000010,
-        /// <summary>
-        /// Default to interpreting WIM paths case insensitively (default on Windows).
-        /// This does not apply to mounted images.
-        /// </summary>
-        DEFAULT_CASE_INSENSITIVE = 0x00000020,
+        RESOURCES_NEEDED = 0x00000004,
     }
     #endregion
 
@@ -1263,6 +1261,270 @@ namespace ManagedWimLib
     }
     #endregion
 
+    #region Enum DeleteFlags
+    [Flags]
+    public enum DeleteFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// Do not issue an error if the path to delete does not exist.
+        /// </summary>
+        FORCE = 0x00000001,
+        /// <summary>
+        /// Delete the file or directory tree recursively; if not specified, an error is issued if the path to delete is a directory.
+        /// </summary>
+        RECURSIVE = 0x00000002,
+    }
+    #endregion
+
+    #region Enum ExportFlags
+    [Flags]
+    public enum ExportFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// If a single image is being exported, mark it bootable in the destination WIM.
+        /// Alternatively, if ::WIMLIB_ALL_IMAGES is specified as the image to export,
+        /// the image in the source WIM (if any) that is marked as bootable is also
+        /// marked as bootable in the destination WIM.
+        /// </summary>
+        BOOT = 0x00000001,
+        /// <summary>
+        /// Give the exported image(s) no names.  Avoids problems with image name collisions.
+        /// </summary>
+        NO_NAMES = 0x00000002,
+        /// <summary>
+        /// Give the exported image(s) no descriptions.
+        /// </summary>
+        NO_DESCRIPTIONS = 0x00000004,
+        /// <summary>
+        /// This advises the library that the program is finished with the source
+        /// WIMStruct and will not attempt to access it after the call to
+        /// wimlib_export_image(), with the exception of the call to wimlib_free().
+        /// </summary>
+        GIFT = 0x00000008,
+        /// <summary>
+        /// Mark each exported image as WIMBoot-compatible.
+        ///
+        /// Note: by itself, this does change the destination WIM's compression type, nor
+        /// does it add the file @c \\Windows\\System32\\WimBootCompress.ini in the WIM
+        /// image.  
+        /// </summary>
+        /// <remarks>
+        /// Before writing the destination WIM, it's recommended to do something
+        /// like:
+        ///
+        /// \code
+        /// wimlib_set_output_compression_type(wim, WIMLIB_COMPRESSION_TYPE_XPRESS);
+        /// wimlib_set_output_chunk_size(wim, 4096);
+        /// wimlib_add_tree(wim, image, L"myconfig.ini",
+        ///   L"\\Windows\\System32\\WimBootCompress.ini", 0);
+        /// \endcode
+        /// </remarks>
+        WIMBOOT = 0x00000010,
+    }
+    #endregion
+
+    #region Enum ExtractFlags
+    [Flags]
+    public enum ExtractFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// Extract the image directly to an NTFS volume rather than a generic directory.
+        /// This mode is only available if wimlib was compiled with libntfs-3g support;
+        /// if not, ::WIMLIB_ERR_UNSUPPORTED will be returned.  In this mode, the
+        /// extraction target will be interpreted as the path to an NTFS volume image (as
+        /// a regular file or block device) rather than a directory.  It will be opened
+        /// using libntfs-3g, and the image will be extracted to the NTFS filesystem's
+        /// root directory.  Note: this flag cannot be used when wimlib_extract_image()
+        /// is called with ::WIMLIB_ALL_IMAGES as the @p image, nor can it be used with
+        /// wimlib_extract_paths() when passed multiple paths.
+        /// </summary>
+        NTFS = 0x00000001,
+        /// <summary>
+        /// UNIX-like systems only:  Extract UNIX-specific metadata captured with
+        /// ::WIMLIB_ADD_FLAG_UNIX_DATA.
+        /// </summary>
+        UNIX_DATA = 0x00000020,
+        /// <summary>
+        /// Do not extract security descriptors.  This flag cannot be combined with
+        /// ::WIMLIB_EXTRACT_FLAG_STRICT_ACLS.
+        /// </summary>
+        NO_ACLS = 0x00000040,
+        /// <summary>
+        /// Fail immediately if the full security descriptor of any file or directory
+        /// cannot be set exactly as specified in the WIM image.  On Windows, the default
+        /// behavior without this flag when wimlib does not have permission to set the
+        /// correct security descriptor is to fall back to setting the security
+        /// descriptor with the SACL omitted, then with the DACL omitted, then with the
+        /// owner omitted, then not at all.  This flag cannot be combined with
+        /// ::WIMLIB_EXTRACT_FLAG_NO_ACLS.
+        /// </summary>
+        STRICT_ACLS = 0x00000080,
+        /// <summary>
+        /// This is the extraction equivalent to ::WIMLIB_ADD_FLAG_RPFIX.  This forces
+        /// reparse-point fixups on, so absolute symbolic links or junction points will
+        /// be fixed to be absolute relative to the actual extraction root.  Reparse-
+        /// point fixups are done by default for wimlib_extract_image() and
+        /// wimlib_extract_image_from_pipe() if <c>WIM_HDR_FLAG_RP_FIX</c> is set in the
+        /// WIM header.  This flag cannot be combined with ::WIMLIB_EXTRACT_FLAG_NORPFIX.
+        /// </summary>
+        RPFIX = 0x00000100,
+        /// <summary>
+        /// Force reparse-point fixups on extraction off, regardless of the state of the
+        /// WIM_HDR_FLAG_RP_FIX flag in the WIM header.  This flag cannot be combined
+        /// with ::WIMLIB_EXTRACT_FLAG_RPFIX.
+        /// </summary>
+        NORPFIX = 0x00000200,
+        /// <summary>
+        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Extract the
+        /// paths, each of which must name a regular file, to standard output.
+        /// </summary>
+        TO_STDOUT = 0x00000400,
+        /// <summary>
+        /// Instead of ignoring files and directories with names that cannot be
+        /// represented on the current platform (note: Windows has more restrictions on
+        /// filenames than POSIX-compliant systems), try to replace characters or append
+        /// junk to the names so that they can be extracted in some form.
+        ///
+        /// Note: this flag is unlikely to have any effect when extracting a WIM image
+        /// that was captured on Windows.
+        /// </summary>
+        REPLACE_INVALID_FILENAMES = 0x00000800,
+        /// <summary>
+        /// On Windows, when there exist two or more files with the same case insensitive
+        /// name but different case sensitive names, try to extract them all by appending
+        /// junk to the end of them, rather than arbitrarily extracting only one.
+        ///
+        /// Note: this flag is unlikely to have any effect when extracting a WIM image
+        /// that was captured on Windows.
+        /// </summary>
+        ALL_CASE_CONFLICTS = 0x00001000,
+        /// <summary>
+        /// Do not ignore failure to set timestamps on extracted files.  This flag
+        /// currently only has an effect when extracting to a directory on UNIX-like
+        /// systems.
+        /// </summary>
+        STRICT_TIMESTAMPS = 0x00002000,
+        /// <summary>
+        /// Do not ignore failure to set short names on extracted files.  This flag
+        /// currently only has an effect on Windows.
+        /// </summary>
+        STRICT_SHORT_NAMES = 0x00004000,
+        /// <summary>
+        /// Do not ignore failure to extract symbolic links and junctions due to
+        /// permissions problems.  This flag currently only has an effect on Windows.  By
+        /// default, such failures are ignored since the default configuration of Windows
+        /// only allows the Administrator to create symbolic links.
+        /// </summary>
+        STRICT_SYMLINKS = 0x00008000,
+        /// <summary>
+        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Treat the
+        /// paths to extract as wildcard patterns ("globs") which may contain the
+        /// wildcard characters @c ? and @c *.  The @c ? character matches any
+        /// non-path-separator character, whereas the @c * character matches zero or more
+        /// non-path-separator characters.  Consequently, each glob may match zero or
+        /// more actual paths in the WIM image.
+        ///
+        /// By default, if a glob does not match any files, a warning but not an error
+        /// will be issued.  This is the case even if the glob did not actually contain
+        /// wildcard characters.  Use ::WIMLIB_EXTRACT_FLAG_STRICT_GLOB to get an error
+        /// instead.
+        /// </summary>
+        GLOB_PATHS = 0x00040000,
+        /// <summary>
+        /// In combination with ::WIMLIB_EXTRACT_FLAG_GLOB_PATHS, causes an error
+        /// (::WIMLIB_ERR_PATH_DOES_NOT_EXIST) rather than a warning to be issued when
+        /// one of the provided globs did not match a file.
+        /// </summary>
+        STRICT_GLOB = 0x00080000,
+        /// <summary>
+        /// Do not extract Windows file attributes such as readonly, hidden, etc.
+        ///
+        /// This flag has an effect on Windows as well as in the NTFS-3G extraction mode.
+        /// </summary>
+        NO_ATTRIBUTES = 0x00100000,
+        /// <summary>
+        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Do not
+        /// preserve the directory structure of the archive when extracting --- that is,
+        /// place each extracted file or directory tree directly in the target directory.
+        /// The target directory will still be created if it does not already exist.
+        /// </summary>
+        NO_PRESERVE_DIR_STRUCTURE = 0x00200000,
+        /// <summary>
+        /// Windows only: Extract files as "pointers" back to the WIM archive.
+        ///
+        /// The effects of this option are fairly complex.  See the documentation for the
+        /// <b>--wimboot</b> option of <b>wimapply</b> for more information.
+        /// </summary>
+        WIMBOOT = 0x00400000,
+        /// <summary>
+        /// Since wimlib v1.8.2 and Windows-only: compress the extracted files using
+        /// System Compression, when possible.  This only works on either Windows 10 or
+        /// later, or on an older Windows to which Microsoft's wofadk.sys driver has been
+        /// added.  Several different compression formats may be used with System
+        /// Compression; this particular flag selects the XPRESS compression format with
+        /// 4096 byte chunks.
+        /// </summary>
+        COMPACT_XPRESS4K = 0x01000000,
+        /// <summary>
+        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
+        /// 8192 byte chunks.
+        /// </summary>
+        COMPACT_XPRESS8K = 0x02000000,
+        /// <summary>
+        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
+        /// 16384 byte chunks.
+        /// </summary>
+        COMPACT_XPRESS16K = 0x04000000,
+        /// <summary>
+        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use LZX compression with
+        /// 32768 byte chunks.
+        /// </summary>
+        COMPACT_LZX = 0x08000000,
+    }
+    #endregion
+
+    #region Enum MountFlags (Linux Only)
+    [Flags]
+    public enum MountFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// Mount the WIM image read-write rather than the default of read-only.
+        /// </summary>
+        READWRITE = 0x00000001,
+        /// <summary>
+        /// Enable FUSE debugging by passing the -d option to fuse_main().
+        /// </summary>
+        DEBUG = 0x00000002,
+        /// <summary>
+        /// Do not allow accessing named data streams in the mounted WIM image.
+        /// </summary>
+        STREAM_INTERFACE_NONE = 0x00000004,
+        /// <summary>
+        /// Access named data streams in the mounted WIM image through extended file
+        /// attributes named "user.X", where X is the name of a data stream.  This is the
+        /// default mode.
+        /// </summary>
+        STREAM_INTERFACE_XATTR = 0x00000008,
+        /// <summary>
+        /// Access named data streams in the mounted WIM image by specifying the file
+        /// name, a colon, then the name of the data stream.
+        /// </summary>
+        STREAM_INTERFACE_WINDOWS = 0x00000010,
+        /// <summary>
+        /// Support UNIX owners, groups, modes, and special files.
+        /// </summary>
+        UNIX_DATA = 0x00000020,
+        /// <summary>
+        /// Allow other users to see the mounted filesystem.  This passes the allow_other option to fuse_main().
+        /// </summary>
+        ALLOW_OTHER = 0x00000040,        
+    }
+    #endregion
+
     #region Enum OpenFlags
     [Flags]
     public enum OpenFlags : int
@@ -1294,6 +1556,62 @@ namespace ManagedWimLib
         /// called.
         /// </summary>
         WRITE_ACCESS = 0x00000004,
+    }
+    #endregion
+
+    #region Enum UnmountFlags (Linux Only)
+    [Flags]
+    public enum UnmountFlags : uint
+    {
+        DEFAULT = 0x00000000,
+        /// <summary>
+        /// Provide ::WIMLIB_WRITE_FLAG_CHECK_INTEGRITY when committing the WIM image.
+        /// Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.
+        /// </summary>
+        CHECK_INTEGRITY = 0x00000001,
+        /// <summary>
+        /// Commit changes to the read-write mounted WIM image.
+        /// If this flag is not specified, changes will be discarded.
+        /// </summary>
+        COMMIT = 0x00000002,
+        /// <summary>
+        /// Provide ::WIMLIB_WRITE_FLAG_REBUILD when committing the WIM image.
+        /// Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.
+        /// </summary>
+        REBUILD = 0x00000004,
+        /// <summary>
+        /// Provide ::WIMLIB_WRITE_FLAG_RECOMPRESS when committing the WIM image.
+        /// Ignored if ::WIMLIB_UNMOUNT_FLAG_COMMIT not also specified.
+        /// </summary>
+        RECOMPRESS = 0x00000008,
+        /// <summary>
+        /// In combination with ::WIMLIB_UNMOUNT_FLAG_COMMIT for a read-write mounted WIM
+        /// image, forces all file descriptors to the open WIM image to be closed before
+        /// committing it.
+        /// </summary>
+        /// <remarks>
+        /// Without ::WIMLIB_UNMOUNT_FLAG_COMMIT or with a read-only mounted WIM image,
+        /// this flag has no effect.
+        /// </remarks>
+        FORCE = 0x00000010,
+        /// <summary>
+        /// In combination with ::WIMLIB_UNMOUNT_FLAG_COMMIT for a read-write mounted
+        /// WIM image, causes the modified image to be committed to the WIM file as a
+        /// new, unnamed image appended to the archive.  The original image in the WIM
+        /// file will be unmodified.
+        /// </summary>
+        NEW_IMAGE = 0x00000020,
+    }
+    #endregion
+
+    #region Enum UpdateFlags
+    [Flags]
+    public enum UpdateFlags : uint
+    {
+        /// <summary>
+        /// Send WIMLIB_PROGRESS_MSG_UPDATE_BEGIN_COMMAND and WIMLIB_PROGRESS_MSG_UPDATE_END_COMMAND messages.
+        /// </summary>
+        SEND_PROGRESS = 0x00000001,
     }
     #endregion
 
@@ -1490,197 +1808,52 @@ namespace ManagedWimLib
     }
     #endregion
 
-    #region Enum ExtractFlags
+    #region Enum InitFlags
     [Flags]
-    public enum ExtractFlags : uint
+    public enum InitFlags : uint
     {
         DEFAULT = 0x00000000,
         /// <summary>
-        /// Extract the image directly to an NTFS volume rather than a generic directory.
-        /// This mode is only available if wimlib was compiled with libntfs-3g support;
-        /// if not, ::WIMLIB_ERR_UNSUPPORTED will be returned.  In this mode, the
-        /// extraction target will be interpreted as the path to an NTFS volume image (as
-        /// a regular file or block device) rather than a directory.  It will be opened
-        /// using libntfs-3g, and the image will be extracted to the NTFS filesystem's
-        /// root directory.  Note: this flag cannot be used when wimlib_extract_image()
-        /// is called with ::WIMLIB_ALL_IMAGES as the @p image, nor can it be used with
-        /// wimlib_extract_paths() when passed multiple paths.
+        /// Windows-only: do not attempt to acquire additional privileges (currently
+        /// SeBackupPrivilege, SeRestorePrivilege, SeSecurityPrivilege,
+        /// SeTakeOwnershipPrivilege, and SeManageVolumePrivilege) when initializing the
+        /// library.  This flag is intended for the case where the calling program
+        /// manages these privileges itself.  Note: by default, no error is issued if
+        /// privileges cannot be acquired, although related errors may be reported later,
+        /// depending on if the operations performed actually require additional
+        /// privileges or not.
         /// </summary>
-        NTFS = 0x00000001,
+        DONT_ACQUIRE_PRIVILEGES = 0x00000002,
         /// <summary>
-        /// UNIX-like systems only:  Extract UNIX-specific metadata captured with
-        /// ::WIMLIB_ADD_FLAG_UNIX_DATA.
+        /// Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
+        /// return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
+        /// to read all possible data and metadata for a capture operation could not be
+        /// acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_APPLY_PRIVILEGES.
         /// </summary>
-        UNIX_DATA = 0x00000020,
+        STRICT_CAPTURE_PRIVILEGES = 0x00000004,
         /// <summary>
-        /// Do not extract security descriptors.  This flag cannot be combined with
-        /// ::WIMLIB_EXTRACT_FLAG_STRICT_ACLS.
+        /// Windows only:  If ::WIMLIB_INIT_FLAG_DONT_ACQUIRE_PRIVILEGES not specified,
+        /// return ::WIMLIB_ERR_INSUFFICIENT_PRIVILEGES if privileges that may be needed
+        /// to restore all possible data and metadata for an apply operation could not be
+        /// acquired.  Can be combined with ::WIMLIB_INIT_FLAG_STRICT_CAPTURE_PRIVILEGES.
         /// </summary>
-        NO_ACLS = 0x00000040,
+        STRICT_APPLY_PRIVILEGES = 0x00000008,
         /// <summary>
-        /// Fail immediately if the full security descriptor of any file or directory
-        /// cannot be set exactly as specified in the WIM image.  On Windows, the default
-        /// behavior without this flag when wimlib does not have permission to set the
-        /// correct security descriptor is to fall back to setting the security
-        /// descriptor with the SACL omitted, then with the DACL omitted, then with the
-        /// owner omitted, then not at all.  This flag cannot be combined with
-        /// ::WIMLIB_EXTRACT_FLAG_NO_ACLS.
+        /// Default to interpreting WIM paths case sensitively (default on UNIX-like
+        /// systems).
         /// </summary>
-        STRICT_ACLS = 0x00000080,
+        DEFAULT_CASE_SENSITIVE = 0x00000010,
         /// <summary>
-        /// This is the extraction equivalent to ::WIMLIB_ADD_FLAG_RPFIX.  This forces
-        /// reparse-point fixups on, so absolute symbolic links or junction points will
-        /// be fixed to be absolute relative to the actual extraction root.  Reparse-
-        /// point fixups are done by default for wimlib_extract_image() and
-        /// wimlib_extract_image_from_pipe() if <c>WIM_HDR_FLAG_RP_FIX</c> is set in the
-        /// WIM header.  This flag cannot be combined with ::WIMLIB_EXTRACT_FLAG_NORPFIX.
+        /// Default to interpreting WIM paths case insensitively (default on Windows).
+        /// This does not apply to mounted images.
         /// </summary>
-        RPFIX = 0x00000100,
-        /// <summary>
-        /// Force reparse-point fixups on extraction off, regardless of the state of the
-        /// WIM_HDR_FLAG_RP_FIX flag in the WIM header.  This flag cannot be combined
-        /// with ::WIMLIB_EXTRACT_FLAG_RPFIX.
-        /// </summary>
-        NORPFIX = 0x00000200,
-        /// <summary>
-        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Extract the
-        /// paths, each of which must name a regular file, to standard output.
-        /// </summary>
-        TO_STDOUT = 0x00000400,
-        /// <summary>
-        /// Instead of ignoring files and directories with names that cannot be
-        /// represented on the current platform (note: Windows has more restrictions on
-        /// filenames than POSIX-compliant systems), try to replace characters or append
-        /// junk to the names so that they can be extracted in some form.
-        ///
-        /// Note: this flag is unlikely to have any effect when extracting a WIM image
-        /// that was captured on Windows.
-        /// </summary>
-        REPLACE_INVALID_FILENAMES = 0x00000800,
-        /// <summary>
-        /// On Windows, when there exist two or more files with the same case insensitive
-        /// name but different case sensitive names, try to extract them all by appending
-        /// junk to the end of them, rather than arbitrarily extracting only one.
-        ///
-        /// Note: this flag is unlikely to have any effect when extracting a WIM image
-        /// that was captured on Windows.
-        /// </summary>
-        ALL_CASE_CONFLICTS = 0x00001000,
-        /// <summary>
-        /// Do not ignore failure to set timestamps on extracted files.  This flag
-        /// currently only has an effect when extracting to a directory on UNIX-like
-        /// systems.
-        /// </summary>
-        STRICT_TIMESTAMPS = 0x00002000,
-        /// <summary>
-        /// Do not ignore failure to set short names on extracted files.  This flag
-        /// currently only has an effect on Windows.
-        /// </summary>
-        STRICT_SHORT_NAMES = 0x00004000,
-        /// <summary>
-        /// Do not ignore failure to extract symbolic links and junctions due to
-        /// permissions problems.  This flag currently only has an effect on Windows.  By
-        /// default, such failures are ignored since the default configuration of Windows
-        /// only allows the Administrator to create symbolic links.
-        /// </summary>
-        STRICT_SYMLINKS = 0x00008000,
-        /// <summary>
-        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Treat the
-        /// paths to extract as wildcard patterns ("globs") which may contain the
-        /// wildcard characters @c ? and @c *.  The @c ? character matches any
-        /// non-path-separator character, whereas the @c * character matches zero or more
-        /// non-path-separator characters.  Consequently, each glob may match zero or
-        /// more actual paths in the WIM image.
-        ///
-        /// By default, if a glob does not match any files, a warning but not an error
-        /// will be issued.  This is the case even if the glob did not actually contain
-        /// wildcard characters.  Use ::WIMLIB_EXTRACT_FLAG_STRICT_GLOB to get an error
-        /// instead.
-        /// </summary>
-        GLOB_PATHS = 0x00040000,
-        /// <summary>
-        /// In combination with ::WIMLIB_EXTRACT_FLAG_GLOB_PATHS, causes an error
-        /// (::WIMLIB_ERR_PATH_DOES_NOT_EXIST) rather than a warning to be issued when
-        /// one of the provided globs did not match a file.
-        /// </summary>
-        STRICT_GLOB = 0x00080000,
-        /// <summary>
-        /// Do not extract Windows file attributes such as readonly, hidden, etc.
-        ///
-        /// This flag has an effect on Windows as well as in the NTFS-3G extraction mode.
-        /// </summary>
-        NO_ATTRIBUTES = 0x00100000,
-        /// <summary>
-        /// For wimlib_extract_paths() and wimlib_extract_pathlist() only:  Do not
-        /// preserve the directory structure of the archive when extracting --- that is,
-        /// place each extracted file or directory tree directly in the target directory.
-        /// The target directory will still be created if it does not already exist.
-        /// </summary>
-        NO_PRESERVE_DIR_STRUCTURE = 0x00200000,
-        /// <summary>
-        /// Windows only: Extract files as "pointers" back to the WIM archive.
-        ///
-        /// The effects of this option are fairly complex.  See the documentation for the
-        /// <b>--wimboot</b> option of <b>wimapply</b> for more information.
-        /// </summary>
-        WIMBOOT = 0x00400000,
-        /// <summary>
-        /// Since wimlib v1.8.2 and Windows-only: compress the extracted files using
-        /// System Compression, when possible.  This only works on either Windows 10 or
-        /// later, or on an older Windows to which Microsoft's wofadk.sys driver has been
-        /// added.  Several different compression formats may be used with System
-        /// Compression; this particular flag selects the XPRESS compression format with
-        /// 4096 byte chunks.
-        /// </summary>
-        COMPACT_XPRESS4K = 0x01000000,
-        /// <summary>
-        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
-        /// 8192 byte chunks.
-        /// </summary>
-        COMPACT_XPRESS8K = 0x02000000,
-        /// <summary>
-        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use XPRESS compression with
-        /// 16384 byte chunks.
-        /// </summary>
-        COMPACT_XPRESS16K = 0x04000000,
-        /// <summary>
-        /// Like ::WIMLIB_EXTRACT_FLAG_COMPACT_XPRESS4K, but use LZX compression with
-        /// 32768 byte chunks.
-        /// </summary>
-        COMPACT_LZX = 0x08000000,
+        DEFAULT_CASE_INSENSITIVE = 0x00000020,
     }
     #endregion
 
-    #region Enum UpdateFlags
+    #region Enum RefFlags
     [Flags]
-    public enum UpdateFlags : uint
-    {
-        /// <summary>
-        /// Send WIMLIB_PROGRESS_MSG_UPDATE_BEGIN_COMMAND and WIMLIB_PROGRESS_MSG_UPDATE_END_COMMAND messages.
-        /// </summary>
-        SEND_PROGRESS = 0x00000001,
-    }
-    #endregion
-
-    #region Enum DeleteFlags
-    [Flags]
-    public enum DeleteFlags : uint
-    {
-        DEFAULT = 0x00000000,
-        /// <summary>
-        /// Do not issue an error if the path to delete does not exist.
-        /// </summary>
-        FORCE = 0x00000001,
-        /// <summary>
-        /// Delete the file or directory tree recursively; if not specified, an error is issued if the path to delete is a directory.
-        /// </summary>
-        RECURSIVE = 0x00000002,
-    }
-    #endregion
-
-    #region Enum ReferenceFlags
-    [Flags]
-    public enum ReferenceFlags : int
+    public enum RefFlags : int
     {
         DEFAULT = 0x00000000,
         /// <summary>
@@ -1696,31 +1869,6 @@ namespace ManagedWimLib
         /// Ignored by wimlib_reference_resources().
         /// </summary>
         GLOB_ERR_ON_NOMATCH = 0x00000002,
-    }
-    #endregion
-
-    #region Enum IterateFlags
-    [Flags]
-    public enum IterateFlags : uint
-    {
-        DEFAULT = 0x00000000,
-        /// <summary>
-        /// For wimlib_iterate_dir_tree(): Iterate recursively on children rather than just on the specified path.
-        /// </summary>
-        RECURSIVE = 0x00000001,
-        /// <summary>
-        /// For wimlib_iterate_dir_tree(): Don't iterate on the file or directory itself;
-        /// only its children (in the case of a non-empty directory)
-        /// </summary>
-        CHILDREN = 0x00000002,
-        /// <summary>
-        /// Return ::WIMLIB_ERR_RESOURCE_NOT_FOUND if any file data blobs needed to fill
-        /// in the ::wimlib_resource_entry's for the iteration cannot be found in the
-        /// blob lookup table of the ::WIMStruct.  The default behavior without this flag
-        /// is to fill in the @ref wimlib_resource_entry::sha1_hash "sha1_hash" and set
-        /// the @ref wimlib_resource_entry::is_missing "is_missing" flag.
-        /// </summary>
-        RESOURCES_NEEDED = 0x00000004,
     }
     #endregion
 
@@ -2345,7 +2493,7 @@ namespace ManagedWimLib
     #endregion
     #endregion
 
-    #region Struct DirEnty
+    #region Struct DirEntry
     /// <summary>
     /// Structure passed to the wimlib_iterate_dir_tree() callback function.
     /// Roughly, the information about a "file" in the WIM image --- but really a
@@ -2353,7 +2501,7 @@ namespace ManagedWimLib
     /// hard_link_group_id field can be used to distinguish actual file inodes.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct DirEntry
+    internal struct DirEntryBase
     {
         /// <summary>
         /// Name of the file, or NULL if this file is unnamed. Only the root directory of an image will be unnamed.
@@ -2408,7 +2556,7 @@ namespace ManagedWimLib
         /// whether the reparse point is a symbolic link, junction point, or some
         /// other, more unusual kind of reparse point.
         /// </summary>
-        public WimLibReparseTag ReparseTag;
+        public ReparseTag ReparseTag;
         /// <summary>
         /// Number of links to this file's inode (hard links).
         ///
@@ -2482,10 +2630,110 @@ namespace ManagedWimLib
         private int Reserved2;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         private ulong[] Reserved;
-        /*
-        // TODO : Unable to handle this correctly!
-        //        Any contributions are welcome.
-        //
+    }
+
+    public class DirEntry
+    {
+        /// <summary>
+        /// Name of the file, or NULL if this file is unnamed. Only the root directory of an image will be unnamed.
+        /// </summary>
+        public string FileName;
+        /// <summary>
+        /// 8.3 name (or "DOS name", or "short name") of this file; or NULL if this file has no such name.
+        /// </summary>
+        public string DosName;
+        /// <summary>
+        /// Full path to this file within the image.  Path separators will be ::WIMLIB_WIM_PATH_SEPARATOR.
+        /// </summary>
+        public string FullPath;
+        /// <summary>
+        /// Depth of this directory entry, where 0 is the root, 1 is the root's children, ..., etc.
+        /// </summary>
+        public ulong Depth;
+        /// <summary>
+        /// Pointer to the security descriptor for this file, in Windows 
+        /// SECURITY_DESCRIPTOR_RELATIVE format, or NULL if this file has no
+        /// security descriptor.
+        /// </summary>
+        public byte[] SecurityDescriptor;
+        /// <summary>
+        /// File attributes, such as whether the file is a directory or not.
+        /// These are the "standard" Windows FILE_ATTRIBUTE_* values, although in
+        /// wimlib.h they are defined as WIMLIB_FILE_ATTRIBUTE_* for convenience
+        /// on other platforms.
+        /// </summary>
+        public FileAttribute Attributes;
+        /// <summary>
+        /// If the file is a reparse point (FILE_ATTRIBUTE_REPARSE_POINT set in
+        /// the attributes), this will give the reparse tag.  This tells you
+        /// whether the reparse point is a symbolic link, junction point, or some
+        /// other, more unusual kind of reparse point.
+        /// </summary>
+        public ReparseTag ReparseTag;
+        /// <summary>
+        /// Number of links to this file's inode (hard links).
+        ///
+        /// Currently, this will always be 1 for directories.  However, it can be
+        /// greater than 1 for nondirectory files.
+        /// </summary>
+        public uint NumLinks;
+        /// <summary>
+        /// Number of named data streams this file has.  Normally 0.
+        /// </summary>
+        public uint NumNamedStreams;
+        /// <summary>
+        /// A unique identifier for this file's inode.  However, as a special
+        /// case, if the inode only has a single link (@p num_links == 1), this
+        /// value may be 0.
+        ///
+        /// Note: if a WIM image is captured from a filesystem, this value is not
+        /// guaranteed to be the same as the original number of the inode on the
+        /// filesystem.
+        /// </summary>
+        public ulong HardLinkGroupId;
+        /// <summary>
+        /// Time this file was created.
+        /// </summary>
+        public DateTime CreationTime;
+        /// <summary>
+        /// Time this file was last written to.
+        /// </summary>
+        public DateTime LastWriteTime;
+        /// <summary>
+        /// Time this file was last accessed.
+        /// </summary>
+        public DateTime LastAccessTime;
+        /// <summary>
+        /// The UNIX user ID of this file.  This is a wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixUserId;
+        /// <summary>
+        /// The UNIX group ID of this file.  This is a wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixGroupId;
+        /// <summary>
+        /// The UNIX mode of this file.  This is a wimlib extension.
+        ///
+        /// If this field is 0, then @p unix_uid, @p unix_gid, @p unix_mode, and
+        /// @p unix_rdev are all unknown (fields are not present in the WIM
+        /// image).
+        /// </summary>
+        public uint UnixMode;
+        /// <summary>
+        /// The UNIX device ID (major and minor number) of this file.  This is a
+        /// wimlib extension.
+        ///
+        /// This field is only valid if @p unix_mode != 0.
+        /// </summary>
+        public uint UnixRootDevice;
+        /// <summary>
+        /// The object ID of this file, if any.  Only valid if object_id.object_id is not all zeroes.
+        /// </summary>
+        public WimObjectId ObjectId;
         /// <summary>
         /// Variable-length array of streams that make up this file.
         ///
@@ -2500,22 +2748,7 @@ namespace ManagedWimLib
         /// additional entries that specify the named data streams, if any, each
         /// of which will have <c>stream_name != NULL</c>.
         /// </summary>
-        public StreamEntry[] Streams
-        {
-            get
-            {
-                // IntPtr ptr = IntPtr.Zero;
-                // Marshal.StructureToPtr(this, ptr, true);
-
-                StreamEntry[] streams = new StreamEntry[NumNamedStreams];
-                for (int i = 0; i < NumNamedStreams; i++)
-                    streams[i] = (StreamEntry)Marshal.PtrToStructure(IntPtr.Add(StreamsArr, i), typeof(StreamEntry));
-
-                return streams;
-            }
-        }
-        private IntPtr StreamsArr;
-        */
+        public StreamEntry[] Streams;
     }
 
     public enum FileAttribute : uint
@@ -2537,7 +2770,7 @@ namespace ManagedWimLib
         VIRTUAL = 0x00010000,
     }
 
-    public enum WimLibReparseTag : uint
+    public enum ReparseTag : uint
     {
         RESERVED_ZERO = 0x00000000,
         RESERVED_ONE = 0x00000001,

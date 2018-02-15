@@ -664,10 +664,13 @@ namespace PEBakery.Core
                     case CodeType.WimPathRename:
                         logs.AddRange(CommandWim.WimPathRename(s, cmd));
                         break;
+                    case CodeType.WimPathOp:
+                        break;
                     case CodeType.WimOptimize:
                         logs.AddRange(CommandWim.WimOptimize(s, cmd));
                         break;
                     case CodeType.WimExport:
+                        logs.AddRange(CommandWim.WimExport(s, cmd));
                         break;
                     #endregion
                     #region 80 Branch

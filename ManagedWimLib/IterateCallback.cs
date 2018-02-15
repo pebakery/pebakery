@@ -34,7 +34,37 @@ namespace ManagedWimLib
             CallbackStatus ret = CallbackStatus.CONTINUE;
             if (_callback != null)
             {
-                DirEntry dentry = (DirEntry)Marshal.PtrToStructure(entry_ptr, typeof(DirEntry));
+                DirEntryBase b = (DirEntryBase)Marshal.PtrToStructure(entry_ptr, typeof(DirEntryBase));
+                DirEntry dentry = new DirEntry()
+                {
+                    FileName = b.FileName,
+                    DosName = b.DosName,
+                    FullPath = b.FullPath,
+                    Depth = b.Depth,
+                    SecurityDescriptor = b.SecurityDescriptor,
+                    Attributes = b.Attributes,
+                    ReparseTag = b.ReparseTag,
+                    NumLinks = b.NumLinks,
+                    NumNamedStreams = b.NumNamedStreams,
+                    HardLinkGroupId = b.HardLinkGroupId,
+                    CreationTime = b.CreationTime,
+                    LastWriteTime = b.LastWriteTime,
+                    LastAccessTime = b.LastAccessTime,
+                    UnixUserId = b.UnixUserId,
+                    UnixGroupId = b.UnixGroupId,
+                    UnixMode = b.UnixMode,
+                    UnixRootDevice = b.UnixRootDevice,
+                    ObjectId = b.ObjectId,
+                    Streams = new StreamEntry[b.NumNamedStreams + 1],
+                };
+
+                IntPtr baseOffset = IntPtr.Add(entry_ptr, Marshal.SizeOf(typeof(DirEntryBase)));
+                for (int i = 0; i < dentry.Streams.Length; i++)
+                {
+                    IntPtr offset = IntPtr.Add(baseOffset, i * Marshal.SizeOf(typeof(StreamEntry)));
+                    dentry.Streams[i] = (StreamEntry)Marshal.PtrToStructure(offset, typeof(StreamEntry));
+                }
+
                 ret = _callback(dentry, _userData);
             }
 
