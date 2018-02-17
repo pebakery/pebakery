@@ -39,7 +39,7 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void Update()
         {
-            string sampleDir = Path.Combine(TestSetup.BaseDir, "Samples");
+            string sampleDir = Path.Combine(TestSetup.SampleDir);
 
             void RunUpdateTest(string wimFile, UpdateCommand[] cmds)
             {
@@ -89,7 +89,7 @@ namespace ManagedWimLib.Tests
             {
                 Directory.CreateDirectory(destDir);
 
-                string srcWimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
+                string srcWimFile = Path.Combine(TestSetup.SampleDir, fileName);
                 string destWimFile = Path.Combine(destDir, fileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
@@ -144,7 +144,7 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void UpdateProgress()
         {
-            string sampleDir = Path.Combine(TestSetup.BaseDir, "Samples");
+            string sampleDir = Path.Combine(TestSetup.SampleDir);
 
             void RunUpdateTest(string wimFile, UpdateCommand[] cmds)
             {
@@ -189,7 +189,7 @@ namespace ManagedWimLib.Tests
                 case ProgressMsg.UPDATE_BEGIN_COMMAND:
                 case ProgressMsg.UPDATE_END_COMMAND:
                     {
-                        WimLibProgressInfo_Update m = (WimLibProgressInfo_Update)info;
+                        ProgressInfo_Update m = (ProgressInfo_Update)info;
 
                         Assert.IsNotNull(m);
                         tested.Set();
@@ -232,7 +232,7 @@ namespace ManagedWimLib.Tests
                 CallbackTested tested = new CallbackTested(false);
                 Directory.CreateDirectory(destDir);
 
-                string srcWimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
+                string srcWimFile = Path.Combine(TestSetup.SampleDir, fileName);
                 string destWimFile = Path.Combine(destDir, fileName);
                 File.Copy(srcWimFile, destWimFile, true);
 

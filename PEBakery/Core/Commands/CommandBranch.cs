@@ -171,7 +171,6 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < paramList.Count; i++)
                     paramDict[i + 1] = paramList[i];
 
-                //
                 long loopCount = 0;
                 long startIdx = 0, endIdx = 0;
                 char startLetter = ' ', endLetter = ' ';

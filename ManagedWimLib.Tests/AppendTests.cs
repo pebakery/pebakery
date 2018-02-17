@@ -60,8 +60,8 @@ namespace ManagedWimLib.Tests
             {
                 Directory.CreateDirectory(destDir);
 
-                string srcDir = Path.Combine(TestSetup.BaseDir, "Samples", "Append01");
-                string srcWimFile = Path.Combine(TestSetup.BaseDir, "Samples", wimFileName);
+                string srcDir = Path.Combine(TestSetup.SampleDir, "Append01");
+                string srcWimFile = Path.Combine(TestSetup.SampleDir, wimFileName);
                 string destWimFile = Path.Combine(destDir, wimFileName);
                 File.Copy(srcWimFile, destWimFile, true);
 
@@ -118,7 +118,7 @@ namespace ManagedWimLib.Tests
             {
                 case ProgressMsg.WRITE_STREAMS:
                     { // Extract of one file
-                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
                         Assert.IsNotNull(m);
 
                         tested.Set();
@@ -140,8 +140,8 @@ namespace ManagedWimLib.Tests
                 Directory.CreateDirectory(destDir);
                 CallbackTested tested = new CallbackTested(false);
 
-                string srcDir = Path.Combine(TestSetup.BaseDir, "Samples", "Append01");
-                string srcWimFile = Path.Combine(TestSetup.BaseDir, "Samples", wimFileName);
+                string srcDir = Path.Combine(TestSetup.SampleDir, "Append01");
+                string srcWimFile = Path.Combine(TestSetup.SampleDir, wimFileName);
                 string destWimFile = Path.Combine(destDir, wimFileName);
                 File.Copy(srcWimFile, destWimFile, true);
 

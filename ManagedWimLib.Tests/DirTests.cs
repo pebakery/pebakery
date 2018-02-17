@@ -63,7 +63,7 @@ namespace ManagedWimLib.Tests
         {
             List<string> entries = new List<string>();
 
-            string wimFile = Path.Combine(TestSetup.BaseDir, "Samples", fileName);
+            string wimFile = Path.Combine(TestSetup.SampleDir, fileName);
             using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
             {
                 wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
