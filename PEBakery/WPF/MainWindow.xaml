@@ -45,6 +45,7 @@
         <local:MainViewModel/>
     </Window.DataContext>
     <Window.Resources>
+        <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
@@ -652,4 +653,14 @@
             </Grid>
         </Grid>
     </DockPanel>
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo ProgressState="{Binding TaskbarProgressState}" >
+            <TaskbarItemInfo.ProgressValue>
+                <MultiBinding Converter="{StaticResource TaskbarProgressConverter}" >
+                    <Binding Path="BuildFullProgressBarMax" />
+                    <Binding Path="BuildFullProgressBarValue" />
+                </MultiBinding>
+            </TaskbarItemInfo.ProgressValue>
+        </TaskbarItemInfo>
+    </Window.TaskbarItemInfo>
 </Window>
