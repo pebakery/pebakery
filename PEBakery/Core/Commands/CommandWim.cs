@@ -484,7 +484,7 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.EXTRACT_FILE_STRUCTURE:
                     {
-                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
 
                         if (0 < m.EndFileCount)
                         {
@@ -496,7 +496,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.EXTRACT_STREAMS:
                     {
-                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -508,7 +508,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.EXTRACT_METADATA:
                     {
-                        WimLibProgressInfo_Extract m = (WimLibProgressInfo_Extract)info;
+                        ProgressInfo_Extract m = (ProgressInfo_Extract)info;
 
                         if (0 < m.EndFileCount)
                         {
@@ -520,7 +520,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CALC_INTEGRITY:
                     {
-                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -823,7 +823,7 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        wim.Write(destWim, WimLibConst.AllImages, writeFlags, (uint)Environment.ProcessorCount);
+                        wim.Write(destWim, Wim.AllImages, writeFlags, (uint)Environment.ProcessorCount);
 
                         logs.Add(new LogInfo(LogState.Success, $"Captured [{srcDir}] into [{destWim}]"));
                     }
@@ -968,14 +968,14 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.SCAN_BEGIN:
                     {
-                        WimLibProgressInfo_Scan m = (WimLibProgressInfo_Scan)info;
+                        ProgressInfo_Scan m = (ProgressInfo_Scan)info;
 
                         s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Scanning {m.Source}...";
                     }
                     break;
                 case ProgressMsg.WRITE_STREAMS:
                     {
-                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -987,7 +987,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CALC_INTEGRITY:
                     {
-                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1082,7 +1082,7 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.WRITE_STREAMS:
                     {
-                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1094,7 +1094,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CALC_INTEGRITY:
                     {
-                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1338,7 +1338,7 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.UPDATE_END_COMMAND:
                     {
-                        WimLibProgressInfo_Update m = (WimLibProgressInfo_Update)info;
+                        ProgressInfo_Update m = (ProgressInfo_Update)info;
 
                         UpdateCommand upCmd = m.Command;
                         string str;
@@ -1365,7 +1365,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.WRITE_STREAMS:
                     {
-                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1377,7 +1377,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CALC_INTEGRITY:
                     {
-                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1616,7 +1616,7 @@ namespace PEBakery.Core.Commands
 
                                 srcWim.ExportImage(imageIndex, destWim, imageName, imageDesc, exportFlags);
 
-                                destWim.Write(destWimPath, WimLibConst.AllImages, writeFlags, (uint)Environment.ProcessorCount);
+                                destWim.Write(destWimPath, Wim.AllImages, writeFlags, (uint)Environment.ProcessorCount);
                             }
 
                             logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into new wim file {destWimPath}"));
@@ -1652,7 +1652,7 @@ namespace PEBakery.Core.Commands
             {
                 case ProgressMsg.WRITE_STREAMS:
                     {
-                        WimLibProgressInfo_WriteStreams m = (WimLibProgressInfo_WriteStreams)info;
+                        ProgressInfo_WriteStreams m = (ProgressInfo_WriteStreams)info;
 
                         if (0 < m.TotalBytes)
                         {
@@ -1664,7 +1664,7 @@ namespace PEBakery.Core.Commands
                     break;
                 case ProgressMsg.CALC_INTEGRITY:
                     {
-                        WimLibProgressInfo_Integrity m = (WimLibProgressInfo_Integrity)info;
+                        ProgressInfo_Integrity m = (ProgressInfo_Integrity)info;
 
                         if (0 < m.TotalBytes)
                         {

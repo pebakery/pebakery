@@ -34,11 +34,13 @@ namespace ManagedWimLib.Tests
     public class TestSetup
     {
         public static string BaseDir;
+        public static string SampleDir;
 
         [AssemblyInitialize]
         public static void Init(TestContext context)
         {
-            BaseDir = Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", "..");
+            BaseDir = Path.GetFullPath(Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", ".."));
+            SampleDir = Path.Combine(BaseDir, "Samples");
 
             if (IntPtr.Size == 8)
                 NativeMethods.AssemblyInit(Path.Combine("x64", "libwim-15.dll"));
@@ -66,7 +68,33 @@ namespace ManagedWimLib.Tests
             return path;
         }
 
-        public static void CheckDir_Src01(string dir)
+        public static void CheckWimPath_Src01(string wimFile)
+        {
+            using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+            {
+                Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD")));
+                Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD", "Z")));
+                Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABDE")));
+                Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABDE", "Z")));
+
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ACDE.txt")));
+
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "A.txt")));
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "B.txt")));
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "C.txt")));
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "D.ini")));
+
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "Z", "X.txt")));
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "Z", "Y.ini")));
+
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "A.txt")));
+
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "Z", "X.txt")));
+                Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "Z", "Y.ini")));
+            }
+        }
+
+        public static void CheckFileSystem_Src01(string dir)
         {
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD")));
             Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD", "Z")));

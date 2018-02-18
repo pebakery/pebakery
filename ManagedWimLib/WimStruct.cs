@@ -35,10 +35,11 @@ namespace ManagedWimLib
     { // Wrapper of WimStruct and API
         #region Field
         public IntPtr Ptr { get; private set; }
-        private ManagedWimLibCallback managedCallback;
+        private ManagedProgressCallback managedCallback;
         #endregion
 
         #region Const
+        public const int NoImage = 0;
         public const int AllImages = -1;
         public const int DefaultThreads = 0;
         #endregion
@@ -47,7 +48,7 @@ namespace ManagedWimLib
         private Wim(IntPtr ptr)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
 
             Ptr = ptr;
         }
@@ -79,7 +80,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region Static Methods
+        #region Factory Methods - OpenWim, CreateWim
         /// <summary>
         /// Open a WIM file and create a instance of Wim class for it.
         /// </summary>
@@ -94,7 +95,7 @@ namespace ManagedWimLib
         public static Wim OpenWim(string wimFile, OpenFlags openFlags)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
 
             ErrorCode ret = NativeMethods.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
             if (ret != ErrorCode.SUCCESS)
@@ -118,10 +119,10 @@ namespace ManagedWimLib
         ///	when finished with it.
         ///	</returns>
         ///	<exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim OpenWim(string wimFile, OpenFlags openFlags, WimLibCallback callback, object userData = null)
+        public static Wim OpenWim(string wimFile, OpenFlags openFlags, ProgressCallback callback, object userData = null)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
 
             ErrorCode ret = NativeMethods.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
@@ -143,24 +144,19 @@ namespace ManagedWimLib
         /// to an on-disk file using wimlib_write().
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public static Wim CreateNewWim(CompressionType compType, WimLibCallback callback = null, object userData = null)
+        public static Wim CreateNewWim(CompressionType compType)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(WimLibConst.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
 
             ErrorCode ret = NativeMethods.CreateNewWim(compType, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
 
-            Wim wim = new Wim(wimPtr);
-            if (callback != null)
-                wim.RegisterCallback(callback, userData);
-
-            return wim;
+            return new Wim(wimPtr);
         }
         #endregion
 
-        #region Instance Methods
-        #region RegisterCallback
+        #region Callback - RegisterCallback
         /// <summary>
         /// Register a progress function with a ::WIMStruct.
         /// </summary>
@@ -174,11 +170,11 @@ namespace ManagedWimLib
         /// The value which will be passed as the third argument to calls to @p
         /// progfunc.
         /// </param>
-        public void RegisterCallback(WimLibCallback callback, object userData = null)
+        public void RegisterCallback(ProgressCallback callback, object userData = null)
         {
             if (callback != null)
             { // RegisterCallback
-                managedCallback = new ManagedWimLibCallback(callback, userData);
+                managedCallback = new ManagedProgressCallback(callback, userData);
                 NativeMethods.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
             }
             else
@@ -189,60 +185,247 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region GetWimInfo
+        #region Add - AddEmptyImage, AddImage, AddImageMultiSource, AddTree
         /// <summary>
-        /// Get basic information about a WIM file.
+        /// Append an empty image to a ::WIMStruct.
+        ///
+        /// The new image will initially contain no files or directories, although if
+        /// written without further modifications, then a root directory will be created
+        /// automatically for it.
         /// </summary>
-        /// <returns>Return 0</returns>
-        public WimInfo GetWimInfo()
+        /// <remarks>
+        /// After calling this function, you can use Wim.UpdateImage() to add files to the new image.
+        /// This gives you more control over making the new image compared to calling Wim.AddImage() or Wim.AddImageMultisource().
+        /// </remarks>
+        /// <param name="name">
+        /// Name to give the new image. 
+        /// If null or empty, the new image is given no name. 
+        /// If nonempty, it must specify a name that does not already exist in wim.
+        /// </param>
+        /// <returns>If non-null, the index of the newly added image is returned in this location.</returns>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public int AddEmptyImage(string name)
         {
-            // This function always return 0, so no need to check exception
-            IntPtr infoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WimInfo)));
+            ErrorCode ret = NativeMethods.AddEmptyImage(Ptr, name, out int newIdx);
+            WimLibException.CheckWimLibError(ret);
+
+            return newIdx;
+        }
+
+        /// <summary>
+        /// Add an image to a WimStruct from an on-disk directory tree or NTFS volume.
+        /// </summary>
+        /// <param name="source">
+        /// A path to a directory or unmounted NTFS volume that will be captured as a WIM image.
+        /// </param>
+        /// <param name="name">
+        /// Name to give the new image. 
+        /// If null or empty, the new image is given no name.
+        /// If nonempty, it must specify a name that does not already exist in wim.
+        /// </param>
+        /// <param name="configFile">
+        /// Path to capture configuration file, or null.
+        /// This file may specify, among other things, which files to exclude from capture.  
+        /// 
+        /// If null, the default capture configuration will be used.
+        /// Ordinarily, the default capture configuration will result in no files being excluded from capture purely based on name;
+        /// however, the AddFlags.WINCONFIG and AddFlags.WIMBOOT flags modify the default.
+        /// </param>
+        /// <param name="addFlags">
+        /// Bitwise OR of AddFlags.
+        /// </param>
+        /// <remarks>
+        /// The directory tree or NTFS volume is scanned immediately to load the dentry
+        /// tree into memory, and file metadata is read.  However, actual file data may
+        /// not be read until the ::WIMStruct is persisted to disk using wimlib_write()
+        /// or wimlib_overwrite().
+        ///
+        /// See the documentation for the @b wimlib-imagex program for more information
+        /// about the "normal" capture mode versus the NTFS capture mode (entered by
+        /// providing the flag ::WIMLIB_ADD_FLAG_NTFS).
+        ///
+        /// Note that no changes are committed to disk until wimlib_write() or
+        /// wimlib_overwrite() is called.
+        /// </remarks>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void AddImage(string source, string name, string configFile, AddFlags addFlags)
+        {
+            ErrorCode ret = NativeMethods.AddImage(Ptr, source, name, configFile, addFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Equivalent to Wim.AddImage() except it allows for multiple sources to be combined into a single WIM image.
+        /// </summary>
+        /// <param name="sources">
+        /// Array of capture sources.
+        /// </param>
+        /// <param name="name">
+        /// Name to give the new image. 
+        /// If null or empty, the new image is given no name.
+        /// If nonempty, it must specify a name that does not already exist in wim.
+        /// </param>
+        /// <param name="configFile">
+        /// Path to capture configuration file, or null.
+        /// This file may specify, among other things, which files to exclude from capture.  
+        /// 
+        /// If null, the default capture configuration will be used.
+        /// Ordinarily, the default capture configuration will result in no files being excluded from capture purely based on name;
+        /// however, the AddFlags.WINCONFIG and AddFlags.WIMBOOT flags modify the default.
+        /// </param>
+        /// <param name="addFlags">Bitwise OR of AddFlags.</param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void AddImageMultiSource(IEnumerable<CaptureSource> sources, string name, string configFile, AddFlags addFlags)
+        {
+            /*
+            CaptureSource[] srcs = sources.ToArray();
+            using (PinnedObject pinned = new PinnedObject(srcs))
+            {
+                ErrorCode ret = NativeMethods.AddImageMultiSource(Ptr, srcs, new IntPtr(srcs.Count()), name, configFile, addFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            */
+
+            ErrorCode ret = NativeMethods.AddImageMultiSource(Ptr, sources.ToArray(), new IntPtr(sources.Count()), name, configFile, addFlags);
+            WimLibException.CheckWimLibError(ret);
+
+            /*
+            CaptureSource[] srcs = sources.ToArray();
+            IntPtr buffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(CaptureSource)) * srcs.Length);
             try
             {
-                NativeMethods.GetWimInfo(Ptr, infoPtr);
-                return (WimInfo)Marshal.PtrToStructure(infoPtr, typeof(WimInfo));
+                for (int i = 0; i < srcs.Length; i++)
+                {
+                    IntPtr offset = IntPtr.Add(buffer, i * Marshal.SizeOf(typeof(CaptureSource)));
+                    Marshal.StructureToPtr(srcs[i], offset, false);
+                }
+
+                ErrorCode ret = NativeMethods.AddImageMultiSource(Ptr, buffer, new IntPtr(srcs.Length), name, configFile, addFlags);
+                WimLibException.CheckWimLibError(ret);
             }
             finally
             {
-                Marshal.FreeHGlobal(infoPtr);
+                Marshal.FreeHGlobal(buffer);
             }
+            */
+            
+        }
+
+        /// <summary>
+        /// Add the file or directory tree at fsSourcePath on the filesystem to the location wimTargetPath
+        /// within the specified image of thewim.
+        ///
+        /// This just builds an appropriate AddCommand and passes it to Wim.UpdateImage().
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="fsSourcePath"></param>
+        /// <param name="wimTargetPath"></param>
+        /// <param name="addFlags">Bitwise OR of AddFlags.</param>
+        /// /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void AddTree(int image, string fsSourcePath, string wimTargetPath, AddFlags addFlags)
+        {
+            ErrorCode ret = NativeMethods.AddTree(Ptr, image, fsSourcePath, wimTargetPath, addFlags);
+            WimLibException.CheckWimLibError(ret);
         }
         #endregion
 
-        #region ExtractImage, ExtractPath, ExtractPaths, ExtractPathList
+        #region Delete - DeleteImage, DeletePath
         /// <summary>
-        /// Extract an image, or all images, from a ::WIMStruct.
+        /// Delete an image, or all images, from a ::WIMStruct.
+        /// </summary>
+        /// <remarks>
+        /// Note that no changes are committed to disk until wimlib_write() or wimlib_overwrite() is called.
+        /// </remarks>
+        /// <param name="image">The 1-based index of the image to delete, or WimLibConst.ALL_IMAGES to delete all images.</param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void DeleteImage(int image)
+        {
+            ErrorCode ret = NativeMethods.DeleteImage(Ptr, image);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Delete the path from the specified image of the wim.
+        /// </summary>
+        /// <remarks>
+        /// This just builds an appropriate DeleteCommand and passes it to Wim.UpdateImage().
+        /// </remarks>
+        /// <param name="image">The 1-based index of the image to delete, or WimLibConst.ALL_IMAGES to delete all images.</param>
+        /// <param name="path">Path to be deleted from the specified image of the wim</param>
+        /// <param name="deleteFlags">Bitwise OR of DeleteFlags.</param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void DeletePath(int image, string path, DeleteFlags deleteFlags)
+        {
+            ErrorCode ret = NativeMethods.DeletePath(Ptr, image, path, deleteFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region Export - ExportImage
+        /// <summary>
+        /// Export an image, or all images, from a WIMStruct into another WIMStruct.
+        ///
+        /// Specifically, if the destination WIMStruct contains n images, then
+        /// the source image(s) will be appended, in order, starting at destination index n + 1.
+        /// By default, all image metadata will be exported verbatim, but certain changes can be made by passing appropriate parameters.
+        /// </summary>
+        /// <param name="srcImage">The 1-based index of the image from src_wim to export, or Wim.ALL_IMAGES</param>
+        /// <param name="destWim">The WIMStruct to which to export the images.</param>
+        /// <param name="destName">
+        /// For single-image exports, the name to give the exported image in destWim.
+        /// If left null, the name from srcWim is used.
+        /// For WimLibConst.AllImages exports, this parameter must be left null; in that case, the names are all taken from src_wim.
+        /// This parameter is overridden by ExportFlags.NO_NAMES.</param>
+        /// <param name="destDescription">
+        /// For single-image exports, the description to give the exported image in the new WIM file.
+        /// If left null, the description from src_wim is used.
+        /// For WimLib.ALL_IMAGES exports, this parameter must be left null; in that case, the description are all taken from src_wim.
+        /// This parameter is overridden by ExportFlags.NO_DESCRIPTIONS.
+        /// </param>
+        /// <param name="exportFlags">Bitwise OR of flags with ExportFlag.</param>
+        /// <remarks>
+        /// Wim.ExportImage() is only an in-memory operation; no changes are
+        /// committed to disk until Wim.Write() or Wim.Overwrite() is called.
+        /// 
+        /// A limitation of the current implementation of Wim.ExportImage() is that
+        /// the directory tree of a source or destination image cannot be updated
+        /// following an export until one of the two images has been freed from memory.
+        /// </remarks>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void ExportImage(int srcImage, Wim destWim, string destName, string destDescription, ExportFlags exportFlags)
+        {
+            ErrorCode ret = NativeMethods.ExportImage(Ptr, srcImage, destWim.Ptr, destName, destDescription, exportFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region Extract - ExtractImage, ExtractPath, ExtractPaths, ExtractPathList
+        /// <summary>
+        /// Extract an image, or all images, from a WimStruct.
         /// </summary>
         /// <param name="wim">
         /// The WIM from which to extract the image(s), specified as a pointer to the
-        /// ::WIMStruct for a standalone WIM file, a delta WIM file, or part 1 of a
+        /// WimStruct for a standalone WIM file, a delta WIM file, or part 1 of a
         /// split WIM.  In the case of a WIM file that is not standalone, this
-        /// ::WIMStruct must have had any needed external resources previously
-        /// referenced using wimlib_reference_resources() or
-        /// wimlib_reference_resource_files().
+        /// WimStruct must have had any needed external resources previously
+        /// referenced using Wim.ReferenceResources() or Wim.ReferenceResourceFiles().
         /// </param>
         /// <param name="image">
-        /// The 1-based index of the image to extract, or ::WIMLIB_ALL_IMAGES to
-        /// extract all images.  Note: ::WIMLIB_ALL_IMAGES is unsupported in NTFS-3G
-        /// extraction mode.
+        /// The 1-based index of the image to extract, or Wim.ALL_IMAGES to extract all images.
+        /// Note: Wim.ALL_IMAGES is unsupported in NTFS-3G extraction mode.
         /// </param>
         /// <param name="target">
-        /// A null-terminated string which names the location to which the image(s)
-        /// will be extracted.  By default, this is interpreted as a path to a
-        /// directory.  Alternatively, if ::WIMLIB_EXTRACT_FLAG_NTFS is specified in
-        /// @p extract_flags, then this is interpreted as a path to an unmounted
-        /// NTFS volume.
+        /// A null-terminated string which names the location to which the image(s) will be extracted.  
+        /// By default, this is interpreted as a path to a directory.
+        /// Alternatively, if ExtractFlags.NTFS is specified in extractFlags, then this is interpreted as a path to an unmounted NTFS volume.
         /// </param>
         /// <param name="extract_flags">
-        /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
+        /// Bitwise OR of ExtractFlags.
         /// </param>
         /// <remarks>
-        /// The exact behavior of how wimlib extracts files from a WIM image is
-        /// controllable by the @p extract_flags parameter, but there also are
-        /// differences depending on the platform (UNIX-like vs Windows).  See the
-        /// documentation for <b>wimapply</b> for more information, including about the
-        /// NTFS-3G extraction mode.
+        /// The exact behavior of how wimlib extracts files from a WIM image is controllable by the extractFlags parameter, 
+        /// but there also are differences depending on the platform (UNIX-like vs Windows).
+        /// See the documentation for wimapply for more information, including about the NTFS-3G extraction mode.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ExtractImage(int image, string target, ExtractFlags extractFlags)
@@ -252,26 +435,63 @@ namespace ManagedWimLib
         }
 
         /// <summary>
+        /// Extract one path (files or directory trees) from the specified WIM image.
+        /// </summary>
+        /// <remarks>
+        /// By default, each path will be extracted to a corresponding subdirectory of the target based on its location in the image.
+        /// For example, if one of the paths to extract is /Windows/explorer.exe and the target is outdir, 
+        /// the file will be extracted to outdir/Windows/explorer.exe.
+        /// This behavior can be changed by providing the flag ExtractFlags.NO_PRESERVE_DIR_STRUCTURE, 
+        /// which will cause each file or directory tree to be placed directly in the target directory 
+        /// --- so the same example would extract /Windows/explorer.exe to outdir/explorer.exe.
+        ///
+        /// With globbing turned off (the default), paths are always checked for existence strictly; 
+        /// that is, if any path to extract does not exist in the  image, then nothing is extracted 
+        /// and the function fails with ErrorCode.PATH_DOES_NOT_EXIST.
+        /// But with globbing turned on (ExtractFlags.GLOB_PATHS specified), globs are by default permitted to match no files,
+        /// and there is a flag (ExtractFlags.STRICT_GLOB) to enable the strict behavior if desired.
+        ///
+        /// Symbolic links are not dereferenced when paths in the image are interpreted.
+        /// </remarks>
+        /// <param name="image">
+        /// The 1-based index of the WIM image from which to extract the paths.
+        /// </param>
+        /// <param name="target">
+        /// Directory to which to extract the paths.
+        /// </param>
+        /// <param name="path">
+        /// Path to extract, must be the absolute path to a file or directory within the image.
+        /// Path separators may be either forwards or backwards slashes, and leading path separators are optional.
+        /// The paths will be interpreted either case-sensitively (UNIX default) or case-insensitively (Windows default);
+        /// however, the case sensitivity can be configured explicitly at library initialization time by passing an
+        /// appropriate flag to AssemblyInit().
+        /// </param>
+        /// <param name="extract_flags">
+        /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
+        public void ExtractPath(int image, string target, string path, ExtractFlags extractFlags)
+        {
+            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, new string[1] { path }, new IntPtr(1), extractFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
         /// Extract zero or more paths (files or directory trees) from the specified WIM image.
         /// </summary>
         /// <remarks>
-        /// By default, each path will be extracted to a corresponding subdirectory of
-        /// the target based on its location in the image.  For example, if one of the
-        /// paths to extract is <c>/Windows/explorer.exe</c> and the target is
-        /// <c>outdir</c>, the file will be extracted to
-        /// <c>outdir/Windows/explorer.exe</c>.  This behavior can be changed by
-        /// providing the flag ::WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE, which
-        /// will cause each file or directory tree to be placed directly in the target
-        /// directory --- so the same example would extract <c>/Windows/explorer.exe</c>
-        /// to <c>outdir/explorer.exe</c>.
+        /// By default, each path will be extracted to a corresponding subdirectory of the target based on its location in the image.
+        /// For example, if one of the paths to extract is /Windows/explorer.exe and the target is outdir, 
+        /// the file will be extracted to outdir/Windows/explorer.exe.
+        /// This behavior can be changed by providing the flag ExtractFlags.NO_PRESERVE_DIR_STRUCTURE, 
+        /// which will cause each file or directory tree to be placed directly in the target directory 
+        /// --- so the same example would extract /Windows/explorer.exe to outdir/explorer.exe.
         ///
-        /// With globbing turned off (the default), paths are always checked for
-        /// existence strictly; that is, if any path to extract does not exist in the
-        /// image, then nothing is extracted and the function fails with
-        /// ::WIMLIB_ERR_PATH_DOES_NOT_EXIST.  But with globbing turned on
-        /// (::WIMLIB_EXTRACT_FLAG_GLOB_PATHS specified), globs are by default permitted
-        /// to match no files, and there is a flag (::WIMLIB_EXTRACT_FLAG_STRICT_GLOB) to
-        /// enable the strict behavior if desired.
+        /// With globbing turned off (the default), paths are always checked for existence strictly; 
+        /// that is, if any path to extract does not exist in the  image, then nothing is extracted 
+        /// and the function fails with ErrorCode.PATH_DOES_NOT_EXIST.
+        /// But with globbing turned on (ExtractFlags.GLOB_PATHS specified), globs are by default permitted to match no files,
+        /// and there is a flag (ExtractFlags.STRICT_GLOB) to enable the strict behavior if desired.
         ///
         /// Symbolic links are not dereferenced when paths in the image are interpreted.
         /// </remarks>
@@ -303,62 +523,15 @@ namespace ManagedWimLib
         }
 
         /// <summary>
-        /// Version of ExtractPaths() extracting only one file.
-        /// </summary>
-        /// <remarks>
-        /// By default, each path will be extracted to a corresponding subdirectory of
-        /// the target based on its location in the image.  For example, if one of the
-        /// paths to extract is <c>/Windows/explorer.exe</c> and the target is
-        /// <c>outdir</c>, the file will be extracted to
-        /// <c>outdir/Windows/explorer.exe</c>.  This behavior can be changed by
-        /// providing the flag ::WIMLIB_EXTRACT_FLAG_NO_PRESERVE_DIR_STRUCTURE, which
-        /// will cause each file or directory tree to be placed directly in the target
-        /// directory --- so the same example would extract <c>/Windows/explorer.exe</c>
-        /// to <c>outdir/explorer.exe</c>.
-        ///
-        /// With globbing turned off (the default), paths are always checked for
-        /// existence strictly; that is, if any path to extract does not exist in the
-        /// image, then nothing is extracted and the function fails with
-        /// ::WIMLIB_ERR_PATH_DOES_NOT_EXIST.  But with globbing turned on
-        /// (::WIMLIB_EXTRACT_FLAG_GLOB_PATHS specified), globs are by default permitted
-        /// to match no files, and there is a flag (::WIMLIB_EXTRACT_FLAG_STRICT_GLOB) to
-        /// enable the strict behavior if desired.
-        ///
-        /// Symbolic links are not dereferenced when paths in the image are interpreted.
-        /// </remarks>
-        /// <param name="image">
-        /// The 1-based index of the WIM image from which to extract the paths.
-        /// </param>
-        /// <param name="target">
-        /// Directory to which to extract the paths.
-        /// </param>
-        /// <param name="paths">
-        /// path to extract, must be the absolute path to a file or directory within the image.
-        /// Path separators may be either forwards or backwards slashes, and leading path separators are optional.
-        /// The paths will be interpreted either case-sensitively (UNIX default) or case-insensitively (Windows default);
-        /// however, the case sensitivity can be configured explicitly at library initialization time by passing an
-        /// appropriate flag to AssemblyInit().
-        /// </param>
-        /// <param name="extract_flags">
-        /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExtractPath(int image, string target, string path, ExtractFlags extractFlags)
-        {
-            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, new string[1] { path }, new IntPtr(1), extractFlags);
-            WimLibException.CheckWimLibError(ret);
-        }
-
-        /// <summary>
-        /// Similar to ExtractPaths(), but the paths to extract from the WIM
+        /// Similar to ExtractPaths(), but the paths to extract from the WimStruct.
         /// image are specified in the ASCII, UTF-8, or UTF-16LE text file named by
-        /// path_list_file which itself contains the list of paths to use, one per line.
+        /// pathListFile which itself contains the list of paths to use, one per line.
         /// </summary>
         /// <remarks>
-        /// Leading and trailing whitespace is ignored.  Empty lines and lines beginning
-        /// with the ';' or '#' characters are ignored.  No quotes are needed, as paths
-        /// are otherwise delimited by the newline character.  However, quotes will be
-        /// stripped if present.
+        /// Leading and trailing whitespace is ignored.
+        /// Empty lines and lines beginning with the ';' or '#' characters are ignored.
+        /// No quotes are needed, as paths are otherwise delimited by the newline character.
+        /// However, quotes will be stripped if present.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void ExtractPathList(int image, string target, string pathListFile, ExtractFlags extractFlags)
@@ -368,73 +541,116 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region AddImage
+        #region GetImageInfo - GetImageDescription, GetImageName, GetImageProperty
         /// <summary>
-        /// Add an image to a ::WIMStruct from an on-disk directory tree or NTFS volume.
+        /// Get the description of the specified image.
+        /// Equivalent to GetImageProperty(image, "DESCRIPTION")
         /// </summary>
-        /// <param name="wim">
-        /// Pointer to the ::WIMStruct to which to add the image.
-        /// </param>
-        /// <param name="source">
-        /// A path to a directory or unmounted NTFS volume that will be captured as
-        /// a WIM image.
-        /// </param>
-        /// <param name="name">
-        /// Name to give the new image.  If @c NULL or empty, the new image is given
-        /// no name.  If nonempty, it must specify a name that does not already
-        /// exist in @p wim.
-        /// </param>
-        /// <param name="config_file">
-        /// Path to capture configuration file, or @c NULL.  This file may specify,
-        /// among other things, which files to exclude from capture.  See the
-        /// documentation for <b>wimcapture</b> (<b>--config</b> option) for details
-        /// of the file format.  If @c NULL, the default capture configuration will
-        /// be used.  Ordinarily, the default capture configuration will result in
-        /// no files being excluded from capture purely based on name; however, the
-        /// ::WIMLIB_ADD_FLAG_WINCONFIG and ::WIMLIB_ADD_FLAG_WIMBOOT flags modify
-        /// the default.
-        /// </param>
-        /// <param name="add_flags">
-        /// Bitwise OR of flags prefixed with WIMLIB_ADD_FLAG.
-        /// </param>
-        /// <remarks>
-        /// The directory tree or NTFS volume is scanned immediately to load the dentry
-        /// tree into memory, and file metadata is read.  However, actual file data may
-        /// not be read until the ::WIMStruct is persisted to disk using wimlib_write()
-        /// or wimlib_overwrite().
-        ///
-        /// See the documentation for the @b wimlib-imagex program for more information
-        /// about the "normal" capture mode versus the NTFS capture mode (entered by
-        /// providing the flag ::WIMLIB_ADD_FLAG_NTFS).
-        ///
-        /// Note that no changes are committed to disk until wimlib_write() or
-        /// wimlib_overwrite() is called.
-        /// </remarks>
-        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void AddImage(string source, string name, string configFile, AddFlags addFlags)
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        public string GetImageDescription(int image)
         {
-            ErrorCode ret = NativeMethods.AddImage(Ptr, source, name, configFile, addFlags);
-            WimLibException.CheckWimLibError(ret);
+            IntPtr ptr = NativeMethods.GetImageDescription(Ptr, image);
+            if (ptr == IntPtr.Zero)
+                return null;
+            else
+                return Marshal.PtrToStringUni(ptr);
+        }
+
+        /// <summary>
+        /// Get the name of the specified image.
+        /// Equivalent to GetImageProperty(image, "NAME")
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <remarks>
+        /// GetImageName() will return an empty string if the image is unnamed 
+        /// whereas GetImageProperty() may return null in that case.
+        /// </remarks>
+        public string GetImageName(int image)
+        {
+            IntPtr ptr = NativeMethods.GetImageName(Ptr, image);
+            if (ptr == IntPtr.Zero)
+                return null;
+            else
+                return Marshal.PtrToStringUni(ptr);
+        }
+
+        /// <summary>
+        /// Since wimlib v1.8.3: get a per-image property from the WIM's XML document.
+        /// </summary>
+        /// <remarks>
+        /// This is an alternative to wimlib_get_image_name() and
+        /// wimlib_get_image_description() which allows getting any simple string
+        /// property.
+        /// </remarks>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="property_name">
+        /// The name of the image property, for example "NAME", "DESCRIPTION", or
+        /// "TOTALBYTES".  The name can contain forward slashes to indicate a nested
+        /// XML element; for example, "WINDOWS/VERSION/BUILD" indicates the BUILD
+        /// element nested within the VERSION element nested within the WINDOWS
+        /// element.  Since wimlib v1.9.0, a bracketed number can be used to
+        /// indicate one of several identically-named elements; for example,
+        /// "WINDOWS/LANGUAGES/LANGUAGE[2]" indicates the second "LANGUAGE" element
+        /// nested within the "WINDOWS/LANGUAGES" element.  Note that element names
+        /// are case sensitive.
+        /// </param>
+        /// <returns>
+        /// The property's value as a  string, or NULL if there is no such property. 
+        /// </returns>
+        public string GetImageProperty(int image, string propertyName)
+        {
+            IntPtr ptr = NativeMethods.GetImageProperty(Ptr, image, propertyName);
+            if (ptr == IntPtr.Zero)
+                return null;
+            else
+                return Marshal.PtrToStringUni(ptr);
+        }
+
+
+        #endregion
+
+        #region GetWimInfo - GetWimInfo, GetXmlData
+        /// <summary>
+        /// Get basic information about a WIM file.
+        /// </summary>
+        /// <returns>Return 0</returns>
+        public WimInfo GetWimInfo()
+        {
+            // This function always return 0, so no need to check exception
+            IntPtr infoPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(WimInfo)));
+            try
+            {
+                NativeMethods.GetWimInfo(Ptr, infoPtr);
+                return (WimInfo)Marshal.PtrToStructure(infoPtr, typeof(WimInfo));
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(infoPtr);
+            }
+        }
+
+        /// <summary>
+        /// Read a WIM file's XML document into an in-memory buffer.
+        ///
+        /// The XML document contains metadata about the WIM file and the images stored in it.
+        /// </summary>
+        /// <returns>string contains XML document is returned.</returns>
+        public string GetXmlData()
+        {
+            IntPtr buffer = IntPtr.Zero;
+            IntPtr bufferSize = IntPtr.Zero;
+
+            NativeMethods.GetXmlData(Ptr, ref buffer, ref bufferSize);
+
+            // bufferSize is a length in byte.
+            // Marshal.PtrStringUni expects length of characters.
+            // Since xml is returned in UTF-16LE, divide by two.
+            int charLen = bufferSize.ToInt32() / 2;
+            return Marshal.PtrToStringUni(buffer, charLen).Trim();
         }
         #endregion
 
-        #region DeleteImage
-        /// <summary>
-        /// Delete an image, or all images, from a ::WIMStruct.
-        /// </summary>
-        /// <remarks>
-        /// Note that no changes are committed to disk until wimlib_write() or wimlib_overwrite() is called.
-        /// </remarks>
-        /// <param name="image">
-        /// The 1-based index of the image to delete, or WIMLIB_ALL_IMAGES to delete all images.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void DeleteImage(int image)
-        {
-            ErrorCode ret = NativeMethods.DeleteImage(Ptr, image);
-            WimLibException.CheckWimLibError(ret);
-        }
-        #endregion
+        
 
         #region UpdateImage
         /// <summary>
@@ -494,43 +710,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region ExportImage
-        /// <summary>
-        /// Export an image, or all images, from a WIMStruct into another WIMStruct.
-        ///
-        /// Specifically, if the destination WIMStruct contains n images, then
-        /// the source image(s) will be appended, in order, starting at destination index n + 1
-        /// By default, all image metadata will be exported verbatim, but certain changes can be made by passing appropriate parameters.
-        /// </summary>
-        /// <param name="srcImage">The 1-based index of the image from src_wim to export, or WIMLIB_ALL_IMAGES</param>
-        /// <param name="destWim">The WIMStruct to which to export the images.</param>
-        /// <param name="destName">
-        /// For single-image exports, the name to give the exported image in destWim.
-        /// If left null, the name from srcWim is used.
-        /// For WimLibConst.AllImages exports, this parameter must be left null; in that case, the names are all taken from src_wim.
-        /// This parameter is overridden by ExportFlags.NO_NAMES.</param>
-        /// <param name="destDescription">
-        /// For single-image exports, the description to give the exported image in the new WIM file.
-        /// If left null, the description from src_wim is used.
-        /// For WimLib.ALL_IMAGES exports, this parameter must be left null; in that case, the description are all taken from src_wim.
-        /// This parameter is overridden by ExportFlags.NO_DESCRIPTIONS.
-        /// </param>
-        /// <param name="exportFlags">Bitwise OR of flags with ExportFlag.</param>
-        /// <remarks>
-        /// Wim.ExportImage() is only an in-memory operation; no changes are
-        /// committed to disk until Wim.Write() or Wim.Overwrite() is called.
-        /// 
-        /// A limitation of the current implementation of Wim.ExportImage() is that
-        /// the directory tree of a source or destination image cannot be updated
-        /// following an export until one of the two images has been freed from memory.
-        /// </remarks>
-        /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
-        public void ExportImage(int srcImage, Wim destWim, string destName, string destDescription, ExportFlags exportFlags)
-        {
-            ErrorCode ret = NativeMethods.ExportImage(Ptr, srcImage, destWim.Ptr, destName, destDescription, exportFlags);
-            WimLibException.CheckWimLibError(ret);
-        }
-        #endregion
+        
 
         #region SetOutputCompressionType, SetOutputPackCompressionType
         /// <summary>
@@ -578,27 +758,23 @@ namespace ManagedWimLib
         /// The path to the on-disk file to write.
         /// </param>
         /// <param name="image">
-        /// Normally, specify ::WIMLIB_ALL_IMAGES here.  This indicates that all
-        /// images are to be included in the new on-disk WIM file.  If for some
-        /// reason you only want to include a single image, specify the 1-based
-        /// index of that image instead.
+        /// Normally, specify Wim.ALL_IMAGES here.
+        /// This indicates that all images are to be included in the new on-disk WIM file.
+        /// If for some reason you only want to include a single image, specify the 1-based index of that image instead.
         /// </param>
         /// <param name="write_flags">
-        /// Bitwise OR of flags prefixed with @c WIMLIB_WRITE_FLAG.
+        /// Bitwise OR of WriteFlags.
         /// </param>
         /// <param name="num_threads">
-        /// The number of threads to use for compressing data, or 0 to have the
-        /// library automatically choose an appropriate number.
+        /// The number of threads to use for compressing data, or 0 to have the library automatically choose an appropriate number.
         /// </param>
         /// <remarks>
-        /// This brings in file data from any external locations, such as directory trees
-        /// or NTFS volumes scanned with wimlib_add_image(), or other WIM files via
-        /// wimlib_export_image(), and incorporates it into a new on-disk WIM file.
+        /// This brings in file data from any external locations, such as directory trees or NTFS volumes scanned with Wim.AddImage(),
+        /// or other WIM files via Wim.ExportImage(), and incorporates it into a new on-disk WIM file.
         ///
-        /// By default, the new WIM file is written as stand-alone.  Using the
-        /// ::WIMLIB_WRITE_FLAG_SKIP_EXTERNAL_WIMS flag, a "delta" WIM can be written
-        /// instead.  However, this function cannot directly write a "split" WIM; use
-        /// wimlib_split() for that.
+        /// By default, the new WIM file is written as stand-alone.
+        /// Using the WriteFlags.SKIP_EXTERNAL_WIMS flag, a "delta" WIM can be written instead.
+        /// However, this function cannot directly write a "split" WIM; use Wim.Split() for that.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void Write(string path, int image, WriteFlags writeFlags, uint numThreads)
@@ -608,37 +784,32 @@ namespace ManagedWimLib
         }
 
         /// <summary>
-        /// Commit a ::WIMStruct to disk, updating its backing file.
+        /// Commit a WimStruct to disk, updating its backing file.
         /// </summary>
-        /// <param name="wim">Pointer to a ::WIMStruct to commit to its backing file.</param>
-        /// <param name="write_flags">Bitwise OR of relevant flags prefixed with WIMLIB_WRITE_FLAG.</param>
+        /// <param name="wim">Pointer to a WimStruct to commit to its backing file.</param>
+        /// <param name="write_flags">Bitwise OR of relevant WriteFlags.</param>
         /// <param name="num_threads">
-        /// The number of threads to use for compressing data, or 0 to have the
-        /// library automatically choose an appropriate number.
+        /// The number of threads to use for compressing data, 
+        /// or Wim.DefaultThreads to have the library automatically choose an appropriate number.
         /// </param>
         /// <remarks>
         /// There are several alternative ways in which changes may be committed:
         ///
-        ///   1. Full rebuild: write the updated WIM to a temporary file, then rename the
-        /// temporary file to the original.
-        ///   2. Appending: append updates to the new original WIM file, then overwrite
-        /// its header such that those changes become visible to new readers.
-        ///   3. Compaction: normally should not be used; see
-        /// ::WIMLIB_WRITE_FLAG_UNSAFE_COMPACT for details.
+        /// 1. Full Rebuild : 
+        /// Write the updated WIM to a temporary file, then rename the temporary file to the original.
+        /// 2. Appending :
+        /// Append updates to the new original WIM file, then overwrite its header such that those changes become visible to new readers.
+        /// 3. Compaction : 
+        /// Normally should not be used; see WriteFlags.UNSAFE_COMPACT for details.
         ///
-        /// Append mode is often much faster than a full rebuild, but it wastes some
-        /// amount of space due to leaving "holes" in the WIM file.  Because of the
-        /// greater efficiency, wimlib_overwrite() normally defaults to append mode.
-        /// However, ::WIMLIB_WRITE_FLAG_REBUILD can be used to explicitly request a full
-        /// rebuild.  In addition, if wimlib_delete_image() has been used on the
-        /// ::WIMStruct, then the default mode switches to rebuild mode, and
-        /// ::WIMLIB_WRITE_FLAG_SOFT_DELETE can be used to explicitly request append
-        /// mode.
+        /// Append mode is often much faster than a full rebuild, but it wastes some amount of space due to leaving "holes" in the WIM file.
+        /// Because of the greater efficiency, Wim.Overwrite() normally defaults to append mode.
+        /// However, WriteFlags.REBUILD can be used to explicitly request a full rebuild.
+        /// In addition, if Wim.DeleteImage() has been used on the WimStruct, then the default mode switches to rebuild mode, 
+        /// and WriteFlags.SOFT_DELETE can be used to explicitly request append mode.
         ///
-        /// If this function completes successfully, then no more functions can be called
-        /// on the ::WIMStruct other than wimlib_free().  If you need to continue using
-        /// the WIM file, you must use wimlib_open_wim() to open a new ::WIMStruct for
-        /// it.
+        /// If this function completes successfully, then no more functions can be called on the WimStruct other than wimlib_free().
+        /// If you need to continue using the WIM file, you must use Wim.OpenWim() to open a new WimStruct for it.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return WIMLIB_ERR_SUCCESS.</exception>
         public void Overwrite(WriteFlags writeFlags, uint numThreads)
@@ -720,67 +891,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region GetImageProperty, GetImageDescription, GetImageName
-        /// <summary>
-        /// Since wimlib v1.8.3: get a per-image property from the WIM's XML document.
-        /// </summary>
-        /// <remarks>
-        /// This is an alternative to wimlib_get_image_name() and
-        /// wimlib_get_image_description() which allows getting any simple string
-        /// property.
-        /// </remarks>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="property_name">
-        /// The name of the image property, for example "NAME", "DESCRIPTION", or
-        /// "TOTALBYTES".  The name can contain forward slashes to indicate a nested
-        /// XML element; for example, "WINDOWS/VERSION/BUILD" indicates the BUILD
-        /// element nested within the VERSION element nested within the WINDOWS
-        /// element.  Since wimlib v1.9.0, a bracketed number can be used to
-        /// indicate one of several identically-named elements; for example,
-        /// "WINDOWS/LANGUAGES/LANGUAGE[2]" indicates the second "LANGUAGE" element
-        /// nested within the "WINDOWS/LANGUAGES" element.  Note that element names
-        /// are case sensitive.
-        /// </param>
-        /// <returns>
-        /// The property's value as a  string, or NULL if there is no such property. 
-        /// </returns>
-        public string GetImageProperty(int image, string propertyName)
-        {
-            IntPtr ptr = NativeMethods.GetImageProperty(Ptr, image, propertyName);
-            if (ptr == IntPtr.Zero)
-                return null;
-            else
-                return Marshal.PtrToStringUni(ptr);
-        }
-
-        /// <summary>
-        /// Get the description of the specified image.
-        /// Equivalent to GetImageProperty(image, "DESCRIPTION")
-        /// </summary>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        public string GetImageDescription(int image)
-        {
-            return GetImageProperty(image, "DESCRIPTION");
-        }
-
-        /// <summary>
-        /// Get the name of the specified image.
-        /// Equivalent to GetImageProperty(image, "NAME")
-        /// </summary>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <remarks>
-        /// GetImageName() will return an empty string if the image is unnamed
-        /// whereas GetImageProperty() may return null in that case.
-        /// </remarks>
-        public string GetImageName(int image)
-        {
-            string str = GetImageProperty(image, "NAME");
-            if (str == null)
-                return string.Empty;
-            else
-                return str;
-        }
-        #endregion
+        
 
         #region IsImageNameInUse
         /// <summary>
@@ -983,8 +1094,8 @@ namespace ManagedWimLib
         /// entire image.
         /// </summary>
         /// <param name="image">
-        /// The 1-based index of the image that contains the files or directories to
-        /// iterate over, or ::WIMLIB_ALL_IMAGES to iterate over all images.
+        /// The 1-based index of the image that contains the files or directories to iterate over,
+        /// or WimLibConst.ALL_IMAGES to iterate over all images.
         /// </param>
         /// <param name="path">
         /// Path in the image at which to do the iteration.
@@ -1023,6 +1134,94 @@ namespace ManagedWimLib
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
+
+        #region Existence Check (ManagedWimLib Only)
+        /// <summary>
+        /// Check if a file exists in wim
+        /// </summary>
+        /// <param name="image">
+        /// The 1-based index of the image that contains wimFilePath, or WimLibConst.ALL_IMAGES to iterate over all images.
+        /// </param>
+        /// <param name="wimFilePath">
+        /// Path of file in the wim image.
+        /// </param>
+        /// <returns></returns>
+        public bool FileExists(int image, string wimFilePath)
+        {
+            bool exists = false;
+            CallbackStatus ExistCallback(DirEntry dentry, object userData)
+            {
+                if ((dentry.Attributes & FileAttribute.DIRECTORY) == 0)
+                    exists = true;
+
+                return CallbackStatus.CONTINUE;
+            }
+
+            try
+            {
+                this.IterateDirTree(image, wimFilePath, IterateFlags.DEFAULT, ExistCallback, null);
+                return exists;
+            }
+            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if a file exists in wim
+        /// </summary>
+        /// <param name="image">
+        /// The 1-based index of the image that contains wimDirPath, or WimLibConst.ALL_IMAGES to iterate over all images.
+        /// </param>
+        /// <param name="wimDirPath">
+        /// Path of directory in the wim image.
+        /// </param>
+        /// <returns></returns>
+        public bool DirExists(int image, string wimDirPath)
+        {
+            bool exists = false;
+            CallbackStatus ExistCallback(DirEntry dentry, object userData)
+            {
+                if ((dentry.Attributes & FileAttribute.DIRECTORY) != 0)
+                    exists = true;
+
+                return CallbackStatus.CONTINUE;
+            }
+
+            try
+            {
+                this.IterateDirTree(image, wimDirPath, IterateFlags.DEFAULT, ExistCallback, null);
+                return exists;
+            }
+            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Check if a file exists in wim
+        /// </summary>
+        /// <param name="image">
+        /// The 1-based index of the image that contains wimPath, or WimLibConst.ALL_IMAGES to iterate over all images.
+        /// </param>
+        /// <param name="wimPath">
+        /// Path of file or directory in the wim image.
+        /// </param>
+        /// <returns></returns>
+        public bool PathExists(int image, string wimPath)
+        {
+            try
+            {
+                this.IterateDirTree(image, wimPath, IterateFlags.DEFAULT, null, null);
+                return true;
+            }
+            catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
+            {
+                return false;
+            }
+        }
         #endregion
     }
     #endregion
