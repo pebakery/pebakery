@@ -194,6 +194,9 @@ namespace PEBakery.Core
                     // End of Script
                     FinishRunScript(s);
 
+                    if(s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
+                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
+
                     // OnScriptExit event callback
                     {
                         bool bakPassCurrentScriptFlag = s.PassCurrentScriptFlag;
@@ -284,6 +287,7 @@ namespace PEBakery.Core
 
         public void ForceStop()
         {
+            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             if (s.RunningSubProcess != null)
                 s.RunningSubProcess.Kill();
             if (s.RunningWebClient != null)

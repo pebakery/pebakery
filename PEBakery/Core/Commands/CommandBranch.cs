@@ -891,6 +891,9 @@ namespace PEBakery.Core.Commands
                                     defaultChoice = false;
                             }
 
+                            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+                            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
                             if (autoTimeout)
                             {
                                 MessageBoxResult result = MessageBoxResult.None;
@@ -943,6 +946,8 @@ namespace PEBakery.Core.Commands
 
                             if (c.NotFlag)
                                 match = !match;
+
+                            s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
                         }
                         break;
                     default:
