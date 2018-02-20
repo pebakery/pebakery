@@ -58,7 +58,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.EXTRACT_IMAGE_BEGIN:
@@ -122,7 +121,7 @@ namespace ManagedWimLib.Tests
 
                 Assert.IsTrue(_checked.All(x => x));
 
-                TestHelper.CheckFileSystem_Src01(destDir);
+                TestHelper.CheckFileSystem(SampleSet.Src01, destDir);
             }
             finally
             {
@@ -174,7 +173,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.EXTRACT_TREE_BEGIN:
@@ -277,7 +275,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.EXTRACT_TREE_BEGIN:

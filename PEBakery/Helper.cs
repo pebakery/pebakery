@@ -723,59 +723,38 @@ namespace PEBakery.Helper
             if (str.Length % 2 == 1)
                 return false;
 
-            if (Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                return true;
-            else
-                return false;
+            return Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
 
         public static bool IsUpperAlphabet(string str)
         {
-            if (Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                return true;
-            else
-                return false;
+            return Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
 
         public static bool IsUpperAlphabet(char ch)
         {
-            if ('A' <= ch && ch <= 'Z')
-                return true;
-            else
-                return false;
+            return 'A' <= ch && ch <= 'Z';
         }
 
         public static bool IsLowerAlphabet(string str)
         {
             str = str.Trim();
-            if (Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                return true;
-            else
-                return false;
+            return Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
 
         public static bool IsLowerAlphabet(char ch)
         {
-            if ('a' <= ch && ch <= 'z')
-                return true;
-            else
-                return false;
+            return 'a' <= ch && ch <= 'z';
         }
 
         public static bool IsAlphabet(string str)
         {
-            if (Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
-                return true;
-            else
-                return false;
+            return Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
 
         public static bool IsAlphabet(char ch)
         {
-            if ('A' <= ch && ch <= 'Z' || 'a' <= ch && ch <= 'z')
-                return true;
-            else
-                return false;
+            return 'A' <= ch && ch <= 'Z' || 'a' <= ch && ch <= 'z';
         }
 
         /// <summary>

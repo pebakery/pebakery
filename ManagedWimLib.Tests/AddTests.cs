@@ -55,7 +55,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.WRITE_METADATA_BEGIN:
@@ -121,7 +120,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.SCAN_BEGIN:
@@ -181,7 +179,7 @@ namespace ManagedWimLib.Tests
 
                 for (int i = 0; i < _checked.Length; i++)
                     Assert.IsTrue(_checked[i]);
-                TestHelper.CheckFileSystem_Src01(destDir);
+                TestHelper.CheckFileSystem(SampleSet.Src01, destDir);
             }
             finally
             {
@@ -214,7 +212,6 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
                     switch (msg)
                     {
                         case ProgressMsg.SCAN_BEGIN:

@@ -83,7 +83,7 @@ namespace ManagedWimLib
                     case ProgressMsg.UPDATE_BEGIN_COMMAND:
                     case ProgressMsg.UPDATE_END_COMMAND:
                         ProgressInfo_UpdateBase _base = (ProgressInfo_UpdateBase)Marshal.PtrToStructure(info, typeof(ProgressInfo_UpdateBase));
-                        pInfo = _base.Convert();
+                        pInfo = _base.ToManaged();
                         break;
                     case ProgressMsg.VERIFY_INTEGRITY:
                     case ProgressMsg.CALC_INTEGRITY:
@@ -120,21 +120,7 @@ namespace ManagedWimLib
                         break;
                 }
 
-                try
-                {
-                    return _callback(msgType, pInfo, _userData);
-                }
-                finally
-                {
-                    switch (msgType)
-                    {
-                        case ProgressMsg.UPDATE_BEGIN_COMMAND:
-                        case ProgressMsg.UPDATE_END_COMMAND:
-                            ProgressInfo_Update m = (ProgressInfo_Update)pInfo;
-                            m.Command.Dispose();
-                            break;
-                    }
-                }
+                return _callback(msgType, pInfo, _userData);
             }
             else
             {
@@ -153,49 +139,40 @@ namespace ManagedWimLib
     public struct ProgressInfo_WriteStreams
     {
         /// <summary>
-        /// An upper bound on the number of bytes of file data that will
-        /// be written.  This number is the uncompressed size; the actual
-        /// size may be lower due to compression.  In addition, this
-        /// number may decrease over time as duplicated file data is
-        /// discovered.
+        /// An upper bound on the number of bytes of file data that will be written.
+        /// This number is the uncompressed size; the actual size may be lower due to compression. 
+        /// In addition, this number may decrease over time as duplicated file data is discovered.
         /// </summary>
         public ulong TotalBytes;
         /// <summary>
-        /// An upper bound on the number of distinct file data "blobs"
-        /// that will be written.  This will often be similar to the
-        /// "number of files", but for several reasons (hard links, named
-        /// data streams, empty files, etc.) it can be different.  In
-        /// addition, this number may decrease over time as duplicated
-        /// file data is discovered.
+        /// An upper bound on the number of distinct file data "blobs" that will be written. 
+        /// This will often be similar to the "number of files", but for several reasons 
+        /// (hard links, named data streams, empty files, etc.) it can be different. 
+        /// In addition, this number may decrease over time as duplicated file data is discovered.
         /// </summary>
         public ulong TotalStreams;
         /// <summary>
-        /// The number of bytes of file data that have been written so
-        /// far.  This starts at 0 and ends at @p total_bytes.  This
-        /// number is the uncompressed size; the actual size may be lower
-        /// due to compression.
+        /// The number of bytes of file data that have been written so far. 
+        /// This starts at 0 and ends at TotalBytes.
+        /// This number is the uncompressed size; the actual size may be lower due to compression.
         /// </summary>
         public ulong CompletedBytes;
         /// <summary>
-        /// The number of distinct file data "blobs" that have been
-        /// written so far.  This starts at 0 and ends at @p
-        /// total_streams.
+        /// The number of distinct file data "blobs" that have been written so far. 
+        /// This starts at 0 and ends at total_streams.
         /// </summary>
         public ulong CompletedStreams;
         /// <summary>
-        /// The number of threads being used for data compression; or,
-        /// if no compression is being performed, this will be 1.
+        /// The number of threads being used for data compression; or, if no compression is being performed, this will be 1.
         /// </summary>
         public uint NumThreads;
         /// <summary>
-        /// The compression type being used, as one of the
-        /// ::wimlib_compression_type constants. 
+        /// The compression type being used, as one of the CompressionType enums. 
         /// </summary>
         public CompressionType CompressionType;
         /// <summary>
-        /// The number of on-disk WIM files from which file data is
-        /// being exported into the output WIM file.  This can be 0, 1,
-        /// or more than 1, depending on the situation.
+        /// The number of on-disk WIM files from which file data is being exported into the output WIM file.
+        /// This can be 0, 1, or more than 1, depending on the situation.
         /// </summary>
         public uint TotalParts;
         /// <summary>
@@ -213,87 +190,71 @@ namespace ManagedWimLib
         /// <summary>
         /// Dentry scan status, valid on SCAN_DENTRY.
         /// </summary>
-        public enum WimLibScanDentryStatus : uint
+        public enum ScanDentryStatus : uint
         {
             /// <summary>
             /// File looks okay and will be captured.
             /// </summary>
             OK = 0,
             /// <summary>
-            /// File is being excluded from capture due to the
-            /// capture configuration.
+            /// File is being excluded from capture due to the capture configuration.
             /// </summary>
             EXCLUDED = 1,
             /// <summary>
-            /// File is being excluded from capture due to being of
-            /// an unsupported type. 
+            /// File is being excluded from capture due to being of an unsupported type. 
             /// </summary>
             UNSUPPORTED = 2,
             /// <summary>
-            /// The file is an absolute symbolic link or junction
-            /// that points into the capture directory, and
-            /// reparse-point fixups are enabled, so its target is
-            /// being adjusted.  (Reparse point fixups can be
-            /// disabled with the flag ::WIMLIB_ADD_FLAG_NORPFIX.)
+            /// The file is an absolute symbolic link or junction that points into the capture directory, and
+            /// reparse-point fixups are enabled, so its target is being adjusted. 
+            /// (Reparse point fixups can be disabled with the flag AddFlags.NORPFIX.)
             /// </summary>
             FIXED_SYMLINK = 3,
             /// <summary>
-            /// Reparse-point fixups are enabled, but the file is an
-            /// absolute symbolic link or junction that does
-            /// <b>not</b> point into the capture directory, so its
-            /// target is <b>not</b> being adjusted.
+            /// Reparse-point fixups are enabled, but the file is an absolute symbolic link or junction that does not
+            /// point into the capture directory, so its target is <b>not</b> being adjusted.
             /// </summary>
             NOT_FIXED_SYMLINK = 4,
         }
 
         /// <summary>
-        /// Top-level directory being scanned; or, when capturing an NTFS
-        /// volume with ::WIMLIB_ADD_FLAG_NTFS, this is instead the path
-        /// to the file or block device that contains the NTFS volume
-        /// being scanned. 
+        /// Top-level directory being scanned; or, when capturing an NTFS volume with AddFlags.NTFS, 
+        /// this is instead the path to the file or block device that contains the NTFS volume being scanned. 
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Source;
         /// <summary>
-        /// Path to the file (or directory) that has been scanned, valid
-        /// on ::SCAN_DENTRY.  When capturing an NTFS
-        /// volume with ::WIMLIB_ADD_FLAG_NTFS, this path will be
-        /// relative to the root of the NTFS volume. 
+        /// Path to the file (or directory) that has been scanned, valid on SCAN_DENTRY.
+        /// When capturing an NTFS volume with ::WIMLIB_ADD_FLAG_NTFS, this path will be relative to the root of the NTFS volume. 
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string CurPath;
         /// <summary>
-        /// Dentry scan status, valid on
-        /// ::SCAN_DENTRY. 
+        /// Dentry scan status, valid on SCAN_DENTRY. 
         /// </summary>
-        public WimLibScanDentryStatus Status;
+        public ScanDentryStatus Status;
         /// <summary>
         /// - wim_target_path
         /// Target path in the image.  Only valid on messages
-        /// ::SCAN_BEGIN and
-        /// ::SCAN_END.
+        /// SCAN_BEGIN and
+        /// SCAN_END.
         /// 
         /// - symlink_target
-        /// For ::SCAN_DENTRY and a status
-        /// of @p WIMLIB_SCAN_DENTRY_FIXED_SYMLINK or @p
-        /// WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK, this is the
-        /// target of the absolute symbolic link or junction.
+        /// For SCAN_DENTRY and a status of WIMLIB_SCAN_DENTRY_FIXED_SYMLINK or WIMLIB_SCAN_DENTRY_NOT_FIXED_SYMLINK,
+        /// this is the target of the absolute symbolic link or junction.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string WimTargetPathSymlinkTarget;
         /// <summary>
-        /// The number of directories scanned so far, not counting
-        /// excluded/unsupported files.
+        /// The number of directories scanned so far, not counting excluded/unsupported files.
         /// </summary>
         public ulong NumDirsScanned;
         /// <summary>
-        /// The number of non-directories scanned so far, not counting
-        /// excluded/unsupported files.
+        /// The number of non-directories scanned so far, not counting excluded/unsupported files.
         /// </summary>
         public ulong NumNonDirsScanned;
         /// <summary>
-        /// The number of bytes of file data detected so far, not
-        /// counting excluded/unsupported files.
+        /// The number of bytes of file data detected so far, not counting excluded/unsupported files.
         /// </summary>
         public ulong NumBytesScanned;
     }
@@ -309,21 +270,16 @@ namespace ManagedWimLib
     /// EXTRACT_TREE_END, and
     /// EXTRACT_IMAGE_END.
     ///
-    /// Note: most of the time of an extraction operation will be spent
-    /// extracting file data, and the application will receive
-    /// ::EXTRACT_STREAMS during this time.  Using @p
-    /// completed_bytes and @p total_bytes, the application can calculate a
-    /// percentage complete.  However, there is no way for applications to
-    /// know which file is currently being extracted.  This is by design
-    /// because the best way to complete the extraction operation is not
-    /// necessarily file-by-file.
+    /// Note: most of the time of an extraction operation will be spent extracting file data, and the application will receive
+    /// EXTRACT_STREAMS during this time. Using completed_bytes and @p total_bytes, the application can calculate a
+    /// percentage complete.  However, there is no way for applications to know which file is currently being extracted.
+    /// This is by design because the best way to complete the extraction operation is not necessarily file-by-file.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct ProgressInfo_Extract
     {
         /// <summary>
-        /// The 1-based index of the image from which files are being
-		/// extracted.
+        /// The 1-based index of the image from which files are being extracted.
         /// </summary>
         public uint Image;
         /// <summary>
@@ -331,21 +287,18 @@ namespace ManagedWimLib
         /// </summary>
         public uint ExtractFlags;
         /// <summary>
-        /// If the ::WIMStruct from which the extraction being performed
-        /// has a backing file, then this is an absolute path to that
-        /// backing file.  Otherwise, this is @c NULL.
+        /// If the WimStruct from which the extraction being performed has a backing file, 
+        /// then this is an absolute path to that backing file. Otherwise, this is null.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string WimFileName;
         /// <summary>
-        /// Name of the image from which files are being extracted, or
-        /// the empty string if the image is unnamed.
+        /// Name of the image from which files are being extracted, or the empty string if the image is unnamed.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string ImageName;
         /// <summary>
-        /// Path to the directory or NTFS volume to which the files are
-        /// being extracted.
+        /// Path to the directory or NTFS volume to which the files are being extracted.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Target;
@@ -353,21 +306,19 @@ namespace ManagedWimLib
         /// Reserved.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
-        public string Reserved;
+        private string Reserved;
         /// <summary>
-        /// he number of bytes of file data that will be extracted. 
+        /// The number of bytes of file data that will be extracted. 
         /// </summary>
         public ulong TotalBytes;
         /// <summary>
-        /// The number of bytes of file data that have been extracted so
-        /// far.  This starts at 0 and ends at @p total_bytes.
+        /// The number of bytes of file data that have been extracted so far.
+        /// This starts at 0 and ends at TotalBytes.
         /// </summary>
         public ulong CompletedBytes;
         /// <summary>
-        /// The number of file streams that will be extracted.  This
-        /// will often be similar to the "number of files", but for
-        /// several reasons (hard links, named data streams, empty files,
-        /// etc.) it can be different.
+        /// The number of file streams that will be extracted. This will often be similar to the "number of files", 
+        /// but for several reasons (hard links, named data streams, empty files, etc.) it can be different.
         /// </summary>
         public ulong TotalStreams;
         /// <summary>
@@ -377,50 +328,43 @@ namespace ManagedWimLib
         public ulong CompletedStreams;
         /// <summary>
         /// Currently only used for
-        /// ::EXTRACT_SPWM_PART_BEGIN. 
+        /// EXTRACT_SPWM_PART_BEGIN. 
         /// </summary>
         public uint PartNumber;
         /// <summary>
         /// Currently only used for
-        /// ::EXTRACT_SPWM_PART_BEGIN.
+        /// EXTRACT_SPWM_PART_BEGIN.
         /// </summary>
         public uint TotalParts;
         /// <summary>
         /// Currently only used for
-        /// ::EXTRACT_SPWM_PART_BEGIN.
+        /// EXTRACT_SPWM_PART_BEGIN.
         /// </summary>
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
         public byte[] Guid;
         /// <summary>
-        /// For ::EXTRACT_FILE_STRUCTURE and
-        /// ::EXTRACT_METADATA messages, this is the
-        /// number of files that have been processed so far.  Once the
-        /// corresponding phase of extraction is complete, this value
-        /// will be equal to @c end_file_count. 
+        /// For EXTRACT_FILE_STRUCTURE and EXTRACT_METADATA messages, 
+        /// this is the number of files that have been processed so far.
+        /// Once the corresponding phase of extraction is complete, this value will be equal to EndFileCount. 
         /// </summary>
         public ulong CurrentFileCount;
         /// <summary>
-        /// For ::EXTRACT_FILE_STRUCTURE and
-        /// ::EXTRACT_METADATA messages, this is
-        /// total number of files that will be processed.
+        /// For EXTRACT_FILE_STRUCTURE and EXTRACT_METADATA messages, 
+        /// this is total number of files that will be processed.
         /// 
-        /// This number is provided for informational purposes only, e.g.
-        /// for a progress bar.  This number will not necessarily be
-        /// equal to the number of files actually being extracted.  This
-        /// is because extraction backends are free to implement an
-        /// extraction algorithm that might be more efficient than
-        /// processing every file in the "extract file structure" and
-        /// "extract file metadata" phases.  For example, the current
-        /// implementation of the UNIX extraction backend will create
+        /// This number is provided for informational purposes only, e.g. for a progress bar. 
+        /// This number will not necessarily be equal to the number of files actually being extracted.
+        /// This is because extraction backends are free to implement an extraction algorithm that might be more efficient than
+        /// processing every file in the "extract file structure" and "extract file metadata" phases.
+        /// For example, the current implementation of the UNIX extraction backend will create
         /// files on-demand during the "extract file data" phase.
-        /// Therefore, when using that particular extraction backend, @p
-        /// end_file_count will only include directories and empty files.
+        /// Therefore, when using that particular extraction backend, EndFileCount will only include directories and empty files.
         /// </summary>
         public ulong EndFileCount;
     }
 
     /// <summary>
-    /// Valid on messages ::RENAME.
+    /// Valid on messages RENAME.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct ProgressInfo_Rename
@@ -453,8 +397,7 @@ namespace ManagedWimLib
         /// </summary>
         public uint CompletedCommands;
         /// <summary>
-        /// Number of update commands that are being executed as part of
-        /// this call to wimlib_update_image().
+        /// Number of update commands that are being executed as part of this call to Wim.UpdateImage().
         /// </summary>
         public uint TotalCommands;
     }
@@ -478,9 +421,9 @@ namespace ManagedWimLib
                 switch (IntPtr.Size)
                 {
                     case 4:
-                        return Cmd32.Convert();
+                        return Cmd32.ToManagedClass();
                     case 8:
-                        return Cmd64.Convert();
+                        return Cmd64.ToManagedClass();
                     default:
                         throw new PlatformNotSupportedException();
                 }
@@ -491,12 +434,11 @@ namespace ManagedWimLib
         /// </summary>
         public uint CompletedCommands;
         /// <summary>
-        /// Number of update commands that are being executed as part of
-        /// this call to wimlib_update_image().
+        /// Number of update commands that are being executed as part of this call to Wim.UpdateImage().
         /// </summary>
         public uint TotalCommands;
 
-        public ProgressInfo_Update Convert()
+        public ProgressInfo_Update ToManaged()
         {
             return new ProgressInfo_Update()
             {
@@ -514,33 +456,29 @@ namespace ManagedWimLib
     public struct ProgressInfo_Integrity
     {
         /// <summary>
-        /// The number of bytes in the WIM file that are covered by
-        /// integrity checks.
+        /// The number of bytes in the WIM file that are covered by integrity checks.
         /// </summary>
         public ulong TotalBytes;
         /// <summary>
-        /// The number of bytes that have been checksummed so far.  This
-        /// starts at 0 and ends at @p total_bytes.
+        /// The number of bytes that have been checksummed so far.
+        /// This starts at 0 and ends at TotalBytes.
         /// </summary>
         public ulong CompletedBytes;
         /// <summary>
-        /// The number of individually checksummed "chunks" the
-        /// integrity-checked region is divided into.
+        /// The number of individually checksummed "chunks" the integrity-checked region is divided into.
         /// </summary>
         public uint TotalChunks;
         /// <summary>
         /// The number of chunks that have been checksummed so far.
-        /// This starts at 0 and ends at @p total_chunks.
+        /// This starts at 0 and ends at TotalChunks.
         /// </summary>
         public uint CompletedChunks;
         /// <summary>
-        /// The size of each individually checksummed "chunk" in the
-        /// integrity-checked region.
+        /// The size of each individually checksummed "chunk" in the integrity-checked region.
         /// </summary>
         public uint ChunkSize;
         /// <summary>
-        /// For ::VERIFY_INTEGRITY messages, this is
-        /// the path to the WIM file being checked.
+        /// For VERIFY_INTEGRITY messages, this is the path to the WIM file being checked.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string FileName;
@@ -554,20 +492,16 @@ namespace ManagedWimLib
     public struct ProgressInfo_Split
     {
         /// <summary>
-        /// Total size of the original WIM's file and metadata resources
-        /// (compressed).
+        /// Total size of the original WIM's file and metadata resources (compressed).
         /// </summary>
         public ulong TotalBytes;
         /// <summary>
-        /// Number of bytes of file and metadata resources that have
-        /// been copied out of the original WIM so far.  Will be 0
-        /// initially, and equal to @p total_bytes at the end.
+        /// Number of bytes of file and metadata resources that have been copied out of the original WIM so far.
+        /// Will be 0 initially, and equal to TotalBytes at the end.
         /// </summary>
         public ulong CompletedBytes;
         /// <summary>
-        /// Number of the split WIM part that is about to be started
-        /// (::SPLIT_BEGIN_PART) or has just been
-        /// finished (::SPLIT_END_PART).
+        /// Number of the split WIM part that is about to be started (SPLIT_BEGIN_PART) or has just been finished (SPLIT_END_PART).
         /// </summary>
         public uint CurPartNumber;
         /// <summary>
@@ -575,13 +509,9 @@ namespace ManagedWimLib
         /// </summary>
         public uint TotalParts;
         /// <summary>
-        /// Name of the split WIM part that is about to be started
-        /// (::SPLIT_BEGIN_PART) or has just been
-        /// finished (::SPLIT_END_PART).  Since
-        /// wimlib v1.7.0, the library user may change this when
-        /// receiving ::SPLIT_BEGIN_PART in order to
-        /// cause the next split WIM part to be written to a different
-        /// location.
+        /// Name of the split WIM part that is about to be started (SPLIT_BEGIN_PART) or has just been finished (SPLIT_END_PART).
+        /// Since wimlib v1.7.0, the library user may change this when receiving SPLIT_BEGIN_PART in order to
+        /// cause the next split WIM part to be written to a different location.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string PartName;
@@ -594,7 +524,7 @@ namespace ManagedWimLib
     public struct ProgressInfo_Replace
     {
         /// <summary>
-        /// Path to the file in the image that is being replaced
+        /// Path to the file in the image that is being replaced.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string PathInWim;
@@ -607,12 +537,12 @@ namespace ManagedWimLib
     public struct ProgressInfo_WimBootExclude
     {
         /// <summary>
-        /// Path to the file in the image
+        /// Path to the file in the image.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string PathInWim;
         /// <summary>
-        /// Path to which the file is being extracted 
+        /// Path to which the file is being extracted .
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string ExtractionInWim;
@@ -625,12 +555,12 @@ namespace ManagedWimLib
     public struct ProgressInfo_Unmount
     {
         /// <summary>
-        /// Path to directory being unmounted
+        /// Path to directory being unmounted.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string MountPoint;
         /// <summary>
-        /// Path to WIM file being unmounted
+        /// Path to WIM file being unmounted.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string MountedWim;
@@ -639,12 +569,11 @@ namespace ManagedWimLib
         /// </summary>
         public uint MountedImage;
         /// <summary>
-        /// Flags that were passed to wimlib_mount_image() when the
-        /// mountpoint was set up.
+        /// Flags that were passed to Wim.MountImage() when the mountpoint was set up.
         /// </summary>
         public uint MountFlags;
         /// <summary>
-        /// Flags passed to wimlib_unmount_image().
+        /// Flags passed to Wim.MountImage().
         /// </summary>
         public uint UnmountFlags;
     }
@@ -660,18 +589,13 @@ namespace ManagedWimLib
         /// or is currently being asynchronously compressed in memory,
         /// and therefore is no longer needed by wimlib.
         ///
-        /// WARNING: The file data will not actually be accessible in the
-        /// WIM file until the WIM file has been completely written.
-        /// Ordinarily you should <b>not</b> treat this message as a
-        /// green light to go ahead and delete the specified file, since
-        /// that would result in data loss if the WIM file cannot be
-        /// successfully created for any reason.
+        /// WARNING: The file data will not actually be accessible in the WIM file until the WIM file has been completely written.
+        /// Ordinarily you should not treat this message as a green light to go ahead and delete the specified file, since
+        /// that would result in data loss if the WIM file cannot be successfully created for any reason.
         ///
-        /// If a file has multiple names (hard links),
-        /// ::DONE_WITH_FILE will only be received
-        /// for one name.  Also, this message will not be received for
-        /// empty files or reparse points (or symbolic links), unless
-        /// they have nonempty named data streams.
+        /// If a file has multiple names (hard links), DONE_WITH_FILE will only be received for one name.
+        /// Also, this message will not be received for empty files or reparse points (or symbolic links),
+        /// unless they have nonempty named data streams.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string PathToFile;
@@ -712,22 +636,18 @@ namespace ManagedWimLib
         /// <summary>
         /// Path to the file for which exclusion is being tested.
         ///
-        /// UNIX capture mode:  The path will be a standard relative or
-        /// absolute UNIX filesystem path.
+        /// UNIX capture mode:  The path will be a standard relative or absolute UNIX filesystem path.
         ///
-        /// NTFS-3G capture mode:  The path will be given relative to the
-        /// root of the NTFS volume, with a leading slash.
+        /// NTFS-3G capture mode:  The path will be given relative to the root of the NTFS volume, with a leading slash.
         ///
-        /// Windows capture mode:  The path will be a Win32 namespace
-        /// path to the file.
+        /// Windows capture mode:  The path will be a Win32 namespace path to the file.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Path;
         /// <summary>
-        /// Indicates whether the file or directory will be excluded from
-        /// capture or not.  This will be <c>false</c> by default.  The
-        /// progress function can set this to <c>true</c> if it decides
-        /// that the file needs to be excluded.
+        /// Indicates whether the file or directory will be excluded from capture or not. 
+        /// This will be false by default.
+        /// The progress function can set this to true if it decides that the file needs to be excluded.
         /// </summary>
         public bool WillExclude;
     }
@@ -739,8 +659,7 @@ namespace ManagedWimLib
     public struct ProgressInfo_HandleError
     {
         /// <summary>
-        /// Path to the file for which the error occurred, or NULL if
-        /// not relevant.
+        /// Path to the file for which the error occurred, or NULL if not relevant.
         /// </summary>
         [MarshalAs(UnmanagedType.LPWStr)]
         public string Path;
@@ -749,9 +668,8 @@ namespace ManagedWimLib
         /// </summary>
         public int ErrorCode;
         /// <summary>
-        /// Indicates whether the error will be ignored or not.  This
-        /// will be <c>false</c> by default; the progress function may
-        /// set it to <c>true</c>.
+        /// Indicates whether the error will be ignored or not.
+        /// This will be false by default; the progress function may set it to true.
         /// </summary>
         public bool WillIgnore;
     }

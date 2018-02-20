@@ -93,6 +93,7 @@ namespace PEBakery.IniLib
             string strX = ((IniKey)x).Section;
             string strY = ((IniKey)y).Section;
             return (new CaseInsensitiveComparer()).Compare(strX, strY);
+            // return StringComparer.OrdinalIgnoreCase.Compare(x, y);
         }
     }
     #endregion

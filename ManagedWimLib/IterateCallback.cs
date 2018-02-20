@@ -95,6 +95,18 @@ namespace ManagedWimLib
             NativeFunc = NativeCallback;
         }
 
+        private CallbackStatus NativeCallback(ResourceEntry resource, IntPtr user_ctx)
+        {
+            CallbackStatus ret = CallbackStatus.CONTINUE;
+            if (_callback != null)
+            {
+                ret = _callback(resource, _userData);
+            }
+
+            return ret;
+        }
+
+        /*
         private CallbackStatus NativeCallback(IntPtr entry_ptr, IntPtr user_ctx)
         {
             CallbackStatus ret = CallbackStatus.CONTINUE;
@@ -106,6 +118,7 @@ namespace ManagedWimLib
 
             return ret;
         }
+        */
     }
     #endregion
 

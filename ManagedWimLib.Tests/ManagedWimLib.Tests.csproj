@@ -51,12 +51,14 @@
   <ItemGroup>
     <Compile Include="AppendTests.cs" />
     <Compile Include="DeleteTests.cs" />
-    <Compile Include="DirTests.cs" />
+    <Compile Include="IterateTests.cs" />
     <Compile Include="ExportTests.cs" />
     <Compile Include="ExtractTests.cs" />
     <Compile Include="AddTests.cs" />
     <Compile Include="GetImageInfoTests.cs" />
     <Compile Include="GetInfoTest.cs" />
+    <Compile Include="JoinTests.cs" />
+    <Compile Include="ReferenceTests.cs" />
     <Compile Include="TestSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UpdateTests.cs" />

@@ -59,7 +59,7 @@ namespace ManagedWimLib.Tests
                     _checked[i] = false;
                 CallbackStatus ProgressCallback(ProgressMsg msg, object info, object progctx)
                 {
-                    Console.WriteLine(msg);
+                    
                     switch (msg)
                     {
                         case ProgressMsg.WRITE_STREAMS:

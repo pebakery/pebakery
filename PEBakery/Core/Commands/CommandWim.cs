@@ -1153,7 +1153,7 @@ namespace PEBakery.Core.Commands
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
-                    UpdateCommand addCmd = UpdateCommand.Add(srcPath, destPath, null, addFlags);
+                    UpdateCommand addCmd = UpdateCommand.SetAdd(srcPath, destPath, null, addFlags);
                     wim.UpdateImage(imageIndex, addCmd, updateFlags);
 
                     s.MainViewModel.BuildCommandProgressTitle = "WimPathAdd Progress";
@@ -1222,7 +1222,7 @@ namespace PEBakery.Core.Commands
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
-                    UpdateCommand deleteCmd = UpdateCommand.Delete(path, deleteFlags);
+                    UpdateCommand deleteCmd = UpdateCommand.SetDelete(path, deleteFlags);
                     wim.UpdateImage(imageIndex, deleteCmd, updateFlags);
 
                     s.MainViewModel.BuildCommandProgressTitle = "WimPathDelete Progress";
@@ -1291,7 +1291,7 @@ namespace PEBakery.Core.Commands
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
-                    UpdateCommand renCmd = UpdateCommand.Rename(srcPath, destPath);
+                    UpdateCommand renCmd = UpdateCommand.SetRename(srcPath, destPath);
                     wim.UpdateImage(imageIndex, renCmd, updateFlags);
 
                     s.MainViewModel.BuildCommandProgressTitle = "WimPathRename Progress";
@@ -1345,15 +1345,15 @@ namespace PEBakery.Core.Commands
                         switch (upCmd.Op)
                         {
                             case UpdateOp.ADD:
-                                var add = upCmd.AddCommand;
+                                var add = upCmd.Add;
                                 str = $"[Stage 1] Adding {add.FsSourcePath} ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             case UpdateOp.DELETE:
-                                var del = upCmd.DeleteCommand;
+                                var del = upCmd.Delete;
                                 str = $"[Stage 1] Deleting {del.WimPath} ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             case UpdateOp.RENAME:
-                                var ren = upCmd.RenameCommand;
+                                var ren = upCmd.Rename;
                                 str = $"[Stage 1] Renaming {ren.WimSourcePath} to {ren.WimTargetPath} ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             default:

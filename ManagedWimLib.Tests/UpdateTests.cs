@@ -43,33 +43,25 @@ namespace ManagedWimLib.Tests
 
             void RunUpdateTest(string wimFile, UpdateCommand[] cmds)
             {
-                try
-                {
-                    Update_Template(wimFile, cmds);
-                }
-                finally
-                {
-                    for (int i = 0; i < cmds.Length; i++)
-                        cmds[i].Dispose();
-                }
+                Update_Template(wimFile, cmds);
             }
 
             RunUpdateTest("XPRESS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
-                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
+                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
+                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
             });
 
             RunUpdateTest("LZX.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Delete("ACDE.txt", DeleteFlags.DEFAULT),
-                UpdateCommand.Delete("ABCD", DeleteFlags.RECURSIVE),
+                UpdateCommand.SetDelete("ACDE.txt", DeleteFlags.DEFAULT),
+                UpdateCommand.SetDelete("ABCD", DeleteFlags.RECURSIVE),
             });
 
             RunUpdateTest("LZMS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Rename("ACDE.txt", "FILE"),
-                UpdateCommand.Rename("ABCD", "DIR"),
+                UpdateCommand.SetRename("ACDE.txt", "FILE"),
+                UpdateCommand.SetRename("ABCD", "DIR"),
             });
         }
 
@@ -112,19 +104,19 @@ namespace ManagedWimLib.Tests
                     {
                         case UpdateOp.ADD:
                             {
-                                var add = cmd.AddCommand;
+                                var add = cmd.Add;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", add.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
                         case UpdateOp.DELETE:
                             {
-                                var del = cmd.DeleteCommand;
+                                var del = cmd.Delete;
                                 Assert.IsFalse(entries.Contains(Path.Combine(@"\", del.WimPath), StringComparer.Ordinal));
                             }
                             break;
                         case UpdateOp.RENAME:
                             {
-                                var ren = cmd.RenameCommand;
+                                var ren = cmd.Rename;
                                 Assert.IsTrue(entries.Contains(Path.Combine(@"\", ren.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
@@ -148,33 +140,25 @@ namespace ManagedWimLib.Tests
 
             void RunUpdateTest(string wimFile, UpdateCommand[] cmds)
             {
-                try
-                {
-                    UpdateProgress_Template(wimFile, cmds);
-                }
-                finally
-                {
-                    for (int i = 0; i < cmds.Length; i++)
-                        cmds[i].Dispose();
-                }
+                UpdateProgress_Template(wimFile, cmds);
             }
 
             RunUpdateTest("XPRESS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Add(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
-                UpdateCommand.Add(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
+                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
+                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
             });
 
             RunUpdateTest("LZX.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Delete("ACDE.txt", DeleteFlags.DEFAULT),
-                UpdateCommand.Delete("ABCD", DeleteFlags.RECURSIVE),
+                UpdateCommand.SetDelete("ACDE.txt", DeleteFlags.DEFAULT),
+                UpdateCommand.SetDelete("ABCD", DeleteFlags.RECURSIVE),
             });
 
             RunUpdateTest("LZMS.wim", new UpdateCommand[2]
             {
-                UpdateCommand.Rename("ACDE.txt", "FILE"),
-                UpdateCommand.Rename("ABCD", "DIR"),
+                UpdateCommand.SetRename("ACDE.txt", "FILE"),
+                UpdateCommand.SetRename("ABCD", "DIR"),
             });
         }
 
@@ -183,7 +167,6 @@ namespace ManagedWimLib.Tests
             CallbackTested tested = progctx as CallbackTested;
             Assert.IsNotNull(tested);
 
-            Console.WriteLine(msg);
             switch (msg)
             {
                 case ProgressMsg.UPDATE_BEGIN_COMMAND:
@@ -199,19 +182,19 @@ namespace ManagedWimLib.Tests
                         {
                             case UpdateOp.ADD:
                                 {
-                                    var add = cmd.AddCommand;
+                                    var add = cmd.Add;
                                     Console.WriteLine($"ADD [{add.FsSourcePath}] -> [{add.WimTargetPath}]");
                                 }
                                 break;
                             case UpdateOp.DELETE:
                                 {
-                                    var del = cmd.DeleteCommand;
+                                    var del = cmd.Delete;
                                     Console.WriteLine($"DELETE [{del.WimPath}]");
                                 }
                                 break;
                             case UpdateOp.RENAME:
                                 {
-                                    var ren = cmd.RenameCommand;
+                                    var ren = cmd.Rename;
                                     Console.WriteLine($"RENAME [{ren.WimSourcePath}] -> [{ren.WimTargetPath}]");
                                 }
                                 break;
@@ -256,20 +239,20 @@ namespace ManagedWimLib.Tests
                     {
                         case UpdateOp.ADD:
                             {
-                                var add = cmd.AddCommand;
-                                Assert.IsTrue(entries.Contains(Path.Combine(@"\", add.WimTargetPath), StringComparer.Ordinal));
+                                var add = cmd.Add;
+                                Assert.IsTrue(entries.Contains(Path.Combine(Wim.RootPath, add.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
                         case UpdateOp.DELETE:
                             {
-                                var del = cmd.DeleteCommand;
-                                Assert.IsFalse(entries.Contains(Path.Combine(@"\", del.WimPath), StringComparer.Ordinal));
+                                var del = cmd.Delete;
+                                Assert.IsFalse(entries.Contains(Path.Combine(Wim.RootPath, del.WimPath), StringComparer.Ordinal));
                             }
                             break;
                         case UpdateOp.RENAME:
                             {
-                                var ren = cmd.RenameCommand;
-                                Assert.IsTrue(entries.Contains(Path.Combine(@"\", ren.WimTargetPath), StringComparer.Ordinal));
+                                var ren = cmd.Rename;
+                                Assert.IsTrue(entries.Contains(Path.Combine(Wim.RootPath, ren.WimTargetPath), StringComparer.Ordinal));
                             }
                             break;
                     }
