@@ -377,6 +377,9 @@ namespace PEBakery.Core.Commands
                     break;
             }
 
+            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
             if (info.Timeout == null)
             {
                 MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
@@ -395,6 +398,8 @@ namespace PEBakery.Core.Commands
                     CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
                 });
             }
+
+            s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
 
             string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             string firstLine = message;
@@ -512,6 +517,9 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile));
                         UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
 
+                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
                         string selectedPath = initPath;
                         if (type == UserInputType.FilePath)
@@ -569,6 +577,8 @@ namespace PEBakery.Core.Commands
                             if (failure)
                                 return logs;
                         }
+
+                        s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
                         logs.AddRange(varLogs);

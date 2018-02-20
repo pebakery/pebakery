@@ -180,6 +180,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
 
+            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             if (s.RunningSubProcess != null)
                 s.RunningSubProcess.Kill();
             s.CmdHaltFlag = true;

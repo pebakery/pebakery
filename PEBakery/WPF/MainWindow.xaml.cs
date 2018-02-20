@@ -48,6 +48,7 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
 using System.Net;
+using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
@@ -1419,6 +1420,10 @@ namespace PEBakery.WPF
                 switchNormalBuildInterface = value;
                 if (value)
                 { // To Normal View
+                    BuildScriptProgressBarValue = 0;
+                    BuildFullProgressBarValue = 0;
+                    TaskbarProgressState = TaskbarItemProgressState.None;
+
                     NormalInterfaceVisibility = Visibility.Visible;
                     BuildInterfaceVisibility = Visibility.Collapsed;
                 }
@@ -1429,6 +1434,7 @@ namespace PEBakery.WPF
 
                     BuildScriptProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
+                    TaskbarProgressState = TaskbarItemProgressState.Normal;
 
                     NormalInterfaceVisibility = Visibility.Collapsed;
                     BuildInterfaceVisibility = Visibility.Visible;
@@ -1665,6 +1671,25 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("BuildCommandProgressVisibility");
             }
         }
+
+        // Taskbar Progress State
+        //
+        // None - Hidden
+        // Inderterminate - Pulsing green indicator
+        // Normal - Green
+        // Error - Red
+        // Paused - Yellow
+        private System.Windows.Shell.TaskbarItemProgressState taskbarProgressState;
+        public System.Windows.Shell.TaskbarItemProgressState TaskbarProgressState
+        {
+            get => taskbarProgressState;
+            set
+            {
+                taskbarProgressState = value;
+                OnPropertyUpdate("TaskbarProgressState");
+            }
+        }
+
         #endregion
 
         #region OnPropertyUpdate
@@ -1949,6 +1974,21 @@ namespace PEBakery.WPF
             }
 
             return errorLogs;
+        }
+    }
+    #endregion
+
+    #region Converters
+    public class TaskbarProgressConverter : System.Windows.Data.IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return (double)values[1] / (double)values[0];
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
     #endregion
