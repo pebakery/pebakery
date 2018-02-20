@@ -31,7 +31,7 @@ using System.Threading;
 namespace ManagedWimLib.Tests
 {
     [TestClass]
-    public class GetInfoTest
+    public class GetInfoTests
     {
         #region GetImageInfo
         [TestMethod]
@@ -124,6 +124,31 @@ namespace ManagedWimLib.Tests
             {
                 bool ret = wim.IsImageNameInUse(imageName);
                 Assert.AreEqual(ret, comp);
+            }
+        }
+        #endregion
+
+        #region ResolveImage
+        [TestMethod]
+        [TestCategory("WimLib")]
+        public void ResolveImage()
+        {
+            ResolveImage_Template("LZX.wim", "Sample", 1);
+            ResolveImage_Template("LZX.wim", "1", 1);
+            ResolveImage_Template("LZX.wim", "2", Wim.NoImage);
+            ResolveImage_Template("MultiImage.wim", "Delta", 3);
+            ResolveImage_Template("MultiImage.wim", "Alpha", Wim.NoImage);
+            ResolveImage_Template("MultiImage.wim", "all", Wim.AllImages);
+            ResolveImage_Template("MultiImage.wim", "*", Wim.AllImages);
+        }
+
+        public void ResolveImage_Template(string fileName, string imageNameOrNum, int comp)
+        {
+            string wimFile = Path.Combine(TestSetup.SampleDir, fileName);
+            using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+            {
+                int imageIndex = wim.ResolveImage(imageNameOrNum);
+                Assert.AreEqual(imageIndex, comp);
             }
         }
         #endregion

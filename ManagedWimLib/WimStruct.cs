@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -33,18 +34,23 @@ namespace ManagedWimLib
 {
     #region WimStruct
     public class Wim : IDisposable
-    { // Wrapper of WimStruct and API
-        #region Field
-        public IntPtr Ptr { get; private set; }
-        private ManagedProgressCallback managedCallback;
-        #endregion
-
+    { // Wrapper of WimStruct and wimlib API
         #region Const
         public const int NoImage = 0;
         public const int AllImages = -1;
         public const int DefaultThreads = 0;
         public const string PathSeparator = @"\";
         public const string RootPath = @"\";
+        #endregion
+
+        #region Field
+        public IntPtr Ptr { get; private set; }
+        private ManagedProgressCallback managedCallback;
+        #endregion
+
+        #region Properties
+        public static bool Loaded => NativeMethods.Loaded;
+        public static string ErrorFile => NativeMethods.ErrorFile;
         #endregion
 
         #region Constructor (private)
@@ -83,32 +89,104 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region Callback - RegisterCallback
-        /// <summary>
-        /// Register a progress function with a ::WimStruct.
-        /// </summary>
-        /// <param name="wim">The ::WimStruct for which to register the progress function.</param>
-        /// <param name="callback">
-        /// Pointer to the progress function to register.  If the WIM already has a
-        /// progress function registered, it will be replaced with this one.  If @p
-        /// NULL, the current progress function (if any) will be unregistered.
-        /// </param>
-        /// <param name="userData">
-        /// The value which will be passed as the third argument to calls to @p
-        /// progfunc.
-        /// </param>
-        public void RegisterCallback(ProgressCallback callback, object userData = null)
+        #region Global - (Static) GlobalInit, GlobalCleanup
+        public static void GlobalInit(string dllPath, InitFlags initFlags = InitFlags.DEFAULT)
         {
-            if (callback != null)
-            { // RegisterCallback
-                managedCallback = new ManagedProgressCallback(callback, userData);
-                NativeMethods.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
+            if (NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.AlreadyInitedMsg);
+            
+            if (dllPath == null) throw new ArgumentNullException(nameof(dllPath));
+            if (!File.Exists(dllPath)) throw new FileNotFoundException("Specified dll does not exist");
+
+            NativeMethods.hModule = NativeMethods.LoadLibrary(dllPath);
+            if (NativeMethods.hModule.IsInvalid)
+                throw new ArgumentException($"Unable to load [{dllPath}]", new Win32Exception());
+
+            // Check if dll is valid (wimlib-15.dll)
+            if (NativeMethods.GetProcAddress(NativeMethods.hModule, "wimlib_open_wim") == IntPtr.Zero)
+            {
+                GlobalCleanup();
+                throw new ArgumentException($"[{dllPath}] is not a valid wimlib library");
+            }
+
+            try
+            {
+                NativeMethods.LoadFuntions();
+
+                // Set ErrorFile and PrintError
+                NativeMethods.ErrorFile = Path.GetTempFileName();
+                WimLibException.CheckWimLibError(NativeMethods.SetErrorFile(NativeMethods.ErrorFile));
+                WimLibException.CheckWimLibError(NativeMethods.SetPrintErrors(true));
+
+                ErrorCode ret = NativeMethods.GlobalInit(initFlags);
+                WimLibException.CheckWimLibError(ret);
+            }
+            catch (Exception)
+            {
+                GlobalCleanup();
+                throw;
+            }
+        }
+
+        public static void GlobalCleanup()
+        {
+            if (NativeMethods.Loaded)
+            {
+                NativeMethods.GlobalCleanup();
+
+                NativeMethods.ResetFuntions();
+
+                NativeMethods.hModule.Close();
+                NativeMethods.hModule = null;
+
+                if (File.Exists(ErrorFile))
+                    File.Delete(ErrorFile);
             }
             else
-            { // Delete callback
-                managedCallback = null;
-                NativeMethods.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
+            {
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
             }
+        }
+        #endregion
+
+        #region Error - (Static) GetErrorString, SetPrintErrors
+        /// <summary>
+        /// Convert a wimlib error code into a string describing it.
+        /// </summary>
+        /// <param name="code">An error code returned by one of wimlib's functions.</param>
+        /// <returns>
+        /// string describing the error code.
+        /// If the value was unrecognized, then the resulting string will be "Unknown error".
+        /// </returns>
+        public static string GetErrorString(ErrorCode code)
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+
+            IntPtr ptr = NativeMethods.GetErrorString(ErrorCode.INVALID_IMAGE);
+            return Marshal.PtrToStringUni(ptr);
+        }
+
+        /// <summary>
+        /// Set whether wimlib can print error and warning messages to the error file, which defaults to standard error.
+        /// Error and warning messages may provide information that cannot be determined only from returned error codes.
+        /// 
+        /// By default, error messages are not printed.
+        /// This setting applies globally (it is not per-WIM).
+        /// This can be called before Wim.GlobalInit().
+        /// </summary>
+        /// <param name="showMessages">
+        /// true if messages are to be printed;
+        /// false if messages are not to be printed.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public static void SetPrintErrors(bool showMessages)
+        {
+            if (!NativeMethods.Loaded)
+                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+
+            ErrorCode ret = NativeMethods.SetPrintErrors(showMessages);
+            WimLibException.CheckWimLibError(ret);
         }
         #endregion
 
@@ -515,7 +593,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        #region GetWimInfo - GetWimInfo, GetXmlData, IsImageNameInUse
+        #region GetWimInfo - GetWimInfo, GetXmlData, IsImageNameInUse, ResolveImage
         /// <summary>
         /// Get basic information about a WIM file.
         /// </summary>
@@ -567,6 +645,29 @@ namespace ManagedWimLib
         public bool IsImageNameInUse(string name)
         {
             return NativeMethods.IsImageNameInUse(Ptr, name);
+        }
+
+        /// <summary>
+        /// Translate a string specifying the name or number of an image in the WIM into the number of the image.
+        /// The images are numbered starting at 1.
+        /// </summary>
+        /// <param name="imageNameOrNum">
+        /// A string specifying the name or number of an image in the WIM.
+        /// If it parses to a positive integer, this integer is taken to specify the number of the image, indexed starting at 1.
+        /// Otherwise, it is taken to be the name of an image, as given in the XML data for the WIM file.
+        /// It also may be the keyword "all" or the string "*", both of which will resolve to Wim.ALL_IMAGES.
+        /// </param>
+        /// <returns>
+        /// If the string resolved to a single existing image, the number of that image, indexed starting at 1, is returned.
+        /// If the keyword "all" or "*" was specified, Wim.AllImages is returned.
+        /// Otherwise, Wim.NoImage is returned.
+        /// 
+        /// If imageNameOr_Num was null or the empty string, Wim.NO_IMAGE is returned, even if one or more images in wim has no name.
+        /// (Since a WIM may have multiple unnamed images, an unnamed image must be specified by index to eliminate the ambiguity.)
+        /// </returns>
+        public int ResolveImage(string imageNameOrNum)
+        {
+            return NativeMethods.ResolveImage(Ptr, imageNameOrNum);
         }
         #endregion
 
@@ -917,8 +1018,224 @@ namespace ManagedWimLib
         }
         #endregion
 
+        #region Callback - RegisterCallback
+        /// <summary>
+        /// Register a progress function with a WimStruct.
+        /// </summary>
+        /// <param name="callback">
+        /// Pointer to the progress function to register.
+        /// If the WIM already has a progress function registered, it will be replaced with this one.
+        /// If null, the current progress function (if any) will be unregistered.
+        /// </param>
+        /// <param name="userData">
+        /// The value which will be passed as the third argument to calls to progfunc.
+        /// </param>
+        public void RegisterCallback(ProgressCallback callback, object userData = null)
+        {
+            if (callback != null)
+            { // RegisterCallback
+                managedCallback = new ManagedProgressCallback(callback, userData);
+                NativeMethods.RegisterProgressFunction(Ptr, managedCallback.NativeFunc, IntPtr.Zero);
+            }
+            else
+            { // Delete callback
+                managedCallback = null;
+                NativeMethods.RegisterProgressFunction(Ptr, null, IntPtr.Zero);
+            }
+        }
+        #endregion
 
-        #region UpdateImage
+        #region Rename - RenamePath
+        /// <summary>
+        /// Rename the source_path to the destPath in the specified image of the wim.
+        /// </summary>
+        /// <remarks>
+        /// This just builds an appropriate Wim.RenameCommand and passes it to Wim.UpdateImage().
+        /// </remarks>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void RenamePath(int image, string sourcePath, string destPath)
+        {
+            ErrorCode ret = NativeMethods.RenamePath(Ptr, image, sourcePath, destPath);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region SetImageInfo - SetImageDescription, SetImageFlags, SetImageName, SetImageProperty, SetWimInfo
+        /// <summary>
+        /// Change the description of a WIM image.
+        /// Equivalent to SetImageProperty(image, "DESCRIPTION", description)
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="description">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetImageDescription(int image, string description)
+        {
+            ErrorCode ret = NativeMethods.SetImageDescription(Ptr, image, description);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Change what is stored in the &lt;FLAGS&gt; element in the WIM XML document (usually something like "Core" or "Ultimate"). 
+        /// Equivalent to SetImageProperty(image, "FLAGS", flags)
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="flags">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetImageFlags(int image, string flags)
+        {
+            ErrorCode ret = NativeMethods.SetImageFlags(Ptr, image, flags);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Change the name of a WIM image.
+        /// Equivalent to SetImageProperty(image, "NAME", name)
+        /// </summary>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="name">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetImageName(int image, string name)
+        {
+            ErrorCode ret = NativeMethods.SetImageName(Ptr, image, name);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Since wimlib v1.8.3:
+        /// add, modify, or remove a per-image property from the WIM's XML document.
+        /// </summary>
+        /// <remarks>
+        /// This is an alternative to Wim.SetImageName(), Wim.SetImageDescripton(), and Wim.SetImageFlags()
+        /// which allows manipulating any simple string property.
+        /// </remarks>
+        /// <param name="image">The 1-based index of the image for which to set the property.</param>
+        /// <param name="propertyName">
+        /// The name of the image property in the same format documented for Wim.GetImageProperty().
+        /// 
+        /// Note: if creating a new element using a bracketed index such as "WINDOWS/LANGUAGES/LANGUAGE[2]", the highest index 
+        /// that can be specified is one greater than the number of existing elements with that same name, excluding the index.
+        /// That means that if you are adding a list of new elements,
+        /// they must be added sequentially from the first index (1) to the last index (n).
+        /// </param>
+        /// <param name="propertyValue">
+        /// If not NULL and not empty, the property is set to this value.
+        /// Otherwise, the property is removed from the XML document.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetImageProperty(int image, string propertyName, string propertyValue)
+        {
+            ErrorCode ret = NativeMethods.SetImageProperty(Ptr, image, propertyName, propertyValue);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Set basic information about a WIM.
+        /// </summary>
+        /// <param name="info">
+        /// Pointer to a WimInfo structure that contains the information to set.
+        /// Only the information explicitly specified in the which flags need be valid.
+        /// </param>
+        /// <param name="which">
+        /// Flags that specify which information to set. 
+        /// This is a bitwise OR of ChangeFlags.READONLY_FLAG, ChangeFlags.GUID, ChangeFlags.BOOT_INDEX, and/or ChangeFlags.RPFIX_FLAG.
+        /// </param>
+        public void SetWimInfo(WimInfo info, ChangeFlags which)
+        {
+            ErrorCode ret = NativeMethods.SetWimInfo(Ptr, ref info, which);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+
+        #endregion
+
+        #region SetOutput - SetOutputChunkSize, SetOutputPackChunkSize, SetOutputCompressionType, SetOutputPackCompressionType
+        /// <summary>
+        /// Set a WimStruct's output compression chunk size.
+        /// This is the compression chunk size that will be used for writing non-solid resources
+        /// in subsequent calls to Wim.Write() or Wim.Overwrite().
+        /// A larger compression chunk size often results in a better compression ratio,
+        /// but compression may be slower and the speed of random access to data may be reduced.
+        /// In addition, some chunk sizes are not compatible with Microsoft software.
+        /// </summary>
+        /// <param name="chunkSize">
+        /// The chunk size (in bytes) to set.
+        /// The valid chunk sizes are dependent on the compression type.
+        /// See the documentation for each CompressionType enum for more information.
+        /// As a special case, if chunkSize is specified as 0,
+        /// then the chunk size will be reset to the default for the currently selected output compression type.
+        /// </param>
+        public void SetOutputChunkSize(uint chunkSize)
+        {
+            ErrorCode ret = NativeMethods.SetOutputChunkSize(Ptr, chunkSize);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Similar to Wim.SetOutputChunkSize(), but set the chunk size for writing solid resources.
+        /// </summary>
+        /// <param name="chunkSize">
+        /// The chunk size (in bytes) to set.
+        /// The valid chunk sizes are dependent on the compression type.
+        /// See the documentation for each CompressionType enum for more information.
+        /// As a special case, if chunkSize is specified as 0,
+        /// then the chunk size will be reset to the default for the currently selected output compression type.
+        /// </param>
+        public void SetOutputPackChunkSize(uint chunkSize)
+        {
+            ErrorCode ret = NativeMethods.SetOutputPackChunkSize(Ptr, chunkSize);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Set a WimStruct's output compression type.
+        /// This is the compression type that will be used for writing non-solid resources
+        /// in subsequent calls to Wim.Write() or Wim.Overwrite().
+        /// </summary>
+        /// <param name="compType">
+        /// The compression type to set.
+        /// If this compression type is incompatible with the current output chunk size,
+        /// then the output chunk size will be reset to the default for the new compression type.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetOutputCompressionType(CompressionType compType)
+        {
+            ErrorCode ret = NativeMethods.SetOutputCompressionType(Ptr, compType);
+            WimLibException.CheckWimLibError(ret);
+        }
+
+        /// <summary>
+        /// Similar to Wim.SetOutputCompressionType(), but set the compression type for writing solid resources. 
+        /// This cannot be CompressType.NONE.
+        /// </summary>
+        /// <param name="compType">
+        /// The compression type to set.
+        /// If this compression type is incompatible with the current output chunk size,
+        /// then the output chunk size will be reset to the default for the new compression type.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void SetOutputPackCompressionType(CompressionType compType)
+        {
+            ErrorCode ret = NativeMethods.SetOutputPackCompressionType(Ptr, compType);
+            WimLibException.CheckWimLibError(ret);
+        }
+        #endregion
+
+        #region Split - Split
+        #endregion
+
+        #region Verify - VerifyWim
+        #endregion
+
+        #region Update - UpdateImage
         /// <summary>
         /// Update a WIM image by adding, deleting, and/or renaming files or directories.
         /// </summary>
@@ -1008,44 +1325,7 @@ namespace ManagedWimLib
         }
         #endregion
 
-        
-
-        #region SetOutputCompressionType, SetOutputPackCompressionType
-        /// <summary>
-        /// Set a ::WimStruct's output compression type.  This is the compression type
-        /// that will be used for writing non-solid resources in subsequent calls to
-        /// wimlib_write() or wimlib_overwrite().
-        /// </summary>
-        /// <param name="compType">
-        /// The compression type to set.  If this compression type is incompatible
-        /// with the current output chunk size, then the output chunk size will be
-        /// reset to the default for the new compression type.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetOutputCompressionType(CompressionType compType)
-        {
-            ErrorCode ret = NativeMethods.SetOutputCompressionType(Ptr, compType);
-            WimLibException.CheckWimLibError(ret);
-        }
-
-        /// <summary>
-        /// Similar to wimlib_set_output_compression_type(), but set the compression type
-        /// for writing solid resources.  This cannot be ::WIMLIB_COMPRESSION_TYPE_NONE.
-        /// </summary>
-        /// <param name="compType">
-        /// The compression type to set.  If this compression type is incompatible
-        /// with the current output chunk size, then the output chunk size will be
-        /// reset to the default for the new compression type.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetOutputPackCompressionType(CompressionType compType)
-        {
-            ErrorCode ret = NativeMethods.SetOutputPackCompressionType(Ptr, compType);
-            WimLibException.CheckWimLibError(ret);
-        }
-        #endregion
-
-        #region Write, Overwrite
+        #region Write - Write, Overwrite
         /// <summary>
         /// Persist a ::WimStruct to a new on-disk WIM file.
         /// </summary>
@@ -1116,81 +1396,6 @@ namespace ManagedWimLib
             WimLibException.CheckWimLibError(ret);
         }
         #endregion
-
-        #region SetImageProperty, SetImageName, SetImageDescription, SetImageFlags
-        /// <summary>
-        /// Since wimlib v1.8.3: add, modify, or remove a per-image property from the
-        /// WIM's XML document.
-        /// </summary>
-        /// <remarks>
-        /// This is an alternative to wimlib_set_image_name(),
-        /// wimlib_set_image_descripton(), and wimlib_set_image_flags() which allows
-        /// manipulating any simple string property.
-        /// </remarks>
-        /// <param name="wim">Pointer to the ::WimStruct for the WIM.</param>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="property_name">
-        /// The name of the image property in the same format documented for wimlib_get_image_property().
-        /// </param>
-        /// <param name="property_value">
-        /// If not NULL and not empty, the property is set to this value.
-        /// Otherwise, the property is removed from the XML document.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetImageProperty(int image, string propertyName, string propertyValue)
-        {
-            ErrorCode ret = NativeMethods.SetImageProperty(Ptr, image, propertyName, propertyValue);
-            WimLibException.CheckWimLibError(ret);
-        }
-
-        /// <summary>
-        /// Change the description of a WIM image.
-        /// Equivalent to SetImageProperty(image, "DESCRIPTION", description)
-        /// </summary>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="description">
-        /// If not NULL and not empty, the property is set to this value.
-        /// Otherwise, the property is removed from the XML document.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetImageDescription(int image, string description)
-        {
-            SetImageProperty(image, "DESCRIPTION", description);
-        }
-
-        /// <summary>
-        /// Change what is stored in the \<FLAGS\> element in the WIM XML document (usually something like "Core" or "Ultimate"). 
-        /// Equivalent to SetImageProperty(image, "FLAGS", flags)
-        /// </summary>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="flags"></param>
-        /// If not NULL and not empty, the property is set to this value.
-        /// Otherwise, the property is removed from the XML document.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetImageFlags(int image, string flags)
-        {
-            SetImageProperty(image, "FLAGS", flags);
-        }
-
-        /// <summary>
-        /// Change the name of a WIM image.
-        /// Equivalent to SetImageProperty(image, "FLAGS", flags)
-        /// </summary>
-        /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="name"></param>
-        /// If not NULL and not empty, the property is set to this value.
-        /// Otherwise, the property is removed from the XML document.
-        /// </param>
-        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
-        public void SetImageName(int image, string name)
-        {
-            SetImageProperty(image, "NAME", name);
-        }
-        #endregion
-        
-
-        
 
         #region Existence Check (ManagedWimLib Only)
         /// <summary>

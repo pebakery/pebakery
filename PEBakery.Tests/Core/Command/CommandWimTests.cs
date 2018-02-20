@@ -83,7 +83,7 @@ namespace PEBakery.Tests.Core.Command
                 EngineTests.Eval(s, rawCode, CodeType.WimApply, check);
                 if (check == ErrorCheck.Success)
                 {
-                    CheckDir_Src01(destDir);
+                    WimChecker.CheckFileSystem(SampleSet.Src01, destDir);
                 }
             }
             finally
@@ -314,7 +314,7 @@ namespace PEBakery.Tests.Core.Command
                         wim.ExtractImage(1, applyDir, ExtractFlags.DEFAULT);
                     }
 
-                    CheckDir_Src01(applyDir);
+                    WimChecker.CheckFileSystem(SampleSet.Src01, applyDir);
                 }
             }
             finally
@@ -343,16 +343,27 @@ namespace PEBakery.Tests.Core.Command
             Directory.CreateDirectory(destDir);
             try
             {
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim", sampleDir, destDir, "XPRESS.wim");
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim", sampleDir, destDir, "LZX.wim");
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim", sampleDir, destDir, "LZMS.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim", sampleDir, destDir,
+                    "XPRESS.wim", SampleSet.Src03);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim", sampleDir, destDir,
+                    "LZX.wim", SampleSet.Src03);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim", sampleDir, destDir,
+                    "LZMS.wim", SampleSet.Src03);
 
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim,BOOT", sampleDir, destDir, "XPRESS.wim");
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim,NOACL", sampleDir, destDir, "LZX.wim");
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim,CHECK", sampleDir, destDir, "LZMS.wim");
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\XPRESS.wim,BOOT", sampleDir, destDir,
+                    "XPRESS.wim", SampleSet.Src03);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZX.wim,NOACL", sampleDir, destDir, 
+                    "LZX.wim", SampleSet.Src03);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src03,{pbDestDir}\LZMS.wim,CHECK", sampleDir, destDir,
+                    "LZMS.wim", SampleSet.Src03);
 
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,TRASH", sampleDir, destDir, "LZX.wim", ErrorCheck.ParserError);
-                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,LZX,TRASH", sampleDir, destDir, "LZX.wim", ErrorCheck.ParserError);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src02_2,{pbDestDir}\MultiImage.wim,DeltaIndex=1", sampleDir, destDir,
+                    "MultiImage.wim", SampleSet.Src02_2);
+
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,TRASH", sampleDir, destDir,
+                    "LZX.wim", SampleSet.Src01, ErrorCheck.ParserError);
+                Append_Template(s, $@"WimAppend,{pbSampleDir}\Src01,{pbDestDir}\LZX.wim,LZX,TRASH", sampleDir, destDir,
+                    "LZX.wim", SampleSet.Src01, ErrorCheck.ParserError);
             }
             finally
             {
@@ -361,7 +372,8 @@ namespace PEBakery.Tests.Core.Command
             }
         }
 
-        public void Append_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName, ErrorCheck check = ErrorCheck.Success)
+        public void Append_Template(EngineState s, string rawCode, string srcDir, string destDir, string wimFileName,
+            SampleSet set, ErrorCheck check = ErrorCheck.Success)
         {
             string applyDir = Path.Combine(destDir, "AppendApply");
             string srcWim = Path.Combine(srcDir, wimFileName);
@@ -390,7 +402,7 @@ namespace PEBakery.Tests.Core.Command
                         wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.DEFAULT);
                     }
 
-                    CheckDir_Src03(applyDir);
+                    WimChecker.CheckFileSystem(set, applyDir);
                 }
             }
             finally
@@ -778,60 +790,283 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        #region Utility
-        public static void CheckDir_Src01(string dir)
+        #region Helper
+        public enum SampleSet
         {
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD")));
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD", "Z")));
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ACDE.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ACDE.txt")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "A.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "B.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "C.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "D.ini")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "A.txt")).Length == 1);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "B.txt")).Length == 2);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "C.txt")).Length == 3);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "D.ini")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "Z", "X.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "Z", "Y.ini")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "Z", "X.txt")).Length == 1);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "Z", "Y.ini")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "A.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "A.txt")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "X.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
+            // TestSet Src01 is created for basic test and compresstion type test
+            Src01,
+            // TestSet Src02 is created for multi image and delta image test 
+            Src02,
+            Src02_1,
+            Src02_2,
+            Src02_3,
+            // TestSet Src03 is created for split wim test and unicode test
+            Src03,
         }
 
-        public static void CheckDir_Src02_1(string dir)
+        internal class WimChecker
         {
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+            public static void CheckWimPath(SampleSet set, string wimFile)
+            {
+                switch (set)
+                {
+                    case SampleSet.Src01:
+                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                        {
+                            Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD")));
+                            Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABCD", "Z")));
+                            Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABDE")));
+                            Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "ABDE", "Z")));
 
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "A.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "A.txt")).Length == 1);
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ACDE.txt")));
 
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.txt")).Length == 1);
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "A.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "B.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "C.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "D.ini")));
+
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "Z", "X.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABCD", "Z", "Y.ini")));
+
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "A.txt")));
+
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "Z", "X.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "Z", "Y.ini")));
+                        }
+                        break;
+                    case SampleSet.Src02:
+                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                        {
+                            Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "B")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "A.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "B", "C.txt")));
+                            Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "B", "D.ini")));
+
+                            Assert.IsTrue(wim.DirExists(2, Path.Combine(@"\", "B")));
+                            Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "Z.txt")));
+                            Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "B", "C.txt")));
+                            Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "B", "D.ini")));
+
+                            Assert.IsTrue(wim.DirExists(3, Path.Combine(@"\", "B")));
+                            Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "Y.txt")));
+                            Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "Z.txt")));
+                            Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "B", "C.txt")));
+                            Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "B", "D.ini")));
+                        }
+                        break;
+                    case SampleSet.Src03:
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+
+            }
+
+            public static void CheckFileSystem(SampleSet set, string dir)
+            {
+                switch (set)
+                {
+                    case SampleSet.Src01:
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD")));
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABCD", "Z")));
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ACDE.txt")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ACDE.txt")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "A.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "B.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "C.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "D.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "A.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "B.txt")).Length == 2);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "C.txt")).Length == 3);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "D.ini")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "Z", "X.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABCD", "Z", "Y.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "Z", "X.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABCD", "Z", "Y.ini")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "A.txt")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "A.txt")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "X.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
+                        break;
+                    case SampleSet.Src02_1:
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "A.txt")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "A.txt")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                        break;
+                    case SampleSet.Src02_2:
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                        break;
+                    case SampleSet.Src02_3:
+                        Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "Y.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "Y.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                        Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                        break;
+                    case SampleSet.Src03:
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "가")));
+                        Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+
+            public static void CheckPathList(SampleSet set, List<Tuple<string, bool>> paths)
+            {
+                Tuple<string, bool>[] checkList;
+                switch (set)
+                {
+                    case SampleSet.Src01:
+                        checkList = new[]
+                        {
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "Z"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\ABDE"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\ABDE", "Z"), true),
+
+                        new Tuple<string, bool>(Path.Combine(@"\ACDE.txt"), false),
+
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "A.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "B.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "D.ini"), false),
+
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "Z", "X.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\ABCD", "Z", "Y.ini"), false),
+
+                        new Tuple<string, bool>(Path.Combine(@"\ABDE", "A.txt"), false),
+
+                        new Tuple<string, bool>(Path.Combine(@"\ABDE", "Z", "X.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\ABDE", "Z", "Y.ini"), false),
+                    };
+                        break;
+                    case SampleSet.Src02_1:
+                        checkList = new[]
+                        {
+                        new Tuple<string, bool>(Path.Combine(@"B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"A.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "D.ini"), false),
+                    };
+                        break;
+                    case SampleSet.Src02_2:
+                        checkList = new[]
+                        {
+                        new Tuple<string, bool>(Path.Combine(@"B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"Z.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "D.ini"), false),
+                    };
+                        break;
+                    case SampleSet.Src02_3:
+                        checkList = new[]
+                        {
+                        new Tuple<string, bool>(Path.Combine(@"B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"Y.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"Z.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"B", "D.ini"), false),
+                    };
+                        break;
+                    case SampleSet.Src03:
+                        checkList = new[]
+                        {
+                        new Tuple<string, bool>(Path.Combine(@"\가"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\나"), false),
+                    };
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+
+                foreach (var tup in checkList)
+                    Assert.IsTrue(paths.Contains(tup, new CheckWimPathComparer()));
+            }
+
+            public static void CheckAppend_Src01(string dir)
+            {
+                Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
+                Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));
+
+                Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+                Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+                Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "A.txt")));
+                Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "A.txt")).Length == 1);
+
+                Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "X.txt")));
+                Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
+                Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
+                Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
+            }
+
+            public static List<Tuple<string, bool>> GenerateWimPathList(string wimFile)
+            {
+                List<Tuple<string, bool>> entries = new List<Tuple<string, bool>>();
+
+                CallbackStatus IterateCallback(DirEntry dentry, object userData)
+                {
+                    string path = dentry.FullPath;
+                    bool isDir = (dentry.Attributes & FileAttribute.DIRECTORY) != 0;
+                    entries.Add(new Tuple<string, bool>(path, isDir));
+
+                    return CallbackStatus.CONTINUE;
+                }
+
+                using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                {
+                    wim.IterateDirTree(1, Wim.RootPath, IterateFlags.RECURSIVE, IterateCallback);
+                }
+
+                return entries;
+            }
+
+            public class CheckWimPathComparer : IEqualityComparer<Tuple<string, bool>>
+            {
+                public bool Equals(Tuple<string, bool> x, Tuple<string, bool> y)
+                {
+                    bool path = x.Item1.Equals(y.Item1, StringComparison.Ordinal);
+                    bool isDir = x.Item2 == y.Item2;
+                    return path && isDir;
+                }
+
+                public int GetHashCode(Tuple<string, bool> x)
+                {
+                    return x.Item1.GetHashCode() ^ x.Item2.GetHashCode();
+                }
+            }
         }
-
-        public static void CheckDir_Src03(string dir)
-        {
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "가")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "가")).Length == 1024 * 1024);
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "나")).Length == 1024 * 1024);
-        }
+        
         #endregion
     }
 }

@@ -43,18 +43,23 @@ namespace ManagedWimLib.Tests
             BaseDir = Path.GetFullPath(Path.Combine(TestHelper.GetProgramAbsolutePath(), "..", ".."));
             SampleDir = Path.Combine(BaseDir, "Samples");
 
-            if (IntPtr.Size == 8)
-                NativeMethods.AssemblyInit(Path.Combine("x64", "libwim-15.dll"));
-            else if (IntPtr.Size == 4)
-                NativeMethods.AssemblyInit(Path.Combine("x86", "libwim-15.dll"));
-            else
-                throw new PlatformNotSupportedException();
+            switch (IntPtr.Size)
+            {
+                case 8:
+                    Wim.GlobalInit(Path.Combine("x64", "libwim-15.dll"));
+                    break;
+                case 4:
+                    Wim.GlobalInit(Path.Combine("x86", "libwim-15.dll"));
+                    break;
+                default:
+                    throw new PlatformNotSupportedException();
+            }
         }
 
         [AssemblyCleanup]
         public static void Cleanup()
         {
-            NativeMethods.AssemblyCleanup();
+            Wim.GlobalCleanup();
         }
     }
 
@@ -64,6 +69,7 @@ namespace ManagedWimLib.Tests
         // TestSet Src01 is created for basic test and compresstion type test
         Src01,
         // TestSet Src02 is created for multi image and delta image test 
+        Src02,
         Src02_1,
         Src02_2,
         Src02_3,
@@ -110,8 +116,30 @@ namespace ManagedWimLib.Tests
                         Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "ABDE", "Z", "Y.ini")));
                     }
                     break;
+                case SampleSet.Src02:
+                    using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                    {
+                        Assert.IsTrue(wim.DirExists(1, Path.Combine(@"\", "B")));
+                        Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "A.txt")));
+                        Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "B", "C.txt")));
+                        Assert.IsTrue(wim.FileExists(1, Path.Combine(@"\", "B", "D.ini")));
+
+                        Assert.IsTrue(wim.DirExists(2, Path.Combine(@"\", "B")));
+                        Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "Z.txt")));
+                        Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "B", "C.txt")));
+                        Assert.IsTrue(wim.FileExists(2, Path.Combine(@"\", "B", "D.ini")));
+
+                        Assert.IsTrue(wim.DirExists(3, Path.Combine(@"\", "B")));
+                        Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "Y.txt")));
+                        Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "Z.txt")));
+                        Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "B", "C.txt")));
+                        Assert.IsTrue(wim.FileExists(3, Path.Combine(@"\", "B", "D.ini")));
+                    }
+                    break;
                 case SampleSet.Src03:
                     break;
+                default:
+                    throw new NotImplementedException();
             }
             
         }
@@ -151,6 +179,41 @@ namespace ManagedWimLib.Tests
                     Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
                     Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
                     break;
+                case SampleSet.Src02_1:
+                    Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "A.txt")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "A.txt")).Length == 1);
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                    break;
+                case SampleSet.Src02_2:
+                    Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                    break;
+                case SampleSet.Src02_3:
+                    Assert.IsTrue(Directory.Exists(Path.Combine(dir, "B")));
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "Y.txt")));
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "Y.txt")).Length == 1);
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
+
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "C.txt")));
+                    Assert.IsTrue(File.Exists(Path.Combine(dir, "B", "D.ini")));
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "C.txt")).Length == 1);
+                    Assert.IsTrue(new FileInfo(Path.Combine(dir, "B", "D.ini")).Length == 1);
+                    break;
                 case SampleSet.Src03:
                     Assert.IsTrue(File.Exists(Path.Combine(dir, "가")));
                     Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
@@ -166,7 +229,7 @@ namespace ManagedWimLib.Tests
             switch (set)
             {
                 case SampleSet.Src01:
-                    checkList = new Tuple<string, bool>[]
+                    checkList = new[]
                     {
                         new Tuple<string, bool>(Path.Combine(@"\ABCD"), true),
                         new Tuple<string, bool>(Path.Combine(@"\ABCD", "Z"), true),
@@ -189,8 +252,36 @@ namespace ManagedWimLib.Tests
                         new Tuple<string, bool>(Path.Combine(@"\ABDE", "Z", "Y.ini"), false),
                     };
                     break;
+                case SampleSet.Src02_1:
+                    checkList = new[]
+                    {
+                        new Tuple<string, bool>(Path.Combine(@"\B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\A.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "D.ini"), false),
+                    };
+                    break;
+                case SampleSet.Src02_2:
+                    checkList = new[]
+                    {
+                        new Tuple<string, bool>(Path.Combine(@"\B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\Z.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "D.ini"), false),
+                    };
+                    break;
+                case SampleSet.Src02_3:
+                    checkList = new[]
+                    {
+                        new Tuple<string, bool>(Path.Combine(@"\B"), true),
+                        new Tuple<string, bool>(Path.Combine(@"\Y.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\Z.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "C.txt"), false),
+                        new Tuple<string, bool>(Path.Combine(@"\B", "D.ini"), false),
+                    };
+                    break;
                 case SampleSet.Src03:
-                    checkList = new Tuple<string, bool>[]
+                    checkList = new[]
                     {
                         new Tuple<string, bool>(Path.Combine(@"\가"), false),
                         new Tuple<string, bool>(Path.Combine(@"\나"), false),
@@ -201,26 +292,7 @@ namespace ManagedWimLib.Tests
             }
 
             foreach (var tup in checkList)
-            {
                 Assert.IsTrue(paths.Contains(tup, new CheckWimPathComparer()));
-            }
-        }
-
-        public static void CheckAppend_Src01(string dir)
-        {
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE")));
-            Assert.IsTrue(Directory.Exists(Path.Combine(dir, "ABDE", "Z")));
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "Z.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "Z.txt")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "A.txt")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "A.txt")).Length == 1);
-
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "X.txt")));
-            Assert.IsTrue(File.Exists(Path.Combine(dir, "ABDE", "Z", "Y.ini")));
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "X.txt")).Length == 1);
-            Assert.IsTrue(new FileInfo(Path.Combine(dir, "ABDE", "Z", "Y.ini")).Length == 1);
         }
 
         public static List<Tuple<string, bool>> GenerateWimPathList(string wimFile)

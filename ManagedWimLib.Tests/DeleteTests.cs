@@ -166,8 +166,7 @@ namespace ManagedWimLib.Tests
                     wim.DeletePath(1, deletePath, DeleteFlags.RECURSIVE);
                     wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
 
-                    for (int i = 0; i < _checked.Length; i++)
-                        Assert.IsTrue(_checked[i]);
+                    Assert.IsTrue(_checked.All(x => x));
 
                     Assert.IsFalse(wim.PathExists(1, deletePath));
                 }

@@ -15,7 +15,7 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void GetErrorString()
         {
-            Console.WriteLine(NativeMethods.GetErrorString(ErrorCode.INVALID_IMAGE));
+            Console.WriteLine(Wim.GetErrorString(ErrorCode.INVALID_IMAGE));
         }
     }
 }
