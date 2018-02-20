@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
@@ -55,16 +64,15 @@ namespace PEBakery.Tests.Core
             // Should be only one project named TestSuite
             Project = projects.Projects[0];
 
-            // Init ZLibAssembly
-            ZLibAssemblyInit();
+            // Init NativeAssembly
+            NativeAssemblyInit();
 
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
             Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
-            
         }
 
-        private static void ZLibAssemblyInit()
+        private static void NativeAssemblyInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string arch;
@@ -72,8 +80,12 @@ namespace PEBakery.Tests.Core
                 arch = "x64";
             else
                 arch = "x86";
+
             string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
+
+            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            ManagedWimLib.Wim.GlobalInit(WimLibDllPath);
         }
 
         [AssemblyCleanup]
@@ -83,7 +95,7 @@ namespace PEBakery.Tests.Core
         }
 
         #region Utility Methods
-        public static EngineState CreateEngineState(bool doClone = true, Plugin p = null)
+        public static EngineState CreateEngineState(bool doClone = true, Script p = null)
         {
             // Clone is needed for parallel test execution
             if (doClone)
@@ -91,25 +103,30 @@ namespace PEBakery.Tests.Core
                 Project project = EngineTests.Project.Clone() as Project;
                 Logger logger = EngineTests.Logger;
                 MainViewModel model = new MainViewModel();
-                return new EngineState(project, logger, model, p);
+                if (p == null)
+                    return new EngineState(project, logger, model, EngineMode.RunAll);
+                else
+                    return new EngineState(project, logger, model, EngineMode.RunOne, p);
             }
             else
             {
                 Project.Variables.ResetVariables(VarsType.Local);
                 MainViewModel model = new MainViewModel();
-                return new EngineState(Project, Logger, model, p);
+                if (p == null)
+                    return new EngineState(Project, Logger, model, EngineMode.RunAll);
+                else
+                    return new EngineState(Project, Logger, model, EngineMode.RunOne, p);
             }
-            
         }
 
         public static SectionAddress DummySectionAddress()
         {
-            return new SectionAddress(Project.MainPlugin, Project.MainPlugin.Sections["Process"]);
+            return new SectionAddress(Project.MainScript, Project.MainScript.Sections["Process"]);
         }
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check)
         {
-            return Eval(s, rawCode, type, check, out CodeCommand dummy);
+            return Eval(s, rawCode, type, check, out _);
         }
 
         public static EngineState Eval(EngineState s, string rawCode, CodeType type, ErrorCheck check, out CodeCommand cmd)

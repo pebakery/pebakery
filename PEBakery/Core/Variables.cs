@@ -116,8 +116,8 @@ namespace PEBakery.Core
             #endregion
 
             #region Project Variables
-            // Read from MainPlugin
-            string fullPath = project.MainPlugin.FullPath;
+            // Read from MainScript
+            string fullPath = project.MainScript.FullPath;
             IniKey[] keys = new IniKey[]
             {
                 new IniKey("Main", "Title"),
@@ -219,35 +219,32 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             // [Variables]
-            if (project.MainPlugin.Sections.ContainsKey("Variables"))
+            if (project.MainScript.Sections.ContainsKey("Variables"))
             {
-                logs = AddVariables(VarsType.Global, project.MainPlugin.Sections["Variables"]);
+                logs = AddVariables(VarsType.Global, project.MainScript.Sections["Variables"]);
                 logs.Add(new LogInfo(LogState.None, Logger.LogSeperator));
             }
 
             return logs;
         }
 
-        public List<LogInfo> LoadDefaultPluginVariables(Plugin p)
+        public List<LogInfo> LoadDefaultScriptVariables(Script p)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            // ScriptFile, PluginFile
+            // ScriptFile
             SetValue(VarsType.Fixed, "ScriptFile", p.FullPath);
-            SetValue(VarsType.Fixed, "PluginFile", p.FullPath);
 
-            // ScriptDir, PluginDir
+            // ScriptDir
             SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.FullPath));
-            SetValue(VarsType.Fixed, "PluginDir", Path.GetDirectoryName(p.FullPath));
 
-            // ScriptTitle, PluginTitle
+            // ScriptTitle
             SetValue(VarsType.Fixed, "ScriptTitle", p.Title);
-            SetValue(VarsType.Fixed, "PluginTitle", p.Title);
 
             // [Variables]
             if (p.Sections.ContainsKey("Variables"))
             {
-                List<LogInfo> subLogs = AddVariables(p.IsMainPlugin ? VarsType.Global : VarsType.Local, p.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(p.IsMainScript ? VarsType.Global : VarsType.Local, p.Sections["Variables"]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
@@ -258,16 +255,16 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface != null)
             {
-                List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[ifaceSecName].GetUICodes(true); }
-                catch { } // No [Interface] section, or unable to get List<UICommand>
+                List<UIControl> uiCtrls = null;
+                try { uiCtrls = p.Sections[ifaceSecName].GetUICtrls(true); }
+                catch { } // No [Interface] section, or unable to get List<UIControl>
 
-                if (uiCodes != null)
+                if (uiCtrls != null)
                 {
-                    List<LogInfo> subLogs = UICommandToVariables(uiCodes);
+                    List<LogInfo> subLogs = UIControlToVariables(uiCtrls);
                     if (0 < subLogs.Count)
                     {
                         logs.Add(new LogInfo(LogState.Info, $"Import Variables from [{ifaceSecName}]", 0));
@@ -282,8 +279,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region UICommandToVariable
-        public LogInfo? UICommandToVariable(UICommand uiCmd, string prefix = null)
+        #region UIControlToVariable
+        public LogInfo? UIControlToVariable(UIControl uiCmd, string prefix = null)
         {
             string destVar = uiCmd.Key;
             if (!string.IsNullOrEmpty(prefix))
@@ -296,13 +293,13 @@ namespace PEBakery.Core
                 return null;
         }
 
-        public List<LogInfo> UICommandToVariables(List<UICommand> uiCodes, string prefix = null)
+        public List<LogInfo> UIControlToVariables(List<UIControl> uiCtrls, string prefix = null)
         {
-            List<LogInfo> logs = new List<LogInfo>(uiCodes.Count);
+            List<LogInfo> logs = new List<LogInfo>(uiCtrls.Count);
 
-            foreach (UICommand uiCmd in uiCodes)
+            foreach (UIControl uiCmd in uiCtrls)
             {
-                LogInfo? log = UICommandToVariable(uiCmd, prefix);
+                LogInfo? log = UIControlToVariable(uiCmd, prefix);
                 if (log != null)
                     logs.Add((LogInfo)log);
             }
@@ -403,10 +400,10 @@ namespace PEBakery.Core
             // Check circular reference
             if (CheckCircularReference(key, _value))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                // This code cannot handle this case : [Set,%PluginPathShort%,\%PluginPathShort%]
+                // This code cannot handle this case : [Set,%ScriptPathShort%,\%ScriptPathShort%]
                 // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
 
-                // To Handle [Set,%PluginPathShort%,\%PluginPathShort%], if curcular reference detected, bake into final form
+                // To Handle [Set,%ScriptPathShort%,\%ScriptPathShort%], if curcular reference detected, bake into final form
                 vars[key] = StringEscaper.UnescapePercent(Expand(_value));
             }
             else
@@ -428,10 +425,10 @@ namespace PEBakery.Core
             // Check circular reference
             if (CheckCircularReference(key, rawValue))
             { // Ex) %Joveler%=Variel\%Joveler%\ied206.txt - Error!
-                // This code cannot handle this case : [Set,%PluginPathShort%,\%PluginPathShort%]
+                // This code cannot handle this case : [Set,%ScriptPathShort%,\%ScriptPathShort%]
                 // return new LogInfo(LogState.Error, $"Variable [%{key}%] has circular reference in [{rawValue}]");
 
-                // To Handle [Set,%PluginPathShort%,\%PluginPathShort%], if curcular reference detected, bake into final form
+                // To Handle [Set,%ScriptPathShort%,\%ScriptPathShort%], if curcular reference detected, bake into final form
                 vars[key] = Expand(rawValue);
                 return new LogInfo(LogState.Success, $"{type} variable [%{key}%] set to [{vars[key]}]");
             }
@@ -540,7 +537,7 @@ namespace PEBakery.Core
                 // Expand variable's name into value
                 // Ex) 123%BaseDir%456%OS%789
                 StringBuilder b = new StringBuilder();
-                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled);
+                matches = Regex.Matches(str, @"%([^ %]+)%", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                 for (int x = 0; x < matches.Count; x++)
                 {
                     string varName = matches[x].Groups[1].Value;
@@ -594,7 +591,7 @@ namespace PEBakery.Core
         #endregion
 
         #region AddVariables
-        public List<LogInfo> AddVariables(VarsType type, PluginSection section)
+        public List<LogInfo> AddVariables(VarsType type, ScriptSection section)
         {
             Dictionary<string, string> dict = null;
 
@@ -705,7 +702,7 @@ namespace PEBakery.Core
 
         public static int GetSectionParamIndex(string secParam)
         {
-            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled);
+            Match match = Regex.Match(secParam, @"(#[0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (match.Success)
             {
                 if (NumberHelper.ParseInt32(secParam.Substring(1), out int paramIdx))
@@ -724,9 +721,9 @@ namespace PEBakery.Core
         public enum VarKeyType { None, Variable, SectionParams, ReturnValue }
         public static VarKeyType DetermineType(string key)
         {
-            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled).Success) // Ex) %A%
+            if (Regex.Match(key, Variables.VarKeyRegex_Variable, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) %A%
                 return VarKeyType.Variable;  // %#[0-9]+% -> Compatibility Shim
-            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled).Success) // Ex) #1, #2, #3, ...
+            else if (Regex.Match(key, Variables.VarKeyRegex_SectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Ex) #1, #2, #3, ...
                 return VarKeyType.SectionParams;
             else if (key.Equals("#r", StringComparison.OrdinalIgnoreCase)) // Ex) #r
                 return VarKeyType.ReturnValue;
@@ -743,9 +740,9 @@ namespace PEBakery.Core
         public static LogInfo SetSectionParam(EngineState s, int pIdx, string value)
         {
             if (pIdx <= 0)
-                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be positive integer");
+                return new LogInfo(LogState.Error, $"Section parmeter's index [{pIdx}] must be a positive integer");
             if (value.IndexOf($"#{pIdx}", StringComparison.Ordinal) != -1)
-                return new LogInfo(LogState.Error, $"Section parameter cannot have circular reference");
+                return new LogInfo(LogState.Error, $"Section parameter cannot have a circular reference");
                 
             s.CurSectionParams[pIdx] = value;
             return new LogInfo(LogState.Success, $"Section parameter [#{pIdx}] set to [{value}]");
@@ -774,7 +771,7 @@ namespace PEBakery.Core
                 {
                     key = Variables.GetVariableName(s, key);
                     if (key == null)
-                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name [{key}], must start and end with %"));
+                        logs.Add(new LogInfo(LogState.Error, $"Invalid variable name. [{key}] must start and end with %"));
 
                     if (permanent)
                     {
@@ -782,16 +779,16 @@ namespace PEBakery.Core
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
-                            if (Ini.DeleteKey(s.Project.MainPlugin.FullPath, "Variables", $"%{key}%")) // Delete var line
+                            if (Ini.DeleteKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%")) // Delete var line
                             {
-                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] deleted"));
+                                logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             }
                             else
                             {
                                 if (globalResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                                    logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                                 else if (localResult)
-                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                                    logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
                                 else
                                     throw new InternalException("Internal Error at Variables.SetVariable");
                             }
@@ -806,9 +803,9 @@ namespace PEBakery.Core
                         bool globalResult = s.Variables.Delete(VarsType.Global, key);
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult)
-                            logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] deleted"));
+                            logs.Add(new LogInfo(LogState.Success, $"Global variable [%{key}%] was deleted"));
                         else if (localResult)
-                            logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] deleted"));
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable [%{key}%] was deleted"));
                         else
                             logs.Add(new LogInfo(LogState.Ignore, $"Variable [%{key}%] does not exist"));
                     }
@@ -852,7 +849,7 @@ namespace PEBakery.Core
 
                         if (log.State == LogState.Success)
                         { // SetValue success, write to IniFile
-                            if (Ini.SetKey(s.Project.MainPlugin.FullPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                            if (Ini.SetKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));

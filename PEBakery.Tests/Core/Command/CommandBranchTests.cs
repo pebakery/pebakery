@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
+using PEBakery.Core.Commands;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,14 +29,14 @@ namespace PEBakery.Tests.Core.Command
             File.Delete(invalid);
 
             cond = new BranchCondition(type, false, kernel32);
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, kernel32);
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, invalid);
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, $"If,ExistFile,{kernel32},Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, $"If,ExistFile,{invalid},Set,%Dest%,T", "F");
@@ -59,14 +60,14 @@ namespace PEBakery.Tests.Core.Command
             File.Delete(invalid);
 
             cond = new BranchCondition(type, false, winDir);
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, invalid);
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, winDir);
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, invalid);
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, $"If,ExistDir,{winDir},Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, $"If,ExistDir,{invalid},Set,%Dest%,T", "F");
@@ -98,14 +99,14 @@ namespace PEBakery.Tests.Core.Command
                 }
 
                 cond = new BranchCondition(type, false, tempPath, "Hello");
-                Assert.IsTrue(cond.Check(s, out string d));
+                Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
                 cond = new BranchCondition(type, false, tempPath, "PEBakery");
-                Assert.IsFalse(cond.Check(s, out d));
+                Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
                 cond = new BranchCondition(type, true, tempPath, "Hello");
-                Assert.IsFalse(cond.Check(s, out d));
+                Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
                 cond = new BranchCondition(type, true, tempPath, "PEBakery");
-                Assert.IsTrue(cond.Check(s, out d));
+                Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
                 BranchCondition_Single_Template(s, $"If,ExistSection,{tempPath},Hello,Set,%Dest%,T", "T");
                 BranchCondition_Single_Template(s, $"If,ExistSection,{tempPath},PEBakery,Set,%Dest%,T", "F");
@@ -132,14 +133,14 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic");
-            Assert.IsFalse(cond.Check(s, out  d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusicNotExist");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,ExistRegSection,HKLM,SOFTWARE\Microsoft\DirectMusic,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,ExistRegSubKey,HKLM,SOFTWARE\Microsoft\DirectMusicNotExist,Set,%Dest%,T", "F");
@@ -159,18 +160,18 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "GMFilePath");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectNotMusic", "GMFilePath");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "HKLM", @"SOFTWARE\Microsoft\DirectMusic", "NoFilePath");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,ExistRegKey,HKLM,SOFTWARE\Microsoft\DirectMusic,GMFilePath,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,ExistRegValue,HKLM,SOFTWARE\Microsoft\DirectNotMusic,GMFilePath,Set,%Dest%,T", "F");
@@ -192,18 +193,18 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition cond;
 
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "FSFilter Infrastructure");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceGroupOrder", "List", "DoesNotExist");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "HKLM", @"SYSTEM\ControlSet001\Control\ServiceProvider\Order", "ExcluedProviders", "EMS");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,FSFilter#$sInfrastructure,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,ExistRegMulti,HKLM,SYSTEM\ControlSet001\Control\ServiceGroupOrder,List,DoesNotExist,Set,%Dest%,T", "F");
@@ -229,22 +230,22 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.SetValue(VarsType.Fixed, "L", "ocal");
 
             cond = new BranchCondition(type, false, "%F%");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%G%");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%L%");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%N%");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "%F%");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "%G%");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "%L%");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "%N%");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,ExistVar,%F%,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,ExistVar,%G%,Set,%Dest%,T", "T");
@@ -273,22 +274,22 @@ namespace PEBakery.Tests.Core.Command
             s.Variables.SetValue(VarsType.Local, "Tails", "Sonic");
 
             cond = new BranchCondition(type, false, "대한");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "민국");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "Sonic");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "%Tails%");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "대한");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "민국");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "Sonic");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "%Tails%");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,ExistMacro,대한,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,ExistMacro,민국,Set,%Dest%,T", "F");
@@ -298,6 +299,112 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition_Single_Template(s, @"If,Not,ExistMacro,민국,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, @"If,Not,ExistMacro,Sonic,Set,%Dest%,T", "F");
             BranchCondition_Single_Template(s, @"If,Not,ExistMacro,%Tails%,Set,%Dest%,T", "F");
+        }
+        #endregion
+
+        #region WimExistIndex
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistIndex()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistIndex;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "0");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "2");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "3");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "4");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "0");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "2");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "3");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "4");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},0,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},1,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},2,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},3,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistIndex,{srcWim},4,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},0,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},1,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},2,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},3,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistIndex,{srcWim},4,Set,%Dest%,T", "T");
+        }
+        #endregion
+
+        // Disabled due to issue in MSTest
+        #region WimExistFile
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistFile()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistFile;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "B");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "1", "A.txt");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "B");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistFile,{srcWim},1,B,Set,%Dest%,T", "T");
+        }
+        #endregion
+
+        #region WimExistDir
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistDir()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            BranchCondition cond;
+            BranchConditionType type = BranchConditionType.WimExistDir;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "MultiImage.wim");
+
+            cond = new BranchCondition(type, false, srcWim, "1", "A.txt");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "B");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "1", "A.txt");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "B");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
         }
         #endregion
 
@@ -313,45 +420,45 @@ namespace PEBakery.Tests.Core.Command
 
             // Equal
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "a", "A");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "A", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "A", "B");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // Test for a bug reported in http://theoven.org/index.php?topic=2271.msg25381#msg25381
             cond = new BranchCondition(type, false, "-1", "0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,A,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Equal,a,Set,%Dest%,T", "T");
@@ -390,38 +497,38 @@ namespace PEBakery.Tests.Core.Command
             BranchConditionType type = BranchConditionType.Smaller;
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "B", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Smaller,A,Set,%Dest%,T", "F");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Smaller,a,Set,%Dest%,T", "F");
@@ -448,38 +555,38 @@ namespace PEBakery.Tests.Core.Command
             BranchConditionType type = BranchConditionType.SmallerEqual;
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "B", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,SmallerEqual,A,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,SmallerEqual,a,Set,%Dest%,T", "T");
@@ -506,38 +613,38 @@ namespace PEBakery.Tests.Core.Command
             BranchConditionType type = BranchConditionType.Bigger;
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out string d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "B", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Bigger,A,Set,%Dest%,T", "F");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,Bigger,a,Set,%Dest%,T", "F");
@@ -564,38 +671,38 @@ namespace PEBakery.Tests.Core.Command
             BranchConditionType type = BranchConditionType.BiggerEqual;
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out string d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 will return lexicographic compare result of two strings.
             // PEBakery will ignore them and treat them as just NotEqual
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "B", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,BiggerEqual,A,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,BiggerEqual,a,Set,%Dest%,T", "T");
@@ -622,41 +729,41 @@ namespace PEBakery.Tests.Core.Command
             BranchConditionType type = BranchConditionType.EqualX;
 
             cond = new BranchCondition(type, false, "A", "A");
-            Assert.IsTrue(cond.Check(s, out string d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "A", "B");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "a", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "A", "A");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "A", "B");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "11.1", "11.1.0");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "11.1", "11.1.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "10.9", "11.1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "12");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "11.1.2.9", "11.1.2.3");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, false, "5", "5.0");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "5", "5.1.2600");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             // WB082 does not recognize hex integer representation
             // PEBakery support hex integer representation
             cond = new BranchCondition(type, false, "11", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "12", "0xC");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "13", "0xC");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,EqualX,A,Set,%Dest%,T", "T");
             BranchCondition_Comparison_Template(s, "A", "If,%Src%,EqualX,a,Set,%Dest%,T", "F");
@@ -684,22 +791,22 @@ namespace PEBakery.Tests.Core.Command
 
             // According to https://www.iana.org/domains/root/db, root domain .zzz does not exist
             cond = new BranchCondition(type, false, "aaa.zzz");
-            Assert.IsFalse(cond.Check(s, out string d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "localhost");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "127.0.0.1");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, false, "::1");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             cond = new BranchCondition(type, true, "aaa.zzz");
-            Assert.IsTrue(cond.Check(s, out d));
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "localhost");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "127.0.0.1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
             cond = new BranchCondition(type, true, "::1");
-            Assert.IsFalse(cond.Check(s, out d));
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
 
             BranchCondition_Single_Template(s, @"If,Ping,aaa.zzz,Set,%Dest%,T", "F");
             BranchCondition_Single_Template(s, @"If,Ping,localhost,Set,%Dest%,T", "T");

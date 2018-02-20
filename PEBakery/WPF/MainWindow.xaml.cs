@@ -48,6 +48,7 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.Core;
 using System.Net;
+using System.Windows.Shell;
 
 namespace PEBakery.WPF
 {
@@ -58,7 +59,7 @@ namespace PEBakery.WPF
     public partial class MainWindow : Window
     {
         #region Constants
-        internal const int PluginAuthorLenLimit = 35;
+        internal const int ScriptAuthorLenLimit = 35;
         #endregion
 
         #region Variables
@@ -81,10 +82,10 @@ namespace PEBakery.WPF
 
         private Logger logger;
         public Logger Logger => logger;
-        private PluginCache pluginCache;
+        private ScriptCache scriptCache;
 
         const int MaxDpiScale = 4;
-        private int allPluginCount = 0;
+        private int allScriptCount = 0;
         private readonly string settingFile;
         private SettingViewModel setting;
         public SettingViewModel Setting => setting;
@@ -111,7 +112,7 @@ namespace PEBakery.WPF
             string argBaseDir = Environment.CurrentDirectory;
             for (int i = 0; i < args.Length; i++)
             {
-                if (string.Equals(args[i], "/basedir", StringComparison.OrdinalIgnoreCase))
+                if (args[i].Equals("/basedir", StringComparison.OrdinalIgnoreCase))
                 {
                     if (i + 1 < args.Length)
                     {
@@ -120,7 +121,6 @@ namespace PEBakery.WPF
                         {
                             MessageBox.Show($"Directory [{argBaseDir}] does not exist", "Invalid BaseDir", MessageBoxButton.OK, MessageBoxImage.Error);
                             Environment.Exit(1); // Force Shutdown
-                            // Application.Current.Shutdown(1); // Grateful Shutdown
                         }
                         Environment.CurrentDirectory = argBaseDir;
                     }
@@ -129,9 +129,9 @@ namespace PEBakery.WPF
                         Console.WriteLine("\'/basedir\' must be used with path\r\n");
                     }
                 }
-                else if (string.Equals(args[i], "/?", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(args[i], "/help", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(args[i], "/h", StringComparison.OrdinalIgnoreCase))
+                else if (args[i].Equals("/?", StringComparison.OrdinalIgnoreCase)
+                    || args[i].Equals("/help", StringComparison.OrdinalIgnoreCase)
+                    || args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("Sorry, help message not implemented\r\n");
                 }
@@ -160,14 +160,14 @@ namespace PEBakery.WPF
             }
             this.setting.LogDB = logger.DB;
 
-            // If plugin cache is enabled, generate cache after 5 seconds
-            if (setting.Plugin_EnableCache)
+            // If script cache is enabled, generate cache after 5 seconds
+            if (setting.Script_EnableCache)
             {
                 string cacheDBFile = System.IO.Path.Combine(dbDir, "PEBakeryCache.db");
                 try
                 {
-                    this.pluginCache = new PluginCache(cacheDBFile);
-                    logger.System_Write(new LogInfo(LogState.Info, $"PluginCache enabled, {pluginCache.Table<DB_PluginCache>().Count()} cached plugin found"));
+                    this.scriptCache = new ScriptCache(cacheDBFile);
+                    logger.System_Write(new LogInfo(LogState.Info, $"ScriptCache enabled, {scriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
                 }
                 catch (SQLiteException e)
                 { // Update failure
@@ -176,11 +176,11 @@ namespace PEBakery.WPF
                     Application.Current.Shutdown(1);
                 }
 
-                this.setting.CacheDB = pluginCache;
+                this.setting.CacheDB = scriptCache;
             }
             else
             {
-                logger.System_Write(new LogInfo(LogState.Info, $"PluginCache disabled"));
+                logger.System_Write(new LogInfo(LogState.Info, $"ScriptCache disabled"));
             }
 
             StartLoadWorker();
@@ -193,29 +193,34 @@ namespace PEBakery.WPF
             AutoResetEvent resetEvent = new AutoResetEvent(false);
             Stopwatch watch = Stopwatch.StartNew();
 
-            // Set PEBakery Logo
+            /*
+            // Load PEBakery Logo
             Image image = new Image()
-            {
+            { 
                 UseLayoutRounding = true,
                 Stretch = Stretch.Uniform,
                 StretchDirection = StretchDirection.DownOnly,
-                Source = ImageHelper.ToBitmapImage(Properties.Resources.DonutPng),
+                Source = Application.Current.TryFindResource("DonutSvgImage") as DrawingImage,
             };
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
-            PluginLogo.Content = image;
+            ScriptLogo.Content = image;
+            */
+
+            // Load CommentProcessing Icon
+            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.CommentProcessing, 10);
 
             // Prepare PEBakery Loading Information
             if (quiet == false)
             {
-                Model.PluginTitleText = "Welcome to PEBakery!";
-                Model.PluginDescriptionText = "PEBakery loading...";
+                Model.ScriptTitleText = "Welcome to PEBakery!";
+                Model.ScriptDescriptionText = "PEBakery loading...";
             }
             logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{baseDir}]"));
             MainCanvas.Children.Clear();
             (MainTreeView.DataContext as TreeViewModel).Children.Clear();
 
             int stage2LinksCount = 0;
-            int loadedPluginCount = 0;
+            int loadedScriptCount = 0;
             int stage1CachedCount = 0;
             int stage2LoadedCount = 0;
             int stage2CachedCount = 0;
@@ -234,22 +239,22 @@ namespace PEBakery.WPF
                 BackgroundWorker worker = sender as BackgroundWorker;
 
                 // Init ProjectCollection
-                if (setting.Plugin_EnableCache && pluginCache != null) // Use PluginCache - Fast speed, more memory
+                if (setting.Script_EnableCache && scriptCache != null) // Use ScriptCache
                 {
-                    if (pluginCache.IsGlobalCacheValid(baseDir))
-                        projects = new ProjectCollection(baseDir, pluginCache);
+                    if (scriptCache.IsGlobalCacheValid(baseDir))
+                        projects = new ProjectCollection(baseDir, scriptCache);
                     else // Cache is invalid
                         projects = new ProjectCollection(baseDir, null);
                 }
-                else  // Do not use PluginCache - Slow speed, less memory
+                else  // Do not use ScriptCache
                 {
                     projects = new ProjectCollection(baseDir, null);
                 }
 
-                allPluginCount = projects.PrepareLoad(out stage2LinksCount);
-                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allPluginCount + stage2LinksCount; });
+                allScriptCount = projects.PrepareLoad(out stage2LinksCount);
+                Dispatcher.Invoke(() => { Model.BottomProgressBarMaximum = allScriptCount + stage2LinksCount; });
 
-                // Let's load plugins parallelly
+                // Let's load scripts parallelly
                 List<LogInfo> errorLogs = projects.Load(worker);
                 Logger.System_Write(errorLogs);
                 setting.UpdateProjectList();
@@ -260,13 +265,13 @@ namespace PEBakery.WPF
                     Dispatcher.Invoke(() =>
                     {
                         foreach (Project project in projects.Projects)
-                            PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree);
+                            ScriptListToTreeViewModel(project, project.VisibleScripts, Model.MainTree);
 
                         int pIdx = setting.Project_DefaultIndex;
                         curMainTree = Model.MainTree.Children[pIdx];
                         curMainTree.IsExpanded = true;
                         if (projects[pIdx] != null)
-                            DrawPlugin(projects[pIdx].MainPlugin);
+                            DrawScript(projects[pIdx].MainScript);
                     });
 
                     e.Result = true;
@@ -279,8 +284,8 @@ namespace PEBakery.WPF
             loadWorker.WorkerReportsProgress = true;
             loadWorker.ProgressChanged += (object sender, ProgressChangedEventArgs e) =>
             {
-                Interlocked.Increment(ref loadedPluginCount);
-                Model.BottomProgressBarValue = loadedPluginCount;
+                Interlocked.Increment(ref loadedScriptCount);
+                Model.BottomProgressBarValue = loadedScriptCount;
                 string msg = string.Empty;
                 switch (e.ProgressPercentage)
                 {
@@ -315,11 +320,11 @@ namespace PEBakery.WPF
                 }
                 int stage = e.ProgressPercentage / 2 + 1;
                 if (stage == 1)
-                    msg = $"Stage {stage} ({loadedPluginCount} / {allPluginCount}) \r\n{msg}";
+                    msg = $"Stage {stage} ({loadedScriptCount} / {allScriptCount}) \r\n{msg}";
                 else
                     msg = $"Stage {stage} ({stage2LoadedCount} / {stage2LinksCount}) \r\n{msg}";
 
-                Model.PluginDescriptionText = $"PEBakery loading...\r\n{msg}";               
+                Model.ScriptDescriptionText = $"PEBakery loading...\r\n{msg}";               
             };
             loadWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -340,15 +345,15 @@ namespace PEBakery.WPF
                     watch.Stop();
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                     string msg;
-                    if (setting.Plugin_EnableCache)
+                    if (setting.Script_EnableCache)
                     {
-                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allPluginCount + stage2LinksCount);
-                        msg = $"{allPluginCount} plugins loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
+                        double cachePercent = (double)(stage1CachedCount + stage2CachedCount) * 100 / (allScriptCount + stage2LinksCount);
+                        msg = $"{allScriptCount} scripts loaded ({t:0.#}s) - {cachePercent:0.#}% cached";
                         Model.StatusBarText = msg;
                     }
                     else
                     {
-                        msg = $"{allPluginCount} plugins loaded ({t:0.#}s)";
+                        msg = $"{allScriptCount} scripts loaded ({t:0.#}s)";
                         Model.StatusBarText = msg;
                     }
                     if (quiet == false)
@@ -358,14 +363,14 @@ namespace PEBakery.WPF
                     logger.System_Write(new LogInfo(LogState.Info, msg));
                     logger.System_Write(Logger.LogSeperator);
 
-                    // If plugin cache is enabled, generate cache.
-                    if (setting.Plugin_EnableCache)
+                    // If script cache is enabled, generate cache.
+                    if (setting.Script_EnableCache)
                         StartCacheWorker();
                 }
                 else
                 {
-                    Model.PluginTitleText = "Unable to find projects.";
-                    Model.PluginDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
+                    Model.ScriptTitleText = "Unable to find projects.";
+                    Model.ScriptDescriptionText = $"Please populate project in [{projects.ProjectRoot}]";
 
                     if (quiet == false)
                         Model.WorkInProgress = false;
@@ -383,9 +388,9 @@ namespace PEBakery.WPF
 
         private void StartCacheWorker()
         {
-            if (PluginCache.dbLock == 0)
+            if (ScriptCache.dbLock == 0)
             {
-                Interlocked.Increment(ref PluginCache.dbLock);
+                Interlocked.Increment(ref ScriptCache.dbLock);
                 try
                 {
                     Stopwatch watch = new Stopwatch();
@@ -399,7 +404,7 @@ namespace PEBakery.WPF
                         BackgroundWorker worker = sender as BackgroundWorker;
 
                         watch = Stopwatch.StartNew();
-                        pluginCache.CachePlugins(projects, baseDir, worker);
+                        scriptCache.CacheScripts(projects, baseDir, worker);
                     };
 
                     cacheWorker.WorkerReportsProgress = true;
@@ -413,10 +418,10 @@ namespace PEBakery.WPF
                     {
                         watch.Stop();
 
-                        double cachePercent = (double)updatedCount * 100 / allPluginCount;
+                        double cachePercent = (double)updatedCount * 100 / allScriptCount;
 
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
-                        string msg = $"{allPluginCount} plugins cached ({t:0.###}s), {cachePercent:0.#}% updated";
+                        string msg = $"{allScriptCount} scripts cached ({t:0.###}s), {cachePercent:0.#}% updated";
                         logger.System_Write(new LogInfo(LogState.Info, msg));
                         logger.System_Write(Logger.LogSeperator);
 
@@ -426,16 +431,16 @@ namespace PEBakery.WPF
                 }
                 finally
                 {
-                    Interlocked.Decrement(ref PluginCache.dbLock);
+                    Interlocked.Decrement(ref ScriptCache.dbLock);
                 }
             }
         }
         
-        public AutoResetEvent StartReloadPluginWorker()
+        public AutoResetEvent StartReloadScriptWorker()
         {
             AutoResetEvent resetEvent = new AutoResetEvent(false);
 
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return null;
 
             if (refreshWorker.IsBusy)
@@ -448,26 +453,26 @@ namespace PEBakery.WPF
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 watch.Start();
-                e.Result = curMainTree.Plugin.Project.RefreshPlugin(curMainTree.Plugin);
+                e.Result = curMainTree.Script.Project.RefreshScript(curMainTree.Script);
             };
             refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                if (e.Result is Plugin p)
+                if (e.Result is Script p)
                 {
-                    curMainTree.Plugin = p;
+                    curMainTree.Script = p;
                     curMainTree.ParentCheckedPropagation();
                     UpdateTreeViewIcon(curMainTree);
 
-                    DrawPlugin(curMainTree.Plugin);                   
+                    DrawScript(curMainTree.Script);                   
                 }
 
                 Model.WorkInProgress = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                if ((Plugin)e.Result == null)
-                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reload failed. ({sec:0.000}sec)";
+                if ((Script)e.Result == null)
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.ShortPath)} reload failed. ({sec:0.000}sec)";
                 else
-                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Plugin.ShortPath)} reloaded. ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.ShortPath)} reloaded. ({sec:0.000}sec)";
 
                 resetEvent.Set();
             };
@@ -478,7 +483,7 @@ namespace PEBakery.WPF
 
         private void StartSyntaxCheckWorker(bool quiet)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return;
 
             if (syntaxCheckWorker.IsBusy)
@@ -487,7 +492,7 @@ namespace PEBakery.WPF
             if (quiet == false)
                 Model.WorkInProgress = true;
 
-            Plugin p = curMainTree.Plugin;
+            Script p = curMainTree.Script;
 
             syntaxCheckWorker = new BackgroundWorker();
             syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
@@ -546,7 +551,7 @@ namespace PEBakery.WPF
 
                 if (errorWarns == 0)
                 {
-                    Model.PluginCheckButtonColor = new SolidColorBrush(Colors.LightGreen);                   
+                    Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGreen);                   
 
                     if (quiet == false)
                     {
@@ -559,7 +564,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Model.PluginCheckButtonColor = new SolidColorBrush(Colors.Orange);
+                    Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.Orange);
 
                     if (quiet == false)
                     {
@@ -586,31 +591,31 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region DrawPlugin
-        public void DrawPlugin(Plugin p)
+        #region DrawScript
+        public void DrawScript(Script p)
         {
             Stopwatch watch = new Stopwatch();
-            DrawPluginLogo(p);
+            DrawScriptLogo(p);
 
-            Model.PluginCheckButtonColor = new SolidColorBrush(Colors.LightGray);
+            Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
 
             MainCanvas.Children.Clear();
-            if (p.Type == PluginType.Directory)
+            if (p.Type == ScriptType.Directory)
             {
-                Model.PluginTitleText = StringEscaper.Unescape(p.Title);
-                Model.PluginDescriptionText = string.Empty;
-                Model.PluginVersionText = string.Empty;
-                Model.PluginAuthorText = string.Empty;
+                Model.ScriptTitleText = StringEscaper.Unescape(p.Title);
+                Model.ScriptDescriptionText = string.Empty;
+                Model.ScriptVersionText = string.Empty;
+                Model.ScriptAuthorText = string.Empty;
             }
             else
             {
-                Model.PluginTitleText = StringEscaper.Unescape(p.Title);
-                Model.PluginDescriptionText = StringEscaper.Unescape(p.Description);
-                Model.PluginVersionText = "v" + p.Version;
-                if (PluginAuthorLenLimit < p.Author.Length)
-                    Model.PluginAuthorText = p.Author.Substring(0, PluginAuthorLenLimit) + "...";
+                Model.ScriptTitleText = StringEscaper.Unescape(p.Title);
+                Model.ScriptDescriptionText = StringEscaper.Unescape(p.Description);
+                Model.ScriptVersionText = "v" + p.Version;
+                if (ScriptAuthorLenLimit < p.Author.Length)
+                    Model.ScriptAuthorText = p.Author.Substring(0, ScriptAuthorLenLimit) + "...";
                 else
-                    Model.PluginAuthorText = p.Author;
+                    Model.ScriptAuthorText = p.Author;
 
                 double scaleFactor = setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
@@ -618,21 +623,21 @@ namespace PEBakery.WPF
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
                 
-                if (setting.Plugin_AutoSyntaxCheck)
+                if (setting.Script_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
             }
             Model.OnPropertyUpdate("MainCanvas");
         }
 
-        public void DrawPluginLogo(Plugin p)
+        public void DrawScriptLogo(Script p)
         {
-            double size = PluginLogo.ActualWidth * MaxDpiScale;
-            if (p.Type == PluginType.Directory)
+            double size = ScriptLogo.ActualWidth * MaxDpiScale;
+            if (p.Type == ScriptType.Directory)
             {
                 if (p.IsDirLink)
-                    PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
+                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
-                    PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+                    ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
             else
             {
@@ -661,20 +666,20 @@ namespace PEBakery.WPF
                     Grid grid = new Grid();
                     grid.Children.Add(image);
 
-                    PluginLogo.Content = grid;
+                    ScriptLogo.Content = grid;
                 }
                 catch
                 { // No logo file - use default
-                    if (p.Type == PluginType.Plugin)
+                    if (p.Type == ScriptType.Script)
                     {
                         if (p.IsDirLink)
-                            PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
                         else
-                            PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
+                            ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
                     }
-                    else if (p.Type == PluginType.Link)
+                    else if (p.Type == ScriptType.Link)
                     {
-                        PluginLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
+                        ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
                     }
                 }
             }
@@ -689,17 +694,17 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                if (curMainTree == null || curMainTree.Plugin == null || Model.WorkInProgress)
+                if (curMainTree == null || curMainTree.Script == null || Model.WorkInProgress)
                 {
                     Interlocked.Decrement(ref Engine.WorkingLock);
                     return;
                 }
 
                 // Determine current project
-                Project project = curMainTree.Plugin.Project;
+                Project project = curMainTree.Script.Project;
 
                 Model.BuildTree.Children.Clear();
-                PluginListToTreeViewModel(project, project.ActivePlugins, Model.BuildTree);
+                ScriptListToTreeViewModel(project, project.ActiveScripts, Model.BuildTree);
                 curBuildTree = null;
 
                 EngineState s = new EngineState(project, logger, Model);
@@ -726,7 +731,7 @@ namespace PEBakery.WPF
 
                 // Build Ended, Switch to Normal View
                 Model.SwitchNormalBuildInterface = true;
-                DrawPlugin(curMainTree.Plugin);
+                DrawScript(curMainTree.Script);
 
                 watch.Stop();
                 TimeSpan t = watch.Elapsed;
@@ -762,7 +767,7 @@ namespace PEBakery.WPF
             if (loadWorker.IsBusy == false)
             {
                 double old_Interface_ScaleFactor = setting.Interface_ScaleFactor;
-                bool old_Plugin_EnableCache = setting.Plugin_EnableCache;
+                bool old_Script_EnableCache = setting.Script_EnableCache;
 
                 SettingWindow dialog = new SettingWindow(setting);
                 bool? result = dialog.ShowDialog();
@@ -771,10 +776,10 @@ namespace PEBakery.WPF
                     // Scale Factor
                     double newScaleFactor = setting.Interface_ScaleFactor;
                     if (double.Epsilon < Math.Abs(newScaleFactor - old_Interface_ScaleFactor)) // Not Equal
-                        DrawPlugin(curMainTree.Plugin);
+                        DrawScript(curMainTree.Script);
 
-                    // Plugin
-                    if (old_Plugin_EnableCache == false && setting.Plugin_EnableCache)
+                    // Script
+                    if (old_Script_EnableCache == false && setting.Script_EnableCache)
                         StartCacheWorker();
 
                     // Apply
@@ -827,16 +832,16 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Plugin Buttons
-        private async void PluginRunButton_Click(object sender, RoutedEventArgs e)
+        #region Script Buttons
+        private async void ScriptRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return;
 
             if (Model.WorkInProgress)
                 return;
 
-            Plugin p = curMainTree.Plugin;
+            Script p = curMainTree.Script;
             if (p.Sections.ContainsKey("Process"))
             {
                 if (Engine.WorkingLock == 0)  // Start Build
@@ -848,7 +853,7 @@ namespace PEBakery.WPF
                     PopulateOneTreeView(p, Model.BuildTree, Model.BuildTree);
                     curBuildTree = null;
 
-                    EngineState s = new EngineState(p.Project, logger, Model, p);
+                    EngineState s = new EngineState(p.Project, logger, Model, EngineMode.RunMainAndOne, p);
                     s.SetOption(setting);
 
                     Engine.WorkingEngine = new Engine(s);
@@ -865,7 +870,7 @@ namespace PEBakery.WPF
 
                     // Build Ended, Switch to Normal View
                     Model.SwitchNormalBuildInterface = true;
-                    DrawPlugin(curMainTree.Plugin);
+                    DrawScript(curMainTree.Script);
 
                     if (setting.General_ShowLogAfterBuild && LogWindow.Count == 0)
                     { // Open BuildLogWindow
@@ -887,31 +892,31 @@ namespace PEBakery.WPF
             }
         }
 
-        private void PluginEditButton_Click(object sender, RoutedEventArgs e)
+        private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return;
 
             if (Model.WorkInProgress)
                 return;
 
-            OpenTextFile(curMainTree.Plugin.FullPath, false);
+            OpenTextFile(curMainTree.Script.FullPath, false);
         }
 
-        private void PluginRefreshButton_Click(object sender, RoutedEventArgs e)
+        private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return;
 
             if (Model.WorkInProgress)
                 return;
 
-            StartReloadPluginWorker();
+            StartReloadScriptWorker();
         }
 
-        private void PluginCheckButton_Click(object sender, RoutedEventArgs e)
+        private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Plugin == null)
+            if (curMainTree == null || curMainTree.Script == null)
                 return;
 
             if (Model.WorkInProgress)
@@ -922,19 +927,19 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void PluginListToTreeViewModel(Project project, List<Plugin> pList, TreeViewModel treeRoot, TreeViewModel projectRoot = null)
+        private void ScriptListToTreeViewModel(Project project, List<Script> pList, TreeViewModel treeRoot, TreeViewModel projectRoot = null)
         {
             Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
 
-            // Populate MainPlugin
+            // Populate MainScript
             if (projectRoot == null)
-                projectRoot = PopulateOneTreeView(project.MainPlugin, treeRoot, treeRoot);
+                projectRoot = PopulateOneTreeView(project.MainScript, treeRoot, treeRoot);
 
-            foreach (Plugin p in pList)
+            foreach (Script p in pList)
             {
                 Debug.Assert(p != null);
 
-                if (p.Equals(project.MainPlugin))
+                if (p.Equals(project.MainScript))
                     continue;
 
                 // Current Parent
@@ -959,8 +964,8 @@ namespace PEBakery.WPF
                     else
                     {
                         string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        Plugin dirPlugin = new Plugin(PluginType.Directory, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
-                        treeParent = PopulateOneTreeView(dirPlugin, treeRoot, treeParent);
+                        Script dirScript = new Script(ScriptType.Directory, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
+                        treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
                 }
@@ -978,24 +983,24 @@ namespace PEBakery.WPF
             foreach (TreeViewModel item in parent.Children)
             {
                 if (0 < item.Children.Count)
-                { // Has child plugins
+                { // Has child scripts
                     SelectedState state = RecursiveDecideDirectorySelectedValue(item, depth + 1);
                     if (depth != 0)
                     {
                         if (state == SelectedState.True)
-                            final = item.Plugin.Selected = SelectedState.True;
+                            final = item.Script.Selected = SelectedState.True;
                         else if (state == SelectedState.False)
                         {
                             if (final != SelectedState.True)
                                 final = SelectedState.False;
-                            if (item.Plugin.Selected != SelectedState.True)
-                                item.Plugin.Selected = SelectedState.False;
+                            if (item.Script.Selected != SelectedState.True)
+                                item.Script.Selected = SelectedState.False;
                         }
                     }
                 }
-                else // Does not have child plugin
+                else // Does not have child script
                 {
-                    switch (item.Plugin.Selected)
+                    switch (item.Script.Selected)
                     {
                         case SelectedState.True:
                             final = SelectedState.True;
@@ -1011,27 +1016,27 @@ namespace PEBakery.WPF
             return final;
         }
 
-        public void UpdatePluginTree(Project project, bool redrawPlugin)
+        public void UpdateScriptTree(Project project, bool redrawScript)
         {
-            TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Plugin.Project.Equals(project));
+            TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
             if (projectRoot != null) // Remove existing project tree
                 projectRoot.Children.Clear();
 
-            PluginListToTreeViewModel(project, project.VisiblePlugins, Model.MainTree, projectRoot);
+            ScriptListToTreeViewModel(project, project.VisibleScripts, Model.MainTree, projectRoot);
 
-            if (redrawPlugin)
+            if (redrawScript)
             {
                 curMainTree = projectRoot;
                 curMainTree.IsExpanded = true;
-                DrawPlugin(projectRoot.Plugin);
+                DrawScript(projectRoot.Script);
             }
         }
 
-        public TreeViewModel PopulateOneTreeView(Plugin p, TreeViewModel treeRoot, TreeViewModel treeParent)
+        public TreeViewModel PopulateOneTreeView(Script p, TreeViewModel treeRoot, TreeViewModel treeParent)
         {
             TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
             {
-                Plugin = p
+                Script = p
             };
             treeParent.Children.Add(item);
             UpdateTreeViewIcon(item);
@@ -1041,18 +1046,18 @@ namespace PEBakery.WPF
 
         TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
         {
-            Plugin p = item.Plugin;
+            Script p = item.Script;
 
-            if (p.Type == PluginType.Directory)
+            if (p.Type == ScriptType.Directory)
             {
                 if (p.IsDirLink)
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
-            else if (p.Type == PluginType.Plugin)
+            else if (p.Type == ScriptType.Script)
             {
-                if (p.IsMainPlugin)
+                if (p.IsMainScript)
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0);
                 else
                 {
@@ -1074,7 +1079,7 @@ namespace PEBakery.WPF
                 }
 
             }
-            else if (p.Type == PluginType.Link)
+            else if (p.Type == ScriptType.Link)
             {
                 item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
             }
@@ -1130,10 +1135,10 @@ namespace PEBakery.WPF
                 {
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    DrawPlugin(item.Plugin);
+                    DrawScript(item.Script);
                     watch.Stop();
                     double msec = watch.Elapsed.TotalMilliseconds;
-                    string filename = Path.GetFileName(curMainTree.Plugin.ShortPath);
+                    string filename = Path.GetFileName(curMainTree.Script.ShortPath);
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
@@ -1212,8 +1217,8 @@ namespace PEBakery.WPF
             while (loadWorker.IsBusy)
                 await Task.Delay(500);
 
-            if (pluginCache != null)
-                pluginCache.WaitClose();
+            if (scriptCache != null)
+                scriptCache.WaitClose();
             logger.DB.Close();
         }
 
@@ -1263,58 +1268,58 @@ namespace PEBakery.WPF
             }
         }
 
-        private string pluginTitleText = "Welcome to PEBakery!";
-        public string PluginTitleText
+        private string scriptTitleText = "Welcome to PEBakery!";
+        public string ScriptTitleText
         {
-            get => pluginTitleText;
+            get => scriptTitleText;
             set
             {
-                pluginTitleText = value;
-                OnPropertyUpdate("PluginTitleText");
+                scriptTitleText = value;
+                OnPropertyUpdate("ScriptTitleText");
             }
         }
 
-        private string pluginAuthorText = string.Empty;
-        public string PluginAuthorText
+        private string scriptAuthorText = string.Empty;
+        public string ScriptAuthorText
         {
-            get => pluginAuthorText;
+            get => scriptAuthorText;
             set
             {
-                pluginAuthorText = value;
-                OnPropertyUpdate("PluginAuthorText");
+                scriptAuthorText = value;
+                OnPropertyUpdate("ScriptAuthorText");
             }
         }
 
-        private string pluginVersionText = Properties.Resources.StringVersion;
-        public string PluginVersionText
+        private string scriptVersionText = Properties.Resources.StringVersion;
+        public string ScriptVersionText
         {
-            get => pluginVersionText;
+            get => scriptVersionText;
             set
             {
-                pluginVersionText = value;
-                OnPropertyUpdate("PluginVersionText");
+                scriptVersionText = value;
+                OnPropertyUpdate("ScriptVersionText");
             }
         }
 
-        private string pluginDescriptionText = "PEBakery is now loading, please wait...";
-        public string PluginDescriptionText
+        private string scriptDescriptionText = "PEBakery is now loading, please wait...";
+        public string ScriptDescriptionText
         {
-            get => pluginDescriptionText;
+            get => scriptDescriptionText;
             set
             {
-                pluginDescriptionText = value;
-                OnPropertyUpdate("PluginDescriptionText");
+                scriptDescriptionText = value;
+                OnPropertyUpdate("ScriptDescriptionText");
             }
         }
 
-        private Brush pluginCheckButtonColor = new SolidColorBrush(Colors.LightGray);
-        public Brush PluginCheckButtonColor
+        private Brush scriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
+        public Brush ScriptCheckButtonColor
         {
-            get => pluginCheckButtonColor;
+            get => scriptCheckButtonColor;
             set
             {
-                pluginCheckButtonColor = value;
-                OnPropertyUpdate("PluginCheckButtonColor");
+                scriptCheckButtonColor = value;
+                OnPropertyUpdate("ScriptCheckButtonColor");
             }
         }
 
@@ -1415,6 +1420,10 @@ namespace PEBakery.WPF
                 switchNormalBuildInterface = value;
                 if (value)
                 { // To Normal View
+                    BuildScriptProgressBarValue = 0;
+                    BuildFullProgressBarValue = 0;
+                    TaskbarProgressState = TaskbarItemProgressState.None;
+
                     NormalInterfaceVisibility = Visibility.Visible;
                     BuildInterfaceVisibility = Visibility.Collapsed;
                 }
@@ -1423,8 +1432,9 @@ namespace PEBakery.WPF
                     BuildPosition = string.Empty;
                     BuildEchoMessage = string.Empty;
 
-                    BuildPluginProgressBarValue = 0;
+                    BuildScriptProgressBarValue = 0;
                     BuildFullProgressBarValue = 0;
+                    TaskbarProgressState = TaskbarItemProgressState.Normal;
 
                     NormalInterfaceVisibility = Visibility.Collapsed;
                     BuildInterfaceVisibility = Visibility.Visible;
@@ -1512,25 +1522,25 @@ namespace PEBakery.WPF
         }
 
         // ProgressBar
-        private double buildPluginProgressBarMax = 100;
-        public double BuildPluginProgressBarMax
+        private double buildScriptProgressBarMax = 100;
+        public double BuildScriptProgressBarMax
         {
-            get => buildPluginProgressBarMax;
+            get => buildScriptProgressBarMax;
             set
             {
-                buildPluginProgressBarMax = value;
-                OnPropertyUpdate("BuildPluginProgressBarMax");
+                buildScriptProgressBarMax = value;
+                OnPropertyUpdate("BuildScriptProgressBarMax");
             }
         }
 
-        private double buildPluginProgressBarValue = 0;
-        public double BuildPluginProgressBarValue
+        private double buildScriptProgressBarValue = 0;
+        public double BuildScriptProgressBarValue
         {
-            get => buildPluginProgressBarValue;
+            get => buildScriptProgressBarValue;
             set
             {
-                buildPluginProgressBarValue = value;
-                OnPropertyUpdate("BuildPluginProgressBarValue");
+                buildScriptProgressBarValue = value;
+                OnPropertyUpdate("BuildScriptProgressBarValue");
             }
         }
 
@@ -1661,6 +1671,25 @@ namespace PEBakery.WPF
                 OnPropertyUpdate("BuildCommandProgressVisibility");
             }
         }
+
+        // Taskbar Progress State
+        //
+        // None - Hidden
+        // Inderterminate - Pulsing green indicator
+        // Normal - Green
+        // Error - Red
+        // Paused - Yellow
+        private System.Windows.Shell.TaskbarItemProgressState taskbarProgressState;
+        public System.Windows.Shell.TaskbarItemProgressState TaskbarProgressState
+        {
+            get => taskbarProgressState;
+            set
+            {
+                taskbarProgressState = value;
+                OnPropertyUpdate("TaskbarProgressState");
+            }
+        }
+
         #endregion
 
         #region OnPropertyUpdate
@@ -1744,7 +1773,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (plugin.Selected)
+                switch (script.Selected)
                 {
                     case SelectedState.True:
                         return true;
@@ -1758,16 +1787,16 @@ namespace PEBakery.WPF
                 w.Dispatcher.Invoke(() =>
                 {
                     w.Model.WorkInProgress = true;
-                    if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
+                    if (script.Mandatory == false && script.Selected != SelectedState.None)
                     {
                         if (value)
                         {
-                            plugin.Selected = SelectedState.True;
+                            script.Selected = SelectedState.True;
 
                             try
                             {
                                 // Run 'Disable' directive
-                                List<LogInfo> errorLogs = DisablePlugins(root, plugin);
+                                List<LogInfo> errorLogs = DisableScripts(root, script);
                                 w.Logger.System_Write(errorLogs);
                             }
                             catch (Exception e)
@@ -1777,13 +1806,13 @@ namespace PEBakery.WPF
                         }
                         else
                         {
-                            plugin.Selected = SelectedState.False;
+                            script.Selected = SelectedState.False;
                         }
 
-                        if (plugin.IsMainPlugin == false)
+                        if (script.IsMainScript == false)
                         {
                             if (0 < this.Children.Count)
-                            { // Set child plugins, too -> Top-down propagation
+                            { // Set child scripts, too -> Top-down propagation
                                 foreach (TreeViewModel childModel in this.Children)
                                 {
                                     if (value)
@@ -1824,12 +1853,12 @@ namespace PEBakery.WPF
             if (parent == null)
                 return;
 
-            if (plugin.Mandatory == false && plugin.Selected != SelectedState.None)
+            if (script.Mandatory == false && script.Selected != SelectedState.None)
             {
                 if (value)
-                    plugin.Selected = SelectedState.True;
+                    script.Selected = SelectedState.True;
                 else
-                    plugin.Selected = SelectedState.False;
+                    script.Selected = SelectedState.False;
             }
 
             OnPropertyUpdate("Checked");
@@ -1840,23 +1869,23 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (plugin.Selected == SelectedState.None)
+                if (script.Selected == SelectedState.None)
                     return Visibility.Collapsed;
                 else
                     return Visibility.Visible;
             }
         }
 
-        public string Text { get => plugin.Title; }
+        public string Text { get => script.Title; }
 
-        private Plugin plugin;
-        public Plugin Plugin
+        private Script script;
+        public Script Script
         {
-            get => plugin;
+            get => script;
             set
             {
-                plugin = value;
-                OnPropertyUpdate("Plugin");
+                script = value;
+                OnPropertyUpdate("Script");
                 OnPropertyUpdate("Checked");
                 OnPropertyUpdate("CheckBoxVisible");
                 OnPropertyUpdate("Text");
@@ -1881,9 +1910,9 @@ namespace PEBakery.WPF
         public void SortChildren()
         {
             IOrderedEnumerable<TreeViewModel> sorted = children
-                .OrderBy(x => x.Plugin.Level)
-                .ThenBy(x => x.Plugin.Type)
-                .ThenBy(x => x.Plugin.FullPath);
+                .OrderBy(x => x.Script.Level)
+                .ThenBy(x => x.Script.Type)
+                .ThenBy(x => x.Script.FullPath);
             children = new ObservableCollection<TreeViewModel>(sorted);
         }
 
@@ -1893,16 +1922,16 @@ namespace PEBakery.WPF
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public TreeViewModel FindPluginByFullPath(string fullPath)
+        public TreeViewModel FindScriptByFullPath(string fullPath)
         {
-            return RecursiveFindPluginByFullPath(root, fullPath); 
+            return RecursiveFindScriptByFullPath(root, fullPath); 
         }
 
-        private static TreeViewModel RecursiveFindPluginByFullPath(TreeViewModel cur, string fullPath)
+        private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)
         {
-            if (cur.Plugin != null)
+            if (cur.Script != null)
             {
-                if (fullPath.Equals(cur.Plugin.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (fullPath.Equals(cur.Script.FullPath, StringComparison.OrdinalIgnoreCase))
                     return cur;
             }
 
@@ -1910,7 +1939,7 @@ namespace PEBakery.WPF
             {
                 foreach (TreeViewModel next in cur.Children)
                 {
-                    TreeViewModel found = RecursiveFindPluginByFullPath(next, fullPath);
+                    TreeViewModel found = RecursiveFindScriptByFullPath(next, fullPath);
                     if (found != null)
                         return found;
                 }
@@ -1920,31 +1949,46 @@ namespace PEBakery.WPF
             return null;
         }
 
-        private List<LogInfo> DisablePlugins(TreeViewModel root, Plugin p)
+        private List<LogInfo> DisableScripts(TreeViewModel root, Script p)
         {
             if (root == null || p == null)
                 return new List<LogInfo>();
 
-            string[] paths = Plugin.GetDisablePluginPaths(p, out List<LogInfo> errorLogs);
+            string[] paths = Script.GetDisableScriptPaths(p, out List<LogInfo> errorLogs);
             if (paths == null)
                 return new List<LogInfo>();
 
             foreach (string path in paths)
             {
-                int exist = p.Project.AllPlugins.Count(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
+                int exist = p.Project.AllScripts.Count(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
                 if (exist == 1)
                 {
                     Ini.SetKey(path, "Main", "Selected", "False");
-                    TreeViewModel found = FindPluginByFullPath(path);
+                    TreeViewModel found = FindScriptByFullPath(path);
                     if (found != null)
                     {
-                        if (p.Type != PluginType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
+                        if (p.Type != ScriptType.Directory && p.Mandatory == false && p.Selected != SelectedState.None)
                             found.Checked = false;
                     }
                 }
             }
 
             return errorLogs;
+        }
+    }
+    #endregion
+
+    #region Converters
+    public class TaskbarProgressConverter : System.Windows.Data.IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            return (double)values[1] / (double)values[0];
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
         }
     }
     #endregion

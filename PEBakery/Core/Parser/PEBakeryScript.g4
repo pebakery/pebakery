@@ -179,7 +179,7 @@ cmd : (
     cmd_compress | cmd_decompress | cmd_expand | cmd_copyorexpand |
 // 06 CommandNetwork
     cmd_webget |
-// 07 CommandPlugin
+// 07 CommandScript
     cmd_extractfile | cmd_extractandrun | cmd_extractallfiles | cmd_encode | 
 // 08 CommandInterface
     cmd_visible | cmd_message | cmd_echo | cmd_addinterface | cmd_userinput | 
@@ -240,7 +240,7 @@ cmd_copyorexpand_options : (P_ (PRESERVE | NOWARN))+;
 // 06 CommandNetwork
 cmd_webget : (WEBGET | WEBGETIFNOTEXIST) P_ STR P_ STR (P_ STR P_ STR)?;
 
-// 07 CommandPlugin
+// 07 CommandScript
 cmd_extractfile : EXTRACTFILE P_ STR P_ STR P_ STR P_ STR;
 cmd_extractandrun : EXTRACTANDRUN P_ STR P_ STR P_ STR;
 cmd_extractallfiles : EXTRACTALLFILES P_ STR P_ STR P_ STR;
@@ -315,7 +315,7 @@ COPYOREXPAND : C O P Y O R E X P A N D;
 WEBGET : W E B G E T;
 WEBGETIFNOTEXIST : W E B G E T I F N O T E X I S T;
 
-// 07 Plugin - 4
+// 07 Script - 4
 EXTRACTFILE : E X T R A C T F I L E;
 EXTRACTANDRUN : E X T R A C T A N D R U N;
 EXTRACTALLFILES : E X T R A C T A L L F I L E S;
@@ -403,7 +403,6 @@ GETFREESPACE : G E T F R E E S P A C E;
 ISADMIN : I S A D M I N;
 ONBUILDEXIT : O N B U I L D E X I T;
 ONSCRIPTEXIT : O N S C R I P T E X I T;
-ONPLUGINEXIT : O N P L U G I N E X I T;
 REFRESHINTERFACE : R E F R E S H I N T E R F A C E;
 RESCANSCRIPTS : R E S C A N S C R I P T S;
 SAVELOG : S A V E L O G;

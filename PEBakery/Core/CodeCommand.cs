@@ -38,6 +38,8 @@ using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using PEBakery.IniLib;
+using System.Diagnostics;
+using ManagedWimLib;
 
 namespace PEBakery.Core
 {
@@ -67,7 +69,7 @@ namespace PEBakery.Core
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
         Visible = 800, ReadInterface, WriteInterface, Message, Echo, EchoFile, UserInput, AddInterface,
-        VisibleOp = 880,
+        VisibleOp = 880, ReadInterfaceOp, WriteInterfaceOp,
         Retrieve = 899, // Will be deprecated in favor of [UserInput | FileSize | FileVersion | DirSize | Hash]
         // 09 Hash
         Hash = 900,
@@ -75,15 +77,18 @@ namespace PEBakery.Core
         StrFormat = 1000,
         // 11 Math
         Math = 1100,
-        // 12 System
-        System = 1200, ShellExecute, ShellExecuteEx, ShellExecuteDelete, ShellExecuteSlow,
-        // 13 Wim
-        WimMount = 1500, WimUnmount, WimInfo, WimApply, WimCapture, WimAppend, WimExtract, WimOptimize,
+        // 12 Wim
+        WimMount = 1200, WimUnmount,
+        WimInfo, WimApply, WimExtract, WimExtractBulk, WimCapture, WimAppend, WimDelete,
+        WimPathAdd, WimPathDelete, WimPathRename, WimOptimize, WimExport,
+        WimExtractOp = 1280, WimPathOp,
         // 80 Branch
-        Run = 8000, Exec, Loop, If, Else, Begin, End,
+        Run = 8000, Exec, Loop, LoopLetter, If, Else, Begin, End,
         // 81 Control
         Set = 8100, SetMacro, AddVariables, Exit, Halt, Wait, Beep,
         GetParam = 8198, PackParam = 8199, // Will be deprecated
+        // 82 System
+        System = 8200, ShellExecute, ShellExecuteEx, ShellExecuteDelete,
         // 99 External Macro
         Macro = 9900,
     }
@@ -93,14 +98,14 @@ namespace PEBakery.Core
     [Serializable]
     public struct SectionAddress
     {
-        public Plugin Plugin;
-        public PluginSection Section;
+        public Script Script;
+        public ScriptSection Section;
 
-        public Project Project => Plugin.Project;
+        public Project Project => Script.Project;
 
-        public SectionAddress(Plugin plugin, PluginSection section)
+        public SectionAddress(Script script, ScriptSection section)
         {
-            this.Plugin = plugin;
+            this.Script = script;
             this.Section = section;
         }
 
@@ -109,7 +114,7 @@ namespace PEBakery.Core
             if (obj is SectionAddress addr)
             {
                 bool result = true;
-                if (Plugin != addr.Plugin || Section != addr.Section)
+                if (Script != addr.Script || Section != addr.Section)
                     result = false;
                 return result;
             }
@@ -129,7 +134,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Plugin.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
+            return Script.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
         }
     }
     #endregion
@@ -184,6 +189,10 @@ namespace PEBakery.Core
             CodeType.INIDeleteSectionOp,
             CodeType.INIWriteTextLineOp,
             CodeType.VisibleOp,
+            CodeType.ReadInterfaceOp,
+            CodeType.WriteInterfaceOp,
+            CodeType.WimExtractOp,
+            CodeType.WimPathOp,
         };
     }
     #endregion
@@ -1379,18 +1388,18 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 07 - Plugin
+    #region CodeInfo 07 - Script
     [Serializable]
     public class CodeInfo_ExtractFile : CodeInfo
-    { // ExtractFile,%PluginFile%,<DirName>,<FileName>,<ExtractTo>
-        public string PluginFile;
+    { // ExtractFile,%ScriptFile%,<DirName>,<FileName>,<ExtractTo>
+        public string ScriptFile;
         public string DirName;
         public string FileName;
         public string DestDir;
 
-        public CodeInfo_ExtractFile(string pluginFile, string dirName, string fileName, string extractTo)
+        public CodeInfo_ExtractFile(string scriptFile, string dirName, string fileName, string extractTo)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FileName = fileName;
             DestDir = extractTo;
@@ -1398,21 +1407,21 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{FileName},{DestDir}";
+            return $"{ScriptFile},{DirName},{FileName},{DestDir}";
         }
     }
 
     [Serializable]
     public class CodeInfo_ExtractAndRun : CodeInfo
-    { // ExtractAndRun,%PluginFile%,<DirName>,<FileName>,[Params]
-        public string PluginFile;
+    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
+        public string ScriptFile;
         public string DirName;
         public string FileName;
         public string[] Params;
 
-        public CodeInfo_ExtractAndRun(string pluginFile, string dirName, string fileName, string[] parameters)
+        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string[] parameters)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FileName = fileName;
             Params = parameters;
@@ -1421,7 +1430,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(DirName);
             b.Append(",");
@@ -1439,41 +1448,41 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ExtractAllFiles : CodeInfo
-    { // ExtractAllFiles,%PluginFile%,<DirName>,<ExtractTo>
-        public string PluginFile;
+    { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
+        public string ScriptFile;
         public string DirName;
         public string DestDir;
 
-        public CodeInfo_ExtractAllFiles(string pluginFile, string dirName, string extractTo)
+        public CodeInfo_ExtractAllFiles(string scriptFile, string dirName, string extractTo)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             DestDir = extractTo;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{DestDir}";
+            return $"{ScriptFile},{DirName},{DestDir}";
         }
     }
 
     [Serializable]
     public class CodeInfo_Encode : CodeInfo
-    { // Encode,%PluginFile%,<DirName>,<FileName>
-        public string PluginFile;
+    { // Encode,%ScriptFile%,<DirName>,<FileName>
+        public string ScriptFile;
         public string DirName;
         public string FilePath; // Can have Wildcard
 
-        public CodeInfo_Encode(string pluginFile, string dirName, string filePath)
+        public CodeInfo_Encode(string scriptFile, string dirName, string filePath)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             DirName = dirName;
             FilePath = filePath;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{DirName},{FilePath}";
+            return $"{ScriptFile},{DirName},{FilePath}";
         }
     }
     #endregion
@@ -1516,17 +1525,17 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_ReadInterface : CodeInfo
-    { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+    { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
         public InterfaceElement Element;
-        public string PluginFile;
+        public string ScriptFile;
         public string Section;
         public string Key;
         public string DestVar;
 
-        public CodeInfo_ReadInterface(InterfaceElement element, string pluginFile, string section, string key, string destVar)
+        public CodeInfo_ReadInterface(InterfaceElement element, string scriptFile, string section, string key, string destVar)
         {
             Element = element;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             Section = section;
             Key = key;
             DestVar = destVar;
@@ -1534,23 +1543,23 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{PluginFile},{Section},{Key},{DestVar}";
+            return $"{Element},{ScriptFile},{Section},{Key},{DestVar}";
         }
     }
 
     [Serializable]
     public class CodeInfo_WriteInterface : CodeInfo
-    { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+    { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
         public InterfaceElement Element;
-        public string PluginFile;
+        public string ScriptFile;
         public string Section;
         public string Key;
         public string Value;
 
-        public CodeInfo_WriteInterface(InterfaceElement element, string pluginFile, string section, string key, string value)
+        public CodeInfo_WriteInterface(InterfaceElement element, string scriptFile, string section, string key, string value)
         {
             Element = element;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             Section = section;
             Key = key;
             Value = value;
@@ -1558,7 +1567,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Element},{PluginFile},{Section},{Key},{Value}";
+            return $"{Element},{ScriptFile},{Section},{Key},{Value}";
         }
     }
 
@@ -1694,20 +1703,20 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_AddInterface : CodeInfo
     { // AddInterface,<ScriptFile>,<Interface>,<Prefix>
-        public string PluginFile;
+        public string ScriptFile;
         public string Interface;
         public string Prefix;
 
         public CodeInfo_AddInterface(string scriptFile, string interfaceSection, string prefix)
         {
-            PluginFile = scriptFile;
+            ScriptFile = scriptFile;
             Interface = interfaceSection;
             Prefix = prefix;
         }
 
         public override string ToString()
         {
-            return $"{PluginFile},{Interface},{Prefix}";
+            return $"{ScriptFile},{Interface},{Prefix}";
         }
     }
     #endregion
@@ -1857,6 +1866,7 @@ namespace PEBakery.Core
             StringBuilder b = new StringBuilder();
             b.Append(DestVar);
             b.Append(",");
+            // This does not show original format string, but in .Net format string!
             b.Append(StringEscaper.Doublequote(FormatString));
             return b.ToString();
         }
@@ -2251,6 +2261,7 @@ namespace PEBakery.Core
         Ceil, Floor, Round, 
         Abs,
         Pow,
+        Hex,
     }
 
     [Serializable]
@@ -2329,18 +2340,18 @@ namespace PEBakery.Core
 
         public string DestVar;
         public string Src;
-        public uint Size;
+        public uint BitSize;
 
-        public MathInfo_IntegerSignedness(string destVar, string src, uint size)
+        public MathInfo_IntegerSignedness(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
             Src = src;
-            Size = size;
+            BitSize = bitSize;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{Size}";
+            return $"{DestVar},{Src},{BitSize}";
         }
     }
 
@@ -2415,18 +2426,18 @@ namespace PEBakery.Core
     { // Math,BitNot,<DestVar>,<Src>,[8|16|32|64]
         public string DestVar;
         public string Src; // Should be unsigned
-        public uint Size;
+        public uint BitSize; // Optional
 
-        public MathInfo_BitNot(string destVar, string src, uint size)
+        public MathInfo_BitNot(string destVar, string src, uint bitSize)
         {
             DestVar = destVar;
             Src = src;
-            Size = size;
+            BitSize = bitSize;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{Size}";
+            return $"{DestVar},{Src},{BitSize}";
         }
     }
 
@@ -2437,22 +2448,22 @@ namespace PEBakery.Core
         public string Src;
         public string LeftRight;
         public string Shift;
-        public uint Size;
-        public bool Unsigned;
+        public uint BitSize; // Optional, [8|16|32|64]
+        public bool Unsigned; // Optional, UNSIGNED
 
-        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint size, bool _unsigned)
+        public MathInfo_BitShift(string destVar, string src, string leftRight, string shift, uint botSoze, bool _unsigned)
         {
             DestVar = destVar;
             Src = src;
             LeftRight = leftRight;
             Shift = shift;
-            Size = size;
+            BitSize = botSoze;
             Unsigned = _unsigned;
         }
 
         public override string ToString()
         {
-            return $"{DestVar},{Src},{LeftRight},{Shift},{Size},{Unsigned}";
+            return $"{DestVar},{Src},{LeftRight},{Shift},{BitSize},{Unsigned}";
         }
     }
 
@@ -2517,6 +2528,32 @@ namespace PEBakery.Core
             return $"{DestVar},{Base},{Power}";
         }
     }
+
+    [Serializable]
+    public class MathInfo_Hex : MathInfo
+    { // Math,Hex,<DestVar>,<Integer>,[BitSize]
+        public string DestVar;
+        public string Integer;
+        public uint BitSize; // Optional, [8|16|32|64]
+
+        public MathInfo_Hex(string destVar, string integer, uint bitSize)
+        {
+            DestVar = destVar;
+            Integer = integer;
+            BitSize = bitSize;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(DestVar);
+            b.Append(",");
+            b.Append(Integer);
+            b.Append(",");
+            b.Append(BitSize);
+            return b.ToString();
+        }
+    }
     #endregion
 
     #region CodeInfo 11 - Math
@@ -2543,304 +2580,642 @@ namespace PEBakery.Core
     }
     #endregion
 
-    #region CodeInfo 12 - System
+    #region CodeInfo 12 - WIM
     [Serializable]
-    public class CodeInfo_System : CodeInfo
-    {
-        public SystemType Type;
-        public SystemInfo SubInfo;
+    public class CodeInfo_WimMount : CodeInfo
+    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>,<READONLY|READWRITE>
+        public string SrcWim;
+        public string ImageIndex;
+        public string MountDir;
+        public string MountOption;
 
-        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir, string mountOption)
         {
-            Type = type;
-            SubInfo = subInfo;
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            MountDir = mountDir;
+            MountOption = mountOption;
         }
 
         public override string ToString()
         {
-            return $"{Type},{SubInfo.ToString()}";
+            return $"{SrcWim},{ImageIndex},{MountDir},{MountOption}";
         }
     }
 
-    #region SystemType, SystemInfo
-    public enum SystemType
-    {
-        Cursor,
-        ErrorOff,
-        GetEnv,
-        GetFreeDrive,
-        GetFreeSpace,
-        IsAdmin,
-        Log,
-        OnBuildExit,
-        OnScriptExit, OnPluginExit,
-        RefreshInterface,
-        LoadAll, RescanScripts, 
-        Load,
-        SaveLog,
-        SetLocal, EndLocal, 
-        // Deprecated, WB082 Compability Shim
-        HasUAC, 
-        FileRedirect, 
-        RegRedirect,
-        RebuildVars,
-    }
-
     [Serializable]
-    public class SystemInfo { }
+    public class CodeInfo_WimUnmount : CodeInfo
+    { // WimUnmount,<MountDir>,<DISCARD|COMMIT>
+        public string MountDir;
+        public string UnmountOption;
 
-    [Serializable]
-    public class SystemInfo_Cursor : SystemInfo
-    { // System,Cursor,<IconKind>
-        public string IconKind;
-
-        public SystemInfo_Cursor(string iconKind)
+        public CodeInfo_WimUnmount(string mountDir, string unmountOption)
         {
-            IconKind = iconKind;
+            MountDir = mountDir;
+            UnmountOption = unmountOption;
         }
 
         public override string ToString()
         {
-            return $"Cursor,{IconKind}";
+            return $"{MountDir},{UnmountOption}";
         }
     }
 
     [Serializable]
-    public class SystemInfo_ErrorOff : SystemInfo
-    { // System,ErrorOff,[Lines]
-        public string Lines;
-
-        public SystemInfo_ErrorOff(string lines = "1")
-        {
-            Lines = lines;
-        }
-
-        public override string ToString()
-        {
-            return $"ErrorOff,{Lines}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_GetEnv : SystemInfo
-    { // System,GetEnv,<EnvVarName>,<DestVar>
-        public string EnvVarName;
+    public class CodeInfo_WimInfo : CodeInfo
+    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>
+        public string SrcWim;
+        public string ImageIndex;
+        public string Key;
         public string DestVar;
 
-        public SystemInfo_GetEnv(string envVarName, string destVar)
+        public CodeInfo_WimInfo(string srcWim, string imageIndex, string key, string destVar)
         {
-            EnvVarName = envVarName;
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            Key = key;
             DestVar = destVar;
         }
 
         public override string ToString()
         {
-            return $"GetEnv,{EnvVarName},{DestVar}";
+            return $"{SrcWim},{ImageIndex},{Key},{DestVar}";
         }
     }
 
     [Serializable]
-    public class SystemInfo_GetFreeDrive : SystemInfo
-    { // System,GetFreeDrive,<DestVar>
-        public string DestVar;
+    public class CodeInfo_WimApply : CodeInfo
+    { // WimApply,<SrcWim>,<ImageIndex>,<DestDir>,[Split=STR],[CHECK],[NOACL],[NOATTRIB]
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestDir;
+        public string Split;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
 
-        public SystemInfo_GetFreeDrive(string destVar)
+        public CodeInfo_WimApply(string srcWim, string imageIndex, string destDir, string split, bool check, bool noAcl, bool noAttrib)
         {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"GetFreeDrive,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_GetFreeSpace : SystemInfo
-    { // System,GetFreeSpace,<Path>,<DestVar>
-        public string Path;
-        public string DestVar;
-
-        public SystemInfo_GetFreeSpace(string path, string destVar)
-        {
-            Path = path;
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"GetFreeDrive,{Path},{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_HasUAC : SystemInfo
-    { // System,HasUAC,<DestVar>
-        public string DestVar;
-
-        public SystemInfo_HasUAC(string destVar)
-        {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"HasUAC,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_IsAdmin : SystemInfo
-    { // System,IsAdmin,<DestVar>
-        public string DestVar;
-
-        public SystemInfo_IsAdmin(string destVar)
-        {
-            DestVar = destVar;
-        }
-
-        public override string ToString()
-        {
-            return $"IsAdmin,{DestVar}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_OnBuildExit : SystemInfo
-    { // System,OnBuildExit,<Command>
-        public CodeCommand Cmd;
-
-        public SystemInfo_OnBuildExit(CodeCommand cmd)
-        {
-            Cmd = cmd;
-        }
-
-        public override string ToString()
-        {
-            return $"OnBuildExit,{Cmd}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_OnPluginExit : SystemInfo
-    { // System,OnPluginExit,<Command>
-        public CodeCommand Cmd;
-
-        public SystemInfo_OnPluginExit(CodeCommand cmd)
-        {
-            Cmd = cmd;
-        }
-
-        public override string ToString()
-        {
-            return $"OnPluginExit,{Cmd}";
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_RefreshInterface : SystemInfo
-    { // System,RefreshInterface
-        public SystemInfo_RefreshInterface() { }
-        public override string ToString() { return "RefreshInterface"; }
-    }
-
-    [Serializable]
-    public class SystemInfo_LoadAll : SystemInfo
-    {
-        // System,LoadAll
-        // System,RescanScripts
-        public SystemInfo_LoadAll() { }
-        public override string ToString() { return "LoadAll"; }
-    }
-
-    [Serializable]
-    public class SystemInfo_Load : SystemInfo
-    { // System,Load,<FilePath>,[NOREC]
-        public string FilePath;
-        public bool NoRec;
-
-        public SystemInfo_Load(string filePath, bool noRec)
-        {
-            FilePath = filePath;
-            NoRec = noRec;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder(8);
-            b.Append("Load");
-            if (FilePath != null)
-            {
-                b.Append(",");
-                b.Append(FilePath);
-                if (NoRec)
-                    b.Append(",NOREC");
-            }
-            return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class SystemInfo_SaveLog : SystemInfo
-    { // System,SaveLog,<DestPath>,[LogFormat]
-        public string DestPath;
-        public string LogFormat;
-
-        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
-        {
-            DestPath = destPath;
-            LogFormat = logFormat;
-        }
-
-        public override string ToString()
-        {
-            return $"SaveLog,{DestPath},{LogFormat}";
-        }
-    }
-    #endregion
-
-    [Serializable]
-    public class CodeInfo_ShellExecute : CodeInfo
-    {
-        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
-        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        // ShellExecuteSlow,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
-        public string Action;
-        public string FilePath;
-        public string Params; // Optional
-        public string WorkDir; // Optional
-        public string ExitOutVar; // Optional
-
-        public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
-        {
-            Action = action;
-            FilePath = filePath;
-            Params = parameters;
-            WorkDir = workDir;
-            ExitOutVar = exitOutVar;
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestDir = destDir;
+            Split = split;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
         }
 
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(Action);
+            b.Append(SrcWim);
             b.Append(",");
-            b.Append(FilePath);
-            if (Params != null)
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestDir);
+            if (Split != null)
             {
                 b.Append(",");
-                b.Append(Params);
+                b.Append(Split);
             }
-            if (WorkDir != null)
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtract : CodeInfo
+    { // WimExtract,<SrcWim>,<ImageIndex>,<ExtractPath>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+        // For extracting mutiple path at once, rely on WimExtractOp or WimExtractBulk
+        public string SrcWim;
+        public string ImageIndex;
+        public string ExtractPath;
+        public string DestDir;
+        public string Split;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
+
+        public CodeInfo_WimExtract(string srcWim, string imageIndex, string extractPath, string destDir, string split, bool check, bool noAcl, bool noAttrib)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            ExtractPath = extractPath;
+            DestDir = destDir;
+            Split = split;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(ExtractPath);
+            b.Append(",");
+            b.Append(DestDir);
+            b.Append(",");
+            b.Append(DestDir);
+            if (Split != null)
             {
                 b.Append(",");
-                b.Append(WorkDir);
+                b.Append(Split);
             }
-            if (ExitOutVar != null)
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtractBulk : CodeInfo
+    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+        public string SrcWim;
+        public string ImageIndex;
+        public string ListFile;
+        public string DestDir;
+        public string Split;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool NoAttribFlag;
+
+        public CodeInfo_WimExtractBulk(string srcWim, string imageIndex, string listFile, string destDir, string split, bool check, bool noAcl, bool noAttrib)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            ListFile = listFile;
+            DestDir = destDir;
+            Split = split;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+            NoAttribFlag = noAttrib;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(ListFile);
+            b.Append(",");
+            b.Append(DestDir);
+            b.Append(",");
+            b.Append(DestDir);
+            if (Split != null)
             {
                 b.Append(",");
-                b.Append(ExitOutVar);
+                b.Append(Split);
+            }
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            if (NoAttribFlag)
+                b.Append(",NOATTRIB");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtractOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WimExtract> Infos
+        {
+            get => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
+        }
+
+        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimCapture : CodeInfo
+    { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[ImageName=STR],[ImageDesc=STR],[Flags=STR],[BOOT],[CHECK],[NOACL]
+        public string SrcDir;
+        public string DestWim;
+        public string Compress; // [NONE|XPRESS|LZX|LZMS]
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimCapture(string srcDir, string destWim, string compress,
+            string imageName, string imageDesc, string wimFlags,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+            Compress = compress;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+            b.Append(",");
+            b.Append(Compress);
+
+            if (ImageName != null)
+            {
+                b.Append("ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (WimFlags != null)
+            {
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimAppend : CodeInfo
+    { // WimAppend,<SrcDir>,<DestWim>,[IMAGENAME=STR],[ImageDesc=STR],[Flags=STR],[DeltaIndex=INT],[BOOT],[CHECK],[NOACL]
+        public string SrcDir;
+        public string DestWim;
+        public string ImageName; // Optional
+        public string ImageDesc; // Optional
+        public string WimFlags; // Optional
+        public string DeltaIndex; // Optional, for Delta Wim (like install.wim)
+        public bool BootFlag; // Optional Flag
+        public bool CheckFlag; // Optional Flag
+        public bool NoAclFlag; // Optional Flag
+
+        public CodeInfo_WimAppend(string srcDir, string destWim,
+            string imageName, string imageDesc, string wimFlags, string deltaIndex,
+            bool boot, bool check, bool noAcl)
+        {
+            SrcDir = srcDir;
+            DestWim = destWim;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            WimFlags = wimFlags;
+            DeltaIndex = deltaIndex;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+            NoAclFlag = noAcl;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcDir);
+            b.Append(",");
+            b.Append(DestWim);
+
+            if (ImageName != null)
+            {
+                b.Append("ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append("ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (WimFlags != null)
+            {
+                b.Append("WimFlags=");
+                b.Append(WimFlags);
+            }
+            if (DeltaIndex != null)
+            {
+                b.Append("DeltaIndex=");
+                b.Append(DeltaIndex);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (NoAclFlag)
+                b.Append(",NOACL");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimDelete : CodeInfo
+    { // WimDelete,<SrcWim>,<ImageIndex>,[CHECK]
+        public string SrcWim;
+        public string ImageIndex; 
+        public bool CheckFlag; // Optional Flag
+
+        public CodeInfo_WimDelete(string srcWim, string imageIndex, bool check)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+
+            // Flags
+            CheckFlag = check;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathAdd : CodeInfo
+    { // WimPathAdd,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[NOACL],[PRESERVE],[REBUILD]
+        // Note : If <SrcPath> is a file, <DestPath> must be a file. If <SrcPath> is a dir, <DestPath> must be a dir.
+        //        It is different from standard PEBakery dest path convention, because it follows wimlib-imagex update convention.
+        public string WimFile;
+        public string ImageIndex;
+        public string SrcPath;
+        public string DestPath;
+        public bool CheckFlag;
+        public bool NoAclFlag;
+        public bool PreserveFlag;
+        public bool RebuildFlag;
+
+        public CodeInfo_WimPathAdd(string wimFile, string imageIndex,
+            string srcPath, string destPath,
+            bool checkFlag, bool noAclFlag, bool preserveFlag, bool rebuildFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathAdd Specific
+            SrcPath = srcPath;
+            DestPath = destPath;
+
+            // Optional Flags
+            CheckFlag = checkFlag;
+            NoAclFlag = noAclFlag;
+            PreserveFlag = preserveFlag;
+            RebuildFlag = rebuildFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestPath);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (CheckFlag)
+                b.Append(",NOACL");
+            if (CheckFlag)
+                b.Append(",PRESERVE");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathDelete : CodeInfo
+    { // WimPathDelete,<WimFile>,<ImageIndex>,<Path>,[CHECK],[REBUILD]
+        public string WimFile;
+        public string ImageIndex;
+        public string Path;
+        public bool CheckFlag;
+        public bool RebuildFlag;
+
+        public CodeInfo_WimPathDelete(string wimFile, string imageIndex, string path, bool checkFlag, bool rebuildFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathDelete Specific
+            Path = path;
+
+            // Optional Flags
+            CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(Path);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathRename : CodeInfo
+    { // WimPathRename,<WimFile>,<ImageIndex>,<SrcPath>,<DestPath>,[CHECK],[REBUILD]
+        public string WimFile;
+        public string ImageIndex;
+        public string SrcPath;
+        public string DestPath;
+        public bool CheckFlag;
+        public bool RebuildFlag;
+
+        public CodeInfo_WimPathRename(string wimFile, string imageIndex, string srcPath, string destPath, bool checkFlag, bool rebuildFlag)
+        {
+            // WimPath (WimUpdate) Series Common
+            WimFile = wimFile;
+            ImageIndex = imageIndex;
+
+            // WimPathDelete Specific
+            SrcPath = srcPath;
+            DestPath = destPath;
+
+            // Optional Flags
+            CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(SrcPath);
+            b.Append(",");
+            b.Append(DestPath);
+            if (CheckFlag)
+                b.Append(",CHECK");
+            if (RebuildFlag)
+                b.Append(",REBUILD");
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimOptimize : CodeInfo
+    { // WimOptimize,<WimFile>,[Recomp=STR],[CHECK|NOCHECK]
+        public string WimFile;
+        public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
+        public bool? CheckFlag; // Optional Flag
+
+        public CodeInfo_WimOptimize(string wimFile, string recompress, bool? checkFlag)
+        {
+            WimFile = wimFile;
+            // Optional Argument
+            Recompress = recompress;
+            // Flags
+            CheckFlag = checkFlag;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(WimFile);
+            if (Recompress != null)
+            {
+                b.Append(",");
+                b.Append(Recompress);
+            }
+            if (CheckFlag != null)
+            {
+                if (CheckFlag == true)
+                    b.Append(",CHECK");
+                else
+                    b.Append(",NOCHECK");
+            }
+            return b.ToString();
+        }
+    }
+    #endregion
+
+    #region WimExport
+    [Serializable]
+    public class CodeInfo_WimExport : CodeInfo
+    { // WimExport,<SrcWim>,<ImageIndex>,<DestWim>,[ImageName=STR],[ImageDesc=STR],[Split=STR],[Recomp=STR],[BOOT],[CHECK|NOCHECK]
+        public string SrcWim;
+        public string ImageIndex;
+        public string DestWim;
+        public string ImageName; // Optional.
+        public string ImageDesc; // Optional
+        public string Recompress; // [KEEP|NONE|XPRESS|LZX|LZMS]
+        public string Split;  // Optional
+        public bool BootFlag; // Optional Flag
+        public bool? CheckFlag; // Optional Flag
+
+        public CodeInfo_WimExport(string srcWim, string imageIndex, string destWim,
+            string imageName, string imageDesc, string split, string recompress,
+            bool boot, bool? check)
+        {
+            SrcWim = srcWim;
+            ImageIndex = imageIndex;
+            DestWim = destWim;
+
+            // Optional argument
+            ImageName = imageName;
+            ImageDesc = imageDesc;
+            Split = split;
+            Recompress = recompress;
+
+            // Flags
+            BootFlag = boot;
+            CheckFlag = check;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(DestWim);
+
+            if (ImageName != null)
+            {
+                b.Append(",ImageName=");
+                b.Append(ImageName);
+            }
+            if (ImageDesc != null)
+            {
+                b.Append(",ImageDesc=");
+                b.Append(ImageDesc);
+            }
+            if (Split != null)
+            {
+                b.Append(",Split=");
+                b.Append(Split);
+            }
+            if (Recompress != null)
+            {
+                b.Append(",Recomp=");
+                b.Append(Recompress);
+            }
+
+            if (BootFlag)
+                b.Append(",BOOT");
+            if (CheckFlag != null)
+            {
+                if (CheckFlag == true)
+                    b.Append(",CHECK");
+                else
+                    b.Append(",NOCHECK");
             }
             return b.ToString();
         }
@@ -2855,6 +3230,7 @@ namespace PEBakery.Core
         Equal, EqualX, Smaller, Bigger, SmallerEqual, BiggerEqual,
         // Existance
         // Note : Wrong Terminoloy with Registry, see https://msdn.microsoft.com/en-us/library/windows/desktop/ms724946(v=vs.85).aspx
+        // ExistRegSubKey and ExistRegValue are proposed for more accurate terms
         ExistFile,
         ExistDir,
         ExistSection,
@@ -2863,6 +3239,10 @@ namespace PEBakery.Core
         ExistRegMulti,
         ExistVar,
         ExistMacro,
+        // Wim
+        WimExistIndex,
+        WimExistFile,
+        WimExistDir,
         // ETC
         Ping, Online, Question,
         // Deprecated
@@ -2926,6 +3306,7 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistSection:
                 case BranchConditionType.ExistRegSection:
                 case BranchConditionType.ExistRegSubKey:
+                case BranchConditionType.WimExistIndex:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     break;
@@ -2943,6 +3324,8 @@ namespace PEBakery.Core
                 case BranchConditionType.ExistRegKey:
                 case BranchConditionType.ExistRegValue:
                 case BranchConditionType.Question: // can have 1 or 3 argument
+                case BranchConditionType.WimExistFile:
+                case BranchConditionType.WimExistDir:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
@@ -2969,15 +3352,9 @@ namespace PEBakery.Core
             }
         }
 
-        /// <summary>
-        /// Return true if matched
-        /// </summary>
-        /// <param name="s"></param>
-        /// <param name="logMessage"></param>
-        /// <returns></returns>
-        public bool Check(EngineState s, out string logMessage)
+        public override string ToString()
         {
-            bool match = false;
+            StringBuilder b = new StringBuilder();
             switch (Type)
             {
                 case BranchConditionType.Equal:
@@ -2986,454 +3363,8 @@ namespace PEBakery.Core
                 case BranchConditionType.SmallerEqual:
                 case BranchConditionType.BiggerEqual:
                 case BranchConditionType.EqualX:
-                    {
-                        string compArg1 = StringEscaper.Preprocess(s, Arg1);
-                        string compArg2 = StringEscaper.Preprocess(s, Arg2);
-
-                        bool ignoreCase = true;
-                        if (Type == BranchConditionType.EqualX) ignoreCase = false;
-
-                        NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2, ignoreCase);
-                        switch (comp)
-                        {
-                            case NumberHelper.CompareStringNumberResult.Equal: // For String and Number
-                                {
-                                    if (Type == BranchConditionType.Equal && !NotFlag ||
-                                        Type == BranchConditionType.SmallerEqual && !NotFlag ||
-                                        Type == BranchConditionType.BiggerEqual && !NotFlag ||
-                                        Type == BranchConditionType.Smaller && NotFlag ||
-                                        Type == BranchConditionType.Bigger && NotFlag ||
-                                        Type == BranchConditionType.EqualX && !NotFlag)
-                                        match = true;
-                                    logMessage = $"[{compArg1}] is equal to [{compArg2}]";
-                                }
-                                break;
-                            case NumberHelper.CompareStringNumberResult.Smaller: // For Number
-                                {
-                                    if (Type == BranchConditionType.Smaller && !NotFlag ||
-                                        Type == BranchConditionType.SmallerEqual && !NotFlag ||
-                                        Type == BranchConditionType.Bigger && NotFlag ||
-                                        Type == BranchConditionType.BiggerEqual && NotFlag || 
-                                        Type == BranchConditionType.Equal && NotFlag ||
-                                        Type == BranchConditionType.EqualX && NotFlag)
-                                        match = true;
-                                    logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
-                                }
-                                break;
-                            case NumberHelper.CompareStringNumberResult.Bigger: // For Number
-                                {
-                                    if (Type == BranchConditionType.Bigger && !NotFlag ||
-                                        Type == BranchConditionType.BiggerEqual && !NotFlag ||
-                                        Type == BranchConditionType.Smaller && NotFlag ||
-                                        Type == BranchConditionType.SmallerEqual && NotFlag ||
-                                        Type == BranchConditionType.Equal && NotFlag ||
-                                        Type == BranchConditionType.EqualX && NotFlag)
-                                        match = true;
-                                    logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
-                                }
-                                break;
-                            case NumberHelper.CompareStringNumberResult.NotEqual: // For String
-                                {
-                                    if (Type == BranchConditionType.Equal && NotFlag ||
-                                        Type == BranchConditionType.EqualX && NotFlag)
-                                        match = true;
-                                    logMessage = $"[{compArg1}] is not equal to [{compArg2}]";
-                                }
-                                break;
-                            default:
-                                throw new InternalException($"Cannot compare [{compArg1}] and [{compArg2}]");
-                        }
-                    }
-                    break;
-                case BranchConditionType.ExistFile:
-                    {
-                        string filePath = StringEscaper.Preprocess(s, Arg1);
-
-                        // Check filePath contains wildcard
-                        bool containsWildcard = true;
-                        if (Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            containsWildcard = false;
-
-                        // Check if file exists
-                        if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
-                        {
-                            match = false;
-                        }
-                        else if (containsWildcard)
-                        {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
-                            {
-                                match = false;
-                            }
-                            else
-                            {
-                                string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
-                                if (0 < list.Length)
-                                    match = true;
-                                else
-                                    match = false;
-                            }
-                        }
-                        else
-                        {
-                            match = File.Exists(filePath);
-                        }
-
-                        if (match)
-                            logMessage = $"File [{filePath}] exists";
-                        else
-                            logMessage = $"File [{filePath}] does not exist";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistDir:
-                    {
-                        string dirPath = StringEscaper.Preprocess(s, Arg1);
-
-                        // Check filePath contains wildcard
-                        bool containsWildcard = true;
-                        if (Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                            containsWildcard = false;
-
-                        // Check if directory exists
-                        if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
-                        {
-                            match = false;
-                        }
-                        else if (containsWildcard)
-                        {
-                            if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
-                            {
-                                match = false;
-                            }
-                            else
-                            {
-                                string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
-                                if (0 < list.Length)
-                                    match = true;
-                                else
-                                    match = false;
-                            }
-                        }
-                        else
-                        {
-                            match = Directory.Exists(dirPath);
-                        }
-
-                        if (match)
-                            logMessage = $"Directory [{dirPath}] exists";
-                        else
-                            logMessage = $"Directory [{dirPath}] does not exist";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistSection:
-                    {
-                        string iniFile = StringEscaper.Preprocess(s, Arg1);
-                        string section = StringEscaper.Preprocess(s, Arg2);
-
-                        match = Ini.CheckSectionExist(iniFile, section);
-                        if (match)
-                            logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
-                        else
-                            logMessage = $"Section [{section}] does not exist in INI file [{iniFile}]";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistRegSection:
-                case BranchConditionType.ExistRegSubKey:
-                    {
-                        string rootKey = StringEscaper.Preprocess(s, Arg1);
-                        string subKey = StringEscaper.Preprocess(s, Arg2);
-
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
-                        if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
-                        {
-                            match = (regSubKey != null);
-                            if (match)
-                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] exists";
-                            else
-                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistRegKey:
-                case BranchConditionType.ExistRegValue:
-                    {
-                        string rootKey = StringEscaper.Preprocess(s, Arg1);
-                        string subKey = StringEscaper.Preprocess(s, Arg2);
-                        string valueName = StringEscaper.Preprocess(s, Arg3);
-
-                        match = true;
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
-                        if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
-                        {
-                            if (regSubKey == null)
-                            {
-                                match = false;
-                            }
-                            else
-                            {
-                                object value = regSubKey.GetValue(valueName);
-                                if (value == null)
-                                    match = false;
-                            }
-
-                            if (match)
-                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
-                            else
-                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistRegMulti:
-                    {
-                        string rootKey = StringEscaper.Preprocess(s, Arg1);
-                        string subKey = StringEscaper.Preprocess(s, Arg2);
-                        string valueName = StringEscaper.Preprocess(s, Arg3);
-                        string subStr = StringEscaper.Preprocess(s, Arg4);
-
-                        match = false;
-                        RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
-                        if (regRoot == null)
-                            throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
-                        using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
-                        {
-                            if (regSubKey == null)
-                            {
-                                logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
-                            }
-                            else
-                            {
-                                object valueData = regSubKey.GetValue(valueName, null);
-                                if (valueData == null)
-                                {
-                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
-                                }
-                                else
-                                {
-                                    RegistryValueKind kind = regSubKey.GetValueKind(valueName);
-                                    if (kind != RegistryValueKind.MultiString)
-                                    {
-                                        logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] is not REG_MULTI_SZ";
-                                    }
-                                    else
-                                    {
-                                        string[] strs = (string[])valueData;
-                                        if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
-                                        {
-                                            match = true;
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
-                                        }
-                                        else
-                                        {
-                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistVar:
-                    {
-                        Variables.VarKeyType type = Variables.DetermineType(Arg1);
-                        if (type == Variables.VarKeyType.Variable)
-                        {
-                            match = s.Variables.ContainsKey(Variables.TrimPercentMark(Arg1));
-                            if (match)
-                                logMessage = $"Variable [{Arg1}] exists";
-                            else
-                                logMessage = $"Variable [{Arg1}] does not exists";
-                        }
-                        else
-                        {
-                            match = false;
-                            logMessage = $"[{Arg1}] is not a variable";
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.ExistMacro:
-                    {
-                        string macroName = StringEscaper.Preprocess(s, Arg1);
-                        match = s.Macro.MacroDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
-
-                        if (match)
-                            logMessage = $"Macro [{macroName}] exists";
-                        else
-                            logMessage = $"Macro [{macroName}] does not exists";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.Ping:
-                    {
-                        string host = StringEscaper.Preprocess(s, Arg1);
-
-                        Ping pinger = new Ping();
-                        try
-                        {
-                            try
-                            {
-                                PingReply reply = pinger.Send(host);
-                                if (reply.Status == IPStatus.Success)
-                                    match = true;
-                                else
-                                    match = false;
-                            }
-                            catch
-                            {
-                                match = false;
-                            }
-
-                            if (match)
-                                logMessage = $"Ping to [{host}] successed";
-                            else
-                                logMessage = $"Ping to [{host}] failed";
-                        }
-                        catch (PingException e)
-                        {
-                            match = false;
-                            logMessage = $"Error while pinging to [{host}] : [{e.Message}]";
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.Online:
-                    {
-                        // Note that system connected only to local network also returns true
-                        match = NetworkInterface.GetIsNetworkAvailable();
-
-                        if (match)
-                            logMessage = "System is online";
-                        else
-                            logMessage = "System is offline";
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                case BranchConditionType.Question: // can have 1 or 3 argument
-                    {
-                        string question = StringEscaper.Preprocess(s, Arg1);
-
-                        bool autoTimeout = false;
-
-                        if (Arg2 != null && Arg3 != null)
-                            autoTimeout = true;
-
-                        int timeout = 0;
-                        bool defaultChoice = false;
-                        if (autoTimeout)
-                        {
-                            string timeoutStr = StringEscaper.Preprocess(s, Arg2);
-                            if (NumberHelper.ParseInt32(timeoutStr, out timeout) == false)
-                                autoTimeout = false;
-                            if (timeout <= 0)
-                                autoTimeout = false;
-
-                            string defaultChoiceStr = StringEscaper.Preprocess(s, Arg3);
-                            if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                defaultChoice = true;
-                            else if (defaultChoiceStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                defaultChoice = false;
-                        }
-
-                        if (autoTimeout)
-                        {
-                            MessageBoxResult result = MessageBoxResult.None; 
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
-                            });
-
-                            if (result == MessageBoxResult.None)
-                            {
-                                match = defaultChoice;
-                                if (defaultChoice)
-                                    logMessage = "[Yes] was automatically chosen";
-                                else
-                                    logMessage = "[No] was automatically chosen";
-                            }
-                            else if (result == MessageBoxResult.Yes)
-                            {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
-                            }
-                        }
-                        else
-                        {
-                            MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                            if (result == MessageBoxResult.Yes)
-                            {
-                                match = true;
-                                logMessage = "[Yes] was chosen";
-                            }
-                            else if (result == MessageBoxResult.No)
-                            {
-                                match = false;
-                                logMessage = "[No] was chosen";
-                            }
-                            else
-                            {
-                                throw new InternalException("Internal Error at Check() of If,Question");
-                            }
-                        }
-
-                        if (NotFlag)
-                            match = !match;
-                    }
-                    break;
-                default:
-                    throw new InternalException($"Internal BranchCondition check error");
-            }
-            return match;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder b = new StringBuilder();
-            switch (Type)
-            {
-                case BranchConditionType.Equal:
-                case BranchConditionType.Smaller:
-                case BranchConditionType.Bigger:
-                case BranchConditionType.SmallerEqual:
-                case BranchConditionType.BiggerEqual:
+                    if (NotFlag)
+                        b.Append("Not,");
                     b.Append(Arg1);
                     b.Append(",");
                     b.Append(Type);
@@ -3441,81 +3372,64 @@ namespace PEBakery.Core
                     b.Append(Arg2);
                     break;
                 case BranchConditionType.ExistFile:
-                    b.Append("ExistFile,");
-                    b.Append(Arg1);
-                    break;
                 case BranchConditionType.ExistDir:
-                    b.Append("ExistDir,");
+                case BranchConditionType.ExistVar:
+                case BranchConditionType.ExistMacro:
+                case BranchConditionType.Ping:
+                    if (NotFlag)
+                        b.Append("Not,");
+                    b.Append(Type);
+                    b.Append(",");
                     b.Append(Arg1);
                     break;
                 case BranchConditionType.ExistSection:
-                    b.Append("ExistSection,");
-                    b.Append(Arg1);
-                    b.Append(",");
-                    b.Append(Arg2);
-                    break;
                 case BranchConditionType.ExistRegSection:
-                    b.Append("ExistRegSection,");
+                case BranchConditionType.ExistRegSubKey:
+                case BranchConditionType.WimExistIndex:
+                    if (NotFlag)
+                        b.Append("Not,");
+                    b.Append(Type);
+                    b.Append(",");
                     b.Append(Arg1);
                     b.Append(",");
                     b.Append(Arg2);
                     break;
                 case BranchConditionType.ExistRegKey:
-                    b.Append("ExistRegKey,");
+                case BranchConditionType.ExistRegValue:
+                case BranchConditionType.WimExistFile:
+                case BranchConditionType.WimExistDir:
+                    if (NotFlag)
+                        b.Append("Not,");
+                    b.Append(Type);
+                    b.Append(",");
                     b.Append(Arg1);
                     b.Append(",");
                     b.Append(Arg2);
                     b.Append(",");
                     b.Append(Arg3);
                     break;
-                case BranchConditionType.ExistVar:
-                    b.Append("ExistVar,");
-                    b.Append(Arg1);
-                    break;
-                case BranchConditionType.ExistMacro:
-                    b.Append("ExistMacro,");
-                    b.Append(Arg2);
+                case BranchConditionType.Question: // can have 1 or 3 argument
+                    if (NotFlag)
+                        b.Append("Not,");
+                    if (Arg2 != null)
+                    {
+                        b.Append(Type);
+                        b.Append(",");
+                        b.Append(Arg1);
+                        b.Append(",");
+                        b.Append(Arg2);
+                        b.Append(",");
+                        b.Append(Arg3);
+                    }
+                    else
+                    {
+                        b.Append(Type);
+                        b.Append(",");
+                        b.Append(Arg1);
+                    }
                     break;
             }
             return b.ToString();
-        }
-    }
-    #endregion
-
-    #region CodeInfo 13 - WIM
-    [Serializable]
-    public class CodeInfo_WimMount : CodeInfo
-    { // WimMount,<SrcWim>,<ImageIndex>,<MountDir>
-        public string SrcWim;
-        public string ImageIndex;
-        public string MountDir;
-
-        public CodeInfo_WimMount(string srcWim, string imageIndex, string mountDir)
-        {
-            SrcWim = srcWim;
-            ImageIndex = imageIndex;
-            MountDir = mountDir;
-        }
-
-        public override string ToString()
-        {
-            return $"{SrcWim},{ImageIndex},{MountDir}";
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimUnmount : CodeInfo
-    { // WimUnmount,<MountDir>
-        public string MountDir;
-
-        public CodeInfo_WimUnmount(string mountDir)
-        {
-            MountDir = mountDir;
-        }
-
-        public override string ToString()
-        {
-            return $"{MountDir}";
         }
     }
     #endregion
@@ -3524,13 +3438,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_RunExec : CodeInfo
     {
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
         public List<string> Parameters;
 
-        public CodeInfo_RunExec(string pluginFile, string sectionName, List<string> parameters)
+        public CodeInfo_RunExec(string scriptFile, string sectionName, List<string> parameters)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Parameters = parameters;
         }
@@ -3538,7 +3452,7 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
             foreach (string param in Parameters)
@@ -3553,17 +3467,19 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_Loop : CodeInfo
     {
+        // Loop,%ScriptFile%,<Section>,<StartIndex>,<EndIndex>[,PARAMS]
+        // Loop,BREAK
         public bool Break;
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
-        public string StartIdx;  //  Its type should be int, but set to string because of variable system
-        public string EndIdx;   //  Its type should be int, but set to string because of variable system
+        public string StartIdx;
+        public string EndIdx; 
         public List<string> Parameters;
 
-        public CodeInfo_Loop(string pluginFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
+        public CodeInfo_Loop(string scriptFile, string sectionName, string startIdx, string endIdx, List<string> parameters)
         {
             Break = false;
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Parameters = parameters;
             StartIdx = startIdx;
@@ -3578,9 +3494,13 @@ namespace PEBakery.Core
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
-            b.Append(PluginFile);
+            b.Append(ScriptFile);
             b.Append(",");
             b.Append(SectionName);
+            b.Append(",");
+            b.Append(StartIdx);
+            b.Append(",");
+            b.Append(EndIdx);
             foreach (string param in Parameters)
             {
                 b.Append(",");
@@ -3726,13 +3646,13 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_AddVariables : CodeInfo
     {
-        public string PluginFile;
+        public string ScriptFile;
         public string SectionName;
         public bool Global;
 
-        public CodeInfo_AddVariables(string pluginFile, string sectionName, bool global)
+        public CodeInfo_AddVariables(string scriptFile, string sectionName, bool global)
         {
-            PluginFile = pluginFile;
+            ScriptFile = scriptFile;
             SectionName = sectionName;
             Global = global;
         }
@@ -3831,6 +3751,309 @@ namespace PEBakery.Core
         public CodeInfo_Beep(BeepType type)
         {
             Type = type;
+        }
+    }
+    #endregion
+
+    #region CodeInfo 82 - System
+    [Serializable]
+    public class CodeInfo_System : CodeInfo
+    {
+        public SystemType Type;
+        public SystemInfo SubInfo;
+
+        public CodeInfo_System(SystemType type, SystemInfo subInfo)
+        {
+            Type = type;
+            SubInfo = subInfo;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type},{SubInfo.ToString()}";
+        }
+    }
+
+    #region SystemType, SystemInfo
+    public enum SystemType
+    {
+        Cursor,
+        ErrorOff,
+        GetEnv,
+        GetFreeDrive,
+        GetFreeSpace,
+        IsAdmin,
+        Log,
+        OnBuildExit,
+        OnScriptExit,
+        RefreshInterface,
+        LoadAll, RescanScripts,
+        Load,
+        SaveLog,
+        SetLocal, EndLocal,
+        // Deprecated, WB082 Compability Shim
+        HasUAC,
+        FileRedirect,
+        RegRedirect,
+        RebuildVars,
+    }
+
+    [Serializable]
+    public class SystemInfo { }
+
+    [Serializable]
+    public class SystemInfo_Cursor : SystemInfo
+    { // System,Cursor,<IconKind>
+        public string IconKind;
+
+        public SystemInfo_Cursor(string iconKind)
+        {
+            IconKind = iconKind;
+        }
+
+        public override string ToString()
+        {
+            return $"Cursor,{IconKind}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_ErrorOff : SystemInfo
+    { // System,ErrorOff,[Lines]
+        public string Lines;
+
+        public SystemInfo_ErrorOff(string lines = "1")
+        {
+            Lines = lines;
+        }
+
+        public override string ToString()
+        {
+            return $"ErrorOff,{Lines}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetEnv : SystemInfo
+    { // System,GetEnv,<EnvVarName>,<DestVar>
+        public string EnvVarName;
+        public string DestVar;
+
+        public SystemInfo_GetEnv(string envVarName, string destVar)
+        {
+            EnvVarName = envVarName;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetEnv,{EnvVarName},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeDrive : SystemInfo
+    { // System,GetFreeDrive,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_GetFreeDrive(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_GetFreeSpace : SystemInfo
+    { // System,GetFreeSpace,<Path>,<DestVar>
+        public string Path;
+        public string DestVar;
+
+        public SystemInfo_GetFreeSpace(string path, string destVar)
+        {
+            Path = path;
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"GetFreeDrive,{Path},{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_HasUAC : SystemInfo
+    { // System,HasUAC,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_HasUAC(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"HasUAC,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_IsAdmin : SystemInfo
+    { // System,IsAdmin,<DestVar>
+        public string DestVar;
+
+        public SystemInfo_IsAdmin(string destVar)
+        {
+            DestVar = destVar;
+        }
+
+        public override string ToString()
+        {
+            return $"IsAdmin,{DestVar}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnBuildExit : SystemInfo
+    { // System,OnBuildExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnBuildExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnBuildExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_OnScriptExit : SystemInfo
+    { // System,OnScriptExit,<Command>
+        public CodeCommand Cmd;
+
+        public SystemInfo_OnScriptExit(CodeCommand cmd)
+        {
+            Cmd = cmd;
+        }
+
+        public override string ToString()
+        {
+            return $"OnScriptExit,{Cmd}";
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_RefreshInterface : SystemInfo
+    { // System,RefreshInterface
+        public SystemInfo_RefreshInterface() { }
+        public override string ToString() { return "RefreshInterface"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_LoadAll : SystemInfo
+    {
+        // System,LoadAll
+        // System,RescanScripts
+        public SystemInfo_LoadAll() { }
+        public override string ToString() { return "LoadAll"; }
+    }
+
+    [Serializable]
+    public class SystemInfo_Load : SystemInfo
+    { // System,Load,<FilePath>,[NOREC]
+        public string FilePath;
+        public bool NoRec;
+
+        public SystemInfo_Load(string filePath, bool noRec)
+        {
+            FilePath = filePath;
+            NoRec = noRec;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder(8);
+            b.Append("Load");
+            if (FilePath != null)
+            {
+                b.Append(",");
+                b.Append(FilePath);
+                if (NoRec)
+                    b.Append(",NOREC");
+            }
+            return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class SystemInfo_SaveLog : SystemInfo
+    { // System,SaveLog,<DestPath>,[LogFormat]
+        public string DestPath;
+        public string LogFormat;
+
+        public SystemInfo_SaveLog(string destPath, string logFormat = "HTML")
+        {
+            DestPath = destPath;
+            LogFormat = logFormat;
+        }
+
+        public override string ToString()
+        {
+            return $"SaveLog,{DestPath},{LogFormat}";
+        }
+    }
+    #endregion
+
+    [Serializable]
+    public class CodeInfo_ShellExecute : CodeInfo
+    {
+        // ShellExecute,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        // ShellExecuteEx,<Action>,<FilePath>[,Params][,WorkDir]
+        // ShellExecuteDelete,<Action>,<FilePath>[,Params][,WorkDir][,%ExitOutVar%]
+        public string Action;
+        public string FilePath;
+        public string Params; // Optional
+        public string WorkDir; // Optional
+        public string ExitOutVar; // Optional
+
+        public CodeInfo_ShellExecute(string action, string filePath, string parameters, string workDir, string exitOutVar)
+        {
+            Action = action;
+            FilePath = filePath;
+            Params = parameters;
+            WorkDir = workDir;
+            ExitOutVar = exitOutVar;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(Action);
+            b.Append(",");
+            b.Append(FilePath);
+            if (Params != null)
+            {
+                b.Append(",");
+                b.Append(Params);
+            }
+            if (WorkDir != null)
+            {
+                b.Append(",");
+                b.Append(WorkDir);
+            }
+            if (ExitOutVar != null)
+            {
+                b.Append(",");
+                b.Append(ExitOutVar);
+            }
+            return b.ToString();
         }
     }
     #endregion

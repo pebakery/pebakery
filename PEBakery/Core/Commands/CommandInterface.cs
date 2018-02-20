@@ -39,6 +39,7 @@ using System.Globalization;
 using PEBakery.WPF.Controls;
 using System.IO;
 using PEBakery.Helper;
+using Ookii.Dialogs.Wpf;
 
 namespace PEBakery.Core.Commands
 {
@@ -61,33 +62,33 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Plugin p = cmd.Addr.Plugin;
-            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            Script p = cmd.Addr.Script;
+            ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
-            List<UICommand> uiCodes = iface.GetUICodes(true);
-            UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
-            if (uiCmd == null)
+            List<UIControl> uiCtrls = iface.GetUICtrls(true);
+            UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
+            if (uiCtrl == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] from section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]"));
                 return logs;
             }
 
-            if (uiCmd.Visibility != visibility)
+            if (uiCtrl.Visibility != visibility)
             {
-                uiCmd.Visibility = visibility;
-                uiCmd.Update();
+                uiCtrl.Visibility = visibility;
+                uiCtrl.Update();
 
-                // Re-render Plugin
+                // Re-render Script
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                        w.DrawPlugin(cmd.Addr.Plugin);
+                    if (w.CurMainTree.Script == cmd.Addr.Script)
+                        w.DrawScript(cmd.Addr.Script);
                 });
             }
 
@@ -103,15 +104,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
-            Plugin p = cmd.Addr.Plugin;
-            PluginSection iface = p.GetInterface(out string ifaceSecName);
+            Script p = cmd.Addr.Script;
+            ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{cmd.Addr.Plugin.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
-            List<UICommand> uiCodes = iface.GetUICodes(true);
+            List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
             List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
             foreach (CodeInfo_Visible info in infoOp.InfoList)
@@ -126,13 +127,13 @@ namespace PEBakery.Core.Commands
                 prepArgs.Add(new Tuple<string, bool>(info.InterfaceKey, visibility));
             }
 
-            List<UICommand> uiCmdList = new List<UICommand>();
+            List<UIControl> uiCmdList = new List<UIControl>();
             foreach (Tuple<string, bool> args in prepArgs)
             {
-                UICommand uiCmd = uiCodes.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
+                UIControl uiCmd = uiCtrls.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
                 {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] from section [{ifaceSecName}]"));
+                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]"));
                     continue;
                 }
 
@@ -140,47 +141,47 @@ namespace PEBakery.Core.Commands
                 uiCmdList.Add(uiCmd);
             }
 
-            UICommand.Update(uiCmdList);
+            UIControl.Update(uiCmdList);
 
             foreach (Tuple<string, bool> args in prepArgs)
                 logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
 
-            // Re-render Plugin
+            // Re-render Script
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                    w.DrawPlugin(cmd.Addr.Plugin);
+                if (w.CurMainTree.Script == cmd.Addr.Script)
+                    w.DrawScript(cmd.Addr.Script);
             });
 
             return logs;
         }
 
         public static List<LogInfo> ReadInterface(EngineState s, CodeCommand cmd)
-        { // ReadInterface,<Element>,<PluginFile>,<Section>,<Key>,<DestVar>
+        { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>(1);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface));
             CodeInfo_ReadInterface info = cmd.Info as CodeInfo_ReadInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            PluginSection iface = p.Sections[section];
-            List<UICommand> uiCmds = iface.GetUICodes(true);
-            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            ScriptSection iface = p.Sections[section];
+            List<UIControl> uiCmds = iface.GetUICtrls(true);
+            UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
                 return logs;
             }
 
@@ -225,31 +226,31 @@ namespace PEBakery.Core.Commands
         }
 
         public static List<LogInfo> WriteInterface(EngineState s, CodeCommand cmd)
-        { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
+        { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
             List<LogInfo> logs = new List<LogInfo>(2);
 
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface));
             CodeInfo_WriteInterface info = cmd.Info as CodeInfo_WriteInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
-                logs.Add(new LogInfo(LogState.Error, $"Plugin [{pluginFile}] does not have section [{section}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            PluginSection iface = p.Sections[section];
-            List<UICommand> uiCmds = iface.GetUICodes(true);
-            UICommand uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            ScriptSection iface = p.Sections[section];
+            List<UIControl> uiCmds = iface.GetUICtrls(true);
+            UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Interface [{key}] does not exist"));
+                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
                 return logs;
             }
 
@@ -323,7 +324,7 @@ namespace PEBakery.Core.Commands
 
                         if (success == false && varLogs.Count == 0)
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"Wring [Value] to [{uiCmd.Type}] is not supported"));
+                            logs.Add(new LogInfo(LogState.Error, $"Writing [Value] to [{uiCmd.Type}] is not supported"));
                             return logs;
                         } 
                     }
@@ -335,12 +336,12 @@ namespace PEBakery.Core.Commands
             // Update uiCmd into file
             uiCmd.Update();
 
-            // Rerender Plugin
+            // Rerender Script
             Application.Current?.Dispatcher.Invoke(() =>
             { // Application.Current is null in unit test
                 MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Plugin == cmd.Addr.Plugin)
-                    w.DrawPlugin(cmd.Addr.Plugin);
+                if (w.CurMainTree.Script == cmd.Addr.Script)
+                    w.DrawScript(cmd.Addr.Script);
             });
 
             return logs;
@@ -376,24 +377,29 @@ namespace PEBakery.Core.Commands
                     break;
             }
 
+            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
             if (info.Timeout == null)
             {
-                MessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image);
+                MessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image);
             }
             else
             {
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
                 
                 if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
-                    throw new ExecuteException($"[{timeoutStr}] is not valid positive integer");
+                    throw new ExecuteException($"[{timeoutStr}] is not a valid positive integer");
                 if (timeout <= 0)
-                    throw new ExecuteException($"Timeout must be positive integer [{timeoutStr}]");
+                    throw new ExecuteException($"Timeout must be a positive integer [{timeoutStr}]");
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    CustomMessageBox.Show(message, cmd.Addr.Plugin.Title, MessageBoxButton.OK, image, timeout);
+                    CustomMessageBox.Show(message, cmd.Addr.Script.Title, MessageBoxButton.OK, image, timeout);
                 });
             }
+
+            s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
 
             string[] slices = message.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             string firstLine = message;
@@ -440,15 +446,15 @@ namespace PEBakery.Core.Commands
                 string tempFile = Path.GetRandomFileName();
                 try
                 {
-                    // Create dummy plugin instance
+                    // Create dummy script instance
                     FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-                    Plugin p = cmd.Addr.Project.LoadPlugin(tempFile, true, false);
+                    Script p = cmd.Addr.Project.LoadScript(tempFile, true, false);
 
-                    // Encode binary file into plugin instance
+                    // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);
-                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.Compress);
+                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
 
-                    // Remove Plugin instance
+                    // Remove Script instance
                     p = null;
 
                     // Read encoded text strings into memory
@@ -511,6 +517,9 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile));
                         UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
 
+                        System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+                        s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
                         string selectedPath = initPath;
                         if (type == UserInputType.FilePath)
@@ -544,7 +553,7 @@ namespace PEBakery.Core.Commands
                         }
                         else
                         {
-                            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog()
+                            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog()
                             {
                                 SelectedPath = initPath,
                             };
@@ -552,7 +561,9 @@ namespace PEBakery.Core.Commands
                             bool failure = false;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                                MainWindow w = Application.Current.MainWindow as MainWindow;
+
+                                if (dialog.ShowDialog(w) == true)
                                 {
                                     selectedPath = dialog.SelectedPath;
                                     logs.Add(new LogInfo(LogState.Success, $"Directory path [{selectedPath}] was chosen by user"));
@@ -566,6 +577,8 @@ namespace PEBakery.Core.Commands
                             if (failure)
                                 return logs;
                         }
+
+                        s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, selectedPath);
                         logs.AddRange(varLogs);
@@ -585,20 +598,20 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface));
             CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
             if (p.Sections.ContainsKey(interfaceSection))
             {
-                List<UICommand> uiCodes = null;
-                try { uiCodes = p.Sections[interfaceSection].GetUICodes(true); }
-                catch { } // No [Interface] section, or unable to get List<UICommand>
+                List<UIControl> uiCtrls = null;
+                try { uiCtrls = p.Sections[interfaceSection].GetUICtrls(true); }
+                catch { } // No [Interface] section, or unable to get List<UIControl>
 
-                if (uiCodes != null)
+                if (uiCtrls != null)
                 {
-                    List<LogInfo> subLogs = s.Variables.UICommandToVariables(uiCodes, prefix);
+                    List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
                     if (0 < subLogs.Count)
                     {
                         s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));

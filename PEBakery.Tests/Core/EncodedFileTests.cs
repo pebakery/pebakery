@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
@@ -36,13 +45,13 @@ namespace PEBakery.Tests.Core
         [TestCategory("EncodedFile")]
         public void EncodedFile_AttachFile()
         {
-            AttachFile_Template("Type1.jpg"); // Type 1
-            AttachFile_Template("Type2.7z"); // Type 2
-            // For testing SharpCompress 0.18.1 Adler32 checksum bug
-            AttachFile_Template("PEBakeryAlphaMemory.jpg"); // -> Seems SharpCompress Adler32 is not faulty when compressing
+            AttachFile_Template("Type1.jpg", EncodedFile.EncodeMode.ZLib); // Type 1
+            AttachFile_Template("Type2.7z", EncodedFile.EncodeMode.Raw); // Type 2
+            AttachFile_Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
+            AttachFile_Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.ZLib);
         }
 
-        public void AttachFile_Template( string fileName)
+        public void AttachFile_Template(string fileName, EncodedFile.EncodeMode encodeMode)
         {
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
@@ -50,10 +59,10 @@ namespace PEBakery.Tests.Core
             string pPath = Path.Combine(dirPath, "EncodeFileTests.script");
             File.Copy(blankPath, pPath, true);
 
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             string originFile = Path.Combine(dirPath, fileName);
-            p = EncodedFile.AttachFile(p, "FolderExample", fileName, originFile, EncodedFile.EncodeMode.Compress);
+            p = EncodedFile.AttachFile(p, "FolderExample", fileName, originFile, encodeMode);
 
             try
             {
@@ -102,49 +111,25 @@ namespace PEBakery.Tests.Core
         [TestCategory("EncodedFile")]
         public void EncodedFile_ExtractFile()
         {
-            ExtractFile_1(); // Type 1
-            ExtractFile_2(); // Type 2
+            ExtractFile_Template("Type1.jpg"); // Type 1
+            ExtractFile_Template("Type2.7z"); // Type 2
+            ExtractFile_Template("Type3.pdf"); // Type 3
         }
 
-        public void ExtractFile_1()
+        public void ExtractFile_Template(string fileName)
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", "Type1.jpg"))
+            using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", fileName))
             {
                 extractDigest = HashHelper.CalcHash(HashType.SHA256, ms);
             }
 
-            string originFile = Path.Combine("%TestBench%", "EncodedFile", "Type1.jpg");
-            originFile = StringEscaper.Preprocess(s, originFile);
-            byte[] originDigest;
-            using (FileStream fs = new FileStream(originFile, FileMode.Open))
-            {
-                originDigest = HashHelper.CalcHash(HashType.SHA256, fs);
-            }
-
-            // Compare Hash
-            Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
-        }
-
-        public void ExtractFile_2()
-        { // Type 2
-            EngineState s = EngineTests.CreateEngineState();
-            string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-            pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
-
-            byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", "Type2.7z"))
-            {
-                extractDigest = HashHelper.CalcHash(HashType.SHA256, ms);
-            }
-
-            string originFile = Path.Combine("%TestBench%", "EncodedFile", "Type2.7z");
+            string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
             originFile = StringEscaper.Preprocess(s, originFile);
             byte[] originDigest;
             using (FileStream fs = new FileStream(originFile, FileMode.Open))
@@ -170,7 +155,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type))
@@ -205,7 +190,7 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
             pPath = StringEscaper.Preprocess(s, pPath);
-            Plugin p = s.Project.LoadPluginMonkeyPatch(pPath);
+            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(p, "PEBakeryAlphaMemory.jpg"))

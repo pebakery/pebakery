@@ -36,6 +36,11 @@ using PEBakery.Exceptions;
 using System.Globalization;
 using System.Diagnostics;
 using PEBakery.Helper;
+using PEBakery.IniLib;
+using ManagedWimLib;
+using System.Net.NetworkInformation;
+using System.Windows;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
 {
@@ -51,15 +56,15 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
-            string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+            string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
-                throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
+                throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
             // Section Parameter
             Dictionary<int, string> paramDict = new Dictionary<int, string>();
@@ -75,7 +80,7 @@ namespace PEBakery.Core.Commands
 
             // Branch to new section
             SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
-            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, paramDict, cmd, forceLog);
+            s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
             Dictionary<string, string> fixedVars = null;
@@ -87,12 +92,12 @@ namespace PEBakery.Core.Commands
                 fixedVars = s.Variables.GetVarDict(VarsType.Fixed);
                 localMacros = s.Macro.LocalDict;
 
-                // Load Per-Plugin Variables
+                // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
-                List<LogInfo> varLogs = s.Variables.LoadDefaultPluginVariables(p);
+                List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(p);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                // Load Per-Plugin Macro
+                // Load Per-Script Macro
                 s.Macro.ResetLocalMacros();
                 List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p, false);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
@@ -117,7 +122,7 @@ namespace PEBakery.Core.Commands
             s.CurDepth = depthBackup;
             s.ErrorOffStartLineIdx = errorOffStartLineIdxBackup;
             s.ErrorOffLineCount = erroroffCountBackup;
-            s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentPlugin, cmd, forceLog);
+            s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
         }  
 
         public static void Loop(EngineState s, CodeCommand cmd)
@@ -127,66 +132,135 @@ namespace PEBakery.Core.Commands
 
             if (info.Break)
             {
-                if (s.LoopRunning)
-                {
-                    s.LoopRunning = false;
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking Loop", cmd, s.CurDepth));
-                }
-                else
+                if (s.LoopState == LoopState.Off)
                 {
                     s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
                 }
+                else
+                {
+                    s.LoopState = LoopState.Off;
+                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking loop", cmd, s.CurDepth));
+
+                    // Reset LoopCounter, to be sure
+                    s.LoopLetter = ' ';
+                    s.LoopCounter = 0;
+                }
+            }
+            else if (s.LoopState != LoopState.Off)
+            { // If loop is already turned on, throw error
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, s.CurDepth));
             }
             else
             {
-                string startIdxStr = StringEscaper.Preprocess(s, info.StartIdx);
-                if (NumberHelper.ParseInt64(startIdxStr, out long startIdx) == false)
-                    throw new ExecuteException($"Argument [{startIdxStr}] is not a valid integer");
-                string endIdxStr = StringEscaper.Preprocess(s, info.EndIdx);
-                if (NumberHelper.ParseInt64(endIdxStr, out long endIdx) == false)
-                    throw new ExecuteException($"Argument [{endIdxStr}] is not a valid integer");
-                long loopCount = endIdx - startIdx + 1;
+                string startStr = StringEscaper.Preprocess(s, info.StartIdx);
+                string endStr = StringEscaper.Preprocess(s, info.EndIdx);
 
                 // Prepare Loop
-                string pluginFile = StringEscaper.Preprocess(s, info.PluginFile);
+                string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-                Plugin p = Engine.GetPluginInstance(s, cmd, s.CurrentPlugin.FullPath, pluginFile, out bool inCurrentPlugin);
+                Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exists?
                 if (!p.Sections.ContainsKey(sectionName))
-                    throw new ExecuteException($"[{pluginFile}] does not have section [{sectionName}]");
-
-                string logMessage;
-                if (inCurrentPlugin)
-                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
-                else
-                    logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
+                    throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
                 // Section Parameter
                 Dictionary<int, string> paramDict = new Dictionary<int, string>();
                 for (int i = 0; i < paramList.Count; i++)
                     paramDict[i + 1] = paramList[i];
 
+                long loopCount = 0;
+                long startIdx = 0, endIdx = 0;
+                char startLetter = ' ', endLetter = ' ';
+                switch (cmd.Type)
+                {
+                    case CodeType.Loop:
+                        { // Integer Index
+                            if (!NumberHelper.ParseInt64(startStr, out startIdx))
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid integer");
+                            if (!NumberHelper.ParseInt64(endStr, out endIdx))
+                                throw new ExecuteException($"Argument [{endStr}] is not a valid integer");
+                            loopCount = endIdx - startIdx + 1;
+                        }
+                        break;
+                    case CodeType.LoopLetter:
+                        { // Drive Letter
+                            if (!(startStr.Length == 1 && StringHelper.IsAlphabet(startStr[0])))
+                                throw new ExecuteException($"Argument [{startStr}] is not a valid drive letter");
+                            if (!(endStr.Length == 1 && StringHelper.IsAlphabet(endStr[0])))
+                                throw new ExecuteException($"Argument [{endStr}] is not a valid drive letter");
+
+                            startLetter = char.ToUpper(startStr[0]);
+                            endLetter = char.ToUpper(endStr[0]);
+
+                            if (endLetter < startLetter)
+                                throw new ExecuteException($"StartLetter must be smaller than EndLetter in lexicographic order");
+
+                            loopCount = endLetter - startLetter + 1;
+                        }
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at CommandBranch.Loop");
+                }
+
+                // Log Messages
+                string logMessage;
+                if (inCurrentScript)
+                    logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
+                else
+                    logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
+
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
-                for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
-                { // Counter Variable is [#c]
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
-                    s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
+                int loopIdx = 1;
+                switch (cmd.Type)
+                {
+                    case CodeType.Loop:
+                        for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
+                        { // Counter Variable is [#c]
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
-                    int depthBackup = s.CurDepth;
-                    s.LoopRunning = true;
-                    Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
-                    if (s.LoopRunning == false) // Loop,Break
+                            int depthBackup = s.CurDepth;
+                            s.LoopState = LoopState.OnIndex;
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+                            if (s.LoopState == LoopState.Off) // Loop,Break
+                                break;
+                            s.LoopState = LoopState.Off;
+                            s.CurDepth = depthBackup;
+
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            loopIdx += 1;
+                        }
                         break;
-                    s.LoopRunning = false;
-                    s.CurDepth = depthBackup;
+                    case CodeType.LoopLetter:
+                        for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
+                        { // Counter Variable is [#c]
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop [{s.LoopCounter}/{loopCount}]", cmd, s.CurDepth));
+                            int depthBackup = s.CurDepth;
+                            s.LoopState = LoopState.OnDriveLetter;
+                            Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, true);
+                            if (s.LoopState == LoopState.Off) // Loop,Break
+                                break;
+                            s.LoopState = LoopState.Off;
+                            s.CurDepth = depthBackup;
+
+                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            loopIdx += 1;
+                        }
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at CommandBranch.Loop");
                 }
+
+                // Reset LoopCounter, to be sure
+                s.LoopLetter = ' ';
+                s.LoopCounter = 0;
             }
         }
 
@@ -195,7 +269,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
             CodeInfo_If info = cmd.Info as CodeInfo_If;
 
-            if (info.Condition.Check(s, out string msg))
+            if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
                 s.Logger.Build_Write(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
@@ -235,5 +309,653 @@ namespace PEBakery.Core.Commands
                 s.Logger.Build_Write(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
             }
         }
+
+        #region BranchConditionCheck
+        public static bool CheckBranchCondition(EngineState s, BranchCondition c, out string logMessage)
+        {
+            {
+                bool match = false;
+                switch (c.Type)
+                {
+                    case BranchConditionType.Equal:
+                    case BranchConditionType.Smaller:
+                    case BranchConditionType.Bigger:
+                    case BranchConditionType.SmallerEqual:
+                    case BranchConditionType.BiggerEqual:
+                    case BranchConditionType.EqualX:
+                        {
+                            string compArg1 = StringEscaper.Preprocess(s, c.Arg1);
+                            string compArg2 = StringEscaper.Preprocess(s, c.Arg2);
+
+                            bool ignoreCase = true;
+                            if (c.Type == BranchConditionType.EqualX) ignoreCase = false;
+
+                            NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2, ignoreCase);
+                            switch (comp)
+                            {
+                                case NumberHelper.CompareStringNumberResult.Equal: // For String and Number
+                                    {
+                                        if (c.Type == BranchConditionType.Equal && !c.NotFlag ||
+                                            c.Type == BranchConditionType.SmallerEqual && !c.NotFlag ||
+                                            c.Type == BranchConditionType.BiggerEqual && !c.NotFlag ||
+                                            c.Type == BranchConditionType.Smaller && c.NotFlag ||
+                                            c.Type == BranchConditionType.Bigger && c.NotFlag ||
+                                            c.Type == BranchConditionType.EqualX && !c.NotFlag)
+                                            match = true;
+                                        logMessage = $"[{compArg1}] is equal to [{compArg2}]";
+                                    }
+                                    break;
+                                case NumberHelper.CompareStringNumberResult.Smaller: // For Number
+                                    {
+                                        if (c.Type == BranchConditionType.Smaller && !c.NotFlag ||
+                                            c.Type == BranchConditionType.SmallerEqual && !c.NotFlag ||
+                                            c.Type == BranchConditionType.Bigger && c.NotFlag ||
+                                            c.Type == BranchConditionType.BiggerEqual && c.NotFlag ||
+                                            c.Type == BranchConditionType.Equal && c.NotFlag ||
+                                            c.Type == BranchConditionType.EqualX && c.NotFlag)
+                                            match = true;
+                                        logMessage = $"[{compArg1}] is smaller than [{compArg2}]";
+                                    }
+                                    break;
+                                case NumberHelper.CompareStringNumberResult.Bigger: // For Number
+                                    {
+                                        if (c.Type == BranchConditionType.Bigger && !c.NotFlag ||
+                                            c.Type == BranchConditionType.BiggerEqual && !c.NotFlag ||
+                                            c.Type == BranchConditionType.Smaller && c.NotFlag ||
+                                            c.Type == BranchConditionType.SmallerEqual && c.NotFlag ||
+                                            c.Type == BranchConditionType.Equal && c.NotFlag ||
+                                            c.Type == BranchConditionType.EqualX && c.NotFlag)
+                                            match = true;
+                                        logMessage = $"[{compArg1}] is bigger than [{compArg2}]";
+                                    }
+                                    break;
+                                case NumberHelper.CompareStringNumberResult.NotEqual: // For String
+                                    {
+                                        if (c.Type == BranchConditionType.Equal && c.NotFlag ||
+                                            c.Type == BranchConditionType.EqualX && c.NotFlag)
+                                            match = true;
+                                        logMessage = $"[{compArg1}] is not equal to [{compArg2}]";
+                                    }
+                                    break;
+                                default:
+                                    throw new InternalException($"Cannot compare [{compArg1}] and [{compArg2}]");
+                            }
+                        }
+                        break;
+                    case BranchConditionType.ExistFile:
+                        {
+                            string filePath = StringEscaper.Preprocess(s, c.Arg1);
+
+                            // Check filePath contains wildcard
+                            bool containsWildcard = true;
+                            if (Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                                containsWildcard = false;
+
+                            // Check if file exists
+                            if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                            {
+                                match = false;
+                            }
+                            else if (containsWildcard)
+                            {
+                                if (Directory.Exists(FileHelper.GetDirNameEx(filePath)) == false)
+                                {
+                                    match = false;
+                                }
+                                else
+                                {
+                                    string[] list = Directory.GetFiles(FileHelper.GetDirNameEx(filePath), Path.GetFileName(filePath));
+                                    if (0 < list.Length)
+                                        match = true;
+                                    else
+                                        match = false;
+                                }
+                            }
+                            else
+                            {
+                                match = File.Exists(filePath);
+                            }
+
+                            if (match)
+                                logMessage = $"File [{filePath}] exists";
+                            else
+                                logMessage = $"File [{filePath}] does not exist";
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistDir:
+                        {
+                            string dirPath = StringEscaper.Preprocess(s, c.Arg1);
+
+                            // Check filePath contains wildcard
+                            bool containsWildcard = true;
+                            if (Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
+                                containsWildcard = false;
+
+                            // Check if directory exists
+                            if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
+                            {
+                                match = false;
+                            }
+                            else if (containsWildcard)
+                            {
+                                if (Directory.Exists(FileHelper.GetDirNameEx(dirPath)) == false)
+                                {
+                                    match = false;
+                                }
+                                else
+                                {
+                                    string[] list = Directory.GetDirectories(FileHelper.GetDirNameEx(dirPath), Path.GetFileName(dirPath));
+                                    if (0 < list.Length)
+                                        match = true;
+                                    else
+                                        match = false;
+                                }
+                            }
+                            else
+                            {
+                                match = Directory.Exists(dirPath);
+                            }
+
+                            if (match)
+                                logMessage = $"Directory [{dirPath}] exists";
+                            else
+                                logMessage = $"Directory [{dirPath}] does not exist";
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistSection:
+                        {
+                            string iniFile = StringEscaper.Preprocess(s, c.Arg1);
+                            string section = StringEscaper.Preprocess(s, c.Arg2);
+
+                            match = Ini.CheckSectionExist(iniFile, section);
+                            if (match)
+                                logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
+                            else
+                                logMessage = $"Section [{section}] does not exist in INI file [{iniFile}]";
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistRegSection:
+                    case BranchConditionType.ExistRegSubKey:
+                        {
+                            string rootKey = StringEscaper.Preprocess(s, c.Arg1);
+                            string subKey = StringEscaper.Preprocess(s, c.Arg2);
+
+                            RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                            if (regRoot == null)
+                                throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                            {
+                                match = (regSubKey != null);
+                                if (match)
+                                    logMessage = $"Registry SubKey [{rootKey}\\{subKey}] exists";
+                                else
+                                    logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistRegKey:
+                    case BranchConditionType.ExistRegValue:
+                        {
+                            string rootKey = StringEscaper.Preprocess(s, c.Arg1);
+                            string subKey = StringEscaper.Preprocess(s, c.Arg2);
+                            string valueName = StringEscaper.Preprocess(s, c.Arg3);
+
+                            match = true;
+                            RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                            if (regRoot == null)
+                                throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                            {
+                                if (regSubKey == null)
+                                {
+                                    match = false;
+                                }
+                                else
+                                {
+                                    object value = regSubKey.GetValue(valueName);
+                                    if (value == null)
+                                        match = false;
+                                }
+
+                                if (match)
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] exists";
+                                else
+                                    logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistRegMulti:
+                        {
+                            string rootKey = StringEscaper.Preprocess(s, c.Arg1);
+                            string subKey = StringEscaper.Preprocess(s, c.Arg2);
+                            string valueName = StringEscaper.Preprocess(s, c.Arg3);
+                            string subStr = StringEscaper.Preprocess(s, c.Arg4);
+
+                            match = false;
+                            RegistryKey regRoot = RegistryHelper.ParseStringToRegKey(rootKey);
+                            if (regRoot == null)
+                                throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
+                            using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
+                            {
+                                if (regSubKey == null)
+                                {
+                                    logMessage = $"Registry SubKey [{rootKey}\\{subKey}] does not exist";
+                                }
+                                else
+                                {
+                                    object valueData = regSubKey.GetValue(valueName, null);
+                                    if (valueData == null)
+                                    {
+                                        logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not exist";
+                                    }
+                                    else
+                                    {
+                                        RegistryValueKind kind = regSubKey.GetValueKind(valueName);
+                                        if (kind != RegistryValueKind.MultiString)
+                                        {
+                                            logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] is not REG_MULTI_SZ";
+                                        }
+                                        else
+                                        {
+                                            string[] strs = (string[])valueData;
+                                            if (strs.Contains(subStr, StringComparer.OrdinalIgnoreCase))
+                                            {
+                                                match = true;
+                                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] contains substring [{subStr}]";
+                                            }
+                                            else
+                                            {
+                                                logMessage = $"Registry Value [{rootKey}\\{subKey}\\{valueName}] does not contain substring [{subStr}]";
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistVar:
+                        {
+                            Variables.VarKeyType type = Variables.DetermineType(c.Arg1);
+                            if (type == Variables.VarKeyType.Variable)
+                            {
+                                match = s.Variables.ContainsKey(Variables.TrimPercentMark(c.Arg1));
+                                if (match)
+                                    logMessage = $"Variable [{c.Arg1}] exists";
+                                else
+                                    logMessage = $"Variable [{c.Arg1}] does not exist";
+                            }
+                            else
+                            {
+                                match = false;
+                                logMessage = $"[{c.Arg1}] is not a variable";
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.ExistMacro:
+                        {
+                            string macroName = StringEscaper.Preprocess(s, c.Arg1);
+                            match = s.Macro.MacroDict.ContainsKey(macroName) || s.Macro.LocalDict.ContainsKey(macroName);
+
+                            if (match)
+                                logMessage = $"Macro [{macroName}] exists";
+                            else
+                                logMessage = $"Macro [{macroName}] does not exist";
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.WimExistIndex:
+                        {
+                            string wimFile = StringEscaper.Preprocess(s, c.Arg1);
+                            string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
+
+                            if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else if (imageIndex < 1)
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else
+                            {
+                                if (File.Exists(wimFile))
+                                {
+                                    try
+                                    {
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                                        {
+                                            WimInfo wi = wim.GetWimInfo();
+                                            if (imageIndex <= wi.ImageCount)
+                                            {
+                                                match = true;
+                                                logMessage = $"ImageIndex [{imageIndex}] exists in [{wimFile}]";
+                                            }
+                                            else
+                                            {
+                                                logMessage = $"ImageIndex [{imageIndex}] does not exist in [{wimFile}]";
+                                            }
+                                        }
+                                    }
+                                    catch (WimLibException e)
+                                    {
+                                        logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                    }
+                                }
+                                else
+                                {
+                                    logMessage = $"Wim [{wimFile}] does not exist";
+                                }
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.WimExistFile:
+                        {
+                            string wimFile = StringEscaper.Preprocess(s, c.Arg1);
+                            string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
+                            string filePath = StringEscaper.Preprocess(s, c.Arg3);
+
+                            if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else if (imageIndex < 1)
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else
+                            {
+                                if (File.Exists(wimFile))
+                                {
+                                    try
+                                    {
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                                        {
+                                            bool isFile = false;
+                                            CallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
+                                            {
+                                                if ((dentry.Attributes & FileAttribute.DIRECTORY) == 0)
+                                                    isFile = true;
+
+                                                return CallbackStatus.CONTINUE;
+                                            }
+
+                                            try
+                                            {
+                                                wim.IterateDirTree(imageIndex, filePath, IterateFlags.DEFAULT, WimExistFileCallback, null);
+
+                                                if (isFile)
+                                                {
+                                                    match = true;
+                                                    logMessage = $"File [{filePath}] exists in [{wimFile}]";
+                                                }
+                                                else
+                                                {
+                                                    logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
+                                                }
+                                            }
+                                            catch (WimLibException e)
+                                            {
+                                                switch (e.ErrorCode)
+                                                {
+                                                    case ErrorCode.INVALID_IMAGE:
+                                                        logMessage = $"File [{filePath}] does not have image index [{imageIndex}]";
+                                                        break;
+                                                    case ErrorCode.PATH_DOES_NOT_EXIST:
+                                                        logMessage = $"File [{filePath}] does not exist in [{wimFile}]";
+                                                        break;
+                                                    default:
+                                                        logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (WimLibException e)
+                                    {
+                                        logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                    }
+                                }
+                                else
+                                {
+                                    logMessage = $"Wim [{wimFile}] does not exist";
+                                }
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.WimExistDir:
+                        {
+                            string wimFile = StringEscaper.Preprocess(s, c.Arg1);
+                            string imageIndexStr = StringEscaper.Preprocess(s, c.Arg2);
+                            string dirPath = StringEscaper.Preprocess(s, c.Arg3);
+
+                            if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else if (imageIndex < 1)
+                                logMessage = $"Index [{imageIndexStr}] is not a positive integer";
+                            else
+                            {
+                                if (File.Exists(wimFile))
+                                {
+                                    try
+                                    {
+                                        using (Wim wim = Wim.OpenWim(wimFile, OpenFlags.DEFAULT))
+                                        {
+                                            bool isDir = false;
+                                            CallbackStatus WimExistFileCallback(DirEntry dentry, object userData)
+                                            {
+                                                if ((dentry.Attributes & FileAttribute.DIRECTORY) != 0)
+                                                    isDir = true;
+
+                                                return CallbackStatus.CONTINUE;
+                                            }
+
+                                            try
+                                            {
+                                                wim.IterateDirTree(imageIndex, dirPath, IterateFlags.DEFAULT, WimExistFileCallback, null);
+
+                                                if (isDir)
+                                                {
+                                                    match = true;
+                                                    logMessage = $"Dir [{dirPath}] exists in [{wimFile}]";
+                                                }
+                                                else
+                                                {
+                                                    logMessage = $"Dir [{dirPath}] does not exist in [{wimFile}]";
+                                                }
+                                            }
+                                            catch (WimLibException e)
+                                            {
+                                                switch (e.ErrorCode)
+                                                {
+                                                    case ErrorCode.INVALID_IMAGE:
+                                                        logMessage = $"Dir [{dirPath}] does not have image index [{imageIndex}]";
+                                                        break;
+                                                    case ErrorCode.PATH_DOES_NOT_EXIST:
+                                                        logMessage = $"Dir [{dirPath}] does not exist in [{wimFile}]";
+                                                        break;
+                                                    default:
+                                                        logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (WimLibException e)
+                                    {
+                                        logMessage = $"Error [{e.ErrorCode}] occured while handling [{wimFile}]";
+                                    }
+                                }
+                                else
+                                {
+                                    logMessage = $"Wim [{wimFile}] does not exist";
+                                }
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.Ping:
+                        {
+                            string host = StringEscaper.Preprocess(s, c.Arg1);
+
+                            Ping pinger = new Ping();
+                            try
+                            {
+                                try
+                                {
+                                    PingReply reply = pinger.Send(host);
+                                    if (reply.Status == IPStatus.Success)
+                                        match = true;
+                                    else
+                                        match = false;
+                                }
+                                catch
+                                {
+                                    match = false;
+                                }
+
+                                if (match)
+                                    logMessage = $"[{host}] responded to Ping";
+                                else
+                                    logMessage = $"[{host}] did not respond to Ping";
+                            }
+                            catch (PingException e)
+                            {
+                                match = false;
+                                logMessage = $"Error while pinging [{host}] : [{e.Message}]";
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.Online:
+                        {
+                            // Note that system connected only to local network also returns true
+                            match = NetworkInterface.GetIsNetworkAvailable();
+
+                            if (match)
+                                logMessage = "System is online";
+                            else
+                                logMessage = "System is offline";
+
+                            if (c.NotFlag)
+                                match = !match;
+                        }
+                        break;
+                    case BranchConditionType.Question: // can have 1 or 3 argument
+                        {
+                            string question = StringEscaper.Preprocess(s, c.Arg1);
+
+                            bool autoTimeout = false;
+
+                            if (c.Arg2 != null && c.Arg3 != null)
+                                autoTimeout = true;
+
+                            int timeout = 0;
+                            bool defaultChoice = false;
+                            if (autoTimeout)
+                            {
+                                string timeoutStr = StringEscaper.Preprocess(s, c.Arg2);
+                                if (NumberHelper.ParseInt32(timeoutStr, out timeout) == false)
+                                    autoTimeout = false;
+                                if (timeout <= 0)
+                                    autoTimeout = false;
+
+                                string defaultChoiceStr = StringEscaper.Preprocess(s, c.Arg3);
+                                if (defaultChoiceStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                                    defaultChoice = true;
+                                else if (defaultChoiceStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                                    defaultChoice = false;
+                            }
+
+                            System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
+                            s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
+
+                            if (autoTimeout)
+                            {
+                                MessageBoxResult result = MessageBoxResult.None;
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    result = CustomMessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question, timeout);
+                                });
+
+                                if (result == MessageBoxResult.None)
+                                {
+                                    match = defaultChoice;
+                                    if (defaultChoice)
+                                        logMessage = "[Yes] was automatically chosen";
+                                    else
+                                        logMessage = "[No] was automatically chosen";
+                                }
+                                else if (result == MessageBoxResult.Yes)
+                                {
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                }
+                                else if (result == MessageBoxResult.No)
+                                {
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                }
+                                else
+                                {
+                                    throw new InternalException("Internal Error at Check() of If,Question");
+                                }
+                            }
+                            else
+                            {
+                                MessageBoxResult result = MessageBox.Show(question, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                                if (result == MessageBoxResult.Yes)
+                                {
+                                    match = true;
+                                    logMessage = "[Yes] was chosen";
+                                }
+                                else if (result == MessageBoxResult.No)
+                                {
+                                    match = false;
+                                    logMessage = "[No] was chosen";
+                                }
+                                else
+                                {
+                                    throw new InternalException("Internal Error at Check() of If,Question");
+                                }
+                            }
+
+                            if (c.NotFlag)
+                                match = !match;
+
+                            s.MainViewModel.TaskbarProgressState = oldTaskbarItemProgressState;
+                        }
+                        break;
+                    default:
+                        throw new InternalException($"Internal BranchCondition check error");
+                }
+                return match;
+            }
+        }
+        #endregion
     }
 }

@@ -68,7 +68,7 @@ namespace PEBakery.Core.Commands
                             throw new ExecuteException($"[{byteSizeStr}] is not a valid integer");
 
                         if (byteSize < 0)
-                            throw new ExecuteException($"[{byteSize}] must be positive integer");
+                            throw new ExecuteException($"[{byteSize}] must be a positive integer");
 
                         string destStr = NumberHelper.ByteSizeToHumanReadableString(byteSize);
 
@@ -128,7 +128,7 @@ namespace PEBakery.Core.Commands
                         }
 
                         if (roundTo < 0)
-                            throw new ExecuteException($"[{roundTo}] must be positive integer");
+                            throw new ExecuteException($"[{roundTo}] must be a positive integer");
 
                         string srcIntStr = StringEscaper.Preprocess(s, subInfo.SizeVar);
                         if (!NumberHelper.ParseInt64(srcIntStr, out long srcInt))
@@ -237,7 +237,7 @@ namespace PEBakery.Core.Commands
                         string dirPath = StringEscaper.Preprocess(s, subInfo.DirPath).Trim();
                         string fileName = StringEscaper.Preprocess(s, subInfo.FileName).Trim();
 
-                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled))
+                        if (Regex.IsMatch(dirPath, @"^([a-zA-Z]:)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                             dirPath = dirPath + @"\";
 
                         string destStr = Path.Combine(dirPath, fileName);
@@ -256,25 +256,60 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Arithmetic));
                         StrFormatInfo_Arithmetic subInfo = info.SubInfo as StrFormatInfo_Arithmetic;
 
-                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
-                        if (!NumberHelper.ParseInt64(srcStr, out long src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
-
                         string operandStr = StringEscaper.Preprocess(s, subInfo.Integer);
                         if (!NumberHelper.ParseInt64(operandStr, out long operand))
-                            throw new ExecuteException($"[{operandStr}] is not a valid integer");
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{operandStr}] is not a valid integer"));
+                            return logs;
+                        }
 
-                        long dest = src;
-                        if (type == StrFormatType.Inc) // +
-                            dest += operand;
-                        else if (type == StrFormatType.Dec) // -
-                            dest -= operand;
-                        else if (type == StrFormatType.Mult) // *
-                            dest *= operand;
-                        else if (type == StrFormatType.Div) // /
-                            dest /= operand;
+                        string destStr;
+                        string srcStr = StringEscaper.Preprocess(s, subInfo.DestVar);
+                        if (NumberHelper.ParseInt64(srcStr, out long src))
+                        { // Integer (Discouraged - Use Math,Add/Sub/Mul/Div/IntDiv instead)
+                            long dest = src;
+                            if (type == StrFormatType.Inc)
+                                dest += operand;
+                            else if (type == StrFormatType.Dec)
+                                dest -= operand;
+                            else if (type == StrFormatType.Mult)
+                                dest *= operand;
+                            else if (type == StrFormatType.Div)
+                                dest /= operand;
 
-                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, dest.ToString());
+                            destStr = dest.ToString();
+                        }
+                        else if (srcStr.Length == 1 && (type == StrFormatType.Inc || type == StrFormatType.Dec))
+                        { // Letter
+                            bool upper = StringHelper.IsUpperAlphabet(srcStr[0]);
+                            bool lower = StringHelper.IsLowerAlphabet(srcStr[0]);
+                            if (upper == false && lower == false)
+                            {
+                                logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer nor drive letter"));
+                                return logs;
+                            }
+
+                            char dest = srcStr[0];
+                            if (type == StrFormatType.Inc)
+                                dest = (char)(dest + operand);
+                            else if (type == StrFormatType.Dec)
+                                dest = (char)(dest - operand);
+
+                            if ((upper && !StringHelper.IsUpperAlphabet(dest)) || (lower && !StringHelper.IsLowerAlphabet(dest)))
+                            {
+                                logs.Add(new LogInfo(LogState.Error, "Result is not a valid drive letter"));
+                                return logs;
+                            }
+
+                            destStr = dest.ToString();
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"[{srcStr}] is not a valid integer"));
+                            return logs;
+                        }
+                        
+                        List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, destStr);
                         logs.AddRange(varLogs);
                     }
                     break;
@@ -290,7 +325,7 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(cutLenStr, out int cutLen))
                             throw new ExecuteException($"[{cutLenStr}] is not a valid integer");
                         if (cutLen < 0)
-                            throw new ExecuteException($"[{cutLen}] must be positive integer");
+                            throw new ExecuteException($"[{cutLen}] must be a positive integer");
 
                         string destStr = string.Empty;
                         try
@@ -314,7 +349,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (ArgumentOutOfRangeException)
                         { // Correct WB082 behavior : Not error, but just empty string
-                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not valid index"));
+                            logs.Add(new LogInfo(LogState.Ignore, $"[{cutLen}] is not a valid index"));
                             logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, string.Empty));
                         }
                     }
@@ -330,12 +365,12 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt32(startPosStr, out int startPos))
                             throw new ExecuteException($"[{startPosStr}] is not a valid integer");
                         if (startPos <= 0)
-                            throw new ExecuteException($"[{startPos}] must be positive integer");
+                            throw new ExecuteException($"[{startPos}] must be a positive integer");
                         string lenStr = StringEscaper.Preprocess(s, subInfo.Length);
                         if (!NumberHelper.ParseInt32(lenStr, out int len))
                             throw new ExecuteException($"[{lenStr}] is not a valid integer");
                         if (len <= 0)
-                            throw new ExecuteException($"[{len}] must be positive integer");
+                            throw new ExecuteException($"[{len}] must be a positive integer");
 
                         // Error handling
                         if (srcStr.Length <= (startPos - 1))
@@ -417,7 +452,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (ArgumentOutOfRangeException)
                         {
-                            logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not valid index"));
+                            logs.Add(new LogInfo(LogState.Error, $"[{toTrim}] is not a valid index"));
                         }
                     }
                     break;
@@ -428,7 +463,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.SrcStr);
 
-                        Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled);
+                        Match match = Regex.Match(srcStr, @"([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                         string destStr;
                         if (match.Success)
                             destStr = srcStr.Substring(0, match.Index);
@@ -596,7 +631,7 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             {
-                                logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bound [{slices.Length}]"));
+                                logs.Add(new LogInfo(LogState.Info, $"Index [{idx}] out of bounds [{slices.Length}]"));
                             }
                         }
                     }

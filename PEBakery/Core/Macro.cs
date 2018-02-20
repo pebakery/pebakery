@@ -44,14 +44,14 @@ namespace PEBakery.Core
     public class Macro
     {
         private bool macroEnabled; // Can use macro or not?
-        private Plugin macroPlugin; // sciprt.project - %API%
-        private PluginSection macroSection; // sciprt.project - %APIVAR%
+        private Script macroScript; // sciprt.project - %API%
+        private ScriptSection macroSection; // sciprt.project - %APIVAR%
         private Dictionary<string, CodeCommand> macroDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Macro Library - [ApiVar]
         private Dictionary<string, CodeCommand> localDict = new Dictionary<string, CodeCommand>(StringComparer.OrdinalIgnoreCase); // Local Macro from [Variables]
 
         public bool MacroEnabled => macroEnabled;
-        public Plugin MacroPlugin => macroPlugin;
-        public PluginSection MacroSection => macroSection;
+        public Script MacroScript => macroScript;
+        public ScriptSection MacroSection => macroSection;
         public Dictionary<string, CodeCommand> MacroDict => macroDict; // Macro Library - [ApiVar]
         public Dictionary<string, CodeCommand> LocalDict => localDict;
 
@@ -61,14 +61,14 @@ namespace PEBakery.Core
         { 
             macroEnabled = true;
             logs = new List<LogInfo>();
-            if (project.MainPlugin.Sections.ContainsKey("Variables") == false)
+            if (project.MainScript.Sections.ContainsKey("Variables") == false)
             {
                 macroEnabled = false;
                 logs.Add(new LogInfo(LogState.Info, "Macro not defined"));
                 return;
             }
 
-            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(project.MainPlugin.Sections["Variables"].GetLines());
+            Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(project.MainScript.Sections["Variables"].GetLines());
             if ((varDict.ContainsKey("API") && varDict.ContainsKey("APIVAR")) == false)
             {
                 macroEnabled = false;
@@ -76,41 +76,41 @@ namespace PEBakery.Core
                 return;
             }
 
-            // Get macroPlugin 
-            string rawPluginPath = varDict["API"];
-            string macroPluginPath = variables.Expand(varDict["API"]); // Need Expansion
-            macroPlugin = project.AllPlugins.Find(x => string.Equals(x.FullPath, macroPluginPath, StringComparison.OrdinalIgnoreCase));
-            if (macroPlugin == null)
+            // Get macroScript
+            string rawScriptPath = varDict["API"];
+            string macroScriptPath = variables.Expand(varDict["API"]); // Need Expansion
+            macroScript = project.AllScripts.Find(x => x.FullPath.Equals(macroScriptPath, StringComparison.OrdinalIgnoreCase));
+            if (macroScript == null)
             {
                 macroEnabled = false;
-                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro plugin [{rawPluginPath}"));
+                logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro script [{rawScriptPath}"));
                 return;
             }
 
-            // Get macroPlugin
-            if (macroPlugin.Sections.ContainsKey(varDict["APIVAR"]) == false)
+            // Get macroScript
+            if (macroScript.Sections.ContainsKey(varDict["APIVAR"]) == false)
             {
                 macroEnabled = false;
                 logs.Add(new LogInfo(LogState.Error, $"Macro defined but unable to find macro section [{varDict["APIVAR"]}"));
                 return;
             }
-            macroSection = macroPlugin.Sections[varDict["APIVAR"]];
-            variables.SetValue(VarsType.Global, "API", macroPluginPath);
-            if (macroPlugin.Sections.ContainsKey("Variables"))
-                variables.AddVariables(VarsType.Global, macroPlugin.Sections["Variables"]);
+            macroSection = macroScript.Sections[varDict["APIVAR"]];
+            variables.SetValue(VarsType.Global, "API", macroScriptPath);
+            if (macroScript.Sections.ContainsKey("Variables"))
+                variables.AddVariables(VarsType.Global, macroScript.Sections["Variables"]);
 
             // Import Section [APIVAR]'s variables, such as '%Shc_Mode%=0'
             variables.AddVariables(VarsType.Global, macroSection);
 
             // Parse Section [APIVAR] into MacroDict
             {
-                SectionAddress addr = new SectionAddress(macroPlugin, macroSection);
+                SectionAddress addr = new SectionAddress(macroScript, macroSection);
                 Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(macroSection.GetLines());
                 foreach (var kv in rawDict)
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                             macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
@@ -122,18 +122,18 @@ namespace PEBakery.Core
                 }
             }
             
-            // Parse MainPlugin's section [Variables] into MacroDict
+            // Parse MainScript's section [Variables] into MacroDict
             // (Written by SetMacro, ... ,PERMANENT
-            if (project.MainPlugin.Sections.ContainsKey("Variables"))
+            if (project.MainScript.Sections.ContainsKey("Variables"))
             {
-                PluginSection permaSection = project.MainPlugin.Sections["Variables"];
-                SectionAddress addr = new SectionAddress(project.MainPlugin, permaSection);
+                ScriptSection permaSection = project.MainScript.Sections["Variables"];
+                SectionAddress addr = new SectionAddress(project.MainScript, permaSection);
                 Dictionary<string, string> rawDict = Ini.ParseIniLinesIniStyle(permaSection.GetLines());
                 foreach (var kv in rawDict)
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success) // Macro Name Validation
                             macroDict[kv.Key] = CodeParser.ParseStatement(kv.Value, addr);
                         else
                             logs.Add(new LogInfo(LogState.Error, $"Invalid macro name [{kv.Key}]"));
@@ -147,11 +147,11 @@ namespace PEBakery.Core
             
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Plugin p, bool append, string sectionName = "Variables")
+        public List<LogInfo> LoadLocalMacroDict(Script p, bool append, string sectionName = "Variables")
         {
             if (p.Sections.ContainsKey(sectionName))
             {
-                PluginSection section = p.Sections[sectionName];
+                ScriptSection section = p.Sections[sectionName];
 
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
@@ -185,7 +185,7 @@ namespace PEBakery.Core
                 {
                     try
                     {
-                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+                        if (Regex.Match(kv.Key, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success == false) // Macro Name Validation
                         {
                             logs.Add(new LogInfo(LogState.Error, $"Invalid local macro name [{kv.Key}]"));
                             continue;
@@ -219,7 +219,7 @@ namespace PEBakery.Core
 
         public LogInfo SetMacro(string macroName, string macroCommand, SectionAddress addr, bool global, bool permanent)
         {
-            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled).Success == false) // Macro Name Validation
+            if (Regex.Match(macroName, Macro.MacroNameRegex, RegexOptions.Compiled | RegexOptions.CultureInvariant).Success == false) // Macro Name Validation
                 return new LogInfo(LogState.Error, $"Invalid macro name [{macroName}]");
 
             if (macroCommand != null)
@@ -238,10 +238,10 @@ namespace PEBakery.Core
                 if (permanent) // MacroDict
                 {
                     MacroDict[macroName] = cmd;
-                    if (Ini.SetKey(addr.Project.MainPlugin.FullPath, "Variables", macroName, cmd.RawCode))
+                    if (Ini.SetKey(addr.Project.MainScript.FullPath, "Variables", macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
-                        return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainPlugin.FullPath}]");
+                        return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainScript.FullPath}]");
                 }
                 else if (global) // MacroDict
                 {
@@ -262,7 +262,7 @@ namespace PEBakery.Core
                     if (MacroDict.ContainsKey(macroName))
                     {
                         MacroDict.Remove(macroName);
-                        Ini.DeleteKey(addr.Project.MainPlugin.FullPath, "Variables", macroName);
+                        Ini.DeleteKey(addr.Project.MainScript.FullPath, "Variables", macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
                     else

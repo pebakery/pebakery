@@ -67,7 +67,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Set_3(EngineState s)
         {
-            string pPath = s.Project.MainPlugin.FullPath;
+            string pPath = s.Project.MainScript.FullPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
             string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";
@@ -172,7 +172,7 @@ namespace PEBakery.Tests.Core.Command
             string rawCode = $"Exit,UnitTest";
             EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Warning);
 
-            Assert.IsTrue(s.PassCurrentPluginFlag);
+            Assert.IsTrue(s.PassCurrentScriptFlag);
         }
 
         public void Exit_2()
@@ -180,7 +180,7 @@ namespace PEBakery.Tests.Core.Command
             string rawCode = $"Exit,UnitTest,NOWARN";
             EngineState s = EngineTests.Eval(rawCode, CodeType.Exit, ErrorCheck.Success);
 
-            Assert.IsTrue(s.PassCurrentPluginFlag);
+            Assert.IsTrue(s.PassCurrentScriptFlag);
         }
         #endregion
 

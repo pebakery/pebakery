@@ -154,6 +154,7 @@ namespace PEBakery.Tests.Core.Command
             StrFormat_Date_2();
             StrFormat_Date_3();
             StrFormat_Date_4();
+            StrFormat_Date_5();
         }
 
         public void StrFormat_Date_1()
@@ -188,7 +189,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_3()
         {
-            string rawCode = "StrFormat,Date,%Dest%,yyy-mm-dd_hh:nn:ss.zzz";
+            string rawCode = "StrFormat,Date,%Dest%,xxx-mm-dd_hh:nn:ss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
@@ -200,7 +201,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void StrFormat_Date_4()
         {
-            string rawCode = "StrFormat,Date,%Dest%,yyymdd_hhnnss.zzz";
+            string rawCode = "StrFormat,Date,%Dest%,qqqmdd_hhnnss.zzz";
             SectionAddress addr = EngineTests.DummySectionAddress();
             CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
 
@@ -208,6 +209,21 @@ namespace PEBakery.Tests.Core.Command
             if (cmd.Type == CodeType.Error) return;
 
             Assert.Fail();
+        }
+
+        public void StrFormat_Date_5()
+        {
+            string rawCode = "StrFormat,DATE,#9,yyyymmddhhnnsszzz am/pm";
+            SectionAddress addr = EngineTests.DummySectionAddress();
+            CodeCommand cmd = CodeParser.ParseStatement(rawCode, addr);
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_StrFormat));
+            CodeInfo_StrFormat info = cmd.Info as CodeInfo_StrFormat;
+
+            Debug.Assert(info.SubInfo.GetType() == typeof(StrFormatInfo_Date));
+            StrFormatInfo_Date subInfo = info.SubInfo as StrFormatInfo_Date;
+
+            Assert.IsTrue(subInfo.FormatString.Equals("yyyyMMddhhmmssfff tt", StringComparison.Ordinal));
         }
         #endregion
 
@@ -289,8 +305,8 @@ namespace PEBakery.Tests.Core.Command
 
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "15", "35");
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "0x0F", "35");
-            // TODO: WB082 returns 'u', does Win10PESE utliize this case?
-            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", "a", ErrorCheck.Error);
+            StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,1", "Y", "Z");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,2", "Y", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Inc,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,20", "-5", "15");
             StrFormat_InitDest_Template(s, @"StrFormat,Inc,%Dest%,-5", "20", "15");
@@ -307,7 +323,8 @@ namespace PEBakery.Tests.Core.Command
 
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "15", "-5");
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,0x0F", "20", "5");
-            // TODO: WB082 returns 'M', does Win10PESE utliize this case?
+            StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,1", "B", "A");
+            StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,2", "B", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", "a", ErrorCheck.Error);
             StrFormat_InitDest_Template_Error(s, @"StrFormat,Dec,%Dest%,20", string.Empty, ErrorCheck.Error);
             StrFormat_InitDest_Template(s, @"StrFormat,Dec,%Dest%,20", "-5", "-25");

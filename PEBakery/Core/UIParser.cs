@@ -41,20 +41,29 @@ namespace PEBakery.Core
 {
     public static class UIParser
     {
-        public static List<UICommand> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
+        public static List<UIControl> ParseRawLines(List<string> lines, SectionAddress addr, out List<LogInfo> errorLogs)
         {
             // Select Code sections and compile
             errorLogs = new List<LogInfo>();
-            List<UICommand> uiCmdList = new List<UICommand>();
+            List<UIControl> uiCtrls = new List<UIControl>();
             for (int i = 0; i < lines.Count; i++)
             {
                 try
                 {
-                    uiCmdList.Add(ParseUICommand(lines, addr, ref i));
+                    UIControl uiCtrl = ParseUIControl(lines, addr, ref i);
+                    
+                    if (uiCtrl != null)
+                    {
+                        // Check if interface control's key is duplicated
+                        if (uiCtrls.Count(x => x.Key.Equals(uiCtrl.Key, StringComparison.OrdinalIgnoreCase)) == 0)
+                            uiCtrls.Add(ParseUIControl(lines, addr, ref i));
+                        else
+                            errorLogs.Add(new LogInfo(LogState.Error, $"Interface key [{uiCtrl.Key}] is duplicated ({uiCtrl.RawLine})"));
+                    }
                 }
-                catch (InvalidUICommandException e)
+                catch (InvalidUIControlException e)
                 {
-                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICmd.RawLine})"));
+                    errorLogs.Add(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} ({e.UICtrl.RawLine})"));
                 }
                 catch (InvalidCommandException e)
                 {
@@ -66,34 +75,34 @@ namespace PEBakery.Core
                 }
             }
 
-            return uiCmdList.Where(x => x.Type != UIType.None).ToList();
+            return uiCtrls.Where(x => x.Type != UIControlType.None).ToList();
         }
 
-        public static UICommand ParseUICommand(List<string> rawLines, SectionAddress addr, ref int idx)
+        public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
         {
-            UIType type = UIType.None;
+            UIControlType type = UIControlType.None;
             string rawLine = rawLines[idx].Trim();
 
             // Check if rawCode is Empty
             if (rawLine.Equals(string.Empty))
-                return new UICommand(rawLine, addr, string.Empty);
+                return null;
 
             // Comment Format : starts with '//' or '#', ';'
             if (rawLine.StartsWith("//") || rawLine.StartsWith("#") || rawLine.StartsWith(";"))
-                return new UICommand(rawLine, addr, string.Empty);
+                return null;
 
             // Find key of interface control
             string key = string.Empty;
             string rawValue = string.Empty;
             int equalIdx = rawLine.IndexOf('=');
-            if (equalIdx != -1)
+            if (equalIdx != -1 && equalIdx != 0)
             {
                 key = rawLine.Substring(0, equalIdx);
                 rawValue = rawLine.Substring(equalIdx + 1);
             }
             else
             {
-                throw new InvalidCommandException($"Interface control [{rawValue}] does not have name", rawLine);
+                throw new InvalidCommandException($"Interface control [{rawValue}] does not have a name defined", rawLine);
             }
 
             // Parse Arguments
@@ -126,7 +135,7 @@ namespace PEBakery.Core
                 }
             }
 
-            // UICommand should have at least 7 operands
+            // UIControl should have at least 7 operands
             //    Text, Visibility, Type, X, Y, width, height, [Optional]
             if (args.Count < 7)
                 throw new InvalidCommandException($"Interface control [{rawValue}] must have at least 7 arguments", rawLine);
@@ -139,39 +148,44 @@ namespace PEBakery.Core
             //   Leftover : Text, Visibility, X, Y, width, height, [Optional]
             args.RemoveAt(2);
 
-            // Forge UICommand
+            // Forge UIControl
             string text = StringEscaper.Unescape(args[0]);
-            bool visibility = string.Equals(args[1], "1", StringComparison.Ordinal);
-            NumberHelper.ParseInt32(args[2], out int x);
-            NumberHelper.ParseInt32(args[3], out int y);
-            NumberHelper.ParseInt32(args[4], out int width);
-            NumberHelper.ParseInt32(args[5], out int height);
+            bool visibility = args[1].Equals("1", StringComparison.Ordinal);
+
+            bool intParse = true;
+            intParse &= NumberHelper.ParseInt32(args[2], out int x);
+            intParse &= NumberHelper.ParseInt32(args[3], out int y);
+            intParse &= NumberHelper.ParseInt32(args[4], out int width);
+            intParse &= NumberHelper.ParseInt32(args[5], out int height);
+            if (intParse == false)
+                throw new InvalidCommandException($"Invalid integers in [{rawValue}]", rawLine);
+
             Rect rect = new Rect(x, y, width, height);
             UIInfo info;
-            try { info = ParseUICommandInfo(type, args); }
+            try { info = ParseUIControlInfo(type, args); }
             catch (InvalidCommandException e) { throw new InvalidCommandException(e.Message, rawLine); }
-            return new UICommand(rawLine, addr, key, text, visibility, type, rect, info);
+            return new UIControl(rawLine, addr, key, text, visibility, type, rect, info);
         }
 
-        public static UIType ParseControlType(string typeStr)
+        public static UIControlType ParseControlType(string typeStr)
         {
             // typeStr must be number
-            if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled))
-                throw new InvalidCommandException("Only number can be used as UICommand type");
+            if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+                throw new InvalidCommandException("Only numbers can be used for interface control type");
 
             bool failure = false;
-            if (Enum.TryParse(typeStr, false, out UIType type) == false)
+            if (Enum.TryParse(typeStr, false, out UIControlType type) == false)
                 failure = true;
-            if (Enum.IsDefined(typeof(UIType), type) == false)
+            if (Enum.IsDefined(typeof(UIControlType), type) == false)
                 failure = true;
 
             if (failure)
-                throw new InvalidCommandException("Invalid UICommand type");
+                throw new InvalidCommandException("Invalid interface control type");
 
             return type;
         }
 
-        private static UIInfo ParseUICommandInfo(UIType type, List<string> fullArgs)
+        private static UIInfo ParseUIControlInfo(UIControlType type, List<string> fullArgs)
         {
             // Only use fields starting from 8th operand
             List<string> args = fullArgs.Skip(6).ToList(); // Remove Text, Visibility, X, Y, width, height
@@ -179,7 +193,7 @@ namespace PEBakery.Core
             switch (type)
             {
                 #region TextBox
-                case UIType.TextBox:
+                case UIControlType.TextBox:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
@@ -190,14 +204,16 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region TextLabel
-                case UIType.TextLabel:
+                case UIControlType.TextLabel:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 2;
                         if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        NumberHelper.ParseInt32(args[0], out int fontSize);
+                        if (!NumberHelper.ParseInt32(args[0], out int fontSize))
+                            throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
+
                         UIInfo_TextLabel_Style style = UIInfo_TextLabel_Style.Normal;
                         if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
                             style = UIInfo_TextLabel_Style.Bold;
@@ -212,7 +228,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region NumberBox
-                case UIType.NumberBox:
+                case UIControlType.NumberBox:
                     {
                         const int minOpCount = 4;
                         const int maxOpCount = 4;
@@ -228,7 +244,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region CheckBox
-                case UIType.CheckBox:
+                case UIControlType.CheckBox:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 3; // +2 for [RunOptional]
@@ -263,7 +279,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region ComboBox
-                case UIType.ComboBox:
+                case UIControlType.ComboBox:
                     { // Variable Length
                         List<string> items = new List<string>();
 
@@ -302,7 +318,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region Image
-                case UIType.Image:
+                case UIControlType.Image:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 1; // [URL]
@@ -310,14 +326,14 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
                         string url = null;
-                        if (args.Count == 1)
+                        if (1 <= args.Count)
                             url = args[0];
 
                         return new UIInfo_Image(GetInfoTooltip(args, maxOpCount), url);
                     }
                 #endregion
                 #region TextFile
-                case UIType.TextFile:
+                case UIControlType.TextFile:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 0;
@@ -328,11 +344,11 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region Button
-                case UIType.Button:
+                case UIControlType.Button:
                     { // <SectionToRun>,<Picture>,[HideProgress]  +[UnknownBoolean] +[RunOptional]
                         // Ex)
                         // pButton1 =,1,8,382,47,24,24,Process-OpenDriver_x86,opendir.bmp,False,_Process-OpenDriver_x86,False,_Process-OpenDriver_x86_,False
-                        // Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Plugin"
+                        // Button_Download=,1,8,403,21,24,24,DownloadXXX,DoubleJDesignRavenna3dArrowDown0016016.bmp,False,False,_DownloadXXX_,False,"__DOWNLOAD Script"
                         // OpendirSMFilesButton=,1,8,475,204,24,24,Opendir_SMFiles,opendir.bmp,"__Open Custom .ini Folder"
                         // Button_HiveUnload_Target="HiveUnload: Target + ProjectTemp + MountFolders",1,8,15,17,293,46,HiveUnload_Launch_B,HiveUnload3232.bmp,0,"__UnLoad hives"
                         // Button_Tools_Folder="Open Tools Folder",1,8,98,256,134,25,Open_Tools_Folder
@@ -378,7 +394,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region WebLabel
-                case UIType.WebLabel:
+                case UIControlType.WebLabel:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 1;
@@ -389,7 +405,7 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region RadioButton
-                case UIType.RadioButton:
+                case UIControlType.RadioButton:
                     {
                         const int minOpCount = 1;
                         const int maxOpCount = 3; // +2 for [RunOptional]
@@ -424,18 +440,36 @@ namespace PEBakery.Core
                     }
                 #endregion
                 #region Bevel
-                case UIType.Bevel:
+                case UIControlType.Bevel:
                     {
                         const int minOpCount = 0;
-                        const int maxOpCount = 0;
-                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1))
+                        const int maxOpCount = 2;
+                        if (CodeParser.CheckInfoArgumentCount(args, minOpCount, maxOpCount + 1)) // +1 for tooltip
                             throw new InvalidCommandException($"[{type}] can have [{minOpCount}] ~ [{maxOpCount + 1}] arguments");
 
-                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount));
+                        int? fontSize = null;
+                        UIInfo_BevelCaption_Style? style = null;
+
+                        if (1 <= args.Count)
+                        {
+                            if (!NumberHelper.ParseInt32(args[0], out int fontSizeVal))
+                                throw new InvalidCommandException($"FontSize {args[0]} is not a valid integer");
+                            fontSize = fontSizeVal;
+                        }
+                            
+                        if (2 <= args.Count)
+                        {
+                            if (args[1].Equals("Normal", StringComparison.OrdinalIgnoreCase))
+                                style = UIInfo_BevelCaption_Style.Normal;
+                            else if (args[1].Equals("Bold", StringComparison.OrdinalIgnoreCase))
+                                style = UIInfo_BevelCaption_Style.Bold;
+                        }
+
+                        return new UIInfo_Bevel(GetInfoTooltip(args, maxOpCount), fontSize, style);
                     }
                 #endregion
                 #region FileBox
-                case UIType.FileBox:
+                case UIControlType.FileBox:
                     {
                         const int minOpCount = 0;
                         const int maxOpCount = 1;
@@ -450,14 +484,14 @@ namespace PEBakery.Core
                             else if (args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
                                 isFile = false;
                             else
-                                throw new InvalidCommandException($"Argument [{type}] should be one of [file] or [dir]");
+                                throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
                         }
 
                         return new UIInfo_FileBox(GetInfoTooltip(args, maxOpCount), isFile);
                     }
                 #endregion
                 #region RadioGroup
-                case UIType.RadioGroup:
+                case UIControlType.RadioGroup:
                     { // Variable Length
                         List<string> items = new List<string>();
 
@@ -485,7 +519,7 @@ namespace PEBakery.Core
                             items.Add(args[i]);
                         
                         if (NumberHelper.ParseInt32(args[cnt], out int idx) == false)
-                            throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be integer");
+                            throw new InvalidCommandException($"Invalid argument [{args[cnt]}], must be an integer");
 
                         return new UIInfo_RadioGroup(GetInfoTooltip(args, args.Count), items, idx, sectionName, showProgress);
                     }
@@ -497,7 +531,7 @@ namespace PEBakery.Core
                 #endregion
             }
 
-            throw new InvalidCommandException($"Invalid UICommand [{type}]");
+            throw new InvalidCommandException($"Invalid interface control type [{type}]");
         }
 
         /// <summary>

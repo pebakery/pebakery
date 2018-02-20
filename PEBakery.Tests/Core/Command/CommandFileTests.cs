@@ -297,8 +297,8 @@ namespace PEBakery.Tests.Core.Command
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF8", "A.txt", Encoding.UTF8, false);
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16", "A.txt", Encoding.Unicode, false);
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,UTF16BE", "A.txt", Encoding.BigEndianUnicode, false);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Warning);
-            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Warning);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
+            FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, true, ErrorCheck.Overwrite);
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,PRESERVE", "A.txt", Encoding.Default, false);
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, true);
             FileCreateBlank_Template(s, $@"FileCreateBlank,{scriptDestDir}\A.txt,NOWARN", "A.txt", Encoding.Default, false);

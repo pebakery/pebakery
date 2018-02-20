@@ -132,15 +132,15 @@ namespace PEBakery.Core
                         {
                             w.WriteLine("<Errors>");
 
-                            long[] pLogIds = errors.Select(x => x.PluginId).Distinct().ToArray();
-                            DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-                            foreach (DB_Plugin pLog in pLogs)
+                            long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
+                            DB_Script[] pLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            foreach (DB_Script pLog in pLogs)
                             {
-                                DB_BuildLog[] eLogs = errors.Where(x => x.PluginId == pLog.Id).ToArray();
+                                DB_BuildLog[] eLogs = errors.Where(x => x.ScriptId == pLog.Id).ToArray();
                                 if (eLogs.Length == 1)
-                                    w.WriteLine($"- [{eLogs.Length}] Error in Plugin [{pLog.Name}] ({pLog.Path})");
+                                    w.WriteLine($"- [{eLogs.Length}] Error in Script [{pLog.Name}] ({pLog.Path})");
                                 else
-                                    w.WriteLine($"- [{eLogs.Length}] Errors in Plugin [{pLog.Name}] ({pLog.Path})");
+                                    w.WriteLine($"- [{eLogs.Length}] Errors in Script [{pLog.Name}] ({pLog.Path})");
 
                                 foreach (DB_BuildLog eLog in eLogs)
                                     w.WriteLine(eLog.Export(LogExportType.Text, false));
@@ -156,15 +156,15 @@ namespace PEBakery.Core
                         {
                             w.WriteLine("<Warnings>");
 
-                            long[] pLogIds = warns.Select(x => x.PluginId).Distinct().ToArray();
-                            DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-                            foreach (DB_Plugin pLog in pLogs)
+                            long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
+                            DB_Script[] pLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            foreach (DB_Script pLog in pLogs)
                             {
-                                DB_BuildLog[] wLogs = warns.Where(x => x.PluginId == pLog.Id).ToArray();
+                                DB_BuildLog[] wLogs = warns.Where(x => x.ScriptId == pLog.Id).ToArray();
                                 if (wLogs.Length == 1)
-                                    w.WriteLine($"- [{wLogs.Length}] Warning in Plugin [{pLog.Name}] ({pLog.Path})");
+                                    w.WriteLine($"- [{wLogs.Length}] Warning in Script [{pLog.Name}] ({pLog.Path})");
                                 else
-                                    w.WriteLine($"- [{wLogs.Length}] Warnings in Plugin [{pLog.Name}] ({pLog.Path})");
+                                    w.WriteLine($"- [{wLogs.Length}] Warnings in Script [{pLog.Name}] ({pLog.Path})");
 
                                 foreach (DB_BuildLog eLog in wLogs)
                                     w.WriteLine(eLog.Export(LogExportType.Text, false));
@@ -174,21 +174,21 @@ namespace PEBakery.Core
                             w.WriteLine();
                         }
 
-                        // Plugin
-                        var plugins = DB.Table<DB_Plugin>()
+                        // Script
+                        var scripts = DB.Table<DB_Script>()
                             .Where(x => x.BuildId == buildId)
                             .OrderBy(x => x.Order);
-                        w.WriteLine("<Plugins>");
+                        w.WriteLine("<Scripts>");
                         {
-                            int count = plugins.Count();
+                            int count = scripts.Count();
                             int idx = 1;
-                            foreach (DB_Plugin p in plugins)
+                            foreach (DB_Script p in scripts)
                             {
                                 w.WriteLine($"[{idx}/{count}] {p.Name} v{p.Version} ({p.ElapsedMilliSec / 1000.0:0.000}sec)");
                                 idx++;
                             }
 
-                            w.WriteLine($"Total {count} Plugins");
+                            w.WriteLine($"Total {count} Scripts");
                             w.WriteLine();
                             w.WriteLine();
                         }
@@ -209,22 +209,22 @@ namespace PEBakery.Core
 
                         w.WriteLine("<Code Logs>");
                         {
-                            foreach (DB_Plugin pLog in plugins)
+                            foreach (DB_Script pLog in scripts)
                             {
                                 // Log codes
                                 var cLogs = DB.Table<DB_BuildLog>()
-                                    .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id)
+                                    .Where(x => x.BuildId == buildId && x.ScriptId == pLog.Id)
                                     .OrderBy(x => x.Id);
                                 foreach (DB_BuildLog log in cLogs)
                                     w.WriteLine(log.Export(LogExportType.Text));
 
                                 // Log local variables
                                 var vLogs = DB.Table<DB_Variable>()
-                                    .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id && x.Type == VarsType.Local)
+                                    .Where(x => x.BuildId == buildId && x.ScriptId == pLog.Id && x.Type == VarsType.Local)
                                     .OrderBy(x => x.Key);
                                 if (0 < vLogs.Count())
                                 {
-                                    w.WriteLine($"- Local Variables of Plugin [{pLog.Name}]");
+                                    w.WriteLine($"- Local Variables of Script [{pLog.Name}]");
                                     foreach (DB_Variable vLog in vLogs)
                                         w.WriteLine($"%{vLog.Key}% = {vLog.Value}");
                                     w.WriteLine(Logger.LogSeperator);
@@ -268,23 +268,23 @@ namespace PEBakery.Core
                         }
 
                         // Show ErrorLogs
-                        m.ErrorCodeDicts = new Dictionary<PluginHtmlModel, CodeLogHtmlModel[]>();
+                        m.ErrorCodeDicts = new Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]>();
                         {
                             int errIdx = 0;
                             DB_BuildLog[] errors = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
                             if (0 < errors.Length)
                             {
-                                long[] pLogIds = errors.Select(x => x.PluginId).Distinct().ToArray();
-                                DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-                                foreach (DB_Plugin pLog in pLogs)
+                                long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
+                                DB_Script[] pLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                                foreach (DB_Script pLog in pLogs)
                                 {
-                                    PluginHtmlModel pModel = new PluginHtmlModel()
+                                    ScriptHtmlModel pModel = new ScriptHtmlModel()
                                     {
                                         Name = pLog.Name,
                                         Path = pLog.Path,
                                     };
                                     m.ErrorCodeDicts[pModel] = errors
-                                        .Where(x => x.PluginId == pLog.Id)
+                                        .Where(x => x.ScriptId == pLog.Id)
                                         .Select(x => new CodeLogHtmlModel()
                                         {
                                             State = x.State,
@@ -296,23 +296,23 @@ namespace PEBakery.Core
                         }
 
                         // Show WarnLogs
-                        m.WarnCodeDicts = new Dictionary<PluginHtmlModel, CodeLogHtmlModel[]>();
+                        m.WarnCodeDicts = new Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]>();
                         {
                             int warnIdx = 0;
                             DB_BuildLog[] warns = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
                             if (0 < warns.Length)
                             {
-                                long[] pLogIds = warns.Select(x => x.PluginId).Distinct().ToArray();
-                                DB_Plugin[] pLogs = DB.Table<DB_Plugin>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
-                                foreach (DB_Plugin pLog in pLogs)
+                                long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
+                                DB_Script[] pLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                                foreach (DB_Script pLog in pLogs)
                                 {
-                                    PluginHtmlModel pModel = new PluginHtmlModel()
+                                    ScriptHtmlModel pModel = new ScriptHtmlModel()
                                     {
                                         Name = pLog.Name,
                                         Path = pLog.Path,
                                     };
                                     m.WarnCodeDicts[pModel] = warns
-                                        .Where(x => x.PluginId == pLog.Id)
+                                        .Where(x => x.ScriptId == pLog.Id)
                                         .Select(x => new CodeLogHtmlModel()
                                         {
                                             State = x.State,
@@ -323,16 +323,16 @@ namespace PEBakery.Core
                             }
                         }
 
-                        // Plugins
-                        var plugins = DB.Table<DB_Plugin>()
+                        // Scripts
+                        var scripts = DB.Table<DB_Script>()
                             .Where(x => x.BuildId == buildId)
                             .OrderBy(x => x.Order);
-                        m.Plugins = new List<PluginHtmlModel>();
+                        m.Scripts = new List<ScriptHtmlModel>();
                         {
                             int idx = 1;
-                            foreach (DB_Plugin pLog in plugins)
+                            foreach (DB_Script pLog in scripts)
                             {
-                                m.Plugins.Add(new PluginHtmlModel()
+                                m.Scripts.Add(new ScriptHtmlModel()
                                 {
                                     Index = idx,
                                     Name = pLog.Name,
@@ -363,22 +363,22 @@ namespace PEBakery.Core
                         }
 
                         // CodeLogs
-                        m.CodeLogs = new List<Tuple<PluginHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>>();
+                        m.CodeLogs = new List<Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>>();
                         {
                             int pIdx = 0;
                             int errIdx = 0;
                             int warnIdx = 0;
 
-                            foreach (DB_Plugin pLog in plugins)
+                            foreach (DB_Script pLog in scripts)
                             {
                                 pIdx += 1;
 
                                 // Log codes
                                 DB_BuildLog[] codeLogs = DB.Table<DB_BuildLog>()
-                                    .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id)
+                                    .Where(x => x.BuildId == buildId && x.ScriptId == pLog.Id)
                                     .OrderBy(x => x.Id).ToArray();
 
-                                PluginHtmlModel pModel = new PluginHtmlModel()
+                                ScriptHtmlModel pModel = new ScriptHtmlModel()
                                 {
                                     Index = pIdx,
                                     Name = pLog.Name,
@@ -418,7 +418,7 @@ namespace PEBakery.Core
 
                                 // Log local variables
                                 VarHtmlModel[] localVarModel = DB.Table<DB_Variable>()
-                                    .Where(x => x.BuildId == buildId && x.PluginId == pLog.Id && x.Type == VarsType.Local)
+                                    .Where(x => x.BuildId == buildId && x.ScriptId == pLog.Id && x.Type == VarsType.Local)
                                     .OrderBy(x => x.Key)
                                     .Select(x => new VarHtmlModel()
                                     {
@@ -427,7 +427,7 @@ namespace PEBakery.Core
                                         Value = x.Value,
                                     }).ToArray();
 
-                                m.CodeLogs.Add(new Tuple<PluginHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>(pModel, logModel.ToArray(), localVarModel));
+                                m.CodeLogs.Add(new Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>(pModel, logModel.ToArray(), localVarModel));
                             }                            
                         }
 
@@ -461,11 +461,11 @@ namespace PEBakery.Core
             public string BuildEndTimeStr { get; set; }
             public string BuildTookTimeStr { get; set; }
             public List<LogStatHtmlModel> LogStats { get; set; }
-            public List<PluginHtmlModel> Plugins { get; set; }
+            public List<ScriptHtmlModel> Scripts { get; set; }
             public List<VarHtmlModel> Vars { get; set; }
-            public Dictionary<PluginHtmlModel, CodeLogHtmlModel[]> ErrorCodeDicts { get; set; }
-            public Dictionary<PluginHtmlModel, CodeLogHtmlModel[]> WarnCodeDicts { get; set; }
-            public List<Tuple<PluginHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>> CodeLogs { get; set; }
+            public Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]> ErrorCodeDicts { get; set; }
+            public Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]> WarnCodeDicts { get; set; }
+            public List<Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>> CodeLogs { get; set; }
             // public List<CodeLogHtmlModel> CodeLogs { get; set; }
         }
 
@@ -475,7 +475,7 @@ namespace PEBakery.Core
             public int Count { get; set; }
         }
 
-        public class PluginHtmlModel
+        public class ScriptHtmlModel
         {
             public int Index { get; set; }
             public string Name { get; set; }

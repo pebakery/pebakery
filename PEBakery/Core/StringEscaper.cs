@@ -76,7 +76,7 @@ namespace PEBakery.Core
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
                 {
-                    errorMsg = $"Cannot write into [{path}], [{f}] is write protected directory";
+                    errorMsg = $"Cannot write into [{path}], [{f}] is a write protected directory";
                     return false;
                 }
             }
@@ -129,21 +129,27 @@ namespace PEBakery.Core
                                 switch (ch2)
                                 {
                                     case 'c': // #$c -> [,]
+                                    case 'C':
                                         b.Append(',');
                                         break;
                                     case 'p': // #$p -> [%]
+                                    case 'P':
                                         b.Append('%');
                                         break;
                                     case 'q': // #$q -> ["]
+                                    case 'Q':
                                         b.Append('"');
                                         break;
                                     case 's': // #$s -> [ ]
+                                    case 'S':
                                         b.Append(' ');
                                         break;
                                     case 't': // #$t -> [   ]
+                                    case 'T':
                                         b.Append('\t');
                                         break;
                                     case 'x': // #$x -> [\r\n]
+                                    case 'X':
                                         b.Append("\r\n");
                                         break;
                                     default: // No escape
@@ -365,7 +371,7 @@ namespace PEBakery.Core
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
-            Regex regex = new Regex(@"(?<!#)(#[0-9]+)", RegexOptions.Compiled);
+            Regex regex = new Regex(@"(?<!#)(#[0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
             MatchCollection matches = regex.Matches(str);
             while (0 < matches.Count)
@@ -414,15 +420,22 @@ namespace PEBakery.Core
 
             // Escape #a (Current Argument Count)
             if (str.IndexOf("#a", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceEx(str, "#a", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#a)", s.CurSectionParamsCount.ToString(), StringComparison.Ordinal);
 
             // Escape #r (Return Value)
             if (str.IndexOf("#r", StringComparison.Ordinal) != -1)
-                str = StringHelper.ReplaceEx(str, "#r", s.SectionReturnValue, StringComparison.Ordinal);
+                str = StringHelper.ReplaceRegex(str, @"(?<!#)(#r)", s.SectionReturnValue, StringComparison.Ordinal);
 
             // Escape #c (Loop Counter)
-            if (s.LoopRunning) 
-                str = StringHelper.ReplaceEx(str, "#c", s.LoopCounter.ToString(), StringComparison.Ordinal);
+            switch (s.LoopState)
+            {
+                case LoopState.OnIndex:
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopCounter.ToString(), StringComparison.Ordinal);
+                    break;
+                case LoopState.OnDriveLetter:
+                    str = StringHelper.ReplaceRegex(str, @"(?<!#)(#c)", s.LoopLetter.ToString(), StringComparison.Ordinal);
+                    break;
+            }              
 
             return str;
         }

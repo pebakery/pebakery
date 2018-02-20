@@ -14,6 +14,15 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Additional permission under GNU GPL version 3 section 7
+
+    If you modify this program, or any covered work, by linking
+    or combining it with external libraries, containing parts
+    covered by the terms of various license, the licensors of
+    this program grant you additional permission to convey the
+    resulting work. An external library is a library which is
+    not derived from or based on this program. 
 */
 
 using System;
@@ -243,6 +252,7 @@ namespace PEBakery.Tests.Core
             ExpandSectionParams_4();
             ExpandSectionParams_5();
             ExpandSectionParams_6();
+            ExpandSectionParams_7();
         }
 
         public void ExpandSectionParams_1()
@@ -251,9 +261,9 @@ namespace PEBakery.Tests.Core
             s.Variables.SetValue(VarsType.Local, "A", "Hello");
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            string src = "%A% ##1 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% World";
+            string comp = "%A% ##1 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -262,9 +272,9 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             Variables.SetVariable(s, "#1", "World");
 
-            string src = "%A% #1";
+            string src = "%A% ##2 #1";
             string dest = StringEscaper.ExpandSectionParams(s, src);
-            string comp = "%A% World";
+            string comp = "%A% ##2 World";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
 
@@ -331,6 +341,17 @@ namespace PEBakery.Tests.Core
             string dest = StringEscaper.ExpandVariables(s, src);
             string comp = "Hello ";
 
+            Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
+        }
+
+        public void ExpandSectionParams_7()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            s.SectionReturnValue = "TEST";
+
+            string src = "##1 ##a ##r #r";
+            string dest = StringEscaper.ExpandSectionParams(s, src);
+            string comp = "##1 ##a ##r TEST";
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
         }
         #endregion

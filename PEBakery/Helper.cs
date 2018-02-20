@@ -54,7 +54,7 @@ using SharpCompress.Writers;
 using SharpCompress.Readers;
 using PEBakery.CabLib;
 using Microsoft.Win32.SafeHandles;
-using ImageMagick;
+using Svg;
 
 namespace PEBakery.Helper
 {
@@ -151,6 +151,16 @@ namespace PEBakery.Helper
                 return 2;
             else
                 return 0;
+        }
+
+        public static void ConvertTextFileToEncoding(string srcFile, string destFile, Encoding destEnc)
+        {
+            Encoding srcEnc = FileHelper.DetectTextEncoding(srcFile);
+            using (StreamReader r = new StreamReader(srcFile, srcEnc))
+            using (StreamWriter w = new StreamWriter(destFile, false, destEnc))
+            {
+                w.Write(r.ReadToEnd());
+            }
         }
 
         /// <summary>
@@ -708,21 +718,43 @@ namespace PEBakery.Helper
             return str.Trim().TrimEnd(Environment.NewLine.ToCharArray()).Trim();
         }
 
-        /// <summary>
-        /// Check if string is hex or not
-        /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
         public static bool IsHex(string str)
         {
-            str = str.Trim();
             if (str.Length % 2 == 1)
                 return false;
 
-            if (Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled))
-                return true;
-            else
-                return false;
+            return Regex.IsMatch(str, @"^[A-Fa-f0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
+
+        public static bool IsUpperAlphabet(string str)
+        {
+            return Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
+
+        public static bool IsUpperAlphabet(char ch)
+        {
+            return 'A' <= ch && ch <= 'Z';
+        }
+
+        public static bool IsLowerAlphabet(string str)
+        {
+            str = str.Trim();
+            return Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
+
+        public static bool IsLowerAlphabet(char ch)
+        {
+            return 'a' <= ch && ch <= 'z';
+        }
+
+        public static bool IsAlphabet(string str)
+        {
+            return Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        }
+
+        public static bool IsAlphabet(char ch)
+        {
+            return 'A' <= ch && ch <= 'Z' || 'a' <= ch && ch <= 'z';
         }
 
         /// <summary>
@@ -773,6 +805,47 @@ namespace PEBakery.Helper
             {
                 return str;
             }
+        }
+
+        public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
+        {
+            MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (0 < matches.Count)
+            {
+                StringBuilder b = new StringBuilder();
+                for (int x = 0; x < matches.Count; x++)
+                {
+                    if (x == 0)
+                    {
+                        b.Append(str.Substring(0, matches[0].Index));
+                    }
+                    else
+                    {
+                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                        int endOffset = matches[x].Index - startOffset;
+                        b.Append(str.Substring(startOffset, endOffset));
+                    }
+
+                    b.Append(newValue);
+
+                    if (x + 1 == matches.Count)
+                    {
+                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                    }
+                }
+                return b.ToString();
+            }
+            else
+            {
+                return str;
+            }
+        }
+
+        public static string ReplaceAt(string str, int index, int length, string newValue)
+        {
+            if (index < 0) throw new ArgumentOutOfRangeException("index");
+            if (length < 0) throw new ArgumentOutOfRangeException("length");
+            return str.Substring(0, index) + newValue + str.Substring(index + length);
         }
     }
     #endregion
@@ -829,6 +902,7 @@ namespace PEBakery.Helper
             }
         }
 
+        #region ParseInt / ParseUInt
         /// <summary>
         /// integer parser, supports base 10 and 16 at same time
         /// </summary>
@@ -1020,6 +1094,101 @@ namespace PEBakery.Helper
                 return decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
             }
         }
+        #endregion
+
+        #region ParseSignedToUInt
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt8(string str, out byte value)
+        {
+            if (NumberHelper.ParseUInt8(str, out byte uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt8(str, out sbyte sInt))
+            {
+                value = (byte)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt16(string str, out ushort value)
+        {
+            if (NumberHelper.ParseUInt16(str, out ushort uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt16(str, out short sInt))
+            {
+                value = (ushort)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt32(string str, out uint value)
+        {
+            if (NumberHelper.ParseUInt32(str, out uint uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt32(str, out int sInt))
+            {
+                value = (uint)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// integer parser, supports base 10 and 16 at same time
+        /// </summary>
+        /// <returns></returns>
+        public static bool ParseSignedUInt64(string str, out ulong value)
+        {
+            if (NumberHelper.ParseUInt64(str, out ulong uInt))
+            {
+                value = uInt;
+                return true;
+            }
+            else if (NumberHelper.ParseInt64(str, out long sInt))
+            {
+                value = (ulong)sInt;
+                return true;
+            }
+            else
+            {
+                value = 0;
+                return false;
+            }
+        }
+        #endregion
 
         /// <summary>
         /// Parse string to int or decimal
@@ -1037,7 +1206,7 @@ namespace PEBakery.Helper
                 return ParseStringToNumberType.String;
 
             // base 10 integer - Z
-            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (long.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1045,7 +1214,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // base 16 integer - Z
-            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled))
+            if (Regex.IsMatch(str, @"^0x[0-9a-zA-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (long.TryParse(str.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out integer))
                     return ParseStringToNumberType.Integer;
@@ -1053,7 +1222,7 @@ namespace PEBakery.Helper
                     return ParseStringToNumberType.String;
             }
             // real number - R
-            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled))
+            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out real))
                     return ParseStringToNumberType.Decimal;
@@ -1825,21 +1994,15 @@ namespace PEBakery.Helper
 
         public static (int Width, int Height) GetSvgSize(Stream stream)
         {
-            MagickImageInfo info = new MagickImageInfo(stream);
-            return (info.Width, info.Height);
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            SizeF size = svgDoc.GetDimensions();
+            return ((int)size.Width, (int)size.Height);
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream)
         {
-            MagickReadSettings settings = new MagickReadSettings()
-            {
-                Format = MagickFormat.Svg,
-            };
-            using (MagickImage image = new MagickImage(stream, settings))
-            {
-                Bitmap bitmap = image.ToBitmap();
-                return ImageHelper.BitmapToBitmapImage(bitmap);
-            }
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
         public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
@@ -1849,18 +2012,8 @@ namespace PEBakery.Helper
 
         public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
         {
-            MagickReadSettings settings = new MagickReadSettings()
-            {
-                Width = width,
-                Height = height,
-                Format = MagickFormat.Svg,
-            };
-
-            using (MagickImage image = new MagickImage(stream, settings))
-            {
-                Bitmap bitmap = image.ToBitmap();
-                return ImageHelper.BitmapToBitmapImage(bitmap);
-            }
+            SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
         }
 
         public static BitmapImage ToBitmapImage(Bitmap bitmap)

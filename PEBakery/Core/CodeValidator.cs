@@ -39,8 +39,8 @@ namespace PEBakery.Core
     public class CodeValidator
     {
         #region Field and Property
-        private Plugin p;
-        private List<PluginSection> visitedSections = new List<PluginSection>();
+        private Script p;
+        private List<ScriptSection> visitedSections = new List<ScriptSection>();
 
         public int CodeSectionCount => p.Sections.Where(x => x.Value.Type == SectionType.Code).Count();
         public int VisitedSectionCount => visitedSections.Count;
@@ -68,7 +68,7 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public CodeValidator(Plugin p)
+        public CodeValidator(Script p)
         {
             this.p = p ?? throw new ArgumentNullException("p");
         }
@@ -81,7 +81,7 @@ namespace PEBakery.Core
             if (p.Sections.ContainsKey("Process"))
                 logInfos.AddRange(ValidateCodeSection(p.Sections["Process"]));
 
-            // UICodes
+            // UICtrls
             if (p.Sections.ContainsKey("Interface"))
                 logInfos.AddRange(ValidateUISection(p.Sections["Interface"]));
 
@@ -94,7 +94,7 @@ namespace PEBakery.Core
         }
 
         #region ValidateCodeSection
-        private List<LogInfo> ValidateCodeSection(PluginSection section)
+        private List<LogInfo> ValidateCodeSection(ScriptSection section)
         {
             // Already processed, so skip
             if (visitedSections.Contains(section))
@@ -126,16 +126,14 @@ namespace PEBakery.Core
                             { 
                                 // Exception Handling for 1-files.script
                                 // If,ExistSection,%ScriptFile%,Cache_Delete_B,Run,%ScriptFile%,Cache_Delete_B
-                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                    info.Condition.Arg1.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                if (info.Condition.Arg1.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                 {
                                     if (info.Embed.Type == CodeType.Run || info.Embed.Type == CodeType.Exec)
                                     {
                                         Debug.Assert(info.Embed.Info.GetType() == typeof(CodeInfo_RunExec));
                                         CodeInfo_RunExec subInfo = info.Embed.Info as CodeInfo_RunExec;
 
-                                        if (subInfo.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                            subInfo.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                                        if (subInfo.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                                         {
                                             if (info.Condition.Arg2.Equals(subInfo.SectionName, StringComparison.OrdinalIgnoreCase))
                                                 continue;
@@ -162,8 +160,7 @@ namespace PEBakery.Core
                             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
@@ -181,8 +178,7 @@ namespace PEBakery.Core
                                 continue;
 
                             // CodeValidator does not have Variable information, so just check with predefined literal
-                            if (info.PluginFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase) ||
-                                info.PluginFile.Equals("%PluginFile%", StringComparison.OrdinalIgnoreCase))
+                            if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (p.Sections.ContainsKey(info.SectionName))
                                     logs.AddRange(ValidateCodeSection(p.Sections[info.SectionName]));
@@ -199,18 +195,18 @@ namespace PEBakery.Core
         #endregion
 
         #region ValidateUISection
-        private List<LogInfo> ValidateUISection(PluginSection section)
+        private List<LogInfo> ValidateUISection(ScriptSection section)
         {
-            // Force parsing of code, bypassing caching by section.GetUICodes()
+            // Force parsing of code, bypassing caching by section.GetUICtrls()
             List<string> lines = section.GetLines();
             SectionAddress addr = new SectionAddress(p, section);
-            List<UICommand> uiCodes = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
+            List<UIControl> uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
 
-            foreach (UICommand uiCmd in uiCodes)
+            foreach (UIControl uiCmd in uiCtrls)
             {
                 switch (uiCmd.Type)
                 {
-                    case UIType.CheckBox:
+                    case UIControlType.CheckBox:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_CheckBox));
                             UIInfo_CheckBox info = uiCmd.Info as UIInfo_CheckBox;
@@ -222,7 +218,7 @@ namespace PEBakery.Core
                             }
                         }
                         break;
-                    case UIType.Button:
+                    case UIControlType.Button:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_Button));
                             UIInfo_Button info = uiCmd.Info as UIInfo_Button;
@@ -234,7 +230,7 @@ namespace PEBakery.Core
                             }
                         }
                         break;
-                    case UIType.RadioButton:
+                    case UIControlType.RadioButton:
                         {
                             Debug.Assert(uiCmd.Info.GetType() == typeof(UIInfo_RadioButton));
                             UIInfo_RadioButton info = uiCmd.Info as UIInfo_RadioButton;

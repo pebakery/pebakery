@@ -45,6 +45,7 @@
         <local:MainViewModel/>
     </Window.DataContext>
     <Window.Resources>
+        <local:TaskbarProgressConverter x:Key="TaskbarProgressConverter" />
         <Style x:Key="BitmapButton" TargetType="Button">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Cursor" Value="Hand" />
@@ -431,7 +432,7 @@
                     </Grid.ColumnDefinitions>
 
                     <ContentPresenter
-                        Name="PluginLogo"
+                        Name="ScriptLogo"
                         Grid.Row="0" Grid.Column="0"
                         Margin="10"
                         VerticalAlignment="Center"
@@ -449,14 +450,14 @@
                         <DockPanel Grid.Row="0">
                             <TextBlock
                                 DockPanel.Dock="Right"
-                                Name="PluginVersion"
-                                Text="{Binding PluginVersionText}"
+                                Name="ScriptVersion"
+                                Text="{Binding ScriptVersionText}"
                                 FontWeight="Bold" FontSize="14" 
                                 VerticalAlignment="Center"/>
                             <TextBlock
                                 DockPanel.Dock="Right"
-                                Name="PluginAuthor"
-                                Text="{Binding PluginAuthorText}" 
+                                Name="ScriptAuthor"
+                                Text="{Binding ScriptAuthorText}" 
                                 Margin="0, 0, 5, 6"
                                 FontSize="12"
                                 VerticalAlignment="Bottom"
@@ -465,9 +466,9 @@
                                 TextWrapping="Wrap" />
                             <TextBlock
                                 DockPanel.Dock="Left"
-                                Name="PluginTitle"
+                                Name="ScriptTitle"
                                 FontStretch="SemiCondensed"
-                                Text="{Binding PluginTitleText}" 
+                                Text="{Binding ScriptTitleText}" 
                                 FontWeight="Bold" FontSize="16"
                                 VerticalAlignment="Center"
                                 TextWrapping="Wrap"/>
@@ -475,8 +476,8 @@
                         <TextBlock
                             Grid.Row="1" Grid.Column="0"
                             FontWeight="Medium"
-                            Name="PluginDescription"
-                            Text="{Binding PluginDescriptionText}"
+                            Name="ScriptDescription"
+                            Text="{Binding ScriptDescriptionText}"
                             FontStretch="SemiCondensed"
                             VerticalAlignment="Center"
                             TextWrapping="Wrap">
@@ -499,30 +500,30 @@
 
                         <Button
                             Grid.Row="0" Grid.Column="0"
-                            Click="PluginRunButton_Click"
-                            ToolTip="Run Plugin">
+                            Click="ScriptRunButton_Click"
+                            ToolTip="Run Script">
                             <Button.Content>
                                 <iconPacks:PackIconMaterial Kind="Play" Width="Auto" Height="Auto" Margin="5"/>
                             </Button.Content>
                         </Button>
                         <Button
                             Grid.Row="1" Grid.Column="0"
-                            Click="PluginRefreshButton_Click"
-                            ToolTip="Refresh Plugin">
+                            Click="ScriptRefreshButton_Click"
+                            ToolTip="Refresh Script">
                             <iconPacks:PackIconMaterial Kind="Refresh" Width="Auto" Height="Auto" Margin="5"/>
                         </Button>
                         <Button
                             Grid.Row="2" Grid.Column="0"
-                            Click="PluginEditButton_Click"
-                            ToolTip="Edit Plugin">
+                            Click="ScriptEditButton_Click"
+                            ToolTip="Edit Script">
                             <Button.Content>
                                 <iconPacks:PackIconMaterial Kind="Pencil" Width="Auto" Height="Auto" Margin="5"/>
                             </Button.Content>
                         </Button>
                         <Button
                             Grid.Row="3" Grid.Column="0"
-                            Click="PluginCheckButton_Click"
-                            Background="{Binding PluginCheckButtonColor}"
+                            Click="ScriptCheckButton_Click"
+                            Background="{Binding ScriptCheckButtonColor}"
                             ToolTip="Syntax Check">
                             <iconPacks:PackIconMaterial Kind="Check" Width="Auto" Height="Auto" Margin="5"/>
                         </Button>
@@ -619,13 +620,13 @@
                         Margin="20, 0, 20, 5"
                         TextAlignment="Left"
                         FontWeight="SemiBold"
-                        Text="Plugin Progress" />
+                        Text="Script Progress" />
                     <ProgressBar
                         Grid.Row="2"
                         Margin="20, 0, 20, 10"
                         Minimum="0"
-                        Maximum="{Binding BuildPluginProgressBarMax}"
-                        Value="{Binding BuildPluginProgressBarValue}" />
+                        Maximum="{Binding BuildScriptProgressBarMax}"
+                        Value="{Binding BuildScriptProgressBarValue}" />
                     <TextBlock
                         Grid.Row="3"
                         Margin="20, 0, 20, 5"
@@ -652,4 +653,14 @@
             </Grid>
         </Grid>
     </DockPanel>
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo ProgressState="{Binding TaskbarProgressState}" >
+            <TaskbarItemInfo.ProgressValue>
+                <MultiBinding Converter="{StaticResource TaskbarProgressConverter}" >
+                    <Binding Path="BuildFullProgressBarMax" />
+                    <Binding Path="BuildFullProgressBarValue" />
+                </MultiBinding>
+            </TaskbarItemInfo.ProgressValue>
+        </TaskbarItemInfo>
+    </Window.TaskbarItemInfo>
 </Window>

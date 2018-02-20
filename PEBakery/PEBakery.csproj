@@ -73,11 +73,8 @@
     <Reference Include="BetterWin32Errors, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\BetterWin32Errors.0.2.0\lib\net45\BetterWin32Errors.dll</HintPath>
     </Reference>
-    <Reference Include="Joveler.ZLibWrapper, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Joveler.ZLibWrapper.1.1.0\lib\net45\Joveler.ZLibWrapper.dll</HintPath>
-    </Reference>
-    <Reference Include="Magick.NET-Q8-AnyCPU, Version=7.2.1.0, Culture=neutral, PublicKeyToken=2004825badfa91ec, processorArchitecture=MSIL">
-      <HintPath>..\packages\Magick.NET-Q8-AnyCPU.7.3.0\lib\net40\Magick.NET-Q8-AnyCPU.dll</HintPath>
+    <Reference Include="Joveler.ZLibWrapper, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Joveler.ZLibWrapper.1.2.0\lib\net45\Joveler.ZLibWrapper.dll</HintPath>
     </Reference>
     <Reference Include="MahApps.Metro.IconPacks, Version=2.0.0.31, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MahApps.Metro.IconPacks.2.0.0\lib\net46\MahApps.Metro.IconPacks.dll</HintPath>
@@ -87,6 +84,9 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Ookii.Dialogs.Wpf, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0c15020868fd6249, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ookii.Dialogs.1.0\lib\net35\Ookii.Dialogs.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.10.0.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <HintPath>..\packages\RazorEngine.3.10.0\lib\net45\RazorEngine.dll</HintPath>
@@ -112,6 +112,9 @@
     <Reference Include="SQLitePCLRaw.provider.e_sqlite3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9c301db686d0bd12, processorArchitecture=MSIL">
       <HintPath>..\packages\SQLitePCLRaw.provider.e_sqlite3.net45.1.1.9\lib\net45\SQLitePCLRaw.provider.e_sqlite3.dll</HintPath>
     </Reference>
+    <Reference Include="Svg, Version=2.2.1.39233, Culture=neutral, PublicKeyToken=12a0bac221edeae2, processorArchitecture=MSIL">
+      <HintPath>..\packages\Svg.2.3.0\lib\net35\Svg.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.4.0\lib\netstandard2.0\System.Buffers.dll</HintPath>
@@ -136,6 +139,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="XZ.NET">
+      <HintPath>..\XZNet20\XZ.NET.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -150,7 +156,7 @@
     <Compile Include="Core\Commands\CommandInterface.cs" />
     <Compile Include="Core\Commands\CommandMath.cs" />
     <Compile Include="Core\Commands\CommandNetwork.cs" />
-    <Compile Include="Core\Commands\CommandPlugin.cs" />
+    <Compile Include="Core\Commands\CommandScript.cs" />
     <Compile Include="Core\Commands\CommandRegistry.cs" />
     <Compile Include="Core\Commands\CommandString.cs" />
     <Compile Include="Core\Commands\CommandSystem.cs" />
@@ -184,13 +190,13 @@
       <DependentUpon>LogWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Core\Macro.cs" />
-    <Compile Include="Core\Plugin.cs" />
-    <Compile Include="Core\PluginCache.cs" />
+    <Compile Include="Core\Script.cs" />
+    <Compile Include="Core\ScriptCache.cs" />
     <Compile Include="WPF\SettingWindow.xaml.cs">
       <DependentUpon>SettingWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Core\StringEscaper.cs" />
-    <Compile Include="Core\UICommand.cs" />
+    <Compile Include="Core\UIControl.cs" />
     <Compile Include="Core\UIParser.cs" />
     <Compile Include="WPF\UIRenderer.cs" />
     <Compile Include="Core\Variables.cs" />
@@ -299,9 +305,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\DonutPng.png" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\ManagedWimLib\ManagedWimLib.csproj">
       <Project>{73bdca22-081d-489e-95e7-a02a6778bb7c}</Project>
       <Name>ManagedWimLib</Name>
@@ -317,6 +320,10 @@
     <ProjectReference Include="..\PEBakery.TreeLib\PEBakery.TreeLib.csproj">
       <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>
       <Name>PEBakery.TreeLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\XZNet20\XZNet20.csproj">
+      <Project>{98ccec3e-79f8-40d3-9ea9-a4b35aa5405d}</Project>
+      <Name>XZNet20</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -342,20 +349,20 @@
     <PropertyGroup>
       <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets'))" />
     <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.props'))" />
     <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets'))" />
     <Error Condition="!Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets'))" />
     <Error Condition="!Exists('..\packages\SevenZipExtractor.1.0.11\build\SevenZipExtractor.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SevenZipExtractor.1.0.11\build\SevenZipExtractor.targets'))" />
+    <Error Condition="!Exists('..\packages\Joveler.ZLibWrapper.1.2.0\build\net45\Joveler.ZLibWrapper.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Joveler.ZLibWrapper.1.2.0\build\net45\Joveler.ZLibWrapper.targets'))" />
   </Target>
-  <Import Project="..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets" Condition="Exists('..\packages\Joveler.ZLibWrapper.1.1.0\build\net45\Joveler.ZLibWrapper.targets')" />
   <Import Project="..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.5-beta001\build\Antlr4.CodeGenerator.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.linux.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.linux.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.osx.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.osx.targets')" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.v110_xp.1.1.9\build\net35\SQLitePCLRaw.lib.e_sqlite3.v110_xp.targets')" />
   <Import Project="..\packages\SevenZipExtractor.1.0.11\build\SevenZipExtractor.targets" Condition="Exists('..\packages\SevenZipExtractor.1.0.11\build\SevenZipExtractor.targets')" />
+  <Import Project="..\packages\Joveler.ZLibWrapper.1.2.0\build\net45\Joveler.ZLibWrapper.targets" Condition="Exists('..\packages\Joveler.ZLibWrapper.1.2.0\build\net45\Joveler.ZLibWrapper.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
