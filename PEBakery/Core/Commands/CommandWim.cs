@@ -91,13 +91,13 @@ namespace PEBakery.Core.Commands
             }
             catch (Win32Exception e)
             {
-                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get information of [{srcWim}]"));
+                logs.Add(CommandWim.LogWimgApiException(e, $"Unable to get information from [{srcWim}]"));
                 return logs;
             }
 
             if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
             {
-                logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
+                logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid positive integer"));
                 return logs;
             }
 
@@ -338,7 +338,7 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(0 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [0] or [1] ~ [{wi.ImageCount}]");
 
@@ -420,7 +420,7 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
 
@@ -436,7 +436,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
-                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
                     }
 
@@ -490,7 +490,7 @@ namespace PEBakery.Core.Commands
                         {
                             ulong percentComplete = (m.CurrentFileCount * 10 / m.EndFileCount);
                             s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                            s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Creating files ({percentComplete}%)";
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 1] Creating files... ({percentComplete}%)";
                         }
                     }
                     break;
@@ -502,7 +502,7 @@ namespace PEBakery.Core.Commands
                         {
                             ulong percentComplete = 10 + (m.CompletedBytes * 80 / m.TotalBytes);
                             s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Extracting file data ({percentComplete}%)";
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 2] Extracting file data... ({percentComplete}%)";
                         }
                     }
                     break;
@@ -514,7 +514,7 @@ namespace PEBakery.Core.Commands
                         {
                             ulong percentComplete = 90 + (m.CurrentFileCount * 10 / m.EndFileCount);
                             s.MainViewModel.BuildCommandProgressValue = percentComplete;
-                            s.MainViewModel.BuildCommandProgressText = $"[Stage 3] Applying metadata to files ({percentComplete}%)";
+                            s.MainViewModel.BuildCommandProgressText = $"[Stage 3] Applying metadata to files... ({percentComplete}%)";
                         }
                     }
                     break;
@@ -576,7 +576,7 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wimInfo.ImageCount}]");
 
@@ -592,7 +592,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
-                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
                     }
 
@@ -677,7 +677,7 @@ namespace PEBakery.Core.Commands
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
                     {
-                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid a positive integer"));
+                        logs.Add(new LogInfo(LogState.Error, $"[{imageIndexStr}] is not a valid positive integer"));
                         return logs;
                     }
                     if (!(1 <= imageIndex && imageIndex <= wimInfo.ImageCount))
@@ -698,7 +698,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
-                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
                     }
 
@@ -793,7 +793,7 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                    return LogInfo.LogErrorMessage(logs, $"Unable to set proper image name automatically");
+                    return LogInfo.LogErrorMessage(logs, $"Unable to automatically set the image name");
             }
 
             // Capture from disk
@@ -882,7 +882,7 @@ namespace PEBakery.Core.Commands
             {
                 imageName = Path.GetFileName(Path.GetFullPath(srcDir));
                 if (string.IsNullOrWhiteSpace(imageName))
-                    return LogInfo.LogErrorMessage(logs, $"Unable to set proper image name automatically");
+                    return LogInfo.LogErrorMessage(logs, $"Unable to automatically set the image name");
             }
 
             try
@@ -917,7 +917,7 @@ namespace PEBakery.Core.Commands
 
                         string deltaIndexStr = StringEscaper.Preprocess(s, info.DeltaIndex);
                         if (!NumberHelper.ParseInt32(deltaIndexStr, out int deltaIndex))
-                            return LogInfo.LogErrorMessage(logs, $"[{deltaIndexStr}] is not a valid a positive integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{deltaIndexStr}] is not a valid positive integer");
                         if (!(1 <= deltaIndex && deltaIndex <= imageCount))
                             return LogInfo.LogErrorMessage(logs, $"[{deltaIndex}] must be [1] ~ [{imageCount}]");
 
@@ -1037,7 +1037,7 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
@@ -1149,7 +1149,7 @@ namespace PEBakery.Core.Commands
 
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
@@ -1218,7 +1218,7 @@ namespace PEBakery.Core.Commands
                 {
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
@@ -1287,7 +1287,7 @@ namespace PEBakery.Core.Commands
                 {
                     ManagedWimLib.WimInfo wi = wim.GetWimInfo();
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
@@ -1303,7 +1303,7 @@ namespace PEBakery.Core.Commands
                     {
                         wim.Overwrite(writeFlags, (uint)Environment.ProcessorCount);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Renamed [{srcPath}] into [{destPath}] in [{wimFile}]"));
+                        logs.Add(new LogInfo(LogState.Success, $"Renamed [{srcPath}] to [{destPath}] in [{wimFile}]"));
                     }
                     finally
                     { // Finalize Command Progress Report
@@ -1346,15 +1346,15 @@ namespace PEBakery.Core.Commands
                         {
                             case UpdateOp.ADD:
                                 var add = upCmd.Add;
-                                str = $"[Stage 1] Adding {add.FsSourcePath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                str = $"[Stage 1] Adding {add.FsSourcePath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             case UpdateOp.DELETE:
                                 var del = upCmd.Delete;
-                                str = $"[Stage 1] Deleting {del.WimPath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                str = $"[Stage 1] Deleting {del.WimPath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             case UpdateOp.RENAME:
                                 var ren = upCmd.Rename;
-                                str = $"[Stage 1] Renaming {ren.WimSourcePath} to {ren.WimTargetPath} ({m.CompletedCommands}/{m.TotalCommands})";
+                                str = $"[Stage 1] Renaming {ren.WimSourcePath} to {ren.WimTargetPath}... ({m.CompletedCommands}/{m.TotalCommands})";
                                 break;
                             default:
                                 throw new InternalException("Internal Logic Error at WimPathProgress");
@@ -1432,7 +1432,7 @@ namespace PEBakery.Core.Commands
                     compType = CompressionType.LZMS;
                 }
                 else if (!recompStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase)) 
-                    return LogInfo.LogErrorMessage(logs, $"Invalid Compression Type [{recompStr}]");
+                    return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{recompStr}].");
             }
 
             if (info.CheckFlag == true)
@@ -1462,7 +1462,7 @@ namespace PEBakery.Core.Commands
 
                         string beforeStr = NumberHelper.ByteSizeToHumanReadableString(before);
                         string afterStr = NumberHelper.ByteSizeToHumanReadableString(after);
-                        logs.Add(new LogInfo(LogState.Success, $"Optimized [{wimFile}] from {beforeStr} to {afterStr}"));
+                        logs.Add(new LogInfo(LogState.Success, $"Optimized [{wimFile}] from [{beforeStr}] to [{afterStr}]"));
                     }
                     finally
                     { // Finalize Command Progress Report
@@ -1528,7 +1528,7 @@ namespace PEBakery.Core.Commands
 
                     // Check imageIndex
                     if (!NumberHelper.ParseInt32(imageIndexStr, out int imageIndex))
-                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid a positive integer");
+                        return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] is not a valid positive integer");
                     if (!(1 <= imageIndex && imageIndex <= wi.ImageCount))
                         return LogInfo.LogErrorMessage(logs, $"[{imageIndexStr}] must be [1] ~ [{wi.ImageCount}]");
 
@@ -1544,7 +1544,7 @@ namespace PEBakery.Core.Commands
                         }
                         catch (WimLibException e) when (e.ErrorCode == ErrorCode.GLOB_HAD_NO_MATCHES)
                         {
-                            return LogInfo.LogErrorMessage(logs, $"Unable to find match to [{splitWim}]");
+                            return LogInfo.LogErrorMessage(logs, $"Unable to find a match to [{splitWim}]");
                         }
                     }
 
@@ -1563,7 +1563,7 @@ namespace PEBakery.Core.Commands
                             {
                                 string compStr = StringEscaper.Preprocess(s, info.Recompress);
                                 if (!compStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
-                                    return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]");
+                                    return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]. You must use [KEEP] when exporting to an existing wim file");
 
                                 writeFlags |= WriteFlags.RECOMPRESS;
                             }
@@ -1602,6 +1602,8 @@ namespace PEBakery.Core.Commands
                                     compType = CompressionType.LZX;
                                 else if (compStr.Equals("LZMS", StringComparison.OrdinalIgnoreCase))
                                     compType = CompressionType.LZMS;
+                                else if (compStr.Equals("KEEP", StringComparison.OrdinalIgnoreCase))
+                                    return LogInfo.LogErrorMessage(logs, $"Cannot use [{compStr}] compression with a new wim file");
                                 else
                                     return LogInfo.LogErrorMessage(logs, $"Invalid compression type [{compStr}]");
 
@@ -1619,7 +1621,7 @@ namespace PEBakery.Core.Commands
                                 destWim.Write(destWimPath, Wim.AllImages, writeFlags, (uint)Environment.ProcessorCount);
                             }
 
-                            logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into new wim file {destWimPath}"));
+                            logs.Add(new LogInfo(LogState.Success, $"Exported [{srcWimPath}:{imageIndex}] into new wim file [{destWimPath}]"));
                         }
                     }
                     finally
