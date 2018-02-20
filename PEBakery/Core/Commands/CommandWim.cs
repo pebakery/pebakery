@@ -1002,7 +1002,7 @@ namespace PEBakery.Core.Commands
 
         private static LogInfo LogWimLibException(WimLibException e)
         {
-            return new LogInfo(LogState.Error, $"[{e.ErrorCode}] {e.ErrorMsg}");
+            return new LogInfo(LogState.Error, e.Message);
         }
         #endregion
 

@@ -57,7 +57,7 @@ namespace ManagedWimLib
         private Wim(IntPtr ptr)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             Ptr = ptr;
         }
@@ -93,7 +93,7 @@ namespace ManagedWimLib
         public static void GlobalInit(string dllPath, InitFlags initFlags = InitFlags.DEFAULT)
         {
             if (NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.AlreadyInitedMsg);
+                throw new InvalidOperationException(NativeMethods.MsgAlreadyInited);
             
             if (dllPath == null) throw new ArgumentNullException(nameof(dllPath));
             if (!File.Exists(dllPath)) throw new FileNotFoundException("Specified dll does not exist");
@@ -116,7 +116,7 @@ namespace ManagedWimLib
                 // Set ErrorFile and PrintError
                 NativeMethods.ErrorFile = Path.GetTempFileName();
                 WimLibException.CheckWimLibError(NativeMethods.SetErrorFile(NativeMethods.ErrorFile));
-                WimLibException.CheckWimLibError(NativeMethods.SetPrintErrors(true));
+                Wim.SetPrintErrors(true);
 
                 ErrorCode ret = NativeMethods.GlobalInit(initFlags);
                 WimLibException.CheckWimLibError(ret);
@@ -144,12 +144,12 @@ namespace ManagedWimLib
             }
             else
             {
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
             }
         }
         #endregion
 
-        #region Error - (Static) GetErrorString, SetPrintErrors
+        #region Error - (Static) GetErrorString, GetLastError, SetPrintErrors
         /// <summary>
         /// Convert a wimlib error code into a string describing it.
         /// </summary>
@@ -161,10 +161,25 @@ namespace ManagedWimLib
         public static string GetErrorString(ErrorCode code)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             IntPtr ptr = NativeMethods.GetErrorString(ErrorCode.INVALID_IMAGE);
             return Marshal.PtrToStringUni(ptr);
+        }
+
+        public static string GetLastError()
+        {
+            if (NativeMethods.ErrorFile == null)
+                return null;
+            if (NativeMethods.PrintErrorsEnabled == false)
+                return null;
+
+            using (FileStream fs = new FileStream(NativeMethods.ErrorFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (StreamReader r = new StreamReader(fs, Encoding.Unicode, false))
+            {
+                var lines = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x));
+                return lines.LastOrDefault();
+            }
         }
 
         /// <summary>
@@ -183,10 +198,12 @@ namespace ManagedWimLib
         public static void SetPrintErrors(bool showMessages)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             ErrorCode ret = NativeMethods.SetPrintErrors(showMessages);
             WimLibException.CheckWimLibError(ret);
+
+            NativeMethods.PrintErrorsEnabled = showMessages;
         }
         #endregion
 
@@ -313,7 +330,7 @@ namespace ManagedWimLib
         public static Wim CreateNewWim(CompressionType compType)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             ErrorCode ret = NativeMethods.CreateNewWim(compType, out IntPtr wimPtr);
             WimLibException.CheckWimLibError(ret);
@@ -343,7 +360,7 @@ namespace ManagedWimLib
         /// <remarks>
         /// This just builds an appropriate DeleteCommand and passes it to Wim.UpdateImage().
         /// </remarks>
-        /// <param name="image">The 1-based index of the image to delete, or Wim.ALL_IMAGES to delete all images.</param>
+        /// <param name="image">The 1-based index of the image to delete, or Wim.AllImages to delete all images.</param>
         /// <param name="path">Path to be deleted from the specified image of the wim</param>
         /// <param name="deleteFlags">Bitwise OR of DeleteFlags.</param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
@@ -362,7 +379,7 @@ namespace ManagedWimLib
         /// the source image(s) will be appended, in order, starting at destination index n + 1.
         /// By default, all image metadata will be exported verbatim, but certain changes can be made by passing appropriate parameters.
         /// </summary>
-        /// <param name="srcImage">The 1-based index of the image from src_wim to export, or Wim.ALL_IMAGES</param>
+        /// <param name="srcImage">The 1-based index of the image from src_wim to export, or Wim.AllImages</param>
         /// <param name="destWim">The WimStruct to which to export the images.</param>
         /// <param name="destName">
         /// For single-image exports, the name to give the exported image in destWim.
@@ -402,8 +419,8 @@ namespace ManagedWimLib
         /// referenced using Wim.ReferenceResources() or Wim.ReferenceResourceFiles().
         /// </param>
         /// <param name="image">
-        /// The 1-based index of the image to extract, or Wim.ALL_IMAGES to extract all images.
-        /// Note: Wim.ALL_IMAGES is unsupported in NTFS-3G extraction mode.
+        /// The 1-based index of the image to extract, or Wim.AllImages to extract all images.
+        /// Note: Wim.AllImages is unsupported in NTFS-3G extraction mode.
         /// </param>
         /// <param name="target">
         /// A null-terminated string which names the location to which the image(s) will be extracted.  
@@ -655,7 +672,7 @@ namespace ManagedWimLib
         /// A string specifying the name or number of an image in the WIM.
         /// If it parses to a positive integer, this integer is taken to specify the number of the image, indexed starting at 1.
         /// Otherwise, it is taken to be the name of an image, as given in the XML data for the WIM file.
-        /// It also may be the keyword "all" or the string "*", both of which will resolve to Wim.ALL_IMAGES.
+        /// It also may be the keyword "all" or the string "*", both of which will resolve to Wim.AllImages.
         /// </param>
         /// <returns>
         /// If the string resolved to a single existing image, the number of that image, indexed starting at 1, is returned.
@@ -679,7 +696,7 @@ namespace ManagedWimLib
         /// </summary>
         /// <param name="image">
         /// The 1-based index of the image that contains the files or directories to iterate over,
-        /// or Wim.ALL_IMAGES to iterate over all images.
+        /// or Wim.AllImages to iterate over all images.
         /// </param>
         /// <param name="path">
         /// Path in the image at which to do the iteration.
@@ -785,7 +802,7 @@ namespace ManagedWimLib
         public static Wim OpenWim(string wimFile, OpenFlags openFlags)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             ErrorCode ret = NativeMethods.OpenWim(wimFile, openFlags, out IntPtr wimPtr);
             if (ret != ErrorCode.SUCCESS)
@@ -814,7 +831,7 @@ namespace ManagedWimLib
         public static Wim OpenWim(string wimFile, OpenFlags openFlags, ProgressCallback callback, object userData = null)
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
@@ -864,8 +881,9 @@ namespace ManagedWimLib
             List<string> resources = new List<string>();
             string dirPath = Path.GetDirectoryName(resourceWimFile);
             string wildcard = Path.GetFileName(resourceWimFile);
-            if ((refFlags & RefFlags.GLOB_ENABLE) != 0 &&
-                !string.IsNullOrEmpty(dirPath) && wildcard.IndexOfAny(new[] { '*', '?' }) != -1)
+            if (dirPath == null) dirPath = @"\";
+            if (dirPath.Length == 0) dirPath = ".";
+            if ((refFlags & RefFlags.GLOB_ENABLE) != 0 && wildcard.IndexOfAny(new[] { '*', '?' }) != -1)
             { // Contains Wildcard
                 string removeAsterisk = StringHelper.ReplaceEx(resourceWimFile, "*", string.Empty, StringComparison.Ordinal);
                 var files = Directory.EnumerateFiles(dirPath, wildcard, SearchOption.AllDirectories);
@@ -916,8 +934,9 @@ namespace ManagedWimLib
             {
                 string dirPath = Path.GetDirectoryName(f);
                 string wildcard = Path.GetFileName(f);
-                if ((refFlags & RefFlags.GLOB_ENABLE) != 0 &&
-                    !string.IsNullOrEmpty(dirPath) && wildcard.IndexOfAny(new[] { '*', '?' }) != -1)
+                if (dirPath == null) dirPath = @"\";
+                if (dirPath.Length == 0) dirPath = ".";
+                if ((refFlags & RefFlags.GLOB_ENABLE) != 0 && wildcard.IndexOfAny(new[] { '*', '?' }) != -1)
                 { // Contains Wildcard
                     string removeAsterisk = StringHelper.ReplaceEx(f, "*", string.Empty, StringComparison.Ordinal);
                     var files = Directory.EnumerateFiles(dirPath, wildcard, SearchOption.AllDirectories);
@@ -1148,6 +1167,7 @@ namespace ManagedWimLib
         /// Flags that specify which information to set. 
         /// This is a bitwise OR of ChangeFlags.READONLY_FLAG, ChangeFlags.GUID, ChangeFlags.BOOT_INDEX, and/or ChangeFlags.RPFIX_FLAG.
         /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void SetWimInfo(WimInfo info, ChangeFlags which)
         {
             ErrorCode ret = NativeMethods.SetWimInfo(Ptr, ref info, which);
@@ -1173,6 +1193,7 @@ namespace ManagedWimLib
         /// As a special case, if chunkSize is specified as 0,
         /// then the chunk size will be reset to the default for the currently selected output compression type.
         /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void SetOutputChunkSize(uint chunkSize)
         {
             ErrorCode ret = NativeMethods.SetOutputChunkSize(Ptr, chunkSize);
@@ -1189,6 +1210,7 @@ namespace ManagedWimLib
         /// As a special case, if chunkSize is specified as 0,
         /// then the chunk size will be reset to the default for the currently selected output compression type.
         /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void SetOutputPackChunkSize(uint chunkSize)
         {
             ErrorCode ret = NativeMethods.SetOutputPackChunkSize(Ptr, chunkSize);
@@ -1230,9 +1252,54 @@ namespace ManagedWimLib
         #endregion
 
         #region Split - Split
+        /// <summary>
+        /// Split a WIM into multiple parts.
+        /// </summary>
+        /// <param name="swmName">
+        /// Name of the split WIM (SWM) file to create. 
+        /// This will be the name of the first part.
+        /// The other parts will, by default, have the same name with 2, 3, 4, ..., etc.  appended before the suffix.
+        /// However, the exact names can be customized using the progress function.
+        /// </param>
+        /// <param name="partSize">
+        /// The maximum size per part, in bytes.
+        /// Unfortunately, it is not guaranteed that this will really be the maximum size per part,
+        /// because some file resources in the WIM may be larger than this size,
+        /// and the WIM file format provides no way to split up file resources among multiple WIMs.
+        /// </param>
+        /// <param name="writeFlags">
+        /// Bitwise OR of WriteFlags.
+        /// These flags will be used to write each split WIM part. 
+        /// Specify WriteFlags.DEFAULT here to get the default behavior.
+        /// </param>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void Split(string swmName, ulong partSize, WriteFlags writeFlags)
+        {
+            ErrorCode ret = NativeMethods.Split(Ptr, swmName, partSize, writeFlags);
+            WimLibException.CheckWimLibError(ret);
+        }
         #endregion
 
         #region Verify - VerifyWim
+        /// <summary>
+        /// Perform verification checks on a WIM file.
+        ///
+        /// This function is intended for safety checking and/or debugging. 
+        /// If used on a well-formed WIM file, it should always succeed.
+        /// </summary>
+        /// <remarks>
+        /// Note: for an extra layer of verification, it is a good idea 
+        /// to have used OpenFlags.CHECK_INTEGRITY when you opened the file.
+        /// 
+        /// If verifying a split WIM, specify the first part of the split WIM here,
+        /// and reference the other parts using Wim.ReferenceResourceFiles() before calling this function.
+        /// </remarks>
+        /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
+        public void VerifyWim()
+        {
+            ErrorCode ret = NativeMethods.VerifyWim(Ptr, 0);
+            WimLibException.CheckWimLibError(ret);
+        }
         #endregion
 
         #region Update - UpdateImage
@@ -1240,8 +1307,8 @@ namespace ManagedWimLib
         /// Update a WIM image by adding, deleting, and/or renaming files or directories.
         /// </summary>
         /// <param name="image">The 1-based index of the image to update.</param>
-        /// <param name="cmds">UpdateCommand that specify the update operations to perform.</param>
-        /// <param name="updateFlags">Number of commands in @p cmds.</param>
+        /// <param name="cmd">UpdateCommand that specify the update operations to perform.</param>
+        /// <param name="updateFlags">Number of commands in cmd.</param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void UpdateImage(int image, UpdateCommand cmd, UpdateFlags updateFlags)
         {
@@ -1286,7 +1353,7 @@ namespace ManagedWimLib
         /// An array of UpdateCommand's that specify the update operations to perform.
         /// </param>
         /// <param name="updateFlags">
-        /// Number of commands in @p cmds.
+        /// Number of commands in cmds.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void UpdateImage(int image, IEnumerable<UpdateCommand> cmds, UpdateFlags updateFlags)
@@ -1327,16 +1394,13 @@ namespace ManagedWimLib
 
         #region Write - Write, Overwrite
         /// <summary>
-        /// Persist a ::WimStruct to a new on-disk WIM file.
+        /// Persist a WimStruct to a new on-disk WIM file.
         /// </summary>
-        /// <param name="wim">
-        /// Pointer to the ::WimStruct being persisted.
-        /// </param>
         /// <param name="path">
         /// The path to the on-disk file to write.
         /// </param>
         /// <param name="image">
-        /// Normally, specify Wim.ALL_IMAGES here.
+        /// Normally, specify Wim.AllImages here.
         /// This indicates that all images are to be included in the new on-disk WIM file.
         /// If for some reason you only want to include a single image, specify the 1-based index of that image instead.
         /// </param>
@@ -1364,9 +1428,8 @@ namespace ManagedWimLib
         /// <summary>
         /// Commit a WimStruct to disk, updating its backing file.
         /// </summary>
-        /// <param name="wim">Pointer to a WimStruct to commit to its backing file.</param>
-        /// <param name="write_flags">Bitwise OR of relevant WriteFlags.</param>
-        /// <param name="num_threads">
+        /// <param name="writeFlags">Bitwise OR of relevant WriteFlags.</param>
+        /// <param name="numThreads">
         /// The number of threads to use for compressing data, 
         /// or Wim.DefaultThreads to have the library automatically choose an appropriate number.
         /// </param>
@@ -1386,7 +1449,7 @@ namespace ManagedWimLib
         /// In addition, if Wim.DeleteImage() has been used on the WimStruct, then the default mode switches to rebuild mode, 
         /// and WriteFlags.SOFT_DELETE can be used to explicitly request append mode.
         ///
-        /// If this function completes successfully, then no more functions can be called on the WimStruct other than wimlib_free().
+        /// If this function completes successfully, then no more functions can be called on the WimStruct other than Wim.Free().
         /// If you need to continue using the WIM file, you must use Wim.OpenWim() to open a new WimStruct for it.
         /// </remarks>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>

@@ -133,16 +133,21 @@ namespace ManagedWimLib
     #region NativeMethods
     internal static class NativeMethods
     {
-        #region Const and Fields
-        public const string InitFirstErrorMsg = "Please call Wim.GlobalInit() first!";
-        public const string AlreadyInitedMsg = "ManagedWimLib is already initialized.";
-
-        public static SafeLibraryHandle hModule = null;
-        public static bool Loaded => (hModule != null);
-        public static string ErrorFile;
+        #region Const
+        public const string MsgInitFirstError = "Please call Wim.GlobalInit() first!";
+        public const string MsgAlreadyInited = "ManagedWimLib is already initialized.";
+        public const string MsgErrorFileNotSet = "ErrorFile is not set unable to read last error.";
+        public const string MsgPrintErrorsDisabled = "Error is not being logged, unable to read last error.";
         #endregion
 
-        #region LoadFunctions, ResetFunctions, GetFuncPtr
+        #region Fields
+        public static SafeLibraryHandle hModule = null;
+        public static bool Loaded => (hModule != null);
+        public static string ErrorFile = null;
+        public static bool PrintErrorsEnabled = false;
+        #endregion
+
+        #region LoadFunctions, ResetFunctions
         private static Delegate GetFuncPtr(string exportFunc, Type delegateType)
         {
             IntPtr funcPtr = GetProcAddress(hModule, exportFunc);
@@ -256,21 +261,23 @@ namespace ManagedWimLib
             SetOutputPackCompressionType = (wimlib_set_output_pack_compression_type)GetFuncPtr("wimlib_set_output_pack_compression_type", typeof(wimlib_set_output_pack_compression_type));
             #endregion
 
+            #region Split - Split
+            Split = (wimlib_split)GetFuncPtr("wimlib_split", typeof(wimlib_split));
+            #endregion
 
-            Overwrite = (wimlib_overwrite)GetFuncPtr("wimlib_overwrite", typeof(wimlib_overwrite));
-            
-            Write = (wimlib_write)GetFuncPtr("wimlib_write", typeof(wimlib_write));
-            
-            
-            
-            
-            
-            
+            #region Verify - VerifyWim
+            VerifyWim = (wimlib_verify_wim)GetFuncPtr("wimlib_verify_wim", typeof(wimlib_verify_wim));
+            #endregion
+
+            #region Update - UpdateImage
             UpdateImage32 = (wimlib_update_image_32)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_32));
             UpdateImage64 = (wimlib_update_image_64)GetFuncPtr("wimlib_update_image", typeof(wimlib_update_image_64));
-            
-            
-            
+            #endregion
+
+            #region Write - Write, Overwrite
+            Write = (wimlib_write)GetFuncPtr("wimlib_write", typeof(wimlib_write));
+            Overwrite = (wimlib_overwrite)GetFuncPtr("wimlib_overwrite", typeof(wimlib_overwrite));
+            #endregion
         }
 
         internal static void ResetFuntions()
@@ -378,9 +385,11 @@ namespace ManagedWimLib
             #endregion
 
             #region Split - Split
+            Split = null;
             #endregion
 
             #region Verify - VerifyWim
+            VerifyWim = null;
             #endregion
 
             #region Update - UpdateImage
@@ -632,7 +641,7 @@ namespace ManagedWimLib
         public static Version GetVersion()
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             uint dword = GetVersionPtr();
             ushort major = (ushort)(dword >> 20);
@@ -649,7 +658,7 @@ namespace ManagedWimLib
         public static Tuple<ushort, ushort, ushort> GetVersionTuple()
         {
             if (!NativeMethods.Loaded)
-                throw new InvalidOperationException(NativeMethods.InitFirstErrorMsg);
+                throw new InvalidOperationException(NativeMethods.MsgInitFirstError);
 
             uint dword = GetVersionPtr();
             ushort major = (ushort)(dword >> 20);
@@ -834,9 +843,21 @@ namespace ManagedWimLib
         #endregion
 
         #region Split - Split
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate ErrorCode wimlib_split(
+            IntPtr wim,
+            [MarshalAs(UnmanagedType.LPWStr)] string swm_name,
+            ulong part_size,
+            WriteFlags write_flags);
+        internal static wimlib_split Split;
         #endregion
 
         #region Verify - VerifyWim
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate ErrorCode wimlib_verify_wim(
+            IntPtr wim,
+            int verify_flags);
+        internal static wimlib_verify_wim VerifyWim;
         #endregion
 
         #region Update - UpdateImage
@@ -1114,7 +1135,7 @@ namespace ManagedWimLib
         END_VERIFY_IMAGE = 28,
         /// <summary>
         /// Wim.VerifyWim() is verifying file data integrity.
-        /// info will point to ProgressInfo_VverifyStreams.
+        /// info will point to ProgressInfo_VerifyStreams.
         /// </summary>
         VERIFY_STREAMS = 29,
         /// <summary>
@@ -1530,7 +1551,7 @@ namespace ManagedWimLib
         DEFAULT = 0x00000000,
         /// <summary>
         /// If a single image is being exported, mark it bootable in the destination WIM.
-        /// Alternatively, if Wim.ALL_IMAGES is specified as the image to export,
+        /// Alternatively, if Wim.AllImages is specified as the image to export,
         /// the image in the source WIM (if any) that is marked as bootable is also
         /// marked as bootable in the destination WIM.
         /// </summary>
@@ -1582,7 +1603,7 @@ namespace ManagedWimLib
         /// In this mode, the extraction target will be interpreted as the path to an NTFS volume image
         /// (as a regular file or block device) rather than a directory.
         /// It will be opened using libntfs-3g, and the image will be extracted to the NTFS filesystem's root directory.
-        /// Note: this flag cannot be used when Wim.ExtractImage() is called with Wim.ALL_IMAGES as the image,
+        /// Note: this flag cannot be used when Wim.ExtractImage() is called with Wim.AllImages as the image,
         /// nor can it be used with Wim.ExtractPaths() when passed multiple paths.
         /// </summary>
         NTFS = 0x00000001,
@@ -2868,9 +2889,16 @@ namespace ManagedWimLib
         {
             get
             {
-                byte[] buf = new byte[SecurityDescriptorSize];
-                Marshal.Copy(SecurityDescriptorPtr, buf, 0, (int)SecurityDescriptorSizeVal.ToUInt32());
-                return buf;
+                if (SecurityDescriptorPtr != IntPtr.Zero)
+                {
+                    byte[] buf = new byte[SecurityDescriptorSize];
+                    Marshal.Copy(SecurityDescriptorPtr, buf, 0, (int)SecurityDescriptorSizeVal.ToUInt32());
+                    return buf;
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
         public IntPtr SecurityDescriptorPtr;
@@ -3284,14 +3312,24 @@ namespace ManagedWimLib
     #region WimLibException
     public class WimLibException : Exception
     {
-        public string ErrorMsg;
         public ErrorCode ErrorCode;
 
         public WimLibException(ErrorCode errorCode)
-            : base($"[{errorCode}] {Wim.GetErrorString(errorCode)}")
+            : base(ForgeErrorMessages(errorCode, true))
         {
-            this.ErrorMsg = Wim.GetErrorString(errorCode);
             this.ErrorCode = errorCode;
+        }
+
+        internal static string ForgeErrorMessages(ErrorCode errorCode, bool full)
+        {
+            StringBuilder b = new StringBuilder();
+
+            if (full)
+                b.Append($"[{errorCode}] ");
+
+            b.Append(Wim.GetLastError() ?? Wim.GetErrorString(errorCode));
+
+            return b.ToString();
         }
 
         public static void CheckWimLibError(ErrorCode ret)

@@ -60,10 +60,11 @@
     <Compile Include="RenameTests.cs" />
     <Compile Include="SetInfoTests.cs" />
     <Compile Include="SetOutputTests.cs" />
+    <Compile Include="SplitTests.cs" />
     <Compile Include="TestSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UpdateTests.cs" />
-    <Compile Include="UtilityTests.cs" />
+    <Compile Include="VerifyTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

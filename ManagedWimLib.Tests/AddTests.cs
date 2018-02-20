@@ -97,20 +97,22 @@ namespace ManagedWimLib.Tests
         [TestCategory("WimLib")]
         public void AddImage()
         {
-            AddImage_Template(CompressionType.NONE, "NONE.wim");
-            AddImage_Template(CompressionType.XPRESS, "XPRESS.wim");
-            AddImage_Template(CompressionType.LZX, "LZX.wim");
-            AddImage_Template(CompressionType.LZMS, "LZMS.wim");
+            AddImage_Template("NONE.wim", CompressionType.NONE);
+            AddImage_Template("XPRESS.wim", CompressionType.XPRESS);
+            AddImage_Template("LZX.wim", CompressionType.LZX);
+            AddImage_Template("LZMS.wim", CompressionType.LZMS);
 
-            AddImage_Template(CompressionType.NONE, "NONE.wim", AddFlags.BOOT);
-            AddImage_Template(CompressionType.XPRESS, "XPRESS.wim", AddFlags.BOOT);
-            AddImage_Template(CompressionType.LZX, "LZX.wim", AddFlags.BOOT);
-            AddImage_Template(CompressionType.LZMS, "LZMS.wim", AddFlags.BOOT);
+            AddImage_Template("NONE.wim", CompressionType.NONE, AddFlags.BOOT);
+            AddImage_Template("XPRESS.wim", CompressionType.XPRESS, AddFlags.BOOT);
+            AddImage_Template("LZX.wim", CompressionType.LZX,  AddFlags.BOOT);
+            AddImage_Template("LZMS.wim", CompressionType.LZMS, AddFlags.BOOT);
         }
 
-        public void AddImage_Template(CompressionType compType, string wimFileName, AddFlags addFlags = AddFlags.DEFAULT)
+        public void AddImage_Template(string wimFileName, CompressionType compType, AddFlags addFlags = AddFlags.DEFAULT)
         {
+            string srcDir = Path.Combine(TestSetup.SampleDir, "Src01");
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string wimFile = Path.Combine(destDir, wimFileName);
             try
             {
                 Directory.CreateDirectory(destDir);
@@ -158,9 +160,6 @@ namespace ManagedWimLib.Tests
                     return CallbackStatus.CONTINUE;
                 }
 
-                // Capture Wim
-                string srcDir = Path.Combine(TestSetup.SampleDir, "Src01");
-                string wimFile = Path.Combine(destDir, wimFileName);
                 using (Wim wim = Wim.CreateNewWim(compType))
                 {
                     wim.RegisterCallback(ProgressCallback);
@@ -170,6 +169,8 @@ namespace ManagedWimLib.Tests
                     WimInfo wi = wim.GetWimInfo();
                     Assert.IsTrue(wi.ImageCount == 1);
                 }
+
+                Assert.IsTrue(_checked.All(x => x));
 
                 TestHelper.CheckWimPath(SampleSet.Src01, wimFile);
             }

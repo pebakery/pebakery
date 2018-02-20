@@ -65,103 +65,6 @@ namespace ManagedWimLib.Tests
             });
         }
 
-        public CallbackStatus IterateDirTree_Callback(DirEntry dentry, object userData)
-        {
-            List<string> entries = userData as List<string>;
-
-            entries.Add(dentry.FullPath);
-
-            return CallbackStatus.CONTINUE;
-        }
-
-        public void Update_Template(string fileName, UpdateCommand[] cmds)
-        {
-            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            try
-            {
-                Directory.CreateDirectory(destDir);
-
-                string srcWimFile = Path.Combine(TestSetup.SampleDir, fileName);
-                string destWimFile = Path.Combine(destDir, fileName);
-                File.Copy(srcWimFile, destWimFile, true);
-
-                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.WRITE_ACCESS))
-                {
-                    wim.UpdateImage(1, cmds, UpdateFlags.SEND_PROGRESS);
-
-                    wim.Overwrite(WriteFlags.DEFAULT, Wim.DefaultThreads);
-                }
-
-                List<string> entries = new List<string>();
-                using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
-                {
-                    wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
-                }
-
-                foreach (UpdateCommand cmd in cmds)
-                {
-                    switch (cmd.Op)
-                    {
-                        case UpdateOp.ADD:
-                            {
-                                var add = cmd.Add;
-                                Assert.IsTrue(entries.Contains(Path.Combine(@"\", add.WimTargetPath), StringComparer.Ordinal));
-                            }
-                            break;
-                        case UpdateOp.DELETE:
-                            {
-                                var del = cmd.Delete;
-                                Assert.IsFalse(entries.Contains(Path.Combine(@"\", del.WimPath), StringComparer.Ordinal));
-                            }
-                            break;
-                        case UpdateOp.RENAME:
-                            {
-                                var ren = cmd.Rename;
-                                Assert.IsTrue(entries.Contains(Path.Combine(@"\", ren.WimTargetPath), StringComparer.Ordinal));
-                            }
-                            break;
-                    }
-                }
-            }
-            finally
-            {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
-            }
-        }
-        #endregion
-
-        #region UpdateProgress
-        [TestMethod]
-        [TestCategory("WimLib")]
-        public void UpdateProgress()
-        {
-            string sampleDir = Path.Combine(TestSetup.SampleDir);
-
-            void RunUpdateTest(string wimFile, UpdateCommand[] cmds)
-            {
-                UpdateProgress_Template(wimFile, cmds);
-            }
-
-            RunUpdateTest("XPRESS.wim", new UpdateCommand[2]
-            {
-                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Append01", "Z.txt"), "ADD", null, AddFlags.DEFAULT),
-                UpdateCommand.SetAdd(Path.Combine(sampleDir, "Src03", "가"), "유니코드", null, AddFlags.DEFAULT),
-            });
-
-            RunUpdateTest("LZX.wim", new UpdateCommand[2]
-            {
-                UpdateCommand.SetDelete("ACDE.txt", DeleteFlags.DEFAULT),
-                UpdateCommand.SetDelete("ABCD", DeleteFlags.RECURSIVE),
-            });
-
-            RunUpdateTest("LZMS.wim", new UpdateCommand[2]
-            {
-                UpdateCommand.SetRename("ACDE.txt", "FILE"),
-                UpdateCommand.SetRename("ABCD", "DIR"),
-            });
-        }
-
         public CallbackStatus UpdateProgress_Callback(ProgressMsg msg, object info, object progctx)
         {
             CallbackTested tested = progctx as CallbackTested;
@@ -207,7 +110,7 @@ namespace ManagedWimLib.Tests
             return CallbackStatus.CONTINUE;
         }
 
-        public void UpdateProgress_Template(string fileName, UpdateCommand[] cmds)
+        public void Update_Template(string fileName, UpdateCommand[] cmds)
         {
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -227,9 +130,15 @@ namespace ManagedWimLib.Tests
                 }
 
                 List<string> entries = new List<string>();
+                CallbackStatus IterateCallback(DirEntry dentry, object userData)
+                {
+                    entries.Add(dentry.FullPath);
+                    return CallbackStatus.CONTINUE;
+                }
+
                 using (Wim wim = Wim.OpenWim(destWimFile, OpenFlags.DEFAULT))
                 {
-                    wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateDirTree_Callback, entries);
+                    wim.IterateDirTree(1, @"\", IterateFlags.RECURSIVE, IterateCallback, entries);
                 }
 
                 Assert.IsTrue(tested.Value);
