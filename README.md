@@ -1,6 +1,6 @@
 # PEBakery
 
-![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
+<img src="./Image/Banner.svg" alt="PEBakery" style="max-width: 100%; height: 140px; width: auto; text-align: center;">
 
 PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment.
 
@@ -29,13 +29,12 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ### Recommended
 
-- Visual Studio 2017
-- .Net Framework 4.7.1 Developer Pack
+- Visual Studio 2017 Community
 
 ### Requirement
 
 - C# 7 Compiler
-- .Net Framework 4.7.1
+- .Net Framework 4.7.1 Developer Pack
 
 ## Documentation
 
@@ -43,12 +42,6 @@ See [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
 
 ## Screenshots
 
-### Build 20171114
+### PEBakery Beta 3
 
-![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
-![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
-
-In WB082, same plugins are rendered like this:
-
-![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
-![Korean IME by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082-Korean_IME.png)
+![Korean IME by PEBakery Beta 3](./Image/PEBakery-Korean_IME.png)
