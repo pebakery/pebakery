@@ -1,6 +1,8 @@
 # PEBakery
 
-<img src="./Image/Banner.svg" alt="PEBakery" style="max-width: 100%; height: 140px; width: auto; text-align: center;">
+<div style="text-align: left">
+    <img src="./Image/Banner.svg" height="140">
+</div>
 
 PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment.
 
