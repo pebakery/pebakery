@@ -1,6 +1,8 @@
 # PEBakery
 
-![Logo](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/Logo.png)
+<div style="text-align: left">
+    <img src="./Image/Banner.svg" height="140">
+</div>
 
 PEBakery is a builder specialized in customizing Windows Preinstalled Envrionment.
 
@@ -16,10 +18,11 @@ PEBakery is compatible with WinBuilder 082.
 - All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
 - Even though I did not experienced data corruption while developing, it is highly recommended to backup your files.
 - I do not provide any warranty, use at your own risk.
+- Windows Preinstalled Environment is a registered trademark of Microsoft. 
 
 ## License
 
-PEBakery is mianly licensed under GPLv3 or any later version with additional permission.
+PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
 
 Some parts of PEBakery is licensed under MIT License and others.
 
@@ -29,26 +32,25 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 
 ### Recommended
 
-- Visual Studio 2017
-- .Net Framework 4.7.1 Developer Pack
+- Visual Studio 2017 Community
 
 ### Requirement
 
 - C# 7 Compiler
-- .Net Framework 4.7.1
+- .Net Framework 4.7.1 Developer Pack
 
 ## Documentation
 
 See [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
 
+## TODO
+
+- New Script Language
+- New Script File Format
+- Multilanguage Support
+
 ## Screenshots
 
-### Build 20171114
+### PEBakery Beta 3
 
-![Win10PESE by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery.png)
-![Korean IME by PEBakery 20171114](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/PEBakery-Korean_IME.png)
-
-In WB082, same plugins are rendered like this:
-
-![Win10PESE by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082.png)
-![Korean IME by WinBuilder 082](https://raw.githubusercontent.com/ied206/PEBakery/master/Image/WB082-Korean_IME.png)
+![Korean IME by PEBakery Beta 3](./Image/PEBakery-Korean_IME.png)

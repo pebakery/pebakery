@@ -33,26 +33,35 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace Launcher
+namespace PEBakeryLauncher
 {
     public class Launcher
     {
         public static void Main(string[] args)
         {
-            // Alert user to update .Net Framework to 4.7.1 if not installed
+            // Alert user to update .Net Framework to 4.7.1 if not installed.
+            // The launcher itself runs in .Net Framework 4 Client Profile.
+            // TODO: Write in C, for maximum compatibility.
             if (!CheckNetFrameworkVersion())
             {
-                MessageBox.Show($"PEBakery requires .Net Framework 4.7.1 or newer, please install it.", "Update .Net Framework", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("PEBakery requires .Net Framework 4.7.1 or newer.", "Install .Net Framework 4.7.1", MessageBoxButton.OK, MessageBoxImage.Error);
+                Process.Start("https://www.microsoft.com/en-us/download/details.aspx?id=56116");
                 Environment.Exit(1);
             }
 
             // Launch PEBakery.exe using ShellExecute
             string absPath = GetProgramAbsolutePath();
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = true;
-            proc.StartInfo.Verb = "Open";
-            proc.StartInfo.FileName = Path.Combine(absPath, "Binary", "PEBakery.exe"); 
-            proc.StartInfo.WorkingDirectory = absPath;
+            Process proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    UseShellExecute = true,
+                    Verb = "Open",
+                    FileName = Path.Combine(absPath, "Binary", "PEBakery.exe"),
+                    WorkingDirectory = absPath
+                }
+            };
+
             StringBuilder b = new StringBuilder();
             foreach (string arg in args)
             {
@@ -83,10 +92,7 @@ namespace Launcher
                 int revision = (int)ndpKey.GetValue("Release", 0);
 
                 // PEBakery requires .Net Framework 4.7.1 or later
-                if (461308 <= revision) // 4.7.1
-                    return true;
-                else
-                    return false;
+                return 461308 <= revision;
             }
         }
     }

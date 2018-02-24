@@ -61,7 +61,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   20180125과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   20180225과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildDate {
             get {
@@ -73,7 +73,7 @@ namespace PEBakery.Properties {
         ///   @using System.Collections.Generic;
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
-        ///&lt;html lang=&quot;ko&quot;&gt;
+        ///&lt;html&gt;
         ///    &lt;head&gt;
         ///        &lt;meta charset=&quot;utf-8&quot;&gt;
         ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
@@ -83,7 +83,7 @@ namespace PEBakery.Properties {
         ///        &lt;title&gt;@Model.BuildName&lt;/title&gt;
         ///
         ///        &lt;!-- Bootstrap CSS --&gt;
-        ///        &lt;link r[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///		&lt;link rel=&quot;stylesheet&quot; [나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string BuildLogHtmlTemplate {
             get {
@@ -92,7 +92,7 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   92과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   93과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string EngineVersion {
             get {
@@ -134,7 +134,7 @@ namespace PEBakery.Properties {
         ///   @using System.Collections.Generic;
         ///@using PEBakery.Core;
         ///&lt;!DOCTYPE html&gt;
-        ///&lt;html lang=&quot;ko&quot;&gt;
+        ///&lt;html&gt;
         ///    &lt;head&gt;
         ///        &lt;meta charset=&quot;utf-8&quot;&gt;
         ///        &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
@@ -144,7 +144,7 @@ namespace PEBakery.Properties {
         ///        &lt;title&gt;PEBakery System Log&lt;/title&gt;
         ///
         ///        &lt;!-- Bootstrap CSS --&gt;
-        ///        &lt;lin[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///        &lt;link rel=&quot;sty[나머지 문자열은 잘림]&quot;;과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string SystemLogHtmlTemplate {
             get {
