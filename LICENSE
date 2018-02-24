@@ -62,7 +62,8 @@ Ookii.Dialogs.Wpf
     Updated by Vladimir Svyatski (@vsvyatski)
     https://github.com/vsvyatski/ookii.dialogs
 
-Launcher
+LauncherNative
+LauncherSharp
     MIT License
     https://opensource.org/licenses/MIT
 
@@ -107,7 +108,8 @@ PEBakery/WPF/Controls/FreeNumberBox
 
 PEBakery/WPF/Controls/Svg/Donut.xaml
 PEBakery/Resources/Donut.ico
-Launcher/Donut.ico
+LauncherNative/Donut.ico
+LauncherSharp/Donut.ico
     CC BY 3.0 US
     https://creativecommons.org/licenses/by/3.0/us/
 
