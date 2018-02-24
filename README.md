@@ -18,10 +18,11 @@ PEBakery is compatible with WinBuilder 082.
 - All implementation is only backed by documentation and blackbox testing, without violating WinBuilder 082's EULA.
 - Even though I did not experienced data corruption while developing, it is highly recommended to backup your files.
 - I do not provide any warranty, use at your own risk.
+- Windows Preinstalled Environment is a registered trademark of Microsoft. 
 
 ## License
 
-PEBakery is mianly licensed under GPLv3 or any later version with additional permission.
+PEBakery is mainly licensed under GPLv3 or any later version with additional permission.
 
 Some parts of PEBakery is licensed under MIT License and others.
 
@@ -41,6 +42,12 @@ To compile PEBakery from source, Visual Studio and .Net Framework is required.
 ## Documentation
 
 See [PEBakery Manual](https://github.com/pebakery/pebakery-docs).
+
+## TODO
+
+- New Script Language
+- New Script File Format
+- Multilanguage Support
 
 ## Screenshots
 
