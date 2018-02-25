@@ -560,7 +560,8 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | ExtractFlags.STRICT_GLOB | 
+                                        ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
                 openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)

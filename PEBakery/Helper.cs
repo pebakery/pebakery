@@ -216,6 +216,8 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static string GetParentDirName(string path)
         {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
             string dirName = Path.GetDirectoryName(path);
             int idx = dirName.LastIndexOf(Path.DirectorySeparatorChar);
             if (idx != -1)
