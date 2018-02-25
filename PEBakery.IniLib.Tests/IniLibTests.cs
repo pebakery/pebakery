@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2017 Hajin Jang
+    Copyright (C) 2017-2018 Hajin Jang
  
     MIT License
 
@@ -28,7 +28,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Text;
 using System.Collections.Generic;
 using PEBakery.IniLib;
-using PEBakery.Helper;
 using System.Linq;
 
 namespace PEBakery.IniLib.Tests
@@ -58,7 +57,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_GetKey_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -78,7 +77,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_GetKey_3()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -120,7 +119,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_GetKeys_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -202,7 +201,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_SetKey_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -213,7 +212,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "B"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -232,7 +231,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_SetKey_3()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -243,7 +242,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -265,7 +264,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_SetKey_4()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -276,7 +275,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -308,7 +307,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_SetKeys_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
 
             IniKey[] keys = new IniKey[3];
             keys[0] = new IniKey("Section2", "20", "English");
@@ -318,7 +317,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.SetKeys(tempFile, keys));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -343,7 +342,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_SetKeys_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -370,7 +369,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.SetKeys(tempFile, keys));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -416,12 +415,12 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_WriteRawLine_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
 
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "RawLine"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -438,7 +437,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_WriteRawLine_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -449,7 +448,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "LineAppend", true));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -469,7 +468,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_WriteRawLine_3()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -480,7 +479,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section", "LinePrepend", false));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -500,7 +499,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_WriteRawLine_4()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -511,7 +510,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section2", "Key"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -533,7 +532,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_WriteRawLine_5()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -544,7 +543,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLine(tempFile, "Section2", "Key"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -577,7 +576,7 @@ namespace PEBakery.IniLib.Tests
         {
             string tempFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -602,7 +601,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLines(tempFile, keys, false));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -636,7 +635,7 @@ namespace PEBakery.IniLib.Tests
         {
             string tempFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -661,7 +660,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.WriteRawLines(tempFile, keys, true));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -705,7 +704,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteKey_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -718,7 +717,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "2"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -739,7 +738,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteKey_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -753,7 +752,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsFalse(Ini.DeleteKey(tempFile, "Section", "5"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -775,7 +774,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteKey_3()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -789,7 +788,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.DeleteKey(tempFile, "Section", "4"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -818,7 +817,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteKeys_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -845,7 +844,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(result.All(x => x == true));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -884,7 +883,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section]");
@@ -910,7 +909,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section]");
@@ -933,7 +932,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section1]");
@@ -992,7 +991,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section]");
@@ -1018,7 +1017,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section]");
@@ -1047,7 +1046,7 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             try
             {
-                FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
                 using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
                 {
                     w.WriteLine("[Section1]");
@@ -1109,11 +1108,11 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_AddSection_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             Assert.IsTrue(Ini.AddSection(tempFile, "Section"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1132,7 +1131,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_AddSection_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -1143,7 +1142,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.AddSection(tempFile, "Section"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1164,7 +1163,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_AddSection_3()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -1183,7 +1182,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.AddSection(tempFile, "Section4"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1224,7 +1223,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_AddSections_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
 
             List<string> sections = new List<string>()
             {
@@ -1236,7 +1235,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.AddSections(tempFile, sections));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1259,7 +1258,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_AddSections_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -1284,7 +1283,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.AddSections(tempFile, sections));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1326,12 +1325,12 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteSection_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
 
             // Induce Error
             Assert.IsFalse(Ini.DeleteSection(tempFile, "Section"));
 
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 string read = r.ReadToEnd();
@@ -1346,7 +1345,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteSection_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section]");
@@ -1356,7 +1355,7 @@ namespace PEBakery.IniLib.Tests
 
             Assert.IsTrue(Ini.DeleteSection(tempFile, "Section"));
 
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             { // Must be same
                 string read = r.ReadToEnd();
@@ -1371,7 +1370,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteSection_3()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -1390,7 +1389,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.DeleteSection(tempFile, "Section2"));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1426,7 +1425,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteSections_1()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -1451,7 +1450,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.DeleteSections(tempFile, sections));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1472,7 +1471,7 @@ namespace PEBakery.IniLib.Tests
         public void IniLib_DeleteSections_2()
         {
             string tempFile = Path.GetTempFileName();
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
                 w.WriteLine("[Section1]");
@@ -1497,7 +1496,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsFalse(Ini.DeleteSections(tempFile, sections));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
             using (StreamReader r = new StreamReader(tempFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1540,8 +1539,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
@@ -1553,7 +1552,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1576,8 +1575,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.Unicode);
+            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.Unicode);
 
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
             {
@@ -1595,7 +1594,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1621,8 +1620,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.Unicode))
             {
@@ -1643,7 +1642,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1670,8 +1669,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile, Encoding.Unicode);
-            FileHelper.WriteTextBOM(destFile, Encoding.BigEndianUnicode);
+            TestHelper.WriteTextBOM(tempFile, Encoding.Unicode);
+            TestHelper.WriteTextBOM(destFile, Encoding.BigEndianUnicode);
 
             using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.Unicode))
             {
@@ -1692,7 +1691,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1733,12 +1732,12 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile))
             {
                 read = r.ReadToEnd();
@@ -1757,8 +1756,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
             {
@@ -1770,7 +1769,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1795,8 +1794,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
             {
@@ -1814,7 +1813,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1842,8 +1841,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
             {
@@ -1864,7 +1863,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1893,9 +1892,9 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
-            FileHelper.WriteTextBOM(tempFile2, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile2, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
             {
@@ -1916,7 +1915,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();
@@ -1944,8 +1943,8 @@ namespace PEBakery.IniLib.Tests
             string tempFile2 = Path.GetTempFileName();
             string destFile = Path.GetTempFileName();
 
-            FileHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
-            FileHelper.WriteTextBOM(destFile, Encoding.UTF8);
+            TestHelper.WriteTextBOM(tempFile1, Encoding.UTF8);
+            TestHelper.WriteTextBOM(destFile, Encoding.UTF8);
 
             using (StreamWriter w = new StreamWriter(tempFile1, false, Encoding.UTF8))
             {
@@ -1975,7 +1974,7 @@ namespace PEBakery.IniLib.Tests
             Assert.IsTrue(Ini.Merge(tempFile1, tempFile2, destFile));
 
             string read;
-            Encoding encoding = FileHelper.DetectTextEncoding(destFile);
+            Encoding encoding = TestHelper.DetectTextEncoding(destFile);
             using (StreamReader r = new StreamReader(destFile, encoding))
             {
                 read = r.ReadToEnd();

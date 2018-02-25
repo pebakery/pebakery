@@ -191,7 +191,6 @@ namespace PEBakery.CabLib
         /// <summary>
         /// Constructor recieves cab file's binary data as stream
         /// </summary>
-        /// <param name="inputData"></param>
         public CabExtract(Stream stream, bool leaveOpen = false)
         {
             _fileReadDelegate = FileRead;

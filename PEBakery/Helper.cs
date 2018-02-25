@@ -100,6 +100,9 @@ namespace PEBakery.Helper
 
         public static void WriteTextBOM(Stream stream, Encoding encoding)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
+
             long posBackup = stream.Position;
             stream.Position = 0;
 

@@ -1550,42 +1550,4 @@ namespace ManagedWimLib
         #endregion
     }
     #endregion
-
-    #region StringHelper
-    internal class StringHelper
-    {
-        public static string ReplaceEx(string str, string oldValue, string newValue, StringComparison comp)
-        {
-            if (oldValue.Equals(string.Empty, comp))
-                return str;
-
-            if (str.IndexOf(oldValue, comp) != -1)
-            {
-                int idx = 0;
-                StringBuilder b = new StringBuilder();
-                while (idx < str.Length)
-                {
-                    int vIdx = str.IndexOf(oldValue, idx, comp);
-
-                    if (vIdx == -1)
-                    {
-                        b.Append(str.Substring(idx));
-                        break;
-                    }
-                    else
-                    {
-                        b.Append(str.Substring(idx, vIdx - idx));
-                        b.Append(newValue);
-                        idx = vIdx += oldValue.Length;
-                    }
-                }
-                return b.ToString();
-            }
-            else
-            {
-                return str;
-            }
-        }
-    }
-    #endregion
 }

@@ -39,7 +39,7 @@ namespace ManagedWimLib
     #region SafeLibraryHandle
     [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode = true)]
     [SecurityPermission(SecurityAction.Demand, UnmanagedCode = true)]
-    public class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid, IDisposable
+    public class SafeLibraryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         #region Managed Methods
         public SafeLibraryHandle() : base(true) { }
@@ -3217,16 +3217,16 @@ namespace ManagedWimLib
         /// <summary>
         /// If this blob is not missing, then this is the uncompressed size of this blob in bytes.
         /// </summary>
-        ulong UncompressedSize;
+        public ulong UncompressedSize;
         /// <summary>
         /// If this blob is located in a non-solid WIM resource, then this is the compressed size of that resource. 
         /// </summary>
-        ulong CompressedSize;
+        public ulong CompressedSize;
         /// <summary>
         /// If this blob is located in a non-solid WIM resource, then this is the offset of that resource within the WIM file containing it.
         /// If this blob is located in a solid WIM resource, then this is the offset of this blob within that solid resource when uncompressed.
         /// </summary>
-        ulong Offset;
+        public ulong Offset;
         /// <summary>
         /// The SHA-1 message digest of the blob's uncompressed contents.
         /// </summary>
@@ -3235,12 +3235,12 @@ namespace ManagedWimLib
         /// <summary>
         /// If this blob is located in a WIM resource, then this is the part number of the WIM file containing it.
         /// </summary>
-        uint PartNumber;
+        public uint PartNumber;
         /// <summary>
         /// If this blob is not missing, then this is the number of times this blob is referenced over all images in the WIM.
         /// This number is not guaranteed to be correct.
         /// </summary>
-        uint ReferenceCount;
+        public uint ReferenceCount;
         /// <summary>
         /// Bit 0 - 6 : Bool Flags
         /// Bit 7 - 31 : Reserved
@@ -3306,37 +3306,6 @@ namespace ManagedWimLib
         public ResourceEntry Resource;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
         private ulong[] Reserved;
-    }
-    #endregion
-
-    #region WimLibException
-    public class WimLibException : Exception
-    {
-        public ErrorCode ErrorCode;
-
-        public WimLibException(ErrorCode errorCode)
-            : base(ForgeErrorMessages(errorCode, true))
-        {
-            this.ErrorCode = errorCode;
-        }
-
-        internal static string ForgeErrorMessages(ErrorCode errorCode, bool full)
-        {
-            StringBuilder b = new StringBuilder();
-
-            if (full)
-                b.Append($"[{errorCode}] ");
-
-            b.Append(Wim.GetLastError() ?? Wim.GetErrorString(errorCode));
-
-            return b.ToString();
-        }
-
-        public static void CheckWimLibError(ErrorCode ret)
-        {
-            if (ret != ErrorCode.SUCCESS)
-                throw new WimLibException(ret);
-        }
     }
     #endregion
 }

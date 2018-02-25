@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2017 Hajin Jang
+    Copyright (C) 2016-2018 Hajin Jang
  
     MIT License
 
@@ -88,12 +88,11 @@ namespace PEBakery.IniLib
 
     public class IniKeyComparer : IComparer
     {
-        public int Compare(System.Object x, System.Object y)
+        public int Compare(object x, object y)
         {
             string strX = ((IniKey)x).Section;
             string strY = ((IniKey)y).Section;
-            return (new CaseInsensitiveComparer()).Compare(strX, strY);
-            // return StringComparer.OrdinalIgnoreCase.Compare(x, y);
+            return StringComparer.OrdinalIgnoreCase.Compare(strX, strY);
         }
     }
     #endregion
@@ -102,7 +101,7 @@ namespace PEBakery.IniLib
     public static class Ini
     {
         #region Lock
-        private readonly static ConcurrentDictionary<string, ReaderWriterLockSlim> lockDict =
+        private static readonly ConcurrentDictionary<string, ReaderWriterLockSlim> lockDict =
             new ConcurrentDictionary<string, ReaderWriterLockSlim>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -118,10 +117,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
         public static string GetKey(string file, IniKey iniKey)
         {
             IniKey[] iniKeys = InternalGetKeys(file, new IniKey[] { iniKey });
@@ -130,10 +125,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
         public static string GetKey(string file, string section, string key)
         {
             IniKey[] iniKeys = InternalGetKeys(file, new IniKey[] { new IniKey(section, key) });
@@ -142,11 +133,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="iniKeys"></param>
-        /// <returns>
-        /// Found values are stroed in returned IniKey.
-        /// </returns>
         public static IniKey[] GetKeys(string file, IEnumerable<IniKey> iniKeys)
         {
             return InternalGetKeys(file, iniKeys.ToArray());
@@ -173,7 +159,7 @@ namespace PEBakery.IniLib
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
-                    string line = string.Empty;
+                    string line;
                     bool inTargetSection = false;
                     string currentSection = null;
 
