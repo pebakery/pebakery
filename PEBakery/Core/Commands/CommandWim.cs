@@ -560,14 +560,17 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS | ExtractFlags.STRICT_GLOB | 
-                                        ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.NO_PRESERVE_DIR_STRUCTURE;
             if (info.CheckFlag)
                 openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
                 extractFlags |= ExtractFlags.NO_ATTRIBUTES;
+
+            // Flags for globbing
+            if (StringHelper.IsWildcard(extractPath))
+                extractFlags |= ExtractFlags.GLOB_PATHS;
 
             try
             {
@@ -653,13 +656,14 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX;
             if (info.CheckFlag)
                 openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
                 extractFlags |= ExtractFlags.NO_ATTRIBUTES;
+            ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GLOB_PATHS;
 
             // Check ListFile
             if (!File.Exists(listFilePath))
@@ -668,8 +672,26 @@ namespace PEBakery.Core.Commands
             string unicodeListFile = Path.GetTempFileName();
             try
             {
+                List<string> extractNormalPaths = new List<string>();
+                List<string> extractGlobPaths = new List<string>();
+                Encoding encoding = FileHelper.DetectTextEncoding(listFilePath);
+                using (StreamReader r = new StreamReader(listFilePath, encoding, false))
+                {
+                    var extractPaths = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim());
+                    foreach (string path in extractPaths)
+                    {
+                        if (path[0] == ';' || path[0] == '#')
+                            continue;
+
+                        if (StringHelper.IsWildcard(path))
+                            extractGlobPaths.Add(path);
+                        else
+                            extractNormalPaths.Add(path);
+                    }
+                }
+
                 // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE ListFile)
-                FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
+                // FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
 
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
@@ -711,12 +733,13 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        // Ignore GLOB_HAD_NO_MATCHES
-                        wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
+                        // wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
+
+                        wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractFlags);
+                        wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
 
                         logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
                     }
-                    // catch (WimLibException e) when (e.ErrorCode == WimLibErrorCode.GLOB_HAD_NO_MATCHES) { }
                     finally
                     { // Finalize Command Progress Report
                         s.MainViewModel.BuildCommandProgressShow = false;

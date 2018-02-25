@@ -762,6 +762,11 @@ namespace PEBakery.Helper
             return 'A' <= ch && ch <= 'Z' || 'a' <= ch && ch <= 'z';
         }
 
+        public static bool IsWildcard(string str)
+        {
+            return (str.IndexOfAny(new[] {'*', '?'}) != -1);
+        }
+
         /// <summary>
         /// Count occurrences of strings.
         /// http://www.dotnetperls.com/string-occurrence
@@ -784,72 +789,63 @@ namespace PEBakery.Helper
             if (oldValue.Equals(string.Empty, comp))
                 return str;
 
-            if (str.IndexOf(oldValue, comp) != -1)
-            {
-                int idx = 0;
-                StringBuilder b = new StringBuilder();
-                while (idx < str.Length)
-                {
-                    int vIdx = str.IndexOf(oldValue, idx, comp);
-
-                    if (vIdx == -1)
-                    {
-                        b.Append(str.Substring(idx));
-                        break;
-                    }
-                    else
-                    {
-                        b.Append(str.Substring(idx, vIdx - idx));
-                        b.Append(newValue);
-                        idx = vIdx += oldValue.Length;
-                    }
-                }
-                return b.ToString();
-            }
-            else
-            {
+            if (str.IndexOf(oldValue, comp) == -1)
                 return str;
+
+            int idx = 0;
+            StringBuilder b = new StringBuilder();
+            while (idx < str.Length)
+            {
+                int vIdx = str.IndexOf(oldValue, idx, comp);
+
+                if (vIdx == -1)
+                {
+                    b.Append(str.Substring(idx));
+                    break;
+                }
+
+                b.Append(str.Substring(idx, vIdx - idx));
+                b.Append(newValue);
+                idx = vIdx += oldValue.Length;
             }
+            return b.ToString();
+
         }
 
         public static string ReplaceRegex(string str, string regex, string newValue, StringComparison comp)
         {
             MatchCollection matches = Regex.Matches(str, regex, RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            if (0 < matches.Count)
-            {
-                StringBuilder b = new StringBuilder();
-                for (int x = 0; x < matches.Count; x++)
-                {
-                    if (x == 0)
-                    {
-                        b.Append(str.Substring(0, matches[0].Index));
-                    }
-                    else
-                    {
-                        int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
-                        int endOffset = matches[x].Index - startOffset;
-                        b.Append(str.Substring(startOffset, endOffset));
-                    }
-
-                    b.Append(newValue);
-
-                    if (x + 1 == matches.Count)
-                    {
-                        b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
-                    }
-                }
-                return b.ToString();
-            }
-            else
-            {
+            if (matches.Count == 0)
                 return str;
+
+            StringBuilder b = new StringBuilder();
+            for (int x = 0; x < matches.Count; x++)
+            {
+                if (x == 0)
+                {
+                    b.Append(str.Substring(0, matches[0].Index));
+                }
+                else
+                {
+                    int startOffset = matches[x - 1].Index + matches[x - 1].Value.Length;
+                    int endOffset = matches[x].Index - startOffset;
+                    b.Append(str.Substring(startOffset, endOffset));
+                }
+
+                b.Append(newValue);
+
+                if (x + 1 == matches.Count)
+                {
+                    b.Append(str.Substring(matches[x].Index + matches[x].Value.Length));
+                }
             }
+            return b.ToString();
         }
 
         public static string ReplaceAt(string str, int index, int length, string newValue)
         {
-            if (index < 0) throw new ArgumentOutOfRangeException("index");
-            if (length < 0) throw new ArgumentOutOfRangeException("length");
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            if (length < 0) throw new ArgumentOutOfRangeException(nameof(length));
             return str.Substring(0, index) + newValue + str.Substring(index + length);
         }
     }

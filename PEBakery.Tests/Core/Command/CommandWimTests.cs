@@ -132,15 +132,16 @@ namespace PEBakery.Tests.Core.Command
                 "A.txt",
             });
 
-            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", destDir, new string[0]);
-
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\Split.swm,1,\나,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
             { // Unicode test with Korean letter
                 "나",
             });
 
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\*.exe,{pbDestDir}", destDir, new string[0]);
+
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\ACDE.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
             Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,2,\ACDE.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+            Extract_Template(s, $@"WimExtract,{pbSampleDir}\LZX.wim,1,\Z.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
         }
 
         public void Extract_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -216,6 +217,10 @@ namespace PEBakery.Tests.Core.Command
 
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},CHECK,NOACL,NOATTRIB,TRASH", destDir, null, ErrorCheck.ParserError);
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,2,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, null, ErrorCheck.Error);
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\Split.swm,1,{pbDestDir}\ListFile.txt,{pbDestDir},Split={pbSampleDir}\Split*.swm", destDir, new string[]
+            { // Unicode test with Korean letter
+                "나", "다"
+            }, ErrorCheck.Error);
         }
 
         public void ExtractBulk_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
