@@ -167,6 +167,20 @@ namespace ManagedWimLib
             return Marshal.PtrToStringUni(ptr);
         }
 
+        public static string[] GetErrors()
+        {
+            if (NativeMethods.ErrorFile == null)
+                return null;
+            if (NativeMethods.PrintErrorsEnabled == false)
+                return null;
+
+            using (FileStream fs = new FileStream(NativeMethods.ErrorFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (StreamReader r = new StreamReader(fs, Encoding.Unicode, false))
+            {
+                return r.ReadToEnd().Split('\n').Select(x => x.Trim()).Where(x => 0 < x.Length).ToArray();
+            }
+        }
+
         public static string GetLastError()
         {
             if (NativeMethods.ErrorFile == null)
@@ -177,8 +191,23 @@ namespace ManagedWimLib
             using (FileStream fs = new FileStream(NativeMethods.ErrorFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (StreamReader r = new StreamReader(fs, Encoding.Unicode, false))
             {
-                var lines = r.ReadToEnd().Split('\n').Where(x => !string.IsNullOrWhiteSpace(x));
+                var lines = r.ReadToEnd().Split('\n').Select(x => x.Trim()).Where(x => 0 < x.Length);
                 return lines.LastOrDefault();
+            }
+        }
+
+        public static void ResetErrorFile()
+        {
+            if (NativeMethods.ErrorFile == null)
+                return;
+            if (NativeMethods.PrintErrorsEnabled == false)
+                return;
+
+            // Overwrite to Empty File
+            using (FileStream fs = new FileStream(NativeMethods.ErrorFile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+            using (StreamWriter w = new StreamWriter(fs, Encoding.Unicode))
+            {
+                w.WriteLine();
             }
         }
 

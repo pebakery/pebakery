@@ -473,7 +473,7 @@ namespace PEBakery.Core.Commands
                             string iniFile = StringEscaper.Preprocess(s, c.Arg1);
                             string section = StringEscaper.Preprocess(s, c.Arg2);
 
-                            match = Ini.CheckSectionExist(iniFile, section);
+                            match = Ini.SectionExists(iniFile, section);
                             if (match)
                                 logMessage = $"Section [{section}] exists in INI file [{iniFile}]";
                             else

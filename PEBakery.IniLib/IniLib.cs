@@ -1708,7 +1708,7 @@ namespace PEBakery.IniLib
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static bool CheckSectionExist(string file, string section)
+        public static bool SectionExists(string file, string section)
         {
             bool result = false;
 

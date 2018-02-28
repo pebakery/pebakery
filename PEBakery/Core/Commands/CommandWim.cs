@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PEBakery.Core.Commands
@@ -663,7 +664,8 @@ namespace PEBakery.Core.Commands
                 extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
                 extractFlags |= ExtractFlags.NO_ATTRIBUTES;
-            ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GLOB_PATHS;
+            // ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GLOB_PATHS;
+            extractFlags = extractFlags | ExtractFlags.GLOB_PATHS;
 
             // Check ListFile
             if (!File.Exists(listFilePath))
@@ -691,7 +693,7 @@ namespace PEBakery.Core.Commands
                 }
 
                 // Convert ListFile into UTF-16LE (wimlib only accepts UTF-8 or UTF-16LE ListFile)
-                // FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
+                FileHelper.ConvertTextFileToEncoding(listFilePath, unicodeListFile, Encoding.Unicode);
 
                 using (Wim wim = Wim.OpenWim(srcWim, openFlags, WimApplyExtractProgress, s))
                 {
@@ -733,12 +735,32 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        // wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
+                        Wim.ResetErrorFile();
 
-                        wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractFlags);
-                        wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
+                        string[] before = Wim.GetErrors();
+                        Debug.Assert(before.Length == 0);
 
-                        logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
+                        wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractFlags);
+                        string[] wimlibErrors = Wim.GetErrors();
+
+                        // Dirty hack to track which glob was not matched\
+                        List<string> errGlobs = new List<string>(wimlibErrors.Length);
+                        foreach (string err in wimlibErrors)
+                        {
+                            Match m = Regex.Match(err, @"\[WARNING\] No matches for path pattern ""(.+)""",
+                                RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                            if (m.Success)
+                            {
+                                string glob = m.Groups[1].Value;
+                                if (!StringHelper.IsWildcard(glob))
+                                    errGlobs.Add(glob);
+                            }
+                        }
+
+                        if (0 < errGlobs.Count)
+                            logs.Add(new LogInfo(LogState.Error, $"Unable to find [{errGlobs.First()}] from [{srcWim}:{imageIndex}]"));
+                        else
+                            logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
                     }
                     finally
                     { // Finalize Command Progress Report
