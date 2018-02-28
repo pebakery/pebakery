@@ -149,8 +149,9 @@ namespace PEBakery.Core
 
                 // Temporary disable folder.script, will fix it later
                 // List<string> dirLinkPathList = GetFolderLinks(projectDir);
-                // dirLinkPathDict[projName] = dirLinkPathList;
-                // allDirLinkPaths.AddRange(dirLinkPathList);
+                List<string> dirLinkPathList = new List<string>();
+                dirLinkPathDict[projName] = dirLinkPathList;
+                allDirLinkPaths.AddRange(dirLinkPathList);
             }
             return allCount;
         }
