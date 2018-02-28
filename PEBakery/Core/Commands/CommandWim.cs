@@ -657,15 +657,13 @@ namespace PEBakery.Core.Commands
 
             // Set Flags
             OpenFlags openFlags = OpenFlags.DEFAULT;
-            ExtractFlags extractFlags = ExtractFlags.NORPFIX;
+            ExtractFlags extractFlags = ExtractFlags.NORPFIX | ExtractFlags.GLOB_PATHS;
             if (info.CheckFlag)
                 openFlags |= OpenFlags.CHECK_INTEGRITY;
             if (info.NoAclFlag)
                 extractFlags |= ExtractFlags.NO_ACLS;
             if (info.NoAttribFlag)
                 extractFlags |= ExtractFlags.NO_ATTRIBUTES;
-            // ExtractFlags extractGlobFlags = extractFlags | ExtractFlags.GLOB_PATHS;
-            extractFlags = extractFlags | ExtractFlags.GLOB_PATHS;
 
             // Check ListFile
             if (!File.Exists(listFilePath))
@@ -747,8 +745,7 @@ namespace PEBakery.Core.Commands
                         List<string> errGlobs = new List<string>(wimlibErrors.Length);
                         foreach (string err in wimlibErrors)
                         {
-                            Match m = Regex.Match(err, @"\[WARNING\] No matches for path pattern ""(.+)""",
-                                RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                            Match m = Regex.Match(err, @"\[WARNING\] No matches for path pattern ""(.+)""", RegexOptions.Compiled | RegexOptions.CultureInvariant);
                             if (m.Success)
                             {
                                 string glob = m.Groups[1].Value;

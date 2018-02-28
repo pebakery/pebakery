@@ -45,14 +45,9 @@ namespace ManagedWimLib.Tests
             string srcDir = Path.Combine(TestSetup.SampleDir, testSet);
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string wimFile = Path.Combine(destDir, "LZX.wim");
-            // Strange, using "%TEMP%\{Path.GetRandomFileName()}" folder for split wim's dest raises an error
-            // Bug of wimlib. Until it is fixed, use just temp directory (so there should be no dot in path)
-            // string splitWimFile = Path.Combine(destDir, "Split.swm");
-            // string splitWildcard = Path.Combine(destDir, "Split*.swm");
-            string splitWimFile = Path.Combine(Path.GetTempPath(), "Split.swm");
-            string splitWildcard = Path.Combine(Path.GetTempPath(), "Split*.swm");
+            string splitWimFile = Path.Combine(destDir, "Split.swm");
+            string splitWildcard = Path.Combine(destDir, "Split*.swm");
 
-            // TroubleShoot : iztfjh2x.fty*.swm -> wimlib generates iztfjh2x2.fty.swm, instead of iztfjh2x.fty2.swm
             try
             {
                 Directory.CreateDirectory(destDir);
