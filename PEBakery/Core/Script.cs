@@ -45,9 +45,10 @@ namespace PEBakery.Core
     [Serializable]
     public class Script
     {
-        #region Fields, Properties
-        private string fullPath;
-        private string shortPath;
+        #region Fields
+        private string realPath;
+        private string treePath;
+
         private bool fullyParsed;
         private bool isMainScript;
 
@@ -59,7 +60,7 @@ namespace PEBakery.Core
         private Script link;
         [NonSerialized]
         private bool linkLoaded;
-        private bool isDirLink = false;
+        private bool isDirLink;
         private string title = string.Empty;
         private string author = string.Empty;
         private string description = string.Empty;
@@ -68,20 +69,21 @@ namespace PEBakery.Core
         private SelectedState selected = SelectedState.None;
         private bool mandatory = false;
         private List<string> interfaceList = new List<string>();
+        #endregion
 
-        // Properties
-        public string FullPath
+        #region Properties
+        public string RealPath
         {
             get
             {
                 if (type == ScriptType.Link && linkLoaded)
-                    return link.FullPath;
+                    return link.RealPath;
                 else
-                    return fullPath;
+                    return realPath;
             }
         }
-        public string DirectFullPath => fullPath;
-        public string ShortPath => shortPath;
+        public string DirectRealPath => realPath;
+        public string TreePath => treePath;
         public Dictionary<string, ScriptSection> Sections
         {
             get
@@ -202,7 +204,7 @@ namespace PEBakery.Core
                         if (sections.ContainsKey("Main"))
                         {
                             sections["Main"].IniDict["Selected"] = valStr;
-                            Ini.SetKey(fullPath, new IniKey("Main", "Selected", valStr));
+                            Ini.SetKey(realPath, new IniKey("Main", "Selected", valStr));
                         }
                     }
                 }
@@ -211,18 +213,23 @@ namespace PEBakery.Core
         #endregion
 
         #region Constructor
-        public Script(ScriptType type, string fullPath, Project project, string projectRoot, int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
+        public Script(
+            ScriptType type,
+            string realPath, string treePath, 
+            Project project, string projectRoot,
+            int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
-            this.fullPath = fullPath ?? throw new ArgumentNullException("fullPath");
+            if (projectRoot == null) throw new ArgumentNullException(nameof(projectRoot));
 
-            if (projectRoot == null) throw new ArgumentNullException("projectRoot");
-            if (fullPath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
-                this.shortPath = fullPath.Remove(0, projectRoot.Length + 1);
+            this.realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
+            if (treePath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
+                this.treePath = treePath.Remove(0, projectRoot.Length + 1);
             else
-                this.shortPath = fullPath;
-           
+                this.treePath = treePath;
+            Debug.Assert(this.treePath != null);
+
             this.type = type;
-            this.project = project ?? throw new ArgumentNullException("project");
+            this.project = project ?? throw new ArgumentNullException(nameof(project));
             this.isMainScript = isMainScript;
             this.linkLoaded = false;
             this.isDirLink = isDirLink;
@@ -238,11 +245,11 @@ namespace PEBakery.Core
                         List<string> dirInfo = new List<string>();
                         sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
                         {
-                            ["Main"] = CreateScriptSectionInstance(fullPath, "Main", SectionType.Main, new List<string>(), 1)
+                            ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, new List<string>(), 1)
                         };
 
                         // Mandatory Entries
-                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(fullPath);
+                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(realPath);
                         sections["Main"].IniDict["Description"] = this.description = $"Directory {this.title}";
                         this.level = (int)level;
                         sections["Main"].IniDict["Level"] = this.level.ToString();
@@ -263,7 +270,7 @@ namespace PEBakery.Core
 
                         if (mainSection.IniDict.ContainsKey("Link") == false)
                         {
-                            throw new ScriptParseException($"Invalid link path in script {fullPath}");
+                            throw new ScriptParseException($"Invalid link path in script {realPath}");
                         }
 
                         if (mainSection.IniDict.ContainsKey("Selected"))
@@ -353,7 +360,7 @@ namespace PEBakery.Core
                         }
                         else
                         {
-                            this.title = Path.GetFileName(fullPath);
+                            this.title = Path.GetFileName(realPath);
                             this.description = string.Empty;
                             this.level = 0;
                         }
@@ -371,8 +378,8 @@ namespace PEBakery.Core
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = FileHelper.DetectTextEncoding(fullPath);
-            using (StreamReader reader = new StreamReader(fullPath, encoding))
+            Encoding encoding = FileHelper.DetectTextEncoding(realPath);
+            using (StreamReader reader = new StreamReader(realPath, encoding))
             {
                 int idx = 0;
                 int sectionIdx = 0;
@@ -391,7 +398,7 @@ namespace PEBakery.Core
                     { // Start of section
                         if (inSection)
                         { // End of section
-                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
 
@@ -411,7 +418,7 @@ namespace PEBakery.Core
                     { // End of .script
                         if (inSection)
                         {
-                            dict[currentSection] = CreateScriptSectionInstance(fullPath, currentSection, type, lines, sectionIdx);
+                            dict[currentSection] = CreateScriptSectionInstance(currentSection, type, lines, sectionIdx);
                             lines = new List<string>();
                         }
                     }
@@ -436,7 +443,7 @@ namespace PEBakery.Core
                         return false;
                 }
                 else
-                    encodedFolders = Ini.ParseIniSection(fullPath, "EncodedFolders");
+                    encodedFolders = Ini.ParseIniSection(realPath, "EncodedFolders");
             }
             catch (SectionNotFoundException) // No EncodedFolders section, exit
             {
@@ -516,7 +523,7 @@ namespace PEBakery.Core
             }
         }
 
-        private ScriptSection CreateScriptSectionInstance(string fullPath, string sectionName, SectionType type, List<string> lines, int lineIdx)
+        private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
             Dictionary<string, string> sectionKeys;
             switch (type)
@@ -542,7 +549,7 @@ namespace PEBakery.Core
         private void CheckMainSection(ScriptType type)
         {
             if (sections.ContainsKey("Main") == false)
-                throw new ScriptParseException($"[{fullPath}] is invalid, please Add [Main] Section");
+                throw new ScriptParseException($"[{realPath}] is invalid, please Add [Main] Section");
 
             bool fail = true;
             if (sections["Main"].DataType == SectionDataType.IniDict)
@@ -560,7 +567,7 @@ namespace PEBakery.Core
             }
 
             if (fail)
-                throw new ScriptParseException($"[{fullPath}] is invalid, check [Main] Section");
+                throw new ScriptParseException($"[{realPath}] is invalid, check [Main] Section");
         }
 
         public static string[] GetDisableScriptPaths(Script p, out List<LogInfo> errorLogs)
@@ -607,7 +614,7 @@ namespace PEBakery.Core
                 try
                 {
                     string pPath = p.Project.Variables.Expand(path);
-                    if (pPath.Equals(p.DirectFullPath, StringComparison.OrdinalIgnoreCase) == false)
+                    if (pPath.Equals(p.DirectRealPath, StringComparison.OrdinalIgnoreCase) == false)
                         filteredPaths.Add(p.Project.Variables.Expand(path));
                 }
                 catch (Exception e) { errorLogs.Add(new LogInfo(LogState.Success, Logger.LogExceptionMessage(e))); }
@@ -642,7 +649,7 @@ namespace PEBakery.Core
         {
             if (obj is Script p)
             {
-                if (this.FullPath.Equals(p.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (this.RealPath.Equals(p.RealPath, StringComparison.OrdinalIgnoreCase))
                     return true;
                 else
                     return false;
@@ -655,7 +662,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return fullPath.GetHashCode() ^ shortPath.GetHashCode();
+            return realPath.GetHashCode() ^ treePath.GetHashCode();
         }
         #endregion
     }
@@ -857,7 +864,7 @@ namespace PEBakery.Core
 
         public bool Equals(ScriptSection section)
         {
-            if (section == null) throw new ArgumentNullException("section");
+            if (section == null) throw new ArgumentNullException(nameof(section));
 
             if (script.Equals(section.Script) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
                 return true;
@@ -900,11 +907,11 @@ namespace PEBakery.Core
                 switch (dataType)
                 {
                     case SectionDataType.IniDict:
-                        iniDict = Ini.ParseIniSectionToDict(script.FullPath, SectionName);
+                        iniDict = Ini.ParseIniSectionToDict(script.RealPath, SectionName);
                         break;
                     case SectionDataType.Lines:
                         {
-                            lines = Ini.ParseIniSection(script.FullPath, sectionName);
+                            lines = Ini.ParseIniSection(script.RealPath, sectionName);
                             if (convDataType == SectionDataConverted.Codes)
                             {
                                 SectionAddress addr = new SectionAddress(script, this);
@@ -1009,7 +1016,7 @@ namespace PEBakery.Core
                 if (loaded)
                     return lines;
                 else
-                    return Ini.ParseIniSection(script.FullPath, sectionName);
+                    return Ini.ParseIniSection(script.RealPath, sectionName);
             }
             else
             {

@@ -70,7 +70,7 @@ namespace PEBakery.Core
         #region Constructor
         public CodeValidator(Script p)
         {
-            this.p = p ?? throw new ArgumentNullException("p");
+            this.p = p ?? throw new ArgumentNullException(nameof(p));
         }
         #endregion
 

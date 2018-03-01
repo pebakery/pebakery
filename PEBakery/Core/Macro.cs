@@ -79,7 +79,7 @@ namespace PEBakery.Core
             // Get macroScript
             string rawScriptPath = varDict["API"];
             string macroScriptPath = variables.Expand(varDict["API"]); // Need Expansion
-            macroScript = project.AllScripts.Find(x => x.FullPath.Equals(macroScriptPath, StringComparison.OrdinalIgnoreCase));
+            macroScript = project.AllScripts.Find(x => x.RealPath.Equals(macroScriptPath, StringComparison.OrdinalIgnoreCase));
             if (macroScript == null)
             {
                 macroEnabled = false;
@@ -238,10 +238,10 @@ namespace PEBakery.Core
                 if (permanent) // MacroDict
                 {
                     MacroDict[macroName] = cmd;
-                    if (Ini.SetKey(addr.Project.MainScript.FullPath, "Variables", macroName, cmd.RawCode))
+                    if (Ini.SetKey(addr.Project.MainScript.RealPath, "Variables", macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
-                        return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainScript.FullPath}]");
+                        return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainScript.RealPath}]");
                 }
                 else if (global) // MacroDict
                 {
@@ -262,7 +262,7 @@ namespace PEBakery.Core
                     if (MacroDict.ContainsKey(macroName))
                     {
                         MacroDict.Remove(macroName);
-                        Ini.DeleteKey(addr.Project.MainScript.FullPath, "Variables", macroName);
+                        Ini.DeleteKey(addr.Project.MainScript.RealPath, "Variables", macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
                     else

@@ -66,7 +66,7 @@ namespace PEBakery.Core.Commands
             ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -108,7 +108,7 @@ namespace PEBakery.Core.Commands
             ScriptSection iface = p.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.ShortPath}] does not have section [{ifaceSecName}]"));
+                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
                 return logs;
             }
 
@@ -168,7 +168,7 @@ namespace PEBakery.Core.Commands
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
@@ -237,7 +237,7 @@ namespace PEBakery.Core.Commands
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             if (!p.Sections.ContainsKey(section))
             {
@@ -602,7 +602,7 @@ namespace PEBakery.Core.Commands
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
             if (p.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;

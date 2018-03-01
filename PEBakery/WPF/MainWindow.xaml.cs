@@ -470,9 +470,9 @@ namespace PEBakery.WPF
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
                 if ((Script)e.Result == null)
-                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.ShortPath)} reload failed. ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.TreePath)} reload failed. ({sec:0.000}sec)";
                 else
-                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.ShortPath)} reloaded. ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{Path.GetFileName(curMainTree.Script.TreePath)} reloaded. ({sec:0.000}sec)";
 
                 resetEvent.Set();
             };
@@ -518,7 +518,7 @@ namespace PEBakery.WPF
 
                     if (quiet == false)
                     {
-                        b.AppendLine($"{errorLogs.Length} syntax error detected at [{p.ShortPath}]");
+                        b.AppendLine($"{errorLogs.Length} syntax error detected at [{p.TreePath}]");
                         b.AppendLine();
                         for (int i = 0; i < errorLogs.Length; i++)
                         {
@@ -900,7 +900,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            OpenTextFile(curMainTree.Script.FullPath, false);
+            OpenTextFile(curMainTree.Script.RealPath, false);
         }
 
         private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -945,10 +945,10 @@ namespace PEBakery.WPF
                 // Current Parent
                 TreeViewModel treeParent = projectRoot;
 
-                int idx = p.ShortPath.IndexOf('\\');
+                int idx = p.TreePath.IndexOf('\\');
                 if (idx == -1)
                     continue;
-                string[] paths = p.ShortPath
+                string[] paths = p.TreePath
                     .Substring(idx + 1)
                     .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
 
@@ -964,7 +964,7 @@ namespace PEBakery.WPF
                     else
                     {
                         string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        Script dirScript = new Script(ScriptType.Directory, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
+                        Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -1138,7 +1138,7 @@ namespace PEBakery.WPF
                     DrawScript(item.Script);
                     watch.Stop();
                     double msec = watch.Elapsed.TotalMilliseconds;
-                    string filename = Path.GetFileName(curMainTree.Script.ShortPath);
+                    string filename = Path.GetFileName(curMainTree.Script.TreePath);
                     Model.StatusBarText = $"{filename} rendered ({msec:0}ms)";
                 });
             }
@@ -1912,7 +1912,7 @@ namespace PEBakery.WPF
             IOrderedEnumerable<TreeViewModel> sorted = children
                 .OrderBy(x => x.Script.Level)
                 .ThenBy(x => x.Script.Type)
-                .ThenBy(x => x.Script.FullPath);
+                .ThenBy(x => x.Script.RealPath);
             children = new ObservableCollection<TreeViewModel>(sorted);
         }
 
@@ -1931,7 +1931,7 @@ namespace PEBakery.WPF
         {
             if (cur.Script != null)
             {
-                if (fullPath.Equals(cur.Script.FullPath, StringComparison.OrdinalIgnoreCase))
+                if (fullPath.Equals(cur.Script.RealPath, StringComparison.OrdinalIgnoreCase))
                     return cur;
             }
 
@@ -1960,7 +1960,7 @@ namespace PEBakery.WPF
 
             foreach (string path in paths)
             {
-                int exist = p.Project.AllScripts.Count(x => x.FullPath.Equals(path, StringComparison.OrdinalIgnoreCase));
+                int exist = p.Project.AllScripts.Count(x => x.RealPath.Equals(path, StringComparison.OrdinalIgnoreCase));
                 if (exist == 1)
                 {
                     Ini.SetKey(path, "Main", "Selected", "False");

@@ -407,7 +407,7 @@ namespace PEBakery.Core
                 Level = p.Level,
                 Order = order,
                 Name = p.Title,
-                Path = p.ShortPath,
+                Path = p.TreePath,
                 Version = p.Version,
             };
             DB.Insert(dbScript);
@@ -677,7 +677,7 @@ namespace PEBakery.Core
             if (logScriptName)
                 LogStartOfSection(s, addr.Section.SectionName, depth, sectionParam, cmd);
             else
-                LogStartOfSection(s, addr.Script.ShortPath, addr.Section.SectionName, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Script.TreePath, addr.Section.SectionName, depth, sectionParam, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
@@ -730,7 +730,7 @@ namespace PEBakery.Core
             if (logScriptName)
                 LogEndOfSection(s, addr.Section.SectionName, depth, cmd);
             else
-                LogEndOfSection(s, addr.Script.ShortPath, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(s, addr.Script.TreePath, addr.Section.SectionName, depth, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;

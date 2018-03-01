@@ -118,7 +118,7 @@ namespace PEBakery.Core
 
         public static Script AttachFile(Script p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException("p");
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             byte[] input;
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
@@ -131,25 +131,25 @@ namespace PEBakery.Core
 
         public static Script AttachFile(Script p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException("p");
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             return Encode(p, dirName, fileName, srcStream, type);
         }
 
         public static Script AttachFile(Script p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException("p");
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             return Encode(p, dirName, fileName, srcBuffer, type);
         }
 
         public static MemoryStream ExtractFile(Script p, string dirName, string fileName)
         {
-            if (p == null) throw new ArgumentNullException("p");
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.RealPath}]");
 
             List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
@@ -157,7 +157,7 @@ namespace PEBakery.Core
 
         public static MemoryStream ExtractLogo(Script p, out ImageHelper.ImageType type)
         {
-            if (p == null) throw new ArgumentNullException("p");
+            if (p == null) throw new ArgumentNullException(nameof(p));
 
             if (p.Sections.ContainsKey("AuthorEncoded") == false)
                 throw new ExtractFileNotFoundException($"There is no AuthorEncoded files");
@@ -179,7 +179,7 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.RealPath}]");
 
             List<string> encoded = p.Sections[section].GetLinesOnce();
             return Decode(encoded);
@@ -376,7 +376,7 @@ namespace PEBakery.Core
 
             // [Stage 8] Before writing to file, backup original script
             string tempFile = Path.GetTempFileName();
-            File.Copy(p.FullPath, tempFile, true);
+            File.Copy(p.RealPath, tempFile, true);
 
             // [Stage 9] Write to file
             try
@@ -391,20 +391,20 @@ namespace PEBakery.Core
                 }
                 
                 if (writeFolderSection)
-                    Ini.WriteRawLine(p.FullPath, "EncodedFolders", dirName, false);
+                    Ini.WriteRawLine(p.RealPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
-                Ini.SetKey(p.FullPath, dirName, fileName, $"{inputStream.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize
+                Ini.SetKey(p.RealPath, dirName, fileName, $"{inputStream.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize
 
                 // Write encoded file into [EncodedFile-{dirName}-{fileName}]
                 if (fileOverwrite)
-                    Ini.DeleteSection(p.FullPath, section); // Delete existing encoded file
-                Ini.SetKeys(p.FullPath, keys); // Write into 
+                    Ini.DeleteSection(p.RealPath, section); // Delete existing encoded file
+                Ini.SetKeys(p.RealPath, keys); // Write into 
             }
             catch
             { // Error -> Rollback!
-                File.Copy(tempFile, p.FullPath, true);
-                throw new FileDecodeFailException($"Error while writing encoded file into [{p.FullPath}]");
+                File.Copy(tempFile, p.RealPath, true);
+                throw new FileDecodeFailException($"Error while writing encoded file into [{p.RealPath}]");
             }
             finally
             { // Delete temp script
@@ -604,7 +604,7 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.FullPath}]");
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.RealPath}]");
 
             List<string> encodedList = p.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))

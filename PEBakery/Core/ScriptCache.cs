@@ -86,7 +86,7 @@ namespace PEBakery.Core
                 {
                     // Remove duplicate
                     var pUniqueList = project.AllScripts
-                        .GroupBy(x => x.DirectFullPath)
+                        .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
 
                     listLock = new ReaderWriterLockSlim();
@@ -117,11 +117,11 @@ namespace PEBakery.Core
         /// <returns>Return true if cache is updated</returns>
         private bool CacheScript(Script p, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
         {
-            if (memDB == null) throw new ArgumentNullException("memDB");
+            if (memDB == null) throw new ArgumentNullException(nameof(memDB));
 
             // Does cache exist?
-            FileInfo f = new FileInfo(p.DirectFullPath);
-            string sPath = p.DirectFullPath.Remove(0, p.Project.BaseDir.Length + 1);
+            FileInfo f = new FileInfo(p.DirectRealPath);
+            string sPath = p.DirectRealPath.Remove(0, p.Project.BaseDir.Length + 1);
 
             bool updated = false;
             // int memIdx = 0;

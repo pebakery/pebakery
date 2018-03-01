@@ -156,7 +156,7 @@ namespace PEBakery.WPF
             Model.Project_SourceDirectoryList = new ObservableCollection<string>();
 
             int idx = Model.Project_SelectedIndex;
-            string fullPath = Model.Projects[idx].MainScript.FullPath;
+            string fullPath = Model.Projects[idx].MainScript.RealPath;
             Ini.SetKey(fullPath, "Main", "SourceDir", string.Empty);
         }
 
@@ -271,7 +271,7 @@ namespace PEBakery.WPF
                 
                 if (0 <= value && value < Project_List.Count)
                 {
-                    string fullPath = projects[value].MainScript.FullPath;
+                    string fullPath = projects[value].MainScript.RealPath;
                     IniKey[] keys = new IniKey[]
                     {
                         new IniKey("Main", "SourceDir"),
@@ -367,7 +367,7 @@ namespace PEBakery.WPF
                         b.Append(",");
                         b.Append(Project_SourceDirectoryList[x]);
                     }
-                    Ini.SetKey(project.MainScript.FullPath, "Main", "SourceDir", b.ToString());
+                    Ini.SetKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
                 
                 OnPropertyUpdate("Project_SourceDirectoryIndex");
@@ -383,7 +383,7 @@ namespace PEBakery.WPF
                 if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
                 {
                     Project project = projects[project_SelectedIndex];
-                    string fullPath = project.MainScript.FullPath;
+                    string fullPath = project.MainScript.RealPath;
                     Ini.SetKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
@@ -403,7 +403,7 @@ namespace PEBakery.WPF
                 if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
                 {
                     Project project = projects[project_SelectedIndex];
-                    string fullPath = project.MainScript.FullPath;
+                    string fullPath = project.MainScript.RealPath;
                     Ini.SetKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }

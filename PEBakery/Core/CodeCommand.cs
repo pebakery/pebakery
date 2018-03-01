@@ -134,7 +134,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Script.FullPath.GetHashCode() ^ Section.SectionName.GetHashCode();
+            return Script.RealPath.GetHashCode() ^ Section.SectionName.GetHashCode();
         }
     }
     #endregion

@@ -93,13 +93,13 @@ namespace PEBakery.WPF
                 catch
                 {
                     this.uiCtrls = null;
-                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.ShortPath}]"));
+                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
                 }
             }
             else
             {
                 this.uiCtrls = null;
-                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.ShortPath}]"));
+                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
             }
         }
         #endregion
@@ -742,7 +742,7 @@ namespace PEBakery.WPF
 
             RadioButton radio = new RadioButton()
             {
-                GroupName = r.Script.FullPath,
+                GroupName = r.Script.RealPath,
                 Content = uiCtrl.Text,
                 FontSize = fontSize,
                 IsChecked = info.Selected,
@@ -903,7 +903,7 @@ namespace PEBakery.WPF
             {
                 RadioButton radio = new RadioButton()
                 {
-                    GroupName = r.Script.FullPath + uiCtrl.Key,
+                    GroupName = r.Script.RealPath + uiCtrl.Key,
                     Content = info.Items[i],
                     Tag = i,
                     FontSize = fontSize,

@@ -117,7 +117,7 @@ namespace PEBakery.Core
 
             #region Project Variables
             // Read from MainScript
-            string fullPath = project.MainScript.FullPath;
+            string fullPath = project.MainScript.RealPath;
             IniKey[] keys = new IniKey[]
             {
                 new IniKey("Main", "Title"),
@@ -233,10 +233,10 @@ namespace PEBakery.Core
             List<LogInfo> logs = new List<LogInfo>();
 
             // ScriptFile
-            SetValue(VarsType.Fixed, "ScriptFile", p.FullPath);
+            SetValue(VarsType.Fixed, "ScriptFile", p.RealPath);
 
             // ScriptDir
-            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.FullPath));
+            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.RealPath));
 
             // ScriptTitle
             SetValue(VarsType.Fixed, "ScriptTitle", p.Title);
@@ -779,7 +779,7 @@ namespace PEBakery.Core
                         bool localResult = s.Variables.Delete(VarsType.Local, key);
                         if (globalResult || localResult)
                         {
-                            if (Ini.DeleteKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%")) // Delete var line
+                            if (Ini.DeleteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%")) // Delete var line
                             {
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] was deleted"));
                             }
@@ -849,7 +849,7 @@ namespace PEBakery.Core
 
                         if (log.State == LogState.Success)
                         { // SetValue success, write to IniFile
-                            if (Ini.SetKey(s.Project.MainScript.FullPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                            if (Ini.SetKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));

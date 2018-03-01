@@ -374,7 +374,7 @@ namespace PEBakery.Helper
 
         public static string[] GetDirectoriesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
-            if (dirPath == null) throw new ArgumentNullException("dirPath");
+            if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
 
             DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
             if (!dirInfo.Exists)
@@ -386,8 +386,8 @@ namespace PEBakery.Helper
 
         private static List<string> InternalGetDirectoriesEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundDirs)
         {
-            if (dirInfo == null) throw new ArgumentNullException("dirInfo");
-            if (searchPattern == null) throw new ArgumentNullException("searchPattern");
+            if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
+            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
             DirectoryInfo[] dirs;
             try
@@ -407,7 +407,7 @@ namespace PEBakery.Helper
 
         public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
-            if (dirPath == null) throw new ArgumentNullException("dirPath");
+            if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
 
             DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
             if (!dirInfo.Exists)
@@ -419,8 +419,8 @@ namespace PEBakery.Helper
 
         private static List<string> InternalGetFilesEx(DirectoryInfo dirInfo, string searchPattern, SearchOption searchOption, List<string> foundFiles)
         {
-            if (dirInfo == null) throw new ArgumentNullException("dirInfo");
-            if (searchPattern == null) throw new ArgumentNullException("searchPattern");
+            if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
+            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
             // Get the files in the directory and copy them to the new location.
             try
@@ -1340,7 +1340,7 @@ namespace PEBakery.Helper
 
             public int CompareTo(VersionEx value)
             {
-                if (value == null) throw new ArgumentNullException("value");
+                if (value == null) throw new ArgumentNullException(nameof(value));
 
                 if (Major != value.Major)
                 {

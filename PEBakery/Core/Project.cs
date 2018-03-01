@@ -56,10 +56,10 @@ namespace PEBakery.Core
         private readonly ScriptCache scriptCache;
 
         private readonly Dictionary<string, List<string>> scriptPathDict = new Dictionary<string, List<string>>();
-        private readonly Dictionary<string, List<string>> dirLinkPathDict = new Dictionary<string, List<string>>();
+        private readonly Dictionary<string, List<(string RealPath, string TreePath)>> dirLinkPathDict = new Dictionary<string, List<(string RealPath, string TreePath)>>();
         private readonly List<Script> allProjectScripts = new List<Script>();
         private readonly List<string> allScriptPaths = new List<string>();
-        private readonly List<string> allDirLinkPaths = new List<string>();
+        private readonly List<(string RealPath, string TreePath)> allDirLinkPaths = new List<(string RealPath, string TreePath)>();
 
         // Properties
         public string ProjectRoot => projectRoot;
@@ -148,56 +148,44 @@ namespace PEBakery.Core
                 allScriptPaths.AddRange(scriptPathList);
 
                 // Temporary disable folder.script, will fix it later
-                // List<string> dirLinkPathList = GetFolderLinks(projectDir);
-                List<string> dirLinkPathList = new List<string>();
+                List<(string RealPath, string TreePath)> dirLinkPathList = GetFolderLinks(projectDir);
+                // List<string> dirLinkPathList = new List<string>();
                 dirLinkPathDict[projName] = dirLinkPathList;
                 allDirLinkPaths.AddRange(dirLinkPathList);
             }
             return allCount;
         }
 
-        private List<string> GetFolderLinks(string projectDir)
+        private List<(string RealPath, string TreePath)> GetFolderLinks(string projectDir)
         {
-            List<string> dirLinkPathList = new List<string>();
-
-            var links = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
-            foreach (string link in links.Where(x => Ini.SectionExists(x, "Links")))
+            var dirLinkPathList = new List<(string, string)>();
+            var linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
+            foreach (string linkFile in linkFiles.Where(x => Ini.SectionExists(x, "Links")))
             {
-                var paths = Ini.ParseRawSection(link, "Links").Select(x => x.Trim()).Where(x => x.Length != 0);
+                string prefix = Path.GetDirectoryName(linkFile);
+
+                var paths = Ini.ParseRawSection(linkFile, "Links").Select(x => x.Trim()).Where(x => x.Length != 0);
                 foreach (string path in paths)
                 {
-                    if (Path.IsPathRooted(path))
-                    { // Full Path
-                        var files = Directory.EnumerateFiles(path, "*.script", SearchOption.AllDirectories);
-                        dirLinkPathList.AddRange(files.Select(x => x.Substring(path.Length + 1)));
+                    // Remove asterisk
+                    string dirPath = path;
+                    if (StringHelper.IsWildcard(Path.GetFileName(path)))
+                        dirPath = Path.GetDirectoryName(path);
 
-                        /*
-                        string fileName = Path.GetFileName(path);
-                        if (StringHelper.IsWildcard(fileName))
-                            */
+                    if (Path.IsPathRooted(dirPath))
+                    { // Absolute Path
+                        var tuples = Directory.EnumerateFiles(dirPath, "*.script", SearchOption.AllDirectories)
+                            .Select(x => (x, Path.Combine(prefix, x.Substring(dirPath.Length + 1))));
+                        dirLinkPathList.AddRange(tuples);
                     }
                     else
                     { // Relative Path to %BaseDir%
-                        string dirPath = path;
-                        if (StringHelper.IsWildcard(Path.GetFileName(path)))
-                            dirPath = Path.GetDirectoryName(path);
                         string fullPath = Path.Combine(baseDir, dirPath);
 
-                        var files = Directory.EnumerateFiles(fullPath, "*.script", SearchOption.AllDirectories);
-                        dirLinkPathList.AddRange(files.Select(x => x.Substring(fullPath.Length + 1)));
+                        var tuples = Directory.EnumerateFiles(fullPath, "*.script", SearchOption.AllDirectories)
+                            .Select(x => (x, Path.Combine(prefix, x.Substring(baseDir.Length + 1))));
+                        dirLinkPathList.AddRange(tuples);
                     }
-
-                    /*
-                    string linkDirPath = Path.Combine(baseDir, Path.GetDirectoryName(path));
-                    string linkWildcard = Path.GetFileName(path);
-
-                    if (Directory.Exists(linkDirPath) && StringHelper.IsWildcard(linkWildcard))
-                    {
-                        string[] dirLinks = Directory.GetFiles(linkDirPath, linkWildcard, SearchOption.AllDirectories);
-                        var dirScriptLinks = dirLinks.Where(p => Path.GetExtension(p).Equals(".script", StringComparison.OrdinalIgnoreCase));
-                        dirLinkPathList.AddRange(dirScriptLinks);
-                    }
-                    */
                 }
             }
 
@@ -303,7 +291,8 @@ namespace PEBakery.Core
                                 ScriptType type = ScriptType.Script;
                                 if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
                                     type = ScriptType.Link;
-                                link = new Script(type, Path.Combine(baseDir, linkFullPath), p.Project, projectRoot, null, false, false, false);
+                                string fullPath = Path.Combine(baseDir, linkFullPath);
+                                link = new Script(type, fullPath, fullPath, p.Project, projectRoot, null, false, false, false);
 
                                 Debug.Assert(p != null);
                             }
@@ -332,7 +321,7 @@ namespace PEBakery.Core
                         p.LinkLoaded = true;
                         p.Link = link;
                         if (worker != null)
-                            worker.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
+                            worker.ReportProgress(cached, Path.GetDirectoryName(p.TreePath));
                     }
                     else // Error
                     {
@@ -398,7 +387,11 @@ namespace PEBakery.Core
         #endregion
 
         #region Load Scripts
-        public List<LogInfo> Load(List<string> allScriptPathList, List<string> allDirLinkPathList, ScriptCache scriptCache, BackgroundWorker worker)
+        public List<LogInfo> Load(
+            List<string> allScriptPathList,
+            List<(string RealPath, string TreePath)> allDirLinkPathList,
+            ScriptCache scriptCache,
+            BackgroundWorker worker)
         {
             List<LogInfo> logs = new List<LogInfo>(32);
 
@@ -411,27 +404,23 @@ namespace PEBakery.Core
             if (scriptCache != null)
                 cacheDB = scriptCache.Table<DB_ScriptCache>().Where(x => true).ToArray();
 
-            // Item2 is IsDirLink
-            // true -> dirLink, false -> script or scriptLink
-            List<Tuple<string, bool>> pTupleList = new List<Tuple<string, bool>>();
-            pTupleList.AddRange(allScriptPathList.Select(x => new Tuple<string, bool>(x, false)));
-            pTupleList.AddRange(allDirLinkPathList.Select(x => new Tuple<string, bool>(x, true)));
+            List<(string RealPath, string TreePath, bool IsDirLink)> pTupleList = new List<(string, string, bool)>();
+            pTupleList.AddRange(allScriptPathList.Select(x => (x, x, false)));
+            pTupleList.AddRange(allDirLinkPathList.Select(x => (x.RealPath, x.TreePath, true)));
 
             // Load scripts from disk or cache
-            Task[] tasks = pTupleList.Select(pTuple =>
+            Task[] tasks = pTupleList.Select(t =>
             {
                 return Task.Run(() =>
                 {
                     int cached = 0;
-                    string pPath = pTuple.Item1;
-                    bool isDirLink = pTuple.Item2;
-                    Script p = null;
+                    Script sc = null;
                     try
                     {
                         if (scriptCache != null)
                         { // ScriptCache enabled
-                            FileInfo f = new FileInfo(pPath);
-                            string sPath = pPath.Remove(0, baseDir.Length + 1); // 1 for \
+                            FileInfo f = new FileInfo(t.RealPath);
+                            string sPath = t.TreePath.Remove(0, baseDir.Length + 1); // 1 for \
                             DB_ScriptCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
                             if (pCache != null &&
                                 pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
@@ -444,9 +433,9 @@ namespace PEBakery.Core
                                     {
                                         BinaryFormatter formatter = new BinaryFormatter();
 
-                                        p = formatter.Deserialize(memStream) as Script;
-                                        p.Project = this;
-                                        p.IsDirLink = isDirLink;
+                                        sc = formatter.Deserialize(memStream) as Script;
+                                        sc.Project = this;
+                                        sc.IsDirLink = t.IsDirLink;
                                         cached = 1;
                                     }
                                 }
@@ -454,31 +443,31 @@ namespace PEBakery.Core
                             }
                         }
 
-                        if (p == null)
+                        if (sc == null)
                         { // Cache Miss
-                            bool isMainScript = pPath.Equals(mainScriptPath, StringComparison.Ordinal);
+                            bool isMainScript = t.RealPath.Equals(mainScriptPath, StringComparison.Ordinal);
 
                             // TODO : Lazy loading of link, takes too much time at start
-                            string ext = Path.GetExtension(pPath);
+                            string ext = Path.GetExtension(t.TreePath);
                             if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                                p = new Script(ScriptType.Link, pPath, this, projectRoot, null, isMainScript, false, false);
+                                sc = new Script(ScriptType.Link, t.RealPath, t.TreePath, this, projectRoot, null, isMainScript, false, false);
                             else
-                                p = new Script(ScriptType.Script, pPath, this, projectRoot, null, isMainScript, false, isDirLink);
+                                sc = new Script(ScriptType.Script, t.RealPath, t.TreePath, this, projectRoot, null, isMainScript, false, t.IsDirLink);
 
-                            Debug.Assert(p != null);
+                            Debug.Assert(sc != null);
                         }
 
                         listLock.EnterWriteLock();
                         try
                         {
-                            allScripts.Add(p);
+                            allScripts.Add(sc);
                         }
                         finally
                         {
                             listLock.ExitWriteLock();
                         }
 
-                        worker?.ReportProgress(cached, Path.GetDirectoryName(p.ShortPath));
+                        worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
                     }
                     catch (Exception e)
                     {
@@ -519,7 +508,7 @@ namespace PEBakery.Core
                     continue;
 
                 int nodeId = rootId;
-                string[] paths = p.ShortPath
+                string[] paths = p.TreePath
                     .Substring(this.projectName.Length + 1)
                     .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
@@ -535,7 +524,7 @@ namespace PEBakery.Core
                     else
                     {
                         string fullPath = Path.Combine(projectRoot, projectName, pathKey);
-                        Script dirScript = new Script(ScriptType.Directory, fullPath, this, projectRoot, p.Level, false, false, false);
+                        Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, this, projectRoot, p.Level, false, false, false);
                         nodeId = pTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
                     }
@@ -552,7 +541,7 @@ namespace PEBakery.Core
                     if (x.Data.Type == ScriptType.Directory)
                     {
                         if (y.Data.Type == ScriptType.Directory)
-                            return string.Compare(x.Data.FullPath, y.Data.FullPath, StringComparison.Ordinal);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.Ordinal);
                         else
                             return 1;
                     }
@@ -561,7 +550,7 @@ namespace PEBakery.Core
                         if (y.Data.Type == ScriptType.Directory)
                             return -1;
                         else
-                            return string.Compare(x.Data.FullPath, y.Data.FullPath, StringComparison.Ordinal);
+                            return string.Compare(x.Data.RealPath, y.Data.RealPath, StringComparison.Ordinal);
                     }
                 }
                 else
@@ -592,8 +581,8 @@ namespace PEBakery.Core
         {
             if (script == null) throw new ArgumentNullException(nameof(script));
 
-            string pPath = script.FullPath;
-            int aIdx = AllScripts.FindIndex(x => x.FullPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
+            string pPath = script.RealPath;
+            int aIdx = AllScripts.FindIndex(x => x.RealPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
 
             Script p = null;
             if (aIdx == -1)
@@ -612,7 +601,7 @@ namespace PEBakery.Core
                     if (s != null)
                     {
                         // Investigate EngineState to update it on build list
-                        int sIdx = s.Scripts.FindIndex(x => x.FullPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
+                        int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(pPath, StringComparison.OrdinalIgnoreCase));
                         if (sIdx != -1)
                             s.Scripts[sIdx] = p;
                     }
@@ -648,15 +637,15 @@ namespace PEBakery.Core
             {
                 if (pPath.Equals(Path.Combine(projectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
                 {
-                    p = new Script(ScriptType.Script, pPath, this, projectRoot, 0, true, ignoreMain, isDirLink);
+                    p = new Script(ScriptType.Script, pPath, pPath, this, projectRoot, 0, true, ignoreMain, isDirLink);
                 }
                 else
                 {
                     string ext = Path.GetExtension(pPath);
                     if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Script(ScriptType.Link, pPath, this, projectRoot, null, false, false, false);
+                        p = new Script(ScriptType.Link, pPath, pPath, this, projectRoot, null, false, false, false);
                     else
-                        p = new Script(ScriptType.Script, pPath, this, projectRoot, null, false, ignoreMain, isDirLink);
+                        p = new Script(ScriptType.Script, pPath, pPath, this, projectRoot, null, false, ignoreMain, isDirLink);
                 }
 
                 // Check Script Link's validity
@@ -747,24 +736,24 @@ namespace PEBakery.Core
         #endregion
 
         #region GetScriptByPath, ContainsScript
-        public Script GetScriptByFullPath(string pFullPath)
+        public Script GetScriptByRealPath(string sRealPath)
         {
-            return AllScripts.Find(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase));
+            return AllScripts.Find(x => x.RealPath.Equals(sRealPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public Script GetScriptByShortPath(string pShortPath)
+        public Script GetScriptByTreePath(string sTreePath)
         {
-            return AllScripts.Find(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase));
+            return AllScripts.Find(x => x.TreePath.Equals(sTreePath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public bool ContainsScriptByFullPath(string pFullPath)
+        public bool ContainsScriptByRealPath(string sRealPath)
         {
-            return (AllScripts.FindIndex(x => x.FullPath.Equals(pFullPath, StringComparison.OrdinalIgnoreCase)) != -1);
+            return (AllScripts.FindIndex(x => x.RealPath.Equals(sRealPath, StringComparison.OrdinalIgnoreCase)) != -1);
         }
 
-        public bool ContainsScriptByShortPath(string pShortPath)
+        public bool ContainsScriptByTreePath(string sTreePath)
         {
-            return (AllScripts.FindIndex(x => x.ShortPath.Equals(pShortPath, StringComparison.OrdinalIgnoreCase)) != -1);
+            return (AllScripts.FindIndex(x => x.TreePath.Equals(sTreePath, StringComparison.OrdinalIgnoreCase)) != -1);
         }
         #endregion
 
@@ -803,7 +792,7 @@ namespace PEBakery.Core
 
         public bool Equals(Project project)
         {
-            if (project == null) throw new ArgumentNullException("project");
+            if (project == null) throw new ArgumentNullException(nameof(project));
 
             if (projectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
                 projectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&

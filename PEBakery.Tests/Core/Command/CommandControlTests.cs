@@ -67,7 +67,7 @@ namespace PEBakery.Tests.Core.Command
 
         public void Set_3(EngineState s)
         {
-            string pPath = s.Project.MainScript.FullPath;
+            string pPath = s.Project.MainScript.RealPath;
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");
 
             string rawCode = "Set,%Set_3%,PEBakery,PERMANENT";

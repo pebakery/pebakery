@@ -135,14 +135,14 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath,  scriptFile, out bool inCurrentScript);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out bool inCurrentScript);
 
             // Does section exists?
             if (!p.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"Script [{scriptFile}] does not have section [{sectionName}]");
 
             // Directly read from file
-            List<string> lines = Ini.ParseRawSection(p.FullPath, sectionName);
+            List<string> lines = Ini.ParseRawSection(p.RealPath, sectionName);
 
             // Add Variables
             Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);

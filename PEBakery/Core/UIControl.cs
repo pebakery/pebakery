@@ -203,19 +203,19 @@ namespace PEBakery.Core
         #region Update
         public void Update()
         {
-            Ini.SetKey(Addr.Script.FullPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
+            Ini.SetKey(Addr.Script.RealPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
         }
         
         public static void Update(List<UIControl> uiCmdList)
         {
             if (0 < uiCmdList.Count)
             {
-                string fullPath = uiCmdList[0].Addr.Script.FullPath;
+                string fullPath = uiCmdList[0].Addr.Script.RealPath;
                 List<IniKey> keys = new List<IniKey>(uiCmdList.Count);
                 for (int i = 0; i < uiCmdList.Count; i++)
                 {
                     UIControl uiCmd = uiCmdList[i];
-                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.FullPath, StringComparison.OrdinalIgnoreCase));
+                    Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
                     keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
                 }

@@ -45,8 +45,8 @@ namespace PEBakery.Core
 
         public LogExporter(LogDB DB, LogExportType type, StreamWriter writer)
         {
-            this.DB = DB ?? throw new ArgumentNullException("DB");
-            this.w = writer ?? throw new ArgumentNullException("writer");
+            this.DB = DB ?? throw new ArgumentNullException(nameof(DB));
+            this.w = writer ?? throw new ArgumentNullException(nameof(writer));
             this.exportType = type;
         }
 

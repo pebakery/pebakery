@@ -94,9 +94,9 @@ namespace PEBakery.Core
             // Log Script Build Start Message
             string msg;
             if (s.RunMode == EngineMode.RunAll)
-                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing script [{p.Title}] ({p.ShortPath})";
+                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing script [{p.Title}] ({p.TreePath})";
             else
-                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{p.ShortPath}]";
+                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{p.TreePath}]";
             s.Logger.Build_Write(s, msg);
             s.Logger.Build_Write(s, Logger.LogSeperator);
 
@@ -147,7 +147,7 @@ namespace PEBakery.Core
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = false;
 
-                    w.CurBuildTree = s.MainViewModel.BuildTree.FindScriptByFullPath(s.CurrentScript.FullPath);
+                    w.CurBuildTree = s.MainViewModel.BuildTree.FindScriptByFullPath(s.CurrentScript.RealPath);
 
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = true;
@@ -158,7 +158,7 @@ namespace PEBakery.Core
         private void FinishRunScript(EngineState s)
         {
             // Finish Per-PScript Log
-            s.Logger.Build_Write(s, $"End of Script [{s.CurrentScript.ShortPath}]");
+            s.Logger.Build_Write(s, $"End of Script [{s.CurrentScript.TreePath}]");
             s.Logger.Build_Write(s, Logger.LogSeperator);
             s.Logger.Build_Script_Finish(s, s.Variables.GetVarDict(VarsType.Local));
         }
@@ -350,7 +350,7 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"No code in [{addr.Script.ShortPath}]::[{addr.Section.SectionName}]", s.CurDepth + 1));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"No code in [{addr.Script.TreePath}]::[{addr.Section.SectionName}]", s.CurDepth + 1));
                 return;
             }
 
@@ -897,11 +897,11 @@ namespace PEBakery.Core
                 inCurrentScript = true; // Sometimes this value is not legal, so always use Project.GetScriptByFullPath.
 
             string fullPath = loadScriptPath;
-            Script p = s.Project.GetScriptByFullPath(fullPath);
+            Script p = s.Project.GetScriptByRealPath(fullPath);
             if (p == null)
             { // Cannot Find Script in Project.AllScripts
                 // Try searching s.Scripts
-                p = s.Scripts.Find(x => x.FullPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                p = s.Scripts.Find(x => x.RealPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
                 if (p == null)
                 { // Still not found in s.Scripts
                     if (!File.Exists(fullPath))

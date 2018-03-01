@@ -280,11 +280,11 @@ namespace PEBakery.Core.Commands
 
                             // Does this file already exists in project.AllScripts?
                             Project project = cmd.Addr.Project;
-                            if (project.ContainsScriptByFullPath(pFullPath))
+                            if (project.ContainsScriptByRealPath(pFullPath))
                             { // Project Tree conatins this script, so just refresh it
                                 // RefreshScript -> Update Project.AllScripts
                                 // TODO: Update EngineState.Scripts?
-                                Script p = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.FullPath, pFullPath, out bool inCurrentScript);
+                                Script p = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, pFullPath, out bool inCurrentScript);
                                 p = s.Project.RefreshScript(p);
                                 if (p == null)
                                 {
