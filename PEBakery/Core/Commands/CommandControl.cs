@@ -166,9 +166,11 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit));
             CodeInfo_Exit info = cmd.Info as CodeInfo_Exit;
 
+            string message = StringEscaper.Preprocess(s, info.Message);
+
             s.PassCurrentScriptFlag = true;
 
-            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, info.Message, cmd));
+            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Warning, message, cmd));
 
             return logs;
         }
@@ -180,12 +182,14 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
 
+            string message = StringEscaper.Preprocess(s, info.Message);
+
             s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
             if (s.RunningSubProcess != null)
                 s.RunningSubProcess.Kill();
             s.CmdHaltFlag = true;
 
-            logs.Add(new LogInfo(LogState.Warning, info.Message, cmd));
+            logs.Add(new LogInfo(LogState.Warning, message, cmd));
 
             return logs;
         }

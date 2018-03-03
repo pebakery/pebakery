@@ -1195,7 +1195,7 @@ namespace PEBakery.Core
                         CodeMessageAction action = CodeMessageAction.None;
                         string timeout = null;
 
-                        if (args.Count == 3)
+                        if (args.Count > 1)
                         {
                             if (args[1].Equals("Information", StringComparison.OrdinalIgnoreCase))
                                 action = CodeMessageAction.Information;
@@ -1207,9 +1207,10 @@ namespace PEBakery.Core
                                 action = CodeMessageAction.Warning;
                             else
                                 throw new InvalidCommandException($"Second argument [{args[1]}] must be one of \'Information\', \'Confirmation\', \'Error\' and \'Warning\'", rawCode);
+                         }
 
+                        if (args.Count == 3)
                             timeout = args[2];
-                        }
 
                         return new CodeInfo_Message(message, action, timeout);
                     }
