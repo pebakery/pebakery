@@ -483,7 +483,7 @@ namespace PEBakery.WPF
 
         private void StartSyntaxCheckWorker(bool quiet)
         {
-            if (curMainTree == null || curMainTree.Script == null)
+            if (curMainTree?.Script == null)
                 return;
 
             if (syntaxCheckWorker.IsBusy)
@@ -894,18 +894,19 @@ namespace PEBakery.WPF
 
         private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Script == null)
+            if (curMainTree?.Script == null)
                 return;
 
             if (Model.WorkInProgress)
                 return;
 
-            OpenTextFile(curMainTree.Script.RealPath, false);
+            Script sc = curMainTree.Script;
+            OpenTextFile(sc.RealPath, false);
         }
 
         private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Script == null)
+            if (curMainTree?.Script == null)
                 return;
 
             if (Model.WorkInProgress)
@@ -963,8 +964,12 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        string fullPath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, project, project.ProjectRoot, p.Level, false, false, p.IsDirLink);
+                        // TODO: Correct real path in DirLink directory
+                        string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
+                        string fullRealPath = fullTreePath;
+                        if (p.IsDirLink)
+                            fullRealPath = p.DirLinkRoot;
+                        Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, project, project.ProjectRoot, p.Level, false, false, p.DirLinkRoot);
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -1046,31 +1051,31 @@ namespace PEBakery.WPF
 
         TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
         {
-            Script p = item.Script;
+            Script sc = item.Script;
 
-            if (p.Type == ScriptType.Directory)
+            if (sc.Type == ScriptType.Directory)
             {
-                if (p.IsDirLink)
+                if (sc.IsDirLink)
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
             }
-            else if (p.Type == ScriptType.Script)
+            else if (sc.Type == ScriptType.Script)
             {
-                if (p.IsMainScript)
+                if (sc.IsMainScript)
                     item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Settings, 0);
                 else
                 {
-                    if (p.IsDirLink)
+                    if (sc.IsDirLink)
                     {
-                        if (p.Mandatory)
+                        if (sc.Mandatory)
                             item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
                             item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
                     }
                     else
                     {
-                        if (p.Mandatory)
+                        if (sc.Mandatory)
                             item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.LockOutline, 0);
                         else
                             item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
@@ -1079,7 +1084,7 @@ namespace PEBakery.WPF
                 }
 
             }
-            else if (p.Type == ScriptType.Link)
+            else if (sc.Type == ScriptType.Link)
             {
                 item.Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.OpenInNew, 0);
             }
@@ -1146,20 +1151,29 @@ namespace PEBakery.WPF
         #endregion
 
         #region OpenTextFile
-        public Process OpenTextFile(string textFile, bool deleteTextFile = false)
+        public void OpenTextFile(string textFile, bool deleteTextFile = false)
         {
             Process proc = new Process();
+
+            if (!(File.Exists(textFile) || Directory.Exists(textFile)))
+            {
+                MessageBox.Show($"Path [{textFile}] does not exist!", "Invalid Path", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             bool startInfoValid = false;
             if (setting.Interface_UseCustomEditor)
             {
-                if (!Path.GetExtension(setting.Interface_CustomEditorPath).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                string ext = Path.GetExtension(setting.Interface_CustomEditorPath);
+                if (ext != null && !ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
                     MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
                 else if (!File.Exists(setting.Interface_CustomEditorPath))
                 {
                     MessageBox.Show($"Custom editor [{setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
                 else
                 {
@@ -1184,8 +1198,6 @@ namespace PEBakery.WPF
                 proc.Exited += (object pSender, EventArgs pEventArgs) => File.Delete(textFile);
 
             proc.Start();
-
-            return proc;
         }
         #endregion
 
@@ -1705,19 +1717,16 @@ namespace PEBakery.WPF
     #region TreeViewModel
     public class TreeViewModel : INotifyPropertyChanged
     {
-        private TreeViewModel root;
-        public TreeViewModel Root { get => root; }
-
-        private TreeViewModel parent;
-        public TreeViewModel Parent { get => parent; }
+        public TreeViewModel Root { get; private set; }
+        public TreeViewModel Parent { get; private set; }
 
         public TreeViewModel(TreeViewModel root, TreeViewModel parent)
         {
             if (root == null)
-                this.root = this;
+                this.Root = this;
             else
-                this.root = root;
-            this.parent = parent;
+                this.Root = root;
+            this.Parent = parent;
         }
 
         private bool isExpanded = false;
@@ -1727,7 +1736,7 @@ namespace PEBakery.WPF
             set
             {
                 isExpanded = value;
-                OnPropertyUpdate("IsExpanded");
+                OnPropertyUpdate(nameof(IsExpanded));
             }
         }
 
@@ -1740,8 +1749,8 @@ namespace PEBakery.WPF
             {
                 buildFocus = value;
                 icon.Foreground = BuildBrush;
-                OnPropertyUpdate("BuildFontWeight");
-                OnPropertyUpdate("BuildBrush");
+                OnPropertyUpdate(nameof(BuildFontWeight));
+                OnPropertyUpdate(nameof(BuildBrush));
                 OnPropertyUpdate("BuildIcon");
             }
         }
@@ -1796,7 +1805,7 @@ namespace PEBakery.WPF
                             try
                             {
                                 // Run 'Disable' directive
-                                List<LogInfo> errorLogs = DisableScripts(root, script);
+                                List<LogInfo> errorLogs = DisableScripts(Root, script);
                                 w.Logger.System_Write(errorLogs);
                             }
                             catch (Exception e)
@@ -1814,18 +1823,13 @@ namespace PEBakery.WPF
                             if (0 < this.Children.Count)
                             { // Set child scripts, too -> Top-down propagation
                                 foreach (TreeViewModel childModel in this.Children)
-                                {
-                                    if (value)
-                                        childModel.Checked = true;
-                                    else
-                                        childModel.Checked = false;
-                                }
+                                    childModel.Checked = value;
                             }
 
                             ParentCheckedPropagation();
                         }
 
-                        OnPropertyUpdate("Checked");
+                        OnPropertyUpdate(nameof(Checked));
                     }
                     w.Model.WorkInProgress = false;
                 });
@@ -1834,23 +1838,23 @@ namespace PEBakery.WPF
 
         public void ParentCheckedPropagation()
         { // Bottom-up propagation of Checked property
-            if (parent == null)
+            if (Parent == null)
                 return;
 
             bool setParentChecked = false;
 
-            foreach (TreeViewModel sibling in parent.Children)
+            foreach (TreeViewModel sibling in Parent.Children)
             { // Siblings
                 if (sibling.Checked)
                     setParentChecked = true;
             }
 
-            parent.SetParentChecked(setParentChecked);
+            Parent.SetParentChecked(setParentChecked);
         }
 
         public void SetParentChecked(bool value)
         {
-            if (parent == null)
+            if (Parent == null)
                 return;
 
             if (script.Mandatory == false && script.Selected != SelectedState.None)
@@ -1861,7 +1865,7 @@ namespace PEBakery.WPF
                     script.Selected = SelectedState.False;
             }
 
-            OnPropertyUpdate("Checked");
+            OnPropertyUpdate(nameof(Checked));
             ParentCheckedPropagation();
         }
 
@@ -1876,7 +1880,7 @@ namespace PEBakery.WPF
             }
         }
 
-        public string Text { get => script.Title; }
+        public string Text => script.Title;
 
         private Script script;
         public Script Script
@@ -1885,10 +1889,10 @@ namespace PEBakery.WPF
             set
             {
                 script = value;
-                OnPropertyUpdate("Script");
-                OnPropertyUpdate("Checked");
-                OnPropertyUpdate("CheckBoxVisible");
-                OnPropertyUpdate("Text");
+                OnPropertyUpdate(nameof(Script));
+                OnPropertyUpdate(nameof(Checked));
+                OnPropertyUpdate(nameof(CheckBoxVisible));
+                OnPropertyUpdate(nameof(Text));
                 OnPropertyUpdate("MainCanvas");
             }
         }
@@ -1900,7 +1904,7 @@ namespace PEBakery.WPF
             set
             {
                 icon = value;
-                OnPropertyUpdate("Icon");
+                OnPropertyUpdate(nameof(Icon));
             }
         }
 
@@ -1924,7 +1928,7 @@ namespace PEBakery.WPF
 
         public TreeViewModel FindScriptByFullPath(string fullPath)
         {
-            return RecursiveFindScriptByFullPath(root, fullPath); 
+            return RecursiveFindScriptByFullPath(Root, fullPath); 
         }
 
         private static TreeViewModel RecursiveFindScriptByFullPath(TreeViewModel cur, string fullPath)
@@ -1981,12 +1985,12 @@ namespace PEBakery.WPF
     #region Converters
     public class TaskbarProgressConverter : System.Windows.Data.IMultiValueConverter
     {
-        public object Convert(object[] values, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             return (double)values[1] / (double)values[0];
         }
 
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture)
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

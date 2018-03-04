@@ -317,36 +317,6 @@
                                     Text="{Binding Interface_CustomEditorPath}" />
                             </DockPanel>
                         </StackPanel>
-                        
-                        <!--
-                        <Grid Margin="5, 5, 5, 5">
-                            <Grid.RowDefinitions>
-                                <RowDefinition />
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox
-                                Grid.Row="0" Grid.Column="0"
-                                IsChecked="{Binding Interface_DefaultCodeEditor}"
-                                Content="System Default Editor" />
-                            <TextBox
-                                Grid.Row="1" Grid.Column="0"
-                                VerticalAlignment="Center"
-                                Text="{Binding Interface_CustomCodeEditor}" />
-                            <TextBox
-                                Grid.Row="1" Grid.Column="0"
-                                VerticalAlignment="Center"
-                                Text="{Binding Interface_CustomCodeEditor}" />
-                            <Button
-                                Grid.Row="1" Grid.Column="1"
-                                Height="25"
-                                Content="Choose"
-                                Click="Button_MonospaceFont_Click"/>
-                        </Grid>
-                        -->
                     </GroupBox>
                     <CheckBox
                         Margin="15, 15, 15, 0"
@@ -462,36 +432,79 @@
             </TabItem>
             <TabItem Header="Compatibility">
                 <StackPanel>
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="Simulate WinBuilder's DirCopy Asterisk Bug"
-                        IsChecked="{Binding Compat_DirCopyBug}" />
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="FileRename and DirMove work like PathMove"
-                        IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="Allow Deprecated Legacy Branch Condition"
-                        IsChecked="{Binding Compat_LegacyBranchCondition}" />
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
-                        IsChecked="{Binding Compat_RegWriteLegacy}" />
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="Ignore Width of WebLabel"
-                        IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
-                    <CheckBox
-                        Margin="15, 15, 15, 0"
-                        VerticalContentAlignment="Center"
-                        Content="Disable Bevel Caption"
-                        IsChecked="{Binding Compat_DisableBevelCaption}" />
+                    <GroupBox
+                        Header="Asterisk Bug"
+                        Margin="5, 5, 5, 0"
+                        BorderBrush="Gray">
+                        <StackPanel Margin="5, 5, 5, 0">
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Simulate WinBuilder's *.* bug in DirCopy"
+                                IsChecked="{Binding Compat_AsteriskBugDirCopy}" />
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Simulate WinBuilder's *.* bug in folder.script"
+                                IsChecked="{Binding Compat_AsteriskBugDirLink}" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox
+                        Header="Code Commands"
+                        Margin="5, 5, 5, 0"
+                        BorderBrush="Gray">
+                        <StackPanel Margin="5, 5, 5, 0">
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="FileRename and DirMove work like PathMove"
+                                IsChecked="{Binding Compat_FileRenameCanMoveDir}" />
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Allow Deprecated Legacy Branch Condition"
+                                IsChecked="{Binding Compat_LegacyBranchCondition}" />
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Allow Variables in RegWrite's &lt;HKey&gt;, &lt;ValueType&gt; Argument"
+                                IsChecked="{Binding Compat_RegWriteLegacy}" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox
+                        Header="Script Interface"
+                        Margin="5, 5, 5, 0"
+                        BorderBrush="Gray">
+                        <StackPanel Margin="5, 5, 5, 0">
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Ignore Width of WebLabel"
+                                IsChecked="{Binding Compat_IgnoreWidthOfWebLabel}" />
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Disable Bevel Caption"
+                                IsChecked="{Binding Compat_DisableBevelCaption}" />
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox
+                        Header="Variable"
+                        Margin="5, 5, 5, 0"
+                        BorderBrush="Gray">
+                        <StackPanel Margin="5, 5, 5, 0">
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Overridable Fixed Variables"
+                                IsChecked="{Binding Compat_OverridableFixedVariables}" />
+                            <CheckBox
+                                Margin="0, 0, 0, 5"
+                                VerticalContentAlignment="Center"
+                                Content="Enable Environment Variables"
+                                IsChecked="{Binding Compat_EnableEnvironmentVariables}" />
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
             </TabItem>
         </TabControl>

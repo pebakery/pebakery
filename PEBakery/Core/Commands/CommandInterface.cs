@@ -448,7 +448,7 @@ namespace PEBakery.Core.Commands
                 {
                     // Create dummy script instance
                     FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-                    Script p = cmd.Addr.Project.LoadScript(tempFile, true, false);
+                    Script p = cmd.Addr.Project.LoadScript(tempFile, true, null);
 
                     // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);

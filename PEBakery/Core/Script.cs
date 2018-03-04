@@ -61,6 +61,7 @@ namespace PEBakery.Core
         [NonSerialized]
         private bool linkLoaded;
         private bool isDirLink;
+        private string dirLinkRoot;
         private string title = string.Empty;
         private string author = string.Empty;
         private string description = string.Empty;
@@ -111,11 +112,11 @@ namespace PEBakery.Core
         }
 
         public bool IsMainScript => isMainScript;
-
         public ScriptType Type => type;
         public Script Link { get => link; set => link = value; }
         public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
         public bool IsDirLink { get => isDirLink; set => isDirLink = value; }
+        public string DirLinkRoot { get => dirLinkRoot; set => dirLinkRoot = value; }
         public Project Project
         {
             get
@@ -217,7 +218,7 @@ namespace PEBakery.Core
             ScriptType type,
             string realPath, string treePath, 
             Project project, string projectRoot,
-            int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
+            int? level, bool isMainScript, bool ignoreMain, string dirLinkRoot)
         {
             if (projectRoot == null) throw new ArgumentNullException(nameof(projectRoot));
 
@@ -232,9 +233,18 @@ namespace PEBakery.Core
             this.project = project ?? throw new ArgumentNullException(nameof(project));
             this.isMainScript = isMainScript;
             this.linkLoaded = false;
-            this.isDirLink = isDirLink;
+            if (dirLinkRoot != null)
+            {
+                this.isDirLink = true;
+                this.dirLinkRoot = dirLinkRoot;
+            }
+            else
+            {
+                this.isDirLink = false;
+                this.dirLinkRoot = null;
+            }
 
-            Debug.Assert(isDirLink ? type != ScriptType.Link : true);
+            Debug.Assert(!isDirLink || type != ScriptType.Link);
 
             switch (type)
             {
@@ -249,7 +259,7 @@ namespace PEBakery.Core
                         };
 
                         // Mandatory Entries
-                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(realPath);
+                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(treePath);
                         sections["Main"].IniDict["Description"] = this.description = $"Directory {this.title}";
                         this.level = (int)level;
                         sections["Main"].IniDict["Level"] = this.level.ToString();

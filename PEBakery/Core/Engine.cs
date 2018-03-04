@@ -1082,7 +1082,7 @@ namespace PEBakery.Core
         {
             LogComment = m.Log_Comment;
             LogMacro = m.Log_Macro;
-            CompatDirCopyBug = m.Compat_DirCopyBug;
+            CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
             DelayedLogging = !m.Log_DisableDelayedLogging;
         }

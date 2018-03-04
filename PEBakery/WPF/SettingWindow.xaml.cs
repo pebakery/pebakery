@@ -55,6 +55,7 @@ namespace PEBakery.WPF
     #region SettingWindow
     public partial class SettingWindow : Window
     {
+        #region Field and Constructor
         public SettingViewModel Model;
 
         public SettingWindow(SettingViewModel model)
@@ -63,7 +64,9 @@ namespace PEBakery.WPF
             this.DataContext = Model;
             InitializeComponent();
         }
+        #endregion
 
+        #region Button Event Handler
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             Model.WriteToFile();
@@ -107,12 +110,9 @@ namespace PEBakery.WPF
         {
             if (Model.General_EnableLongFilePath)
             {
-                string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
+                const string msg = "Enabling this option may cause problems!\r\nDo you really want to continue?";
                 MessageBoxResult res = MessageBox.Show(msg, "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (res == MessageBoxResult.Yes)
-                    Model.General_EnableLongFilePath = true;
-                else
-                    Model.General_EnableLongFilePath = false;
+                Model.General_EnableLongFilePath = (res != MessageBoxResult.Yes);
             }
         }
 
@@ -136,7 +136,7 @@ namespace PEBakery.WPF
                     }
                 }
 
-                Project project = Model.Projects[Model.Project_SelectedIndex];
+                // Project project = Model.Projects[Model.Project_SelectedIndex];
                 if (exist == false) // Add to list
                 {
                     ObservableCollection<string> newSourceDirList = new ObservableCollection<string>
@@ -205,6 +205,7 @@ namespace PEBakery.WPF
                 Model.Interface_CustomEditorPath = dialog.FileName;
             }
         }
+        #endregion
     }
     #endregion
 
@@ -213,15 +214,9 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         private readonly string settingFile;
-
-        private LogDB logDB;
-        public LogDB LogDB { set => logDB = value; }
-
-        private ScriptCache cacheDB;
-        public ScriptCache CacheDB { set => cacheDB = value; }
-
-        private ProjectCollection projects;
-        public ProjectCollection Projects => projects;
+        public LogDB LogDB { get; set; }
+        public ScriptCache CacheDB { get; set; }
+        public ProjectCollection Projects { get; private set; }
 
         public SettingViewModel(string settingFile)
         {
@@ -232,12 +227,9 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Project
+        #region Property - Project
         private string Project_DefaultStr;
-        public string Project_Default
-        {
-            get => Project_List[project_DefaultIndex];
-        }
+        public string Project_Default => Project_List[project_DefaultIndex];
 
         private ObservableCollection<string> project_List;
         public ObservableCollection<string> Project_List
@@ -246,7 +238,7 @@ namespace PEBakery.WPF
             set
             {
                 project_List = value;
-                OnPropertyUpdate("Project_List");
+                OnPropertyUpdate(nameof(Project_List));
             }
         }
 
@@ -257,7 +249,7 @@ namespace PEBakery.WPF
             set
             {
                 project_DefaultIndex = value;
-                OnPropertyUpdate("Project_DefaultIndex");
+                OnPropertyUpdate(nameof(Project_DefaultIndex));
             }
         }
 
@@ -271,7 +263,7 @@ namespace PEBakery.WPF
                 
                 if (0 <= value && value < Project_List.Count)
                 {
-                    string fullPath = projects[value].MainScript.RealPath;
+                    string fullPath = Projects[value].MainScript.RealPath;
                     IniKey[] keys = new IniKey[]
                     {
                         new IniKey("Main", "SourceDir"),
@@ -295,7 +287,7 @@ namespace PEBakery.WPF
                         foreach (string rawDir in rawDirList)
                         {
                             string dir = rawDir.Trim();
-                            if (dir.Equals(string.Empty, StringComparison.Ordinal) == false)
+                            if (0 < dir.Length)
                                 Project_SourceDirectoryList.Add(dir);
                         }
                     }
@@ -303,23 +295,23 @@ namespace PEBakery.WPF
                     if (0 < Project_SourceDirectoryList.Count)
                     {
                         project_SourceDirectoryIndex = 0;
-                        OnPropertyUpdate("Project_SourceDirectoryIndex");
+                        OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
                     }
 
                     if (keys[1].Value != null)
                     {
                         project_TargetDirectory = keys[1].Value;
-                        OnPropertyUpdate("Project_TargetDirectory");
+                        OnPropertyUpdate(nameof(Project_TargetDirectory));
                     }
                     
                     if (keys[2].Value != null)
                     {
                         project_ISOFile = keys[2].Value;
-                        OnPropertyUpdate("Project_ISOFile");
+                        OnPropertyUpdate(nameof(Project_ISOFile));
                     }
                 }
 
-                OnPropertyUpdate("Project_SelectedIndex");
+                OnPropertyUpdate(nameof(Project_SelectedIndex));
             }
         }
 
@@ -330,7 +322,7 @@ namespace PEBakery.WPF
             set
             {
                 project_PathEnabled = value;
-                OnPropertyUpdate("Project_PathEnabled");
+                OnPropertyUpdate(nameof(Project_PathEnabled));
             }
         }
 
@@ -341,7 +333,7 @@ namespace PEBakery.WPF
             set
             {
                 project_SourceDirectoryList = value;
-                OnPropertyUpdate("Project_SourceDirectoryList");
+                OnPropertyUpdate(nameof(Project_SourceDirectoryList));
             }
         }
 
@@ -370,7 +362,7 @@ namespace PEBakery.WPF
                     Ini.SetKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
                 
-                OnPropertyUpdate("Project_SourceDirectoryIndex");
+                OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
             }
         }
 
@@ -382,7 +374,7 @@ namespace PEBakery.WPF
             {
                 if (value.Equals(project_TargetDirectory, StringComparison.OrdinalIgnoreCase) == false)
                 {
-                    Project project = projects[project_SelectedIndex];
+                    Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
                     Ini.SetKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
@@ -390,7 +382,7 @@ namespace PEBakery.WPF
 
                 project_TargetDirectory = value;
 
-                OnPropertyUpdate("Project_TargetDirectory");
+                OnPropertyUpdate(nameof(Project_TargetDirectory));
             }
         }
 
@@ -402,7 +394,7 @@ namespace PEBakery.WPF
             {
                 if (value.Equals(project_ISOFile, StringComparison.OrdinalIgnoreCase) == false)
                 {
-                    Project project = projects[project_SelectedIndex];
+                    Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
                     Ini.SetKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
@@ -410,12 +402,12 @@ namespace PEBakery.WPF
 
                 project_ISOFile = value;
 
-                OnPropertyUpdate("Project_ISOFile");
+                OnPropertyUpdate(nameof(Project_ISOFile));
             }
         }
         #endregion
 
-        #region General
+        #region Property - General
         private bool general_EnableLongFilePath;
         public bool General_EnableLongFilePath
         {
@@ -424,12 +416,11 @@ namespace PEBakery.WPF
             {
                 general_EnableLongFilePath = value;
 
-                if (value)
-                    AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", false); // Path Length Limit = 32767
-                else
-                    AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", true); // Path Length Limit = 260
+                // Enabled  = Path Length Limit = 32767
+                // Disabled = Path Legnth Limit = 260
+                AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !value);
 
-                OnPropertyUpdate("General_EnableLongFilePath");
+                OnPropertyUpdate(nameof(General_EnableLongFilePath));
             }
         }
 
@@ -440,7 +431,7 @@ namespace PEBakery.WPF
             set
             {
                 general_OptimizeCode = value;
-                OnPropertyUpdate("General_OptimizeCode");
+                OnPropertyUpdate(nameof(General_OptimizeCode));
             }
         }
 
@@ -451,7 +442,7 @@ namespace PEBakery.WPF
             set
             {
                 general_ShowLogAfterBuild = value;
-                OnPropertyUpdate("General_ShowLogAfterBuild");
+                OnPropertyUpdate(nameof(General_ShowLogAfterBuild));
             }
         }
 
@@ -462,12 +453,12 @@ namespace PEBakery.WPF
             set
             {
                 general_StopBuildOnError = value;
-                OnPropertyUpdate("General_StopBuildOnError");
+                OnPropertyUpdate(nameof(General_StopBuildOnError));
             }
         }
         #endregion
 
-        #region Interface
+        #region Property - Interface
         private string interface_MonospaceFontStr;
         public string Interface_MonospaceFontStr
         {
@@ -475,7 +466,7 @@ namespace PEBakery.WPF
             set
             {
                 interface_MonospaceFontStr = value;
-                OnPropertyUpdate("Interface_MonospaceFontStr");
+                OnPropertyUpdate(nameof(Interface_MonospaceFontStr));
             }
         }
 
@@ -487,18 +478,18 @@ namespace PEBakery.WPF
             {
                 interface_MonospaceFont = value;
 
-                OnPropertyUpdate("Interface_MonospaceFont");
+                OnPropertyUpdate(nameof(Interface_MonospaceFont));
                 Interface_MonospaceFontStr = $"{value.FontFamily.Source}, {value.FontSizeInPoint}pt";
 
-                OnPropertyUpdate("Interface_MonospaceFontFamily");
-                OnPropertyUpdate("Interface_MonospaceFontWeight");
-                OnPropertyUpdate("Interface_MonospaceFontSize");
+                OnPropertyUpdate(nameof(Interface_MonospaceFontFamily));
+                OnPropertyUpdate(nameof(Interface_MonospaceFontWeight));
+                OnPropertyUpdate(nameof(Interface_MonospaceFontSize));
             }
         }
 
-        public FontFamily Interface_MonospaceFontFamily { get => interface_MonospaceFont.FontFamily; }
-        public FontWeight Interface_MonospaceFontWeight { get => interface_MonospaceFont.FontWeight; }
-        public double Interface_MonospaceFontSize { get => interface_MonospaceFont.FontSizeInDIP; }
+        public FontFamily Interface_MonospaceFontFamily => interface_MonospaceFont.FontFamily;
+        public FontWeight Interface_MonospaceFontWeight => interface_MonospaceFont.FontWeight;
+        public double Interface_MonospaceFontSize => interface_MonospaceFont.FontSizeInDIP;
 
         private double interface_ScaleFactor;
         public double Interface_ScaleFactor
@@ -507,7 +498,7 @@ namespace PEBakery.WPF
             set
             {
                 interface_ScaleFactor = value;
-                OnPropertyUpdate("Interface_ScaleFactor");
+                OnPropertyUpdate(nameof(Interface_ScaleFactor));
             }
         }
 
@@ -518,7 +509,7 @@ namespace PEBakery.WPF
             set
             {
                 interface_UseCustomEditor = value;
-                OnPropertyUpdate("Interface_UseCustomEditor");
+                OnPropertyUpdate(nameof(Interface_UseCustomEditor));
             }
         }
 
@@ -529,7 +520,7 @@ namespace PEBakery.WPF
             set
             {
                 interface_CustomEditorPath = value;
-                OnPropertyUpdate("Interface_CustomEditorPath");
+                OnPropertyUpdate(nameof(Interface_CustomEditorPath));
             }
         }
 
@@ -540,12 +531,12 @@ namespace PEBakery.WPF
             set
             {
                 interface_DisplayShellExecuteConOut = value;
-                OnPropertyUpdate("Interface_DisplayShellExecuteConOut");
+                OnPropertyUpdate(nameof(Interface_DisplayShellExecuteConOut));
             }
         }
         #endregion
 
-        #region Script
+        #region Property - Script
         private string script_CacheState;
         public string Script_CacheState
         {
@@ -553,7 +544,7 @@ namespace PEBakery.WPF
             set
             {
                 script_CacheState = value;
-                OnPropertyUpdate("Script_CacheState");
+                OnPropertyUpdate(nameof(Script_CacheState));
             }
         }
 
@@ -564,7 +555,7 @@ namespace PEBakery.WPF
             set
             {
                 script_EnableCache = value;
-                OnPropertyUpdate("Script_EnableCache");
+                OnPropertyUpdate(nameof(Script_EnableCache));
             }
         }
 
@@ -575,7 +566,7 @@ namespace PEBakery.WPF
             set
             {
                 script_AutoConvertToUTF8 = value;
-                OnPropertyUpdate("Script_AutoConvertToUTF8");
+                OnPropertyUpdate(nameof(Script_AutoConvertToUTF8));
             }
         }
 
@@ -586,12 +577,12 @@ namespace PEBakery.WPF
             set
             {
                 script_AutoSyntaxCheck = value;
-                OnPropertyUpdate("Script_AutoSyntaxCheck");
+                OnPropertyUpdate(nameof(Script_AutoSyntaxCheck));
             }
         }
         #endregion
 
-        #region Logging
+        #region Property - Logging
         private ObservableCollection<string> log_DebugLevelList = new ObservableCollection<string>()
         {
             DebugLevel.Production.ToString(),
@@ -604,7 +595,7 @@ namespace PEBakery.WPF
             set
             {
                 log_DebugLevelList = value;
-                OnPropertyUpdate("Log_DebugLevelList");
+                OnPropertyUpdate(nameof(Log_DebugLevelList));
             }
         }
 
@@ -615,7 +606,7 @@ namespace PEBakery.WPF
             set
             {
                 log_DebugLevelIndex = value;
-                OnPropertyUpdate("Log_DebugLevelIndex");
+                OnPropertyUpdate(nameof(Log_DebugLevelIndex));
             }
         }
 
@@ -657,7 +648,7 @@ namespace PEBakery.WPF
             set
             {
                 log_DBState = value;
-                OnPropertyUpdate("Log_DBState");
+                OnPropertyUpdate(nameof(Log_DBState));
             }
         }
 
@@ -668,7 +659,7 @@ namespace PEBakery.WPF
             set
             {
                 log_Macro = value;
-                OnPropertyUpdate("Log_Macro");
+                OnPropertyUpdate(nameof(Log_Macro));
             }
         }
 
@@ -679,7 +670,7 @@ namespace PEBakery.WPF
             set
             {
                 log_Comment = value;
-                OnPropertyUpdate("Log_Comment");
+                OnPropertyUpdate(nameof(Log_Comment));
             }
         }
 
@@ -690,7 +681,7 @@ namespace PEBakery.WPF
             set
             {
                 log_DisableInInterface = value;
-                OnPropertyUpdate("Log_DisableInInterface");
+                OnPropertyUpdate(nameof(Log_DisableInInterface));
             }
         }
 
@@ -701,20 +692,31 @@ namespace PEBakery.WPF
             set
             {
                 log_DisableDelayedLogging = value;
-                OnPropertyUpdate("Log_DisableDelayedLogging");
+                OnPropertyUpdate(nameof(Log_DisableDelayedLogging));
             }
         }
         #endregion
 
-        #region Compatibility
-        private bool compat_DirCopyBug;
-        public bool Compat_DirCopyBug
+        #region Property - Compatibility
+        private bool compat_AsteriskBugDirCopy;
+        public bool Compat_AsteriskBugDirCopy
         {
-            get => compat_DirCopyBug;
+            get => compat_AsteriskBugDirCopy;
             set
             {
-                compat_DirCopyBug = value;
-                OnPropertyUpdate("Compat_DirCopyBug");
+                compat_AsteriskBugDirCopy = value;
+                OnPropertyUpdate(nameof(Compat_AsteriskBugDirCopy));
+            }
+        }
+
+        private bool compat_AsteriskBugDirLink;
+        public bool Compat_AsteriskBugDirLink
+        {
+            get => compat_AsteriskBugDirLink;
+            set
+            {
+                compat_AsteriskBugDirLink = value;
+                OnPropertyUpdate(nameof(Compat_AsteriskBugDirLink));
             }
         }
 
@@ -725,7 +727,7 @@ namespace PEBakery.WPF
             set
             {
                 compat_FileRenameCanMoveDir = value;
-                OnPropertyUpdate("Compat_FileRenameCanMoveDir");
+                OnPropertyUpdate(nameof(Compat_FileRenameCanMoveDir));
             }
         }
 
@@ -736,7 +738,7 @@ namespace PEBakery.WPF
             set
             {
                 compat_LegacyBranchCondition = value;
-                OnPropertyUpdate("Compat_LegacyBranchCondition");
+                OnPropertyUpdate(nameof(Compat_LegacyBranchCondition));
             }
         }
 
@@ -747,7 +749,7 @@ namespace PEBakery.WPF
             set
             {
                 compat_RegWriteLegacy = value;
-                OnPropertyUpdate("Compat_RegWriteLegacy");
+                OnPropertyUpdate(nameof(Compat_RegWriteLegacy));
             }
         }
 
@@ -758,7 +760,7 @@ namespace PEBakery.WPF
             set
             {
                 compat_IgnoreWidthOfWebLabel = value;
-                OnPropertyUpdate("Compat_IgnoreWidthOfWebLabel");
+                OnPropertyUpdate(nameof(Compat_IgnoreWidthOfWebLabel));
             }
         }
 
@@ -769,24 +771,51 @@ namespace PEBakery.WPF
             set
             {
                 compat_DisableBevelCaption = value;
-                OnPropertyUpdate("Compat_DisableBevelCaption");
+                OnPropertyUpdate(nameof(Compat_DisableBevelCaption));
+            }
+        }
+
+        private bool compat_OverridableFixedVariables;
+        public bool Compat_OverridableFixedVariables
+        {
+            get => compat_OverridableFixedVariables;
+            set
+            {
+                compat_OverridableFixedVariables = value;
+                OnPropertyUpdate(nameof(Compat_OverridableFixedVariables));
+            }
+        }
+
+        private bool compat_EnableEnvironmentVariables;
+        public bool Compat_EnableEnvironmentVariables
+        {
+            get => compat_EnableEnvironmentVariables;
+            set
+            {
+                compat_EnableEnvironmentVariables = value;
+                OnPropertyUpdate(nameof(Compat_EnableEnvironmentVariables));
             }
         }
         #endregion
 
-        #region Utility
+        #region ApplySetting
         public void ApplySetting()
         {
             CodeParser.OptimizeCode = this.General_OptimizeCode;
             Engine.StopBuildOnError = this.General_StopBuildOnError;
             Logger.DebugLevel = this.Log_DebugLevel;
+            MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
+            Project.AsteriskBugDirLink = this.Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
             UIRenderer.DisableBevelCaption = this.Compat_DisableBevelCaption;
-            MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
+            Variables.OverridableFixedVariables = this.Compat_OverridableFixedVariables;
+            Variables.EnableEnvironmentVariables = this.Compat_EnableEnvironmentVariables;
         }
+        #endregion
 
+        #region SetToDefault
         public void SetToDefault()
         {
             // Project
@@ -801,10 +830,14 @@ namespace PEBakery.WPF
             // Interface
             using (InstalledFontCollection fonts = new InstalledFontCollection())
             {
-                if (fonts.Families.FirstOrDefault(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)) == null)
-                    Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("Consolas"), FontWeights.Regular, 12);
-                else // Prefer D2Coding over Consolas
-                    Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily("D2Coding"), FontWeights.Regular, 12);
+                // Every Windows have Consolas installed
+                string fontFamily = "Consolas";
+
+                // Prefer D2Coding over Consolas
+                if (0 < fonts.Families.Count(x => x.Name.Equals("D2Coding", StringComparison.Ordinal)))
+                    fontFamily = "D2Coding";
+
+                Interface_MonospaceFont = new FontHelper.WPFFont(new FontFamily(fontFamily), FontWeights.Regular, 12);
             }
             Interface_ScaleFactor = 100;
             Interface_DisplayShellExecuteConOut = true;
@@ -828,14 +861,19 @@ namespace PEBakery.WPF
             Log_DisableDelayedLogging = false;
 
             // Compatibility
-            Compat_DirCopyBug = true;
+            Compat_AsteriskBugDirCopy = true;
+            Compat_AsteriskBugDirLink = false;
             Compat_FileRenameCanMoveDir = true;
             Compat_LegacyBranchCondition = true;
             Compat_RegWriteLegacy = true;
-            Compat_IgnoreWidthOfWebLabel = true;
+            Compat_IgnoreWidthOfWebLabel = false;
             Compat_DisableBevelCaption = true;
+            Compat_OverridableFixedVariables = false;
+            Compat_EnableEnvironmentVariables = false;
         }
+        #endregion
 
+        #region ReadFromFile, WriteToFile
         public void ReadFromFile()
         {
             // If key not specified or value malformed, default value will be used.
@@ -844,95 +882,77 @@ namespace PEBakery.WPF
             if (File.Exists(settingFile) == false)
                 return;
 
+            const string generalStr = "General";
+            const string interfaceStr = "Interface";
+            const string scriptStr = "Script";
+            const string logStr = "Log";
+            const string compatStr = "Compat";
+
             IniKey[] keys = new IniKey[]
             {
-                new IniKey("General", "EnableLongFilePath"), // Boolean
-                new IniKey("General", "OptimizeCode"), // Boolean
-                new IniKey("General", "ShowLogAfterBuild"), // Boolean
-                new IniKey("General", "StopBuildOnError"), // Boolean
-                new IniKey("Interface", "MonospaceFontFamily"),
-                new IniKey("Interface", "MonospaceFontWeight"),
-                new IniKey("Interface", "MonospaceFontSize"),
-                new IniKey("Interface", "ScaleFactor"), // Integer 100 ~ 200
-                new IniKey("Interface", "UseCustomEditor"), // Boolean
-                new IniKey("Interface", "CustomEditorPath"), // String
-                new IniKey("Interface", "DisplayShellExecuteConOut"), // Boolean
-                new IniKey("Script", "EnableCache"), // Boolean
-                new IniKey("Script", "SpeedupLoading"), // Boolean
-                new IniKey("Script", "AutoConvertToUTF8"), // Boolean
-                new IniKey("Script", "AutoSyntaxCheck"), // Boolean
-                new IniKey("Log", "DebugLevel"), // Integer
-                new IniKey("Log", "Macro"), // Boolean
-                new IniKey("Log", "Comment"), // Boolean
-                new IniKey("Log", "DisableInInterface"), // Boolean
-                new IniKey("Log", "DisableDelayedLogging"), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr)), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr)),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr)), // Integer 100 ~ 200
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr)), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_AutoConvertToUTF8), scriptStr)), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
+                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DisableInInterface), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DisableDelayedLogging), logStr)), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
-                new IniKey("Compat", "DirCopyBug"), // Boolean
-                new IniKey("Compat", "FileRenameCanMoveDir"), // Boolean
-                new IniKey("Compat", "LegacyBranchCondition"), // Boolean
-                new IniKey("Compat", "RegWriteLegacy"), // Boolean
-                new IniKey("Compat", "IgnoreWidthOfWebLabel"), // Boolean
-                new IniKey("Compat", "DisableBevelCaption"), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableBevelCaption), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             }; 
-            keys = Ini.GetKeys(settingFile, keys);
 
+            keys = Ini.GetKeys(settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
-            string str_General_EnableLongFilePath = dict["General_EnableLongFilePath"];
-            string str_General_OptimizeCode = dict["General_OptimizeCode"];
-            string str_General_ShowLogAfterBuild = dict["General_ShowLogAfterBuild"];
-            string str_General_StopBuildOnError = dict["General_StopBuildOnError"];
-            string str_Interface_MonospaceFontFamiliy = dict["Interface_MonospaceFontFamily"];
-            string str_Interface_MonospaceFontWeight = dict["Interface_MonospaceFontWeight"];
-            string str_Interface_MonospaceFontSize = dict["Interface_MonospaceFontSize"];
-            string str_Interface_UseCustomEditor = dict["Interface_UseCustomEditor"];
-            string str_Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
-            string str_Interface_DisplayShellExecuteConOut = dict["Interface_DisplayShellExecuteConOut"];
-            string str_Interface_ScaleFactor = dict["Interface_ScaleFactor"];
-            string str_Script_EnableCache = dict["Script_EnableCache"];
-            string str_Script_SpeedupLoading = dict["Script_SpeedupLoading"];
-            string str_Script_AutoConvertToUTF8 = dict["Script_AutoConvertToUTF8"];
-            string str_Script_AutoSyntaxCheck = dict["Script_AutoSyntaxCheck"];
-            string str_Log_DebugLevelIndex = dict["Log_DebugLevel"];
-            string str_Log_Macro = dict["Log_Macro"];
-            string str_Log_Comment = dict["Log_Comment"];
-            string str_Log_DisableInInterface = dict["Log_DisableInInterface"];
-            string str_Log_DisableDelayedLogging = dict["Log_DisableDelayedLogging"];
-            string str_Compat_DirCopyBug = dict["Compat_DirCopyBug"];
-            string str_Compat_FileRenameCanMoveDir = dict["Compat_FileRenameCanMoveDir"];
-            string str_Compat_LegacyBranchCondition = dict["Compat_LegacyBranchCondition"];
-            string str_Compat_RegWriteLegacy = dict["Compat_RegWriteLegacy"];
-            string str_Compat_IgnoreWidthOfWebLabel = dict["Compat_IgnoreWidthOfWebLabel"];
-            string str_Compat_DisableBevelCaption = dict["Compat_DisableBevelCaption"];
 
             // Project
             if (dict["Project_DefaultProject"] != null)
                 Project_DefaultStr = dict["Project_DefaultProject"];
 
             // General - EnableLongFilePath (Default = False)
-            if (str_General_EnableLongFilePath != null)
+            if (dict[nameof(General_EnableLongFilePath)] != null)
             {
-                if (str_General_EnableLongFilePath.Equals("True", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(General_EnableLongFilePath)].Equals("True", StringComparison.OrdinalIgnoreCase))
                     General_EnableLongFilePath = true;
             }
 
             // General - EnableLongFilePath (Default = True)
-            if (str_General_OptimizeCode != null)
+            if (dict[nameof(General_OptimizeCode)] != null)
             {
-                if (str_General_OptimizeCode.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(General_OptimizeCode)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     General_OptimizeCode = false;
             }
 
             // General - ShowLogAfterBuild (Default = True)
-            if (str_General_ShowLogAfterBuild != null)
+            if (dict[nameof(General_ShowLogAfterBuild)] != null)
             {
-                if (str_General_ShowLogAfterBuild.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(General_ShowLogAfterBuild)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     General_ShowLogAfterBuild = false;
             }
 
             // General - StopBuildOnError (Default = True)
-            if (str_General_StopBuildOnError != null)
+            if (dict[nameof(General_StopBuildOnError)] != null)
             {
-                if (str_General_StopBuildOnError.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(General_StopBuildOnError)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     General_StopBuildOnError = false;
             }
 
@@ -940,13 +960,13 @@ namespace PEBakery.WPF
             FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
             FontWeight monoFontWeight = Interface_MonospaceFont.FontWeight;
             int monoFontSize = Interface_MonospaceFont.FontSizeInPoint;
-            if (str_Interface_MonospaceFontFamiliy != null)
-                monoFontFamiliy = new FontFamily(str_Interface_MonospaceFontFamiliy);
-            if (str_Interface_MonospaceFontWeight != null)
-                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(str_Interface_MonospaceFontWeight);
-            if (str_Interface_MonospaceFontSize != null)
+            if (dict[nameof(Interface_MonospaceFontFamily)] != null)
+                monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospaceFontFamily)]);
+            if (dict[nameof(Interface_MonospaceFontWeight)] != null)
+                monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(dict[nameof(Interface_MonospaceFontWeight)]);
+            if (dict[nameof(Interface_MonospaceFontSize)] != null)
             {
-                if (int.TryParse(str_Interface_MonospaceFontSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
+                if (int.TryParse(dict[nameof(Interface_MonospaceFontSize)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
                 {
                     if (0 < newMonoFontSize)
                         monoFontSize = newMonoFontSize;
@@ -955,9 +975,9 @@ namespace PEBakery.WPF
             Interface_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
 
             // Interface - ScaleFactor (Default = 100)
-            if (str_Interface_ScaleFactor != null)
+            if (dict[nameof(Interface_ScaleFactor)] != null)
             {
-                if (int.TryParse(str_Interface_ScaleFactor, NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
+                if (int.TryParse(dict[nameof(Interface_ScaleFactor)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
                 {
                     if (100 <= scaleFactor && scaleFactor <= 200)
                         Interface_ScaleFactor = scaleFactor;
@@ -965,48 +985,48 @@ namespace PEBakery.WPF
             }
 
             // Interface_UseCustomEditor (Default = False)
-            if (str_Interface_UseCustomEditor != null)
+            if (dict[nameof(Interface_UseCustomEditor)] != null)
             {
-                if (str_Interface_UseCustomEditor.Equals("True", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Interface_UseCustomEditor)].Equals("True", StringComparison.OrdinalIgnoreCase))
                     Interface_UseCustomEditor = true;
             }
 
-            // Interface_CustomEditorPath
-            if (dict["Interface_CustomEditorPath"] != null)
-                Interface_CustomEditorPath = dict["Interface_CustomEditorPath"];
+            // str_Interface_CustomEditorPath
+            if (dict[nameof(Interface_CustomEditorPath)] != null)
+                Interface_CustomEditorPath = dict[nameof(Interface_CustomEditorPath)];
 
             // Interface - DisplayShellExecuteStdOut (Default = True)
-            if (str_Interface_DisplayShellExecuteConOut != null)
+            if (dict[nameof(Interface_DisplayShellExecuteConOut)] != null)
             {
-                if (str_Interface_DisplayShellExecuteConOut.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Interface_DisplayShellExecuteConOut)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Interface_DisplayShellExecuteConOut = false;
             }
 
             // Script - EnableCache (Default = True)
-            if (str_Script_EnableCache != null)
+            if (dict[nameof(Script_EnableCache)] != null)
             {
-                if (str_Script_EnableCache.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Script_EnableCache)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Script_EnableCache = false;
             }
 
             // Script - AutoConvertToUTF8 (Default = False)
-            if (str_Script_AutoConvertToUTF8 != null)
+            if (dict[nameof(Script_AutoConvertToUTF8)] != null)
             {
-                if (str_Script_AutoConvertToUTF8.Equals("True", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Script_AutoConvertToUTF8)].Equals("True", StringComparison.OrdinalIgnoreCase))
                     Script_AutoConvertToUTF8 = true;
             }
 
             // Script - AutoSyntaxCheck (Default = False)
-            if (str_Script_AutoSyntaxCheck != null)
+            if (dict[nameof(Script_AutoSyntaxCheck)] != null)
             {
-                if (str_Script_AutoSyntaxCheck.Equals("True", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Script_AutoSyntaxCheck)].Equals("True", StringComparison.OrdinalIgnoreCase))
                     Script_AutoSyntaxCheck = true;
             }
 
             // Log - DebugLevel (Default = 0)
-            if (str_Log_DebugLevelIndex != null)
+            if (dict[nameof(Log_DebugLevel)] != null)
             {
-                if (int.TryParse(str_Log_DebugLevelIndex, NumberStyles.Integer, CultureInfo.InvariantCulture, out int debugLevelIdx))
+                if (int.TryParse(dict[nameof(Log_DebugLevel)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int debugLevelIdx))
                 {
                     if (0 <= debugLevelIdx && debugLevelIdx <= 2)
                         Log_DebugLevelIndex = debugLevelIdx;
@@ -1014,146 +1034,183 @@ namespace PEBakery.WPF
             }
 
             // Log - Macro (Default = True)
-            if (str_Log_Macro != null)
+            if (dict[nameof(Log_Macro)] != null)
             {
-                if (str_Log_Macro.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Log_Macro)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Log_Macro = false;
             }
 
             // Log - Comment (Default = True)
-            if (str_Log_Comment != null)
+            if (dict[nameof(Log_Comment)] != null)
             {
-                if (str_Log_Comment.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Log_Comment)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Log_Comment = false;
             }
 
             // Log - DisableInInterface (Default = True)
-            if (str_Log_DisableInInterface != null)
+            if (dict[nameof(Log_DisableInInterface)] != null)
             {
-                if (str_Log_DisableInInterface.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Log_DisableInInterface)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Log_DisableInInterface = false;
             }
 
             // Log - DisableDelayedLogging (Default = False)
-            if (str_Log_DisableDelayedLogging != null)
+            if (dict[nameof(Log_DisableDelayedLogging)] != null)
             {
-                if (str_Log_DisableDelayedLogging.Equals("True", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Log_DisableDelayedLogging)].Equals("True", StringComparison.OrdinalIgnoreCase))
                     Log_DisableDelayedLogging = true;
             }
 
-            // Compatibility - DirCopyBug (Default = True)
-            if (str_Compat_DirCopyBug != null)
+            // Compatibility - AseteriskBugDirCopy (Default = True)
+            if (dict[nameof(Compat_AsteriskBugDirCopy)] != null)
             {
-                if (str_Compat_DirCopyBug.Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_DirCopyBug = false;
+                if (dict[nameof(Compat_AsteriskBugDirCopy)].Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_AsteriskBugDirCopy = false;
+            }
+
+            // Compatibility - AseteriskBugDirLink (Default = True)
+            if (dict[nameof(Compat_AsteriskBugDirLink)] != null)
+            {
+                if (dict[nameof(Compat_AsteriskBugDirLink)].Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_AsteriskBugDirLink = false;
             }
 
             // Compatibility - FileRenameCanMoveDir (Default = True)
-            if (str_Compat_FileRenameCanMoveDir != null)
+            if (dict[nameof(Compat_FileRenameCanMoveDir)] != null)
             {
-                if (str_Compat_FileRenameCanMoveDir.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Compat_FileRenameCanMoveDir)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_FileRenameCanMoveDir = false;
             }
 
             // Compatibility - LegacyBranchCondition (Default = True)
-            if (str_Compat_LegacyBranchCondition != null)
+            if (dict[nameof(Compat_LegacyBranchCondition)] != null)
             {
-                if (str_Compat_LegacyBranchCondition.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Compat_LegacyBranchCondition)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_LegacyBranchCondition = false;
             }
 
             // Compatibility - RegWriteLegacy (Default = True)
-            if (str_Compat_RegWriteLegacy != null)
+            if (dict[nameof(Compat_RegWriteLegacy)] != null)
             {
-                if (str_Compat_RegWriteLegacy.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Compat_RegWriteLegacy)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_RegWriteLegacy = false;
             }
 
             // Compatibility - IgnoreWidthOfWebLabel (Default = True)
-            if (str_Compat_IgnoreWidthOfWebLabel != null)
+            if (dict[nameof(Compat_IgnoreWidthOfWebLabel)] != null)
             {
-                if (str_Compat_IgnoreWidthOfWebLabel.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Compat_IgnoreWidthOfWebLabel)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_IgnoreWidthOfWebLabel = false;
             }
 
             // Compatibility - DisableBevelCaption (Default = True)
-            if (str_Compat_DisableBevelCaption != null)
+            if (dict[nameof(Compat_DisableBevelCaption)] != null)
             {
-                if (str_Compat_DisableBevelCaption.Equals("False", StringComparison.OrdinalIgnoreCase))
+                if (dict[nameof(Compat_DisableBevelCaption)].Equals("False", StringComparison.OrdinalIgnoreCase))
                     Compat_DisableBevelCaption = false;
+            }
+
+            // Compatibility - OverridableFixedVariables (Default = True)
+            if (dict[nameof(Compat_OverridableFixedVariables)] != null)
+            {
+                if (dict[nameof(Compat_OverridableFixedVariables)].Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_OverridableFixedVariables = false;
+            }
+
+            // Compatibility - EnableEnvironmentVariables (Default = True)
+            if (dict[nameof(Compat_EnableEnvironmentVariables)] != null)
+            {
+                if (dict[nameof(Compat_EnableEnvironmentVariables)].Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Compat_EnableEnvironmentVariables = false;
             }
         }
 
         public void WriteToFile()
         {
+            const string generalStr = "General";
+            const string interfaceStr = "Interface";
+            const string scriptStr = "Script";
+            const string logStr = "Log";
+            const string compatStr = "Compat";
+
             IniKey[] keys = new IniKey[]
             {
-                new IniKey("General", "OptimizeCode", General_OptimizeCode.ToString()),
-                new IniKey("General", "EnableLongFilePath", General_EnableLongFilePath.ToString()),
-                new IniKey("General", "ShowLogAfterBuild", General_ShowLogAfterBuild.ToString()),
-                new IniKey("General", "StopBuildOnError", General_StopBuildOnError.ToString()),
-                new IniKey("Interface", "MonospaceFontFamily", Interface_MonospaceFont.FontFamily.Source),
-                new IniKey("Interface", "MonospaceFontWeight", Interface_MonospaceFont.FontWeight.ToString()),
-                new IniKey("Interface", "MonospaceFontSize", Interface_MonospaceFont.FontSizeInPoint.ToString()),
-                new IniKey("Interface", "ScaleFactor", Interface_ScaleFactor.ToString()),
-                new IniKey("Interface", "UseCustomEditor", Interface_UseCustomEditor.ToString()),
-                new IniKey("Interface", "CustomEditorPath", Interface_CustomEditorPath),
-                new IniKey("Interface", "DisplayShellExecuteConOut", Interface_DisplayShellExecuteConOut.ToString()),
-                new IniKey("Script", "EnableCache", Script_EnableCache.ToString()),
-                new IniKey("Script", "AutoConvertToUTF8", Script_AutoConvertToUTF8.ToString()),
-                new IniKey("Script", "AutoSyntaxCheck", Script_AutoSyntaxCheck.ToString()),
-                new IniKey("Log", "DebugLevel", log_DebugLevelIndex.ToString()),
-                new IniKey("Log", "Macro", Log_Macro.ToString()),
-                new IniKey("Log", "Comment", Log_Comment.ToString()),
-                new IniKey("Log", "DisableInInterface", Log_DisableInInterface.ToString()),
-                new IniKey("Log", "DisableDelayedLogging", Log_DisableDelayedLogging.ToString()),
-                new IniKey("Project", "DefaultProject", Project_Default),
-                new IniKey("Compat", "DirCopyBug", Compat_DirCopyBug.ToString()),
-                new IniKey("Compat", "FileRenameCanMoveDir", Compat_FileRenameCanMoveDir.ToString()),
-                new IniKey("Compat", "LegacyBranchCondition", Compat_LegacyBranchCondition.ToString()),
-                new IniKey("Compat", "RegWriteLegacy", Compat_RegWriteLegacy.ToString()),
-                new IniKey("Compat", "IgnoreWidthOfWebLabel", Compat_IgnoreWidthOfWebLabel.ToString()),
-                new IniKey("Compat", "DisableBevelCaption", Compat_DisableBevelCaption.ToString()),
+                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr), General_EnableLongFilePath.ToString()), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr), General_OptimizeCode.ToString()), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr), General_ShowLogAfterBuild.ToString()), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr), General_StopBuildOnError.ToString()), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr), Interface_MonospaceFont.FontFamily.Source),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr), Interface_MonospaceFont.FontWeight.ToString()),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr), Interface_MonospaceFont.FontSizeInPoint.ToString()),
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_ScaleFactor), interfaceStr), Interface_ScaleFactor.ToString(CultureInfo.InvariantCulture)), // Integer
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_UseCustomEditor), interfaceStr), Interface_UseCustomEditor.ToString()), // Boolean
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
+                new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_AutoConvertToUTF8), scriptStr), Script_AutoConvertToUTF8.ToString()), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
+                new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DisableInInterface), logStr), Log_DisableInInterface.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DisableDelayedLogging), logStr), Log_DisableDelayedLogging.ToString()), // Boolean
+                new IniKey("Project", "DefaultProject", Project_Default), // String
+                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr), Compat_FileRenameCanMoveDir.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_LegacyBranchCondition), compatStr), Compat_LegacyBranchCondition.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_RegWriteLegacy), compatStr), Compat_RegWriteLegacy.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_IgnoreWidthOfWebLabel), compatStr), Compat_IgnoreWidthOfWebLabel.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_DisableBevelCaption), compatStr), Compat_DisableBevelCaption.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
+                new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
             };
             Ini.SetKeys(settingFile, keys);
         }
 
+        private static string KeyPart(string str, string section)
+        {
+            return str.Substring(section.Length + 1);
+        }
+        #endregion
+
+        #region Database Operation
         public void ClearLogDB()
         {
-            logDB.DeleteAll<DB_SystemLog>();
-            logDB.DeleteAll<DB_BuildInfo>();
-            logDB.DeleteAll<DB_Script>();
-            logDB.DeleteAll<DB_Variable>();
-            logDB.DeleteAll<DB_BuildLog>();
+            LogDB.DeleteAll<DB_SystemLog>();
+            LogDB.DeleteAll<DB_BuildInfo>();
+            LogDB.DeleteAll<DB_Script>();
+            LogDB.DeleteAll<DB_Variable>();
+            LogDB.DeleteAll<DB_BuildLog>();
 
             UpdateLogDBState();
         }
 
         public void ClearCacheDB()
         {
-            if (cacheDB != null)
+            if (CacheDB != null)
             {
-                cacheDB.DeleteAll<DB_ScriptCache>();
+                CacheDB.DeleteAll<DB_ScriptCache>();
                 UpdateCacheDBState();
             }
         }
 
         public void UpdateLogDBState()
         {
-            int systemLogCount = logDB.Table<DB_SystemLog>().Count();
-            int codeLogCount = logDB.Table<DB_BuildLog>().Count();
+            int systemLogCount = LogDB.Table<DB_SystemLog>().Count();
+            int codeLogCount = LogDB.Table<DB_BuildLog>().Count();
             Log_DBState = $"{systemLogCount} System Logs, {codeLogCount} Build Logs";
         }
 
         public void UpdateCacheDBState()
         {
-            if (cacheDB == null)
+            if (CacheDB == null)
             {
                 Script_CacheState = "Cache not enabled";
             }
             else
             {
-                int cacheCount = cacheDB.Table<DB_ScriptCache>().Count();
+                int cacheCount = CacheDB.Table<DB_ScriptCache>().Count();
                 Script_CacheState = $"{cacheCount} scripts cached";
             }
         }
@@ -1163,11 +1220,11 @@ namespace PEBakery.WPF
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow w = Application.Current.MainWindow as MainWindow;
-                projects = w.Projects;
+                Projects = w.Projects;
             });
 
             bool foundDefault = false;
-            List<string> projNameList = projects.ProjectNames;
+            List<string> projNameList = Projects.ProjectNames;
             Project_List = new ObservableCollection<string>();
             for (int i = 0; i < projNameList.Count; i++)
             {
@@ -1180,9 +1237,11 @@ namespace PEBakery.WPF
             }
 
             if (foundDefault == false)
-                Project_SelectedIndex = Project_DefaultIndex = projects.Count - 1;
+                Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
         }
+        #endregion
 
+        #region OnPropertyUpdate
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {
