@@ -167,6 +167,13 @@
     <Compile Include="Core\Commands\CommandWim.cs" />
     <Compile Include="Core\LogExporter.cs" />
     <Compile Include="Core\Parser\PEBakeryScriptVisitor.cs" />
+    <Compile Include="Helper\ArchiveHelper.cs" />
+    <Compile Include="Helper\FileHelper.cs" />
+    <Compile Include="Helper\HashHelper.cs" />
+    <Compile Include="Helper\ImageHelper.cs" />
+    <Compile Include="Helper\NumberHelper.cs" />
+    <Compile Include="Helper\RegistryHelper.cs" />
+    <Compile Include="Helper\StringHelper.cs" />
     <Compile Include="WPF\AboutWindow.xaml.cs">
       <DependentUpon>AboutWindow.xaml</DependentUpon>
     </Compile>
@@ -235,7 +242,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Helper.cs" />
+    <Compile Include="Helper\FontHelper.cs" />
     <Compile Include="WPF\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
