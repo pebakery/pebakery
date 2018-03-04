@@ -62,8 +62,8 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            Script p = cmd.Addr.Script;
-            ScriptSection iface = p.GetInterface(out string ifaceSecName);
+            Script sc = cmd.Addr.Script;
+            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
                 logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
@@ -104,8 +104,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
 
-            Script p = cmd.Addr.Script;
-            ScriptSection iface = p.GetInterface(out string ifaceSecName);
+            Script sc = cmd.Addr.Script;
+            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface == null)
             {
                 logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
@@ -168,15 +168,15 @@ namespace PEBakery.Core.Commands
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
-            if (!p.Sections.ContainsKey(section))
+            if (!sc.Sections.ContainsKey(section))
             {
                 logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            ScriptSection iface = p.Sections[section];
+            ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCmds = iface.GetUICtrls(true);
             UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
@@ -237,15 +237,15 @@ namespace PEBakery.Core.Commands
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
-            if (!p.Sections.ContainsKey(section))
+            if (!sc.Sections.ContainsKey(section))
             {
                 logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
                 return logs;
             }
 
-            ScriptSection iface = p.Sections[section];
+            ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCmds = iface.GetUICtrls(true);
             UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
@@ -448,14 +448,14 @@ namespace PEBakery.Core.Commands
                 {
                     // Create dummy script instance
                     FileHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-                    Script p = cmd.Addr.Project.LoadScript(tempFile, true, null);
+                    Script sc = cmd.Addr.Project.LoadScript(tempFile, true, null);
 
                     // Encode binary file into script instance
                     string fileName = Path.GetFileName(srcFile);
-                    EncodedFile.AttachFile(p, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
+                    EncodedFile.AttachFile(sc, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
 
                     // Remove Script instance
-                    p = null;
+                    sc = null;
 
                     // Read encoded text strings into memory
                     string txtStr;
@@ -602,11 +602,11 @@ namespace PEBakery.Core.Commands
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
-            if (p.Sections.ContainsKey(interfaceSection))
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            if (sc.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;
-                try { uiCtrls = p.Sections[interfaceSection].GetUICtrls(true); }
+                try { uiCtrls = sc.Sections[interfaceSection].GetUICtrls(true); }
                 catch { } // No [Interface] section, or unable to get List<UIControl>
 
                 if (uiCtrls != null)

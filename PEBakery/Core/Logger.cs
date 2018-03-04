@@ -395,7 +395,7 @@ namespace PEBakery.Core
             System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
         }
 
-        public long Build_Script_Init(EngineState s, Script p, int order)
+        public long Build_Script_Init(EngineState s, Script sc, int order)
         {
             if (s.DisableLogger)
                 return 0;
@@ -404,11 +404,11 @@ namespace PEBakery.Core
             DB_Script dbScript = new DB_Script()
             {
                 BuildId = buildId,
-                Level = p.Level,
+                Level = sc.Level,
                 Order = order,
-                Name = p.Title,
-                Path = p.TreePath,
-                Version = p.Version,
+                Name = sc.Title,
+                Path = sc.TreePath,
+                Version = sc.Version,
             };
             DB.Insert(dbScript);
             scriptDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());

@@ -46,30 +46,28 @@ namespace PEBakery.Core
     public class Script
     {
         #region Fields
-        private string realPath;
-        private string treePath;
-
-        private bool fullyParsed;
-        private bool isMainScript;
-
-        private Dictionary<string, ScriptSection> sections;
-        private ScriptType type;
+        private string _realPath;
+        private string _treePath;
+        private bool _fullyParsed;
+        private bool _isMainScript;
+        private Dictionary<string, ScriptSection> _sections;
+        private ScriptType _type;
         [NonSerialized]
-        private Project project;
+        private Project _project;
         [NonSerialized]
-        private Script link;
+        private Script _link;
         [NonSerialized]
-        private bool linkLoaded;
-        private bool isDirLink;
-        private string dirLinkRoot;
-        private string title = string.Empty;
-        private string author = string.Empty;
-        private string description = string.Empty;
-        private int version;
-        private int level;
-        private SelectedState selected = SelectedState.None;
-        private bool mandatory = false;
-        private List<string> interfaceList = new List<string>();
+        private bool _linkLoaded;
+        private bool _isDirLink;
+        private string _dirLinkRoot;
+        private string _title = string.Empty;
+        private string _author = string.Empty;
+        private string _description = string.Empty;
+        private int _version;
+        private int _level;
+        private SelectedState _selected = SelectedState.None;
+        private bool _mandatory = false;
+        private List<string> _interfaceList = new List<string>();
         #endregion
 
         #region Properties
@@ -77,135 +75,135 @@ namespace PEBakery.Core
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.RealPath;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.RealPath;
                 else
-                    return realPath;
+                    return _realPath;
             }
         }
-        public string DirectRealPath => realPath;
-        public string TreePath => treePath;
+        public string DirectRealPath => _realPath;
+        public string TreePath => _treePath;
         public Dictionary<string, ScriptSection> Sections
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Sections;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Sections;
                 else
-                    return sections;
+                    return _sections;
             }
         }
         public Dictionary<string, string> MainInfo
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.MainInfo;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.MainInfo;
                 else
                 {
-                    if (sections.ContainsKey("Main"))
-                        return sections["Main"].GetIniDict();
+                    if (_sections.ContainsKey("Main"))
+                        return _sections["Main"].GetIniDict();
                     else // Just return empty dictionary
                         return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }
             }
         }
 
-        public bool IsMainScript => isMainScript;
-        public ScriptType Type => type;
-        public Script Link { get => link; set => link = value; }
-        public bool LinkLoaded { get => linkLoaded; set => linkLoaded = value; }
-        public bool IsDirLink { get => isDirLink; set => isDirLink = value; }
-        public string DirLinkRoot { get => dirLinkRoot; set => dirLinkRoot = value; }
+        public bool IsMainScript => _isMainScript;
+        public ScriptType Type => _type;
+        public Script Link { get => _link; set => _link = value; }
+        public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
+        public bool IsDirLink { get => _isDirLink; set => _isDirLink = value; }
+        public string DirLinkRoot { get => _dirLinkRoot; set => _dirLinkRoot = value; }
         public Project Project
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Project;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Project;
                 else
-                    return project;
+                    return _project;
             }
             set
             {
-                project = value;
+                _project = value;
             }
         }
         public string Title
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Title;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Title;
                 else
-                    return title;
+                    return _title;
             }
         }
         public string Author
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Author;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Author;
                 else
-                    return author;
+                    return _author;
             }
         }
         public string Description
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Description;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Description;
                 else
-                    return description;
+                    return _description;
             }
         }
         public int Version
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Version;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Version;
                 else
-                    return version;
+                    return _version;
             }
         }
         public int Level
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Level;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Level;
                 else
-                    return level;
+                    return _level;
             }
         }
         public bool Mandatory
         {
             get
             {
-                if (type == ScriptType.Link && linkLoaded)
-                    return link.Mandatory;
+                if (_type == ScriptType.Link && _linkLoaded)
+                    return _link.Mandatory;
                 else
-                    return mandatory;
+                    return _mandatory;
             }
         }
         public SelectedState Selected
         {
-            get => selected;
+            get => _selected;
             set
             {
-                if (selected != value)
+                if (_selected != value)
                 {
-                    selected = value;
+                    _selected = value;
                     string valStr = value.ToString();
-                    if (type != ScriptType.Directory)
+                    if (_type != ScriptType.Directory)
                     {
-                        if (sections.ContainsKey("Main"))
+                        if (_sections.ContainsKey("Main"))
                         {
-                            sections["Main"].IniDict["Selected"] = valStr;
-                            Ini.SetKey(realPath, new IniKey("Main", "Selected", valStr));
+                            _sections["Main"].IniDict["Selected"] = valStr;
+                            Ini.SetKey(_realPath, new IniKey("Main", "Selected", valStr));
                         }
                     }
                 }
@@ -222,29 +220,29 @@ namespace PEBakery.Core
         {
             if (projectRoot == null) throw new ArgumentNullException(nameof(projectRoot));
 
-            this.realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
+            this._realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
             if (treePath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))
-                this.treePath = treePath.Remove(0, projectRoot.Length + 1);
+                this._treePath = treePath.Remove(0, projectRoot.Length + 1);
             else
-                this.treePath = treePath;
-            Debug.Assert(this.treePath != null);
+                this._treePath = treePath;
+            Debug.Assert(this._treePath != null);
 
-            this.type = type;
-            this.project = project ?? throw new ArgumentNullException(nameof(project));
-            this.isMainScript = isMainScript;
-            this.linkLoaded = false;
+            this._type = type;
+            this._project = project ?? throw new ArgumentNullException(nameof(project));
+            this._isMainScript = isMainScript;
+            this._linkLoaded = false;
             if (dirLinkRoot != null)
             {
-                this.isDirLink = true;
-                this.dirLinkRoot = dirLinkRoot;
+                this._isDirLink = true;
+                this._dirLinkRoot = dirLinkRoot;
             }
             else
             {
-                this.isDirLink = false;
-                this.dirLinkRoot = null;
+                this._isDirLink = false;
+                this._dirLinkRoot = null;
             }
 
-            Debug.Assert(!isDirLink || type != ScriptType.Link);
+            Debug.Assert(!_isDirLink || type != ScriptType.Link);
 
             switch (type)
             {
@@ -253,30 +251,30 @@ namespace PEBakery.Core
                         if (level == null)
                             level = 0;
                         List<string> dirInfo = new List<string>();
-                        sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
+                        _sections = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase)
                         {
                             ["Main"] = CreateScriptSectionInstance("Main", SectionType.Main, new List<string>(), 1)
                         };
 
                         // Mandatory Entries
-                        sections["Main"].IniDict["Title"] = this.title = Path.GetFileName(treePath);
-                        sections["Main"].IniDict["Description"] = this.description = $"Directory {this.title}";
-                        this.level = (int)level;
-                        sections["Main"].IniDict["Level"] = this.level.ToString();
+                        _sections["Main"].IniDict["Title"] = this._title = Path.GetFileName(treePath);
+                        _sections["Main"].IniDict["Description"] = this._description = $"Directory {this._title}";
+                        this._level = (int)level;
+                        _sections["Main"].IniDict["Level"] = this._level.ToString();
 
                         // Optional Entries
-                        this.author = string.Empty;
-                        this.version = 0;
-                        this.selected = SelectedState.None; // This Value should be adjusted later!
-                        this.mandatory = false;
-                        this.link = null;
+                        this._author = string.Empty;
+                        this._version = 0;
+                        this._selected = SelectedState.None; // This Value should be adjusted later!
+                        this._mandatory = false;
+                        this._link = null;
                     }
                     break;
                 case ScriptType.Link:
                     { // Parse only [Main] Section
-                        sections = ParseScript();
+                        _sections = ParseScript();
                         CheckMainSection(ScriptType.Link);
-                        ScriptSection mainSection = sections["Main"];
+                        ScriptSection mainSection = _sections["Main"];
 
                         if (mainSection.IniDict.ContainsKey("Link") == false)
                         {
@@ -287,66 +285,66 @@ namespace PEBakery.Core
                         {
                             string _value = mainSection.IniDict["Selected"];
                             if (_value.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.True;
+                                this._selected = SelectedState.True;
                             else if (_value.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                this.selected = SelectedState.False;
+                                this._selected = SelectedState.False;
                             else
-                                this.selected = SelectedState.None;
+                                this._selected = SelectedState.None;
                         }
                     }
                     break;
                 case ScriptType.Script:
                     {
-                        sections = ParseScript();
+                        _sections = ParseScript();
                         InspectTypeOfUninspectedCodeSection();
                         if (!ignoreMain)
                         {
                             CheckMainSection(ScriptType.Script);
-                            ScriptSection mainSection = sections["Main"];
+                            ScriptSection mainSection = _sections["Main"];
 
                             // Mandatory Entry
-                            this.title = mainSection.IniDict["Title"];
+                            this._title = mainSection.IniDict["Title"];
                             if (mainSection.IniDict.ContainsKey("Description"))
-                                this.description = mainSection.IniDict["Description"];
+                                this._description = mainSection.IniDict["Description"];
                             else
-                                this.description = string.Empty;
+                                this._description = string.Empty;
                             if (level == null)
                             {
                                 if (mainSection.IniDict.ContainsKey("Level"))
                                 {
-                                    if (!int.TryParse(mainSection.IniDict["Level"], out this.level))
-                                        this.level = 0;
+                                    if (!int.TryParse(mainSection.IniDict["Level"], out this._level))
+                                        this._level = 0;
                                 }
                                 else
                                 {
-                                    this.level = 0;
+                                    this._level = 0;
                                 }
                             }
                             else
                             {
-                                this.level = (int)level;
+                                this._level = (int)level;
                             }
 
                             if (mainSection.IniDict.ContainsKey("Author"))
-                                this.author = mainSection.IniDict["Author"];
+                                this._author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
-                                this.version = int.Parse(mainSection.IniDict["Version"]);
+                                this._version = int.Parse(mainSection.IniDict["Version"]);
                             if (mainSection.IniDict.ContainsKey("Selected"))
                             {
                                 string src = mainSection.IniDict["Selected"];
                                 if (src.Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    this.selected = SelectedState.True;
+                                    this._selected = SelectedState.True;
                                 else if (src.Equals("False", StringComparison.OrdinalIgnoreCase))
-                                    this.selected = SelectedState.False;
+                                    this._selected = SelectedState.False;
                                 else
-                                    this.selected = SelectedState.None;
+                                    this._selected = SelectedState.None;
                             }
                             if (mainSection.IniDict.ContainsKey("Mandatory"))
                             {
                                 if (mainSection.IniDict["Mandatory"].Equals("True", StringComparison.OrdinalIgnoreCase))
-                                    this.mandatory = true;
+                                    this._mandatory = true;
                                 else
-                                    this.mandatory = false;
+                                    this._mandatory = false;
                             }
                             if (mainSection.IniDict.ContainsKey("InterfaceList"))
                             {
@@ -359,20 +357,20 @@ namespace PEBakery.Core
                                         while (remainder != null)
                                         {
                                             Tuple<string, string> tuple = CodeParser.GetNextArgument(remainder);
-                                            this.interfaceList.Add(tuple.Item1);
+                                            this._interfaceList.Add(tuple.Item1);
                                             remainder = tuple.Item2;
                                         }
                                     }
                                     catch (InvalidCommandException) { } // Just Ignore
                                 }
                             } // InterfaceList
-                            this.link = null;
+                            this._link = null;
                         }
                         else
                         {
-                            this.title = Path.GetFileName(realPath);
-                            this.description = string.Empty;
-                            this.level = 0;
+                            this._title = Path.GetFileName(realPath);
+                            this._description = string.Empty;
+                            this._level = 0;
                         }
                     }
                     break;
@@ -388,8 +386,8 @@ namespace PEBakery.Core
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
 
-            Encoding encoding = FileHelper.DetectTextEncoding(realPath);
-            using (StreamReader reader = new StreamReader(realPath, encoding))
+            Encoding encoding = FileHelper.DetectTextEncoding(_realPath);
+            using (StreamReader reader = new StreamReader(_realPath, encoding))
             {
                 int idx = 0;
                 int sectionIdx = 0;
@@ -435,7 +433,7 @@ namespace PEBakery.Core
                 }
             }
 
-            fullyParsed = true;
+            _fullyParsed = true;
 
             return dict;
         }
@@ -445,15 +443,15 @@ namespace PEBakery.Core
             List<string> encodedFolders;
             try
             {
-                if (fullyParsed)
+                if (_fullyParsed)
                 {
-                    if (sections.ContainsKey("EncodedFolders"))
-                        encodedFolders = sections["EncodedFolders"].GetLines();
+                    if (_sections.ContainsKey("EncodedFolders"))
+                        encodedFolders = _sections["EncodedFolders"].GetLines();
                     else
                         return false;
                 }
                 else
-                    encodedFolders = Ini.ParseIniSection(realPath, "EncodedFolders");
+                    encodedFolders = Ini.ParseIniSection(_realPath, "EncodedFolders");
             }
             catch (SectionNotFoundException) // No EncodedFolders section, exit
             {
@@ -498,10 +496,10 @@ namespace PEBakery.Core
         private void InspectTypeOfUninspectedCodeSection()
         {
             // Dictionary<string, ScriptSection>
-            foreach (var key in sections.Keys)
+            foreach (var key in _sections.Keys)
             {
-                if (sections[key].Type == SectionType.Uninspected)
-                    sections[key].Type = DetectTypeOfUninspectedSection(sections[key].SectionName);
+                if (_sections[key].Type == SectionType.Uninspected)
+                    _sections[key].Type = DetectTypeOfUninspectedSection(_sections[key].SectionName);
             }
         }
 
@@ -510,7 +508,7 @@ namespace PEBakery.Core
             SectionType type;
             if (IsSectionEncodedFolders(sectionName))
                 type = SectionType.AttachFileList;
-            else if (interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
+            else if (_interfaceList.FirstOrDefault(x => x.Equals(sectionName, StringComparison.OrdinalIgnoreCase)) != null)
                 type = SectionType.Interface;
             else // Load it!
                 type = SectionType.Code;
@@ -558,42 +556,42 @@ namespace PEBakery.Core
 
         private void CheckMainSection(ScriptType type)
         {
-            if (sections.ContainsKey("Main") == false)
-                throw new ScriptParseException($"[{realPath}] is invalid, please Add [Main] Section");
+            if (_sections.ContainsKey("Main") == false)
+                throw new ScriptParseException($"[{_realPath}] is invalid, please Add [Main] Section");
 
             bool fail = true;
-            if (sections["Main"].DataType == SectionDataType.IniDict)
+            if (_sections["Main"].DataType == SectionDataType.IniDict)
             {
                 if (type == ScriptType.Script)
                 {
-                    if (sections["Main"].IniDict.ContainsKey("Title"))
+                    if (_sections["Main"].IniDict.ContainsKey("Title"))
                         fail = false;
                 }
                 else if (type == ScriptType.Link)
                 {
-                    if (sections["Main"].IniDict.ContainsKey("Link"))
+                    if (_sections["Main"].IniDict.ContainsKey("Link"))
                         fail = false;
                 }
             }
 
             if (fail)
-                throw new ScriptParseException($"[{realPath}] is invalid, check [Main] Section");
+                throw new ScriptParseException($"[{_realPath}] is invalid, check [Main] Section");
         }
 
-        public static string[] GetDisableScriptPaths(Script p, out List<LogInfo> errorLogs)
+        public static string[] GetDisableScriptPaths(Script sc, out List<LogInfo> errorLogs)
         {
             errorLogs = new List<LogInfo>();
 
-            if (p.Type == ScriptType.Directory || p.isMainScript)
+            if (sc.Type == ScriptType.Directory || sc._isMainScript)
                 return null;
 
-            if (p.MainInfo.ContainsKey("Disable") == false)
+            if (sc.MainInfo.ContainsKey("Disable") == false)
                 return null;
 
-            p.Project.Variables.ResetVariables(VarsType.Local);
-            p.Project.Variables.LoadDefaultScriptVariables(p);
+            sc.Project.Variables.ResetVariables(VarsType.Local);
+            sc.Project.Variables.LoadDefaultScriptVariables(sc);
 
-            string rawLine = p.MainInfo["Disable"];
+            string rawLine = sc.MainInfo["Disable"];
 
             // Check if rawCode is Empty
             if (rawLine.Equals(string.Empty, StringComparison.Ordinal))
@@ -623,9 +621,9 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    string pPath = p.Project.Variables.Expand(path);
-                    if (pPath.Equals(p.DirectRealPath, StringComparison.OrdinalIgnoreCase) == false)
-                        filteredPaths.Add(p.Project.Variables.Expand(path));
+                    string pPath = sc.Project.Variables.Expand(path);
+                    if (pPath.Equals(sc.DirectRealPath, StringComparison.OrdinalIgnoreCase) == false)
+                        filteredPaths.Add(sc.Project.Variables.Expand(path));
                 }
                 catch (Exception e) { errorLogs.Add(new LogInfo(LogState.Success, Logger.LogExceptionMessage(e))); }
             }
@@ -649,23 +647,23 @@ namespace PEBakery.Core
         #region Virtual Methods
         public override string ToString()
         {
-            if (type == ScriptType.Link)
-                return sections["Main"].IniDict["Link"];
+            if (_type == ScriptType.Link)
+                return _sections["Main"].IniDict["Link"];
             else
-                return this.title;
+                return this._title;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is Script p)
-                return this.RealPath.Equals(p.RealPath, StringComparison.OrdinalIgnoreCase);
+            if (obj is Script sc)
+                return this.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase);
             else
                 return false;
         }
 
         public override int GetHashCode()
         {
-            return realPath.GetHashCode() ^ treePath.GetHashCode();
+            return _realPath.GetHashCode() ^ _treePath.GetHashCode();
         }
         #endregion
     }

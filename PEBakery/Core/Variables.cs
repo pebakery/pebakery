@@ -118,7 +118,7 @@ namespace PEBakery.Core
             // PEBakery
             logs.Add(SetValue(VarsType.Fixed, "PEBakery", "True"));
             // BaseDir
-            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir.TrimEnd(new char[] { '\\' } )));
+            logs.Add(SetValue(VarsType.Fixed, "BaseDir", project.BaseDir.TrimEnd('\\')));
             // Version
             logs.Add(SetValue(VarsType.Fixed, "Version", "082")); // WB082 Compatibility Shim
             logs.Add(SetValue(VarsType.Fixed, "EngineVersion", App.Version.ToString("000")));
@@ -254,23 +254,19 @@ namespace PEBakery.Core
             return logs;
         }
 
-        public List<LogInfo> LoadDefaultScriptVariables(Script p)
+        public List<LogInfo> LoadDefaultScriptVariables(Script sc)
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            // ScriptFile
-            SetValue(VarsType.Fixed, "ScriptFile", p.RealPath);
-
-            // ScriptDir
-            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(p.RealPath));
-
-            // ScriptTitle
-            SetValue(VarsType.Fixed, "ScriptTitle", p.Title);
+            // Per-Script Variables
+            SetValue(VarsType.Fixed, "ScriptFile", sc.RealPath);
+            SetValue(VarsType.Fixed, "ScriptDir", Path.GetDirectoryName(sc.RealPath));
+            SetValue(VarsType.Fixed, "ScriptTitle", sc.Title);
 
             // [Variables]
-            if (p.Sections.ContainsKey("Variables"))
+            if (sc.Sections.ContainsKey("Variables"))
             {
-                List<LogInfo> subLogs = AddVariables(p.IsMainScript ? VarsType.Global : VarsType.Local, p.Sections["Variables"]);
+                List<LogInfo> subLogs = AddVariables(sc.IsMainScript ? VarsType.Global : VarsType.Local, sc.Sections["Variables"]);
                 if (0 < subLogs.Count)
                 {
                     logs.Add(new LogInfo(LogState.Info, "Import Variables from [Variables]", 0));
@@ -281,11 +277,11 @@ namespace PEBakery.Core
             }
 
             // [Interface]
-            ScriptSection iface = p.GetInterface(out string ifaceSecName);
+            ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface != null)
             {
                 List<UIControl> uiCtrls = null;
-                try { uiCtrls = p.Sections[ifaceSecName].GetUICtrls(true); }
+                try { uiCtrls = sc.Sections[ifaceSecName].GetUICtrls(true); }
                 catch { } // No [Interface] section, or unable to get List<UIControl>
 
                 if (uiCtrls != null)

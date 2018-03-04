@@ -116,9 +116,9 @@ namespace PEBakery.Core
             Zopfli = 0xFF, // Compatible with Type 1, better compression rate but much slower compression.
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException(nameof(p));
+            if (sc == null) throw new ArgumentNullException(nameof(sc));
 
             byte[] input;
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
@@ -126,76 +126,76 @@ namespace PEBakery.Core
                 input = new byte[fs.Length];
                 fs.Read(input, 0, input.Length);
             }
-            return Encode(p, dirName, fileName, input, type);
+            return Encode(sc, dirName, fileName, input, type);
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException(nameof(p));
+            if (sc == null) throw new ArgumentNullException(nameof(sc));
 
-            return Encode(p, dirName, fileName, srcStream, type);
+            return Encode(sc, dirName, fileName, srcStream, type);
         }
 
-        public static Script AttachFile(Script p, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachFile(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
         {
-            if (p == null) throw new ArgumentNullException(nameof(p));
+            if (sc == null) throw new ArgumentNullException(nameof(sc));
 
-            return Encode(p, dirName, fileName, srcBuffer, type);
+            return Encode(sc, dirName, fileName, srcBuffer, type);
         }
 
-        public static MemoryStream ExtractFile(Script p, string dirName, string fileName)
+        public static MemoryStream ExtractFile(Script sc, string dirName, string fileName)
         {
-            if (p == null) throw new ArgumentNullException(nameof(p));
+            if (sc == null) throw new ArgumentNullException(nameof(sc));
 
             string section = $"EncodedFile-{dirName}-{fileName}";
-            if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.RealPath}]");
+            if (sc.Sections.ContainsKey(section) == false)
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
-            List<string> encoded = p.Sections[section].GetLinesOnce();
+            List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded);
         }
 
-        public static MemoryStream ExtractLogo(Script p, out ImageHelper.ImageType type)
+        public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
         {
-            if (p == null) throw new ArgumentNullException(nameof(p));
+            if (sc == null) throw new ArgumentNullException(nameof(sc));
 
-            if (p.Sections.ContainsKey("AuthorEncoded") == false)
+            if (sc.Sections.ContainsKey("AuthorEncoded") == false)
                 throw new ExtractFileNotFoundException($"There is no AuthorEncoded files");
 
-            Dictionary<string, string> fileDict = p.Sections["AuthorEncoded"].GetIniDict();
+            Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
 
             if (fileDict.ContainsKey("Logo") == false)
-                throw new ExtractFileNotFoundException($"There is no logo in \'{p.Title}\'");
+                throw new ExtractFileNotFoundException($"There is no logo in \'{sc.Title}\'");
 
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
                 throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
 
-            List<string> encoded = p.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
+            List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
             return Decode(encoded);
         }
 
-        public static MemoryStream ExtractInterfaceEncoded(Script p, string fileName)
+        public static MemoryStream ExtractInterfaceEncoded(Script sc, string fileName)
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";
-            if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{p.RealPath}]");
+            if (sc.Sections.ContainsKey(section) == false)
+                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
 
-            List<string> encoded = p.Sections[section].GetLinesOnce();
+            List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded);
         }
         #endregion
 
         #region Encode, Decode
-        private static Script Encode(Script p, string dirName, string fileName, byte[] input, EncodeMode mode)
+        private static Script Encode(Script sc, string dirName, string fileName, byte[] input, EncodeMode mode)
         {
             using (MemoryStream ms = new MemoryStream(input))
             {
-                return Encode(p, dirName, fileName, ms, mode);
+                return Encode(sc, dirName, fileName, ms, mode);
             }
         }
 
-        private static Script Encode(Script p, string dirName, string fileName, Stream inputStream, EncodeMode mode)
+        private static Script Encode(Script sc, string dirName, string fileName, Stream inputStream, EncodeMode mode)
         {
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUTF8.Length == 0 || 512 <= fileNameUTF8.Length)
@@ -203,9 +203,9 @@ namespace PEBakery.Core
 
             // Check Overwrite
             bool fileOverwrite = false;
-            if (p.Sections.ContainsKey(dirName))
+            if (sc.Sections.ContainsKey(dirName))
             { // [{dirName}] section exists, check if there is already same file encoded
-                List<string> lines = p.Sections[dirName].GetLines();
+                List<string> lines = sc.Sections[dirName].GetLines();
                 if (lines.FirstOrDefault(x => x.Equals(fileName, StringComparison.OrdinalIgnoreCase)) != null)
                     fileOverwrite = true;
             }
@@ -376,35 +376,35 @@ namespace PEBakery.Core
 
             // [Stage 8] Before writing to file, backup original script
             string tempFile = Path.GetTempFileName();
-            File.Copy(p.RealPath, tempFile, true);
+            File.Copy(sc.RealPath, tempFile, true);
 
             // [Stage 9] Write to file
             try
             {
                 // Write folder info to [EncodedFolders]
                 bool writeFolderSection = true;
-                if (p.Sections.ContainsKey("EncodedFolders"))
+                if (sc.Sections.ContainsKey("EncodedFolders"))
                 {
-                    List<string> folders = p.Sections["EncodedFolders"].GetLines();
+                    List<string> folders = sc.Sections["EncodedFolders"].GetLines();
                     if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
                         writeFolderSection = false;
                 }
                 
                 if (writeFolderSection)
-                    Ini.WriteRawLine(p.RealPath, "EncodedFolders", dirName, false);
+                    Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
-                Ini.SetKey(p.RealPath, dirName, fileName, $"{inputStream.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize
+                Ini.SetKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize
 
                 // Write encoded file into [EncodedFile-{dirName}-{fileName}]
                 if (fileOverwrite)
-                    Ini.DeleteSection(p.RealPath, section); // Delete existing encoded file
-                Ini.SetKeys(p.RealPath, keys); // Write into 
+                    Ini.DeleteSection(sc.RealPath, section); // Delete existing encoded file
+                Ini.SetKeys(sc.RealPath, keys); // Write into 
             }
             catch
             { // Error -> Rollback!
-                File.Copy(tempFile, p.RealPath, true);
-                throw new FileDecodeFailException($"Error while writing encoded file into [{p.RealPath}]");
+                File.Copy(tempFile, sc.RealPath, true);
+                throw new FileDecodeFailException($"Error while writing encoded file into [{sc.RealPath}]");
             }
             finally
             { // Delete temp script
@@ -412,7 +412,7 @@ namespace PEBakery.Core
             }
 
             // [Stage 10] Refresh Script
-            return p.Project.RefreshScript(p);
+            return sc.Project.RefreshScript(sc);
         }
 
         private static MemoryStream Decode(List<string> encodedList)
@@ -595,18 +595,17 @@ namespace PEBakery.Core
         {
             if (disposing)
             {
-                if (RawBodyStream != null)
-                    RawBodyStream.Close();
+                RawBodyStream?.Close();
             }
         }
 
-        public EncodedFileInfo(Script p, string dirName, string fileName)
+        public EncodedFileInfo(Script sc, string dirName, string fileName)
         {
             string section = $"EncodedFile-{dirName}-{fileName}";
-            if (p.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{p.RealPath}]");
+            if (sc.Sections.ContainsKey(section) == false)
+                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
-            List<string> encodedList = p.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
+            List<string> encodedList = sc.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
                 throw new FileDecodeFailException("Encoded lines are malformed");
 

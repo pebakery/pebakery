@@ -284,9 +284,9 @@ namespace PEBakery.Core.Commands
                             { // Project Tree conatins this script, so just refresh it
                                 // RefreshScript -> Update Project.AllScripts
                                 // TODO: Update EngineState.Scripts?
-                                Script p = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, pFullPath, out bool inCurrentScript);
-                                p = s.Project.RefreshScript(p);
-                                if (p == null)
+                                Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, pFullPath, out bool inCurrentScript);
+                                sc = s.Project.RefreshScript(sc);
+                                if (sc == null)
                                 {
                                     logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{pFullPath}]"));
                                     continue;
@@ -298,9 +298,9 @@ namespace PEBakery.Core.Commands
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
                                     w.UpdateScriptTree(project, false);
-                                    if (p.Equals(w.CurMainTree.Script))
+                                    if (sc.Equals(w.CurMainTree.Script))
                                     {
-                                        w.CurMainTree.Script = p;
+                                        w.CurMainTree.Script = sc;
                                         w.DrawScript(w.CurMainTree.Script);
                                     }
                                 });
@@ -310,8 +310,8 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             { // Add scripts into Project.AllScripts
-                                Script p = cmd.Addr.Project.LoadScriptMonkeyPatch(pFullPath, true, false);
-                                if (p == null)
+                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(pFullPath, true, false);
+                                if (sc == null)
                                 {
                                     logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{pFullPath}]"));
                                     continue;
@@ -323,9 +323,9 @@ namespace PEBakery.Core.Commands
                                     MainWindow w = (Application.Current.MainWindow as MainWindow);
 
                                     w.UpdateScriptTree(project, false);
-                                    if (p.Equals(w.CurMainTree.Script))
+                                    if (sc.Equals(w.CurMainTree.Script))
                                     {
-                                        w.CurMainTree.Script = p;
+                                        w.CurMainTree.Script = sc;
                                         w.DrawScript(w.CurMainTree.Script);
                                     }
                                 });

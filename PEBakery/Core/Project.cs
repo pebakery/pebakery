@@ -498,15 +498,15 @@ namespace PEBakery.Core
 
             int rootId = pTree.AddNode(0, this.MainScript); // Root is script.project
 
-            foreach (Script p in pList)
+            foreach (Script sc in pList)
             {
-                Debug.Assert(p != null);
+                Debug.Assert(sc != null);
 
-                if (p.IsMainScript)
+                if (sc.IsMainScript)
                     continue;
 
                 int nodeId = rootId;
-                string[] paths = p.TreePath
+                string[] paths = sc.TreePath
                     .Substring(this.ProjectName.Length + 1)
                     .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
@@ -514,7 +514,7 @@ namespace PEBakery.Core
                 for (int i = 0; i < paths.Length - 1; i++)
                 {
                     string pathKey = PathKeyGenerator(paths, i);
-                    string key = p.Level + pathKey;
+                    string key = sc.Level + pathKey;
                     if (dirDict.ContainsKey(key))
                     {
                         nodeId = dirDict[key];
@@ -522,13 +522,13 @@ namespace PEBakery.Core
                     else
                     {
                         string fullPath = Path.Combine(ProjectRoot, ProjectName, pathKey);
-                        Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, this, ProjectRoot, p.Level, false, false, null);
+                        Script dirScript = new Script(ScriptType.Directory, fullPath, fullPath, this, ProjectRoot, sc.Level, false, false, null);
                         nodeId = pTree.AddNode(nodeId, dirScript);
                         dirDict[key] = nodeId;
                     }
                 }
-                Debug.Assert(p != null);
-                pTree.AddNode(nodeId, p);
+                Debug.Assert(sc != null);
+                pTree.AddNode(nodeId, sc);
             }
 
             // Sort - Script first, Directory last
@@ -558,10 +558,10 @@ namespace PEBakery.Core
             });
 
             List<Script> newList = new List<Script>();
-            foreach (Script p in pTree)
+            foreach (Script sc in pTree)
             {
-                if (p.Type != ScriptType.Directory)
-                    newList.Add(p);
+                if (sc.Type != ScriptType.Directory)
+                    newList.Add(sc);
             }
 
             return newList;
@@ -618,39 +618,39 @@ namespace PEBakery.Core
             if (pFullPath.StartsWith(this.BaseDir, StringComparison.OrdinalIgnoreCase) == false)
                 return null;
 
-            Script p = LoadScript(pFullPath, ignoreMain, null);
+            Script sc = LoadScript(pFullPath, ignoreMain, null);
             if (addToProjectTree)
             {
-                AllScripts.Add(p);
+                AllScripts.Add(sc);
                 AllScriptCount += 1;
             }
 
-            return p;
+            return sc;
         }
 
         public Script LoadScript(string pPath, bool ignoreMain, string dirLinkRoot)
         {
-            Script p;
+            Script sc;
             try
             {
                 if (pPath.Equals(Path.Combine(ProjectRoot, "script.project"), StringComparison.OrdinalIgnoreCase))
                 {
-                    p = new Script(ScriptType.Script, pPath, pPath, this, ProjectRoot, 0, true, ignoreMain, dirLinkRoot);
+                    sc = new Script(ScriptType.Script, pPath, pPath, this, ProjectRoot, 0, true, ignoreMain, dirLinkRoot);
                 }
                 else
                 {
                     string ext = Path.GetExtension(pPath);
                     if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                        p = new Script(ScriptType.Link, pPath, pPath, this, ProjectRoot, null, false, false, null);
+                        sc = new Script(ScriptType.Link, pPath, pPath, this, ProjectRoot, null, false, false, null);
                     else
-                        p = new Script(ScriptType.Script, pPath, pPath, this, ProjectRoot, null, false, ignoreMain, dirLinkRoot);
+                        sc = new Script(ScriptType.Script, pPath, pPath, this, ProjectRoot, null, false, ignoreMain, dirLinkRoot);
                 }
 
                 // Check Script Link's validity
                 // Also, convert nested link to one-depth link
-                if (p.Type == ScriptType.Link)
+                if (sc.Type == ScriptType.Link)
                 {
-                    Script link = p.Link;
+                    Script link = sc.Link;
                     bool valid = false;
                     do
                     {
@@ -666,7 +666,7 @@ namespace PEBakery.Core
                     while (link.Type != ScriptType.Script);
 
                     if (valid)
-                        p.Link = link;
+                        sc.Link = link;
                     else
                         return null;
                 }
@@ -676,18 +676,18 @@ namespace PEBakery.Core
                 return null;
             }
 
-            return p;
+            return sc;
         }
         #endregion
 
         #region Active, Visible Scripts
-        private List<Script> CollectVisibleScripts(List<Script> allScriptList)
+        private static List<Script> CollectVisibleScripts(IEnumerable<Script> allScriptList)
         {
             List<Script> visibleScriptList = new List<Script>();
-            foreach (Script p in allScriptList)
+            foreach (Script sc in allScriptList)
             {
-                if (0 < p.Level)
-                    visibleScriptList.Add(p);
+                if (0 < sc.Level)
+                    visibleScriptList.Add(sc);
             }
             return visibleScriptList;
         }
@@ -699,20 +699,20 @@ namespace PEBakery.Core
                 MainScript
             };
 
-            foreach (Script p in allPlugist.Where(x => !x.IsMainScript && (0 < x.Level)))
+            foreach (Script sc in allPlugist.Where(x => !x.IsMainScript && (0 < x.Level)))
             {
                 bool active = false;
-                if (p.Type == ScriptType.Script || p.Type == ScriptType.Link)
+                if (sc.Type == ScriptType.Script || sc.Type == ScriptType.Link)
                 {                   
-                    if (p.Selected != SelectedState.None)
+                    if (sc.Selected != SelectedState.None)
                     {
-                        if (p.Mandatory || p.Selected == SelectedState.True)
+                        if (sc.Mandatory || sc.Selected == SelectedState.True)
                             active = true;
                     }
                 }
 
                 if (active)
-                    activeScripts.Add(p);
+                    activeScripts.Add(sc);
             }
             
             return activeScripts;

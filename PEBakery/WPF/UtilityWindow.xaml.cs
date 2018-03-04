@@ -147,7 +147,7 @@ namespace PEBakery.WPF
                 Interlocked.Increment(ref Engine.WorkingLock);
 
                 Project project = m.CodeBox_CurrentProject;
-                Script p = project.LoadScriptMonkeyPatch(m.CodeFile);
+                Script sc = project.LoadScriptMonkeyPatch(m.CodeFile);
 
                 Logger logger = null;
                 SettingViewModel setting = null;
@@ -163,7 +163,7 @@ namespace PEBakery.WPF
                 mainModel.SwitchNormalBuildInterface = false;
                 mainModel.WorkInProgress = true;
 
-                EngineState s = new EngineState(p.Project, logger, mainModel, EngineMode.RunMainAndOne, p);
+                EngineState s = new EngineState(sc.Project, logger, mainModel, EngineMode.RunMainAndOne, sc);
                 s.SetOption(setting);
 
                 Engine.WorkingEngine = new Engine(s);
@@ -205,13 +205,13 @@ namespace PEBakery.WPF
 
             Project project = m.CodeBox_CurrentProject;
 
-            Script p = project.MainScript;
+            Script sc = project.MainScript;
             ScriptSection section;
             if (project.MainScript.Sections.ContainsKey("Process"))
-                section = p.Sections["Process"];
+                section = sc.Sections["Process"];
             else
-                section = new ScriptSection(p, "Process", SectionType.Code, new List<string>(), 1);
-            SectionAddress addr = new SectionAddress(p, section);
+                section = new ScriptSection(sc, "Process", SectionType.Code, new List<string>(), 1);
+            SectionAddress addr = new SectionAddress(sc, section);
 
             List<string> lines = m.Syntax_InputCode.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
             List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);

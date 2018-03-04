@@ -68,7 +68,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -90,7 +90,7 @@ namespace PEBakery.Core.Commands
             }
 
             string destPath = Path.Combine(destDir, fileName);
-            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, fileName))
+            using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, fileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
@@ -114,7 +114,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Params);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -123,7 +123,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, info.FileName))
+            using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, info.FileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
                 ms.Position = 0;
@@ -152,7 +152,7 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -160,7 +160,7 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            List<string> dirs = p.Sections["EncodedFolders"].Lines;
+            List<string> dirs = sc.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
                 throw new ExecuteException($"Directory [{dirName}] not exists in [{scriptFile}]");
@@ -179,11 +179,11 @@ namespace PEBakery.Core.Commands
                 }
             }
 
-            List<string> lines = p.Sections[dirName].Lines;
+            List<string> lines = sc.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {
-                using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, file))
+                using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, file))
                 using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
                 {
                     ms.Position = 0;
@@ -207,13 +207,13 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{p.RealPath}]", cmd));
+                EncodedFile.AttachFile(sc, dirName, Path.GetFileName(filePath), filePath);
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{sc.RealPath}]", cmd));
             }
             else
             { // With Wildcard
@@ -223,10 +223,10 @@ namespace PEBakery.Core.Commands
 
                 if (0 < files.Length)
                 { // One or more file will be copied
-                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{p.RealPath}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{sc.RealPath}]", cmd));
                     for (int i = 0; i < files.Length; i++)
                     {
-                        EncodedFile.AttachFile(p, dirName, Path.GetFileName(files[i]), files[i]);
+                        EncodedFile.AttachFile(sc, dirName, Path.GetFileName(files[i]), files[i]);
                         logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
                     }
 

@@ -81,8 +81,8 @@ namespace PEBakery.Core.Commands
                         string finalValue = StringEscaper.Preprocess(s, info.VarValue);
 
                         #region Set UI
-                        Script p = cmd.Addr.Script;
-                        ScriptSection iface = p.GetInterface(out string sectionName);
+                        Script sc = cmd.Addr.Script;
+                        ScriptSection iface = sc.GetInterface(out string sectionName);
                         if (iface == null)
                             goto case false;
 
@@ -135,21 +135,21 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out bool inCurrentScript);
 
             // Does section exists?
-            if (!p.Sections.ContainsKey(sectionName))
+            if (!sc.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"Script [{scriptFile}] does not have section [{sectionName}]");
 
             // Directly read from file
-            List<string> lines = Ini.ParseRawSection(p.RealPath, sectionName);
+            List<string> lines = Ini.ParseRawSection(sc.RealPath, sectionName);
 
             // Add Variables
             Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);
             List<LogInfo> varLogs = s.Variables.AddVariables(info.Global ? VarsType.Global : VarsType.Local, varDict);
 
             // Add Macros
-            SectionAddress addr = new SectionAddress(p, p.Sections[sectionName]);
+            SectionAddress addr = new SectionAddress(sc, sc.Sections[sectionName]);
             List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(addr, lines, true);
             varLogs.AddRange(macroLogs);
 

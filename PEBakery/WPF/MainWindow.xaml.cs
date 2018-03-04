@@ -592,34 +592,33 @@ namespace PEBakery.WPF
         #endregion
 
         #region DrawScript
-        public void DrawScript(Script p)
+        public void DrawScript(Script sc)
         {
-            Stopwatch watch = new Stopwatch();
-            DrawScriptLogo(p);
+            DrawScriptLogo(sc);
 
             Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
 
             MainCanvas.Children.Clear();
-            if (p.Type == ScriptType.Directory)
+            if (sc.Type == ScriptType.Directory)
             {
-                Model.ScriptTitleText = StringEscaper.Unescape(p.Title);
+                Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 Model.ScriptDescriptionText = string.Empty;
                 Model.ScriptVersionText = string.Empty;
                 Model.ScriptAuthorText = string.Empty;
             }
             else
             {
-                Model.ScriptTitleText = StringEscaper.Unescape(p.Title);
-                Model.ScriptDescriptionText = StringEscaper.Unescape(p.Description);
-                Model.ScriptVersionText = "v" + p.Version;
-                if (ScriptAuthorLenLimit < p.Author.Length)
-                    Model.ScriptAuthorText = p.Author.Substring(0, ScriptAuthorLenLimit) + "...";
+                Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
+                Model.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
+                Model.ScriptVersionText = "v" + sc.Version;
+                if (ScriptAuthorLenLimit < sc.Author.Length)
+                    Model.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
                 else
-                    Model.ScriptAuthorText = p.Author;
+                    Model.ScriptAuthorText = sc.Author;
 
                 double scaleFactor = setting.Interface_ScaleFactor / 100;
                 ScaleTransform scale = new ScaleTransform(scaleFactor, scaleFactor);
-                UIRenderer render = new UIRenderer(MainCanvas, this, p, logger, scaleFactor);
+                UIRenderer render = new UIRenderer(MainCanvas, this, sc, logger, scaleFactor);
                 MainCanvas.LayoutTransform = scale;
                 render.Render();
                 
@@ -629,12 +628,12 @@ namespace PEBakery.WPF
             Model.OnPropertyUpdate("MainCanvas");
         }
 
-        public void DrawScriptLogo(Script p)
+        public void DrawScriptLogo(Script sc)
         {
             double size = ScriptLogo.ActualWidth * MaxDpiScale;
-            if (p.Type == ScriptType.Directory)
+            if (sc.Type == ScriptType.Directory)
             {
-                if (p.IsDirLink)
+                if (sc.IsDirLink)
                     ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderMove, 0);
                 else
                     ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
@@ -645,7 +644,7 @@ namespace PEBakery.WPF
                 {
                     ImageSource imageSource;
 
-                    using (MemoryStream mem = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type))
+                    using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
                     {
                         mem.Position = 0;
                         
@@ -670,14 +669,14 @@ namespace PEBakery.WPF
                 }
                 catch
                 { // No logo file - use default
-                    if (p.Type == ScriptType.Script)
+                    if (sc.Type == ScriptType.Script)
                     {
-                        if (p.IsDirLink)
+                        if (sc.IsDirLink)
                             ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
                         else
                             ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileDocument, 0);
                     }
-                    else if (p.Type == ScriptType.Link)
+                    else if (sc.Type == ScriptType.Link)
                     {
                         ScriptLogo.Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FileSend, 5);
                     }
@@ -835,14 +834,14 @@ namespace PEBakery.WPF
         #region Script Buttons
         private async void ScriptRunButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Script == null)
+            if (curMainTree?.Script == null)
                 return;
 
             if (Model.WorkInProgress)
                 return;
 
-            Script p = curMainTree.Script;
-            if (p.Sections.ContainsKey("Process"))
+            Script sc = curMainTree.Script;
+            if (sc.Sections.ContainsKey("Process"))
             {
                 if (Engine.WorkingLock == 0)  // Start Build
                 {
@@ -850,10 +849,10 @@ namespace PEBakery.WPF
 
                     // Populate BuildTree
                     Model.BuildTree.Children.Clear();
-                    PopulateOneTreeView(p, Model.BuildTree, Model.BuildTree);
+                    PopulateOneTreeView(sc, Model.BuildTree, Model.BuildTree);
                     curBuildTree = null;
 
-                    EngineState s = new EngineState(p.Project, logger, Model, EngineMode.RunMainAndOne, p);
+                    EngineState s = new EngineState(sc.Project, logger, Model, EngineMode.RunMainAndOne, sc);
                     s.SetOption(setting);
 
                     Engine.WorkingEngine = new Engine(s);
@@ -862,7 +861,7 @@ namespace PEBakery.WPF
                     Model.SwitchNormalBuildInterface = false;
 
                     // Run
-                    long buildId = await Engine.WorkingEngine.Run($"{p.Title} - Run");
+                    long buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
 #if DEBUG  // TODO: Remove this later, this line is for Debug
                     logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
@@ -888,7 +887,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                Model.StatusBarText = $"Section [Process] does not exist in {p.Title}";
+                Model.StatusBarText = $"Section [Process] does not exist in {sc.Title}";
             }
         }
 
@@ -917,7 +916,7 @@ namespace PEBakery.WPF
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
         {
-            if (curMainTree == null || curMainTree.Script == null)
+            if (curMainTree?.Script == null)
                 return;
 
             if (Model.WorkInProgress)
@@ -936,20 +935,20 @@ namespace PEBakery.WPF
             if (projectRoot == null)
                 projectRoot = PopulateOneTreeView(project.MainScript, treeRoot, treeRoot);
 
-            foreach (Script p in pList)
+            foreach (Script sc in pList)
             {
-                Debug.Assert(p != null);
+                Debug.Assert(sc != null);
 
-                if (p.Equals(project.MainScript))
+                if (sc.Equals(project.MainScript))
                     continue;
 
                 // Current Parent
                 TreeViewModel treeParent = projectRoot;
 
-                int idx = p.TreePath.IndexOf('\\');
+                int idx = sc.TreePath.IndexOf('\\');
                 if (idx == -1)
                     continue;
-                string[] paths = p.TreePath
+                string[] paths = sc.TreePath
                     .Substring(idx + 1)
                     .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
 
@@ -957,7 +956,7 @@ namespace PEBakery.WPF
                 for (int i = 0; i < paths.Length - 1; i++)
                 {
                     string pathKey = Project.PathKeyGenerator(paths, i);
-                    string key = $"{p.Level}_{pathKey}";
+                    string key = $"{sc.Level}_{pathKey}";
                     if (dirDict.ContainsKey(key))
                     {
                         treeParent = dirDict[key];
@@ -967,22 +966,22 @@ namespace PEBakery.WPF
                         // TODO: Correct real path in DirLink directory
                         string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
                         string fullRealPath = fullTreePath;
-                        if (p.IsDirLink)
-                            fullRealPath = p.DirLinkRoot;
-                        Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, project, project.ProjectRoot, p.Level, false, false, p.DirLinkRoot);
+                        if (sc.IsDirLink)
+                            fullRealPath = sc.DirLinkRoot;
+                        Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.DirLinkRoot);
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
                 }
 
-                PopulateOneTreeView(p, treeRoot, treeParent);
+                PopulateOneTreeView(sc, treeRoot, treeParent);
             }
 
             // Reflect Directory's Selected value
             RecursiveDecideDirectorySelectedValue(treeRoot, 0);
         }
 
-        private SelectedState RecursiveDecideDirectorySelectedValue(TreeViewModel parent, int depth)
+        private static SelectedState RecursiveDecideDirectorySelectedValue(TreeViewModel parent, int depth)
         {
             SelectedState final = SelectedState.None;
             foreach (TreeViewModel item in parent.Children)
@@ -1024,8 +1023,7 @@ namespace PEBakery.WPF
         public void UpdateScriptTree(Project project, bool redrawScript)
         {
             TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
-            if (projectRoot != null) // Remove existing project tree
-                projectRoot.Children.Clear();
+            projectRoot?.Children.Clear();
 
             ScriptListToTreeViewModel(project, project.VisibleScripts, Model.MainTree, projectRoot);
 
@@ -1037,11 +1035,11 @@ namespace PEBakery.WPF
             }
         }
 
-        public TreeViewModel PopulateOneTreeView(Script p, TreeViewModel treeRoot, TreeViewModel treeParent)
+        public TreeViewModel PopulateOneTreeView(Script sc, TreeViewModel treeRoot, TreeViewModel treeParent)
         {
             TreeViewModel item = new TreeViewModel(treeRoot, treeParent)
             {
-                Script = p
+                Script = sc
             };
             treeParent.Children.Add(item);
             UpdateTreeViewIcon(item);

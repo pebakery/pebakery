@@ -147,15 +147,15 @@ namespace PEBakery.Core
             
         }
 
-        public List<LogInfo> LoadLocalMacroDict(Script p, bool append, string sectionName = "Variables")
+        public List<LogInfo> LoadLocalMacroDict(Script sc, bool append, string sectionName = "Variables")
         {
-            if (p.Sections.ContainsKey(sectionName))
+            if (sc.Sections.ContainsKey(sectionName))
             {
-                ScriptSection section = p.Sections[sectionName];
+                ScriptSection section = sc.Sections[sectionName];
 
                 // [Variables]'s type is SectionDataType.Lines
                 // Pick key-value only if key is not wrapped by %
-                SectionAddress addr = new SectionAddress(p, section);
+                SectionAddress addr = new SectionAddress(sc, section);
                 Dictionary<string, string> dict = Ini.ParseIniLinesIniStyle(section.GetLines());
                 return LoadLocalMacroDict(addr, dict, append);
             }

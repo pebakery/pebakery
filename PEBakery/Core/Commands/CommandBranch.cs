@@ -60,10 +60,10 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
             List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
             // Does section exists?
-            if (!p.Sections.ContainsKey(sectionName))
+            if (!sc.Sections.ContainsKey(sectionName))
                 throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
             // Section Parameter
@@ -79,7 +79,7 @@ namespace PEBakery.Core.Commands
             }
 
             // Branch to new section
-            SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
+            SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
             s.Logger.LogStartOfSection(s, nextAddr, s.CurDepth, inCurrentScript, paramDict, cmd, forceLog);
 
             Dictionary<string, string> localVars = null;
@@ -94,12 +94,12 @@ namespace PEBakery.Core.Commands
 
                 // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
-                List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(p);
+                List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(sc);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                 // Load Per-Script Macro
                 s.Macro.ResetLocalMacros();
-                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(p, false);
+                List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(sc, false);
                 s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 
@@ -160,10 +160,10 @@ namespace PEBakery.Core.Commands
                 string sectionName = StringEscaper.Preprocess(s, info.SectionName);
                 List<string> paramList = StringEscaper.Preprocess(s, info.Parameters);
 
-                Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+                Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
 
                 // Does section exists?
-                if (!p.Sections.ContainsKey(sectionName))
+                if (!sc.Sections.ContainsKey(sectionName))
                     throw new ExecuteException($"[{scriptFile}] does not have section [{sectionName}]");
 
                 // Section Parameter
@@ -210,11 +210,11 @@ namespace PEBakery.Core.Commands
                 if (inCurrentScript)
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
                 else
-                    logMessage = $"Loop [{p.Title}]'s Section [{sectionName}] [{loopCount}] times";
+                    logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
                 s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
                 // Loop it
-                SectionAddress nextAddr = new SectionAddress(p, p.Sections[sectionName]);
+                SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
                 int loopIdx = 1;
                 switch (cmd.Type)
                 {

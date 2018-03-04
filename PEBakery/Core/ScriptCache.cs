@@ -115,13 +115,13 @@ namespace PEBakery.Core
         }
 
         /// <returns>Return true if cache is updated</returns>
-        private bool CacheScript(Script p, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
+        private bool CacheScript(Script sc, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
         {
             if (memDB == null) throw new ArgumentNullException(nameof(memDB));
 
             // Does cache exist?
-            FileInfo f = new FileInfo(p.DirectRealPath);
-            string sPath = p.DirectRealPath.Remove(0, p.Project.BaseDir.Length + 1);
+            FileInfo f = new FileInfo(sc.DirectRealPath);
+            string sPath = sc.DirectRealPath.Remove(0, sc.Project.BaseDir.Length + 1);
 
             bool updated = false;
             // int memIdx = 0;
@@ -144,7 +144,7 @@ namespace PEBakery.Core
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, p);
+                    formatter.Serialize(ms, sc);
                     pCache.Serialized = ms.ToArray();
                 }
 
@@ -165,7 +165,7 @@ namespace PEBakery.Core
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    formatter.Serialize(ms, p);
+                    formatter.Serialize(ms, sc);
                     pCache.Serialized = ms.ToArray();
                     pCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
                     pCache.FileSize = f.Length;
@@ -183,9 +183,9 @@ namespace PEBakery.Core
                 }
             }
 
-            if (p.Type == ScriptType.Link && p.LinkLoaded)
+            if (sc.Type == ScriptType.Link && sc.LinkLoaded)
             {
-                bool linkUpdated = CacheScript(p.Link, memDB, updateDB);
+                bool linkUpdated = CacheScript(sc.Link, memDB, updateDB);
                 updated = updated || linkUpdated;
             }
 

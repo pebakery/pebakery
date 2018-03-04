@@ -48,17 +48,19 @@ namespace PEBakery.Tests.Core
     [TestClass]
     public class EngineTests
     {
+        #region Static Fields
         public static Project Project;
         public static Logger Logger;
         public static string BaseDir;
-        
-        // [TestInitialize], [TestCleanup]
+        #endregion
+
+        #region AssemblyInitalize, AssemblyCleanup
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
             BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(BaseDir, null);
-            projects.PrepareLoad(out int nop);
+            projects.PrepareLoad(out _);
             projects.Load(null);
 
             // Should be only one project named TestSuite
@@ -67,9 +69,10 @@ namespace PEBakery.Tests.Core
             // Init NativeAssembly
             NativeAssemblyInit();
 
+            // Use InMemory Database for Tests
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
-            Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery.Tests launched"));
+            Logger.System_Write(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
         }
 
         private static void NativeAssemblyInit()
@@ -93,6 +96,7 @@ namespace PEBakery.Tests.Core
         {
             Logger.DB.Close();
         }
+        #endregion
 
         #region Utility Methods
         public static EngineState CreateEngineState(bool doClone = true, Script p = null)
@@ -174,7 +178,7 @@ namespace PEBakery.Tests.Core
             // Create CodeCommand
             SectionAddress addr = EngineTests.DummySectionAddress();
             cmds = CodeParser.ParseStatements(rawCodes, addr, out List<LogInfo> errorLogs);
-            if (0 < errorLogs.Where(x => x.State == LogState.Error).Count())
+            if (errorLogs.Any(x => x.State == LogState.Error))
             { 
                 Assert.IsTrue(check == ErrorCheck.ParserError);
                 return s;
