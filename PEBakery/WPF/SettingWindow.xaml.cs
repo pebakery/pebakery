@@ -559,17 +559,6 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool script_AutoConvertToUTF8;
-        public bool Script_AutoConvertToUTF8
-        {
-            get => script_AutoConvertToUTF8;
-            set
-            {
-                script_AutoConvertToUTF8 = value;
-                OnPropertyUpdate(nameof(Script_AutoConvertToUTF8));
-            }
-        }
-
         private bool script_AutoSyntaxCheck;
         public bool Script_AutoSyntaxCheck
         {
@@ -674,25 +663,25 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool log_DisableInInterface;
-        public bool Log_DisableInInterface
+        private bool log_InterfaceButton;
+        public bool Log_InterfaceButton
         {
-            get => log_DisableInInterface;
+            get => log_InterfaceButton;
             set
             {
-                log_DisableInInterface = value;
-                OnPropertyUpdate(nameof(Log_DisableInInterface));
+                log_InterfaceButton = value;
+                OnPropertyUpdate(nameof(Log_InterfaceButton));
             }
         }
 
-        private bool log_DisableDelayedLogging;
-        public bool Log_DisableDelayedLogging
+        private bool log_DelayedLogging;
+        public bool Log_DelayedLogging
         {
-            get => log_DisableDelayedLogging;
+            get => log_DelayedLogging;
             set
             {
-                log_DisableDelayedLogging = value;
-                OnPropertyUpdate(nameof(Log_DisableDelayedLogging));
+                log_DelayedLogging = value;
+                OnPropertyUpdate(nameof(Log_DelayedLogging));
             }
         }
         #endregion
@@ -846,7 +835,6 @@ namespace PEBakery.WPF
 
             // Script
             Script_EnableCache = true;
-            Script_AutoConvertToUTF8 = false;
             Script_AutoSyntaxCheck = true;
 
             // Log
@@ -857,8 +845,8 @@ namespace PEBakery.WPF
 #endif
             Log_Macro = true;
             Log_Comment = true;
-            Log_DisableInInterface = true;
-            Log_DisableDelayedLogging = false;
+            Log_InterfaceButton = false;
+            Log_DelayedLogging = true;
 
             // Compatibility
             Compat_AsteriskBugDirCopy = true;
@@ -902,13 +890,12 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr)), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_AutoConvertToUTF8), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DisableInInterface), logStr)), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DisableDelayedLogging), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_InterfaceButton), logStr)), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
                 new IniKey("Project", "DefaultProject"), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
@@ -1009,13 +996,6 @@ namespace PEBakery.WPF
                     Script_EnableCache = false;
             }
 
-            // Script - AutoConvertToUTF8 (Default = False)
-            if (dict[nameof(Script_AutoConvertToUTF8)] != null)
-            {
-                if (dict[nameof(Script_AutoConvertToUTF8)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Script_AutoConvertToUTF8 = true;
-            }
-
             // Script - AutoSyntaxCheck (Default = False)
             if (dict[nameof(Script_AutoSyntaxCheck)] != null)
             {
@@ -1048,17 +1028,17 @@ namespace PEBakery.WPF
             }
 
             // Log - DisableInInterface (Default = True)
-            if (dict[nameof(Log_DisableInInterface)] != null)
+            if (dict[nameof(Log_InterfaceButton)] != null)
             {
-                if (dict[nameof(Log_DisableInInterface)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Log_DisableInInterface = false;
+                if (dict[nameof(Log_InterfaceButton)].Equals("False", StringComparison.OrdinalIgnoreCase))
+                    Log_InterfaceButton = false;
             }
 
-            // Log - DisableDelayedLogging (Default = False)
-            if (dict[nameof(Log_DisableDelayedLogging)] != null)
+            // Log - DelayedLogging (Default = False)
+            if (dict[nameof(Log_DelayedLogging)] != null)
             {
-                if (dict[nameof(Log_DisableDelayedLogging)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Log_DisableDelayedLogging = true;
+                if (dict[nameof(Log_DelayedLogging)].Equals("True", StringComparison.OrdinalIgnoreCase))
+                    Log_DelayedLogging = true;
             }
 
             // Compatibility - AseteriskBugDirCopy (Default = True)
@@ -1147,13 +1127,12 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_CustomEditorPath), interfaceStr), Interface_CustomEditorPath), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
-                new IniKey(scriptStr, KeyPart(nameof(Script_AutoConvertToUTF8), scriptStr), Script_AutoConvertToUTF8.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DisableInInterface), logStr), Log_DisableInInterface.ToString()), // Boolean
-                new IniKey(logStr, KeyPart(nameof(Log_DisableDelayedLogging), logStr), Log_DisableDelayedLogging.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_InterfaceButton), logStr), Log_InterfaceButton.ToString()), // Boolean
+                new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr), Log_DelayedLogging.ToString()), // Boolean
                 new IniKey("Project", "DefaultProject", Project_Default), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr), Compat_AsteriskBugDirCopy.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr), Compat_AsteriskBugDirLink.ToString()), // Boolean

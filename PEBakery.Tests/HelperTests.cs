@@ -74,6 +74,7 @@ namespace PEBakery.Tests
         }
         #endregion
 
+        #region GetFilesEx
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
@@ -92,7 +93,63 @@ namespace PEBakery.Tests
                 Assert.IsTrue(srcFiles.Length == 3);
             }
         }
+        #endregion
 
+        #region GetFilesExWithDir
+        [TestMethod]
+        [TestCategory("Helper")]
+        [TestCategory("FileHelper")]
+        public void FileHelper_GetFilesExWithDir()
+        {
+            string srcDir = Path.Combine(EngineTests.BaseDir, "WorkBench", "Helper", "FileHelper");
+
+            // Test 1
+            {
+                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.AllDirectories);
+
+                string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(dirs.Length == 2);
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Z"), StringComparer.Ordinal));
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Za"), StringComparer.Ordinal));
+
+                string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(files.Length == 5);
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "C.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Z", "X.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Za", "W.txt"), StringComparer.Ordinal));
+            }
+            // Test 2
+            {
+                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.ini", SearchOption.AllDirectories);
+
+                string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(dirs.Length == 1);
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Z"), StringComparer.Ordinal));
+
+                string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(files.Length == 2);
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "D.ini"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "Z", "Y.ini"), StringComparer.Ordinal));
+            }
+            // Test 3
+            {
+                (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
+
+                string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(dirs.Length == 0);
+
+                string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
+                Assert.IsTrue(files.Length == 3);
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "A.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "B.txt"), StringComparer.Ordinal));
+                Assert.IsTrue(files.Contains(Path.Combine(srcDir, "C.txt"), StringComparer.Ordinal));
+            }
+        }
+        #endregion
+
+        #region DirectoryCopy
         [TestMethod]
         [TestCategory("Helper")]
         [TestCategory("FileHelper")]
@@ -147,6 +204,7 @@ namespace PEBakery.Tests
                     Directory.Delete(destDir, true);
             }
         }
+        #endregion
     }
     #endregion
 

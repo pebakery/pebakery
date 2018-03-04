@@ -106,22 +106,22 @@ namespace PEBakery.Helper
             long posBackup = stream.Position;
             stream.Position = 0;
 
-            if (encoding == Encoding.UTF8)
+            if (encoding.Equals(Encoding.UTF8))
             {
-                byte[] bom = new byte[] { 0xEF, 0xBB, 0xBF };
+                byte[] bom = { 0xEF, 0xBB, 0xBF };
                 stream.Write(bom, 0, bom.Length);
             }
-            else if (encoding == Encoding.Unicode)
+            else if (encoding.Equals(Encoding.Unicode))
             {
-                byte[] bom = new byte[] { 0xFF, 0xFE };
+                byte[] bom = { 0xFF, 0xFE };
                 stream.Write(bom, 0, bom.Length);
             }
-            else if (encoding == Encoding.BigEndianUnicode)
+            else if (encoding.Equals(Encoding.BigEndianUnicode))
             {
-                byte[] bom = new byte[] { 0xFE, 0xFF };
+                byte[] bom = { 0xFE, 0xFF };
                 stream.Write(bom, 0, bom.Length);
             }
-            else if (encoding != Encoding.Default)
+            else if (!encoding.Equals(Encoding.Default))
             { // Unsupported Encoding
                 throw new ArgumentException($"[{encoding}] is not supported");
             }
@@ -219,6 +219,9 @@ namespace PEBakery.Helper
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             string dirName = Path.GetDirectoryName(path);
+            if (dirName == null)
+                return string.Empty;
+
             int idx = dirName.LastIndexOf(Path.DirectorySeparatorChar);
             if (idx != -1)
                 dirName = dirName.Substring(idx + 1, dirName.Length - (idx + 1));
@@ -287,8 +290,6 @@ namespace PEBakery.Helper
 
         public static void CopyOffset(string srcFile, string destFile, long offset, long length)
         {
-            long size = FileHelper.GetFileSize(srcFile);
-
             using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
             using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor())
             using (FileStream stream = new FileStream(destFile, FileMode.Create, FileAccess.Write))
@@ -319,22 +320,13 @@ namespace PEBakery.Helper
         /// <summary>
         /// Copy directory.
         /// </summary>
-        /// <remarks>
-        /// Based on Official MSDN Code
-        /// https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
-        /// </remarks>
-        /// <param name="srcDir"></param>
-        /// <param name="destDir"></param>
-        /// <param name="copySubDirs"></param>
-        /// <param name="overwrite"></param>
-        /// <param name="wildcard">Wildcard only for first-sublevel directories</param>
         public static void DirectoryCopy(string srcDir, string destDir, bool copySubDirs, bool overwrite, string fileWildcard = null)
         {
             // Get the subdirectories for the specified directory.
             DirectoryInfo dirInfo = new DirectoryInfo(srcDir);
 
             if (!dirInfo.Exists)
-                throw new DirectoryNotFoundException($"Source directory does not exist or cannot be found: {srcDir}");
+                throw new DirectoryNotFoundException($"Directory [{srcDir}] does not exist");
 
             // Get the files in the directory and copy them to the new location.
             try
@@ -367,7 +359,7 @@ namespace PEBakery.Helper
                 foreach (DirectoryInfo subDir in dirs)
                 {
                     string tempPath = Path.Combine(destDir, subDir.Name);
-                    DirectoryCopy(subDir.FullName, tempPath, copySubDirs, overwrite, fileWildcard);
+                    DirectoryCopy(subDir.FullName, tempPath, true, overwrite, fileWildcard);
                 }
             }
         }
@@ -389,10 +381,9 @@ namespace PEBakery.Helper
             if (dirInfo == null) throw new ArgumentNullException(nameof(dirInfo));
             if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
-            DirectoryInfo[] dirs;
             try
             {
-                dirs = dirInfo.GetDirectories();
+                var dirs = dirInfo.GetDirectories();
                 foreach (DirectoryInfo dir in dirs)
                 {
                     foundDirs.Add(dir.FullName);
@@ -408,10 +399,11 @@ namespace PEBakery.Helper
         public static string[] GetFilesEx(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
+            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
             DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
             if (!dirInfo.Exists)
-                throw new DirectoryNotFoundException($"Source directory does not exist or could not be found: {dirPath}");
+                throw new DirectoryNotFoundException($"Directory [{dirPath}] does not exist");
 
             List<string> foundFiles = new List<string>();
             return InternalGetFilesEx(dirInfo, searchPattern, searchOption, foundFiles).ToArray();
@@ -449,17 +441,59 @@ namespace PEBakery.Helper
             return foundFiles;
         }
 
+        public static (string Path, bool IsDir)[] GetFilesExWithDirs(string dirPath, string searchPattern, SearchOption searchOption = SearchOption.TopDirectoryOnly)
+        {
+            if (dirPath == null) throw new ArgumentNullException(nameof(dirPath));
+            if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
+
+            DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
+            if (!dirInfo.Exists)
+                throw new DirectoryNotFoundException($"Directory [{dirPath}] does not exist");
+
+            List<(string Path, bool IsDir)> foundPaths = new List<(string Path, bool IsDir)>();
+            List<(string Path, bool IsDir)> InternalGetFilesExWithDirs(bool first, DirectoryInfo subDir)
+            {
+                if (subDir == null) throw new ArgumentNullException(nameof(subDir));
+                if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
+
+                // Get the files in the directory and copy them to the new location.
+                try
+                {
+                    var fileInfos = subDir.EnumerateFiles(searchPattern);
+                    (string Path, bool IsDir)[] files = fileInfos.Select(file => (Path: file.FullName, IsDir: false)).ToArray();
+                    if (0 < files.Length)
+                    {
+                        if (!first)
+                            foundPaths.Add((Path: subDir.FullName, IsDir: true));
+                        foundPaths.AddRange(files);
+                    }
+                }
+                catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
+
+                DirectoryInfo[] dirs;
+                try { dirs = subDir.GetDirectories(); }
+                catch (UnauthorizedAccessException) { return foundPaths; } // Ignore UnauthorizedAccessException
+
+                // If copying subdirectories, copy them and their contents to new location.
+                if (searchOption == SearchOption.AllDirectories)
+                {
+                    foreach (DirectoryInfo dir in dirs)
+                        InternalGetFilesExWithDirs(false, dir);
+                }
+
+                return foundPaths;
+            }
+            return InternalGetFilesExWithDirs(true, dirInfo).ToArray();
+        }
+
         public static void DirectoryDeleteEx(string path)
         {
-            DirectoryInfo root;
-            Stack<DirectoryInfo> fols;
-            DirectoryInfo fol;
-            fols = new Stack<DirectoryInfo>();
-            root = new DirectoryInfo(path);
+            DirectoryInfo root = new DirectoryInfo(path);
+            Stack<DirectoryInfo> fols = new Stack<DirectoryInfo>();
             fols.Push(root);
             while (fols.Count > 0)
             {
-                fol = fols.Pop();
+                DirectoryInfo fol = fols.Pop();
                 fol.Attributes = fol.Attributes & ~(FileAttributes.Archive | FileAttributes.ReadOnly | FileAttributes.Hidden);
                 foreach (DirectoryInfo d in fol.GetDirectories())
                 {
@@ -475,7 +509,7 @@ namespace PEBakery.Helper
         }
 
         private const int MAX_LONG_PATH = 32767;
-        private static readonly string LONG_PATH_PREFIX = @"\\?\";
+        private const string LONG_PATH_PREFIX = @"\\?\";
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern int GetShortPathName(
@@ -702,7 +736,7 @@ namespace PEBakery.Helper
                     hashType = HashType.SHA512;
                     break;
                 default:
-                    throw new Exception($"Cannot recognize valid hash string");
+                    throw new InvalidOperationException("Cannot recognize valid hash string");
             }
 
             return hashType;
@@ -797,7 +831,6 @@ namespace PEBakery.Helper
             while (idx < str.Length)
             {
                 int vIdx = str.IndexOf(oldValue, idx, comp);
-
                 if (vIdx == -1)
                 {
                     b.Append(str.Substring(idx));
@@ -806,7 +839,7 @@ namespace PEBakery.Helper
 
                 b.Append(str.Substring(idx, vIdx - idx));
                 b.Append(newValue);
-                idx = vIdx += oldValue.Length;
+                idx = vIdx + oldValue.Length;
             }
             return b.ToString();
 
@@ -1309,10 +1342,10 @@ namespace PEBakery.Helper
 
             public VersionEx(int major, int minor, int build, int revision)
             {
-                if (major < 0) throw new ArgumentOutOfRangeException("major");
-                if (minor < 0) throw new ArgumentOutOfRangeException("minor");
-                if (build < -1) throw new ArgumentOutOfRangeException("build");
-                if (revision < -1) throw new ArgumentOutOfRangeException("revision");
+                if (major < 0) throw new ArgumentOutOfRangeException(nameof(major));
+                if (minor < 0) throw new ArgumentOutOfRangeException(nameof(minor));
+                if (build < -1) throw new ArgumentOutOfRangeException(nameof(build));
+                if (revision < -1) throw new ArgumentOutOfRangeException(nameof(revision));
 
                 Major = major;
                 Minor = minor;
@@ -1408,7 +1441,7 @@ namespace PEBakery.Helper
 
         public static string ByteSizeToHumanReadableString(long byteSize, int decPoint = 3)
         {
-            if (decPoint < 0) throw new ArgumentOutOfRangeException("decPoint");
+            if (decPoint < 0) throw new ArgumentOutOfRangeException(nameof(decPoint));
 
             string formatString = "0";
             if (0 < decPoint)
@@ -1510,24 +1543,24 @@ namespace PEBakery.Helper
     public static class RegistryHelper
     {
         [DllImport("kernel32.dll")]
-        static extern IntPtr GetCurrentProcess();
+        private static extern IntPtr GetCurrentProcess();
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool OpenProcessToken(IntPtr ProcessHandle, UInt32 DesiredAccess, out IntPtr TokenHandle);
+        private static extern bool OpenProcessToken(IntPtr ProcessHandle, UInt32 DesiredAccess, out IntPtr TokenHandle);
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
+        private static extern bool LookupPrivilegeValue(string lpSystemName, string lpName, out LUID lpLuid);
         [DllImport("advapi32.dll", ExactSpelling = true, SetLastError = true)]
-        static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
+        private static extern bool AdjustTokenPrivileges(IntPtr htok, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, UInt32 len, IntPtr prev, IntPtr relen);
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern Int32 RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
+        public static extern int RegLoadKey(SafeRegistryHandle hKey, string lpSubKey, string lpFile);
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern Int32 RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
+        public static extern int RegUnLoadKey(SafeRegistryHandle hKey, string lpSubKey);
         [DllImport("kernel32.dll", SetLastError = true)]
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool CloseHandle(IntPtr hObject);
+        private static extern bool CloseHandle(IntPtr hObject);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct LUID
@@ -1539,20 +1572,20 @@ namespace PEBakery.Helper
         private struct LUID_AND_ATTRIBUTES
         {
             public LUID pLuid;
-            public UInt32 Attributes;
+            public uint Attributes;
         }
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         private struct TOKEN_PRIVILEGES
         {
             public int Count;
             public LUID Luid;
-            public UInt32 Attr;
+            public uint Attr;
         }
 
-        private const Int32 ANYSIZE_ARRAY = 1;
-        private const UInt32 SE_PRIVILEGE_ENABLED = 0x00000002;
-        private const UInt32 TOKEN_ADJUST_PRIVILEGES = 0x0020;
-        private const UInt32 TOKEN_QUERY = 0x0008;
+        private const int ANYSIZE_ARRAY = 1;
+        private const uint SE_PRIVILEGE_ENABLED = 0x00000002;
+        private const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        private const uint TOKEN_QUERY = 0x0008;
 
         /*
         public const UInt32 HKCR = 0x80000000; // HKEY_CLASSES_ROOT
@@ -1711,11 +1744,6 @@ namespace PEBakery.Helper
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
-        /// TODO: Use 
-        /// </remarks>
-        /// <param name="srcPath"></param>
-        /// <param name="destPath"></param>
-        /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir)
         {
             using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -1728,11 +1756,6 @@ namespace PEBakery.Helper
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
-        /// TODO: Use 
-        /// </remarks>
-        /// <param name="srcPath"></param>
-        /// <param name="destPath"></param>
-        /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, out List<string> extractedList)
         {
             using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -1745,11 +1768,6 @@ namespace PEBakery.Helper
         /// <summary>
         /// Expand cab file using P/invoked FDICreate, FDICopy, FDIDestroy
         /// </summary>
-        /// TODO: Use 
-        /// </remarks>
-        /// <param name="srcPath"></param>
-        /// <param name="destPath"></param>
-        /// <returns>Return true if success</returns>
         public static bool ExtractCab(string srcCabFile, string destDir, string target)
         {
             using (FileStream fs = new FileStream(srcCabFile, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -1925,6 +1943,8 @@ namespace PEBakery.Helper
         /// <returns></returns>
         public static bool GetImageType(string path, out ImageType type)
         {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
             type = ImageType.Bmp; // Dummy
             string logoType = Path.GetExtension(path);
             if (logoType.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
@@ -2242,7 +2262,7 @@ namespace PEBakery.Helper
         }
 
         [DllImport("comdlg32.dll", CharSet = CharSet.Auto, EntryPoint = "ChooseFont", SetLastError = true)]
-        public extern static bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
+        public static extern bool ChooseFont([In, Out] ref CHOOSEFONT lpcf);
 
         public static LogFontWeight FontWeightConvert_WPFToLogFont(System.Windows.FontWeight weight)
         {
@@ -2329,8 +2349,8 @@ namespace PEBakery.Helper
             public System.Windows.Media.FontFamily FontFamily;
             public System.Windows.FontWeight FontWeight;
             public int FontSizeInPoint; // In Point (72DPI)
-            public int Win32FontSize { get => -(int)Math.Round(FontSizeInPoint * 96 / 72f);  }
-            public double FontSizeInDIP { get => FontSizeInPoint * 96 / 72f; } // Device Independent Pixel (96DPI)
+            public int Win32FontSize => -(int)Math.Round(FontSizeInPoint * 96 / 72f);
+            public double FontSizeInDIP => FontSizeInPoint * 96 / 72f; // Device Independent Pixel (96DPI)
 
             public WPFFont(System.Windows.Media.FontFamily fontFamily, System.Windows.FontWeight fontWeight, int fontSize)
             {

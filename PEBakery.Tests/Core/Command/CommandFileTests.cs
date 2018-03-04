@@ -550,7 +550,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
             string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMove);
 
             DirMove_Template(s, $@"DirMove,{scriptDestDir}\ABCD,{scriptDestDir}\XYZ", "ABCD", "XYZ");

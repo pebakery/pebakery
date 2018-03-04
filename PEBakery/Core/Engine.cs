@@ -65,10 +65,8 @@ namespace PEBakery.Core
         /// <summary>
         /// Ready to run an script
         /// </summary>
-        internal static void ReadyRunScript(EngineState s, Script p = null)
+        internal static void ReadyRunScript(EngineState s, Script sc = null)
         {
-            long buildId = s.BuildId;
-
             // Turn off System,ErrorOff
             s.ErrorOffStartLineIdx = -1;
             s.ErrorOffLineCount = 0;
@@ -80,10 +78,10 @@ namespace PEBakery.Core
 
             // Set CurrentScript
             // Note: s.CurrentScriptIdx is not touched here
-            if (p == null)
-                p = s.CurrentScript;
+            if (sc == null)
+                sc = s.CurrentScript;
             else
-                s.CurrentScript = p;
+                s.CurrentScript = sc;
 
             // Init Per-Script Log
             s.ScriptId = s.Logger.Build_Script_Init(s, s.CurrentScript, s.CurrentScriptIdx + 1);
@@ -94,19 +92,19 @@ namespace PEBakery.Core
             // Log Script Build Start Message
             string msg;
             if (s.RunMode == EngineMode.RunAll)
-                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing script [{p.Title}] ({p.TreePath})";
+                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing script [{sc.Title}] ({sc.TreePath})";
             else
-                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{p.TreePath}]";
+                msg = $"[{s.CurrentScriptIdx + 1}/{s.Scripts.Count}] Processing section [{entrySection}] of script [{sc.TreePath}]";
             s.Logger.Build_Write(s, msg);
             s.Logger.Build_Write(s, Logger.LogSeperator);
 
             // Load Default Per-Script Variables
             s.Variables.ResetVariables(VarsType.Local);
-            s.Logger.Build_Write(s, s.Variables.LoadDefaultScriptVariables(p));
+            s.Logger.Build_Write(s, s.Variables.LoadDefaultScriptVariables(sc));
 
             // Load Per-Script Macro
             s.Macro.ResetLocalMacros();
-            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(p, false));
+            s.Logger.Build_Write(s, s.Macro.LoadLocalMacroDict(sc, false));
 
             // Reset Current Section Parameter
             s.CurSectionParams = new Dictionary<int, string>();
@@ -116,16 +114,16 @@ namespace PEBakery.Core
 
             // Set Interface using MainWindow, MainViewModel
             if (s.RunMode == EngineMode.RunAll)
-                s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(p.Title)}";
+                s.MainViewModel.ScriptTitleText = $"({s.CurrentScriptIdx + 1}/{s.Scripts.Count}) {StringEscaper.Unescape(sc.Title)}";
             else 
-                s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(p.Title);
+                s.MainViewModel.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 
-            s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(p.Description);
-            s.MainViewModel.ScriptVersionText = "v" + p.Version;
-            if (MainWindow.ScriptAuthorLenLimit < p.Author.Length)
-                s.MainViewModel.ScriptAuthorText = p.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
+            s.MainViewModel.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
+            s.MainViewModel.ScriptVersionText = "v" + sc.Version;
+            if (MainWindow.ScriptAuthorLenLimit < sc.Author.Length)
+                s.MainViewModel.ScriptAuthorText = sc.Author.Substring(0, MainWindow.ScriptAuthorLenLimit) + "...";
             else
-                s.MainViewModel.ScriptAuthorText = p.Author;
+                s.MainViewModel.ScriptAuthorText = sc.Author;
             s.MainViewModel.BuildEchoMessage = $"Processing Section [{entrySection}]...";
 
             long allLineCount = 0;
@@ -142,7 +140,7 @@ namespace PEBakery.Core
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
 
-                    w.DrawScriptLogo(p);
+                    w.DrawScriptLogo(sc);
 
                     if (w.CurBuildTree != null)
                         w.CurBuildTree.BuildFocus = false;
@@ -155,7 +153,7 @@ namespace PEBakery.Core
             }
         }
 
-        private void FinishRunScript(EngineState s)
+        private static void FinishRunScript(EngineState s)
         {
             // Finish Per-PScript Log
             s.Logger.Build_Write(s, $"End of Script [{s.CurrentScript.TreePath}]");
@@ -288,10 +286,8 @@ namespace PEBakery.Core
         public void ForceStop()
         {
             s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
-            if (s.RunningSubProcess != null)
-                s.RunningSubProcess.Kill();
-            if (s.RunningWebClient != null)
-                s.RunningWebClient.CancelAsync();
+            s.RunningSubProcess?.Kill();
+            s.RunningWebClient?.CancelAsync();
             s.UserHaltFlag = true;
         }
 
@@ -354,12 +350,11 @@ namespace PEBakery.Core
                 return;
             }
 
-            CodeCommand curCommand;
             for (int idx = 0; idx < codes.Count; idx++)
             {
                 try
                 {
-                    curCommand = codes[idx];
+                    var curCommand = codes[idx];
                     s.CurDepth = depth;
                     s.CurSectionParams = sectionParams;
                     ExecuteCommand(s, curCommand);
@@ -897,22 +892,22 @@ namespace PEBakery.Core
                 inCurrentScript = true; // Sometimes this value is not legal, so always use Project.GetScriptByFullPath.
 
             string fullPath = loadScriptPath;
-            Script p = s.Project.GetScriptByRealPath(fullPath);
-            if (p == null)
+            Script sc = s.Project.GetScriptByRealPath(fullPath);
+            if (sc == null)
             { // Cannot Find Script in Project.AllScripts
                 // Try searching s.Scripts
-                p = s.Scripts.Find(x => x.RealPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
-                if (p == null)
+                sc = s.Scripts.Find(x => x.RealPath.Equals(fullPath, StringComparison.OrdinalIgnoreCase));
+                if (sc == null)
                 { // Still not found in s.Scripts
                     if (!File.Exists(fullPath))
                         throw new ExecuteException($"No script in [{fullPath}]");
-                    p = s.Project.LoadScriptMonkeyPatch(fullPath, false, true);
-                    if (p == null)
+                    sc = s.Project.LoadScriptMonkeyPatch(fullPath, false, true);
+                    if (sc == null)
                         throw new ExecuteException($"Unable to load script [{fullPath}]");
                 }
             }
 
-            return p;
+            return sc;
         }
 
         public static void EnableSetLocal(EngineState s, ScriptSection section)
@@ -979,7 +974,7 @@ namespace PEBakery.Core
         public Script CurrentScript;
         public int CurrentScriptIdx;
         public ScriptSection CurrentSection;
-        public Dictionary<int, string> CurSectionParams = new Dictionary<int, string>();
+        public Dictionary<int, string> CurSectionParams;
         public string SectionReturnValue = string.Empty;
         public List<int> ProcessedSectionHashes = new List<int>();
         public int CurDepth = 1;
@@ -1047,6 +1042,8 @@ namespace PEBakery.Core
                     break;
                 case EngineMode.RunMainAndOne:
                     { // Run one script, executing MainScript before it.
+                        if (runSingle == null)
+                            throw new ArgumentNullException(nameof(runSingle));
                         if (runSingle.Equals(project.MainScript) && entrySection.Equals("Process", StringComparison.Ordinal))
                             goto case EngineMode.RunOne;
 
@@ -1071,9 +1068,7 @@ namespace PEBakery.Core
             }
 
             CurrentSection = null;
-
             CurSectionParams = new Dictionary<int, string>();
-
             MainViewModel = mainModel;
         }
 
@@ -1084,7 +1079,7 @@ namespace PEBakery.Core
             LogMacro = m.Log_Macro;
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
-            DelayedLogging = !m.Log_DisableDelayedLogging;
+            DelayedLogging = m.Log_DelayedLogging;
         }
         #endregion
     }

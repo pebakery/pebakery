@@ -56,7 +56,7 @@ namespace PEBakery.Tests.Core
         [AssemblyInitialize]
         public static void PrepareTests(TestContext ctx)
         {
-            BaseDir = @"..\..\Samples";
+            BaseDir = Path.GetFullPath(Path.Combine("..", "..", "Samples"));
             ProjectCollection projects = new ProjectCollection(BaseDir, null);
             projects.PrepareLoad(out int nop);
             projects.Load(null);

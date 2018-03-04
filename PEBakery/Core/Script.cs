@@ -658,16 +658,9 @@ namespace PEBakery.Core
         public override bool Equals(object obj)
         {
             if (obj is Script p)
-            {
-                if (this.RealPath.Equals(p.RealPath, StringComparison.OrdinalIgnoreCase))
-                    return true;
-                else
-                    return false;
-            }
+                return this.RealPath.Equals(p.RealPath, StringComparison.OrdinalIgnoreCase);
             else
-            {
                 return false;
-            }
         }
 
         public override int GetHashCode()
@@ -876,10 +869,7 @@ namespace PEBakery.Core
         {
             if (section == null) throw new ArgumentNullException(nameof(section));
 
-            if (script.Equals(section.Script) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase))
-                return true;
-            else
-                return false;
+            return script.Equals(section.Script) && sectionName.Equals(section.SectionName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()

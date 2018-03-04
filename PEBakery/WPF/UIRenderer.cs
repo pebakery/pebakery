@@ -1031,7 +1031,7 @@ namespace PEBakery.WPF
 
                 EngineState s = new EngineState(addr.Script.Project, logger, mainModel, EngineMode.RunMainAndOne, addr.Script, addr.Section.SectionName);
                 s.SetOption(setting);
-                s.DisableLogger = setting.Log_DisableInInterface;
+                s.DisableLogger = !setting.Log_InterfaceButton;
 
                 Engine.WorkingEngine = new Engine(s);
 
