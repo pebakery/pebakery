@@ -177,8 +177,6 @@ namespace PEBakery.WPF
         /// Render TextBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextBox(RenderInfo r, UIControl uiCtrl)
         {
@@ -211,7 +209,7 @@ namespace PEBakery.WPF
                     FontSize = CalcFontPointScale(),
                 };
                 SetToolTip(block, info.ToolTip);
-                double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.2;
+                const double margin = PointToDeviceIndependentPixel * DefaultFontPoint * 1.2;
                 Rect blockRect = new Rect(uiCtrl.Rect.Left, uiCtrl.Rect.Top - margin, uiCtrl.Rect.Width, uiCtrl.Rect.Height);
                 DrawToCanvas(r, block, blockRect);
             }
@@ -221,8 +219,6 @@ namespace PEBakery.WPF
         /// Render TextLabel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextLabel(RenderInfo r, UIControl uiCtrl)
         {
@@ -262,9 +258,6 @@ namespace PEBakery.WPF
         /// Render NumberBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="r.MasterScale">Master Scale Factor</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderNumberBox(RenderInfo r, UIControl uiCtrl)
         {
@@ -296,8 +289,6 @@ namespace PEBakery.WPF
         /// Render CheckBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderCheckBox(RenderInfo r, UIControl uiCtrl)
         {
@@ -330,13 +321,11 @@ namespace PEBakery.WPF
             
             checkBox.Checked += (object sender, RoutedEventArgs e) =>
             {
-                CheckBox box = sender as CheckBox;
                 info.Value = true;
                 uiCtrl.Update();
             };
             checkBox.Unchecked += (object sender, RoutedEventArgs e) =>
             {
-                CheckBox box = sender as CheckBox;
                 info.Value = false;
                 uiCtrl.Update();
             };
@@ -349,8 +338,6 @@ namespace PEBakery.WPF
         /// Render ComboBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderComboBox(RenderInfo r, UIControl uiCtrl)
         {
@@ -400,8 +387,6 @@ namespace PEBakery.WPF
         /// Render Image control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderImage(RenderInfo r, UIControl uiCtrl)
         {
@@ -485,7 +470,6 @@ namespace PEBakery.WPF
             }
 
             SetToolTip(button, toolTip);
-            // SetToolTip(button, info.ToolTip);
             DrawToCanvas(r, button, uiCtrl.Rect);
         }
 
@@ -493,8 +477,6 @@ namespace PEBakery.WPF
         /// Render TextFile control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextFile(RenderInfo r, UIControl uiCtrl)
         {
@@ -527,8 +509,6 @@ namespace PEBakery.WPF
         /// Render Button control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderButton(RenderInfo r, UIControl uiCtrl, Logger logger)
         {
@@ -574,9 +554,6 @@ namespace PEBakery.WPF
                 {
                     if (type == ImageHelper.ImageType.Svg)
                     {
-                        // var (Width, Height) = ImageHelper.GetSvgSize(ms);
-                        // image.Source = ImageHelper.SvgToBitmapImage(ms, Width, Height);
-
                         image.Source = ImageHelper.SvgToBitmapImage(ms);
                     }
                     else
@@ -626,8 +603,6 @@ namespace PEBakery.WPF
         /// Render WebLabel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderWebLabel(RenderInfo r, UIControl uiCtrl)
         {
@@ -670,8 +645,6 @@ namespace PEBakery.WPF
         /// Render Bevel control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
         {
@@ -730,8 +703,6 @@ namespace PEBakery.WPF
         /// Render RadioGroup control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioButton(RenderInfo r, UIControl uiCtrl, UIControl[] radioButtons)
         {
@@ -796,8 +767,7 @@ namespace PEBakery.WPF
         /// Render FileBox control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="canvas">Parent canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
+        /// <returns>Success = false, Failure = true</returns>
         public static void RenderFileBox(RenderInfo r, UIControl uiCtrl, Variables variables)
         {
             // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
@@ -821,7 +791,7 @@ namespace PEBakery.WPF
             Button button = new Button()
             {
                 FontSize = CalcFontPointScale(),
-                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderUpload, 0),
+                Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen, 0),
             };
             SetToolTip(button, info.ToolTip);
 
@@ -878,8 +848,6 @@ namespace PEBakery.WPF
         /// Render RadioGroup control.
         /// Return true if failed.
         /// </summary>
-        /// <param name="r.Canvas">Parent r.Canvas</param>
-        /// <param name="uiCtrl">UIControl</param>
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioGroup(RenderInfo r, UIControl uiCtrl)
         {
@@ -951,7 +919,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Utility
-        private static void InitCanvas(Canvas canvas)
+        private static void InitCanvas(FrameworkElement canvas)
         {
             canvas.Width = double.NaN;
             canvas.Height = double.NaN;

@@ -79,8 +79,8 @@ namespace PEBakery.Core
 
         public int PrepareLoad(out int processCount)
         {
-            // Ex) projNameList = { "Win7PESE", "Win8PESE", "Win8.1SE", "Win10PESE" }
-            // Ex) scriptPathDict = [script paths of Win7PESE, script paths of Win8PESE, ... ]
+            // Ex) projNameList = { "ChrisPE", "MistyPE", "Win10PESE" }
+            // Ex) scriptPathDict = [script paths of ChrisPE, script paths of MistyPE, ... ]
             List<string> projNameList = GetProjectNameList();
             GetScriptPaths(projNameList, out processCount);
 
