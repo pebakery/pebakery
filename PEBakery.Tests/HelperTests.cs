@@ -108,7 +108,8 @@ namespace PEBakery.Tests
                 (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
-                Assert.IsTrue(dirs.Length == 2);
+                Assert.IsTrue(dirs.Length == 3);
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir), StringComparer.Ordinal));
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Z"), StringComparer.Ordinal));
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Za"), StringComparer.Ordinal));
 
@@ -125,7 +126,8 @@ namespace PEBakery.Tests
                 (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.ini", SearchOption.AllDirectories);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
-                Assert.IsTrue(dirs.Length == 1);
+                Assert.IsTrue(dirs.Length == 2);
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir), StringComparer.Ordinal));
                 Assert.IsTrue(dirs.Contains(Path.Combine(srcDir, "Z"), StringComparer.Ordinal));
 
                 string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
@@ -138,7 +140,8 @@ namespace PEBakery.Tests
                 (string Path, bool IsDir)[] paths = FileHelper.GetFilesExWithDirs(srcDir, "*.txt", SearchOption.TopDirectoryOnly);
 
                 string[] dirs = paths.Where(x => x.IsDir).Select(x => x.Path).ToArray();
-                Assert.IsTrue(dirs.Length == 0);
+                Assert.IsTrue(dirs.Length == 1);
+                Assert.IsTrue(dirs.Contains(Path.Combine(srcDir), StringComparer.Ordinal));
 
                 string[] files = paths.Where(x => !x.IsDir).Select(x => x.Path).ToArray();
                 Assert.IsTrue(files.Length == 3);

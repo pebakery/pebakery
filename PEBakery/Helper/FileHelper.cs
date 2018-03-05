@@ -428,8 +428,9 @@ namespace PEBakery.Helper
                 throw new DirectoryNotFoundException($"Directory [{dirPath}] does not exist");
 
             List<(string Path, bool IsDir)> foundPaths = new List<(string Path, bool IsDir)>();
-            List<(string Path, bool IsDir)> InternalGetFilesExWithDirs(bool first, DirectoryInfo subDir)
+            List<(string Path, bool IsDir)> InternalGetFilesExWithDirs(DirectoryInfo subDir)
             {
+                bool dirAdded = false;
                 if (subDir == null) throw new ArgumentNullException(nameof(subDir));
                 if (searchPattern == null) throw new ArgumentNullException(nameof(searchPattern));
 
@@ -437,30 +438,33 @@ namespace PEBakery.Helper
                 try
                 {
                     var fileInfos = subDir.EnumerateFiles(searchPattern);
-                    (string Path, bool IsDir)[] files = fileInfos.Select(file => (Path: file.FullName, IsDir: false)).ToArray();
+                    var files = fileInfos.Select(file => (Path: file.FullName, IsDir: false)).ToArray();
                     if (0 < files.Length)
                     {
-                        if (!first)
-                            foundPaths.Add((Path: subDir.FullName, IsDir: true));
+                        foundPaths.Add((Path: subDir.FullName, IsDir: true));
+                        dirAdded = true;
                         foundPaths.AddRange(files);
                     }
                 }
                 catch (UnauthorizedAccessException) { } // Ignore UnauthorizedAccessException
 
-                DirectoryInfo[] dirs;
-                try { dirs = subDir.GetDirectories(); }
-                catch (UnauthorizedAccessException) { return foundPaths; } // Ignore UnauthorizedAccessException
-
                 // If copying subdirectories, copy them and their contents to new location.
                 if (searchOption == SearchOption.AllDirectories)
                 {
+                    DirectoryInfo[] dirs;
+                    try { dirs = subDir.GetDirectories(); }
+                    catch (UnauthorizedAccessException) { return foundPaths; } // Ignore UnauthorizedAccessException
+
+                    if (0 < dirs.Length && !dirAdded)
+                        foundPaths.Add((Path: subDir.FullName, IsDir: true));
+
                     foreach (DirectoryInfo dir in dirs)
-                        InternalGetFilesExWithDirs(false, dir);
+                        InternalGetFilesExWithDirs(dir);
                 }
 
                 return foundPaths;
             }
-            return InternalGetFilesExWithDirs(true, dirInfo).ToArray();
+            return InternalGetFilesExWithDirs(dirInfo).ToArray();
         }
 
         public static void DirectoryDeleteEx(string path)

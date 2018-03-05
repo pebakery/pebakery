@@ -30,6 +30,7 @@ using SQLite;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -73,7 +74,6 @@ namespace PEBakery.Core
         {
             try
             {
-                DateTime buildDate = new FileInfo(Assembly.GetExecutingAssembly().Location).LastWriteTimeUtc;
                 DB_CacheInfo[] infos = new DB_CacheInfo[]
                 {
                     new DB_CacheInfo() { Key = "EngineVersion", Value = Properties.Resources.EngineVersion },
@@ -85,7 +85,9 @@ namespace PEBakery.Core
                 foreach (Project project in projects.Projects)
                 {
                     // Remove duplicate
+                    // Exclude directory links because treePath is inconsistent
                     var pUniqueList = project.AllScripts
+                        .Where(x => x.Type != ScriptType.Directory && !x.IsDirLink)
                         .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
 
@@ -118,6 +120,8 @@ namespace PEBakery.Core
         private bool CacheScript(Script sc, DB_ScriptCache[] memDB, List<DB_ScriptCache> updateDB)
         {
             if (memDB == null) throw new ArgumentNullException(nameof(memDB));
+            if (updateDB == null) throw new ArgumentNullException(nameof(updateDB));
+            Debug.Assert(sc.Type != ScriptType.Directory);
 
             // Does cache exist?
             FileInfo f = new FileInfo(sc.DirectRealPath);
@@ -125,15 +129,15 @@ namespace PEBakery.Core
 
             bool updated = false;
             // int memIdx = 0;
-            DB_ScriptCache pCache = null;
+            DB_ScriptCache scCache = null;
 
             // Retrieve Cache
-            pCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+            scCache = memDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
 
             // Update Cache into updateDB
-            if (pCache == null)
+            if (scCache == null)
             { // Cache not exists
-                pCache = new DB_ScriptCache()
+                scCache = new DB_ScriptCache()
                 {
                     Hash = sPath.GetHashCode(),
                     Path = sPath,
@@ -145,13 +149,13 @@ namespace PEBakery.Core
                 using (MemoryStream ms = new MemoryStream())
                 {
                     formatter.Serialize(ms, sc);
-                    pCache.Serialized = ms.ToArray();
+                    scCache.Serialized = ms.ToArray();
                 }
 
                 listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(pCache);
+                    updateDB.Add(scCache);
                     updated = true;
                 }
                 finally
@@ -159,22 +163,22 @@ namespace PEBakery.Core
                     listLock.ExitWriteLock();
                 }
             }
-            else if (pCache.Path.Equals(sPath, StringComparison.Ordinal) && 
-                (DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTime) == false || pCache.FileSize != f.Length))
+            else if (scCache.Path.Equals(sPath, StringComparison.Ordinal) && 
+                (DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTime) == false || scCache.FileSize != f.Length))
             { // Cache is outdated
                 BinaryFormatter formatter = new BinaryFormatter();
                 using (MemoryStream ms = new MemoryStream())
                 {
                     formatter.Serialize(ms, sc);
-                    pCache.Serialized = ms.ToArray();
-                    pCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
-                    pCache.FileSize = f.Length;
+                    scCache.Serialized = ms.ToArray();
+                    scCache.LastWriteTimeUtc = f.LastWriteTimeUtc;
+                    scCache.FileSize = f.Length;
                 }
 
                 listLock.EnterWriteLock();
                 try
                 {
-                    updateDB.Add(pCache);
+                    updateDB.Add(scCache);
                     updated = true;
                 }
                 finally

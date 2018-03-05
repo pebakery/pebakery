@@ -43,7 +43,7 @@ namespace PEBakery.Core
 {
     #region Script
     [Serializable]
-    public class Script
+    public class Script : IEquatable<Script>
     {
         #region Fields
         private readonly string _realPath;
@@ -58,8 +58,8 @@ namespace PEBakery.Core
         private Script _link;
         [NonSerialized]
         private bool _linkLoaded;
+        [NonSerialized]
         private bool _isDirLink;
-        private string _dirLinkRoot;
         private readonly string _title = string.Empty;
         private readonly string _author = string.Empty;
         private readonly string _description = string.Empty;
@@ -114,7 +114,6 @@ namespace PEBakery.Core
         public Script Link { get => _link; set => _link = value; }
         public bool LinkLoaded { get => _linkLoaded; set => _linkLoaded = value; }
         public bool IsDirLink { get => _isDirLink; set => _isDirLink = value; }
-        public string DirLinkRoot { get => _dirLinkRoot; set => _dirLinkRoot = value; }
         public Project Project
         {
             get
@@ -213,7 +212,7 @@ namespace PEBakery.Core
             ScriptType type,
             string realPath, string treePath, 
             Project project, string projectRoot,
-            int? level, bool isMainScript, bool ignoreMain, string dirLinkRoot)
+            int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
             if (projectRoot == null) throw new ArgumentNullException(nameof(projectRoot));
 
@@ -228,17 +227,8 @@ namespace PEBakery.Core
             _project = project ?? throw new ArgumentNullException(nameof(project));
             _isMainScript = isMainScript;
             _linkLoaded = false;
-            if (dirLinkRoot != null)
-            {
-                _isDirLink = true;
-                _dirLinkRoot = dirLinkRoot;
-            }
-            else
-            {
-                _isDirLink = false;
-                _dirLinkRoot = null;
-            }
-
+            _isDirLink = isDirLink;
+            
             Debug.Assert(!_isDirLink || type != ScriptType.Link);
 
             switch (type)
@@ -639,7 +629,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Virtual Methods
+        #region Virtual, Interface Methods
         public override string ToString()
         {
             if (_type == ScriptType.Link)
@@ -651,9 +641,18 @@ namespace PEBakery.Core
         public override bool Equals(object obj)
         {
             if (obj is Script sc)
-                return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase);
+                return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
+                       TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase);
             else
                 return false;
+        }
+
+        public bool Equals(Script sc)
+        {
+            if (sc == null)
+                return false;
+            return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
+                   TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()

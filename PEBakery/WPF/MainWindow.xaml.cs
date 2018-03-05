@@ -265,7 +265,7 @@ namespace PEBakery.WPF
                     Dispatcher.Invoke(() =>
                     {
                         foreach (Project project in projects.Projects)
-                            ScriptListToTreeViewModel(project, project.VisibleScripts, Model.MainTree);
+                            ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree);
 
                         int pIdx = setting.Project_DefaultIndex;
                         curMainTree = Model.MainTree.Children[pIdx];
@@ -693,7 +693,7 @@ namespace PEBakery.WPF
             {
                 Interlocked.Increment(ref Engine.WorkingLock);
 
-                if (curMainTree == null || curMainTree.Script == null || Model.WorkInProgress)
+                if (curMainTree?.Script == null || Model.WorkInProgress)
                 {
                     Interlocked.Decrement(ref Engine.WorkingLock);
                     return;
@@ -703,7 +703,7 @@ namespace PEBakery.WPF
                 Project project = curMainTree.Script.Project;
 
                 Model.BuildTree.Children.Clear();
-                ScriptListToTreeViewModel(project, project.ActiveScripts, Model.BuildTree);
+                ScriptListToTreeViewModel(project, project.ActiveScripts, false, Model.BuildTree, null);
                 curBuildTree = null;
 
                 EngineState s = new EngineState(project, logger, Model);
@@ -927,7 +927,9 @@ namespace PEBakery.WPF
         #endregion
 
         #region TreeView Methods
-        private void ScriptListToTreeViewModel(Project project, List<Script> pList, TreeViewModel treeRoot, TreeViewModel projectRoot = null)
+        private void ScriptListToTreeViewModel(
+            Project project, List<Script> scList, bool assertDirExist,
+            TreeViewModel treeRoot, TreeViewModel projectRoot = null)
         {
             Dictionary<string, TreeViewModel> dirDict = new Dictionary<string, TreeViewModel>(StringComparer.OrdinalIgnoreCase);
 
@@ -935,7 +937,7 @@ namespace PEBakery.WPF
             if (projectRoot == null)
                 projectRoot = PopulateOneTreeView(project.MainScript, treeRoot, treeRoot);
 
-            foreach (Script sc in pList)
+            foreach (Script sc in scList.Where(x => x.Type != ScriptType.Directory))
             {
                 Debug.Assert(sc != null);
 
@@ -963,12 +965,30 @@ namespace PEBakery.WPF
                     }
                     else
                     {
+                        /*
                         // TODO: Correct real path in DirLink directory
                         string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
                         string fullRealPath = fullTreePath;
                         if (sc.IsDirLink)
                             fullRealPath = sc.DirLinkRoot;
                         Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.DirLinkRoot);
+                        */
+                        string treePath = Path.Combine(project.ProjectName, pathKey);
+                        Script ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
+                        Script dirScript;
+
+                        if (assertDirExist)
+                            Debug.Assert(ts != null);
+
+                        if (ts != null)
+                            dirScript = new Script(ScriptType.Directory, ts.RealPath, ts.TreePath, project, project.ProjectRoot, sc.Level, false, false, ts.IsDirLink);
+                        else
+                        {
+                            string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
+                            dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
+                        }
+
+                        
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;
                     }
@@ -1025,7 +1045,7 @@ namespace PEBakery.WPF
             TreeViewModel projectRoot = Model.MainTree.Children.FirstOrDefault(x => x.Script.Project.Equals(project));
             projectRoot?.Children.Clear();
 
-            ScriptListToTreeViewModel(project, project.VisibleScripts, Model.MainTree, projectRoot);
+            ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree, projectRoot);
 
             if (redrawScript)
             {
