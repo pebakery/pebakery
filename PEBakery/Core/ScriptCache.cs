@@ -86,7 +86,7 @@ namespace PEBakery.Core
                 {
                     // Remove duplicate
                     // Exclude directory links because treePath is inconsistent
-                    var pUniqueList = project.AllScripts
+                    var scUniqueList = project.AllScripts
                         .Where(x => x.Type != ScriptType.Directory && !x.IsDirLink)
                         .GroupBy(x => x.DirectRealPath)
                         .Select(x => x.First());
@@ -95,16 +95,13 @@ namespace PEBakery.Core
 
                     DB_ScriptCache[] memDB = Table<DB_ScriptCache>().ToArray();
                     List<DB_ScriptCache> updateDB = new List<DB_ScriptCache>();
-                    var tasks = pUniqueList.Select(p =>
+
+                    Parallel.ForEach(scUniqueList, sc =>
                     {
-                        return Task.Run(() =>
-                        {
-                            bool updated = CacheScript(p, memDB, updateDB);
-                            worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
-                        });
-                    }).ToArray();
-                    Task.WaitAll(tasks);
-                    
+                        bool updated = CacheScript(sc, memDB, updateDB);
+                        worker.ReportProgress(updated ? 1 : 0); // 1 - updated, 0 - not updated
+                    });
+
                     InsertOrReplaceAll(updateDB);
                 }
             }

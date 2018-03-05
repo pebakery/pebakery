@@ -259,99 +259,95 @@ namespace PEBakery.Core
             bool cacheValid = true;
             Script[] links = allProjectScripts.Where(x => x.Type == ScriptType.Link).ToArray();
             Debug.Assert(links.Count(x => x.IsDirLink) == 0);
-            Task[] tasks = links.Select(p =>
+            Parallel.ForEach(links, sc =>
             {
-                return Task.Run(() =>
+                Script link = null;
+                bool valid = false;
+                int cached = 2;
+                try
                 {
-                    Script link = null;
-                    bool valid = false;
-                    int cached = 2;
-                    try
+                    do
                     {
-                        do
-                        {
-                            string linkPath = p.Sections["Main"].IniDict["Link"];
-                            string linkFullPath = Path.Combine(baseDir, linkPath);
-                            if (File.Exists(linkFullPath) == false) // Invalid link
-                                break;
+                        string linkPath = sc.Sections["Main"].IniDict["Link"];
+                        string linkFullPath = Path.Combine(baseDir, linkPath);
+                        if (File.Exists(linkFullPath) == false) // Invalid link
+                            break;
 
-                            // Load .link's linked scripts with cache
-                            if (cacheDB != null && cacheValid)
-                            { // Case of ScriptCache enabled
-                                FileInfo f = new FileInfo(linkFullPath);
-                                DB_ScriptCache scCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
-                                if (scCache != null &&
-                                    scCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
-                                    DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
-                                    scCache.FileSize == f.Length)
+                        // Load .link's linked scripts with cache
+                        if (cacheDB != null && cacheValid)
+                        { // Case of ScriptCache enabled
+                            FileInfo f = new FileInfo(linkFullPath);
+                            DB_ScriptCache scCache = cacheDB.FirstOrDefault(x => x.Hash == linkPath.GetHashCode());
+                            if (scCache != null &&
+                                scCache.Path.Equals(linkPath, StringComparison.Ordinal) &&
+                                DateTime.Equals(scCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                                scCache.FileSize == f.Length)
+                            {
+                                try
                                 {
-                                    try
+                                    using (MemoryStream ms = new MemoryStream(scCache.Serialized))
                                     {
-                                        using (MemoryStream ms = new MemoryStream(scCache.Serialized))
-                                        {
-                                            BinaryFormatter formatter = new BinaryFormatter();
-                                            link = formatter.Deserialize(ms) as Script;
-                                        }
-
-                                        if (link == null)
-                                        {
-                                            cacheValid = false;
-                                        }
-                                        else
-                                        {
-                                            link.Project = p.Project;
-                                            link.IsDirLink = false;
-                                            cached = 3;
-                                        }
+                                        BinaryFormatter formatter = new BinaryFormatter();
+                                        link = formatter.Deserialize(ms) as Script;
                                     }
-                                    catch { link = null; }
+
+                                    if (link == null)
+                                    {
+                                        cacheValid = false;
+                                    }
+                                    else
+                                    {
+                                        link.Project = sc.Project;
+                                        link.IsDirLink = false;
+                                        cached = 3;
+                                    }
                                 }
+                                catch { link = null; }
                             }
-
-                            if (link == null)
-                            {
-                                // TODO : Lazy loading of link, takes too much time at start
-                                string ext = Path.GetExtension(linkFullPath);
-                                ScriptType type = ScriptType.Script;
-                                if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
-                                    type = ScriptType.Link;
-                                string fullPath = Path.Combine(baseDir, linkFullPath);
-                                link = new Script(type, fullPath, fullPath, p.Project, ProjectRoot, null, false, false, false);
-
-                                Debug.Assert(p != null);
-                            }
-
-                            // Convert nested link to one-depth link
-                            if (link.Type == ScriptType.Script)
-                            {
-                                valid = true;
-                                break;
-                            }
-                            link = link.Link;
                         }
-                        while (link.Type != ScriptType.Script);
-                    }
-                    catch (Exception e)
-                    { // Parser Error
-                        logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
-                    }
 
-                    if (valid)
-                    {
-                        p.LinkLoaded = true;
-                        p.Link = link;
-                        worker?.ReportProgress(cached, Path.GetDirectoryName(p.TreePath));
-                    }
-                    else // Error
-                    {
-                        int idx = allProjectScripts.IndexOf(p);
-                        removeIdxs.Add(idx);
-                        worker?.ReportProgress(cached);
-                    }
-                });
-            }).ToArray();
-            Task.WaitAll(tasks);
+                        if (link == null)
+                        {
+                            // TODO : Lazy loading of link, takes too much time at start
+                            string ext = Path.GetExtension(linkFullPath);
+                            ScriptType type = ScriptType.Script;
+                            if (ext.Equals(".link", StringComparison.OrdinalIgnoreCase))
+                                type = ScriptType.Link;
+                            string fullPath = Path.Combine(baseDir, linkFullPath);
+                            link = new Script(type, fullPath, fullPath, sc.Project, ProjectRoot, null, false, false, false);
 
+                            Debug.Assert(sc != null);
+                        }
+
+                        // Convert nested link to one-depth link
+                        if (link.Type == ScriptType.Script)
+                        {
+                            valid = true;
+                            break;
+                        }
+                        link = link.Link;
+                    }
+                    while (link.Type != ScriptType.Script);
+                }
+                catch (Exception e)
+                { // Parser Error
+                    logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
+                }
+
+                if (valid)
+                {
+                    sc.LinkLoaded = true;
+                    sc.Link = link;
+                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                }
+                else // Error
+                {
+                    int idx = allProjectScripts.IndexOf(sc);
+                    removeIdxs.Add(idx);
+                    worker?.ReportProgress(cached);
+                }
+            });
+            
             // Remove malformed link
             var idxs = removeIdxs.OrderByDescending(x => x);
             foreach (int idx in idxs)
@@ -437,91 +433,87 @@ namespace PEBakery.Core
                 cacheDB = scriptCache.Table<DB_ScriptCache>().Where(x => true).ToArray();
 
             // ScriptParseInfo
-            var pList = new List<ScriptParseInfo>();
-            pList.AddRange(allScriptPathList.Select(x => new ScriptParseInfo(x.Path, x.Path, x.IsDir, false)));
-            pList.AddRange(allDirLinkPathList.Select(x => new ScriptParseInfo(x.RealPath, x.TreePath, x.IsDir, true)));
+            var spiList = new List<ScriptParseInfo>();
+            spiList.AddRange(allScriptPathList.Select(x => new ScriptParseInfo(x.Path, x.Path, x.IsDir, false)));
+            spiList.AddRange(allDirLinkPathList.Select(x => new ScriptParseInfo(x.RealPath, x.TreePath, x.IsDir, true)));
 
             // Load scripts from disk or cache
             bool cacheValid = true;
-            Task[] tasks = pList.Select(p =>
+            Parallel.ForEach(spiList, spi =>
             {
-                return Task.Run(() =>
+                int cached = 0;
+                Script sc = null;
+                try
                 {
-                    int cached = 0;
-                    Script sc = null;
+                    if (cacheDB != null && cacheValid)
+                    { // ScriptCache enabled
+                        FileInfo f = new FileInfo(spi.RealPath);
+                        string sPath = spi.TreePath.Remove(0, BaseDir.Length + 1); // 1 for \
+                        DB_ScriptCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
+                        if (pCache != null &&
+                            pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
+                            DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
+                            pCache.FileSize == f.Length)
+                        { // Cache Hit
+                            try
+                            {
+                                using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
+                                {
+                                    BinaryFormatter formatter = new BinaryFormatter();
+                                    sc = formatter.Deserialize(memStream) as Script;
+                                }
+
+                                if (sc == null)
+                                {
+                                    cacheValid = false;
+                                }
+                                else
+                                {
+                                    sc.Project = this;
+                                    sc.IsDirLink = spi.IsDirLink;
+                                    cached = 1;
+                                }
+                            }
+                            catch { sc = null; } // Cache Error
+                        }
+                    }
+
+                    if (sc == null)
+                    { // Cache Miss
+                        bool isMainScript = spi.RealPath.Equals(mainScriptPath, StringComparison.Ordinal);
+
+                        // TODO : Lazy loading of link, takes too much time at start
+                        // Directory scripts will not be directly used (so level information is dummy)
+                        // They are mainly used to store RealPath and TreePath information.
+                        if (spi.IsDir) // level information is empty
+                            sc = new Script(ScriptType.Directory, spi.RealPath, spi.TreePath, this, ProjectRoot, null, false, false, spi.IsDirLink);
+                        else if (Path.GetExtension(spi.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
+                            sc = new Script(ScriptType.Link, spi.RealPath, spi.TreePath, this, ProjectRoot, null, isMainScript, false, false);
+                        else
+                            sc = new Script(ScriptType.Script, spi.RealPath, spi.TreePath, this, ProjectRoot, null, isMainScript, false, spi.IsDirLink);
+
+                        Debug.Assert(sc != null);
+                    }
+
+                    listLock.EnterWriteLock();
                     try
                     {
-                        if (cacheDB != null && cacheValid)
-                        { // ScriptCache enabled
-                            FileInfo f = new FileInfo(p.RealPath);
-                            string sPath = p.TreePath.Remove(0, BaseDir.Length + 1); // 1 for \
-                            DB_ScriptCache pCache = cacheDB.FirstOrDefault(x => x.Hash == sPath.GetHashCode());
-                            if (pCache != null &&
-                                pCache.Path.Equals(sPath, StringComparison.Ordinal) &&
-                                DateTime.Equals(pCache.LastWriteTimeUtc, f.LastWriteTimeUtc) &&
-                                pCache.FileSize == f.Length)
-                            { // Cache Hit
-                                try
-                                {
-                                    using (MemoryStream memStream = new MemoryStream(pCache.Serialized))
-                                    {
-                                        BinaryFormatter formatter = new BinaryFormatter();
-                                        sc = formatter.Deserialize(memStream) as Script;
-                                    }
-                                    
-                                    if (sc == null)
-                                    {
-                                        cacheValid = false;
-                                    }
-                                    else
-                                    {
-                                        sc.Project = this;
-                                        sc.IsDirLink = p.IsDirLink;
-                                        cached = 1;
-                                    }
-                                }
-                                catch { sc = null; } // Cache Error
-                            }
-                        }
-
-                        if (sc == null)
-                        { // Cache Miss
-                            bool isMainScript = p.RealPath.Equals(mainScriptPath, StringComparison.Ordinal);
-
-                            // TODO : Lazy loading of link, takes too much time at start
-                            // Directory scripts will not be directly used (so level information is dummy)
-                            // They are mainly used to store RealPath and TreePath information.
-                            if (p.IsDir) // level information is empty
-                                sc = new Script(ScriptType.Directory, p.RealPath, p.TreePath, this, ProjectRoot, null, false, false, p.IsDirLink);
-                            else if (Path.GetExtension(p.TreePath).Equals(".link", StringComparison.OrdinalIgnoreCase))
-                                sc = new Script(ScriptType.Link, p.RealPath, p.TreePath, this, ProjectRoot, null, isMainScript, false, false);
-                            else
-                                sc = new Script(ScriptType.Script, p.RealPath, p.TreePath, this, ProjectRoot, null, isMainScript, false, p.IsDirLink);
-
-                            Debug.Assert(sc != null);
-                        }
-
-                        listLock.EnterWriteLock();
-                        try
-                        {
-                            AllScripts.Add(sc);
-                        }
-                        finally
-                        {
-                            listLock.ExitWriteLock();
-                        }
-
-                        worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                        AllScripts.Add(sc);
                     }
-                    catch (Exception e)
+                    finally
                     {
-                        logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
-                        worker?.ReportProgress(cached);
+                        listLock.ExitWriteLock();
                     }
-                });
-            }).ToArray();
-            Task.WaitAll(tasks);
 
+                    worker?.ReportProgress(cached, Path.GetDirectoryName(sc.TreePath));
+                }
+                catch (Exception e)
+                {
+                    logs.Add(new LogInfo(LogState.Error, Logger.LogExceptionMessage(e)));
+                    worker?.ReportProgress(cached);
+                }
+            });
+            
             // mainScriptIdx
             SetMainScriptIdx();
 
