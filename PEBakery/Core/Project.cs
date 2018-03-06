@@ -523,10 +523,10 @@ namespace PEBakery.Core
         #region PostLoad, Sort
         public void PostLoad()
         {
-            this.AllScripts = InternalSortScripts(AllScripts);
+            AllScripts = InternalSortScripts(AllScripts);
             SetMainScriptIdx();
 
-            this.Variables = new Variables(this);
+            Variables = new Variables(this);
         }
 
         private List<Script> InternalSortScripts(List<Script> scList)
@@ -534,7 +534,7 @@ namespace PEBakery.Core
             Tree<Script> pTree = new Tree<Script>();
             Dictionary<string, int> dirDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-            int rootId = pTree.AddNode(0, this.MainScript); // Root is script.project
+            int rootId = pTree.AddNode(0, MainScript); // Root is script.project
 
             foreach (Script sc in scList)
             {
@@ -601,10 +601,7 @@ namespace PEBakery.Core
 
             List<Script> newList = new List<Script>();
             foreach (Script sc in pTree)
-            {
-               //  if (sc.Type != ScriptType.Directory)
-                    newList.Add(sc);
-            }
+                newList.Add(sc);
 
             return newList;
         }

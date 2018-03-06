@@ -125,7 +125,7 @@ namespace PEBakery.Core
             logs.Add(SetValue(VarsType.Fixed, "PEBakeryVersion", typeof(App).Assembly.GetName().Version.ToString()));
             #endregion
 
-            #region Project Variables
+            #region Project Title
             // Read from MainScript
             string fullPath = project.MainScript.RealPath;
             IniKey[] keys = new IniKey[]
@@ -180,7 +180,7 @@ namespace PEBakery.Core
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            #region Project Variables
+            #region SourceDir, TargetDir, ISOFile
             // Read from MainScript
             string fullPath = project.MainScript.RealPath;
             IniKey[] keys = new IniKey[]
@@ -193,14 +193,12 @@ namespace PEBakery.Core
             keys = Ini.GetKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
-            // If PathSetting is set to False, ignore SourceDir, TargetDir and ISOFile
+            // If PathSetting is set to False, do not set SourceDir, TargetDir and ISOFile
             bool pathEnabled = true;
             string pathEnabledStr = dict["PathSetting"];
             if (pathEnabledStr != null && pathEnabledStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                 pathEnabled = false;
 
-            string targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
-            string isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
             if (pathEnabled)
             {
                 // Get SourceDir
@@ -220,26 +218,27 @@ namespace PEBakery.Core
                     }
                 }
 
-                // Set SourceDir
-                logs.Add(SetValue(VarsType.Fixed, "SourceDir", sourceDir));
+                // SourceDir
+                logs.Add(SetValue(VarsType.Global, "SourceDir", sourceDir));
 
+                // TargetDir
                 string targetDirStr = dict["TargetDir"];
+                string targetDir = Path.Combine("%BaseDir%", "Target", project.ProjectName);
                 if (!string.IsNullOrEmpty(targetDirStr))
                     targetDir = targetDirStr;
+                logs.Add(SetValue(VarsType.Global, "TargetDir", targetDir));
 
+                // ISOFile, ISODir
                 string isoFileStr = dict["ISOFile"];
+                string isoFile = Path.Combine("%BaseDir%", "ISO", project.ProjectName + ".iso");
                 if (!string.IsNullOrEmpty(isoFileStr))
                     isoFile = isoFileStr;
+                logs.Add(SetValue(VarsType.Global, "ISOFile", isoFile));
+                logs.Add(SetValue(VarsType.Global, "ISODir", FileHelper.GetDirNameEx(isoFile)));
             }
 
             // ProjectDir
             logs.Add(SetValue(VarsType.Global, "ProjectDir", Path.Combine("%BaseDir%", "Projects", project.ProjectName)));
-            // TargetDir
-            logs.Add(SetValue(VarsType.Global, "TargetDir", targetDir));
-            // ISOFile
-            logs.Add(SetValue(VarsType.Global, "ISOFile", isoFile));
-            // ISODir
-            logs.Add(SetValue(VarsType.Global, "ISODir", FileHelper.GetDirNameEx(isoFile)));
             #endregion
 
             #region Project Variables

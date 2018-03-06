@@ -549,43 +549,42 @@ namespace PEBakery.Tests.Core.Command
         { // DirMove,<SrcDir>,<DestPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMove);
+            string varSrcDir = Path.Combine("%TestBench%", "CommandFile", SrcDir_Dir);
+            string srcDir = StringEscaper.Preprocess(s, varSrcDir);
+            string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ABCD,{scriptDestDir}\XYZ", "ABCD", "XYZ");
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ABDE,{scriptDestDir}\ABCD", "ABDE", Path.Combine("ABCD", "ABDE"));
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\XYZ,{scriptDestDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
-            DirMove_Template(s, $@"DirMove,{scriptDestDir}\ACDE.txt,{scriptDestDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
-        }
-
-        private void DirMove_Template(EngineState s, string rawCode, string srcDirName, string destDirName, ErrorCheck check = ErrorCheck.Success)
-        {
-            string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
-
-            string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_DirMove);
-
-            string srcFullPath = Path.Combine(destDir, srcDirName);
-            string destFullPath = Path.Combine(destDir, destDirName);
-
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
-            FileHelper.DirectoryCopy(srcDir, destDir, true, true);
-            try
+            void Template(string rawCode, string srcDirName, string destDirName, ErrorCheck check = ErrorCheck.Success)
             {
-                EngineTests.Eval(s, rawCode, CodeType.DirMove, check);
+                string srcFullPath = Path.Combine(destDir, srcDirName);
+                string destFullPath = Path.Combine(destDir, destDirName);
 
-                if (check == ErrorCheck.Success)
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
+                FileHelper.DirectoryCopy(srcDir, destDir, true, true);
+                try
                 {
-                    Assert.IsFalse(Directory.Exists(srcFullPath));
-                    Assert.IsTrue(Directory.Exists(destFullPath));
+                    EngineTests.Eval(s, rawCode, CodeType.DirMove, check);
+
+                    if (check == ErrorCheck.Success)
+                    {
+                        Assert.IsFalse(Directory.Exists(srcFullPath));
+                        Assert.IsTrue(Directory.Exists(destFullPath));
+                    }
+                }
+                finally
+                {
+                    Directory.Delete(destDir, true);
                 }
             }
-            finally
-            {
-                Directory.Delete(destDir, true);
-            }
+
+            // string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMove);
+            Template($@"DirMove,{destDir}\ABCD,{destDir}\XYZ", "ABCD", "XYZ");
+            Template($@"DirMove,{destDir}\ABDE,{destDir}\ABCD", "ABDE", Path.Combine("ABCD", "ABDE"));
+            Template($@"DirMove,{destDir}\XYZ,{destDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
+            Template($@"DirMove,{destDir}\ACDE.txt,{destDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
         }
+
+        
         #endregion
 
         #region DirMake
