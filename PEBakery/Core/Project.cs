@@ -184,17 +184,68 @@ namespace PEBakery.Core
                 foreach (string path in paths)
                 {
                     // Remove asterisk
+                    if (AsteriskBugDirLink && StringHelper.IsWildcard(Path.GetFileName(path)))
+                    { // Simulate WinBuilder *.* bug
+                        string dirPath = Path.GetDirectoryName(path);
+                        if (dirPath == null)
+                            continue;
+
+                        if (Path.IsPathRooted(dirPath))
+                        { // Absolute Path
+                            string[] subDirs = Directory.GetDirectories(dirPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
+                                dirLinkPathList.AddRange(tuples);
+                            }
+                        }
+                        else
+                        { // Relative to %BaseDir%
+                            string fullPath = Path.Combine(baseDir, dirPath);
+                            string[] subDirs = Directory.GetDirectories(fullPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(subDir), x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
+                                dirLinkPathList.AddRange(tuples);
+                            }
+                        }
+                    }
+                    else
+                    { // Ignore wildcard
+                        if (Path.IsPathRooted(path))
+                        { // Absolute Path
+                            var tuples = FileHelper.GetFilesExWithDirs(path, "*.script", SearchOption.AllDirectories)
+                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(path), x.Path.Substring(path.Length).TrimStart('\\')), x.IsDir));
+                            dirLinkPathList.AddRange(tuples);
+                        }
+                        else
+                        { // Relative to %BaseDir%
+                            string fullPath = Path.Combine(baseDir, path);
+                            var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
+                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(path), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
+                            dirLinkPathList.AddRange(tuples);
+                        }
+                    }
+
+                    /*
                     string dirPath = path;
-                    if (StringHelper.IsWildcard(Path.GetFileName(path)))
-                        dirPath = Path.GetDirectoryName(path);
+                    dirPath = Path.GetDirectoryName(path);
                     if (dirPath == null)
                         continue;
 
                     if (Path.IsPathRooted(dirPath))
                     { // Absolute Path
-                        if (AsteriskBugDirLink)
+                        if (AsteriskBugDirLink && Path.GetFileName(dirPath).Equals("*.*", StringComparison.Ordinal))
                         { // Simulate WinBuilder *.* bug
-
+                            string[] subDirs = Directory.GetDirectories(dirPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => (x.Path, Path.Combine(prefix, x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
+                                dirLinkPathList.AddRange(tuples);
+                            }
                         }
                         else
                         {
@@ -205,19 +256,25 @@ namespace PEBakery.Core
                     }
                     else
                     { // Relative Path to %BaseDir%
-
-                        if (AsteriskBugDirLink)
+                        string fullPath = Path.Combine(baseDir, dirPath);
+                        if (AsteriskBugDirLink && Path.GetFileName(dirPath).Equals("*.*", StringComparison.Ordinal))
                         { // Simulate WinBuilder *.* bug
-
+                            string[] subDirs = Directory.GetDirectories(fullPath);
+                            foreach (string subDir in subDirs)
+                            {
+                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
+                                    .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
+                                dirLinkPathList.AddRange(tuples);
+                            }
                         }
                         else
                         { 
-                            string fullPath = Path.Combine(baseDir, dirPath);
                             var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
                                 .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
                             dirLinkPathList.AddRange(tuples);
                         }
                     }
+                    */
                 }
             }
 

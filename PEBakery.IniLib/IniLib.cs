@@ -1372,8 +1372,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Parse INI style strings into dictionary
         /// </summary>
-        /// <param name="lines"></param>
-        /// <returns></returns>
         public static Dictionary<string, string> ParseIniLinesIniStyle(IEnumerable<string> lines)
         {
             // This regex exclude %A%=BCD form.
@@ -1382,11 +1380,8 @@ namespace PEBakery.IniLib
         }
 
         /// <summary>
-        /// Parse PEBakery-Variable style strings into dictionary
+        /// Parse PEBakery-Variable style strings into dictionary, format of %VarKey%=VarValue. 
         /// </summary>
-        /// There in format of %VarKey%=VarValue
-        /// <param name="lines"></param>
-        /// <returns></returns>
         public static Dictionary<string, string> ParseIniLinesVarStyle(IEnumerable<string> lines)
         {
             // Used [^=] to prevent '=' in key.
@@ -1396,9 +1391,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Parse strings with regex.
         /// </summary>
-        /// <param name="regex"></param>
-        /// <param name="lines"></param>
-        /// <returns></returns>
         private static Dictionary<string, string> InternalParseIniLinesRegex(string regex, IEnumerable<string> lines)
         {
             Dictionary<string, string> dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -1422,9 +1414,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Parse section to dictionary.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <returns></returns>
         public static Dictionary<string, string> ParseIniSectionToDict(string file, string section)
         {
             List<string> lines = ParseIniSection(file, section);
@@ -1438,12 +1427,18 @@ namespace PEBakery.IniLib
             Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
-                string line = string.Empty;
+                string line;
                 bool appendState = false;
-                int idx = 0;
                 while ((line = reader.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();
+
+                    // Ignore comment
+                    if (line.StartsWith("#", StringComparison.Ordinal) ||
+                        line.StartsWith(";", StringComparison.Ordinal) ||
+                        line.StartsWith("//", StringComparison.Ordinal)) 
+                        continue;
+
                     if (line.StartsWith("[", StringComparison.Ordinal) &&
                         line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
@@ -1454,10 +1449,14 @@ namespace PEBakery.IniLib
                         if (section.Equals(foundSection, StringComparison.OrdinalIgnoreCase))
                             appendState = true;
                     }
-                    else if ((idx = line.IndexOf('=')) != -1 && idx != 0)
-                    { // valid ini key, and not empty
-                        if (appendState)
-                            lines.Add(line);
+                    else
+                    {
+                        int idx = 0;
+                        if ((idx = line.IndexOf('=')) != -1 && idx != 0)
+                        { // valid ini key, and not empty
+                            if (appendState)
+                                lines.Add(line);
+                        }
                     }
                 }
 
@@ -1476,11 +1475,18 @@ namespace PEBakery.IniLib
             Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
-                string line = string.Empty;
+                string line;
                 bool appendState = false;
                 while ((line = reader.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();
+
+                    // Ignore comment
+                    if (line.StartsWith("#", StringComparison.Ordinal) ||
+                        line.StartsWith(";", StringComparison.Ordinal) ||
+                        line.StartsWith("//", StringComparison.Ordinal))
+                        continue;
+
                     if (line.StartsWith("[", StringComparison.Ordinal) &&
                         line.EndsWith("]", StringComparison.Ordinal))
                     { // Start of section
@@ -1509,9 +1515,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Parse section to dictionary array.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <returns></returns>
         public static Dictionary<string, string>[] ParseSectionsToDicts(string file, string[] sections)
         {
             List<string>[] lines = ParseIniSections(file, sections);
@@ -1523,9 +1526,6 @@ namespace PEBakery.IniLib
         /// <summary>
         /// Parse sections to string 2D array.
         /// </summary>
-        /// <param name="file"></param>
-        /// <param name="section"></param>
-        /// <returns></returns>
         public static List<string>[] ParseIniSections(string file, IEnumerable<string> sectionList)
         {
             string[] sections = sectionList.Distinct().ToArray(); // Remove duplicate
@@ -1537,9 +1537,8 @@ namespace PEBakery.IniLib
             Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
-                string line = string.Empty;
+                string line;
                 int currentSection = -1; // -1 == empty, 0, 1, ... == index value of sections array
-                int idx = 0;
                 List<int> processedSectionIdxs = new List<int>();
 
                 while ((line = reader.ReadLine()) != null)
@@ -1569,10 +1568,14 @@ namespace PEBakery.IniLib
                         if (!isSectionFound)
                             currentSection = -1;
                     }
-                    else if ((idx = line.IndexOf('=')) != -1 && idx != 0)
-                    { // valid ini key
-                        if (currentSection != -1) // current section is target, and key is empty
-                            lines[currentSection].Add(line);
+                    else
+                    {
+                        int idx;
+                        if ((idx = line.IndexOf('=')) != -1 && idx != 0)
+                        { // valid ini key
+                            if (currentSection != -1) // current section is target, and key is empty
+                                lines[currentSection].Add(line);
+                        }
                     }
                 }
 
@@ -1581,12 +1584,12 @@ namespace PEBakery.IniLib
                     StringBuilder b = new StringBuilder("Section [");
                     for (int i = 0; i < sections.Length; i++)
                     {
-                        if (processedSectionIdxs.Contains(i) == false)
-                        {
-                            b.Append(sections[i]);
-                            if (i + 1 < sections.Length)
-                                b.Append(", ");
-                        }
+                        if (processedSectionIdxs.Contains(i))
+                            continue;
+
+                        b.Append(sections[i]);
+                        if (i + 1 < sections.Length)
+                            b.Append(", ");
                     }
                     b.Append("] not found");
                     throw new SectionNotFoundException(b.ToString());
@@ -1632,7 +1635,7 @@ namespace PEBakery.IniLib
                         return dict;
                     }
 
-                    string line = string.Empty;
+                    string line;
                     string section = null;
 
                     while ((line = reader.ReadLine()) != null)
@@ -1687,7 +1690,7 @@ namespace PEBakery.IniLib
             Encoding encoding = IniHelper.DetectTextEncoding(file);
             using (StreamReader reader = new StreamReader(file, encoding, true))
             {
-                string line = string.Empty;
+                string line;
                 while ((line = reader.ReadLine()) != null)
                 { // Read text line by line
                     line = line.Trim();

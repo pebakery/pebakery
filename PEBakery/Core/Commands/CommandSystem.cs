@@ -221,8 +221,8 @@ namespace PEBakery.Core.Commands
                 case SystemType.RescanScripts:
                 case SystemType.LoadAll:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadAll));
-                        SystemInfo_LoadAll subInfo = info.SubInfo as SystemInfo_LoadAll;
+                        // Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadAll));
+                        // SystemInfo_LoadAll subInfo = info.SubInfo as SystemInfo_LoadAll;
 
                         // Reload Project
                         AutoResetEvent resetEvent = null;
@@ -231,8 +231,7 @@ namespace PEBakery.Core.Commands
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
                             resetEvent = w.StartLoadWorker(true);                
                         });
-                        if (resetEvent != null)
-                            resetEvent.WaitOne();
+                        resetEvent?.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Reload project [{cmd.Addr.Script.Project.ProjectName}]"));
                     }

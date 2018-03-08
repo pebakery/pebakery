@@ -878,6 +878,7 @@ namespace PEBakery.WPF
 
             IniKey[] keys = new IniKey[]
             {
+                new IniKey("Project", "DefaultProject"), // String
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr)), // Boolean
@@ -896,7 +897,6 @@ namespace PEBakery.WPF
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_InterfaceButton), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DelayedLogging), logStr)), // Boolean
-                new IniKey("Project", "DefaultProject"), // String
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirCopy), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_AsteriskBugDirLink), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_FileRenameCanMoveDir), compatStr)), // Boolean
@@ -911,198 +911,113 @@ namespace PEBakery.WPF
             keys = Ini.GetKeys(settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
+            (string Section, string Key) SplitSectionKey(string varName)
+            {
+                int sIdx = varName.IndexOf('_');
+                string section = varName.Substring(0, sIdx);
+                string key = varName.Substring(sIdx + 1);
+                return (section, key);
+            }
+
+            string ParseString(string varName, string defaultValue)
+            {
+                string valStr = dict[varName];
+                if (valStr == null) // No warning, just use default value
+                    return defaultValue;
+                return valStr;
+            }
+
+            bool ParseBoolean(string varName, bool defaultValue)
+            {
+                string valStr = dict[varName];
+                if (valStr == null) // No warning, just use default value
+                    return defaultValue;
+
+                if (valStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (valStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                (string section, string key) = SplitSectionKey(varName);
+                App.Logger.System_Write(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+                return defaultValue;
+            }
+
+            int ParseInteger(string varName, int defaultValue, int min, int max)
+            {
+                string valStr = dict[varName];
+                if (valStr == null) // No warning, just use default value
+                    return defaultValue;
+
+                if (int.TryParse(valStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int valInt))
+                {
+                    if (min == -1)
+                    { // No Min
+                        if (max == -1) // No Max
+                            return valInt;
+                        if (valInt <= max) // Have Min
+                            return valInt;
+                    }
+                    else
+                    { // Have Min
+                        if (max == -1 && min <= valInt) // No Max
+                            return valInt;
+                        if (min <= valInt && valInt <= max) // Have Min
+                            return valInt;
+                    }
+                }
+
+                (string section, string key) = SplitSectionKey(varName);
+                App.Logger.System_Write(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+                return defaultValue;
+            }
+
             // Project
             if (dict["Project_DefaultProject"] != null)
                 Project_DefaultStr = dict["Project_DefaultProject"];
 
-            // General - EnableLongFilePath (Default = False)
-            if (dict[nameof(General_EnableLongFilePath)] != null)
-            {
-                if (dict[nameof(General_EnableLongFilePath)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    General_EnableLongFilePath = true;
-            }
+            // General
+            General_EnableLongFilePath = ParseBoolean(nameof(General_EnableLongFilePath), General_EnableLongFilePath);
+            General_OptimizeCode = ParseBoolean(nameof(General_OptimizeCode), General_OptimizeCode);
+            General_ShowLogAfterBuild = ParseBoolean(nameof(General_ShowLogAfterBuild), General_ShowLogAfterBuild);
+            General_StopBuildOnError = ParseBoolean(nameof(General_StopBuildOnError), General_StopBuildOnError);
 
-            // General - EnableLongFilePath (Default = True)
-            if (dict[nameof(General_OptimizeCode)] != null)
-            {
-                if (dict[nameof(General_OptimizeCode)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    General_OptimizeCode = false;
-            }
-
-            // General - ShowLogAfterBuild (Default = True)
-            if (dict[nameof(General_ShowLogAfterBuild)] != null)
-            {
-                if (dict[nameof(General_ShowLogAfterBuild)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    General_ShowLogAfterBuild = false;
-            }
-
-            // General - StopBuildOnError (Default = True)
-            if (dict[nameof(General_StopBuildOnError)] != null)
-            {
-                if (dict[nameof(General_StopBuildOnError)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    General_StopBuildOnError = false;
-            }
-
-            // Interface - MonospaceFont (Default = Consolas, Regular, 12pt
+            // Interface
             FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
             FontWeight monoFontWeight = Interface_MonospaceFont.FontWeight;
-            int monoFontSize = Interface_MonospaceFont.FontSizeInPoint;
             if (dict[nameof(Interface_MonospaceFontFamily)] != null)
                 monoFontFamiliy = new FontFamily(dict[nameof(Interface_MonospaceFontFamily)]);
             if (dict[nameof(Interface_MonospaceFontWeight)] != null)
                 monoFontWeight = FontHelper.FontWeightConvert_StringToWPF(dict[nameof(Interface_MonospaceFontWeight)]);
-            if (dict[nameof(Interface_MonospaceFontSize)] != null)
-            {
-                if (int.TryParse(dict[nameof(Interface_MonospaceFontSize)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int newMonoFontSize))
-                {
-                    if (0 < newMonoFontSize)
-                        monoFontSize = newMonoFontSize;
-                }
-            }
+            int monoFontSize = ParseInteger(nameof(Interface_MonospaceFontSize), Interface_MonospaceFont.FontSizeInPoint, 1, -1);
             Interface_MonospaceFont = new FontHelper.WPFFont(monoFontFamiliy, monoFontWeight, monoFontSize);
 
-            // Interface - ScaleFactor (Default = 100)
-            if (dict[nameof(Interface_ScaleFactor)] != null)
-            {
-                if (int.TryParse(dict[nameof(Interface_ScaleFactor)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int scaleFactor))
-                {
-                    if (100 <= scaleFactor && scaleFactor <= 200)
-                        Interface_ScaleFactor = scaleFactor;
-                }
-            }
+            Interface_ScaleFactor = ParseInteger(nameof(Interface_ScaleFactor), (int)Interface_ScaleFactor, 100, 200);
+            Interface_UseCustomEditor = ParseBoolean(nameof(Interface_UseCustomEditor), Interface_UseCustomEditor);
+            Interface_CustomEditorPath = ParseString(nameof(Interface_CustomEditorPath), Interface_CustomEditorPath);
+            Interface_DisplayShellExecuteConOut = ParseBoolean(nameof(Interface_DisplayShellExecuteConOut), Interface_DisplayShellExecuteConOut);
 
-            // Interface_UseCustomEditor (Default = False)
-            if (dict[nameof(Interface_UseCustomEditor)] != null)
-            {
-                if (dict[nameof(Interface_UseCustomEditor)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Interface_UseCustomEditor = true;
-            }
+            // Script
+            Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
+            Script_AutoSyntaxCheck = ParseBoolean(nameof(Script_AutoSyntaxCheck), Script_AutoSyntaxCheck);
 
-            // str_Interface_CustomEditorPath
-            if (dict[nameof(Interface_CustomEditorPath)] != null)
-                Interface_CustomEditorPath = dict[nameof(Interface_CustomEditorPath)];
+            // Log
+            Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
+            Log_Macro = ParseBoolean(nameof(Log_Macro), Log_Macro);
+            Log_Comment = ParseBoolean(nameof(Log_Comment), Log_Comment);
+            Log_InterfaceButton = ParseBoolean(nameof(Log_InterfaceButton), Log_InterfaceButton);
+            Log_DelayedLogging = ParseBoolean(nameof(Log_DelayedLogging), Log_DelayedLogging);
 
-            // Interface - DisplayShellExecuteStdOut (Default = True)
-            if (dict[nameof(Interface_DisplayShellExecuteConOut)] != null)
-            {
-                if (dict[nameof(Interface_DisplayShellExecuteConOut)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Interface_DisplayShellExecuteConOut = false;
-            }
-
-            // Script - EnableCache (Default = True)
-            if (dict[nameof(Script_EnableCache)] != null)
-            {
-                if (dict[nameof(Script_EnableCache)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Script_EnableCache = false;
-            }
-
-            // Script - AutoSyntaxCheck (Default = False)
-            if (dict[nameof(Script_AutoSyntaxCheck)] != null)
-            {
-                if (dict[nameof(Script_AutoSyntaxCheck)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Script_AutoSyntaxCheck = true;
-            }
-
-            // Log - DebugLevel (Default = 0)
-            if (dict[nameof(Log_DebugLevel)] != null)
-            {
-                if (int.TryParse(dict[nameof(Log_DebugLevel)], NumberStyles.Integer, CultureInfo.InvariantCulture, out int debugLevelIdx))
-                {
-                    if (0 <= debugLevelIdx && debugLevelIdx <= 2)
-                        Log_DebugLevelIndex = debugLevelIdx;
-                }
-            }
-
-            // Log - Macro (Default = True)
-            if (dict[nameof(Log_Macro)] != null)
-            {
-                if (dict[nameof(Log_Macro)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Log_Macro = false;
-            }
-
-            // Log - Comment (Default = True)
-            if (dict[nameof(Log_Comment)] != null)
-            {
-                if (dict[nameof(Log_Comment)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Log_Comment = false;
-            }
-
-            // Log - DisableInInterface (Default = True)
-            if (dict[nameof(Log_InterfaceButton)] != null)
-            {
-                if (dict[nameof(Log_InterfaceButton)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Log_InterfaceButton = false;
-            }
-
-            // Log - DelayedLogging (Default = False)
-            if (dict[nameof(Log_DelayedLogging)] != null)
-            {
-                if (dict[nameof(Log_DelayedLogging)].Equals("True", StringComparison.OrdinalIgnoreCase))
-                    Log_DelayedLogging = true;
-            }
-
-            // Compatibility - AseteriskBugDirCopy (Default = True)
-            if (dict[nameof(Compat_AsteriskBugDirCopy)] != null)
-            {
-                if (dict[nameof(Compat_AsteriskBugDirCopy)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_AsteriskBugDirCopy = false;
-            }
-
-            // Compatibility - AseteriskBugDirLink (Default = True)
-            if (dict[nameof(Compat_AsteriskBugDirLink)] != null)
-            {
-                if (dict[nameof(Compat_AsteriskBugDirLink)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_AsteriskBugDirLink = false;
-            }
-
-            // Compatibility - FileRenameCanMoveDir (Default = True)
-            if (dict[nameof(Compat_FileRenameCanMoveDir)] != null)
-            {
-                if (dict[nameof(Compat_FileRenameCanMoveDir)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_FileRenameCanMoveDir = false;
-            }
-
-            // Compatibility - LegacyBranchCondition (Default = True)
-            if (dict[nameof(Compat_LegacyBranchCondition)] != null)
-            {
-                if (dict[nameof(Compat_LegacyBranchCondition)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_LegacyBranchCondition = false;
-            }
-
-            // Compatibility - RegWriteLegacy (Default = True)
-            if (dict[nameof(Compat_RegWriteLegacy)] != null)
-            {
-                if (dict[nameof(Compat_RegWriteLegacy)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_RegWriteLegacy = false;
-            }
-
-            // Compatibility - IgnoreWidthOfWebLabel (Default = True)
-            if (dict[nameof(Compat_IgnoreWidthOfWebLabel)] != null)
-            {
-                if (dict[nameof(Compat_IgnoreWidthOfWebLabel)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_IgnoreWidthOfWebLabel = false;
-            }
-
-            // Compatibility - DisableBevelCaption (Default = True)
-            if (dict[nameof(Compat_DisableBevelCaption)] != null)
-            {
-                if (dict[nameof(Compat_DisableBevelCaption)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_DisableBevelCaption = false;
-            }
-
-            // Compatibility - OverridableFixedVariables (Default = True)
-            if (dict[nameof(Compat_OverridableFixedVariables)] != null)
-            {
-                if (dict[nameof(Compat_OverridableFixedVariables)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_OverridableFixedVariables = false;
-            }
-
-            // Compatibility - EnableEnvironmentVariables (Default = True)
-            if (dict[nameof(Compat_EnableEnvironmentVariables)] != null)
-            {
-                if (dict[nameof(Compat_EnableEnvironmentVariables)].Equals("False", StringComparison.OrdinalIgnoreCase))
-                    Compat_EnableEnvironmentVariables = false;
-            }
+            // Compatibility
+            Compat_AsteriskBugDirCopy = ParseBoolean(nameof(Compat_AsteriskBugDirCopy), Compat_AsteriskBugDirCopy);
+            Compat_AsteriskBugDirLink = ParseBoolean(nameof(Compat_AsteriskBugDirLink), Compat_AsteriskBugDirLink);
+            Compat_FileRenameCanMoveDir = ParseBoolean(nameof(Compat_FileRenameCanMoveDir), Compat_FileRenameCanMoveDir);
+            Compat_LegacyBranchCondition = ParseBoolean(nameof(Compat_LegacyBranchCondition), Compat_LegacyBranchCondition);
+            Compat_RegWriteLegacy = ParseBoolean(nameof(Compat_RegWriteLegacy), Compat_RegWriteLegacy);
+            Compat_IgnoreWidthOfWebLabel = ParseBoolean(nameof(Compat_IgnoreWidthOfWebLabel), Compat_IgnoreWidthOfWebLabel);
+            Compat_DisableBevelCaption = ParseBoolean(nameof(Compat_DisableBevelCaption), Compat_DisableBevelCaption);
+            Compat_OverridableFixedVariables = ParseBoolean(nameof(Compat_OverridableFixedVariables), Compat_OverridableFixedVariables);
+            Compat_EnableEnvironmentVariables = ParseBoolean(nameof(Compat_EnableEnvironmentVariables), Compat_EnableEnvironmentVariables);
         }
 
         public void WriteToFile()
@@ -1200,23 +1115,23 @@ namespace PEBakery.WPF
             {
                 MainWindow w = Application.Current.MainWindow as MainWindow;
                 Projects = w.Projects;
-            });
 
-            bool foundDefault = false;
-            List<string> projNameList = Projects.ProjectNames;
-            Project_List = new ObservableCollection<string>();
-            for (int i = 0; i < projNameList.Count; i++)
-            {
-                Project_List.Add(projNameList[i]);
-                if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
+                bool foundDefault = false;
+                List<string> projNameList = Projects.ProjectNames;
+                Project_List = new ObservableCollection<string>();
+                for (int i = 0; i < projNameList.Count; i++)
                 {
-                    foundDefault = true;
-                    Project_SelectedIndex = Project_DefaultIndex = i;
+                    Project_List.Add(projNameList[i]);
+                    if (projNameList[i].Equals(Project_DefaultStr, StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundDefault = true;
+                        Project_SelectedIndex = Project_DefaultIndex = i;
+                    }
                 }
-            }
 
-            if (foundDefault == false)
-                Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
+                if (foundDefault == false)
+                    Project_SelectedIndex = Project_DefaultIndex = Projects.Count - 1;
+            });
         }
         #endregion
 
