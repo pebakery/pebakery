@@ -183,13 +183,10 @@ namespace PEBakery.Core
                 var paths = Ini.ParseRawSection(linkFile, "Links").Select(x => x.Trim()).Where(x => x.Length != 0);
                 foreach (string path in paths)
                 {
-                    // Remove asterisk
-                    if (AsteriskBugDirLink && StringHelper.IsWildcard(Path.GetFileName(path)))
+                    bool isWildcard = StringHelper.IsWildcard(Path.GetFileName(path));
+                    if (AsteriskBugDirLink && isWildcard)
                     { // Simulate WinBuilder *.* bug
                         string dirPath = Path.GetDirectoryName(path);
-                        if (dirPath == null)
-                            continue;
-
                         if (Path.IsPathRooted(dirPath))
                         { // Absolute Path
                             string[] subDirs = Directory.GetDirectories(dirPath);
@@ -214,17 +211,21 @@ namespace PEBakery.Core
                     }
                     else
                     { // Ignore wildcard
-                        if (Path.IsPathRooted(path))
+                        string dirPath = path;
+                        if (isWildcard)
+                            dirPath = Path.GetDirectoryName(path);
+
+                        if (Path.IsPathRooted(dirPath))
                         { // Absolute Path
-                            var tuples = FileHelper.GetFilesExWithDirs(path, "*.script", SearchOption.AllDirectories)
-                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(path), x.Path.Substring(path.Length).TrimStart('\\')), x.IsDir));
+                            var tuples = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
+                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(dirPath.Length).TrimStart('\\')), x.IsDir));
                             dirLinkPathList.AddRange(tuples);
                         }
                         else
                         { // Relative to %BaseDir%
-                            string fullPath = Path.Combine(baseDir, path);
+                            string fullPath = Path.Combine(baseDir, dirPath);
                             var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
-                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(path), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
+                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
                             dirLinkPathList.AddRange(tuples);
                         }
                     }
