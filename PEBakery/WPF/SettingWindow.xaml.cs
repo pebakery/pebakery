@@ -919,13 +919,7 @@ namespace PEBakery.WPF
                 return (section, key);
             }
 
-            string ParseString(string varName, string defaultValue)
-            {
-                string valStr = dict[varName];
-                if (valStr == null) // No warning, just use default value
-                    return defaultValue;
-                return valStr;
-            }
+            string ParseString(string varName, string defaultValue) => dict[varName] ?? defaultValue;
 
             bool ParseBoolean(string varName, bool defaultValue)
             {
