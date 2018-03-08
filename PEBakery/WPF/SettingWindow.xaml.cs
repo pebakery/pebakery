@@ -794,7 +794,7 @@ namespace PEBakery.WPF
             Engine.StopBuildOnError = this.General_StopBuildOnError;
             Logger.DebugLevel = this.Log_DebugLevel;
             MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
-            Project.AsteriskBugDirLink = this.Compat_AsteriskBugDirLink;
+            ProjectCollection.AsteriskBugDirLink = this.Compat_AsteriskBugDirLink;
             CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
             CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
             UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;

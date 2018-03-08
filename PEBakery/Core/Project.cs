@@ -48,6 +48,10 @@ namespace PEBakery.Core
     #region ProjectCollection
     public class ProjectCollection
     {
+        #region Static Field
+        public static bool AsteriskBugDirLink = false;
+        #endregion
+
         #region Fields
         private readonly string baseDir;
         private readonly Dictionary<string, Project> projectDict = new Dictionary<string, Project>(StringComparer.Ordinal);
@@ -123,7 +127,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region GetScriptPaths, GetDirLinks
+        #region GetScriptPaths
         /// <summary>
         /// Get scriptPathDict and allScriptPathList
         /// </summary>
@@ -163,7 +167,9 @@ namespace PEBakery.Core
             }
             return allCount;
         }
+        #endregion
 
+        #region GetDirLinks
         private List<(string RealPath, string TreePath, bool IsDir)> GetDirLinks(string projectDir)
         {
             var dirLinkPathList = new List<(string, string, bool)>();
@@ -186,18 +192,31 @@ namespace PEBakery.Core
 
                     if (Path.IsPathRooted(dirPath))
                     { // Absolute Path
-                        var tuples = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
-                            .Select(x => (x.Path, Path.Combine(prefix, x.Path.Substring(dirPath.Length).TrimStart('\\')), x.IsDir));
-                        dirLinkPathList.AddRange(tuples);
+                        if (AsteriskBugDirLink)
+                        { // Simulate WinBuilder *.* bug
+
+                        }
+                        else
+                        {
+                            var tuples = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
+                                .Select(x => (x.Path, Path.Combine(prefix, x.Path.Substring(dirPath.Length).TrimStart('\\')), x.IsDir));
+                            dirLinkPathList.AddRange(tuples);
+                        }   
                     }
                     else
                     { // Relative Path to %BaseDir%
-                        // Compat_AsteriskBugDirLink
-                        string fullPath = Path.Combine(baseDir, dirPath);
 
-                        var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
-                            .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
-                        dirLinkPathList.AddRange(tuples);
+                        if (AsteriskBugDirLink)
+                        { // Simulate WinBuilder *.* bug
+
+                        }
+                        else
+                        { 
+                            string fullPath = Path.Combine(baseDir, dirPath);
+                            var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
+                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
+                            dirLinkPathList.AddRange(tuples);
+                        }
                     }
                 }
             }
@@ -362,10 +381,6 @@ namespace PEBakery.Core
     #region Project
     public class Project : ICloneable
     {
-        #region Static
-        public static bool AsteriskBugDirLink = false;
-        #endregion
-
         #region Fields
         private int mainScriptIdx;
         #endregion
@@ -399,10 +414,10 @@ namespace PEBakery.Core
         #region Struct ScriptParseInfo
         private struct ScriptParseInfo
         {
-            public string RealPath;
-            public string TreePath;
-            public bool IsDir;
-            public bool IsDirLink;
+            public readonly string RealPath;
+            public readonly string TreePath;
+            public readonly bool IsDir;
+            public readonly bool IsDirLink;
 
             public ScriptParseInfo(string realPath, string treePath, bool isDir, bool isDirLink)
             {
@@ -519,6 +534,7 @@ namespace PEBakery.Core
 
             return logs;
         }
+        #endregion
 
         #region PostLoad, Sort
         public void PostLoad()
@@ -614,6 +630,7 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region RefreshScript
         public Script RefreshScript(Script sc, EngineState s = null)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
@@ -644,7 +661,9 @@ namespace PEBakery.Core
             }
             return sc;
         }
+        #endregion
 
+        #region LoadScript, LoadScriptMonkeyPatch
         /// <summary>
         /// Load scripts into project while running
         /// Return true if error

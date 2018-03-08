@@ -204,17 +204,16 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshInterface:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
-                        SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
+                        // Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
+                        // SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
 
                         AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = (Application.Current.MainWindow as MainWindow);
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
                             resetEvent = w.StartReloadScriptWorker();
                         });
-                        if (resetEvent != null)
-                            resetEvent.WaitOne();
+                        resetEvent?.WaitOne();
 
                         logs.Add(new LogInfo(LogState.Success, $"Rerendered script [{cmd.Addr.Script.Title}]"));
                     }
@@ -295,7 +294,7 @@ namespace PEBakery.Core.Commands
                                 // Update MainWindow and redraw Script
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
-                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                                    MainWindow w = Application.Current.MainWindow as MainWindow;
 
                                     w.UpdateScriptTree(project, false);
                                     if (sc.Equals(w.CurMainTree.Script))
@@ -390,10 +389,10 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 case SystemType.FileRedirect: // Do nothing
-                    logs.Add(new LogInfo(LogState.Ignore, $"[System,FileRedirect] is not necessary in PEBakery"));
+                    logs.Add(new LogInfo(LogState.Ignore, "[System,FileRedirect] is not necessary in PEBakery"));
                     break;
                 case SystemType.RegRedirect: // Do nothing
-                    logs.Add(new LogInfo(LogState.Ignore, $"[System,RegRedirect] is not necessary in PEBakery"));
+                    logs.Add(new LogInfo(LogState.Ignore, "[System,RegRedirect] is not necessary in PEBakery"));
                     break;
                 case SystemType.RebuildVars: 
                     { // Reset Variables to clean state
@@ -465,6 +464,15 @@ namespace PEBakery.Core.Commands
                 bool redirectStandardStream = false;
                 Stopwatch watch = Stopwatch.StartNew();
                 StringBuilder bConOut = new StringBuilder();
+                void ConsoleDataReceivedHandler(object sender, DataReceivedEventArgs e)
+                {
+                    if (e.Data == null)
+                        return;
+
+                    bConOut.AppendLine(e.Data);
+                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
+                }
+
                 try
                 {
                     if (verb.Equals("Open", StringComparison.OrdinalIgnoreCase))
@@ -482,25 +490,16 @@ namespace PEBakery.Core.Commands
                         {
                             redirectStandardStream = true;
 
+                            // Windows Console uses OEM Code Pages
+                            Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
+
                             proc.StartInfo.RedirectStandardOutput = true;
-                            proc.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
-                            {
-                                if (e.Data != null)
-                                {
-                                    bConOut.AppendLine(e.Data);
-                                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
-                                } 
-                            };
+                            proc.StartInfo.StandardOutputEncoding = cmdEncoding;
+                            proc.OutputDataReceived += ConsoleDataReceivedHandler;
 
                             proc.StartInfo.RedirectStandardError = true;
-                            proc.ErrorDataReceived += (object sender, DataReceivedEventArgs e) =>
-                            {
-                                if (e.Data != null)
-                                {
-                                    bConOut.AppendLine(e.Data);
-                                    s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
-                                }
-                            };
+                            proc.StartInfo.StandardErrorEncoding = cmdEncoding;
+                            proc.ErrorDataReceived += ConsoleDataReceivedHandler;
 
                             // Without this, XCOPY.exe of Windows 7 will not work properly.
                             // https://stackoverflow.com/questions/14218642/xcopy-does-not-work-with-useshellexecute-false
