@@ -190,6 +190,8 @@ namespace PEBakery.Core.Commands
             Stopwatch watch = Stopwatch.StartNew();
             using (WebClient client = new WebClient())
             {
+                client.Headers.Add("user-agent", "PEBakery/1.0");
+
                 client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>
                 {
                     s.MainViewModel.BuildCommandProgressValue = e.ProgressPercentage;
