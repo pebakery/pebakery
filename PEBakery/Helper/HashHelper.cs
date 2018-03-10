@@ -142,22 +142,22 @@ namespace PEBakery.Helper
             return hash.ComputeHash(stream);
         }
 
-        public static HashHelper.HashType DetectHashHelper(byte[] data)
+        public static HashHelper.HashType DetectHashType(byte[] data)
         {
-            return InternalDetectHashHelper(data.Length);
+            return InternalDetectHashType(data.Length);
         }
 
-        public static HashHelper.HashType DetectHashHelper(string hex)
+        public static HashHelper.HashType DetectHashType(string hex)
         {
             if (StringHelper.IsHex(hex))
                 return HashHelper.HashType.None;
             if (!NumberHelper.ParseHexStringToBytes(hex, out byte[] hashByte))
                 return HashHelper.HashType.None;
 
-            return InternalDetectHashHelper(hashByte.Length);
+            return InternalDetectHashType(hashByte.Length);
         }
 
-        private static HashHelper.HashType InternalDetectHashHelper(int length)
+        private static HashHelper.HashType InternalDetectHashType(int length)
         {
             HashHelper.HashType hashType = HashHelper.HashType.None;
 
