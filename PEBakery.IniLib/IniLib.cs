@@ -1256,24 +1256,22 @@ namespace PEBakery.IniLib
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = IniHelper.DetectTextEncoding(file);
-                using (StreamReader reader = new StreamReader(file, encoding, true))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
-                    if (reader.Peek() == -1)
+                    if (r.Peek() == -1)
                     {
-                        reader.Close();
+                        r.Close();
                         return false;
                     }
 
-                    string rawLine = string.Empty;
-                    string line = string.Empty;
+                    string rawLine;
                     bool ignoreCurrentSection = false;
 
                     // Main Logic
-                    while ((rawLine = reader.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
-                        bool thisLineProcessed = false;
-                        line = rawLine.Trim(); // Remove whitespace
+                        string line = rawLine.Trim();
 
                         // Check if encountered section head Ex) [Process]
                         if (line.StartsWith("[", StringComparison.Ordinal) &&
@@ -1295,11 +1293,9 @@ namespace PEBakery.IniLib
                             }
                         }
 
-                        if (thisLineProcessed == false && ignoreCurrentSection == false)
-                            writer.WriteLine(rawLine);
+                        if (ignoreCurrentSection == false)
+                            w.WriteLine(rawLine);
                     }
-                    reader.Close();
-                    writer.Close();
                 }
 
                 if (sectionList.Count == 0)

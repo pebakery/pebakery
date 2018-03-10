@@ -201,7 +201,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Encode, Decode
+        #region Encode
         private static Script Encode(Script sc, string dirName, string fileName, byte[] input, EncodeMode mode)
         {
             using (MemoryStream ms = new MemoryStream(input))
@@ -418,7 +418,9 @@ namespace PEBakery.Core
             // [Stage 10] Refresh Script
             return sc.Project.RefreshScript(sc);
         }
+        #endregion
 
+        #region Encode
         private static MemoryStream Decode(List<string> encodedList)
         {
             // if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))

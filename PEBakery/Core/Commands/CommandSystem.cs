@@ -433,10 +433,15 @@ namespace PEBakery.Core.Commands
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
+            if (cmd.Type == CodeType.ShellExecuteDelete)
+            {
+                if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
+                    return LogInfo.LogErrorMessage(logs, errorMsg);
+            }
+
             // Must not check existance of filePath with File.Exists()!
             // Because of PATH envrionment variable, it prevents call of system executables.
             // Ex) cmd.exe does not exist in %BaseDir%, but in System32 directory.
-
             StringBuilder b = new StringBuilder(filePath);
             using (Process proc = new Process())
             {

@@ -28,7 +28,6 @@
 using PEBakery.Core;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
-using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
 using System;
 using System.Collections.Generic;
@@ -40,8 +39,6 @@ using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Diagnostics;
 using MahApps.Metro.IconPacks;
-using System.Windows.Media.Imaging;
-using System.ComponentModel;
 using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;

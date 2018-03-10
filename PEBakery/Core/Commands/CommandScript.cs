@@ -158,10 +158,7 @@ namespace PEBakery.Core.Commands
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             List<string> dirs = sc.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
