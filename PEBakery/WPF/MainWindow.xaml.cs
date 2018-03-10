@@ -450,9 +450,9 @@ namespace PEBakery.WPF
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
                 if ((Script)e.Result == null)
-                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reload failed. ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reload failed. ({sec:0.000}s)";
                 else
-                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reloaded. ({sec:0.000}sec)";
+                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reloaded. ({sec:0.000}s)";
 
                 resetEvent.Set();
             };
@@ -945,14 +945,6 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        /*
-                        // TODO: Correct real path in DirLink directory
-                        string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
-                        string fullRealPath = fullTreePath;
-                        if (sc.IsDirLink)
-                            fullRealPath = sc.DirLinkRoot;
-                        Script dirScript = new Script(ScriptType.Directory, fullRealPath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.DirLinkRoot);
-                        */
                         string treePath = Path.Combine(project.ProjectName, pathKey);
                         Script ts = scList.FirstOrDefault(x => x.TreePath.Equals(treePath, StringComparison.OrdinalIgnoreCase));
                         Script dirScript;
@@ -967,7 +959,6 @@ namespace PEBakery.WPF
                             string fullTreePath = Path.Combine(project.ProjectRoot, project.ProjectName, pathKey);
                             dirScript = new Script(ScriptType.Directory, fullTreePath, fullTreePath, project, project.ProjectRoot, sc.Level, false, false, sc.IsDirLink);
                         }
-
                         
                         treeParent = PopulateOneTreeView(dirScript, treeRoot, treeParent);
                         dirDict[key] = treeParent;

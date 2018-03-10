@@ -34,11 +34,9 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using PEBakery.Exceptions;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 using System.Windows;
-using PEBakery.WPF;
 using PEBakery.Helper;
 using PEBakery.TreeLib;
 using PEBakery.IniLib;
@@ -143,9 +141,6 @@ namespace PEBakery.Core
                 (string, bool)[] scripts = FileHelper.GetFilesExWithDirs(projectDir, "*.script", SearchOption.AllDirectories);
                 (string, bool)[] links = FileHelper.GetFilesExWithDirs(projectDir, "*.link", SearchOption.AllDirectories);
 
-                // string[] scripts = Directory.GetFiles(projectDir, "*.script", SearchOption.AllDirectories);
-                // string[] links = Directory.GetFiles(projectDir, "*.link", SearchOption.AllDirectories);
-
                 // Path of root, normal and link scripts
                 var scriptPathList = new List<(string Path, bool IsDir)>(1 + scripts.Length + links.Length)
                 {
@@ -229,53 +224,6 @@ namespace PEBakery.Core
                             dirLinkPathList.AddRange(tuples);
                         }
                     }
-
-                    /*
-                    string dirPath = path;
-                    dirPath = Path.GetDirectoryName(path);
-                    if (dirPath == null)
-                        continue;
-
-                    if (Path.IsPathRooted(dirPath))
-                    { // Absolute Path
-                        if (AsteriskBugDirLink && Path.GetFileName(dirPath).Equals("*.*", StringComparison.Ordinal))
-                        { // Simulate WinBuilder *.* bug
-                            string[] subDirs = Directory.GetDirectories(dirPath);
-                            foreach (string subDir in subDirs)
-                            {
-                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
-                                    .Select(x => (x.Path, Path.Combine(prefix, x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
-                                dirLinkPathList.AddRange(tuples);
-                            }
-                        }
-                        else
-                        {
-                            var tuples = FileHelper.GetFilesExWithDirs(dirPath, "*.script", SearchOption.AllDirectories)
-                                .Select(x => (x.Path, Path.Combine(prefix, x.Path.Substring(dirPath.Length).TrimStart('\\')), x.IsDir));
-                            dirLinkPathList.AddRange(tuples);
-                        }   
-                    }
-                    else
-                    { // Relative Path to %BaseDir%
-                        string fullPath = Path.Combine(baseDir, dirPath);
-                        if (AsteriskBugDirLink && Path.GetFileName(dirPath).Equals("*.*", StringComparison.Ordinal))
-                        { // Simulate WinBuilder *.* bug
-                            string[] subDirs = Directory.GetDirectories(fullPath);
-                            foreach (string subDir in subDirs)
-                            {
-                                var tuples = FileHelper.GetFilesExWithDirs(subDir, "*.script", SearchOption.AllDirectories)
-                                    .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(subDir.Length).TrimStart('\\')), x.IsDir));
-                                dirLinkPathList.AddRange(tuples);
-                            }
-                        }
-                        else
-                        { 
-                            var tuples = FileHelper.GetFilesExWithDirs(fullPath, "*.script", SearchOption.AllDirectories)
-                                .Select(x => (x.Path, Path.Combine(prefix, Path.GetFileName(dirPath), x.Path.Substring(fullPath.Length).TrimStart('\\')), x.IsDir));
-                            dirLinkPathList.AddRange(tuples);
-                        }
-                    }
-                    */
                 }
             }
 

@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using RazorEngine;
 using RazorEngine.Templating;
 using System;
 using System.Collections.Generic;
@@ -39,9 +38,9 @@ namespace PEBakery.Core
 {
     public class LogExporter
     {
-        private LogDB DB;
-        private LogExportType exportType;
-        private StreamWriter w;
+        private readonly LogDB DB;
+        private readonly LogExportType exportType;
+        private readonly StreamWriter w;
 
         public LogExporter(LogDB DB, LogExportType type, StreamWriter writer)
         {
@@ -100,7 +99,7 @@ namespace PEBakery.Core
                 #region Text
                 case LogExportType.Text:
                     {
-                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
+                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.EndTime == DateTime.MinValue)
                             dbBuild.EndTime = DateTime.UtcNow;
 
@@ -116,12 +115,8 @@ namespace PEBakery.Core
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
                         { 
-                            int count = DB.Table<DB_BuildLog>()
-                                .Where(x => x.BuildId == buildId)
-                                .Where(x => x.State == state)
-                                .Count();
-
-                            w.WriteLine($"{state.ToString().PadRight(9)} : {count}");
+                            int count = DB.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
+                            w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
                         }
                         w.WriteLine();
                         w.WriteLine();
@@ -184,7 +179,7 @@ namespace PEBakery.Core
                             int idx = 1;
                             foreach (DB_Script sc in scripts)
                             {
-                                w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}sec)");
+                                w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
                                 idx++;
                             }
 
@@ -239,7 +234,7 @@ namespace PEBakery.Core
                 #region HTML
                 case LogExportType.Html:
                     {
-                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().Where(x => x.Id == buildId).First();
+                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.EndTime == DateTime.MinValue)
                             dbBuild.EndTime = DateTime.UtcNow;
                         ExportBuildLogHtmlModel m = new ExportBuildLogHtmlModel()
@@ -256,9 +251,7 @@ namespace PEBakery.Core
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
                         {
-                            int count = DB.Table<DB_BuildLog>()
-                                .Where(x => x.BuildId == buildId && x.State == state)
-                                .Count();
+                            int count = DB.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
 
                             m.LogStats.Add(new LogStatHtmlModel()
                             {
