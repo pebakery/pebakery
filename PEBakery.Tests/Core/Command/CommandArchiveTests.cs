@@ -75,8 +75,8 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -117,8 +117,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcFullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(Path.Combine(compDir, srcFileName), FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -166,8 +166,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
 
@@ -205,8 +205,8 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -280,8 +280,8 @@ namespace PEBakery.Tests.Core.Command
                     using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (FileStream destStream = new FileStream(destPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                        byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                        byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                        byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                         Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                     }
                 }
@@ -319,15 +319,12 @@ namespace PEBakery.Tests.Core.Command
                         using (FileStream srcStream = new FileStream(srcFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         using (FileStream destStream = new FileStream(destFiles[i], FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                            byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                            byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                            byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                             Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                         }
                     }
                 }
-                
-
-                Console.WriteLine($"{archiveFile} Success");
             }
             finally
             {
@@ -372,8 +369,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }
@@ -407,8 +404,8 @@ namespace PEBakery.Tests.Core.Command
                 using (FileStream srcStream = new FileStream(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (FileStream destStream = new FileStream(destFile, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    byte[] srcDigest = HashHelper.CalcHash(HashType.SHA256, srcStream);
-                    byte[] destDigest = HashHelper.CalcHash(HashType.SHA256, destStream);
+                    byte[] srcDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, srcStream);
+                    byte[] destDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, destStream);
                     Assert.IsTrue(srcDigest.SequenceEqual(destDigest));
                 }
             }

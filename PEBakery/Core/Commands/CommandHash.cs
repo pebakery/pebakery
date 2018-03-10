@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -50,28 +49,15 @@ namespace PEBakery.Core.Commands
             string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            HashType hashType;
-            if (hashTypeStr.Equals("MD5", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.MD5;
-            else if (hashTypeStr.Equals("SHA1", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA1;
-            else if (hashTypeStr.Equals("SHA256", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA256;
-            else if (hashTypeStr.Equals("SHA384", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA384;
-            else if (hashTypeStr.Equals("SHA512", StringComparison.OrdinalIgnoreCase))
-                hashType = HashType.SHA512;
-            else
-                throw new ExecuteException($"Invalid hash type [{hashTypeStr}]");
-
             string digest;
+            HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 digest = HashHelper.CalcHashString(hashType, fs);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Hash [{hashType}] digest of [{filePath}] is [{digest}]"));
-            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest.ToString());
+            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, digest);
             logs.AddRange(varLogs);
 
             return logs;

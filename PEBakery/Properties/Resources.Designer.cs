@@ -122,11 +122,20 @@ namespace PEBakery.Properties {
         }
         
         /// <summary>
-        ///   0.9.4 beta4과(와) 유사한 지역화된 문자열을 찾습니다.
+        ///   0.9.4과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string StringVersion {
             get {
                 return ResourceManager.GetString("StringVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   0.9.4 beta4과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string StringVersionFull {
+            get {
+                return ResourceManager.GetString("StringVersionFull", resourceCulture);
             }
         }
         

@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.WPF;
 using System;
@@ -417,7 +416,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default: // Error
-                    throw new InvalidCodeCommandException($"Wrong SystemType [{type}]");
+                    return LogInfo.LogErrorMessage(logs, $"Wrong SystemType [{type}]");
             }
 
             return logs;
@@ -558,7 +557,7 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Success, $"Executed and deleted [{b}], returned exit code [{proc.ExitCode}], took [{tookTime}s]"));
                             break;
                         default:
-                            throw new InternalException($"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
+                            return LogInfo.LogErrorMessage(logs, $"Internal Error! Invalid CodeType [{cmd.Type}]. Please report to issue tracker.");
                     }
 
                     if (cmd.Type != CodeType.ShellExecuteEx)
@@ -570,13 +569,10 @@ namespace PEBakery.Core.Commands
                             exitOutVar = info.ExitOutVar;
 
                         LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
-
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));
-                        else if (log.State == LogState.Error)
-                            logs.Add(log);
                         else
-                            throw new InternalException($"Internal Error! Invalid LogType [{log.State}]. Please report to issue tracker.");
+                            logs.Add(log);
 
                         if (redirectStandardStream)
                         {

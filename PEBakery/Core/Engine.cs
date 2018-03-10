@@ -1010,6 +1010,7 @@ namespace PEBakery.Core
         public bool CompatFileRenameCanMoveDir = false; // Compatibility
         public bool DisableLogger = false; // For performance (when engine runned by interface)
         public bool DelayedLogging = true; // For performance
+        public string CustomUserAgent = null;
 
         // System Commands
         public CodeCommand OnBuildExit = null;
@@ -1019,6 +1020,7 @@ namespace PEBakery.Core
         public readonly string RunOneEntrySection;
         #endregion
 
+        #region Constructor
         public EngineState(Project project, Logger logger, MainViewModel mainModel, EngineMode mode = EngineMode.RunAll, Script runSingle = null, string entrySection = "Process")
         {
             this.Project = project;
@@ -1071,6 +1073,7 @@ namespace PEBakery.Core
             CurSectionParams = new Dictionary<int, string>();
             MainViewModel = mainModel;
         }
+        #endregion
 
         #region SetOption
         public void SetOption(SettingViewModel m)
@@ -1080,6 +1083,7 @@ namespace PEBakery.Core
             CompatDirCopyBug = m.Compat_AsteriskBugDirCopy;
             CompatFileRenameCanMoveDir = m.Compat_FileRenameCanMoveDir;
             DelayedLogging = m.Log_DelayedLogging;
+            CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
         }
         #endregion
     }

@@ -1737,7 +1737,7 @@ namespace PEBakery.Core
     #region CodeInfo 09 - Hash
     [Serializable]
     public class CodeInfo_Hash : CodeInfo
-    { // Hash,<HashType>,<FilePath>,<DestVar>
+    { // Hash,<HashHelper.HashType>,<FilePath>,<DestVar>
         public string HashType;
         public string FilePath;
         public string DestVar;

@@ -1317,7 +1317,7 @@ namespace PEBakery.Core
                 #endregion
                 #region 09 Hash
                 case CodeType.Hash:
-                    { // Hash,<HashType>,<FilePath>,<DestVar>
+                    { // Hash,<HashHelper.HashType>,<FilePath>,<DestVar>
                         const int argCount = 3;
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);

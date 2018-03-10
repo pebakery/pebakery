@@ -25,7 +25,6 @@
     not derived from or based on this program. 
 */
 
-using PEBakery.Exceptions;
 using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
@@ -52,11 +51,8 @@ namespace PEBakery.Core.Commands
             string url = StringEscaper.Preprocess(s, info.URL);
             string downloadTo = StringEscaper.Preprocess(s, info.DestPath);
 
-            if (StringEscaper.PathSecurityCheck(downloadTo, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(downloadTo, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             Uri uri = new Uri(url);
             string destPath;
@@ -73,14 +69,12 @@ namespace PEBakery.Core.Commands
                         logs.Add(new LogInfo(LogState.Ignore, $"File [{downloadTo}] already exists"));
                         return logs;
                     }
-                    else
-                    {
-                        logs.Add(new LogInfo(LogState.Overwrite, $"File [{downloadTo}] will be overwritten"));
-                    }
+
+                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{downloadTo}] will be overwritten"));
                 }
                 else
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(downloadTo));
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(downloadTo));
                 }
                 destPath = downloadTo;
             }
@@ -94,47 +88,32 @@ namespace PEBakery.Core.Commands
                 if (info.HashType != null && info.HashDigest != null)
                 { // Calculate Hash After Downloading
                     string tempPath = Path.GetTempFileName();
-                    
-                    if (!DownloadFile(s, url, tempPath))
+
+                    (bool result, WebException e) = DownloadFile(s, url, tempPath);
+                    if (result == false)
+                    {
                         logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
+                        if (e.Response is HttpWebResponse res)
+                        {
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{(int)res.StatusCode}]"));
+                            /*
+                            int statusCode = (int)res.StatusCode;
+                            LogInfo log = Variables.SetVariable(s, "%StatusCode%", statusCode.ToString()).First();
+                            if (log.State == LogState.Success)
+                                logs.Add(new LogInfo(LogState.Info, $"HTTP Status Code [{statusCode}] saved into variable [%StatusCode%]"));
+                            else
+                                logs.Add(log);
+                            */
+                        }
+
+                        return logs;
+                    }
 
                     string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
                     string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
 
-                    HashType hashType;
-                    if (hashTypeStr.Equals("MD5", StringComparison.OrdinalIgnoreCase))
-                        hashType = HashType.MD5;
-                    else if (hashTypeStr.Equals("SHA1", StringComparison.OrdinalIgnoreCase))
-                        hashType = HashType.SHA1;
-                    else if (hashTypeStr.Equals("SHA256", StringComparison.OrdinalIgnoreCase))
-                        hashType = HashType.SHA256;
-                    else if (hashTypeStr.Equals("SHA384", StringComparison.OrdinalIgnoreCase))
-                        hashType = HashType.SHA384;
-                    else if (hashTypeStr.Equals("SHA512", StringComparison.OrdinalIgnoreCase))
-                        hashType = HashType.SHA512;
-                    else
-                        throw new ExecuteException($"Invalid hash type [{hashTypeStr}]");
-
-                    int byteLen = 0;
-                    switch (hashType)
-                    {
-                        case HashType.MD5:
-                            byteLen = 32;
-                            break;
-                        case HashType.SHA1:
-                            byteLen = 40;
-                            break;
-                        case HashType.SHA256:
-                            byteLen = 64;
-                            break;
-                        case HashType.SHA384:
-                            byteLen = 96;
-                            break;
-                        case HashType.SHA512:
-                            byteLen = 128;
-                            break;
-                    }
-
+                    HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
+                    int byteLen = HashHelper.GetHashByteLen(hashType);
                     if (hashDigest.Length != byteLen)
                         throw new ExecuteException($"Hash digest [{hashDigest}] is not [{hashTypeStr}]");
 
@@ -156,11 +135,27 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No Hash
-                    bool result = DownloadFile(s, url, destPath);
+                    (bool result, WebException e) = DownloadFile(s, url, destPath);
                     if (result)
+                    {
                         logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{downloadTo}]"));
+                    }
                     else
+                    {
                         logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
+                        if (e.Response is HttpWebResponse res)
+                        {
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{(int)res.StatusCode}]"));
+                            /*
+                            int statusCode = (int) res.StatusCode;
+                            LogInfo log = Variables.SetVariable(s, "%StatusCode%", statusCode.ToString()).First();
+                            if (log.State == LogState.Success)
+                                logs.Add(new LogInfo(LogState.Success, $"HTTP Status Code [{statusCode}] saved into variable [%StatusCode%]"));
+                            else
+                                logs.Add(log);
+                            */
+                        }
+                    }
                 }
             }
             finally
@@ -178,19 +173,18 @@ namespace PEBakery.Core.Commands
         /// <summary>
         /// Return true if success
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="url"></param>
-        /// <param name="destPath"></param>
         /// <returns></returns>
-        private static bool DownloadFile(EngineState s, string url, string destPath)
+        private static (bool, WebException) DownloadFile(EngineState s, string url, string destPath)
         {
             Uri uri = new Uri(url);
 
             bool result = true;
+            WebException webEx = null;
             Stopwatch watch = Stopwatch.StartNew();
             using (WebClient client = new WebClient())
             {
-                client.Headers.Add("user-agent", "PEBakery/1.0");
+                string userAgent = s.CustomUserAgent ?? $"PEBakery/{Properties.Resources.EngineVersion}";
+                client.Headers.Add("User-Agent", userAgent);
 
                 client.DownloadProgressChanged += (object sender, DownloadProgressChangedEventArgs e) =>
                 {
@@ -200,7 +194,7 @@ namespace PEBakery.Core.Commands
                     double totalSec = t.TotalSeconds;
                     string downloaded = NumberHelper.ByteSizeToHumanReadableString(e.BytesReceived, 1);
                     string total = NumberHelper.ByteSizeToHumanReadableString(e.TotalBytesToReceive, 1);
-                    if (totalSec == 0)
+                    if (Math.Abs(totalSec) < double.Epsilon)
                     {
                         s.MainViewModel.BuildCommandProgressText = $"{url}\r\nTotal : {total}\r\nReceived : {downloaded}";
                     }
@@ -226,6 +220,7 @@ namespace PEBakery.Core.Commands
                     if (e.Cancelled || e.Error != null)
                     {
                         result = false;
+                        webEx = e.Error as WebException;
 
                         if (File.Exists(destPath))
                             File.Delete(destPath);
@@ -241,7 +236,7 @@ namespace PEBakery.Core.Commands
             }
             watch.Stop();
 
-            return result;
+            return (result, webEx);
         }
         #endregion
     }

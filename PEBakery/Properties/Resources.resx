@@ -134,6 +134,9 @@
     <value>..\Resources\SystemLogHtmlTemplate.cshtml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;utf-8</value>
   </data>
   <data name="StringVersion" xml:space="preserve">
+    <value>0.9.4</value>
+  </data>
+  <data name="StringVersionFull" xml:space="preserve">
     <value>0.9.4 beta4</value>
   </data>
 </root>

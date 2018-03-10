@@ -54,7 +54,6 @@ namespace PEBakery.Core
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="path"></param>
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {

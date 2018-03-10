@@ -67,7 +67,7 @@ namespace PEBakery.WPF
         }
     }
 
-    #region UtiltiyViewModel
+    #region AboutViewModel
     public class AboutViewModel : INotifyPropertyChanged
     {
         #region Field, Property, Constructor
@@ -80,8 +80,7 @@ namespace PEBakery.WPF
         {
             MonoFont = monoFont;
 
-            // Info_PEBakeryVersion = typeof(App).Assembly.GetName().Version.ToString();
-            Info_PEBakeryVersion = Properties.Resources.StringVersion;
+            Info_PEBakeryVersion = Properties.Resources.StringVersionFull;
             Info_BuildDate = "Build " + Properties.Resources.BuildDate;
 
             License_Text = Properties.Resources.LicenseSimple;

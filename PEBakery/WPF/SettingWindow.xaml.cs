@@ -408,22 +408,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General
-        private bool general_EnableLongFilePath;
-        public bool General_EnableLongFilePath
-        {
-            get => general_EnableLongFilePath;
-            set
-            {
-                general_EnableLongFilePath = value;
-
-                // Enabled  = Path Length Limit = 32767
-                // Disabled = Path Legnth Limit = 260
-                AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !value);
-
-                OnPropertyUpdate(nameof(General_EnableLongFilePath));
-            }
-        }
-
+        // Build
         private bool general_OptimizeCode;
         public bool General_OptimizeCode
         {
@@ -456,6 +441,46 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(General_StopBuildOnError));
             }
         }
+
+        // Path Length Limit
+        private bool general_EnableLongFilePath;
+        public bool General_EnableLongFilePath
+        {
+            get => general_EnableLongFilePath;
+            set
+            {
+                general_EnableLongFilePath = value;
+
+                // Enabled  = Path Length Limit = 32767
+                // Disabled = Path Legnth Limit = 260
+                AppContext.SetSwitch("Switch.System.IO.UseLegacyPathHandling", !value);
+
+                OnPropertyUpdate(nameof(General_EnableLongFilePath));
+            }
+        }
+
+        // Custom User-Agent
+        private bool general_UseCustomUserAgent;
+        public bool General_UseCustomUserAgent
+        {
+            get => general_UseCustomUserAgent;
+            set
+            {
+                general_UseCustomUserAgent = value;
+                OnPropertyUpdate(nameof(General_UseCustomUserAgent));
+            }
+        }
+
+        private string general_CustomUserAgent;
+        public string General_CustomUserAgent
+        {
+            get => general_CustomUserAgent;
+            set
+            {
+                general_CustomUserAgent = value;
+                OnPropertyUpdate(nameof(General_CustomUserAgent));
+            }
+        } 
         #endregion
 
         #region Property - Interface
@@ -811,10 +836,13 @@ namespace PEBakery.WPF
             Project_DefaultStr = string.Empty;
 
             // General
-            General_EnableLongFilePath = false;
             General_OptimizeCode = true;
             General_ShowLogAfterBuild = true;
             General_StopBuildOnError = true;
+            General_EnableLongFilePath = false;
+            General_UseCustomUserAgent = false;
+            // Custom User-Agent is set to Edge's on Windows 10 v1709
+            General_CustomUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299";
 
             // Interface
             using (InstalledFontCollection fonts = new InstalledFontCollection())
@@ -876,13 +904,16 @@ namespace PEBakery.WPF
             const string logStr = "Log";
             const string compatStr = "Compat";
 
-            IniKey[] keys = new IniKey[]
+            // General_CustomUserAgent
+            IniKey[] keys = 
             {
                 new IniKey("Project", "DefaultProject"), // String
-                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr)), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr)), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr)), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr)),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr)),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr)),
@@ -971,10 +1002,12 @@ namespace PEBakery.WPF
                 Project_DefaultStr = dict["Project_DefaultProject"];
 
             // General
-            General_EnableLongFilePath = ParseBoolean(nameof(General_EnableLongFilePath), General_EnableLongFilePath);
             General_OptimizeCode = ParseBoolean(nameof(General_OptimizeCode), General_OptimizeCode);
             General_ShowLogAfterBuild = ParseBoolean(nameof(General_ShowLogAfterBuild), General_ShowLogAfterBuild);
             General_StopBuildOnError = ParseBoolean(nameof(General_StopBuildOnError), General_StopBuildOnError);
+            General_EnableLongFilePath = ParseBoolean(nameof(General_EnableLongFilePath), General_EnableLongFilePath);
+            General_UseCustomUserAgent = ParseBoolean(nameof(General_UseCustomUserAgent), General_UseCustomUserAgent);
+            General_CustomUserAgent = ParseString(nameof(General_CustomUserAgent), General_CustomUserAgent);
 
             // Interface
             FontFamily monoFontFamiliy = Interface_MonospaceFont.FontFamily;
@@ -1022,12 +1055,14 @@ namespace PEBakery.WPF
             const string logStr = "Log";
             const string compatStr = "Compat";
 
-            IniKey[] keys = new IniKey[]
+            IniKey[] keys = 
             {
                 new IniKey(generalStr, KeyPart(nameof(General_EnableLongFilePath), generalStr), General_EnableLongFilePath.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_OptimizeCode), generalStr), General_OptimizeCode.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_ShowLogAfterBuild), generalStr), General_ShowLogAfterBuild.ToString()), // Boolean
                 new IniKey(generalStr, KeyPart(nameof(General_StopBuildOnError), generalStr), General_StopBuildOnError.ToString()), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_UseCustomUserAgent), generalStr), General_UseCustomUserAgent.ToString()), // Boolean
+                new IniKey(generalStr, KeyPart(nameof(General_CustomUserAgent), generalStr), General_CustomUserAgent), // String
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontFamily), interfaceStr), Interface_MonospaceFont.FontFamily.Source),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontWeight), interfaceStr), Interface_MonospaceFont.FontWeight.ToString()),
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_MonospaceFontSize), interfaceStr), Interface_MonospaceFont.FontSizeInPoint.ToString()),

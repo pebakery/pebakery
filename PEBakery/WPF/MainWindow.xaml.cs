@@ -1283,7 +1283,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private string scriptVersionText = Properties.Resources.StringVersion;
+        private string scriptVersionText = Properties.Resources.StringVersionFull;
         public string ScriptVersionText
         {
             get => scriptVersionText;
