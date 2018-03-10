@@ -1114,12 +1114,17 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractAllFiles(args[0], args[1], args[2]);
                     }
                 case CodeType.Encode:
-                    { // Encode,%ScriptFile%,<DirName>,<FileName>
-                        const int argCount = 3;
-                        if (args.Count != argCount)
-                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+                    { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 4;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_Encode(args[0], args[1], args[2]);
+                        string compression = null;
+                        if (3 < args.Count)
+                            compression = args[3];
+
+                        return new CodeInfo_Encode(args[0], args[1], args[2], compression);
                     }
                 #endregion
                 #region 08 Interface

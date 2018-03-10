@@ -998,22 +998,15 @@ namespace PEBakery.Core
         }
 
         /// <summary>
-        /// Get Lines without permanently loaded, saving memory
+        /// Get Lines without permanent loading
         /// </summary>
         /// <returns></returns>
         public List<string> GetLinesOnce()
         {
             if (_dataType == SectionDataType.Lines)
-            {
-                if (_loaded)
-                    return _lines;
-                else
-                    return Ini.ParseIniSection(_script.RealPath, _sectionName);
-            }
-            else
-            {
-                throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
-            }
+                return _loaded ? _lines : Ini.ParseIniSection(_script.RealPath, _sectionName);
+
+            throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
         }
 
         public List<CodeCommand> GetCodes()

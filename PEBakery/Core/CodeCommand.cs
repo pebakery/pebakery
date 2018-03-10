@@ -1468,21 +1468,34 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_Encode : CodeInfo
-    { // Encode,%ScriptFile%,<DirName>,<FileName>
+    { // Encode,%ScriptFile%,<DirName>,<FileName>,[Compression]
         public string ScriptFile;
         public string DirName;
         public string FilePath; // Can have Wildcard
+        public string Compression;
 
-        public CodeInfo_Encode(string scriptFile, string dirName, string filePath)
+        public CodeInfo_Encode(string scriptFile, string dirName, string filePath, string compression)
         {
             ScriptFile = scriptFile;
             DirName = dirName;
             FilePath = filePath;
+            Compression = compression;
         }
 
         public override string ToString()
         {
-            return $"{ScriptFile},{DirName},{FilePath}";
+            StringBuilder b = new StringBuilder();
+            b.Append(ScriptFile);
+            b.Append(',');
+            b.Append(DirName);
+            b.Append(',');
+            b.Append(FilePath);
+            if (Compression != null)
+            {
+                b.Append(',');
+                b.Append(Compression);
+            }
+            return b.ToString();
         }
     }
     #endregion

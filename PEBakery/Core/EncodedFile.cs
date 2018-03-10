@@ -113,8 +113,23 @@ namespace PEBakery.Core
             ZLib = 0x00, // Type 1
             Raw = 0x01, // Type 2
             XZ = 0x02, // Type 3 (PEBakery Only)
-            Zopfli = 0xFF, // Compatible with Type 1, better compression rate but much slower compression.
         }
+
+        public EncodeMode ParseEncodeMode(string str)
+        {
+            EncodeMode mode;
+            if (str.Equals("ZLib", StringComparison.OrdinalIgnoreCase))
+                mode = EncodeMode.ZLib;
+            else if (str.Equals("Raw", StringComparison.OrdinalIgnoreCase))
+                mode = EncodeMode.Raw;
+            else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase))
+                mode = EncodeMode.XZ;
+            else
+                throw new ArgumentException($"Wrong EncodeMode [{str}]");
+
+            return mode;
+        }
+
 
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
@@ -160,12 +175,12 @@ namespace PEBakery.Core
             if (sc == null) throw new ArgumentNullException(nameof(sc));
 
             if (sc.Sections.ContainsKey("AuthorEncoded") == false)
-                throw new ExtractFileNotFoundException($"There is no AuthorEncoded files");
+                throw new ExtractFileNotFoundException("Directory [AuthorEncoded] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
 
             if (fileDict.ContainsKey("Logo") == false)
-                throw new ExtractFileNotFoundException($"There is no logo in \'{sc.Title}\'");
+                throw new ExtractFileNotFoundException($"Logo does not exist in \'{sc.Title}\'");
 
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
@@ -199,14 +214,18 @@ namespace PEBakery.Core
         {
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUTF8.Length == 0 || 512 <= fileNameUTF8.Length)
-                throw new FileDecodeFailException($"Filename's UTF8 encoded length should be shorter than 512B");
+                throw new FileDecodeFailException("UTF8 encoded filename should be shorter than 512B");
+            string section = $"EncodedFile-{dirName}-{fileName}";
 
             // Check Overwrite
             bool fileOverwrite = false;
             if (sc.Sections.ContainsKey(dirName))
-            { // [{dirName}] section exists, check if there is already same file encoded
+            {
+                // Check if [{dirName}] section and [EncodedFile-{dirName}-{fileName}] section exists
                 List<string> lines = sc.Sections[dirName].GetLines();
-                if (lines.FirstOrDefault(x => x.Equals(fileName, StringComparison.OrdinalIgnoreCase)) != null)
+                var dict = Ini.ParseIniLinesIniStyle(lines);
+                if (0 < dict.Count(x => x.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase)) &&
+                    sc.Sections.ContainsKey(section))
                     fileOverwrite = true;
             }
 
@@ -237,20 +256,6 @@ namespace PEBakery.Core
                             {
                                 inputStream.CopyTo(xzs);
                             }
-                        }
-                        break;
-                    case EncodeMode.Zopfli:
-                        {
-                            /*
-                            using LibZopfliSharp;
-                            using (ZopfliStream zs = new ZopfliStream(bodyStream, ZopfliFormat.ZOPFLI_FORMAT_ZLIB, true))
-                            {
-                                inputStream.CopyTo(zs);
-                            }
-                            */
-
-                            // Set mode to ZLib, for compatibility of footers
-                            mode = EncodeMode.ZLib;
                         }
                         break;
                     default:
@@ -359,8 +364,7 @@ namespace PEBakery.Core
             }
 
             // [Stage 7] Tokenize encoded string into 4090B.
-            string section = $"EncodedFile-{dirName}-{fileName}";
-            List<IniKey> keys = new List<IniKey>();
+            List<IniKey> keys = new List<IniKey>(encodedStr.Length / 4090);
             for (int i = 0; i <= (encodedStr.Length / 4090); i++)
             {
                 if (i < (encodedStr.Length / 4090)) // 1 Line is 4090 characters
@@ -417,17 +421,17 @@ namespace PEBakery.Core
 
         private static MemoryStream Decode(List<string> encodedList)
         {
-            if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new FileDecodeFailException("Encoded lines are malformed");
+            // if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
+            //    throw new FileDecodeFailException("Encoded lines are malformed");
+            // int.TryParse(value, out int blockCount);
 
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
             {
-                int.TryParse(value, out int blockCount);
                 encodedList.RemoveAt(0); // Remove "lines=n"
 
                 // Each line is 64KB block
-                if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
+                if (Ini.GetKeyValueFromLines(encodedList, out _, out List<string> base64Blocks))
                     throw new FileDecodeFailException("Encoded lines are malformed");
 
                 StringBuilder b = new StringBuilder();
@@ -463,10 +467,10 @@ namespace PEBakery.Core
 
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
-                throw new FileDecodeFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException("Encoded file is corrupted");
             uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
             if (full_crc32 != calcFull_crc32)
-                throw new FileDecodeFailException($"Encoded file is corrupted");
+                throw new FileDecodeFailException("Encoded file is corrupted");
 
             // [Stage 4] Decompress first footer
             byte[] rawFooter;
@@ -500,29 +504,29 @@ namespace PEBakery.Core
                 case EncodeMode.ZLib: // Type 1, zlib
                     {
                         if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                         if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
                     }
                     break;
                 case EncodeMode.Raw: // Type 2, raw
                     {
                         if (compressedBodyLen2 != 0)
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                         if (compLevel != 0)
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
                     }
                     break;
                 case EncodeMode.XZ: // Type 3, LZMA
                     {
                         if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                         if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
+                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
                     }
                     break;
                 default:
-                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
             }
 
             // [Stage 7] Decompress body
@@ -554,7 +558,7 @@ namespace PEBakery.Core
                     }
                     break;
                 default:
-                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
             }
 
             rawBodyStream.Position = 0;
@@ -562,7 +566,7 @@ namespace PEBakery.Core
             // [Stage 8] Validate decompressed body
             uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
             if (compressedBody_crc32 != calcCompBody_crc32)
-                throw new FileDecodeFailException($"Encoded file is corrupted: body");
+                throw new FileDecodeFailException("Encoded file is corrupted: body");
 
             // [Stage 9] Return decompressed body stream
             rawBodyStream.Position = 0;
@@ -573,6 +577,7 @@ namespace PEBakery.Core
     #endregion
 
     #region EncodedFileInfo
+    /// <inheritdoc />
     /// <summary>
     /// Class to handle malformed WB082-attached files
     /// </summary>
