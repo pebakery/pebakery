@@ -38,7 +38,6 @@ namespace PEBakery.Tests.Core.Command
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
             EngineState s = EngineTests.CreateEngineState();
 
-            // files: test
             WebGet_1(s);
             WebGet_MD5(s);
             WebGet_SHA1(s);
@@ -60,7 +59,7 @@ namespace PEBakery.Tests.Core.Command
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\"";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
-                Assert.IsTrue(File.Exists(tempSrc));
+                Assert.IsTrue(File.Exists(tempDest));
             }
             finally
             {
@@ -197,6 +196,69 @@ namespace PEBakery.Tests.Core.Command
                 Uri fileUri = new Uri(tempSrc);
                 string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5,00000000000000000000000000000000";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+            }
+            finally
+            {
+                if (File.Exists(tempSrc))
+                    File.Delete(tempSrc);
+                if (File.Exists(tempDest))
+                    File.Delete(tempDest);
+            }
+        }
+        #endregion
+
+        #region WebGetStatus
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandNetwork")]
+        public void Network_WebGetStatus()
+        { // WebGetStatus,<URL>,<DestPath>,<DestVar>,[HashType],[HashDigest]
+            EngineState s = EngineTests.CreateEngineState();
+
+            WebGetStatus_1(s);
+            WebGetStatus_2(s);
+        }
+
+        public void WebGetStatus_1(EngineState s)
+        {
+            string tempSrc = CommandHashTests.SampleText();
+            string tempDest = Path.GetTempFileName();
+            File.Delete(tempDest);
+
+            try
+            {
+                Uri fileUri = new Uri(tempSrc);
+                string rawCode = $"WebGetStatus,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",%Dest%";
+                EngineTests.Eval(s, rawCode, CodeType.WebGetStatus, ErrorCheck.Success);
+
+                Assert.IsTrue(File.Exists(tempSrc));
+                Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["Dest"].Equals("200", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(tempSrc))
+                    File.Delete(tempSrc);
+                if (File.Exists(tempDest))
+                    File.Delete(tempDest);
+            }
+        }
+
+        public void WebGetStatus_2(EngineState s)
+        {
+            string tempSrc = Path.GetTempFileName();
+            string tempDest = Path.GetTempFileName();
+
+            try
+            {
+                File.Delete(tempSrc);
+                File.Delete(tempDest);
+
+                Uri fileUri = new Uri(tempSrc);
+                string rawCode = $"WebGetStatus,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",%Dest%";
+                EngineTests.Eval(s, rawCode, CodeType.WebGetStatus, ErrorCheck.Warning);
+
+                Assert.IsTrue(s.Variables["Dest"].Equals("0", StringComparison.Ordinal));
             }
             finally
             {
