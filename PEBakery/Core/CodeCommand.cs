@@ -64,7 +64,8 @@ namespace PEBakery.Core
         // 05 Compress
         Compress = 500, Decompress, Expand, CopyOrExpand, 
         // 06 Network
-        WebGet = 600, WebGetIfNotExist,
+        WebGet = 600, WebGetStatus,
+        WebGetIfNotExist = 699, // Will be deprecated
         // 07 Attach
         ExtractFile = 700, ExtractAndRun, ExtractAllFiles, Encode,
         // 08 Interface
@@ -1356,16 +1357,21 @@ namespace PEBakery.Core
     #region CodeInfo 06 - Network
     [Serializable]
     public class CodeInfo_WebGet : CodeInfo
-    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+    {
+        // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+        // WebGetStatus,<URL>,<DestPath>,<DestVar>,[HashType],[HashDigest] - deprecated
+        // WebGetIfNotExist,<URL>,<DestPath>,[HashType],[HashDigest] - deprecated
         public string URL;
         public string DestPath;
+        public string DestVar;
         public string HashType;
         public string HashDigest;
 
-        public CodeInfo_WebGet(string url, string destPath, string hashType, string hashDigest)
+        public CodeInfo_WebGet(string url, string destPath, string destVar, string hashType, string hashDigest)
         {
             URL = url;
             DestPath = destPath;
+            DestVar = destVar;
             HashType = hashType;
             HashDigest = hashDigest;
         }
@@ -1376,6 +1382,11 @@ namespace PEBakery.Core
             b.Append(URL);
             b.Append(",");
             b.Append(DestPath);
+            if (DestVar != null)
+            {
+                b.Append(",");
+                b.Append(DestVar);
+            }
             if (HashType != null && HashDigest != null)
             {
                 b.Append(",");

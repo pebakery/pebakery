@@ -49,34 +49,37 @@ namespace PEBakery.Core.Commands
             CodeInfo_WebGet info = cmd.Info as CodeInfo_WebGet;
 
             string url = StringEscaper.Preprocess(s, info.URL);
-            string downloadTo = StringEscaper.Preprocess(s, info.DestPath);
+            string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
-            if (!StringEscaper.PathSecurityCheck(downloadTo, out string errorMsg))
-                return LogInfo.LogErrorMessage(logs, errorMsg);
+            // Check PathSecurity in destPath
+            {
+                if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                    return LogInfo.LogErrorMessage(logs, errorMsg);
+            }
 
             Uri uri = new Uri(url);
-            string destPath;
-            if (Directory.Exists(downloadTo)) // downloadTo is dir
+            string destFile;
+            if (Directory.Exists(destPath)) // downloadTo is dir
             {
-                destPath = Path.Combine(downloadTo, Path.GetFileName(uri.LocalPath));
+                destFile = Path.Combine(destPath, Path.GetFileName(uri.LocalPath));
             }
             else // downloadTo is file
             {
-                if (File.Exists(downloadTo))
+                if (File.Exists(destPath))
                 {
                     if (cmd.Type == CodeType.WebGetIfNotExist)
                     {
-                        logs.Add(new LogInfo(LogState.Ignore, $"File [{downloadTo}] already exists"));
+                        logs.Add(new LogInfo(LogState.Ignore, $"File [{destPath}] already exists"));
                         return logs;
                     }
 
-                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{downloadTo}] will be overwritten"));
+                    logs.Add(new LogInfo(LogState.Overwrite, $"File [{destPath}] will be overwritten"));
                 }
                 else
                 {
-                    Directory.CreateDirectory(FileHelper.GetDirNameEx(downloadTo));
+                    Directory.CreateDirectory(FileHelper.GetDirNameEx(destPath));
                 }
-                destPath = downloadTo;
+                destFile = destPath;
             }
 
             s.MainViewModel.BuildCommandProgressTitle = "WebGet Progress";
@@ -89,24 +92,45 @@ namespace PEBakery.Core.Commands
                 { // Calculate Hash After Downloading
                     string tempPath = Path.GetTempFileName();
 
-                    (bool result, WebException e) = DownloadFile(s, url, tempPath);
-                    if (result == false)
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
-                        if (e.Response is HttpWebResponse res)
+                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, tempPath);
+                    if (info.DestVar == null)
+                    { // Standard WebGet
+                        if (result)
                         {
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{(int)res.StatusCode}]"));
-                            /*
-                            int statusCode = (int)res.StatusCode;
-                            LogInfo log = Variables.SetVariable(s, "%StatusCode%", statusCode.ToString()).First();
-                            if (log.State == LogState.Success)
-                                logs.Add(new LogInfo(LogState.Info, $"HTTP Status Code [{statusCode}] saved into variable [%StatusCode%]"));
-                            else
-                                logs.Add(log);
-                            */
+                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
                         }
-
-                        return logs;
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
+                            logs.Add(new LogInfo(LogState.Info, errorMsg));
+                            if (statusCode == 0)
+                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                            else
+                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            return logs;
+                        }
+                    }
+                    else
+                    { // WebGetStatus
+                        if (result)
+                        {
+                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
+                            logs.AddRange(varLogs);
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, $"Error occured while downloading [{url}]"));
+                            logs.Add(new LogInfo(LogState.Info, errorMsg));
+                            if (statusCode == 0)
+                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                            else
+                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
+                            logs.AddRange(varLogs);
+                            return logs;
+                        }
                     }
 
                     string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
@@ -125,8 +149,8 @@ namespace PEBakery.Core.Commands
 
                     if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
                     {
-                        File.Move(tempPath, destPath);
-                        logs.Add(new LogInfo(LogState.Success, $"[{url}] was downloaded to [{downloadTo}] and it's integerity was verified."));
+                        File.Move(tempPath, destFile);
+                        logs.Add(new LogInfo(LogState.Success, $"[{url}] was downloaded to [{destPath}] and it's integerity was verified."));
                     }
                     else
                     {
@@ -135,26 +159,41 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 { // No Hash
-                    (bool result, WebException e) = DownloadFile(s, url, destPath);
-                    if (result)
-                    {
-                        logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{downloadTo}]"));
+                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, destFile);
+                    if (info.DestVar == null)
+                    { // Standard WebGet
+                        if (result)
+                        {
+                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
+                        }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
+                            logs.Add(new LogInfo(LogState.Info, errorMsg));
+                            if (statusCode == 0)
+                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                            else
+                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                        }
                     }
                     else
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
-                        if (e.Response is HttpWebResponse res)
+                    { // WebGetStatus
+                        if (result)
                         {
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{(int)res.StatusCode}]"));
-                            /*
-                            int statusCode = (int) res.StatusCode;
-                            LogInfo log = Variables.SetVariable(s, "%StatusCode%", statusCode.ToString()).First();
-                            if (log.State == LogState.Success)
-                                logs.Add(new LogInfo(LogState.Success, $"HTTP Status Code [{statusCode}] saved into variable [%StatusCode%]"));
-                            else
-                                logs.Add(log);
-                            */
+                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
                         }
+                        else
+                        {
+                            logs.Add(new LogInfo(LogState.Warning, $"Error occured while downloading [{url}]"));
+                            logs.Add(new LogInfo(LogState.Info, errorMsg));
+                        }
+
+                        if (statusCode == 0)
+                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                        else
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                        List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
+                        logs.AddRange(varLogs);
                     }
                 }
             }
@@ -174,12 +213,13 @@ namespace PEBakery.Core.Commands
         /// Return true if success
         /// </summary>
         /// <returns></returns>
-        private static (bool, WebException) DownloadFile(EngineState s, string url, string destPath)
+        private static (bool, int, string) DownloadFile(EngineState s, string url, string destPath)
         {
             Uri uri = new Uri(url);
 
             bool result = true;
-            WebException webEx = null;
+            int statusCode = 200;
+            string errorMsg = null;
             Stopwatch watch = Stopwatch.StartNew();
             using (WebClient client = new WebClient())
             {
@@ -220,7 +260,13 @@ namespace PEBakery.Core.Commands
                     if (e.Cancelled || e.Error != null)
                     {
                         result = false;
-                        webEx = e.Error as WebException;
+                        statusCode = 0; // Unknown Error
+                        if (e.Error is WebException webEx)
+                        {
+                            errorMsg = $"[{webEx.Status}] {webEx.Message}";
+                            if (webEx.Response is HttpWebResponse res)
+                                statusCode = (int)res.StatusCode;
+                        }
 
                         if (File.Exists(destPath))
                             File.Delete(destPath);
@@ -236,7 +282,7 @@ namespace PEBakery.Core.Commands
             }
             watch.Stop();
 
-            return (result, webEx);
+            return (result, statusCode, errorMsg);
         }
         #endregion
     }

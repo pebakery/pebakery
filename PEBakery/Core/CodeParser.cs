@@ -1064,27 +1064,48 @@ namespace PEBakery.Core
                 // 06 Network
                 case CodeType.WebGet:
                 case CodeType.WebGetIfNotExist: // Will be deprecated
-                    { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+                    {
+                        // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+                        // WebGetIfNotExist,<URL>,<DestPath>,[HashType],[HashDigest]
                         const int minArgCount = 2;
                         const int maxArgCount = 5; // WB082 Spec allows args up to 5 - WebGet,<URL>,<DestPath>,[MD5_Digest],[ASK],[TIMEOUT_int]
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string url = args[0];
-                        string destPath = args[1];
                         string hashType = null;
                         string hashDigest = null;
 
                         if (args.Count == 4)
                         {
-                            if (!(args[2].Length == 32)) // If this statement follows WB082 Spec, Just ignore.
+                            if (args[2].Length != 32) // If this statement follows WB082 Spec, Just ignore.
                             {
                                 hashType = args[2];
                                 hashDigest = args[3];
                             }
                         }
 
-                        return new CodeInfo_WebGet(url, destPath, hashType, hashDigest);
+                        return new CodeInfo_WebGet(args[0], args[1], null, hashType, hashDigest);
+                    }
+                case CodeType.WebGetStatus:
+                    { // WebGetStatus,<URL>,<DestPath>,<DestVar>,[HashType],[HashDigest]
+                        const int minArgCount = 3;
+                        const int maxArgCount = 5;
+                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
+                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
+
+                        string destVar = args[2];
+                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
+                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
+
+                        string hashType = null;
+                        string hashDigest = null;
+                        if (args.Count == 5)
+                        {
+                            hashType = args[3];
+                            hashDigest = args[4];
+                        }
+
+                        return new CodeInfo_WebGet(args[0], args[1], destVar, hashType, hashDigest);
                     }
                 #endregion
                 #region 07 Script
