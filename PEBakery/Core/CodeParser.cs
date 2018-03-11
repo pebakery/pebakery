@@ -1407,25 +1407,25 @@ namespace PEBakery.Core
                             if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (split != null)
-                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
                                 split = arg.Substring(SplitKey.Length);
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAttrib)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAttrib = true;
                             }
                             else
@@ -1454,25 +1454,25 @@ namespace PEBakery.Core
                             if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (split != null)
-                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
                                 split = arg.Substring(SplitKey.Length);
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAttrib)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAttrib = true;
                             }
                             else
@@ -1484,9 +1484,9 @@ namespace PEBakery.Core
                         return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtractBulk:
-                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR]
                         const int minArgCount = 4;
-                        const int maxArgCount = 7;
+                        const int maxArgCount = 9;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -1494,6 +1494,7 @@ namespace PEBakery.Core
                         bool check = false;
                         bool noAcl = false;
                         bool noAttrib = false;
+                        bool noErr = false;
 
                         for (int i = minArgCount; i < args.Count; i++)
                         {
@@ -1503,26 +1504,32 @@ namespace PEBakery.Core
                             if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (split != null)
-                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
                                 split = arg.Substring(SplitKey.Length);
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else if (arg.Equals("NOATTRIB", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAttrib)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAttrib = true;
+                            }
+                            else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noErr)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noErr = true;
                             }
                             else
                             {
@@ -1530,7 +1537,7 @@ namespace PEBakery.Core
                             }
                         }
 
-                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
+                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib, noErr);
                     }
                 case CodeType.WimCapture:
                     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]
@@ -1556,37 +1563,37 @@ namespace PEBakery.Core
                             if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageName != null)
-                                    throw new InvalidCommandException($"Argument <ImageName> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
                                 imageName = arg.Substring(ImageNameKey.Length);
                             }
                             else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
-                                    throw new InvalidCommandException($"Argument <ImageDesc> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
                                 imageDesc = arg.Substring(ImageDescKey.Length);
                             }
                             else if (arg.StartsWith(WimFlagsKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (wimFlags != null)
-                                    throw new InvalidCommandException($"Argument <Flags> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Flags> cannot be duplicated", rawCode);
                                 wimFlags = arg.Substring(WimFlagsKey.Length);
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (boot)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 boot = true;
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else
@@ -1621,43 +1628,43 @@ namespace PEBakery.Core
                             if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageName != null)
-                                    throw new InvalidCommandException($"Argument <ImageName> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
                                 imageName = arg.Substring(ImageNameKey.Length);
                             }
                             else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
-                                    throw new InvalidCommandException($"Argument <ImageDesc> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
                                 imageDesc = arg.Substring(ImageDescKey.Length);
                             }
                             else if (arg.StartsWith(WimFlagsKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (wimFlags != null)
-                                    throw new InvalidCommandException($"Argument <Flags> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Flags> cannot be duplicated", rawCode);
                                 wimFlags = arg.Substring(WimFlagsKey.Length);
                             }
                             else if (arg.StartsWith(DeltaIndexKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (deltaFrom != null)
-                                    throw new InvalidCommandException($"Argument <DeltaFrom> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <DeltaFrom> cannot be duplicated", rawCode);
                                 deltaFrom = arg.Substring(DeltaIndexKey.Length);
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (boot)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 boot = true;
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else
@@ -1682,7 +1689,7 @@ namespace PEBakery.Core
                             if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else
@@ -1711,25 +1718,25 @@ namespace PEBakery.Core
                             if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOACL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (noAcl)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noAcl = true;
                             }
                             else if (arg.Equals("PRESERVE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (preserve)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 preserve = true;
                             }
                             else if (arg.Equals("REBUILD", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (rebuild)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 rebuild = true;
                             }
                             else
@@ -1756,13 +1763,13 @@ namespace PEBakery.Core
                             if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("REBUILD", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (rebuild)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 rebuild = true;
                             }
                             else
@@ -1789,13 +1796,13 @@ namespace PEBakery.Core
                             if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("REBUILD", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (rebuild)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 rebuild = true;
                             }
                             else
@@ -1824,19 +1831,19 @@ namespace PEBakery.Core
                             if (arg.StartsWith(RecompKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (recompress != null)
-                                    throw new InvalidCommandException($"Argument <Recomp> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Recomp> cannot be duplicated", rawCode);
                                 recompress = arg.Substring(RecompKey.Length);
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check != null)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOCHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check != null)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = false;
                             }
                             else
@@ -1870,43 +1877,43 @@ namespace PEBakery.Core
                             if (arg.StartsWith(ImageNameKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageName != null)
-                                    throw new InvalidCommandException($"Argument <ImageName> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageName> cannot be duplicated", rawCode);
                                 imageName = arg.Substring(ImageNameKey.Length);
                             }
                             else if (arg.StartsWith(ImageDescKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (imageDesc != null)
-                                    throw new InvalidCommandException($"Argument <ImageDesc> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <ImageDesc> cannot be duplicated", rawCode);
                                 imageDesc = arg.Substring(ImageDescKey.Length);
                             }
                             else if (arg.StartsWith(SplitKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (split != null)
-                                    throw new InvalidCommandException($"Argument <Split> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Split> cannot be duplicated", rawCode);
                                 split = arg.Substring(SplitKey.Length);
                             }
                             else if (arg.StartsWith(RecompKey, StringComparison.OrdinalIgnoreCase))
                             {
                                 if (recompress != null)
-                                    throw new InvalidCommandException($"Argument <Recomp> cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Argument <Recomp> cannot be duplicated", rawCode);
                                 recompress = arg.Substring(RecompKey.Length);
                             }
                             else if (arg.Equals("BOOT", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (boot != false)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                if (boot)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 boot = true;
                             }
                             else if (arg.Equals("CHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check != null)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = true;
                             }
                             else if (arg.Equals("NOCHECK", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (check != null)
-                                    throw new InvalidCommandException($"Flag cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 check = false;
                             }
                             else

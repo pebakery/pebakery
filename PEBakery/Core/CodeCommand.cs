@@ -2766,7 +2766,7 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimExtractBulk : CodeInfo
-    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB]
+    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR]
         public string SrcWim;
         public string ImageIndex;
         public string ListFile;
@@ -2775,8 +2775,11 @@ namespace PEBakery.Core
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool NoAttribFlag;
+        public bool NoErrFlag;
 
-        public CodeInfo_WimExtractBulk(string srcWim, string imageIndex, string listFile, string destDir, string split, bool check, bool noAcl, bool noAttrib)
+        public CodeInfo_WimExtractBulk(
+            string srcWim, string imageIndex, string listFile, string destDir, string split,
+            bool check, bool noAcl, bool noAttrib, bool noErr)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
@@ -2786,6 +2789,7 @@ namespace PEBakery.Core
             CheckFlag = check;
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
+            NoErrFlag = noErr;
         }
 
         public override string ToString()
@@ -2811,6 +2815,8 @@ namespace PEBakery.Core
                 b.Append(",NOACL");
             if (NoAttribFlag)
                 b.Append(",NOATTRIB");
+            if (NoErrFlag)
+                b.Append(",NOERR");
             return b.ToString();
         }
     }

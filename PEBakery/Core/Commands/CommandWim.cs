@@ -675,6 +675,7 @@ namespace PEBakery.Core.Commands
             {
                 List<string> extractNormalPaths = new List<string>();
                 List<string> extractGlobPaths = new List<string>();
+
                 Encoding encoding = FileHelper.DetectTextEncoding(listFilePath);
                 using (StreamReader r = new StreamReader(listFilePath, encoding, false))
                 {
@@ -734,8 +735,29 @@ namespace PEBakery.Core.Commands
 
                     try
                     {
-                        wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractFlags);
-                        wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
+                        if (info.NoErrFlag)
+                        {
+                            /*
+                            Wim.ResetErrorFile();
+                            wim.ExtractPathList(imageIndex, destDir, unicodeListFile, extractGlobFlags);
+                            foreach (string err in Wim.GetErrors())
+                            {
+                                logs.Add(new LogInfo(LogState.Warning, err));
+                            }
+                            */
+
+                            Wim.ResetErrorFile();
+                            wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractGlobFlags);
+                            logs.AddRange(Wim.GetErrors().Select(x => new LogInfo(LogState.Warning, x)));
+
+                            wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
+                        }
+                        else
+                        {
+                            wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractFlags);
+                            wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
+                        }
+                            
                         logs.Add(new LogInfo(LogState.Success, $"Extracted files to [{destDir}] from [{srcWim}:{imageIndex}], based on [{listFilePath}]"));
                     }
                     finally

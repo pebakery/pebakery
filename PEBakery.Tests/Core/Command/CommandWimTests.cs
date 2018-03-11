@@ -184,7 +184,10 @@ namespace PEBakery.Tests.Core.Command
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string pbDestDir = StringEscaper.Escape(destDir);
 
-            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[] { "ACDE.txt" });
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\XPRESS.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                "ACDE.txt"
+            });
             ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
             {
                 Path.Combine("ABCD", "Z", "X.txt"),
@@ -221,6 +224,16 @@ namespace PEBakery.Tests.Core.Command
             { // Unicode test with Korean letter
                 "나", "다"
             }, ErrorCheck.Error);
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir}", destDir, new string[]
+            {
+                Path.Combine("Z.txt"),
+            }, ErrorCheck.Error);
+
+            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},NOERR", destDir, new string[]
+            {
+                Path.Combine("Z.txt"),
+            }, ErrorCheck.Warning);
         }
 
         public void ExtractBulk_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
@@ -233,8 +246,8 @@ namespace PEBakery.Tests.Core.Command
                 {
                     using (StreamWriter w = new StreamWriter(listFile, false, Encoding.Unicode))
                     {
-                        for (int i = 0; i < compFiles.Length; i++)
-                            w.WriteLine(@"\" + compFiles[i]);
+                        foreach (string f in compFiles)
+                            w.WriteLine(@"\" + f);
                     }
                 }
 
