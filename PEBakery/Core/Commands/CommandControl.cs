@@ -135,7 +135,7 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath,  scriptFile, out _);
 
             // Does section exists?
             if (!sc.Sections.ContainsKey(sectionName))
@@ -185,8 +185,7 @@ namespace PEBakery.Core.Commands
             string message = StringEscaper.Preprocess(s, info.Message);
 
             s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
-            if (s.RunningSubProcess != null)
-                s.RunningSubProcess.Kill();
+            s.RunningSubProcess?.Kill();
             s.CmdHaltFlag = true;
 
             logs.Add(new LogInfo(LogState.Warning, message, cmd));

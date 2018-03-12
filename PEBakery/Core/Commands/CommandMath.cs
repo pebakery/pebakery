@@ -63,9 +63,9 @@ namespace PEBakery.Core.Commands
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
                         if (!NumberHelper.ParseDecimal(srcStr1, out decimal src1))
-                            throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseDecimal(srcStr2, out decimal src2))
-                            throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                         decimal destInt;
                         if (type == MathType.Add)
@@ -93,9 +93,9 @@ namespace PEBakery.Core.Commands
                         if (srcStr1.StartsWith("-", StringComparison.Ordinal) || srcStr2.StartsWith("-", StringComparison.Ordinal))
                         { // Signed
                             if (!NumberHelper.ParseInt64(srcStr1, out long src1))
-                                throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                             if (!NumberHelper.ParseInt64(srcStr2, out long src2))
-                                throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                             long q = src1 / src2;
                             long r = src1 % src2;
@@ -106,9 +106,9 @@ namespace PEBakery.Core.Commands
                         else
                         { // Unsigned
                             if (!NumberHelper.ParseUInt64(srcStr1, out ulong src1))
-                                throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                             if (!NumberHelper.ParseUInt64(srcStr2, out ulong src2))
-                                throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                             ulong q = src1 / src2;
                             ulong r = src1 % src2;
@@ -125,7 +125,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                         decimal destInt = (src * -1);
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, destInt.ToString()));
@@ -150,7 +150,7 @@ namespace PEBakery.Core.Commands
                                 case 8:
                                     {
                                         if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((sbyte)src).ToString();
                                     }
@@ -158,7 +158,7 @@ namespace PEBakery.Core.Commands
                                 case 16:
                                     {
                                         if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((short)src).ToString();
                                     }
@@ -166,7 +166,7 @@ namespace PEBakery.Core.Commands
                                 case 32:
                                     {
                                         if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((int)src).ToString();
                                     }
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
                                 case 64:
                                     {
                                         if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((long)src).ToString();
                                     }
@@ -190,7 +190,7 @@ namespace PEBakery.Core.Commands
                                 case 8:
                                     {
                                         if (!NumberHelper.ParseInt8(srcStr, out sbyte src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((byte)src).ToString();
                                     }
@@ -198,7 +198,7 @@ namespace PEBakery.Core.Commands
                                 case 16:
                                     {
                                         if (!NumberHelper.ParseInt16(srcStr, out short src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((ushort)src).ToString();
                                     }
@@ -206,7 +206,7 @@ namespace PEBakery.Core.Commands
                                 case 32:
                                     {
                                         if (!NumberHelper.ParseInt32(srcStr, out int src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((uint)src).ToString();
                                     }
@@ -214,7 +214,7 @@ namespace PEBakery.Core.Commands
                                 case 64:
                                     {
                                         if (!NumberHelper.ParseInt64(srcStr, out long src))
-                                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                         destStr = ((ulong)src).ToString();
                                     }
@@ -241,13 +241,13 @@ namespace PEBakery.Core.Commands
                         if (srcStr1.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src1 = true;
                         else if (!srcStr1.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr1}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not valid boolean value");
 
                         bool src2 = false;
                         if (srcStr2.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src2 = true;
                         else if (!srcStr2.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr2}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not valid boolean value");
 
                         bool dest;
                         if (type == MathType.BoolAnd)
@@ -272,7 +272,7 @@ namespace PEBakery.Core.Commands
                         if (srcStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                             src = true;
                         else if (!srcStr.Equals("False", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{srcStr}] is not valid boolean value");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not valid boolean value");
 
                         bool dest = !src;
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
@@ -289,9 +289,9 @@ namespace PEBakery.Core.Commands
                         string srcStr2 = StringEscaper.Preprocess(s, subInfo.Src2);
 
                         if (!NumberHelper.ParseUInt64(srcStr1, out ulong src1))
-                            throw new ExecuteException($"[{srcStr1}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr1}] is not a valid integer");
                         if (!NumberHelper.ParseUInt64(srcStr2, out ulong src2))
-                            throw new ExecuteException($"[{srcStr2}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr2}] is not a valid integer");
 
                         ulong dest;
                         if (type == MathType.BitAnd)
@@ -320,7 +320,7 @@ namespace PEBakery.Core.Commands
                             case 8:
                                 {
                                     if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     destStr = ((byte)(~src)).ToString();
                                 }
@@ -328,7 +328,7 @@ namespace PEBakery.Core.Commands
                             case 16:
                                 {
                                     if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     destStr = ((ushort)(~src)).ToString();
                                 }
@@ -336,7 +336,7 @@ namespace PEBakery.Core.Commands
                             case 32:
                                 {
                                     if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     destStr = ((uint)(~src)).ToString();
                                 }
@@ -344,7 +344,7 @@ namespace PEBakery.Core.Commands
                             case 64:
                                 {
                                     if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     destStr = ((ulong)(~src)).ToString();
                                 }
@@ -365,14 +365,14 @@ namespace PEBakery.Core.Commands
 
                         string shiftStr = StringEscaper.Preprocess(s, subInfo.Shift);
                         if (!NumberHelper.ParseInt32(shiftStr, out int shift))
-                            throw new ExecuteException($"[{shiftStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{shiftStr}] is not a valid integer");
 
                         string leftRightStr = StringEscaper.Preprocess(s, subInfo.LeftRight);
                         bool isLeft = false;
                         if (leftRightStr.Equals("Left", StringComparison.OrdinalIgnoreCase))
                             isLeft = true;
                         else if (!leftRightStr.Equals("Right", StringComparison.OrdinalIgnoreCase))
-                            throw new ExecuteException($"[{leftRightStr}] must be one of [Left, Right]");
+                            return LogInfo.LogErrorMessage(logs, $"[{leftRightStr}] must be one of [Left, Right]");
 
                         string destStr;
                         switch (subInfo.BitSize)
@@ -380,7 +380,7 @@ namespace PEBakery.Core.Commands
                             case 8:
                                 {
                                     if (!NumberHelper.ParseUInt8(srcStr, out byte src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     byte dest;
                                     if (isLeft)
@@ -393,7 +393,7 @@ namespace PEBakery.Core.Commands
                             case 16:
                                 {
                                     if (!NumberHelper.ParseUInt16(srcStr, out ushort src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     ushort dest;
                                     if (isLeft)
@@ -406,7 +406,7 @@ namespace PEBakery.Core.Commands
                             case 32:
                                 {
                                     if (!NumberHelper.ParseUInt32(srcStr, out uint src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     uint dest;
                                     if (isLeft)
@@ -419,7 +419,7 @@ namespace PEBakery.Core.Commands
                             case 64:
                                 {
                                     if (!NumberHelper.ParseUInt64(srcStr, out ulong src))
-                                        throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                                        return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                                     ulong dest;
                                     if (isLeft)
@@ -445,14 +445,14 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseInt64(srcStr, out long srcInt))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                         string unitStr = StringEscaper.Preprocess(s, subInfo.Unit);
                         // Is roundToStr number?
                         if (!NumberHelper.ParseInt64(unitStr, out long unit))
-                            throw new ExecuteException($"[{unitStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{unitStr}] is not a valid integer");
                         if (unit < 0)
-                            throw new ExecuteException($"[{unit}] must be positive integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{unit}] must be positive integer");
 
                         long destInt;
                         long remainder = srcInt % unit;
@@ -483,7 +483,7 @@ namespace PEBakery.Core.Commands
 
                         string srcStr = StringEscaper.Preprocess(s, subInfo.Src);
                         if (!NumberHelper.ParseDecimal(srcStr, out decimal src))
-                            throw new ExecuteException($"[{srcStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{srcStr}] is not a valid integer");
 
                         decimal dest = System.Math.Abs(src);
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
@@ -496,11 +496,11 @@ namespace PEBakery.Core.Commands
 
                         string baseStr = StringEscaper.Preprocess(s, subInfo.Base);
                         if (!NumberHelper.ParseDecimal(baseStr, out decimal _base))
-                            throw new ExecuteException($"[{baseStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{baseStr}] is not a valid integer");
 
                         string powerStr = StringEscaper.Preprocess(s, subInfo.Power);
                         if (!NumberHelper.ParseUInt32(powerStr, out uint power))
-                            throw new ExecuteException($"[{baseStr}] is not a postivie integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{baseStr}] is not a postivie integer");
 
                         decimal dest = NumberHelper.DecimalPower(_base, power);
                         logs.AddRange(Variables.SetVariable(s, subInfo.DestVar, dest.ToString()));
@@ -517,22 +517,22 @@ namespace PEBakery.Core.Commands
                         {
                             case 8:
                                 if (!NumberHelper.ParseSignedUInt8(intStr, out byte u8))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 8bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 8bit integer");
                                 dest = u8.ToString("X2");
                                 break;
                             case 16:
                                 if (!NumberHelper.ParseSignedUInt16(intStr, out ushort u16))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 16bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 16bit integer");
                                 dest = u16.ToString("X4");
                                 break;
                             case 32:
                                 if (!NumberHelper.ParseSignedUInt32(intStr, out uint u32))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 32bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 32bit integer");
                                 dest = u32.ToString("X8");
                                 break;
                             case 64:
                                 if (!NumberHelper.ParseSignedUInt64(intStr, out ulong u64))
-                                    throw new ExecuteException($"[{intStr}] is not a valid 64bit integer");
+                                    return LogInfo.LogErrorMessage(logs, $"[{intStr}] is not a valid 64bit integer");
                                 dest = u64.ToString("X16");
                                 break;
                             default:

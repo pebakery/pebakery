@@ -54,7 +54,7 @@ namespace PEBakery.Core.Commands
             string hiveFile = StringEscaper.Preprocess(s, info.HiveFile);
 
             if (!File.Exists(hiveFile))
-                throw new ExecuteException($"Hive file [{hiveFile}] does not exist");
+                return LogInfo.LogErrorMessage(logs, $"Hive file [{hiveFile}] does not exist");
 
             if (!privilegesEnabled)
             {
@@ -113,18 +113,18 @@ namespace PEBakery.Core.Commands
             string valueDataStr;
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, false))
             {
+                if (subKey == null)
+                    return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
+
                 object valueData = subKey.GetValue(valueName, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                 if (valueData == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot read registry key [{fullKeyPath}]"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Cannot read registry key [{fullKeyPath}]");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 switch (kind)
                 { 
                     case RegistryValueKind.None:
-                        throw new ExecuteException($"Cannot read empty value [{fullKeyPath}\\{valueName}]");
+                        return LogInfo.LogErrorMessage(logs, $"Cannot read empty value [{fullKeyPath}\\{valueName}]");
                     case RegistryValueKind.String:
                     case RegistryValueKind.ExpandString:
                         valueDataStr = (string)valueData;
@@ -142,8 +142,7 @@ namespace PEBakery.Core.Commands
                         valueDataStr = ((ulong)(long)valueData).ToString();
                         break;
                     default:
-                        logs.Add(new LogInfo(LogState.Error, $"Unsupported registry value type [0x{((int) kind).ToString("0:X")}]"));
-                        return logs;
+                        return LogInfo.LogErrorMessage(logs, $"Unsupported registry value type [0x{(int)kind:0:X}]");
                 }
             }
 
@@ -222,7 +221,7 @@ namespace PEBakery.Core.Commands
                                 string[] binStrs = StringEscaper.Preprocess(s, info.ValueDatas).ToArray();
                                 string valueData = StringEscaper.PackRegBinary(binStrs);
                                 if (!StringEscaper.UnpackRegBinary(binStrs, out byte[] binData))
-                                    throw new ExecuteException($"[{valueData}] is not valid binary data");
+                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
                                 subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
                                 logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                             }
@@ -230,7 +229,7 @@ namespace PEBakery.Core.Commands
                             { // Use info.ValueData
                                 string valueData = StringEscaper.Preprocess(s, info.ValueData);
                                 if (!StringEscaper.UnpackRegBinary(valueData, out byte[] binData))
-                                    throw new ExecuteException($"[{valueData}] is not valid binary data");
+                                    return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not valid binary data");
                                 subKey.SetValue(valueName, binData, RegistryValueKind.Binary);
                                 logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_BINARY [{valueData}]"));
                             }
@@ -248,7 +247,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt32(valueData, out uint valUInt32))
                                 subKey.SetValue(valueName, (int)valUInt32, RegistryValueKind.DWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not a valid DWORD");
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not a valid DWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_DWORD [{valueData}]"));
                         }
                         break;
@@ -260,7 +259,7 @@ namespace PEBakery.Core.Commands
                             else if (NumberHelper.ParseUInt64(valueData, out ulong valUInt64))
                                 subKey.SetValue(valueName, (long)valUInt64, RegistryValueKind.QWord);
                             else
-                                throw new ExecuteException($"[{valueData}] is not a valid QWORD");
+                                return LogInfo.LogErrorMessage(logs, $"[{valueData}] is not a valid QWORD");
                             logs.Add(new LogInfo(LogState.Success, $"Registry value [{fullValuePath}] set to REG_QWORD [{valueData}]"));
                         }
                         break;
@@ -282,7 +281,7 @@ namespace PEBakery.Core.Commands
             string hKeyStr = StringEscaper.Preprocess(s, info.HKey);
             RegistryKey hKey = RegistryHelper.ParseStringToRegKey(hKeyStr);
             if (hKey == null)
-                throw new ExecuteException($"Invalid HKey [{hKeyStr}]");
+                return LogInfo.LogErrorMessage(logs, $"Invalid HKey [{hKeyStr}]");
 
             string valTypeStr = StringEscaper.Preprocess(s, info.ValueType);
 
@@ -373,24 +372,15 @@ namespace PEBakery.Core.Commands
             using (RegistryKey subKey = info.HKey.OpenSubKey(keyPath, true))
             {
                 if (subKey == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullKeyPath}] does not exist"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry key [{fullKeyPath}] does not exist");
 
                 object regRead = subKey.GetValue(valueName, null);
                 if (regRead == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry value [{fullKeyPath}\\{valueName}] does not exist"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry value [{fullKeyPath}\\{valueName}] does not exist");
 
                 RegistryValueKind kind = subKey.GetValueKind(valueName);
                 if (kind != RegistryValueKind.MultiString)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Registry value [{fullKeyPath}\\{valueName}] is not REG_MULTI_SZ"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"Registry value [{fullKeyPath}\\{valueName}] is not REG_MULTI_SZ");
 
                 List<string> multiStrs = ((string[])regRead).ToList();
                 switch (info.ActionType)
@@ -432,7 +422,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -459,7 +449,7 @@ namespace PEBakery.Core.Commands
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -478,13 +468,13 @@ namespace PEBakery.Core.Commands
                     case RegMultiType.Place:
                         {
                             if (!NumberHelper.ParseInt32(arg1, out int idx))
-                                throw new ExecuteException($"[{arg1}] is not a valid integer");
+                                return LogInfo.LogErrorMessage(logs, $"[{arg1}] is not a valid integer");
                             if (idx < 1)
-                                throw new ExecuteException($"Index [{arg1}] must be positive integer");
+                                return LogInfo.LogErrorMessage(logs, $"Index [{arg1}] must be positive integer");
 
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
@@ -525,16 +515,15 @@ namespace PEBakery.Core.Commands
                         {
                             if (arg2 == null)
                             {
-                                logs.Add(new LogInfo(LogState.Error, $"Operation [Before] of RegMulti requires 6 arguemnts"));
+                                logs.Add(new LogInfo(LogState.Error, "Operation [Before] of RegMulti requires 6 arguemnts"));
                                 return logs;
                             }
 
                             if (Variables.DetermineType(info.Arg2) == Variables.VarKeyType.None)
-                                throw new ExecuteException($"[{info.Arg2}] is not a valid variable name");
+                                return LogInfo.LogErrorMessage(logs, $"[{info.Arg2}] is not a valid variable name");
 
-                            string idxStr;
                             int idx = multiStrs.FindIndex(x => x.Equals(arg1, StringComparison.OrdinalIgnoreCase));
-                            idxStr = (idx + 1).ToString();
+                            string idxStr = (idx + 1).ToString();
 
                             if (idx == -1) // Not Found -> Write 0 into DestVar
                                 logs.Add(new LogInfo(LogState.Success, $"[{arg1}] does not exist in REG_MULTI_SZ [{fullKeyPath}]\\{valueName}]"));

@@ -121,7 +121,7 @@ namespace PEBakery.Core.Commands
                         string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
                         int byteLen = HashHelper.GetHashByteLen(info.HashType);
                         if (hashDigest.Length != byteLen)
-                            throw new ExecuteException($"Hash digest [{hashDigest}] is not [{info.HashType}]");
+                            return LogInfo.LogErrorMessage(logs, $"Hash digest [{hashDigest}] is not [{info.HashType}]");
 
                         string downDigest;
                         using (FileStream fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read))

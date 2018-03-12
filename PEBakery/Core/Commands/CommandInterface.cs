@@ -122,7 +122,7 @@ namespace PEBakery.Core.Commands
                 if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                     visibility = true;
                 else if (visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase) == false)
-                    throw new ExecuteException($"Invalid boolean value [{visibilityStr}]");
+                    return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
                 prepArgs.Add(new Tuple<string, bool>(info.InterfaceKey, visibility));
             }
@@ -389,9 +389,9 @@ namespace PEBakery.Core.Commands
                 string timeoutStr = StringEscaper.Preprocess(s, info.Timeout);
                 
                 if (NumberHelper.ParseInt32(timeoutStr, out int timeout) == false)
-                    throw new ExecuteException($"[{timeoutStr}] is not a valid positive integer");
+                    return LogInfo.LogErrorMessage(logs, $"[{timeoutStr}] is not a valid positive integer");
                 if (timeout <= 0)
-                    throw new ExecuteException($"Timeout must be a positive integer [{timeoutStr}]");
+                    return LogInfo.LogErrorMessage(logs, $"Timeout must be a positive integer [{timeoutStr}]");
 
                 Application.Current?.Dispatcher.Invoke(() =>
                 {

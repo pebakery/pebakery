@@ -163,7 +163,7 @@ namespace PEBakery.Core.Commands
             List<string> dirs = sc.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
-                throw new ExecuteException($"Directory [{dirName}] not exists in [{scriptFile}]");
+                return LogInfo.LogErrorMessage(logs, $"Directory [{dirName}] not exists in [{scriptFile}]");
 
             if (!Directory.Exists(destDir))
             {

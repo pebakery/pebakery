@@ -50,10 +50,10 @@ namespace PEBakery.Core.Commands
             string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
-            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new ExecuteException("Section name cannot be empty");
-            if (key.Equals(string.Empty, StringComparison.Ordinal))
-                throw new ExecuteException("Key name cannot be empty");
+            if (sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+            if (key.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
             string value = Ini.GetKey(fileName, sectionName, key);
             if (value != null)
@@ -95,13 +95,13 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniRead info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-                string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
+                string key = StringEscaper.Preprocess(s, info.Key); 
 
-                if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new ExecuteException("Section name cannot be empty");
-                if (key.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new ExecuteException("Key name cannot be empty");
+                if (sectionName.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+                if (key.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
                 keys[i] = new IniKey(sectionName, key);
             }
@@ -146,14 +146,14 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWrite info = cmd.Info as CodeInfo_IniWrite;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-            string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); 
+            string key = StringEscaper.Preprocess(s, info.Key); 
             string value = StringEscaper.Preprocess(s, info.Value);
 
-            if(sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
-            if (key.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
+            if(sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+            if (key.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -193,14 +193,14 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniWrite info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-                string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                string key = StringEscaper.Preprocess(s, info.Key);
                 string value = StringEscaper.Preprocess(s, info.Value);
 
-                if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
-                if (key.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
+                if (sectionName.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+                if (key.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
                 keys[i] = new IniKey(sectionName, key, value);
             }
@@ -241,13 +241,13 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniDelete info = cmd.Info as CodeInfo_IniDelete;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-            string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
+            string key = StringEscaper.Preprocess(s, info.Key);
 
-            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
-            if (key.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
+            if (sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+            if (key.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -283,13 +283,13 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniDelete info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-                string key = StringEscaper.Preprocess(s, info.Key); // WB082 : 여기 값은 변수 Expand는 안 하나, Escaping은 한다.
+                string sectionName = StringEscaper.Preprocess(s, info.Section);
+                string key = StringEscaper.Preprocess(s, info.Key); 
 
-                if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
-                if (key.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Key name cannot be empty", cmd);
+                if (sectionName.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
+                if (key.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
                 keys[i] = new IniKey(sectionName, key);
             }
@@ -329,8 +329,8 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
 
-            if (section.Equals(string.Empty, StringComparison.Ordinal))
-                throw new ExecuteException("Section name cannot be empty");
+            if (section.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
             IniKey[] keys = Ini.ReadSection(fileName, section);
             if (keys != null)
@@ -379,8 +379,8 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniReadSection info = infoOp.Infos[i];
 
                 string section = StringEscaper.Preprocess(s, info.Section);
-                if (section.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new ExecuteException("Section name cannot be empty");
+                if (section.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
                 sections[i] = section;
                 destVars[i] = info.DestVar;
@@ -431,10 +431,10 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniAddSection info = cmd.Info as CodeInfo_IniAddSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
 
-            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+            if (sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -475,9 +475,9 @@ namespace PEBakery.Core.Commands
             {
                 CodeInfo_IniAddSection info = infoOp.Infos[i];
 
-                string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-                if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+                string sectionName = StringEscaper.Preprocess(s, info.Section); 
+                if (sectionName.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
                 sections[i] = sectionName;
             }
@@ -512,10 +512,10 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniDeleteSection info = cmd.Info as CodeInfo_IniDeleteSection;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section); 
 
-            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+            if (sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -553,8 +553,8 @@ namespace PEBakery.Core.Commands
                 CodeInfo_IniDeleteSection info = infoOp.Infos[i];
 
                 string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
-                if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                    throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+                if (sectionName.Length == 0)
+                    return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
                 sections[i] = sectionName;
             }
@@ -585,11 +585,11 @@ namespace PEBakery.Core.Commands
             CodeInfo_IniWriteTextLine info = cmd.Info as CodeInfo_IniWriteTextLine;
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); // WB082 : 여기 값은 변수 Expand 안한다.
+            string sectionName = StringEscaper.Preprocess(s, info.Section);
             string line = StringEscaper.Preprocess(s, info.Line); 
 
-            if (sectionName.Equals(string.Empty, StringComparison.Ordinal))
-                throw new InvalidCodeCommandException("Section name cannot be empty", cmd);
+            if (sectionName.Length == 0)
+                return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
