@@ -619,5 +619,43 @@ namespace PEBakery.Core.Commands
 
             return logs;
         }
+
+        public static List<LogInfo> RegCopy(EngineState s, CodeCommand cmd)
+        { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
+            List<LogInfo> logs = new List<LogInfo>();
+
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RegCopy));
+            CodeInfo_RegCopy info = cmd.Info as CodeInfo_RegCopy;
+
+            string srcKeyPath = StringEscaper.Preprocess(s, info.SrcKeyPath);
+            string destKeyPath = StringEscaper.Preprocess(s, info.DestKeyPath);
+
+            string hSrcKeyStr = RegistryHelper.RegKeyToString(info.HSrcKey);
+            string hDestKeyStr = RegistryHelper.RegKeyToString(info.HDestKey);
+            if (hSrcKeyStr == null || hDestKeyStr == null)
+                throw new InternalException("Internal Logic Error");
+            string fullSrcKeyPath = $"{hSrcKeyStr}\\{srcKeyPath}";
+            string fullDestKeyPath = $"{hDestKeyStr}\\{destKeyPath}";
+
+            using (Process proc = new Process())
+            {
+                proc.StartInfo.FileName = "REG.exe";
+                proc.StartInfo.Arguments = $"COPY \"{fullSrcKeyPath}\" \"{fullDestKeyPath}\" /S /F"; // Forces copy of all subkeys and values without prompting
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.Verb = "Open";
+                proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                proc.StartInfo.CreateNoWindow = true;
+                proc.Start();
+
+                proc.WaitForExit();
+
+                if (proc.ExitCode == 0) // Success
+                    logs.Add(new LogInfo(LogState.Success, $"Registry key [{fullSrcKeyPath}] copied to [{fullDestKeyPath}]"));
+                else // Failure
+                    logs.Add(new LogInfo(LogState.Error, $"Registry key [{fullSrcKeyPath}] could not be copied"));
+            }
+
+            return logs;
+        }
     }
 }

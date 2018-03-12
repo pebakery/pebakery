@@ -733,6 +733,17 @@ namespace PEBakery.Core
 
                         return new CodeInfo_RegExport(hKey, args[1], args[2]);
                     }
+                case CodeType.RegCopy:
+                    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
+                        const int argCount = 4;
+                        if (args.Count != argCount)
+                            throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
+
+                        RegistryKey hSrcKey = RegistryHelper.ParseStringToRegKey(args[0]);
+                        RegistryKey hDestKey = RegistryHelper.ParseStringToRegKey(args[2]);
+
+                        return new CodeInfo_RegCopy(hSrcKey, args[1], hDestKey, args[3]);
+                    }
                 #endregion
                 #region 03 Text
                 case CodeType.TXTAddLine:
