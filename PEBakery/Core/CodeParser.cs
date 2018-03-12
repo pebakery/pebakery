@@ -323,7 +323,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region ParseCodeInfo, CheckInfoArgumentCount
+        #region ParseCodeInfo
         public static CodeInfo ParseCodeInfo(string rawCode, ref CodeType type, string macroType, List<string> args, SectionAddress addr, int lineIdx)
         {
             switch (type)
@@ -1064,48 +1064,72 @@ namespace PEBakery.Core
                 // 06 Network
                 case CodeType.WebGet:
                 case CodeType.WebGetIfNotExist: // Will be deprecated
-                    {
-                        // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
-                        // WebGetIfNotExist,<URL>,<DestPath>,[HashType],[HashDigest]
+                    { // WebGet,<URL>,<DestPath>,[HashType=HashDigest],[NOERR]
                         const int minArgCount = 2;
-                        const int maxArgCount = 5; // WB082 Spec allows args up to 5 - WebGet,<URL>,<DestPath>,[MD5_Digest],[ASK],[TIMEOUT_int]
+                        const int maxArgCount = 4; 
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        string hashType = null;
+                        HashHelper.HashType hashType = HashHelper.HashType.None;
                         string hashDigest = null;
+                        bool noErr = false;
 
-                        if (args.Count == 4)
+                        const string MD5Key = "MD5=";
+                        const string SHA1Key = "SHA1=";
+                        const string SHA256Key = "SHA256=";
+                        const string SHA384Key = "SHA384=";
+                        const string SHA512Key = "SHA512=";
+                        for (int i = minArgCount; i < args.Count; i++)
                         {
-                            if (args[2].Length != 32) // If this statement follows WB082 Spec, Just ignore.
+                            string arg = args[i];
+                            if (arg.StartsWith(MD5Key, StringComparison.OrdinalIgnoreCase))
                             {
-                                hashType = args[2];
-                                hashDigest = args[3];
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <MD5> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.MD5;
+                                hashDigest = arg.Substring(MD5Key.Length);
+                            }
+                            else if (arg.StartsWith(SHA1Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA1> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA1;
+                                hashDigest = arg.Substring(SHA1Key.Length);
+                            }
+                            else if (arg.StartsWith(SHA256Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA256> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA256;
+                                hashDigest = arg.Substring(SHA256Key.Length);
+                            }
+                            else if (arg.StartsWith(SHA384Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA384> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA384;
+                                hashDigest = arg.Substring(SHA384Key.Length);
+                            }
+                            else if (arg.StartsWith(SHA512Key, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (hashType != HashHelper.HashType.None || hashDigest != null)
+                                    throw new InvalidCommandException("Argument <SHA512> cannot be duplicated", rawCode);
+                                hashType = HashHelper.HashType.SHA512;
+                                hashDigest = arg.Substring(SHA512Key.Length);
+                            }
+                            else if (arg.Equals("NOERR", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noErr)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noErr = true;
+                            }
+                            else
+                            {
+                                throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_WebGet(args[0], args[1], null, hashType, hashDigest);
-                    }
-                case CodeType.WebGetStatus:
-                    { // WebGetStatus,<URL>,<DestPath>,<DestVar>,[HashType],[HashDigest]
-                        const int minArgCount = 3;
-                        const int maxArgCount = 5;
-                        if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
-                            throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
-
-                        string destVar = args[2];
-                        if (Variables.DetermineType(destVar) == Variables.VarKeyType.None)
-                            throw new InvalidCommandException($"[{destVar}] is not valid variable name", rawCode);
-
-                        string hashType = null;
-                        string hashDigest = null;
-                        if (args.Count == 5)
-                        {
-                            hashType = args[3];
-                            hashDigest = args[4];
-                        }
-
-                        return new CodeInfo_WebGet(args[0], args[1], destVar, hashType, hashDigest);
+                        return new CodeInfo_WebGet(args[0], args[1], hashType, hashDigest, noErr);
                     }
                 #endregion
                 #region 07 Script
@@ -1495,7 +1519,6 @@ namespace PEBakery.Core
                         bool noAcl = false;
                         bool noAttrib = false;
                         bool noErr = false;
-
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -2206,7 +2229,9 @@ namespace PEBakery.Core
                     #endregion
             }
         }
+        #endregion
 
+        #region CheckInfoArgumentCount
         /// <summary>
         /// Check CodeCommand's argument count
         /// </summary>
@@ -2216,21 +2241,10 @@ namespace PEBakery.Core
         /// <returns>Return true if invalid</returns>
         public static bool CheckInfoArgumentCount(List<string> op, int min, int max)
         {
-            if (max == -1)
-            { // Unlimited argument count
-                if (op.Count < min)
-                    return true;
-                else
-                    return false;
-            }
-            else
-            {
-                if (op.Count < min || max < op.Count)
-                    return true;
-                else
-                    return false;
-            }
-
+            if (max == -1) // Unlimited argument count
+                return op.Count < min;
+             else
+                return op.Count < min || max < op.Count;
         }
         #endregion
 

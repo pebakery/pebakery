@@ -562,7 +562,6 @@ namespace PEBakery.Core
                     #endregion
                     #region 06 Network
                     case CodeType.WebGet:
-                    case CodeType.WebGetStatus:
                     case CodeType.WebGetIfNotExist: // Deprecated
                         logs.AddRange(CommandNetwork.WebGet(s, cmd));
                         break;

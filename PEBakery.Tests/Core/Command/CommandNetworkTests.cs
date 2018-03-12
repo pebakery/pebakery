@@ -35,10 +35,12 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("Command")]
         [TestCategory("CommandNetwork")]
         public void Network_WebGet()
-        { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
+        { 
             EngineState s = EngineTests.CreateEngineState();
 
             WebGet_1(s);
+            WebGet_2(s);
+            WebGet_3(s);
             WebGet_MD5(s);
             WebGet_SHA1(s);
             WebGet_SHA256(s);
@@ -60,6 +62,59 @@ namespace PEBakery.Tests.Core.Command
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(tempSrc))
+                    File.Delete(tempSrc);
+                if (File.Exists(tempDest))
+                    File.Delete(tempDest);
+            }
+        }
+
+        public void WebGet_2(EngineState s)
+        {
+            string tempSrc = Path.GetTempFileName();
+            string tempDest = Path.GetTempFileName();
+
+            try
+            {
+                File.Delete(tempSrc);
+                File.Delete(tempDest);
+
+                Uri fileUri = new Uri(tempSrc);
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\"";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
+
+                Assert.IsFalse(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("0", StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (File.Exists(tempSrc))
+                    File.Delete(tempSrc);
+                if (File.Exists(tempDest))
+                    File.Delete(tempDest);
+            }
+        }
+
+        public void WebGet_3(EngineState s)
+        {
+            string tempSrc = Path.GetTempFileName();
+            string tempDest = Path.GetTempFileName();
+
+            try
+            {
+                File.Delete(tempSrc);
+                File.Delete(tempDest);
+
+                Uri fileUri = new Uri(tempSrc);
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",NOERR";
+                EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Warning);
+
+                Assert.IsFalse(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("0", StringComparison.Ordinal));
             }
             finally
             {
@@ -79,10 +134,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5,1179cf94187d2d2f94010a8d39099543";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5=1179cf94187d2d2f94010a8d39099543";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
-                Assert.IsTrue(File.Exists(tempSrc));
+                Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
             }
             finally
             {
@@ -102,10 +158,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA1,0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA1=0aaac8883f1c8dd48dbf974299a9422f1ab437ee";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
             }
             finally
             {
@@ -125,10 +182,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA256,3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA256=3596bc5a263736c9d5b9a06e85a66ed2a866b457a44e5ed8548e504ca5599772";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
             }
             finally
             {
@@ -148,10 +206,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA384,e068a3ac0b4ab4b37306dc354af6b8a4c89ef3fbbf1db969ec6d6a4281f1ab1f472fcd7bc2f16c0cf41c1991056846a6";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA384=e068a3ac0b4ab4b37306dc354af6b8a4c89ef3fbbf1db969ec6d6a4281f1ab1f472fcd7bc2f16c0cf41c1991056846a6";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
             }
             finally
             {
@@ -171,10 +230,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA512,f5829cb5e052ab5ef6820630fd992acabb798512d21b5c5295fb81b88b74f3812863c0804e730f26e166b51d77eb5f1de200fd75913278522da78fbb269600cc";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",SHA512=f5829cb5e052ab5ef6820630fd992acabb798512d21b5c5295fb81b88b74f3812863c0804e730f26e166b51d77eb5f1de200fd75913278522da78fbb269600cc";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Success);
 
                 Assert.IsTrue(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("200", StringComparison.Ordinal));
             }
             finally
             {
@@ -194,105 +254,11 @@ namespace PEBakery.Tests.Core.Command
             try
             {
                 Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5,00000000000000000000000000000000";
+                string rawCode = $"WebGet,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",MD5=00000000000000000000000000000000";
                 EngineTests.Eval(s, rawCode, CodeType.WebGet, ErrorCheck.Error);
-            }
-            finally
-            {
-                if (File.Exists(tempSrc))
-                    File.Delete(tempSrc);
-                if (File.Exists(tempDest))
-                    File.Delete(tempDest);
-            }
-        }
-        #endregion
 
-        #region WebGetStatus
-        [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandNetwork")]
-        public void Network_WebGetStatus()
-        { // WebGetStatus,<URL>,<DestPath>,<DestVar>,[HashType],[HashDigest]
-            EngineState s = EngineTests.CreateEngineState();
-
-            WebGetStatus_1(s);
-            WebGetStatus_2(s);
-        }
-
-        public void WebGetStatus_1(EngineState s)
-        {
-            string tempSrc = CommandHashTests.SampleText();
-            string tempDest = Path.GetTempFileName();
-            File.Delete(tempDest);
-
-            try
-            {
-                Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGetStatus,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",%Dest%";
-                EngineTests.Eval(s, rawCode, CodeType.WebGetStatus, ErrorCheck.Success);
-
-                Assert.IsTrue(File.Exists(tempSrc));
-                Assert.IsTrue(File.Exists(tempDest));
-                Assert.IsTrue(s.Variables["Dest"].Equals("200", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(tempSrc))
-                    File.Delete(tempSrc);
-                if (File.Exists(tempDest))
-                    File.Delete(tempDest);
-            }
-        }
-
-        public void WebGetStatus_2(EngineState s)
-        {
-            string tempSrc = Path.GetTempFileName();
-            string tempDest = Path.GetTempFileName();
-
-            try
-            {
-                File.Delete(tempSrc);
-                File.Delete(tempDest);
-
-                Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGetStatus,\"{fileUri.AbsoluteUri}\",\"{tempDest}\",%Dest%";
-                EngineTests.Eval(s, rawCode, CodeType.WebGetStatus, ErrorCheck.Warning);
-
-                Assert.IsTrue(s.Variables["Dest"].Equals("0", StringComparison.Ordinal));
-            }
-            finally
-            {
-                if (File.Exists(tempSrc))
-                    File.Delete(tempSrc);
-                if (File.Exists(tempDest))
-                    File.Delete(tempDest);
-            }
-        }
-        #endregion
-
-        #region WebGetIfNotExist
-        [TestMethod]
-        [TestCategory("Command")]
-        [TestCategory("CommandNetwork")]
-        public void Network_WebGetIfNotExist()
-        { // WebGetIfNotExist,<URL>,<DestPath>,[HashType],[HashDigest]
-            WebGetIfNotExist_Local();
-        }
-
-        public void WebGetIfNotExist_Local()
-        {
-            string tempSrc = CommandHashTests.SampleText();
-            string tempDest = Path.GetTempFileName();
-
-            try
-            {
-                Uri fileUri = new Uri(tempSrc);
-                string rawCode = $"WebGetIfNotExist,\"{fileUri.AbsoluteUri}\",\"{tempDest}\"";
-                EngineState s = EngineTests.Eval(rawCode, CodeType.WebGetIfNotExist, ErrorCheck.Warning);
-
-                // WebGet should have been ignored
-                FileInfo info = new FileInfo(tempDest);
-                Assert.IsTrue(info.Length == 0);
+                Assert.IsFalse(File.Exists(tempDest));
+                Assert.IsTrue(s.Variables["StatusCode"].Equals("1", StringComparison.Ordinal));
             }
             finally
             {

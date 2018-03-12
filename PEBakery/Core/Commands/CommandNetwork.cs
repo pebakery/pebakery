@@ -50,6 +50,7 @@ namespace PEBakery.Core.Commands
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
+            const string destVar = @"%StatusCode%";
 
             // Check PathSecurity in destPath
             {
@@ -88,113 +89,70 @@ namespace PEBakery.Core.Commands
             s.MainViewModel.BuildCommandProgressShow = true;
             try
             {
-                if (info.HashType != null && info.HashDigest != null)
-                { // Calculate Hash After Downloading
-                    string tempPath = Path.GetTempFileName();
-
-                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, tempPath);
-                    if (info.DestVar == null)
-                    { // Standard WebGet
-                        if (result)
-                        {
-                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
-                        }
-                        else
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
-                            logs.Add(new LogInfo(LogState.Info, errorMsg));
-                            if (statusCode == 0)
-                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
-                            else
-                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
-                            return logs;
-                        }
-                    }
-                    else
-                    { // WebGetStatus
-                        if (result)
-                        {
-                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
-                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
-                            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
-                            logs.AddRange(varLogs);
-                        }
-                        else
-                        {
-                            logs.Add(new LogInfo(LogState.Warning, $"Error occured while downloading [{url}]"));
-                            logs.Add(new LogInfo(LogState.Info, errorMsg));
-                            if (statusCode == 0)
-                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
-                            else
-                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
-                            List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
-                            logs.AddRange(varLogs);
-                            return logs;
-                        }
-                    }
-
-                    string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
-                    string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
-
-                    HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);
-                    int byteLen = HashHelper.GetHashByteLen(hashType);
-                    if (hashDigest.Length != byteLen)
-                        throw new ExecuteException($"Hash digest [{hashDigest}] is not [{hashTypeStr}]");
-
-                    string downDigest;
-                    using (FileStream fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read))
-                    {
-                        downDigest = HashHelper.CalcHashString(hashType, fs);
-                    }
-
-                    if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
-                    {
-                        File.Move(tempPath, destFile);
-                        logs.Add(new LogInfo(LogState.Success, $"[{url}] was downloaded to [{destPath}] and it's integerity was verified."));
-                    }
-                    else
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"Downloaded [{url}], but the file was corrupted"));
-                    }
-                }
-                else
-                { // No Hash
+                if (info.HashType == HashHelper.HashType.None)
+                { // Standard WebGet
                     (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, destFile);
-                    if (info.DestVar == null)
-                    { // Standard WebGet
-                        if (result)
-                        {
-                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
-                        }
-                        else
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"Error occured while downloading [{url}]"));
-                            logs.Add(new LogInfo(LogState.Info, errorMsg));
-                            if (statusCode == 0)
-                                logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
-                            else
-                                logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
-                        }
+                    if (result)
+                    {
+                        logs.Add(new LogInfo(LogState.Success, $"[{destPath}] downloaded from [{url}]"));
                     }
                     else
-                    { // WebGetStatus
-                        if (result)
-                        {
-                            logs.Add(new LogInfo(LogState.Success, $"[{url}] downloaded to [{destPath}]"));
-                        }
-                        else
-                        {
-                            logs.Add(new LogInfo(LogState.Warning, $"Error occured while downloading [{url}]"));
-                            logs.Add(new LogInfo(LogState.Info, errorMsg));
-                        }
-
+                    {
+                        LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
+                        logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
+                        logs.Add(new LogInfo(LogState.Info, errorMsg));
                         if (statusCode == 0)
                             logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
                         else
                             logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
-                        List<LogInfo> varLogs = Variables.SetVariable(s, info.DestVar, statusCode.ToString());
-                        logs.AddRange(varLogs);
                     }
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
+                    logs.AddRange(varLogs);
+                }
+                else
+                { // Validate downloaded file with hash
+                    Debug.Assert(info.HashDigest != null);
+
+                    string tempPath = Path.GetTempFileName();
+                    (bool result, int statusCode, string errorMsg) = DownloadFile(s, url, tempPath);
+                    if (result)
+                    { // Success -> Check hash
+                        string hashDigest = StringEscaper.Preprocess(s, info.HashDigest);
+                        int byteLen = HashHelper.GetHashByteLen(info.HashType);
+                        if (hashDigest.Length != byteLen)
+                            throw new ExecuteException($"Hash digest [{hashDigest}] is not [{info.HashType}]");
+
+                        string downDigest;
+                        using (FileStream fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read))
+                        {
+                            downDigest = HashHelper.CalcHashString(info.HashType, fs);
+                        }
+
+                        if (hashDigest.Equals(downDigest, StringComparison.OrdinalIgnoreCase)) // Success
+                        {
+                            File.Move(tempPath, destFile);
+                            logs.Add(new LogInfo(LogState.Success, $"[{destPath}] downloaded from [{url}] and verified "));
+                        }
+                        else
+                        {
+                            statusCode = 1;
+                            logs.Add(new LogInfo(LogState.Error, $"Downloaded file from [{url}] was corrupted"));
+                        }
+                    }
+                    else
+                    { // Failure -> Log error message
+                        LogState state = info.NoErrFlag ? LogState.Warning : LogState.Error;
+                        logs.Add(new LogInfo(state, $"Error occured while downloading [{url}]"));
+                        logs.Add(new LogInfo(LogState.Info, errorMsg));
+                        if (statusCode == 0)
+                            logs.Add(new LogInfo(LogState.Info, "Request failed, no response received."));
+                        else
+                            logs.Add(new LogInfo(LogState.Info, $"Response returned HTTP Status Code [{statusCode}]"));
+                    }
+
+                    List<LogInfo> varLogs = Variables.SetVariable(s, destVar, statusCode.ToString());
+                    logs.AddRange(varLogs);
                 }
             }
             finally
