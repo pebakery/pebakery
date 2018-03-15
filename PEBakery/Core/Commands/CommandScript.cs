@@ -83,11 +83,9 @@ namespace PEBakery.Core.Commands
             }
 
             string destPath = Path.Combine(destDir, fileName);
-            using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, fileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
-                ms.Position = 0;
-                ms.CopyTo(fs);
+                EncodedFile.ExtractFile(sc, dirName, fileName, fs);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted to [{destDir}]"));
@@ -116,11 +114,9 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
-            using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, info.FileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
-                ms.Position = 0;
-                ms.CopyTo(fs);
+                EncodedFile.ExtractFile(sc, dirName, info.FileName, fs);
             }
 
             ProcessStartInfo startInfo = new ProcessStartInfo
@@ -177,11 +173,9 @@ namespace PEBakery.Core.Commands
             Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {
-                using (MemoryStream ms = EncodedFile.ExtractFile(sc, dirName, file))
                 using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
                 {
-                    ms.Position = 0;
-                    ms.CopyTo(fs);
+                    EncodedFile.ExtractFile(sc, dirName, file, fs);
                 }
             }
 

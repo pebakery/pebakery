@@ -33,7 +33,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -70,19 +72,19 @@ namespace PEBakery.Core
         1B : [Length of FileName]
         511B : [FileName]
     0x200 - 0x207 : 8B  -> Length of Raw File
-    0x208 - 0x20F : 8B  -> (Type 1) Length of zlib-Compressed File
+    0x208 - 0x20F : 8B  -> (Type 1) Length of zlib-compressed File
                            (Type 2) Null-padded
-                           (Type 3) Length of LZMA-Compressed File
+                           (Type 3) Length of LZMA-compressed File
     0x210 - 0x21F : 16B -> Null-padded
     0x220 - 0x223 : 4B  -> CRC32 of Raw File
-    0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01)
+    0x224         : 1B  -> Compress Mode (Type 1 : 00, Type 2 : 01, Type 3 : 02)
     0x225         : 1B  -> Compress Level (Type 1, 3 : 01 ~ 09, Type 2 : 00)
 
     [FinalFooter]
     Not compressed, 36Byte (0x24)
     0x00 - 0x04   : 4B  -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
     0x04 - 0x08   : 4B  -> Unknown - Always 1
-    0x08 - 0x0B   : 4B  -> WB082 ZLBArchive version - Always 2
+    0x08 - 0x0B   : 4B  -> WB082 ZLBArchive Component version - Always 2
     0x0C - 0x0F   : 4B  -> Zlib Compressed FirstFooter Length
     0x10 - 0x17   : 8B  -> Zlib Compressed File Length
     0x18 - 0x1B   : 4B  -> Unknown - Always 1
@@ -158,7 +160,7 @@ namespace PEBakery.Core
             return Encode(sc, dirName, fileName, srcBuffer, type);
         }
 
-        public static MemoryStream ExtractFile(Script sc, string dirName, string fileName)
+        public static void ExtractFile(Script sc, string dirName, string fileName, Stream outStream)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
 
@@ -167,7 +169,7 @@ namespace PEBakery.Core
                 throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
-            return Decode(encoded);
+            Decode(encoded, outStream);
         }
 
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
@@ -187,7 +189,10 @@ namespace PEBakery.Core
                 throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
 
             List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
-            return Decode(encoded);
+            MemoryStream ms = new MemoryStream();
+            Decode(encoded, ms);
+            ms.Position = 0;
+            return ms;
         }
 
         public static MemoryStream ExtractInterfaceEncoded(Script sc, string fileName)
@@ -197,7 +202,10 @@ namespace PEBakery.Core
                 throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
-            return Decode(encoded);
+            MemoryStream ms = new MemoryStream();
+            Decode(encoded, ms);
+            ms.Position = 0;
+            return ms;
         }
         #endregion
 
@@ -229,160 +237,133 @@ namespace PEBakery.Core
                     fileOverwrite = true;
             }
 
-            string encodedStr;
-            using (MemoryStream bodyStream = new MemoryStream())
-            using (MemoryStream footerStream = new MemoryStream())
-            using (MemoryStream concatStream = new MemoryStream())
+            int encodedLen;
+            string tempFile = Path.GetTempFileName();
+            List<IniKey> keys;
+            try
             {
-                // [Stage 1] Compress file with zlib
-                switch (mode)
+                using (FileStream encodeStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
                 {
-                    case EncodeMode.ZLib:
-                        {
-                            using (ZLibStream zs = new ZLibStream(bodyStream, CompressionMode.Compress, CompressionLevel.Level6, true))
+                    // [Stage 1] Compress file with zlib
+                    switch (mode)
+                    {
+                        case EncodeMode.ZLib:
+                            using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
                                 inputStream.CopyTo(zs);
                             }
-                        }
-                        break;
-                    case EncodeMode.Raw:
-                        {
-                            inputStream.CopyTo(bodyStream);
-                        }
-                        break;
-                    case EncodeMode.XZ:
-                        {
-                            using (XZOutputStream xzs = new XZOutputStream(bodyStream, Environment.ProcessorCount, XZOutputStream.DefaultPreset, true))
+                            break;
+                        case EncodeMode.Raw:
+                            inputStream.CopyTo(encodeStream);
+                            break;
+                        case EncodeMode.XZ:
+                            using (XZOutputStream xzs = new XZOutputStream(encodeStream, Environment.ProcessorCount, XZOutputStream.DefaultPreset, true))
                             {
                                 inputStream.CopyTo(xzs);
                             }
+                            break;
+                        default:
+                            throw new InternalException($"Wrong EncodeMode [{mode}]");
+                    }
+                    long bodyLen = encodeStream.Position;
+                    long inputLen = inputStream.Length;
+
+                    // [Stage 2] Generate first footer
+                    byte[] rawFooter = new byte[0x226]; // 0x550
+                    {
+                        // 0x000 - 0x1FF : Filename and its length
+                        rawFooter[0] = (byte)fileNameUTF8.Length;
+                        fileNameUTF8.CopyTo(rawFooter, 1);
+                        for (int i = 1 + fileNameUTF8.Length; i < 0x200; i++)
+                            rawFooter[i] = 0; // Null Pad
+                        // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
+                        BitConverter.GetBytes(inputLen).CopyTo(rawFooter, 0x200);
+                        switch (mode)
+                        {
+                            case EncodeMode.ZLib: // Type 1
+                            case EncodeMode.XZ: // Type 3
+                                // 0x208 - 0x20F : 8B -> Length of compressed body, in little endian
+                                BitConverter.GetBytes(bodyLen).CopyTo(rawFooter, 0x208);
+                                // 0x210 - 0x21F : 16B -> Null padding
+                                for (int i = 0x210; i < 0x220; i++)
+                                    rawFooter[i] = 0;
+                                break;
+                            case EncodeMode.Raw: // Type 2
+                                // 0x208 - 0x21F : 16B -> Null padding
+                                for (int i = 0x208; i < 0x220; i++)
+                                    rawFooter[i] = 0;
+                                break;
+                            default:
+                                throw new InternalException($"Wrong EncodeMode [{mode}]");
                         }
-                        break;
-                    default:
-                        throw new InternalException($"Wrong EncodeMode [{mode}]");
-                }
-
-                bodyStream.Flush();
-                bodyStream.Position = 0;
-                inputStream.Position = 0;
-
-                // [Stage 2] Generate first footer
-                byte[] rawFooter = new byte[0x226]; // 0x550
-                {
-                    // 0x000 - 0x1FF : Filename and its length
-                    rawFooter[0] = (byte)fileNameUTF8.Length;
-                    fileNameUTF8.CopyTo(rawFooter, 1);
-                    for (int i = 1 + fileNameUTF8.Length; i < 0x200; i++)
-                        rawFooter[i] = 0; // Null Pad
-                    // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
-                    BitConverter.GetBytes(inputStream.Length).CopyTo(rawFooter, 0x200);
-                    switch (mode)
-                    {
-                        case EncodeMode.ZLib: // Type 1
-                        case EncodeMode.XZ: // Type 3
-                            // 0x208 - 0x20F : 8B -> Length of zlibed body, in little endian
-                            BitConverter.GetBytes(bodyStream.Length).CopyTo(rawFooter, 0x208);
-                            // 0x210 - 0x21F : 16B -> Null padding
-                            for (int i = 0x210; i < 0x220; i++)
-                                rawFooter[i] = 0;
-                            break;
-                        case EncodeMode.Raw: // Type 2
-                            // 0x208 - 0x21F : 16B -> Null padding
-                            for (int i = 0x208; i < 0x220; i++)
-                                rawFooter[i] = 0;
-                            break;
-                        default:
-                            throw new InternalException($"Wrong EncodeMode [{mode}]");
+                        // 0x220 - 0x223 : CRC32 of raw file
+                        BitConverter.GetBytes(CalcCrc32(inputStream)).CopyTo(rawFooter, 0x220);
+                        // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+                        rawFooter[0x224] = (byte)mode;
+                        // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
+                        switch (mode)
+                        {
+                            case EncodeMode.ZLib: // Type 1
+                                rawFooter[0x225] = (byte)CompressionLevel.Level6;
+                                break;
+                            case EncodeMode.Raw: // Type 2
+                                rawFooter[0x225] = 0;
+                                break;
+                            case EncodeMode.XZ: // Type 3
+                                rawFooter[0x225] = (byte)XZOutputStream.DefaultPreset;
+                                break;
+                            default:
+                                throw new InternalException($"Wrong EncodeMode [{mode}]");
+                        }
                     }
-                    // 0x220 - 0x223 : CRC32 of raw file
-                    uint crc32 = Crc32Checksum.Crc32(inputStream);
-                    inputStream.Position = 0;
-                    BitConverter.GetBytes(crc32).CopyTo(rawFooter, 0x220);
-                    // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
-                    rawFooter[0x224] = (byte) mode;
-                    // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
-                    switch (mode)
+
+                    // [Stage 3] Compress first footer and concat to body
+                    using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Default, true))
                     {
-                        case EncodeMode.ZLib: // Type 1
-                            rawFooter[0x225] = (byte)CompressionLevel.Level6;
-                            break;
-                        case EncodeMode.Raw: // Type 2
-                            rawFooter[0x225] = 0;
-                            break;
-                        case EncodeMode.XZ: // Type 3
-                            rawFooter[0x225] = (byte)XZOutputStream.DefaultPreset;
-                            break;
-                        default:
-                            throw new InternalException($"Wrong EncodeMode [{mode}]");
+                        zs.Write(rawFooter, 0, rawFooter.Length);
                     }
+                    encodeStream.Flush();
+                    long zlibedFooterLen = encodeStream.Position - bodyLen;
+
+                    // [Stage 4] Generate final footer
+                    {
+                        byte[] finalFooter = new byte[0x24];
+
+                        // 0x00 - 0x04 : 4B -> CRC32 of compressed body and compressed footer
+                        BitConverter.GetBytes(CalcCrc32(encodeStream)).CopyTo(finalFooter, 0x00);
+                        // 0x04 - 0x08 : 4B -> Unknown - Always 1
+                        BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x04);
+                        // 0x08 - 0x0B : 4B -> Delphi ZLBArchive Component version (Always 2)
+                        BitConverter.GetBytes((uint)2).CopyTo(finalFooter, 0x08);
+                        // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+                        BitConverter.GetBytes((int)zlibedFooterLen).CopyTo(finalFooter, 0x0C);
+                        // 0x10 - 0x17 : 8B -> Compressed/Raw File Length
+                        BitConverter.GetBytes(bodyLen).CopyTo(finalFooter, 0x10);
+                        // 0x18 - 0x1B : 4B -> Unknown - Always 1
+                        BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x18);
+                        // 0x1C - 0x23 : 8B -> Unknown - Always 0
+                        for (int i = 0x1C; i < 0x24; i++)
+                            finalFooter[i] = 0;
+
+                        encodeStream.Write(finalFooter, 0, finalFooter.Length);
+                    }
+
+                    // [Stage 5] Encode with Base64 and split into 4090B
+                    encodeStream.Flush();
+                    (keys, encodedLen) = SplitBase64.Encode(encodeStream, section);
                 }
-
-                // [Stage 3] Compress first footer
-                using (ZLibStream zs = new ZLibStream(footerStream, CompressionMode.Compress, CompressionLevel.Default, true))
-                {
-                    zs.Write(rawFooter, 0, rawFooter.Length);
-                }
-                footerStream.Position = 0;
-
-                // [Stage 4] Concat body and footer
-                bodyStream.CopyTo(concatStream);
-                footerStream.CopyTo(concatStream);
-                bodyStream.Position = 0;
-                footerStream.Position = 0;
-
-                // [Stage 5] Generate final footer
-                {
-                    byte[] finalFooter = new byte[0x24];
-
-                    // 0x00 - 0x04 : 4B -> CRC32 of compressed body and compressed footer
-                    uint crc32 = Crc32Checksum.Crc32(concatStream.ToArray());
-                    BitConverter.GetBytes(crc32).CopyTo(finalFooter, 0x00);
-                    // 0x04 - 0x08 : 4B -> Unknown - Always 1
-                    BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x04);
-                    // 0x08 - 0x0B : 4B -> ZLBArchive version (Always 2)
-                    BitConverter.GetBytes((uint)2).CopyTo(finalFooter, 0x08);
-                    // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
-                    BitConverter.GetBytes((int)footerStream.Length).CopyTo(finalFooter, 0x0C);
-                    // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
-                    BitConverter.GetBytes(bodyStream.Length).CopyTo(finalFooter, 0x10);
-                    // 0x18 - 0x1B : 4B -> Unknown - Always 1
-                    BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x18);
-                    // 0x1C - 0x23 : 8B -> Unknown - Always 0
-                    for (int i = 0x1C; i < 0x24; i++)
-                        finalFooter[i] = 0;
-
-                    concatStream.Write(finalFooter, 0, finalFooter.Length);
-                }
-
-                // [Stage 6] Encode body, footer and finalFooter with Base64
-                encodedStr = Convert.ToBase64String(concatStream.ToArray());
-                // Remove Base64 Padding (==, =)
-                if (encodedStr.EndsWith("==", StringComparison.Ordinal))
-                    encodedStr = encodedStr.Substring(0, encodedStr.Length - 2);
-                else if (encodedStr.EndsWith("=", StringComparison.Ordinal))
-                    encodedStr = encodedStr.Substring(0, encodedStr.Length - 1);
             }
-
-            // [Stage 7] Tokenize encoded string into 4090B.
-            List<IniKey> keys = new List<IniKey>(encodedStr.Length / 4090);
-            for (int i = 0; i <= (encodedStr.Length / 4090); i++)
+            finally
             {
-                if (i < (encodedStr.Length / 4090)) // 1 Line is 4090 characters
-                {
-                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, 4090))); // X=eJyFk0Fr20AQhe8G...
-                }
-                else // Last Iteration
-                {
-                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, encodedStr.Length - (i * 4090)))); // X=N3q8ryccAAQWuBjqA5QvAAAAAA (end)
-                    keys.Insert(0, new IniKey(section, "lines", i.ToString())); // lines=X
-                }
+                if (File.Exists(tempFile))
+                    File.Delete(tempFile);
             }
 
-            // [Stage 8] Before writing to file, backup original script
-            string tempFile = Path.GetTempFileName();
-            File.Copy(sc.RealPath, tempFile, true);
+            // [Stage 6] Before writing to file, backup original script
+            string backupFile = Path.GetTempFileName();
+            File.Copy(sc.RealPath, backupFile, true);
 
-            // [Stage 9] Write to file
+            // [Stage 7] Write to file
             try
             {
                 // Write folder info to [EncodedFolders]
@@ -393,12 +374,12 @@ namespace PEBakery.Core
                     if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
                         writeFolderSection = false;
                 }
-                
+
                 if (writeFolderSection)
                     Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
-                Ini.SetKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedStr.Length}"); // UncompressedSize,EncodedSize
+                Ini.SetKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
 
                 // Write encoded file into [EncodedFile-{dirName}-{fileName}]
                 if (fileOverwrite)
@@ -407,172 +388,242 @@ namespace PEBakery.Core
             }
             catch
             { // Error -> Rollback!
-                File.Copy(tempFile, sc.RealPath, true);
+                File.Copy(backupFile, sc.RealPath, true);
                 throw new FileDecodeFailException($"Error while writing encoded file into [{sc.RealPath}]");
             }
             finally
-            { // Delete temp script
-                File.Delete(tempFile);
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
             }
-
-            // [Stage 10] Refresh Script
+            
+            // [Stage 8] Refresh Script
             return sc.Project.RefreshScript(sc);
         }
         #endregion
 
-        #region Encode
-        private static MemoryStream Decode(List<string> encodedList)
+        #region Decode
+        private static long Decode(List<string> encodedList, Stream outStream)
         {
-            // if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-            //    throw new FileDecodeFailException("Encoded lines are malformed");
-            // int.TryParse(value, out int blockCount);
-
-            // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded;
+            string tempDecode = Path.GetTempFileName();
+            string tempComp = Path.GetTempFileName();
+            try
             {
-                encodedList.RemoveAt(0); // Remove "lines=n"
-
-                // Each line is 64KB block
-                if (Ini.GetKeyValueFromLines(encodedList, out _, out List<string> base64Blocks))
-                    throw new FileDecodeFailException("Encoded lines are malformed");
-
-                StringBuilder b = new StringBuilder();
-                foreach (string block in base64Blocks)
-                    b.Append(block);
-                switch (b.Length % 4)
+                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
                 {
-                    case 0:
-                        break;
-                    case 1:
-                        throw new FileDecodeFailException("Encoded lines are malformed");
-                    case 2:
-                        b.Append("==");
-                        break;
-                    case 3:
-                        b.Append("=");
-                        break;
-                }
+                    // [Stage 1] Concat sliced base64-encoded lines into one string
+                    int decodeLen = SplitBase64.Decode(encodedList, decodeStream);
 
-                decoded = Convert.FromBase64String(b.ToString());
-            }
+                    // [Stage 2] Read final footer
+                    const int finalFooterLen = 0x24;
+                    byte[] finalFooter = new byte[finalFooterLen];
+                    int finalFooterIdx = decodeLen - finalFooterLen;
 
-            // [Stage 2] Read final footer
-            const int finalFooterLen = 0x24;
-            int finalFooterIdx = decoded.Length - finalFooterLen;
-            // 0x00 - 0x04 : 4B -> CRC32
-            uint full_crc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
-            // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
-            int compressedFooterLen = (int) BitConverter.ToUInt32(decoded, finalFooterIdx + 0x0C);
-            int compressedFooterIdx = decoded.Length - (finalFooterLen + compressedFooterLen);
-            // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
-            int compressedBodyLen = (int) BitConverter.ToUInt64(decoded, finalFooterIdx + 0x10);
+                    decodeStream.Flush();
+                    decodeStream.Position = finalFooterIdx;
+                    int readByte = decodeStream.Read(finalFooter, 0, finalFooterLen);
+                    Debug.Assert(readByte == finalFooterLen);
 
-            // [Stage 3] Validate final footer
-            if (compressedBodyLen != compressedFooterIdx)
-                throw new FileDecodeFailException("Encoded file is corrupted");
-            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
-            if (full_crc32 != calcFull_crc32)
-                throw new FileDecodeFailException("Encoded file is corrupted");
+                    // 0x00 - 0x04 : 4B -> CRC32
+                    uint full_crc32 = BitConverter.ToUInt32(finalFooter, 0x00);
+                    // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+                    int compressedFooterLen = (int)BitConverter.ToUInt32(finalFooter, 0x0C);
+                    int compressedFooterIdx = finalFooterIdx - compressedFooterLen;
+                    // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
+                    int compressedBodyLen = (int)BitConverter.ToUInt64(finalFooter, 0x10);
 
-            // [Stage 4] Decompress first footer
-            byte[] rawFooter;
-            using (MemoryStream rawFooterStream = new MemoryStream())
-            {
-                using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
-                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
-                {
-                    zs.CopyTo(rawFooterStream);
-                }
+                    // [Stage 3] Validate final footer
+                    if (compressedBodyLen != compressedFooterIdx)
+                        throw new FileDecodeFailException("Encoded file is corrupted");
+                    if (full_crc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
+                        throw new FileDecodeFailException("Encoded file is corrupted");
 
-                rawFooter = rawFooterStream.ToArray();
-            }
+                    // [Stage 4] Decompress first footer
+                    byte[] firstFooter = new byte[0x226];
+                    using (MemoryStream compressedFooter = new MemoryStream(compressedFooterLen))
+                    { 
+                        decodeStream.Position = compressedFooterIdx;
+                        decodeStream.CopyTo(compressedFooter, compressedFooterLen);
+                        decodeStream.Position = 0;
 
-            // [Stage 5] Read first footer
-            // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
-            int rawBodyLen = BitConverter.ToInt32(rawFooter, 0x200);
-            // 0x208 - 0x20F : 8B -> Length of zlib-compressed file, in little endian
-            //     Note: In Type 2, 0x208 entry is null - padded
-            int compressedBodyLen2 = BitConverter.ToInt32(rawFooter, 0x208);
-            // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
-            uint compressedBody_crc32 = BitConverter.ToUInt32(rawFooter, 0x220);
-            // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
-            byte compMode = rawFooter[0x224];
-            // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
-            byte compLevel = rawFooter[0x225];
-
-            // [Stage 6] Validate first footer
-            switch ((EncodeMode)compMode)
-            {
-                case EncodeMode.ZLib: // Type 1, zlib
-                    {
-                        if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
-                        if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
-                    }
-                    break;
-                case EncodeMode.Raw: // Type 2, raw
-                    {
-                        if (compressedBodyLen2 != 0)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
-                        if (compLevel != 0)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
-                    }
-                    break;
-                case EncodeMode.XZ: // Type 3, LZMA
-                    {
-                        if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
-                        if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
-                    }
-                    break;
-                default:
-                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
-            }
-
-            // [Stage 7] Decompress body
-            MemoryStream rawBodyStream = new MemoryStream(); // This stream should be alive even after this method returns
-            switch ((EncodeMode)compMode)
-            {
-                case EncodeMode.ZLib: // Type 1, zlib
-                    {
-                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                        using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
+                        compressedFooter.Flush();
+                        compressedFooter.Position = 0;
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, CompressionMode.Decompress, CompressionLevel.Default))
                         {
-                            zs.CopyTo(rawBodyStream);
+                            readByte = zs.Read(firstFooter, 0, firstFooter.Length);
+                            Debug.Assert(readByte == firstFooter.Length);
                         }
                     }
-                    break;
-                case EncodeMode.Raw: // Type 2, raw
+
+                    // [Stage 5] Read first footer
+                    // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
+                    int rawBodyLen = BitConverter.ToInt32(firstFooter, 0x200);
+                    // 0x208 - 0x20F : 8B -> Length of zlib-compressed file, in little endian
+                    //     Note: In Type 2, 0x208 entry is null - padded
+                    int compressedBodyLen2 = BitConverter.ToInt32(firstFooter, 0x208);
+                    // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
+                    uint compressedBody_crc32 = BitConverter.ToUInt32(firstFooter, 0x220);
+                    // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+                    byte compMode = firstFooter[0x224];
+                    // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+                    byte compLevel = firstFooter[0x225];
+
+                    // [Stage 6] Validate first footer
+                    switch ((EncodeMode)compMode)
                     {
-                        // rawBodyStream = new MemoryStream(decoded, 0, rawBodyLen);
-                        rawBodyStream.Write(decoded, 0, rawBodyLen);
+                        case EncodeMode.ZLib: // Type 1, zlib
+                            if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
+                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            if (compLevel < 1 || 9 < compLevel)
+                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            break;
+                        case EncodeMode.Raw: // Type 2, raw
+                            if (compressedBodyLen2 != 0)
+                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            if (compLevel != 0)
+                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            break;
+                        case EncodeMode.XZ: // Type 3, LZMA
+                            if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
+                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            if (compLevel < 1 || 9 < compLevel)
+                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            break;
+                        default:
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                     }
-                    break;
-                case EncodeMode.XZ: // Type 3, LZMA
+
+                    // [Stage 7] Decompress body
+                    Crc32Checksum crc32 = new Crc32Checksum();
+                    long outPosBak = outStream.Position;
+                    switch ((EncodeMode)compMode)
                     {
-                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                        using (XZInputStream xzs = new XZInputStream(ms))
-                        {
-                            xzs.CopyTo(rawBodyStream);
-                        }
+                        case EncodeMode.ZLib: // Type 1, zlib
+                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                            {
+                                decodeStream.Position = 0;
+                                decodeStream.CopyTo(compStream, compressedBodyLen);
+
+                                compStream.Flush();
+                                compStream.Position = 0;
+                                using (ZLibStream zs = new ZLibStream(compStream, CompressionMode.Decompress, false))
+                                {
+                                    byte[] buffer = new byte[4096 * 1024]; // 4MB
+                                    while ((readByte = zs.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        crc32.Append(buffer, 0, readByte);
+                                        outStream.Write(buffer, 0, readByte);
+                                    }
+
+                                    // zs.CopyTo(outStream);
+                                }
+                            }
+                            break;
+                        case EncodeMode.Raw: // Type 2, raw
+                            {
+                                decodeStream.Position = 0;
+
+                                int offset = 0;
+                                byte[] buffer = new byte[4096 * 1024]; // 4MB
+                                while (offset < rawBodyLen)
+                                {
+                                    if (offset + buffer.Length < rawBodyLen)
+                                        readByte = decodeStream.Read(buffer, 0, buffer.Length);
+                                    else
+                                        readByte = decodeStream.Read(buffer, 0, rawBodyLen - offset);
+
+                                    crc32.Append(buffer, 0, readByte);
+                                    outStream.Write(buffer, 0, readByte);
+                                    
+                                    offset += readByte;
+                                }
+                            }
+                            break;
+                        case EncodeMode.XZ: // Type 3, LZMA
+                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                            {
+                                decodeStream.Position = 0;
+                                decodeStream.CopyTo(compStream, compressedBodyLen);
+
+                                compStream.Flush();
+                                compStream.Position = 0;
+                                using (XZInputStream xzs = new XZInputStream(compStream, false))
+                                {
+                                    byte[] buffer = new byte[4096 * 1024]; // 4MB
+                                    while ((readByte = xzs.Read(buffer, 0, buffer.Length)) != 0)
+                                    {
+                                        crc32.Append(buffer, 0, readByte);
+                                        outStream.Write(buffer, 0, readByte);
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                     }
-                    break;
-                default:
-                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                    int outLen = (int)(outStream.Position - outPosBak);
+
+                    // [Stage 8] Validate decompressed body
+                    if (compressedBody_crc32 != crc32.Checksum)
+                        throw new FileDecodeFailException("Encoded file is corrupted: body");
+
+                    return outLen;
+                }
+            }
+            finally
+            {
+                if (!File.Exists(tempDecode))
+                    File.Delete(tempDecode);
+                if (!File.Exists(tempComp))
+                    File.Delete(tempComp);
+            }
+        }
+        #endregion
+
+        #region Utility
+
+        private static uint CalcCrc32(Stream stream)
+        {
+            long posBak = stream.Position;
+            stream.Position = 0;
+
+            Crc32Checksum calc = new Crc32Checksum();
+            byte[] buffer = new byte[4096 * 1024]; // 4MB
+            while (stream.Position < stream.Length)
+            {
+                int readByte = stream.Read(buffer, 0, buffer.Length);
+                calc.Append(buffer, 0, readByte);
+            }
+            
+            stream.Position = posBak;
+            return calc.Checksum;
+        }
+
+        private static uint CalcCrc32(Stream stream, int startOffset, int length)
+        {
+            if (stream.Length <= startOffset)
+                throw new ArgumentOutOfRangeException(nameof(startOffset));
+            if (stream.Length <= startOffset + length)
+                throw new ArgumentOutOfRangeException(nameof(length));
+
+            long posBak = stream.Position;
+            stream.Position = startOffset;
+
+            int offset = startOffset;
+            Crc32Checksum calc = new Crc32Checksum();
+            byte[] buffer = new byte[4096 * 1024]; // 4MB
+            while (offset < startOffset + length)
+            {
+                int readByte = stream.Read(buffer, 0, buffer.Length);
+                if (offset + readByte < startOffset + length)
+                    calc.Append(buffer, 0, readByte);
+                else
+                    calc.Append(buffer, 0, startOffset + length - offset);
+                offset += readByte;
             }
 
-            rawBodyStream.Position = 0;
-
-            // [Stage 8] Validate decompressed body
-            uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
-            if (compressedBody_crc32 != calcCompBody_crc32)
-                throw new FileDecodeFailException("Encoded file is corrupted: body");
-
-            // [Stage 9] Return decompressed body stream
-            rawBodyStream.Position = 0;
-            return rawBodyStream;
+            stream.Position = posBak;
+            return calc.Checksum;
         }
         #endregion
     }
@@ -769,6 +820,106 @@ namespace PEBakery.Core
 
             // [Stage 9] Return decompressed body stream
             this.RawBodyStream.Position = 0;
+        }
+    }
+    #endregion
+
+    #region SplitBase64
+    public static class SplitBase64
+    {
+        public static (List<IniKey>, int) Encode(Stream stream, string section)
+        {
+            int idx = 0;
+            int encodedLen = 0;
+            List<IniKey> keys = new List<IniKey>((int)(stream.Length * 4 / 3) / 4090 + 1);
+
+            long posBak = stream.Position;
+            stream.Position = 0;
+
+            byte[] buffer = new byte[4090 * 1024 * 3]; // Process ~12MB at once (encode to ~16MB)
+            while (stream.Position < stream.Length)
+            {
+                int readByte = stream.Read(buffer, 0, buffer.Length);
+                string encodedStr = Convert.ToBase64String(buffer, 0, readByte);
+
+                // Count Base64 string length
+                encodedLen += encodedStr.Length;
+
+                // Remove Base64 Padding (==, =)
+                if (readByte < buffer.Length)
+                    encodedStr = encodedStr.TrimEnd('=');
+                    
+                // Tokenize encoded string by 4090 chars
+                int encodeLine = encodedStr.Length / 4090;
+                for (int x = 0; x < encodeLine; x++)
+                {
+                    keys.Add(new IniKey(section, idx.ToString(), encodedStr.Substring(x * 4090, 4090)));
+                    idx += 1;
+                }
+                keys.Add(new IniKey(section, idx.ToString(), encodedStr.Substring(encodeLine * 4090)));
+            }
+
+            stream.Position = posBak;
+
+            keys.Insert(0, new IniKey(section, "lines", idx.ToString())); // lines=X
+            return (keys, encodedLen);
+        }
+
+        public static int Decode(List<string> encodedList, Stream outStream)
+        {
+            // Remove "lines=n"
+            encodedList.RemoveAt(0);
+
+            // Each line is 64KB block
+            if (Ini.GetKeyValueFromLines(encodedList, out _, out List<string> base64Blocks))
+                throw new FileDecodeFailException("Encoded lines are malformed");
+
+            int lineCount = 0;
+            int encodeLen = 0;
+            int decodeLen = 0;
+            StringBuilder b = new StringBuilder(4090 * 1024 * 4); // Process encoded block ~16MB at once
+            while (lineCount < base64Blocks.Count)
+            { // One block is 4090B
+                string block = base64Blocks[lineCount];
+
+                b.Append(block);
+                lineCount += 1;
+                encodeLen += block.Length;
+
+                // If buffer is full, decode ~16MB to ~12MB raw bytes
+                if (lineCount % 1024 == 0)
+                {
+                    byte[] buffer = Convert.FromBase64String(b.ToString());
+                    decodeLen += buffer.Length;
+                    outStream.Write(buffer, 0, buffer.Length);
+                    b.Clear();
+                }
+                
+                // Last Line -> 
+                if (lineCount == base64Blocks.Count)
+                {
+                    // Append = padding
+                    switch (encodeLen % 4)
+                    {
+                        case 0:
+                            break;
+                        case 1:
+                            throw new FileDecodeFailException("Encoded lines are malformed");
+                        case 2:
+                            b.Append("==");
+                            break;
+                        case 3:
+                            b.Append("=");
+                            break;
+                    }
+
+                    byte[] buffer = Convert.FromBase64String(b.ToString());
+                    decodeLen += buffer.Length;
+                    outStream.Write(buffer, 0, buffer.Length);
+                }
+            }
+
+            return decodeLen;
         }
     }
     #endregion

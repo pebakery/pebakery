@@ -240,27 +240,24 @@ namespace PEBakery.Helper
         {
             long size = FileHelper.GetFileSize(srcFile);
 
-            MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open);
-            MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor();
-
-            byte[] buffer = new byte[signature.Length];
             bool found = false;
-
-            offset = 0;
-
-            for (long i = 0; i < size - signature.Length; i++)
+            using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(srcFile, FileMode.Open))
+            using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor())
             {
-                accessor.ReadArray(i, buffer, 0, buffer.Length);
-                if (signature.SequenceEqual(buffer))
+                byte[] buffer = new byte[signature.Length];
+                offset = 0;
+
+                for (long i = 0; i < size - signature.Length; i++)
                 {
-                    found = true;
-                    offset = i;
-                    break;
+                    accessor.ReadArray(i, buffer, 0, buffer.Length);
+                    if (signature.SequenceEqual(buffer))
+                    {
+                        found = true;
+                        offset = i;
+                        break;
+                    }
                 }
             }
-
-            accessor.Dispose();
-            mmap.Dispose();
 
             return found;
         }

@@ -86,8 +86,10 @@ namespace PEBakery.Tests.Core
 
                 // Check whether file can be successfully extracted
                 byte[] extractDigest;
-                using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", fileName))
+                using (MemoryStream ms = new MemoryStream())
                 {
+                    EncodedFile.ExtractFile(p, "FolderExample", fileName, ms);
+                    ms.Position = 0;
                     extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
                 }
 
@@ -124,8 +126,10 @@ namespace PEBakery.Tests.Core
             Script p = s.Project.LoadScriptMonkeyPatch(pPath);
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractFile(p, "FolderExample", fileName))
+            using (MemoryStream ms = new MemoryStream())
             {
+                EncodedFile.ExtractFile(p, "FolderExample", fileName, ms);
+                ms.Position = 0;
                 extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
             }
 
