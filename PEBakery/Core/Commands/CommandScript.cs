@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright (C) 2016-2018 Hajin Jang
+    Copyright (C) 2016-2017 Hajin Jang
     Licensed under GPL 3.0
  
     PEBakery is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@
     not derived from or based on this program. 
 */
 
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
@@ -52,6 +53,13 @@ namespace PEBakery.Core.Commands
          *   -> No Hello : Failure
          *   -> Hello is a file : Failure
          *   -> Hello is a direcotry : Extract files into directory.
+         * 
+         * PEBakery Behavior
+         * ExtractFile/ExtractAllFiles : DestDir must be Directory, create if not exists.
+         * Ex) (...),README.txt,%BaseDir%\Temp\Hello
+         *   -> No Hello : Create direcotry "Hello" and extract files into new directory.
+         *   -> Hello is a file : Failure
+         *   -> Hello is a directory : Extract files into directory.
          */
 
         public static List<LogInfo> ExtractFile(EngineState s, CodeCommand cmd)
@@ -66,7 +74,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir); // Should be directory name
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
             {
@@ -77,15 +85,22 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(destDir)) // DestDir already exists
             {
                 if (File.Exists(destDir)) // Error, cannot proceed
-                    return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory.");
-                
-                Directory.CreateDirectory(destDir);
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not a directory."));
+                    return logs;
+                }
+                else
+                {
+                    Directory.CreateDirectory(destDir);
+                }
             }
 
             string destPath = Path.Combine(destDir, fileName);
+            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, fileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
-                EncodedFile.ExtractFile(sc, dirName, fileName, fs);
+                ms.Position = 0;
+                ms.CopyTo(fs);
             }
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted to [{destDir}]"));
@@ -105,7 +120,7 @@ namespace PEBakery.Core.Commands
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             List<string> parameters = StringEscaper.Preprocess(s, info.Params);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             string destPath = Path.GetTempFileName();
             if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
@@ -114,26 +129,18 @@ namespace PEBakery.Core.Commands
                 return logs;
             }
 
+            using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, info.FileName))
             using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
             {
-                EncodedFile.ExtractFile(sc, dirName, info.FileName, fs);
+                ms.Position = 0;
+                ms.CopyTo(fs);
             }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = destPath,
-                UseShellExecute = true,
-            };
-                /*
-            if (!string.IsNullOrEmpty(info.Params))
-            {
-                string parameters = StringEscaper.Preprocess(s, info.Params);
-                proc.StartInfo.Arguments = parameters;
-                b.Append(" ");
-                b.Append(parameters);
-            }
-            */
-            Process.Start(startInfo);
+            Process proc = new Process();
+            proc.StartInfo.FileName = destPath;
+            proc.StartInfo.UseShellExecute = true;
+            proc.StartInfo.Verb = "Open";
+            proc.Start();
 
             logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted and executed"));
 
@@ -151,31 +158,41 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-                return LogInfo.LogErrorMessage(logs, errorMsg);
+            {
+                logs.Add(new LogInfo(LogState.Error, errorMsg));
+                return logs;
+            }
 
-            List<string> dirs = sc.Sections["EncodedFolders"].Lines;
+            List<string> dirs = p.Sections["EncodedFolders"].Lines;
             bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
             if (dirNameValid == false)
-                return LogInfo.LogErrorMessage(logs, $"Directory [{dirName}] not exists in [{scriptFile}]");
+                throw new ExecuteException($"Directory [{dirName}] not exists in [{scriptFile}]");
 
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
-                    return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory");
+                {
+                    logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] is not a directory"));
+                    return logs;
+                }
                 else
-                    return LogInfo.LogErrorMessage(logs, $"Directory [{destDir}] does not exist");
+                {
+                    Directory.CreateDirectory(destDir);
+                }
             }
 
-            List<string> lines = sc.Sections[dirName].Lines;
+            List<string> lines = p.Sections[dirName].Lines;
             Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(lines);
             foreach (string file in fileDict.Keys)
             {
+                using (MemoryStream ms = EncodedFile.ExtractFile(p, dirName, file))
                 using (FileStream fs = new FileStream(Path.Combine(destDir, file), FileMode.Create, FileAccess.Write))
                 {
-                    EncodedFile.ExtractFile(sc, dirName, file, fs);
+                    ms.Position = 0;
+                    ms.CopyTo(fs);
                 }
             }
 
@@ -195,27 +212,13 @@ namespace PEBakery.Core.Commands
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            EncodedFile.EncodeMode mode = EncodedFile.EncodeMode.ZLib;
-            if (info.Compression != null)
-            {
-                string encodeModeStr = StringEscaper.Preprocess(s, info.Compression);
-                if (encodeModeStr.Equals("None", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.Raw;
-                else if (encodeModeStr.Equals("Deflate", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.ZLib;
-                else if (encodeModeStr.Equals("LZMA", StringComparison.OrdinalIgnoreCase))
-                    mode = EncodedFile.EncodeMode.XZ;
-                else
-                    return LogInfo.LogErrorMessage(logs, $"[{encodeModeStr}] is invalid compression");
-            }
-           
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
+            Script p = Engine.GetScriptInstance(s, cmd, s.CurrentScript.FullPath, scriptFile, out bool inCurrentScript);
 
             // Check srcFileName contains wildcard
             if (filePath.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
-                EncodedFile.AttachFile(sc, dirName, Path.GetFileName(filePath), filePath, mode);
-                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{sc.RealPath}]", cmd));
+                EncodedFile.AttachFile(p, dirName, Path.GetFileName(filePath), filePath);
+                logs.Add(new LogInfo(LogState.Success, $"[{filePath}] was encoded into [{p.FullPath}]", cmd));
             }
             else
             { // With Wildcard
@@ -224,18 +227,18 @@ namespace PEBakery.Core.Commands
                 string[] files = Directory.GetFiles(srcDirToFind, Path.GetFileName(filePath));
 
                 if (0 < files.Length)
-                { // One or more file will be copidwed
-                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{sc.RealPath}]", cmd));
+                { // One or more file will be copied
+                    logs.Add(new LogInfo(LogState.Success, $"[{filePath}] will be encoded into [{p.FullPath}]", cmd));
                     for (int i = 0; i < files.Length; i++)
                     {
-                        EncodedFile.AttachFile(sc, dirName, Path.GetFileName(files[i]), files[i], mode);
+                        EncodedFile.AttachFile(p, dirName, Path.GetFileName(files[i]), files[i]);
                         logs.Add(new LogInfo(LogState.Success, $"[{files[i]}] encoded ({i + 1}/{files.Length})", cmd));
                     }
 
                     logs.Add(new LogInfo(LogState.Success, $"[{files.Length}] files copied", cmd));
                 }
                 else
-                { // No file will be compressed
+                { // No file will be copied
                     logs.Add(new LogInfo(LogState.Warning, $"Files matching wildcard [{filePath}] were not found", cmd));
                 }
             }
