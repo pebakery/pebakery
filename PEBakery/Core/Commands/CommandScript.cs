@@ -52,6 +52,13 @@ namespace PEBakery.Core.Commands
          *   -> No Hello : Failure
          *   -> Hello is a file : Failure
          *   -> Hello is a direcotry : Extract files into directory.
+         * 
+         * PEBakery Behavior
+         * ExtractFile/ExtractAllFiles : DestDir must be Directory, create if not exists.
+         * Ex) (...),README.txt,%BaseDir%\Temp\Hello
+         *   -> No Hello : Create direcotry "Hello" and extract files into new directory.
+         *   -> Hello is a file : Failure
+         *   -> Hello is a directory : Extract files into directory.
          */
 
         public static List<LogInfo> ExtractFile(EngineState s, CodeCommand cmd)
@@ -166,7 +173,7 @@ namespace PEBakery.Core.Commands
                 if (File.Exists(destDir))
                     return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory");
                 else
-                    return LogInfo.LogErrorMessage(logs, $"Directory [{destDir}] does not exist");
+                    Directory.CreateDirectory(destDir);
             }
 
             List<string> lines = sc.Sections[dirName].Lines;
