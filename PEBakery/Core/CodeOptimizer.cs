@@ -629,7 +629,7 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.SectionName}]";
+            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.Name}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList), cmdList[0].LineIdx);
         }
 
@@ -646,7 +646,7 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized TXTReplace at [{cmdList[0].Addr.Section.SectionName}]";
+            string rawCode = $"Optimized TXTReplace at [{cmdList[0].Addr.Section.Name}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTReplaceOp, new CodeInfo_TXTReplaceOp(infoList), cmdList[0].LineIdx);
         }
 
@@ -792,7 +792,7 @@ namespace PEBakery.Core
                 infoList.Add(info);
             }
 
-            string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.SectionName}]";
+            string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.Name}]";
             return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList), cmdList[0].LineIdx);
         }
         #endregion

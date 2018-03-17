@@ -203,7 +203,7 @@ namespace PEBakery.Core
         #region Update
         public void Update()
         {
-            Ini.SetKey(Addr.Script.RealPath, new IniKey(Addr.Section.SectionName, Key, ForgeRawLine(false)));
+            Ini.SetKey(Addr.Script.RealPath, new IniKey(Addr.Section.Name, Key, ForgeRawLine(false)));
         }
         
         public static void Update(List<UIControl> uiCmdList)
@@ -217,7 +217,7 @@ namespace PEBakery.Core
                     UIControl uiCmd = uiCmdList[i];
                     Debug.Assert(fullPath.Equals(uiCmd.Addr.Script.RealPath, StringComparison.OrdinalIgnoreCase));
 
-                    keys.Add(new IniKey(uiCmd.Addr.Section.SectionName, uiCmd.Key, uiCmd.ForgeRawLine(false)));
+                    keys.Add(new IniKey(uiCmd.Addr.Section.Name, uiCmd.Key, uiCmd.ForgeRawLine(false)));
                 }
 
                 Ini.SetKeys(fullPath, keys);

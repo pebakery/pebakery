@@ -97,7 +97,7 @@ namespace PEBakery.Core
             }
             catch (InvalidCodeCommandException e)
             {
-                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.SectionName}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
+                errorLogs.Add(new LogInfo(LogState.Error, $"Cannot parse Section [{addr.Section.Name}] : {Logger.LogExceptionMessage(e)}", e.Cmd));
             }
 
             if (OptimizeCode)

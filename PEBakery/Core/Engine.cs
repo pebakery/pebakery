@@ -301,7 +301,16 @@ namespace PEBakery.Core
         #region RunSection
         public static void RunSection(EngineState s, SectionAddress addr, List<string> sectionParams, int depth, bool callback)
         {
-            List<CodeCommand> codes = addr.Section.GetCodes(true);
+            List<CodeCommand> codes;
+            try
+            {
+                codes = addr.Section.GetCodes(true);
+            }
+            catch (InternalException)
+            {
+                s.Logger.Build_Write(s, new LogInfo(LogState.Error, $"Section [{addr.Section.Name}] is not a valid code section", s.CurDepth + 1));
+                return;
+            }
             s.Logger.Build_Write(s, LogInfo.AddDepth(addr.Section.LogInfos, s.CurDepth + 1));
 
             // Set CurrentSection
@@ -346,7 +355,7 @@ namespace PEBakery.Core
         {
             if (codes.Count == 0)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"No code in [{addr.Script.TreePath}]::[{addr.Section.SectionName}]", s.CurDepth + 1));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"No code in [{addr.Script.TreePath}]::[{addr.Section.Name}]", s.CurDepth + 1));
                 return;
             }
 

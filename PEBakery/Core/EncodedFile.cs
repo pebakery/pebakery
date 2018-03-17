@@ -85,7 +85,7 @@ namespace PEBakery.Core
     [FinalFooter]
     Not compressed, 36Byte (0x24)
     0x00 - 0x04   : 4B  -> CRC32 of Zlib-Compressed File and Zlib-Compressed FirstFooter
-    0x04 - 0x08   : 4B  -> Unknown - Always 1
+    0x04 - 0x08   : 4B  -> Unknown - Always 1 
     0x08 - 0x0B   : 4B  -> WB082 ZLBArchive Component version - Always 2
     0x0C - 0x0F   : 4B  -> Zlib Compressed FirstFooter Length
     0x10 - 0x17   : 8B  -> Zlib Compressed File Length

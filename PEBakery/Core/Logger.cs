@@ -675,9 +675,9 @@ namespace PEBakery.Core
                 turnOff = false;
 
             if (logScriptName)
-                LogStartOfSection(s, addr.Section.SectionName, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Section.Name, depth, sectionParam, cmd);
             else
-                LogStartOfSection(s, addr.Script.TreePath, addr.Section.SectionName, depth, sectionParam, cmd);
+                LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, sectionParam, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;
@@ -728,9 +728,9 @@ namespace PEBakery.Core
                 turnOff = false;
 
             if (logScriptName)
-                LogEndOfSection(s, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(s, addr.Section.Name, depth, cmd);
             else
-                LogEndOfSection(s, addr.Script.TreePath, addr.Section.SectionName, depth, cmd);
+                LogEndOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, cmd);
 
             if (forceLog && TurnOffOriginalValue)
                 turnOff = true;

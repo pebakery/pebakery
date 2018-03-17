@@ -99,28 +99,26 @@ namespace PEBakery.Core
     [Serializable]
     public struct SectionAddress
     {
-        public Script Script;
-        public ScriptSection Section;
+        public readonly Script Script;
+        public readonly ScriptSection Section;
 
         public Project Project => Script.Project;
 
         public SectionAddress(Script script, ScriptSection section)
         {
-            this.Script = script;
-            this.Section = section;
+            Script = script;
+            Section = section;
         }
 
         public override bool Equals(object obj)
         {
             if (obj is SectionAddress addr)
             {
-                bool result = true;
-                if (Script != addr.Script || Section != addr.Section)
-                    result = false;
+                bool result = (Script == addr.Script && Section == addr.Section);
                 return result;
             }
-            else
-                return false;
+            
+            return false;
         }
 
         public static bool operator ==(SectionAddress c1, SectionAddress c2)
@@ -135,7 +133,7 @@ namespace PEBakery.Core
 
         public override int GetHashCode()
         {
-            return Script.RealPath.GetHashCode() ^ Section.SectionName.GetHashCode();
+            return Script.RealPath.GetHashCode() ^ Section.Name.GetHashCode();
         }
     }
     #endregion

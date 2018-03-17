@@ -33,6 +33,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using PEBakery.Exceptions;
 
 namespace PEBakery.Core
 {
@@ -94,14 +95,29 @@ namespace PEBakery.Core
         }
 
         #region ValidateCodeSection
-        private List<LogInfo> ValidateCodeSection(ScriptSection section)
+        private List<LogInfo> ValidateCodeSection(ScriptSection section, string rawLine = null)
         {
             // Already processed, so skip
             if (visitedSections.Contains(section))
                 return new List<LogInfo>();
 
             // Force parsing of code, bypassing caching by section.GetCodes()
-            List<string> lines = section.GetLines();
+            List<string> lines;
+            try
+            {
+                lines = section.GetLines();
+            }
+            catch (InternalException)
+            {
+                string msg;
+                if (rawLine == null)
+                    msg = $"Section [{section.Name}] is not a valid code section";
+                else
+                    msg = $"Section [{section.Name}] is not a valid code section ({rawLine})";
+
+                return new List<LogInfo> { new LogInfo(LogState.Error, msg) };
+            }
+
             SectionAddress addr = new SectionAddress(sc, section);
             List<CodeCommand> codes = CodeParser.ParseStatements(lines, addr, out List<LogInfo> logs);
 
@@ -163,7 +179,7 @@ namespace PEBakery.Core
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName]));
+                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName], cmd.RawCode));
                                 else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
@@ -181,13 +197,11 @@ namespace PEBakery.Core
                             if (info.ScriptFile.Equals("%ScriptFile%", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (sc.Sections.ContainsKey(info.SectionName))
-                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName]));
+                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName], cmd.RawCode));
                                 else if (CodeParser.StringContainsVariable(info.SectionName) == false)
                                     logs.Add(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exist", cmd));
                             }
                         }
-                        break;
-                    default:
                         break;
                 }
             }
@@ -198,7 +212,15 @@ namespace PEBakery.Core
         private List<LogInfo> ValidateUISection(ScriptSection section)
         {
             // Force parsing of code, bypassing caching by section.GetUICtrls()
-            List<string> lines = section.GetLines();
+            List<string> lines;
+            try
+            {
+                lines = section.GetLines();
+            }
+            catch (InternalException)
+            {
+                return new List<LogInfo> { new LogInfo(LogState.Error, $"Section [{section.Name}] is not a valid interface section") };
+            }
             SectionAddress addr = new SectionAddress(sc, section);
             List<UIControl> uiCtrls = UIParser.ParseRawLines(lines, addr, out List<LogInfo> logs);
 
@@ -214,7 +236,7 @@ namespace PEBakery.Core
                             if (info.SectionName != null)
                             {
                                 if (sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName]));
+                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName], uiCmd.RawLine));
                             }
                         }
                         break;
@@ -226,7 +248,7 @@ namespace PEBakery.Core
                             if (info.SectionName != null)
                             {
                                 if (sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName]));
+                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName], uiCmd.RawLine));
                             }
                         }
                         break;
@@ -238,7 +260,7 @@ namespace PEBakery.Core
                             if (info.SectionName != null)
                             {
                                 if (sc.Sections.ContainsKey(info.SectionName)) // Only if section exists
-                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName]));
+                                    logs.AddRange(ValidateCodeSection(sc.Sections[info.SectionName], uiCmd.RawLine));
                             }
                         }
                         break;

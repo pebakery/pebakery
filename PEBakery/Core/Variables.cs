@@ -627,7 +627,7 @@ namespace PEBakery.Core
             else if (section.DataType == SectionDataType.Lines)
                 dict = Ini.ParseIniLinesVarStyle(section.GetLines());
             else
-                throw new ExecuteException($"Section [{section.SectionName}] is not IniDict or Lines");
+                throw new ExecuteException($"Section [{section.Name}] is not IniDict or Lines");
 
             if (dict.Keys.Count != 0)
                 return InternalAddDictionary(type, dict);

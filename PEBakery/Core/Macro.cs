@@ -180,7 +180,7 @@ namespace PEBakery.Core
             if (0 < dict.Keys.Count)
             {
                 int count = 0;
-                logs.Add(new LogInfo(LogState.Info, $"Import Local Macro from [{addr.Section.SectionName}]", 0));
+                logs.Add(new LogInfo(LogState.Info, $"Import Local Macro from [{addr.Section.Name}]", 0));
                 foreach (var kv in dict)
                 {
                     try
