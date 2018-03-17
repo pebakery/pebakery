@@ -472,6 +472,9 @@ namespace PEBakery.Core
                     case CodeType.RegExport:
                         logs.AddRange(CommandRegistry.RegExport(s, cmd));
                         break;
+                    case CodeType.RegCopy:
+                        logs.AddRange(CommandRegistry.RegCopy(s, cmd));
+                        break;
                     #endregion
                     #region 03 Text
                     case CodeType.TXTAddLine:

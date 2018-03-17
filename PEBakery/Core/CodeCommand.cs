@@ -53,7 +53,7 @@ namespace PEBakery.Core
         DirCopy = 120, DirDelete, DirMove, DirMake, DirSize,
         PathMove = 160,
         // 02 Registry
-        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport,
+        RegHiveLoad = 200, RegHiveUnload, RegRead, RegWrite, RegDelete, RegMulti, RegImport, RegExport, RegCopy,
         RegWriteLegacy = 260,
         // 03 Text
         TXTAddLine = 300, TXTDelLine, TXTReplace, TXTDelSpaces, TXTDelEmptyLines,
@@ -750,6 +750,31 @@ namespace PEBakery.Core
         {
             string HKeyStr = RegistryHelper.RegKeyToString(HKey);
             return $"{HKeyStr},{KeyPath},{RegFile}";
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_RegCopy : CodeInfo
+    { // RegCopy,<SrcKey>,<SrcKeyPath>,<DestKey>,<DestKeyPath>
+        [NonSerialized]
+        public RegistryKey HSrcKey;
+        public string SrcKeyPath;
+        public RegistryKey HDestKey;
+        public string DestKeyPath;
+
+        public CodeInfo_RegCopy(RegistryKey hSrcKey, string srcKeyPath, RegistryKey hDestKey, string destKeyPath)
+        {
+            HSrcKey = hSrcKey;
+            SrcKeyPath = srcKeyPath;
+            HDestKey = hDestKey;
+            DestKeyPath = destKeyPath;
+        }
+
+        public override string ToString()
+        {
+            string HKeySrcStr = RegistryHelper.RegKeyToString(HSrcKey);
+            string HKeyDestStr = RegistryHelper.RegKeyToString(HDestKey);
+            return $"{HKeySrcStr},{SrcKeyPath},{HKeyDestStr},{DestKeyPath}";
         }
     }
     #endregion
