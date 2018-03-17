@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+// #define ENABLE_XZ
+
 using Joveler.ZLibWrapper;
 using PEBakery.Exceptions;
 using PEBakery.Helper;
@@ -114,7 +116,9 @@ namespace PEBakery.Core
         {
             ZLib = 0x00, // Type 1
             Raw = 0x01, // Type 2
+#if ENABLE_XZ
             XZ = 0x02, // Type 3 (PEBakery Only)
+#endif
         }
 
         public EncodeMode ParseEncodeMode(string str)
@@ -124,14 +128,15 @@ namespace PEBakery.Core
                 mode = EncodeMode.ZLib;
             else if (str.Equals("Raw", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.Raw;
+#if ENABLE_XZ
             else if (str.Equals("XZ", StringComparison.OrdinalIgnoreCase))
                 mode = EncodeMode.XZ;
+#endif
             else
                 throw new ArgumentException($"Wrong EncodeMode [{str}]");
 
             return mode;
         }
-
 
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
@@ -160,7 +165,7 @@ namespace PEBakery.Core
             return Encode(sc, dirName, fileName, srcBuffer, type);
         }
 
-        public static void ExtractFile(Script sc, string dirName, string fileName, Stream outStream)
+        public static long ExtractFile(Script sc, string dirName, string fileName, Stream outStream)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
 
@@ -169,7 +174,7 @@ namespace PEBakery.Core
                 throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
-            Decode(encoded, outStream);
+            return Decode(encoded, outStream);
         }
 
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
@@ -245,27 +250,44 @@ namespace PEBakery.Core
                 using (FileStream encodeStream = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
                 {
                     // [Stage 1] Compress file with zlib
+                    int readByte;
+                    byte[] buffer = new byte[4096 * 1024]; // 4MB
+                    Crc32Checksum crc32 = new Crc32Checksum();
                     switch (mode)
                     {
                         case EncodeMode.ZLib:
                             using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Level6, true))
                             {
-                                inputStream.CopyTo(zs);
+                                while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                                {
+                                    crc32.Append(buffer, 0, readByte);
+                                    zs.Write(buffer, 0, readByte);
+                                }
                             }
                             break;
                         case EncodeMode.Raw:
-                            inputStream.CopyTo(encodeStream);
+                            while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                            {
+                                crc32.Append(buffer, 0, readByte);
+                                encodeStream.Write(buffer, 0, readByte);
+                            }
                             break;
+#if ENABLE_XZ
                         case EncodeMode.XZ:
                             using (XZOutputStream xzs = new XZOutputStream(encodeStream, Environment.ProcessorCount, XZOutputStream.DefaultPreset, true))
                             {
-                                inputStream.CopyTo(xzs);
+                                while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+                                {
+                                    crc32.Append(buffer, 0, readByte);
+                                    xzs.Write(buffer, 0, readByte);
+                                }
                             }
                             break;
+#endif
                         default:
                             throw new InternalException($"Wrong EncodeMode [{mode}]");
                     }
-                    long bodyLen = encodeStream.Position;
+                    long compressedBodyLen = encodeStream.Position;
                     long inputLen = inputStream.Length;
 
                     // [Stage 2] Generate first footer
@@ -281,9 +303,11 @@ namespace PEBakery.Core
                         switch (mode)
                         {
                             case EncodeMode.ZLib: // Type 1
+#if ENABLE_XZ
                             case EncodeMode.XZ: // Type 3
+#endif
                                 // 0x208 - 0x20F : 8B -> Length of compressed body, in little endian
-                                BitConverter.GetBytes(bodyLen).CopyTo(rawFooter, 0x208);
+                                BitConverter.GetBytes(compressedBodyLen).CopyTo(rawFooter, 0x208);
                                 // 0x210 - 0x21F : 16B -> Null padding
                                 for (int i = 0x210; i < 0x220; i++)
                                     rawFooter[i] = 0;
@@ -297,7 +321,7 @@ namespace PEBakery.Core
                                 throw new InternalException($"Wrong EncodeMode [{mode}]");
                         }
                         // 0x220 - 0x223 : CRC32 of raw file
-                        BitConverter.GetBytes(CalcCrc32(inputStream)).CopyTo(rawFooter, 0x220);
+                        BitConverter.GetBytes(crc32.Checksum).CopyTo(rawFooter, 0x220);
                         // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
                         rawFooter[0x224] = (byte)mode;
                         // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01 ~ 09, Type 2 : 00)
@@ -309,21 +333,24 @@ namespace PEBakery.Core
                             case EncodeMode.Raw: // Type 2
                                 rawFooter[0x225] = 0;
                                 break;
+#if ENABLE_XZ
                             case EncodeMode.XZ: // Type 3
                                 rawFooter[0x225] = (byte)XZOutputStream.DefaultPreset;
                                 break;
+#endif
                             default:
                                 throw new InternalException($"Wrong EncodeMode [{mode}]");
                         }
                     }
 
                     // [Stage 3] Compress first footer and concat to body
+                    long compressedFooterLen = encodeStream.Position;
                     using (ZLibStream zs = new ZLibStream(encodeStream, CompressionMode.Compress, CompressionLevel.Default, true))
                     {
                         zs.Write(rawFooter, 0, rawFooter.Length);
                     }
                     encodeStream.Flush();
-                    long zlibedFooterLen = encodeStream.Position - bodyLen;
+                    compressedFooterLen = encodeStream.Position - compressedFooterLen;
 
                     // [Stage 4] Generate final footer
                     {
@@ -336,9 +363,9 @@ namespace PEBakery.Core
                         // 0x08 - 0x0B : 4B -> Delphi ZLBArchive Component version (Always 2)
                         BitConverter.GetBytes((uint)2).CopyTo(finalFooter, 0x08);
                         // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
-                        BitConverter.GetBytes((int)zlibedFooterLen).CopyTo(finalFooter, 0x0C);
+                        BitConverter.GetBytes((int)compressedFooterLen).CopyTo(finalFooter, 0x0C);
                         // 0x10 - 0x17 : 8B -> Compressed/Raw File Length
-                        BitConverter.GetBytes(bodyLen).CopyTo(finalFooter, 0x10);
+                        BitConverter.GetBytes(compressedBodyLen).CopyTo(finalFooter, 0x10);
                         // 0x18 - 0x1B : 4B -> Unknown - Always 1
                         BitConverter.GetBytes((uint)1).CopyTo(finalFooter, 0x18);
                         // 0x1C - 0x23 : 8B -> Unknown - Always 0
@@ -400,9 +427,9 @@ namespace PEBakery.Core
             // [Stage 8] Refresh Script
             return sc.Project.RefreshScript(sc);
         }
-        #endregion
+#endregion
 
-        #region Decode
+#region Decode
         private static long Decode(List<string> encodedList, Stream outStream)
         {
             string tempDecode = Path.GetTempFileName();
@@ -483,12 +510,14 @@ namespace PEBakery.Core
                             if (compLevel != 0)
                                 throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
                             break;
+#if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
                             if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
                                 throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
                                 throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
                             break;
+#endif
                         default:
                             throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                     }
@@ -496,6 +525,7 @@ namespace PEBakery.Core
                     // [Stage 7] Decompress body
                     Crc32Checksum crc32 = new Crc32Checksum();
                     long outPosBak = outStream.Position;
+                    byte[] buffer = new byte[4096 * 1024]; // 4MB
                     switch ((EncodeMode)compMode)
                     {
                         case EncodeMode.ZLib: // Type 1, zlib
@@ -506,16 +536,13 @@ namespace PEBakery.Core
 
                                 compStream.Flush();
                                 compStream.Position = 0;
-                                using (ZLibStream zs = new ZLibStream(compStream, CompressionMode.Decompress, false))
+                                using (ZLibStream zs = new ZLibStream(compStream, CompressionMode.Decompress, true))
                                 {
-                                    byte[] buffer = new byte[4096 * 1024]; // 4MB
                                     while ((readByte = zs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
                                         crc32.Append(buffer, 0, readByte);
                                         outStream.Write(buffer, 0, readByte);
                                     }
-
-                                    // zs.CopyTo(outStream);
                                 }
                             }
                             break;
@@ -524,7 +551,6 @@ namespace PEBakery.Core
                                 decodeStream.Position = 0;
 
                                 int offset = 0;
-                                byte[] buffer = new byte[4096 * 1024]; // 4MB
                                 while (offset < rawBodyLen)
                                 {
                                     if (offset + buffer.Length < rawBodyLen)
@@ -539,6 +565,7 @@ namespace PEBakery.Core
                                 }
                             }
                             break;
+#if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
                             using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
                             {
@@ -547,9 +574,8 @@ namespace PEBakery.Core
 
                                 compStream.Flush();
                                 compStream.Position = 0;
-                                using (XZInputStream xzs = new XZInputStream(compStream, false))
+                                using (XZInputStream xzs = new XZInputStream(compStream, true))
                                 {
-                                    byte[] buffer = new byte[4096 * 1024]; // 4MB
                                     while ((readByte = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
                                         crc32.Append(buffer, 0, readByte);
@@ -558,10 +584,11 @@ namespace PEBakery.Core
                                 }
                             }
                             break;
+#endif
                         default:
                             throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                     }
-                    int outLen = (int)(outStream.Position - outPosBak);
+                    long outLen = outStream.Position - outPosBak;
 
                     // [Stage 8] Validate decompressed body
                     if (compressedBody_crc32 != crc32.Checksum)
@@ -581,7 +608,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Utility
-
         private static uint CalcCrc32(Stream stream)
         {
             long posBak = stream.Position;
@@ -625,11 +651,11 @@ namespace PEBakery.Core
             stream.Position = posBak;
             return calc.Checksum;
         }
-        #endregion
+#endregion
     }
-    #endregion
+#endregion
 
-    #region EncodedFileInfo
+#region EncodedFileInfo
     /// <inheritdoc />
     /// <summary>
     /// Class to handle malformed WB082-attached files
@@ -670,7 +696,7 @@ namespace PEBakery.Core
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
             {
-                int.TryParse(value, out int blockCount);
+                int.TryParse(value, out _);
                 encodedList.RemoveAt(0); // Remove "lines=n"
 
                 // Each line is 64KB block
@@ -795,6 +821,7 @@ namespace PEBakery.Core
                         this.CompressedBodyValid = true;
                     }
                     break;
+#if ENABLE_XZ
                 case EncodedFile.EncodeMode.XZ:
                     {
                         using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
@@ -806,6 +833,7 @@ namespace PEBakery.Core
                         this.CompressedBodyValid = true;
                     }
                     break;
+#endif
                 default:
                     throw new InternalException($"Wrong EncodeMode [{compMode}]");
             }
@@ -822,9 +850,9 @@ namespace PEBakery.Core
             this.RawBodyStream.Position = 0;
         }
     }
-    #endregion
+#endregion
 
-    #region SplitBase64
+#region SplitBase64
     public static class SplitBase64
     {
         public static (List<IniKey>, int) Encode(Stream stream, string section)
@@ -922,5 +950,5 @@ namespace PEBakery.Core
             return decodeLen;
         }
     }
-    #endregion
+#endregion
 }
