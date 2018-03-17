@@ -1,3 +1,0 @@
-artifacts:
-  - path: PEBakery\bin\$(configuration)
-    name: Nightly
