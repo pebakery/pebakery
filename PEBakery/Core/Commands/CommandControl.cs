@@ -139,10 +139,12 @@ namespace PEBakery.Core.Commands
 
             // Does section exists?
             if (!sc.Sections.ContainsKey(sectionName))
-                throw new ExecuteException($"Script [{scriptFile}] does not have section [{sectionName}]");
+                return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Directly read from file
             List<string> lines = Ini.ParseRawSection(sc.RealPath, sectionName);
+            if (lines == null)
+                return new List<LogInfo> { new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{sectionName}]") };
 
             // Add Variables
             Dictionary<string, string> varDict = Ini.ParseIniLinesVarStyle(lines);

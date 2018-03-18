@@ -111,6 +111,14 @@ namespace PEBakery.Exceptions
         public ScriptParseException(string message) : base(message) { }
         public ScriptParseException(string message, Exception inner) : base(message, inner) { }
     }
+
+    [Serializable]
+    public class ScriptSectionException : Exception
+    {
+        public ScriptSectionException() { }
+        public ScriptSectionException(string message) : base(message) { }
+        public ScriptSectionException(string message, Exception inner) : base(message, inner) { }
+    }
     #endregion
 
     #region Engine / EngineState

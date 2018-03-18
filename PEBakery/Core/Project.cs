@@ -175,7 +175,11 @@ namespace PEBakery.Core
                 if (prefix == null)
                     continue;
 
-                var paths = Ini.ParseRawSection(linkFile, "Links").Select(x => x.Trim()).Where(x => x.Length != 0);
+                List<string> rawPaths = Ini.ParseRawSection(linkFile, "Links");
+                if (rawPaths == null)
+                    continue;
+                var paths = rawPaths.Select(x => x.Trim()).Where(x => x.Length != 0);
+                
                 foreach (string path in paths)
                 {
                     bool isWildcard = StringHelper.IsWildcard(Path.GetFileName(path));
@@ -823,11 +827,9 @@ namespace PEBakery.Core
             if (Variables == null)
                 return;
 
-            if (MainScript.Sections.ContainsKey(Variables.VarSectionName))
-            {
-                ScriptSection section = MainScript.RefreshSection(Variables.VarSectionName);
+            ScriptSection section = MainScript.RefreshSection(Variables.VarSectionName);
+            if (section != null)
                 Variables.AddVariables(VarsType.Global, section);
-            }
         }
         #endregion
 

@@ -36,29 +36,6 @@ using System.Diagnostics;
 
 namespace PEBakery.IniLib
 {
-    #region Exceptions
-    /// <summary>
-    /// When parsing ini file, specified key not found.
-    /// </summary>
-    [Serializable]
-    public class IniKeyNotFoundException : Exception
-    {
-        public IniKeyNotFoundException() { }
-        public IniKeyNotFoundException(string message) : base(message) { }
-        public IniKeyNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    /// <summary>
-    /// When parsing ini file, specified section is not found.
-    /// </summary>
-    public class SectionNotFoundException : Exception
-    {
-        public SectionNotFoundException() { }
-        public SectionNotFoundException(string message) : base(message) { }
-        public SectionNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
     #region IniKey
     public struct IniKey
     {
@@ -1413,7 +1390,7 @@ namespace PEBakery.IniLib
         public static Dictionary<string, string> ParseIniSectionToDict(string file, string section)
         {
             List<string> lines = ParseIniSection(file, section);
-            return ParseIniLinesIniStyle(lines);
+            return lines == null ? null : ParseIniLinesIniStyle(lines);
         }
 
         public static List<string> ParseIniSection(string file, string section)
@@ -1457,9 +1434,7 @@ namespace PEBakery.IniLib
                 }
 
                 if (appendState == false) // Section not found
-                    throw new SectionNotFoundException($"Section [{section}] not found");
-
-                reader.Close();
+                    return null;
             }
             return lines;
         }
@@ -1501,9 +1476,7 @@ namespace PEBakery.IniLib
                 }
 
                 if (appendState == false) // Section not found
-                    throw new SectionNotFoundException($"Section [{section}] not found");
-
-                reader.Close();
+                    return null;
             }
             return lines;
         }
@@ -1575,21 +1548,8 @@ namespace PEBakery.IniLib
                     }
                 }
 
-                if (sections.Length != processedSectionIdxs.Count) // Section not found
-                {
-                    StringBuilder b = new StringBuilder("Section [");
-                    for (int i = 0; i < sections.Length; i++)
-                    {
-                        if (processedSectionIdxs.Contains(i))
-                            continue;
-
-                        b.Append(sections[i]);
-                        if (i + 1 < sections.Length)
-                            b.Append(", ");
-                    }
-                    b.Append("] not found");
-                    throw new SectionNotFoundException(b.ToString());
-                }
+                //if (sections.Length != processedSectionIdxs.Count) // Section not found
+                //    return null;
 
                 reader.Close();
             }

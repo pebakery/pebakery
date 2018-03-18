@@ -428,21 +428,18 @@ namespace PEBakery.Core
         private bool IsSectionEncodedFolders(string sectionName)
         {
             List<string> encodedFolders;
-            try
+            if (_fullyParsed)
             {
-                if (_fullyParsed)
-                {
-                    if (_sections.ContainsKey("EncodedFolders"))
-                        encodedFolders = _sections["EncodedFolders"].GetLines();
-                    else
-                        return false;
-                }
+                if (_sections.ContainsKey("EncodedFolders"))
+                    encodedFolders = _sections["EncodedFolders"].GetLines();
                 else
-                    encodedFolders = Ini.ParseIniSection(_realPath, "EncodedFolders");
+                    return false;
             }
-            catch (SectionNotFoundException) // No EncodedFolders section, exit
+            else
             {
-                return false;
+                encodedFolders = Ini.ParseIniSection(_realPath, "EncodedFolders");
+                if (encodedFolders == null)  // No EncodedFolders section, exit
+                    return false;
             }
 
             foreach (string folder in encodedFolders)
@@ -539,13 +536,24 @@ namespace PEBakery.Core
 
         public ScriptSection RefreshSection(string sectionName)
         {
-            if (!Sections.ContainsKey(sectionName))
-                return null;
+            ScriptSection section;
+            if (Sections.ContainsKey(sectionName))
+            { // Force refresh by invalidating section
+                section = Sections[sectionName];
+                section.Unload();
+                section.Load();
+            }
+            else
+            {
+                List<string> lines = Ini.ParseRawSection(_realPath, sectionName);
+                if (lines == null)
+                    return null;
 
-            // Force refresh by invalidating section
-            ScriptSection section = Sections[sectionName];
-            section.Unload();
-            section.Load();
+                SectionType type = DetectTypeOfSection(sectionName, true);
+                // lineIdx information is not provided, use with caution!
+                section = CreateScriptSectionInstance(sectionName, type, lines, 0);
+                Sections[sectionName] = section;
+            }
 
             return section;
         }
@@ -904,10 +912,13 @@ namespace PEBakery.Core
             switch (DataType)
             {
                 case SectionDataType.IniDict:
-                    _iniDict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
+                    var dict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
+                    _iniDict = dict ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
                     break;
                 case SectionDataType.Lines:
-                    _lines = Ini.ParseIniSection(Script.RealPath, Name);
+                    var lines = Ini.ParseIniSection(Script.RealPath, Name);
+                    _lines = lines ?? throw new ScriptSectionException($"Unable to load, section [{Name}] does not exist");
+
                     switch (_convDataType)
                     {
                         case SectionDataConverted.Codes:
@@ -997,16 +1008,14 @@ namespace PEBakery.Core
         {
             if (DataType == SectionDataType.IniDict)
                 return IniDict; // IniDict for Load()
-            else
-                throw new InternalException("GetIniDict must be used with [SectionDataType.IniDict]");
+            throw new InternalException("GetIniDict must be used with [SectionDataType.IniDict]");
         }
 
         public List<string> GetLines()
         {
             if (DataType == SectionDataType.Lines)
                 return Lines; // Lines for Load()
-            else
-                throw new InternalException("GetLines must be used with [SectionDataType.Lines]");
+            throw new InternalException("GetLines must be used with [SectionDataType.Lines]");
         }
 
         /// <summary>
@@ -1015,10 +1024,18 @@ namespace PEBakery.Core
         /// <returns></returns>
         public List<string> GetLinesOnce()
         {
-            if (DataType == SectionDataType.Lines)
-                return Loaded ? _lines : Ini.ParseIniSection(Script.RealPath, Name);
+            if (DataType != SectionDataType.Lines)
+                throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
 
-            throw new InternalException("GetLinesOnce must be used with [SectionDataType.Lines]");
+            if (Loaded)
+                return _lines;
+
+            List<string> lines = Ini.ParseIniSection(Script.RealPath, Name);
+            if (lines == null)
+                throw new ScriptSectionException($"Unable to load lines, section [{Name}] does not exist");
+            else
+                _lines = lines;
+            return _lines;
         }
 
         public List<CodeCommand> GetCodes()
@@ -1026,8 +1043,8 @@ namespace PEBakery.Core
             if (DataType == SectionDataType.Lines &&
                 _convDataType == SectionDataConverted.Codes)
                 return Codes; // Codes for Load()
-            else
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
+            
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         /// <summary>

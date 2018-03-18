@@ -622,15 +622,21 @@ namespace PEBakery.Core
         {
             Dictionary<string, string> dict;
 
-            if (section.DataType == SectionDataType.IniDict)
-                dict = section.GetIniDict();
-            else if (section.DataType == SectionDataType.Lines)
-                dict = Ini.ParseIniLinesVarStyle(section.GetLines());
-            else
-                throw new ExecuteException($"Section [{section.Name}] is not IniDict or Lines");
+            switch (section.DataType)
+            {
+                case SectionDataType.IniDict:
+                    dict = section.GetIniDict();
+                    break;
+                case SectionDataType.Lines:
+                    dict = Ini.ParseIniLinesVarStyle(section.GetLines());
+                    break;
+                default:
+                    throw new ExecuteException($"Section [{section.Name}] is not IniDict or Lines");
+            }
 
             if (0 < dict.Keys.Count)
                 return InternalAddDictionary(type, dict);
+
             // Empty
             return new List<LogInfo>();
         }
