@@ -399,7 +399,6 @@ namespace PEBakery.WPF
             RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
             Button button;
 
-            // double width, height;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
             {
                 if (ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))

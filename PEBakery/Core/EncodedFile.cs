@@ -850,9 +850,9 @@ namespace PEBakery.Core
             this.RawBodyStream.Position = 0;
         }
     }
-#endregion
+    #endregion
 
-#region SplitBase64
+    #region SplitBase64
     public static class SplitBase64
     {
         public static (List<IniKey>, int) Encode(Stream stream, string section)
@@ -884,7 +884,10 @@ namespace PEBakery.Core
                     keys.Add(new IniKey(section, idx.ToString(), encodedStr.Substring(x * 4090, 4090)));
                     idx += 1;
                 }
-                keys.Add(new IniKey(section, idx.ToString(), encodedStr.Substring(encodeLine * 4090)));
+
+                string lastLine = encodedStr.Substring(encodeLine * 4090);
+                if (0 < lastLine.Length && encodeLine < 1024 * 4)
+                    keys.Add(new IniKey(section, idx.ToString(), lastLine));
             }
 
             stream.Position = posBak;
@@ -898,54 +901,50 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            // Each line is 64KB block
             if (Ini.GetKeyValueFromLines(encodedList, out _, out List<string> base64Blocks))
                 throw new FileDecodeFailException("Encoded lines are malformed");
 
-            int lineCount = 0;
             int encodeLen = 0;
             int decodeLen = 0;
-            StringBuilder b = new StringBuilder(4090 * 1024 * 4); // Process encoded block ~16MB at once
-            while (lineCount < base64Blocks.Count)
-            { // One block is 4090B
-                string block = base64Blocks[lineCount];
+            StringBuilder b = new StringBuilder(4090 * 4096); // Process encoded block ~16MB at once
+            for (int i = 0; i < base64Blocks.Count; i++)
+            {
+                string block = base64Blocks[i];
+
+                if (i + 1 < base64Blocks.Count && block.Length != 4090)
+                    throw new FileDecodeFailException("Encoded lines are malformed");
 
                 b.Append(block);
-                lineCount += 1;
                 encodeLen += block.Length;
 
                 // If buffer is full, decode ~16MB to ~12MB raw bytes
-                if (lineCount % 1024 == 0)
+                if ((i + 1) % 4096 == 0)
                 {
                     byte[] buffer = Convert.FromBase64String(b.ToString());
-                    decodeLen += buffer.Length;
                     outStream.Write(buffer, 0, buffer.Length);
+                    decodeLen += buffer.Length;
                     b.Clear();
                 }
-                
-                // Last Line -> 
-                if (lineCount == base64Blocks.Count)
-                {
-                    // Append = padding
-                    switch (encodeLen % 4)
-                    {
-                        case 0:
-                            break;
-                        case 1:
-                            throw new FileDecodeFailException("Encoded lines are malformed");
-                        case 2:
-                            b.Append("==");
-                            break;
-                        case 3:
-                            b.Append("=");
-                            break;
-                    }
-
-                    byte[] buffer = Convert.FromBase64String(b.ToString());
-                    decodeLen += buffer.Length;
-                    outStream.Write(buffer, 0, buffer.Length);
-                }
             }
+
+            // Append = padding
+            switch (encodeLen % 4)
+            {
+                case 0:
+                    break;
+                case 1:
+                    throw new FileDecodeFailException("Encoded lines are malformed");
+                case 2:
+                    b.Append("==");
+                    break;
+                case 3:
+                    b.Append("=");
+                    break;
+            }
+
+            byte[] finalBuffer = Convert.FromBase64String(b.ToString());
+            decodeLen += finalBuffer.Length;
+            outStream.Write(finalBuffer, 0, finalBuffer.Length);
 
             return decodeLen;
         }
