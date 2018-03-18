@@ -53,9 +53,6 @@ using System.Windows.Shell;
 namespace PEBakery.WPF
 {
     #region MainWindow
-    /// <summary>
-    /// MainWindow.xaml에 대한 상호 작용 논리
-    /// </summary>
     public partial class MainWindow : Window
     {
         #region Constants
@@ -79,10 +76,9 @@ namespace PEBakery.WPF
 
         private const int MaxDpiScale = 4;
         private int allScriptCount = 0;
-        private readonly string settingFile;
         public SettingViewModel Setting { get; }
 
-        public MainViewModel Model { get; private set; }
+        public MainViewModel Model { get; }
         public Canvas MainCanvas => Model.MainCanvas;
 
         public LogWindow LogDialog = null;
@@ -93,10 +89,10 @@ namespace PEBakery.WPF
         public MainWindow()
         {
             InitializeComponent();
-            Model = this.DataContext as MainViewModel;
+            Model = DataContext as MainViewModel;
 
             string[] args = App.Args;
-            if (int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version) == false)
+            if (!int.TryParse(Properties.Resources.EngineVersion, NumberStyles.Integer, CultureInfo.InvariantCulture, out App.Version))
             {
                 MessageBox.Show($"Invalid version [{App.Version}]", "Invalid Version", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(1);
@@ -132,7 +128,7 @@ namespace PEBakery.WPF
 
             BaseDir = argBaseDir;
 
-            settingFile = System.IO.Path.Combine(BaseDir, "PEBakery.ini");
+            var settingFile = System.IO.Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new SettingViewModel(settingFile);
 
             string dbDir = System.IO.Path.Combine(BaseDir, "Database");
@@ -143,7 +139,7 @@ namespace PEBakery.WPF
             try
             {
                 App.Logger = Logger = new Logger(logDBFile);
-                Logger.System_Write(new LogInfo(LogState.Info, $"PEBakery launched"));
+                Logger.System_Write(new LogInfo(LogState.Info, "PEBakery launched"));
             }
             catch (SQLiteException e)
             { // Update failure
@@ -173,7 +169,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                Logger.System_Write(new LogInfo(LogState.Info, $"ScriptCache disabled"));
+                Logger.System_Write(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
 
             StartLoadWorker();
@@ -197,7 +193,7 @@ namespace PEBakery.WPF
             }
             Logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{BaseDir}]"));
             MainCanvas.Children.Clear();
-            (MainTreeView.DataContext as TreeViewModel).Children.Clear();
+            (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
 
             int stage2LinksCount = 0;
             int loadedScriptCount = 0;
@@ -226,7 +222,7 @@ namespace PEBakery.WPF
                     else // Cache is invalid
                         Projects = new ProjectCollection(baseDir, null);
                 }
-                else  // Do not use ScriptCache
+                else // Do not use ScriptCache
                 {
                     Projects = new ProjectCollection(baseDir, null);
                 }
@@ -271,21 +267,21 @@ namespace PEBakery.WPF
                 {
                     case 0:  // Stage 1
                         if (e.UserState == null)
-                            msg = $"Error";
+                            msg = "Error";
                         else
                             msg = $"{e.UserState}";
                         break;
                     case 1:  // Stage 1, Cached
                         Interlocked.Increment(ref stage1CachedCount);
                         if (e.UserState == null)
-                            msg = $"Cached - Error";
+                            msg = "Cached - Error";
                         else
                             msg = $"Cached - {e.UserState}";
                         break;
                     case 2:  // Stage 2
                         Interlocked.Increment(ref stage2LoadedCount);
                         if (e.UserState == null)
-                            msg = $"Error";
+                            msg = "Error";
                         else
                             msg = $"{e.UserState}";
                         break;
@@ -293,7 +289,7 @@ namespace PEBakery.WPF
                         Interlocked.Increment(ref stage2LoadedCount);
                         Interlocked.Increment(ref stage2CachedCount);
                         if (e.UserState == null)
-                            msg = $"Cached - Error";
+                            msg = "Cached - Error";
                         else
                             msg = $"Cached - {e.UserState}";
                         break;
@@ -420,7 +416,7 @@ namespace PEBakery.WPF
         {
             AutoResetEvent resetEvent = new AutoResetEvent(false);
 
-            if (CurMainTree == null || CurMainTree.Script == null)
+            if (CurMainTree?.Script == null)
                 return null;
 
             if (refreshWorker.IsBusy)
@@ -449,10 +445,10 @@ namespace PEBakery.WPF
                 Model.WorkInProgress = false;
                 watch.Stop();
                 double sec = watch.Elapsed.TotalSeconds;
-                if ((Script)e.Result == null)
-                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reload failed. ({sec:0.000}s)";
-                else
+                if (e.Result is Script)
                     Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reloaded. ({sec:0.000}s)";
+                else
+                    Model.StatusBarText = $"{Path.GetFileName(CurMainTree.Script.TreePath)} reload failed. ({sec:0.000}s)";
 
                 resetEvent.Set();
             };
@@ -484,7 +480,8 @@ namespace PEBakery.WPF
             };
             syntaxCheckWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
-                CodeValidator v = (CodeValidator) e.Result;
+                if (!(e.Result is CodeValidator v))
+                    return;
 
                 LogInfo[] logs = v.LogInfos;
                 LogInfo[] errorLogs = logs.Where(x => x.State == LogState.Error).ToArray();
@@ -496,7 +493,7 @@ namespace PEBakery.WPF
                 {
                     errorWarns += errorLogs.Length;
 
-                    if (quiet == false)
+                    if (!quiet)
                     {
                         b.AppendLine($"{errorLogs.Length} syntax error detected at [{sc.TreePath}]");
                         b.AppendLine();
@@ -516,7 +513,7 @@ namespace PEBakery.WPF
                 {
                     errorWarns += warnLogs.Length;
 
-                    if (quiet == false)
+                    if (!quiet)
                     {
                         b.AppendLine($"{errorLogs.Length} syntax warning detected");
                         b.AppendLine();
@@ -533,7 +530,7 @@ namespace PEBakery.WPF
                 {
                     Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGreen);                   
 
-                    if (quiet == false)
+                    if (!quiet)
                     {
                         b.AppendLine("No syntax error detected");
                         b.AppendLine();
@@ -546,7 +543,7 @@ namespace PEBakery.WPF
                 {
                     Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.Orange);
 
-                    if (quiet == false)
+                    if (!quiet)
                     {
                         MessageBoxResult result = MessageBox.Show($"{errorWarns} syntax error detected!\r\n\r\nOpen logs?", "Syntax Check", MessageBoxButton.OKCancel, MessageBoxImage.Error);
                         if (result == MessageBoxResult.OK)
@@ -564,7 +561,7 @@ namespace PEBakery.WPF
                     }
                 }
 
-                if (quiet == false)
+                if (!quiet)
                     Model.WorkInProgress = false;
             };
             syntaxCheckWorker.RunWorkerAsync();
@@ -793,6 +790,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
+            /*
             Model.WorkInProgress = true;
 
             using (WebClient c = new WebClient())
@@ -801,6 +799,8 @@ namespace PEBakery.WPF
             }
 
             Model.WorkInProgress = false;
+            */
+
             MessageBox.Show("Not Implemented", "Sorry", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
@@ -932,7 +932,7 @@ namespace PEBakery.WPF
                     continue;
                 string[] paths = sc.TreePath
                     .Substring(idx + 1)
-                    .Split(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar });
+                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
                 // Ex) Apps\Network\Mozilla_Firefox_CR.script
                 for (int i = 0; i < paths.Length - 1; i++)
@@ -1018,7 +1018,7 @@ namespace PEBakery.WPF
 
             ScriptListToTreeViewModel(project, project.VisibleScripts, true, Model.MainTree, projectRoot);
 
-            if (redrawScript)
+            if (redrawScript && projectRoot != null)
             {
                 CurMainTree = projectRoot;
                 CurMainTree.IsExpanded = true;
@@ -1038,7 +1038,7 @@ namespace PEBakery.WPF
             return item;
         }
 
-        TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
+        public static TreeViewModel UpdateTreeViewIcon(TreeViewModel item)
         {
             Script sc = item.Script;
 
@@ -1081,7 +1081,7 @@ namespace PEBakery.WPF
 
         private void MainTreeView_Loaded(object sender, RoutedEventArgs e)
         {
-            this.KeyDown += MainTreeView_KeyDown;
+            KeyDown += MainTreeView_KeyDown;
         }
 
         /// <summary>
@@ -1091,30 +1091,20 @@ namespace PEBakery.WPF
         /// <param name="e"></param>
         private void MainTreeView_KeyDown(object sender, KeyEventArgs e)
         {
-            // Window window = sender as Window;
-            base.OnKeyDown(e);
-
             if (e.Key == Key.Space)
             {
                 if (Keyboard.FocusedElement is FrameworkElement focusedElement)
                 {
-                    if (focusedElement.DataContext is TreeViewModel node)
-                    {
-                        if (node.Checked == true)
-                            node.Checked = false;
-                        else if (node.Checked == false)
-                            node.Checked = true;
-                        e.Handled = true;
-                    }
+                    if (!(focusedElement.DataContext is TreeViewModel node)) return;
+                    node.Checked = !node.Checked;
+                    e.Handled = true;
                 }
             }
         }
 
         private void MainTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            var tree = sender as TreeView;
-
-            if (tree.SelectedItem is TreeViewModel model)
+            if (sender is TreeView tree && tree.SelectedItem is TreeViewModel model)
             {
                 TreeViewModel item = CurMainTree = model;
 
@@ -1152,20 +1142,19 @@ namespace PEBakery.WPF
                     MessageBox.Show($"Custom editor [{Setting.Interface_CustomEditorPath}] is not a executable!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                else if (!File.Exists(Setting.Interface_CustomEditorPath))
+
+                if (!File.Exists(Setting.Interface_CustomEditorPath))
                 {
                     MessageBox.Show($"Custom editor [{Setting.Interface_CustomEditorPath}] does not exist!", "Invalid Custom Editor", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                else
+
+                proc.StartInfo = new ProcessStartInfo(Setting.Interface_CustomEditorPath)
                 {
-                    proc.StartInfo = new ProcessStartInfo(Setting.Interface_CustomEditorPath)
-                    {
-                        UseShellExecute = true,
-                        Arguments = textFile,
-                    };
-                    startInfoValid = true;
-                }
+                    UseShellExecute = true,
+                    Arguments = textFile,
+                };
+                startInfoValid = true;
             }
             
             if (startInfoValid == false)
@@ -1217,11 +1206,13 @@ namespace PEBakery.WPF
 
         private void BuildConOutRedirectTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            TextBox textBox = sender as TextBox;
             var focusedBackup = FocusManager.GetFocusedElement(this);
 
-            textBox.CaretIndex = textBox.Text.Length;
-            textBox.ScrollToEnd();
+            if (sender is TextBox textBox)
+            {
+                textBox.CaretIndex = textBox.Text.Length;
+                textBox.ScrollToEnd();
+            }
 
             FocusManager.SetFocusedElement(this, focusedBackup);
         }
@@ -1698,16 +1689,13 @@ namespace PEBakery.WPF
     #region TreeViewModel
     public class TreeViewModel : INotifyPropertyChanged
     {
-        public TreeViewModel Root { get; private set; }
-        public TreeViewModel Parent { get; private set; }
+        public TreeViewModel Root { get; }
+        public TreeViewModel Parent { get; }
 
         public TreeViewModel(TreeViewModel root, TreeViewModel parent)
         {
-            if (root == null)
-                this.Root = this;
-            else
-                this.Root = root;
-            this.Parent = parent;
+            Root = root ?? this;
+            Parent = parent;
         }
 
         private bool isExpanded = false;
@@ -1773,8 +1761,8 @@ namespace PEBakery.WPF
             }
             set
             {
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                w.Dispatcher.Invoke(() =>
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w?.Dispatcher.Invoke(() =>
                 {
                     w.Model.WorkInProgress = true;
                     if (script.Mandatory == false && script.Selected != SelectedState.None)
@@ -1801,9 +1789,9 @@ namespace PEBakery.WPF
 
                         if (script.IsMainScript == false)
                         {
-                            if (0 < this.Children.Count)
+                            if (0 < Children.Count)
                             { // Set child scripts, too -> Top-down propagation
-                                foreach (TreeViewModel childModel in this.Children)
+                                foreach (TreeViewModel childModel in Children)
                                     childModel.Checked = value;
                             }
 
@@ -1838,7 +1826,7 @@ namespace PEBakery.WPF
             if (Parent == null)
                 return;
 
-            if (script.Mandatory == false && script.Selected != SelectedState.None)
+            if (!script.Mandatory && script.Selected != SelectedState.None)
             {
                 if (value)
                     script.Selected = SelectedState.True;
@@ -1874,7 +1862,7 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Checked));
                 OnPropertyUpdate(nameof(CheckBoxVisible));
                 OnPropertyUpdate(nameof(Text));
-                OnPropertyUpdate("MainCanvas");
+                OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
             }
         }
 
@@ -1890,7 +1878,7 @@ namespace PEBakery.WPF
         }
 
         private ObservableCollection<TreeViewModel> children = new ObservableCollection<TreeViewModel>();
-        public ObservableCollection<TreeViewModel> Children { get => children; }
+        public ObservableCollection<TreeViewModel> Children => children;
 
         public void SortChildren()
         {

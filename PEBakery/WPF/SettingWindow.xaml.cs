@@ -213,14 +213,14 @@ namespace PEBakery.WPF
     public class SettingViewModel : INotifyPropertyChanged
     {
         #region Field and Constructor
-        private readonly string settingFile;
+        private readonly string _settingFile;
         public LogDB LogDB { get; set; }
         public ScriptCache CacheDB { get; set; }
         public ProjectCollection Projects { get; private set; }
 
         public SettingViewModel(string settingFile)
         {
-            this.settingFile = settingFile;
+            this._settingFile = settingFile;
             ReadFromFile();
 
             ApplySetting();
@@ -895,7 +895,7 @@ namespace PEBakery.WPF
             // If key not specified or value malformed, default value will be used.
             SetToDefault();
 
-            if (File.Exists(settingFile) == false)
+            if (File.Exists(_settingFile) == false)
                 return;
 
             const string generalStr = "General";
@@ -939,7 +939,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             }; 
 
-            keys = Ini.GetKeys(settingFile, keys);
+            keys = Ini.GetKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
             (string Section, string Key) SplitSectionKey(string varName)
@@ -1088,7 +1088,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
             };
-            Ini.SetKeys(settingFile, keys);
+            Ini.SetKeys(_settingFile, keys);
         }
 
         private static string KeyPart(string str, string section)
