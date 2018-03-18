@@ -37,7 +37,6 @@ using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System.Diagnostics;
-using PEBakery.Core.Commands;
 
 namespace PEBakery.Core
 {
@@ -367,7 +366,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Methods
+        #region ParseScript
         public Dictionary<string, ScriptSection> ParseScript()
         {
             Dictionary<string, ScriptSection> dict = new Dictionary<string, ScriptSection>(StringComparer.OrdinalIgnoreCase);
@@ -423,7 +422,9 @@ namespace PEBakery.Core
 
             return dict;
         }
+        #endregion
 
+        #region Detect Section Type
         private bool IsSectionEncodedFolders(string sectionName)
         {
             List<string> encodedFolders;
@@ -470,12 +471,7 @@ namespace PEBakery.Core
             else if (string.Compare(sectionName, 0, "EncodedFile-", 0, 11, StringComparison.OrdinalIgnoreCase) == 0) // lazy loading
                 type = SectionType.AttachEncode;
             else
-            {
-                if (inspectCode)
-                    type = DetectTypeOfUninspectedSection(sectionName);
-                else
-                    type = SectionType.Uninspected;
-            }
+                type = inspectCode ? DetectTypeOfUninspectedSection(sectionName) : SectionType.Uninspected;
             return type;
         }
 
@@ -516,7 +512,9 @@ namespace PEBakery.Core
                     return false;
             }
         }
+        #endregion
 
+        #region ScriptSection
         private ScriptSection CreateScriptSectionInstance(string sectionName, SectionType type, List<string> lines, int lineIdx)
         {
             switch (type)
@@ -539,6 +537,21 @@ namespace PEBakery.Core
             }
         }
 
+        public ScriptSection RefreshSection(string sectionName)
+        {
+            if (!Sections.ContainsKey(sectionName))
+                return null;
+
+            // Force refresh by invalidating section
+            ScriptSection section = Sections[sectionName];
+            section.Unload();
+            section.Load();
+
+            return section;
+        }
+        #endregion
+
+        #region CheckMainSection
         private void CheckMainSection(ScriptType type)
         {
             if (_sections.ContainsKey("Main") == false)
@@ -547,22 +560,25 @@ namespace PEBakery.Core
             bool fail = true;
             if (_sections["Main"].DataType == SectionDataType.IniDict)
             {
-                if (type == ScriptType.Script)
+                switch (type)
                 {
-                    if (_sections["Main"].IniDict.ContainsKey("Title"))
-                        fail = false;
-                }
-                else if (type == ScriptType.Link)
-                {
-                    if (_sections["Main"].IniDict.ContainsKey("Link"))
-                        fail = false;
+                    case ScriptType.Script:
+                        if (_sections["Main"].IniDict.ContainsKey("Title"))
+                            fail = false;
+                        break;
+                    case ScriptType.Link:
+                        if (_sections["Main"].IniDict.ContainsKey("Link"))
+                            fail = false;
+                        break;
                 }
             }
 
             if (fail)
                 throw new ScriptParseException($"[{_realPath}] is invalid, check [Main] Section");
         }
+        #endregion
 
+        #region GetDisableScriptPaths
         public static string[] GetDisableScriptPaths(Script sc, out List<LogInfo> errorLogs)
         {
             errorLogs = new List<LogInfo>();
@@ -615,27 +631,23 @@ namespace PEBakery.Core
 
             return filteredPaths.ToArray();
         }
+        #endregion
 
+        #region GetInterface
         public ScriptSection GetInterface(out string sectionName)
         {
             sectionName = "Interface";
             if (MainInfo.ContainsKey("Interface"))
                 sectionName = MainInfo["Interface"];
 
-            if (Sections.ContainsKey(sectionName))
-                return Sections[sectionName];
-            else
-                return null;
+            return Sections.ContainsKey(sectionName) ? Sections[sectionName] : null;
         }
         #endregion
 
         #region Virtual, Interface Methods
         public override string ToString()
         {
-            if (_type == ScriptType.Link)
-                return _sections["Main"].IniDict["Link"];
-            else
-                return _title;
+            return _type == ScriptType.Link ? _sections["Main"].IniDict["Link"] : _title;
         }
 
         public override bool Equals(object obj)
@@ -643,8 +655,7 @@ namespace PEBakery.Core
             if (obj is Script sc)
                 return RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase) &&
                        TreePath.Equals(sc.TreePath, StringComparison.OrdinalIgnoreCase);
-            else
-                return false;
+            return false;
         }
 
         public bool Equals(Script sc)
@@ -887,58 +898,66 @@ namespace PEBakery.Core
 
         public void Load()
         {
-            if (Loaded == false)
+            if (Loaded)
+                return;
+
+            switch (DataType)
             {
-                switch (DataType)
-                {
-                    case SectionDataType.IniDict:
-                        _iniDict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
-                        break;
-                    case SectionDataType.Lines:
+                case SectionDataType.IniDict:
+                    _iniDict = Ini.ParseIniSectionToDict(Script.RealPath, Name);
+                    break;
+                case SectionDataType.Lines:
+                    _lines = Ini.ParseIniSection(Script.RealPath, Name);
+                    switch (_convDataType)
+                    {
+                        case SectionDataConverted.Codes:
                         {
-                            _lines = Ini.ParseIniSection(Script.RealPath, Name);
-                            if (_convDataType == SectionDataConverted.Codes)
-                            {
-                                SectionAddress addr = new SectionAddress(Script, this);
-                                _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
-                                _logInfos.AddRange(logList);
-                            }
-                            else if (_convDataType == SectionDataConverted.Interfaces)
-                            {
-                                SectionAddress addr = new SectionAddress(Script, this);
-                                _uiCtrls = UIParser.ParseRawLines(_lines, addr, out List<LogInfo> logList);
-                                _logInfos.AddRange(logList);
-                            }
+                            SectionAddress addr = new SectionAddress(Script, this);
+                            _codes = CodeParser.ParseStatements(_lines, addr, out List<LogInfo> logList);
+                            _logInfos.AddRange(logList);
+                            break;
                         }
-                        break;
-                    default:
-                        throw new InternalException($"Invalid SectionType {Type}");
-                }
-                Loaded = true;
+                        case SectionDataConverted.Interfaces:
+                        {
+                            SectionAddress addr = new SectionAddress(Script, this);
+                            _uiCtrls = UIParser.ParseRawLines(_lines, addr, out List<LogInfo> logList);
+                            _logInfos.AddRange(logList);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Invalid SectionType {Type}");
             }
+            Loaded = true;
         }
 
         public void Unload()
         {
-            if (Loaded)
+            if (!Loaded)
+                return;
+
+            switch (DataType)
             {
-                switch (DataType)
-                {
-                    case SectionDataType.IniDict:
-                        _iniDict = null;
-                        break;
-                    case SectionDataType.Lines:
-                        _lines = null;
-                        if (_convDataType == SectionDataConverted.Codes)
+                case SectionDataType.IniDict:
+                    _iniDict = null;
+                    break;
+                case SectionDataType.Lines:
+                    _lines = null;
+                    switch (_convDataType)
+                    {
+                        case SectionDataConverted.Codes:
                             _codes = null;
-                        else if (_convDataType == SectionDataConverted.Interfaces)
+                            break;
+                        case SectionDataConverted.Interfaces:
                             _uiCtrls = null;
-                        break;
-                    default:
-                        throw new InternalException($"Invalid SectionType {Type}");
-                }
-                Loaded = false;
+                            break;
+                    }
+                    break;
+                default:
+                    throw new InternalException($"Invalid SectionType {Type}");
             }
+            Loaded = false;
         }
 
         public void ConvertLineToCodeSection(List<string> lines)

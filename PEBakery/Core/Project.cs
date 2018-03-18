@@ -823,9 +823,10 @@ namespace PEBakery.Core
             if (Variables == null)
                 return;
 
-            if (MainScript.Sections.ContainsKey("Variables"))
+            if (MainScript.Sections.ContainsKey(Variables.VarSectionName))
             {
-                Variables.AddVariables(VarsType.Global, MainScript.Sections["Variables"]);
+                ScriptSection section = MainScript.RefreshSection(Variables.VarSectionName);
+                Variables.AddVariables(VarsType.Global, section);
             }
         }
         #endregion
