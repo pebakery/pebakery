@@ -412,7 +412,7 @@ namespace PEBakery.WPF
             }
         }
         
-        public AutoResetEvent StartReloadScriptWorker()
+        public AutoResetEvent StartRefreshScriptWorker()
         {
             AutoResetEvent resetEvent = new AutoResetEvent(false);
 
@@ -422,6 +422,9 @@ namespace PEBakery.WPF
             if (refreshWorker.IsBusy)
                 return null;
 
+            if (CurMainTree.Script.Type == ScriptType.Directory)
+                return null;
+
             Stopwatch watch = new Stopwatch();
 
             Model.WorkInProgress = true;
@@ -429,7 +432,9 @@ namespace PEBakery.WPF
             refreshWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
                 watch.Start();
-                e.Result = CurMainTree.Script.Project.RefreshScript(CurMainTree.Script);
+                Script sc = CurMainTree.Script;
+                if (sc.Type != ScriptType.Directory)
+                    e.Result = sc.Project.RefreshScript(CurMainTree.Script);
             };
             refreshWorker.RunWorkerCompleted += (object sender, RunWorkerCompletedEventArgs e) =>
             {
@@ -465,10 +470,12 @@ namespace PEBakery.WPF
             if (syntaxCheckWorker.IsBusy)
                 return;
 
-            if (quiet == false)
-                Model.WorkInProgress = true;
-
             Script sc = CurMainTree.Script;
+            if (sc.Type == ScriptType.Directory)
+                return;
+
+            if (!quiet)
+                Model.WorkInProgress = true;
 
             syntaxCheckWorker = new BackgroundWorker();
             syntaxCheckWorker.DoWork += (object sender, DoWorkEventArgs e) =>
@@ -602,7 +609,9 @@ namespace PEBakery.WPF
                 if (Setting.Script_AutoSyntaxCheck)
                     StartSyntaxCheckWorker(true);
             }
-            Model.OnPropertyUpdate("MainCanvas");
+
+            Model.IsTreeEntryFile = sc.Type != ScriptType.Directory;
+            Model.OnPropertyUpdate(nameof(MainViewModel.MainCanvas));
         }
 
         public void DrawScriptLogo(Script sc)
@@ -622,9 +631,7 @@ namespace PEBakery.WPF
                     ImageSource imageSource;
 
                     using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
-                    {
-                        mem.Position = 0;
-                        
+                    {                       
                         if (type == ImageHelper.ImageType.Svg)
                             imageSource = ImageHelper.SvgToBitmapImage(mem, size, size);
                         else
@@ -891,7 +898,7 @@ namespace PEBakery.WPF
             if (Model.WorkInProgress)
                 return;
 
-            StartReloadScriptWorker();
+            StartRefreshScriptWorker();
         }
 
         private void ScriptCheckButton_Click(object sender, RoutedEventArgs e)
@@ -1295,6 +1302,22 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(ScriptDescriptionText));
             }
         }
+
+        private bool isTreeEntryFile = true;
+        public bool IsTreeEntryFile
+        {
+            get => isTreeEntryFile;
+            set
+            {
+                isTreeEntryFile = value;
+                OnPropertyUpdate(nameof(IsTreeEntryFile));
+                OnPropertyUpdate(nameof(EditButtonToopTip));
+                OnPropertyUpdate(nameof(EditButtonIconKind));
+            }
+        }
+
+        public string EditButtonToopTip => IsTreeEntryFile ? "Edit Script" : "Open Folder";
+        public PackIconMaterialKind EditButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.Pencil : PackIconMaterialKind.Folder;
 
         private Brush scriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
         public Brush ScriptCheckButtonColor

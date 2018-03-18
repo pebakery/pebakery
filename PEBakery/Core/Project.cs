@@ -34,6 +34,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization.Formatters.Binary;
 using SQLite;
 using System.Windows;
@@ -392,7 +393,7 @@ namespace PEBakery.Core
     public class Project : ICloneable
     {
         #region Fields
-        private int mainScriptIdx;
+        private int _mainScriptIdx;
         #endregion
 
         #region Properties
@@ -400,7 +401,7 @@ namespace PEBakery.Core
         public string ProjectRoot { get; }
         public string ProjectDir { get; }
         public string BaseDir { get; }
-        public Script MainScript => AllScripts[mainScriptIdx];
+        public Script MainScript => AllScripts[_mainScriptIdx];
         public List<Script> AllScripts { get; private set; }
         public List<Script> ActiveScripts => CollectActiveScripts(AllScripts);
         public List<Script> VisibleScripts => CollectVisibleScripts(AllScripts);
@@ -634,9 +635,9 @@ namespace PEBakery.Core
 
         public void SetMainScriptIdx()
         {
-            mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
+            _mainScriptIdx = AllScripts.FindIndex(x => x.IsMainScript);
             Debug.Assert(AllScripts.Count(x => x.IsMainScript) == 1);
-            Debug.Assert(mainScriptIdx != -1);
+            Debug.Assert(_mainScriptIdx != -1);
         }
         #endregion
 
@@ -644,30 +645,29 @@ namespace PEBakery.Core
         public Script RefreshScript(Script sc, EngineState s = null)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc.Type == ScriptType.Directory)
+                return null;
 
             int aIdx = AllScripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
-
             if (aIdx == -1)
-            {
-                // Even if idx is not found in Projects directory, just proceed.
-                // If not, cannot deal with monkey-patched scripts.
+            { // Even if idx is not found in Projects directory, just proceed to deal with monkey-patched scripts.
                 sc = LoadScript(sc.RealPath, sc.TreePath, true, sc.IsDirLink);
             }
             else
             {
                 // This one is in legit Project list, so [Main] cannot be ignored
                 sc = LoadScript(sc.RealPath, sc.TreePath, false, sc.IsDirLink);
-                if (sc != null)
-                {
-                    AllScripts[aIdx] = sc;
-                    if (s != null)
-                    {
-                        // Investigate EngineState to update it on build list
-                        int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
-                        if (sIdx != -1)
-                            s.Scripts[sIdx] = sc;
-                    }
-                }
+                if (sc == null)
+                    return null;
+
+                AllScripts[aIdx] = sc;
+
+                // Investigate EngineState to update it on build list
+                if (s == null)
+                    return sc;
+                int sIdx = s.Scripts.FindIndex(x => x.RealPath.Equals(sc.RealPath, StringComparison.OrdinalIgnoreCase));
+                if (sIdx != -1)
+                    s.Scripts[sIdx] = sc;
             }
             return sc;
         }
@@ -834,11 +834,12 @@ namespace PEBakery.Core
         #endregion
 
         #region Clone
+        [SuppressMessage("ReSharper", "ArrangeThisQualifier")]
         public object Clone()
         {
             Project project = new Project(BaseDir, ProjectName)
             {
-                mainScriptIdx = this.mainScriptIdx,
+                _mainScriptIdx = this._mainScriptIdx,
                 AllScripts = new List<Script>(this.AllScripts),
                 Variables = this.Variables.Clone() as Variables,
                 LoadedScriptCount = this.LoadedScriptCount,
@@ -859,19 +860,15 @@ namespace PEBakery.Core
         {
             if (project == null) throw new ArgumentNullException(nameof(project));
 
-            if (ProjectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
-                ProjectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&
-                ProjectDir.Equals(project.ProjectDir, StringComparison.OrdinalIgnoreCase) &&
-                AllScriptCount == project.AllScriptCount)
-                return true;
-            else
-                return false;
-
+            return ProjectName.Equals(project.ProjectName, StringComparison.OrdinalIgnoreCase) &&
+                   ProjectRoot.Equals(project.ProjectRoot, StringComparison.OrdinalIgnoreCase) &&
+                   ProjectDir.Equals(project.ProjectDir, StringComparison.OrdinalIgnoreCase) &&
+                   AllScriptCount == project.AllScriptCount;
         }
 
         public override int GetHashCode()
         {
-            return ProjectName.GetHashCode() ^ ProjectRoot.GetHashCode() ^ ProjectDir.GetHashCode() ^ AllScriptCount.GetHashCode();
+            return ProjectName.GetHashCode() ^ ProjectRoot.GetHashCode() ^ ProjectDir.GetHashCode();
         }
         #endregion
     }

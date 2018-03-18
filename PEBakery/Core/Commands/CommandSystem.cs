@@ -52,6 +52,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_System));
             CodeInfo_System info = cmd.Info as CodeInfo_System;
 
+            // ReSharper disable once PossibleNullReferenceException
             SystemType type = info.Type;
             switch (type)
             {
@@ -60,6 +61,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Cursor));
                         SystemInfo_Cursor subInfo = info.SubInfo as SystemInfo_Cursor;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
@@ -89,6 +91,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_ErrorOff));
                         SystemInfo_ErrorOff subInfo = info.SubInfo as SystemInfo_ErrorOff;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not a valid integer");
@@ -108,6 +111,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetEnv));
                         SystemInfo_GetEnv subInfo = info.SubInfo as SystemInfo_GetEnv;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVarName);
                         string envVarValue = Environment.GetEnvironmentVariable(envVarName);
                         if (envVarValue == null) // Failure
@@ -127,19 +131,21 @@ namespace PEBakery.Core.Commands
                         SystemInfo_GetFreeDrive subInfo = info.SubInfo as SystemInfo_GetFreeDrive;
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
-                        string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                        const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                         char lastFreeLetter = letters.Except(drives.Select(d => d.Name[0])).LastOrDefault();
 
                         if (lastFreeLetter != '\0') // Success
                         {
                             logs.Add(new LogInfo(LogState.Success, $"Last free drive letter is [{lastFreeLetter}]"));
+                            // ReSharper disable once PossibleNullReferenceException
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString());
                             logs.AddRange(varLogs);
                         }
                         else // No Free Drives
                         {
                             // TODO: Is it correct WB082 behavior?
-                            logs.Add(new LogInfo(LogState.Ignore, "No free drive letter")); 
+                            logs.Add(new LogInfo(LogState.Ignore, "No free drive letter"));
+                            // ReSharper disable once PossibleNullReferenceException
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, string.Empty);
                             logs.AddRange(varLogs);
                         }
@@ -150,6 +156,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeSpace));
                         SystemInfo_GetFreeSpace subInfo = info.SubInfo as SystemInfo_GetFreeSpace;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
                         FileInfo f = new FileInfo(path);
@@ -177,6 +184,7 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is not running as Administrator"));
 
+                        // ReSharper disable once PossibleNullReferenceException
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString());
                         logs.AddRange(varLogs);
                     }
@@ -186,6 +194,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnBuildExit));
                         SystemInfo_OnBuildExit subInfo = info.SubInfo as SystemInfo_OnBuildExit;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         s.OnBuildExit = subInfo.Cmd;
 
                         logs.Add(new LogInfo(LogState.Success, "OnBuildExit callback registered"));
@@ -196,6 +205,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnScriptExit));
                         SystemInfo_OnScriptExit subInfo = info.SubInfo as SystemInfo_OnScriptExit;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         s.OnScriptExit = subInfo.Cmd;
 
                         logs.Add(new LogInfo(LogState.Success, "OnScriptExit callback registered"));
@@ -203,14 +213,13 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.RefreshInterface:
                     {
-                        // Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_RefreshInterface));
-                        // SystemInfo_RefreshInterface subInfo = info.SubInfo as SystemInfo_RefreshInterface;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
                         AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = Application.Current.MainWindow as MainWindow;
-                            resetEvent = w.StartReloadScriptWorker();
+                            resetEvent = w?.StartRefreshScriptWorker();
                         });
                         resetEvent?.WaitOne();
 
@@ -220,15 +229,14 @@ namespace PEBakery.Core.Commands
                 case SystemType.RescanScripts:
                 case SystemType.LoadAll:
                     {
-                        // Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_LoadAll));
-                        // SystemInfo_LoadAll subInfo = info.SubInfo as SystemInfo_LoadAll;
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
-                        // Reload Project
+                        // Refresh Project
                         AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = (Application.Current.MainWindow as MainWindow);
-                            resetEvent = w.StartLoadWorker(true);                
+                            resetEvent = w?.StartLoadWorker(true);
                         });
                         resetEvent?.WaitOne();
 
@@ -240,6 +248,7 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load));
                         SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
                         SearchOption searchOption = SearchOption.AllDirectories;
                         if (subInfo.NoRec)
@@ -247,7 +256,7 @@ namespace PEBakery.Core.Commands
                             
                         // Check wildcard
                         string wildcard = Path.GetFileName(filePath);
-                        bool containsWildcard = (wildcard.IndexOfAny(new char[] { '*', '?' }) != -1);
+                        bool containsWildcard = wildcard?.IndexOfAny(new[] { '*', '?' }) != -1;
 
                         string[] files;
                         if (containsWildcard)
@@ -267,32 +276,33 @@ namespace PEBakery.Core.Commands
                                 return logs;
                             }
 
-                            files = new string[1] { filePath };
+                            files = new string[] { filePath };
                         }
 
                         int successCount = 0;
                         foreach (string f in files)
                         { 
-                            string pFullPath = Path.GetFullPath(f);
+                            string scRealPath = Path.GetFullPath(f);
 
                             // Does this file already exists in project.AllScripts?
                             Project project = cmd.Addr.Project;
-                            if (project.ContainsScriptByRealPath(pFullPath))
+                            if (project.ContainsScriptByRealPath(scRealPath))
                             { // Project Tree conatins this script, so just refresh it
                                 // RefreshScript -> Update Project.AllScripts
                                 // TODO: Update EngineState.Scripts?
-                                Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, pFullPath, out bool inCurrentScript);
+                                Script sc = Engine.GetScriptInstance(s, cmd, cmd.Addr.Script.RealPath, scRealPath, out _);
                                 sc = s.Project.RefreshScript(sc);
                                 if (sc == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{pFullPath}]"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to refresh script [{scRealPath}]"));
                                     continue;
                                 }
 
                                 // Update MainWindow and redraw Script
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
-                                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                                    if (!(Application.Current.MainWindow is MainWindow w))
+                                        return;
 
                                     w.UpdateScriptTree(project, false);
                                     if (sc.Equals(w.CurMainTree.Script))
@@ -307,17 +317,18 @@ namespace PEBakery.Core.Commands
                             }
                             else
                             { // Add scripts into Project.AllScripts
-                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(pFullPath, true, false);
+                                Script sc = cmd.Addr.Project.LoadScriptMonkeyPatch(scRealPath, true, false);
                                 if (sc == null)
                                 {
-                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{pFullPath}]"));
+                                    logs.Add(new LogInfo(LogState.Error, $"Unable to load script [{scRealPath}]"));
                                     continue;
                                 }
 
                                 // Update MainWindow.MainTree and redraw Script
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
-                                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                                    if (!(Application.Current.MainWindow is MainWindow w))
+                                        return;
 
                                     w.UpdateScriptTree(project, false);
                                     if (sc.Equals(w.CurMainTree.Script))
@@ -341,12 +352,13 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog));
                         SystemInfo_SaveLog subInfo = info.SubInfo as SystemInfo_SaveLog;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
 
                         LogExportType logFormat = Logger.ParseLogExportType(logFormatStr);
 
-                        if (s.DisableLogger == false)
+                        if (!s.DisableLogger)
                         { // When logger is disabled, s.BuildId is invalid.
                             s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                             s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
@@ -355,7 +367,6 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.SetLocal:
                     { // SetLocal
-                        // No SystemInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
                         Engine.EnableSetLocal(s, cmd.Addr.Section);

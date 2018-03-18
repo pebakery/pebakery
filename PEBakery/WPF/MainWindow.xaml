@@ -65,7 +65,7 @@
             </Setter>
         </Style>
         <Style x:Key="BackgroundButton" TargetType="Button">
-            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="OverridesDefaultStyle" Value="False" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -505,7 +505,7 @@
 
                     <ContentPresenter Name="ScriptLogo"
                                       Grid.Row="0" Grid.Column="0"
-                                      Margin="10"
+                                      Margin="14"
                                       VerticalAlignment="Center"
                                       HorizontalAlignment="Center"
                                       UseLayoutRounding="True">
@@ -563,42 +563,45 @@
                         <Button Grid.Row="0"
                                 Grid.Column="0"
                                 Click="ScriptRunButton_Click"
+                                IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Run Script">
                             <Button.Content>
                                 <iconPacks:PackIconMaterial Kind="Play"
                                                             Width="Auto"
                                                             Height="Auto"
-                                                            Margin="5"/>
+                                                            Margin="4"/>
                             </Button.Content>
                         </Button>
                         <Button Grid.Row="1"
                                 Grid.Column="0"
                                 Click="ScriptRefreshButton_Click"
+                                IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Refresh Script">
                             <iconPacks:PackIconMaterial Kind="Refresh"
                                                         Width="Auto"
                                                         Height="Auto"
-                                                        Margin="5"/>
+                                                        Margin="4"/>
                         </Button>
                         <Button Grid.Row="2"
                                 Grid.Column="0"
                                 Click="ScriptEditButton_Click"
-                                ToolTip="Edit Script">
+                                ToolTip="{Binding EditButtonToopTip}">
                             <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="Pencil"
+                                <iconPacks:PackIconMaterial Kind="{Binding EditButtonIconKind}"
                                                             Width="Auto"
                                                             Height="Auto"
-                                                            Margin="5"/>
+                                                            Margin="4"/>
                             </Button.Content>
                         </Button>
                         <Button Grid.Row="3"
                                 Grid.Column="0"
                                 Click="ScriptCheckButton_Click"
                                 Background="{Binding ScriptCheckButtonColor}"
+                                IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Syntax Check">
                             <iconPacks:PackIconMaterial Kind="Check"
                                                         Width="Auto"
-                                                        Height="Auto" Margin="5"/>
+                                                        Height="Auto" Margin="4"/>
                         </Button>
                     </Grid>
                 </Grid>

@@ -264,10 +264,6 @@ namespace PEBakery.Core
         /// <summary>
         /// Used to get Embedded Command from If, Else
         /// </summary>
-        /// <param name="rawCodes"></param>
-        /// <param name="addr"></param>
-        /// <param name="idx"></param>
-        /// <param name="preprocessed"></param>
         /// <returns></returns>
         private static CodeCommand ParseStatementFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr, int lineIdx)
         {
@@ -284,10 +280,9 @@ namespace PEBakery.Core
                 throw new InvalidCommandException(e.Message, rawCode);
             }
 
-            CodeInfo info;
             try
             {
-                info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), addr, lineIdx);
+                CodeInfo info = ParseCodeInfo(rawCode, ref type, macroType, args.Skip(1).ToList(), addr, lineIdx);
                 return new CodeCommand(rawCode, addr, type, info, lineIdx);
             }
             catch (InvalidCommandException e)
@@ -3238,7 +3233,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        info = new SystemInfo_RefreshInterface();
+                        info = new SystemInfo();
                     }
                     break;
                 case SystemType.LoadAll:
@@ -3248,7 +3243,7 @@ namespace PEBakery.Core
                         if (args.Count != argCount)
                             throw new InvalidCommandException($"Command [System,{type}] must have [{argCount}] arguments", rawCode);
 
-                        info = new SystemInfo_LoadAll();
+                        info = new SystemInfo();
                     }
                     break;
                 case SystemType.Load:
