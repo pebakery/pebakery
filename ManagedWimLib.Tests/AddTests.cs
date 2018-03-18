@@ -127,7 +127,7 @@ namespace ManagedWimLib.Tests
                         case ProgressMsg.SCAN_BEGIN:
                             {
                                 ProgressInfo_Scan m = (ProgressInfo_Scan)info;
-                                Assert.IsNotNull(info);
+                                Assert.IsNotNull(m);
 
                                 _checked[0] = true;
                             }
@@ -135,7 +135,7 @@ namespace ManagedWimLib.Tests
                         case ProgressMsg.SCAN_END:
                             {
                                 ProgressInfo_Scan m = (ProgressInfo_Scan)info;
-                                Assert.IsNotNull(info);
+                                Assert.IsNotNull(m);
 
                                 _checked[1] = true;
                             }
@@ -210,7 +210,7 @@ namespace ManagedWimLib.Tests
                         case ProgressMsg.SCAN_BEGIN:
                             {
                                 ProgressInfo_Scan m = (ProgressInfo_Scan)info;
-                                Assert.IsNotNull(info);
+                                Assert.IsNotNull(m);
 
                                 _checked[0] = true;
                             }
@@ -218,7 +218,7 @@ namespace ManagedWimLib.Tests
                         case ProgressMsg.SCAN_END:
                             {
                                 ProgressInfo_Scan m = (ProgressInfo_Scan)info;
-                                Assert.IsNotNull(info);
+                                Assert.IsNotNull(m);
 
                                 _checked[1] = true;
                             }

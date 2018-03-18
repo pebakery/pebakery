@@ -62,10 +62,9 @@
                                   ItemsSource="{Binding Project_List}"
                                   SelectedIndex="{Binding Project_DefaultIndex}"/>
                     </Grid>
-                    <Grid
-                        Height="25"
-                        Margin="15, 15, 15, 0"
-                        VerticalAlignment="Center">
+                    <Grid Height="25"
+                          Margin="15, 15, 15, 0"
+                          VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>

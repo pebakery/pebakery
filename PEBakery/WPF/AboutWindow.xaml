@@ -41,122 +41,110 @@
         Width="600" Height="480">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="Information">
                 <StackPanel>
-                    <Grid
-                        Margin="0, 20, 0, 20"
-                        HorizontalAlignment="Center">
+                    <Grid Margin="0, 20, 0, 20"
+                          HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Image
-                            Grid.Row="0" Grid.Column="0"
-                            Source="{StaticResource DonutSvgImage}" />
-                        <TextBlock
-                            Grid.Row="0" Grid.Column="1"
-                            Text="PEBakery"
-                            Margin="5, 0, 0, 5"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            FontSize="50" 
-                            FontWeight="SemiBold"
-                            FontStretch="Condensed"
-                            FontStyle="Italic" />
-                        <TextBlock
-                            Grid.Row="0" Grid.Column="2"
-                            Text="{Binding Info_PEBakeryVersion}"
-                            Margin="12, 0, 0, 10"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Bottom"
-                            FontSize="30" 
-                            FontWeight="SemiBold"
-                            FontStretch="Condensed"/>
+                        <Image Grid.Row="0"
+                               Grid.Column="0"
+                               Source="{StaticResource DonutSvgImage}" />
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text="PEBakery"
+                                   Margin="5, 0, 0, 5"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   FontSize="50" 
+                                   FontWeight="SemiBold"
+                                   FontStretch="Condensed"
+                                   FontStyle="Italic" />
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="2"
+                                   Text="{Binding Info_PEBakeryVersion}"
+                                   Margin="12, 0, 0, 10"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Bottom"
+                                   FontSize="30" 
+                                   FontWeight="SemiBold"
+                                   FontStretch="Condensed"/>
                     </Grid>
-                    <TextBlock
-                        HorizontalAlignment="Center" 
-                        Margin="0, 0, 0, 20"
-                        FontSize="18"
-                        Text="The Builder for Windows Preinstalled Environment"/>
-                    <TextBlock
-                        HorizontalAlignment="Center" 
-                        Margin="0, 0, 0, 20"
-                        FontSize="15"
-                        Text="{Binding Info_BuildDate}"/>
-                    <Grid
-                        Margin="0, 0, 0, 10"
-                        HorizontalAlignment="Center">
+                    <TextBlock HorizontalAlignment="Center" 
+                               Margin="0, 0, 0, 20"
+                               FontSize="18"
+                               Text="The Builder for Windows Preinstalled Environment"/>
+                    <TextBlock HorizontalAlignment="Center" 
+                               Margin="0, 0, 0, 20"
+                               FontSize="15"
+                               Text="{Binding Info_BuildDate}"/>
+                    <Grid Margin="0, 0, 0, 10"
+                          HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <iconPacks:PackIconMaterial
-                            Kind="GitHubCircle"
-                            Width="Auto"
-                            Height="Auto" />
-                        <TextBlock
-                            Grid.Column="1"
-                            Margin="5, 0, 0, 0"
-                            FontSize="15" >
-                            <Hyperlink
-                                NavigateUri="https://github.com/ied206/PEBakery"
-                                RequestNavigate="Hyperlink_RequestNavigate">
+                        <iconPacks:PackIconMaterial Kind="GitHubCircle"
+                                                    Width="Auto"
+                                                    Height="Auto" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="5, 0, 0, 0"
+                                   FontSize="15" >
+                            <Hyperlink NavigateUri="https://github.com/ied206/PEBakery"
+                                       RequestNavigate="Hyperlink_RequestNavigate">
                                 GitHub
                             </Hyperlink>
                         </TextBlock>
                     </Grid>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock
-                            VerticalAlignment="Bottom"
-                            Margin="0, 0, 0, 0"
-                            FontSize="14"
-                            Text="Copyright (c) 2016-2018 Hajin Jang "/>
-                        <TextBlock
-                            VerticalAlignment="Bottom"
-                            Margin="0, 0, 0, 0"
-                            FontSize="12"
-                            Text="(aka ied206, joveler)"/>
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center">
+                        <TextBlock VerticalAlignment="Bottom"
+                                   Margin="0, 0, 0, 0"
+                                   FontSize="14"
+                                   Text="Copyright (c) 2016-2018 Hajin Jang "/>
+                        <TextBlock VerticalAlignment="Bottom"
+                                   Margin="0, 0, 0, 0"
+                                   FontSize="12"
+                                   Text="(aka ied206, joveler)"/>
                     </StackPanel>
                     
                 </StackPanel>
             </TabItem>
             <TabItem Header="License">
                 <Grid Margin="10, 10, 10, 10">
-                    <TextBox
-                        Grid.Row="1"
-                        FontFamily="{Binding MonoFontFamily}"
-                        FontWeight="{Binding MonoFontWeight}"
-                        FontSize="{Binding MonoFontSize}"
-                        TextWrapping="Wrap"
-                        AcceptsReturn="True"
-                        VerticalContentAlignment="Stretch"
-                        ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto"
-                        ScrollViewer.CanContentScroll="True"
-                        IsReadOnly="True"
-                        Text="{Binding License_Text}"/>
+                    <TextBox FontFamily="{Binding MonoFontFamily}"
+                             FontWeight="{Binding MonoFontWeight}"
+                             FontSize="{Binding MonoFontSize}"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalContentAlignment="Stretch"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.CanContentScroll="True"
+                             IsReadOnly="True"
+                             Text="{Binding License_Text}"/>
                 </Grid>
             </TabItem>
         </TabControl>
-        <Grid Grid.Row="1" Margin="15, 15, 15, 15">
-            <Grid.RowDefinitions>
-                <RowDefinition></RowDefinition>
-            </Grid.RowDefinitions>
+        <Grid Grid.Row="1"
+              Margin="15, 15, 15, 15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="100"></ColumnDefinition>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
-            <Button
-                Grid.Row="0" Grid.Column="1"
-                IsDefault="True"
-                IsCancel="True"
-                Content="Close">
+            <Button Grid.Row="0"
+                    Grid.Column="1"
+                    IsDefault="True"
+                    IsCancel="True"
+                    Content="Close">
             </Button>
         </Grid>
     </Grid>

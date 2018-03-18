@@ -65,24 +65,31 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0" Name="MainTab" SelectedIndex="{Binding SelectedTabIndex}">
+        <TabControl Grid.Row="0"
+                    Name="MainTab"
+                    SelectedIndex="{Binding SelectedTabIndex}">
             <TabItem Header="System Log">
                 <Grid>
-                    <ListView
-                        Name="SystemLogListView"
-                        HorizontalContentAlignment="Stretch"
-                        SelectedIndex="{Binding SystemLogListSelectedIndex}"
-                        ItemsSource="{Binding SystemLogListModel}"
-                        ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                        AlternationCount="2">
+                    <ListView Name="SystemLogListView"
+                              HorizontalContentAlignment="Stretch"
+                              SelectedIndex="{Binding SystemLogListSelectedIndex}"
+                              ItemsSource="{Binding SystemLogListModel}"
+                              ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                              AlternationCount="2">
                         <ListView.View>
                             <custom:AutoSizedGridView>
-                                <GridViewColumn Header="Time" Width="Auto" DisplayMemberBinding="{Binding TimeStr}" />
-                                <GridViewColumn Header="State" Width="Auto" DisplayMemberBinding="{Binding StateStr}" />
-                                <GridViewColumn Header="Message" Width="Auto" DisplayMemberBinding="{Binding Message}" />
+                                <GridViewColumn Header="Time"
+                                                Width="Auto"
+                                                DisplayMemberBinding="{Binding TimeStr}" />
+                                <GridViewColumn Header="State"
+                                                Width="Auto"
+                                                DisplayMemberBinding="{Binding StateStr}" />
+                                <GridViewColumn Header="Message"
+                                                Width="Auto"
+                                                DisplayMemberBinding="{Binding Message}" />
                             </custom:AutoSizedGridView>
                         </ListView.View>
                     </ListView>
@@ -91,120 +98,131 @@
             <TabItem Header="Build Log">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                        <RowDefinition Height="Auto"></RowDefinition>
-                        <RowDefinition></RowDefinition>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
 
-                    <DockPanel 
-                        Margin="15, 15, 15, 0"
-                        Grid.Row="0">
-                        <TextBlock
-                            DockPanel.Dock="Left"
-                            Width="100"
-                            Margin="0, 0, 15, 0"
-                            VerticalAlignment="Center"
-                            Text="Select Build">
+                    <DockPanel Margin="15, 15, 15, 0"
+                               Grid.Row="0">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Width="100"
+                                   Margin="0, 0, 15, 0"
+                                   VerticalAlignment="Center"
+                                   Text="Select Build">
                         </TextBlock>
-                        <ComboBox
-                            Name="SelectBuildComboBox"
-                            SelectedIndex="{Binding SelectBuildIndex}"
-                            ItemsSource="{Binding SelectBuildEntries}"
-                            AlternationCount="2">
-                            <ComboBox.ItemTemplate>
+                        <ComboBox Name="SelectBuildComboBox"
+                                  SelectedIndex="{Binding SelectBuildIndex}"
+                                  ItemsSource="{Binding SelectBuildEntries}"
+                                  AlternationCount="2">
+                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                    <TextBlock Text="{Binding Item1}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
 
-                    <DockPanel 
-                        Margin="15, 15, 15, 0"
-                        Grid.Row="1">
-                        <TextBlock
-                            DockPanel.Dock="Left"
-                            Width="100"
-                            Margin="0, 0, 15, 0"
-                            VerticalAlignment="Center"
-                            Text="Select Script">
+                    <DockPanel Margin="15, 15, 15, 0"
+                               Grid.Row="1">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Width="100"
+                                   Margin="0, 0, 15, 0"
+                                   VerticalAlignment="Center"
+                                   Text="Select Script">
                         </TextBlock>
-                        <ComboBox
-                            Name="SelectScriptComboBox"
-                            SelectedIndex="{Binding SelectScriptIndex}"
-                            ItemsSource="{Binding SelectScriptEntries}"
-                            AlternationCount="2">
+                         <ComboBox Name="SelectScriptComboBox"
+                                   SelectedIndex="{Binding SelectScriptIndex}"
+                                   ItemsSource="{Binding SelectScriptEntries}"
+                                   AlternationCount="2">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"></TextBlock>
+                                    <TextBlock Text="{Binding Item1}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
 
-                    <TabControl
-                        Margin="15, 15, 15, 0"
-                        Grid.Row="2">
+                    <TabControl Margin="15, 15, 15, 0"
+                                Grid.Row="2">
                         <TabItem Header="Statistics">
-                            <ListView
-                                HorizontalContentAlignment="Stretch"
-                                ItemsSource="{Binding LogStatModel}"
-                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                AlternationCount="2">
+                            <ListView HorizontalContentAlignment="Stretch"
+                                      ItemsSource="{Binding LogStatModel}"
+                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                      AlternationCount="2">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Type" Width="70" DisplayMemberBinding="{Binding Item1}" />
-                                        <GridViewColumn Header="Count" Width="160" DisplayMemberBinding="{Binding Item2}" />
+                                        <GridViewColumn Header="Type"
+                                                        Width="70"
+                                                        DisplayMemberBinding="{Binding Item1}" />
+                                        <GridViewColumn Header="Count"
+                                                        Width="160"
+                                                        DisplayMemberBinding="{Binding Item2}" />
                                     </GridView>
                                 </ListView.View>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Log (Simple)">
-                            <ListView
-                                Name="BuildLogSimpleListView"
-                                SelectedIndex="{Binding BuildLogSimpleSelectedIndex}"
-                                HorizontalContentAlignment="Stretch"
-                                ItemsSource="{Binding BuildLogListModel}"
-                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                AlternationCount="2">
-                                <ListBox.ItemTemplate>
+                            <ListView Name="BuildLogSimpleListView"
+                                      SelectedIndex="{Binding BuildLogSimpleSelectedIndex}"
+                                      HorizontalContentAlignment="Stretch"
+                                      ItemsSource="{Binding BuildLogListModel}"
+                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                      AlternationCount="2">
+                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Text}"></TextBlock>
+                                        <TextBlock Text="{Binding Text}"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Log (Detail)">
-                            <ListView
-                                Name="BuildLogDetailListView"
-                                SelectedIndex="{Binding BuildLogDetailSelectedIndex}"
-                                HorizontalContentAlignment="Stretch"
-                                ItemsSource="{Binding BuildLogListModel}"
-                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                AlternationCount="2">
+                            <ListView Name="BuildLogDetailListView"
+                                      SelectedIndex="{Binding BuildLogDetailSelectedIndex}"
+                                      HorizontalContentAlignment="Stretch"
+                                      ItemsSource="{Binding BuildLogListModel}"
+                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                      AlternationCount="2">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Time" Width="150" DisplayMemberBinding="{Binding TimeStr}" />
-                                        <GridViewColumn Header="Depth" Width="40" DisplayMemberBinding="{Binding Depth}" />
-                                        <GridViewColumn Header="State" Width="60" DisplayMemberBinding="{Binding StateStr}" />
-                                        <GridViewColumn Header="Line#" Width="45" DisplayMemberBinding="{Binding LineIdxStr}" />
-                                        <GridViewColumn Header="Message" Width="340" DisplayMemberBinding="{Binding Message}" />
-                                        <GridViewColumn Header="RawCode" Width="175" DisplayMemberBinding="{Binding RawCode}" />
+                                        <GridViewColumn Header="Time"
+                                                        Width="150"
+                                                        DisplayMemberBinding="{Binding TimeStr}" />
+                                        <GridViewColumn Header="Depth"
+                                                        Width="40"
+                                                        DisplayMemberBinding="{Binding Depth}" />
+                                        <GridViewColumn Header="State"
+                                                        Width="60"
+                                                        DisplayMemberBinding="{Binding StateStr}" />
+                                        <GridViewColumn Header="Line#"
+                                                        Width="45"
+                                                        DisplayMemberBinding="{Binding LineIdxStr}" />
+                                        <GridViewColumn Header="Message"
+                                                        Width="340" 
+                                                        DisplayMemberBinding="{Binding Message}" />
+                                        <GridViewColumn Header="RawCode"
+                                                        Width="175"
+                                                        DisplayMemberBinding="{Binding RawCode}" />
                                     </GridView>
                                 </ListView.View>
                             </ListView>
                         </TabItem>
                         <TabItem Header="Variable">
-                            <ListView
-                                HorizontalContentAlignment="Stretch"
-                                ItemsSource="{Binding VariableListModel}"
-                                ItemContainerStyle="{StaticResource AlternativeListViewColor}"
-                                AlternationCount="2">
+                            <ListView HorizontalContentAlignment="Stretch"
+                                      ItemsSource="{Binding VariableListModel}"
+                                      ItemContainerStyle="{StaticResource AlternativeListViewColor}"
+                                      AlternationCount="2">
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="Type" Width="60" DisplayMemberBinding="{Binding Type}" />
-                                        <GridViewColumn Header="Key" Width="160" DisplayMemberBinding="{Binding Key}" />
-                                        <GridViewColumn Header="Value" Width="580" DisplayMemberBinding="{Binding Value}" />
+                                        <GridViewColumn Header="Type"
+                                                        Width="60"
+                                                        DisplayMemberBinding="{Binding Type}" />
+                                        <GridViewColumn Header="Key"
+                                                        Width="160"
+                                                        DisplayMemberBinding="{Binding Key}" />
+                                        <GridViewColumn Header="Value"
+                                                        Width="580"
+                                                        DisplayMemberBinding="{Binding Value}" />
                                     </GridView>
                                 </ListView.View>
                             </ListView>
@@ -222,27 +240,23 @@
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
 
-            <Button
-                Grid.Column="0"
-                Margin="0, 0, 15, 0"
-                Click="RefreshButton_Click"
-                Content="Refresh"/>
-            <Button
-                Grid.Column="1"
-                Margin="0, 0, 15, 0"
-                Click="ClearButton_Click"
-                Content="Clear"/>
-            <Button
-                Grid.Column="2"
-                Margin="0, 0, 15, 0"
-                Content="Export"
-                Click="ExportButton_Click"/>
-            <Button
-                Grid.Column="4"
-                IsDefault="True"
-                IsCancel="True"
-                Click="CloseButton_Click"
-                Content="Close"/>
+            <Button Grid.Column="0"
+                    Margin="0, 0, 15, 0"
+                    Click="RefreshButton_Click"
+                    Content="Refresh"/>
+            <Button Grid.Column="1"
+                    Margin="0, 0, 15, 0"
+                    Click="ClearButton_Click"
+                    Content="Clear"/>
+            <Button Grid.Column="2"
+                    Margin="0, 0, 15, 0"
+                    Content="Export"
+                    Click="ExportButton_Click"/>
+            <Button Grid.Column="4"
+                    IsDefault="True"
+                    IsCancel="True"
+                    Click="CloseButton_Click"
+                    Content="Close"/>
         </Grid>
     </Grid>
 </Window>

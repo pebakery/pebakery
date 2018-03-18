@@ -453,7 +453,6 @@ namespace PEBakery.Core
             string mainScriptPath = Path.Combine(ProjectDir, "script.project");
             AllScripts = new List<Script>();
 
-            // Doing this will consume memory, but also greatly increase performance.
             DB_ScriptCache[] cacheDB = null;
             if (scriptCache != null)
                 cacheDB = scriptCache.Table<DB_ScriptCache>().Where(x => true).ToArray();
