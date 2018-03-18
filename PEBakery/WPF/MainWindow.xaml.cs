@@ -735,7 +735,7 @@ namespace PEBakery.WPF
         {
             if (loadWorker.IsBusy == false)
             {
-                (MainTreeView.DataContext as TreeViewModel).Children.Clear();
+                (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
 
                 StartLoadWorker();
             }

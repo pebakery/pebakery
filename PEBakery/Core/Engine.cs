@@ -140,6 +140,7 @@ namespace PEBakery.Core
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
 
+                    // ReSharper disable once PossibleNullReferenceException
                     w.DrawScriptLogo(sc);
 
                     if (w.CurBuildTree != null)
@@ -202,7 +203,7 @@ namespace PEBakery.Core
                         bool bakUserHalt = s.UserHaltFlag;
                         bool bakCmdHalt = s.CmdHaltFlag;
 
-                        string eventParam = FinishEventParam(s);
+                        string eventParam = FinishEventParam();
 
                         // Reset Halt Flags before running OnScriptExit
                         // Otherwise only first command is executed
@@ -220,10 +221,15 @@ namespace PEBakery.Core
                     }
 
                     bool runOneScriptExit = false;
-                    if (s.RunMode == EngineMode.RunMainAndOne && s.CurrentScriptIdx != 0)
-                        runOneScriptExit = true;
-                    else if (s.RunMode == EngineMode.RunOne)
-                        runOneScriptExit = true;
+                    switch (s.RunMode)
+                    {
+                        case EngineMode.RunMainAndOne when s.CurrentScriptIdx != 0:
+                            runOneScriptExit = true;
+                            break;
+                        case EngineMode.RunOne:
+                            runOneScriptExit = true;
+                            break;
+                    }
 
                     if (s.Scripts.Count - 1 <= s.CurrentScriptIdx ||
                         runOneScriptExit || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
@@ -240,7 +246,7 @@ namespace PEBakery.Core
                             s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Build stop requested by user"));
                         }
 
-                        string eventParam = FinishEventParam(s);
+                        string eventParam = FinishEventParam();
 
                         // Reset Halt Flags before running OnBuildExit
                         // Otherwise only first command is executed
@@ -359,11 +365,11 @@ namespace PEBakery.Core
                 return;
             }
 
-            for (int idx = 0; idx < codes.Count; idx++)
+            foreach (CodeCommand code in codes)
             {
                 try
                 {
-                    var curCommand = codes[idx];
+                    CodeCommand curCommand = code;
                     s.CurDepth = depth;
                     s.CurSectionParams = sectionParams;
                     ExecuteCommand(s, curCommand);
@@ -410,6 +416,7 @@ namespace PEBakery.Core
                             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error));
                             CodeInfo_Error info = cmd.Info as CodeInfo_Error;
 
+                            // ReSharper disable once PossibleNullReferenceException
                             logs.Add(new LogInfo(LogState.Error, info.ErrorMessage));
                         }
                         break;
@@ -807,6 +814,8 @@ namespace PEBakery.Core
             {
                 Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
                 CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
+
+                // ReSharper disable once PossibleNullReferenceException
                 if (1 <= info.Parameters.Count)
                     info.Parameters[0] = eventParam;
                 else
@@ -824,16 +833,15 @@ namespace PEBakery.Core
             cbCmd = null;
         }
 
-        public string FinishEventParam(EngineState s)
+        public string FinishEventParam()
         {
             if (s.UserHaltFlag)
                 return "STOP";
-            else if (s.ErrorHaltFlag)
+            if (s.ErrorHaltFlag)
                 return "ERROR";
-            else if (s.CmdHaltFlag || s.PassCurrentScriptFlag)
+            if (s.CmdHaltFlag || s.PassCurrentScriptFlag)
                 return "COMMAND";
-            else
-                return "DONE";
+            return "DONE";
         }
         #endregion
 
@@ -885,10 +893,15 @@ namespace PEBakery.Core
         public static string GetEntrySection(EngineState s)
         {
             string entrySection = "Process";
-            if (s.RunMode == EngineMode.RunMainAndOne && s.CurrentScriptIdx != 0)
-                entrySection = s.RunOneEntrySection;
-            else if (s.RunMode == EngineMode.RunOne)
-                entrySection = s.RunOneEntrySection;
+            switch (s.RunMode)
+            {
+                case EngineMode.RunMainAndOne when s.CurrentScriptIdx != 0:
+                    entrySection = s.RunOneEntrySection;
+                    break;
+                case EngineMode.RunOne:
+                    entrySection = s.RunOneEntrySection;
+                    break;
+            }
 
             return entrySection;
         }
@@ -1035,8 +1048,8 @@ namespace PEBakery.Core
         #region Constructor
         public EngineState(Project project, Logger logger, MainViewModel mainModel, EngineMode mode = EngineMode.RunAll, Script runSingle = null, string entrySection = "Process")
         {
-            this.Project = project;
-            this.Logger = logger;
+            Project = project;
+            Logger = logger;
 
             Macro = new Macro(Project, Variables, out List<LogInfo> macroLogs);
             logger.Build_Write(BuildId, macroLogs);

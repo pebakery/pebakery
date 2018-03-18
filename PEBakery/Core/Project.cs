@@ -392,9 +392,9 @@ namespace PEBakery.Core
         #endregion
 
         #region Properties
-        public string ProjectName { get; private set; }
-        public string ProjectRoot { get; private set; }
-        public string ProjectDir { get; private set; }
+        public string ProjectName { get; }
+        public string ProjectRoot { get; }
+        public string ProjectDir { get; }
         public string BaseDir { get; }
         public Script MainScript => AllScripts[mainScriptIdx];
         public List<Script> AllScripts { get; private set; }
@@ -408,12 +408,12 @@ namespace PEBakery.Core
         #region Constructor
         public Project(string baseDir, string projectName)
         {
-            this.LoadedScriptCount = 0;
-            this.AllScriptCount = 0;
-            this.ProjectName = projectName;
-            this.ProjectRoot = Path.Combine(baseDir, "Projects");
-            this.ProjectDir = Path.Combine(baseDir, "Projects", projectName);
-            this.BaseDir = baseDir;
+            LoadedScriptCount = 0;
+            AllScriptCount = 0;
+            ProjectName = projectName;
+            ProjectRoot = Path.Combine(baseDir, "Projects");
+            ProjectDir = Path.Combine(baseDir, "Projects", projectName);
+            BaseDir = baseDir;
         }
         #endregion
 
@@ -820,10 +820,12 @@ namespace PEBakery.Core
         #region Variables
         public void UpdateProjectVariables()
         {
-            if (Variables != null)
+            if (Variables == null)
+                return;
+
+            if (MainScript.Sections.ContainsKey("Variables"))
             {
-                if (MainScript.Sections.ContainsKey("Variables"))
-                    Variables.AddVariables(VarsType.Global, MainScript.Sections["Variables"]);
+                Variables.AddVariables(VarsType.Global, MainScript.Sections["Variables"]);
             }
         }
         #endregion
