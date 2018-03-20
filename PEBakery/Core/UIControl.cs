@@ -172,10 +172,7 @@ namespace PEBakery.Core
 
             b.Append(StringEscaper.QuoteEscape(Text));
             b.Append(",");
-            if (Visibility)
-                b.Append("1,");
-            else
-                b.Append("0,");
+            b.Append(Visibility ? "1," : "0,");
             b.Append((int) Type);
             b.Append(",");
             b.Append(Rect.Left);

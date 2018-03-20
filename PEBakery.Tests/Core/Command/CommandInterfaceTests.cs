@@ -14,9 +14,6 @@ namespace PEBakery.Tests.Core.Command
     {
         #region Const String
         private const string TestSuite_Interface = "Interface";
-        private const string SrcDir = "Src";
-        private const string DestDir_ReadInterface = "Dest_ReadInterface";
-        private const string DestDir_WriteInterface = "Dest_WriteInterface";
         #endregion
 
         #region ReadInterface

@@ -52,6 +52,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
             CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
 
+            // ReSharper disable once PossibleNullReferenceException
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
             bool visibility = false;
             if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
@@ -86,8 +87,8 @@ namespace PEBakery.Core.Commands
                 // Re-render Script
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
-                    if (w.CurMainTree.Script == cmd.Addr.Script)
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
                         w.DrawScript(cmd.Addr.Script);
                 });
             }
@@ -115,6 +116,7 @@ namespace PEBakery.Core.Commands
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
             List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
+            // ReSharper disable once PossibleNullReferenceException
             foreach (CodeInfo_Visible info in infoOp.InfoList)
             {
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
@@ -149,8 +151,8 @@ namespace PEBakery.Core.Commands
             // Re-render Script
             Application.Current.Dispatcher.Invoke(() =>
             {
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Script == cmd.Addr.Script)
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
                     w.DrawScript(cmd.Addr.Script);
             });
 
@@ -164,6 +166,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface));
             CodeInfo_ReadInterface info = cmd.Info as CodeInfo_ReadInterface;
 
+            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
@@ -215,7 +218,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default:
-                    throw new InternalException($"Internal Logic Error at ReadInterface");
+                    throw new InternalException("Internal Logic Error at ReadInterface");
             }
 
             // Do not expand read values
@@ -232,6 +235,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface));
             CodeInfo_WriteInterface info = cmd.Info as CodeInfo_WriteInterface;
 
+            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
@@ -261,10 +265,14 @@ namespace PEBakery.Core.Commands
                     break;
                 case InterfaceElement.Visible:
                     {
-                        bool visibility = false;
-                        if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
+                        bool visibility;
+                        if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase) ||
+                            finalValue.Equals("1", StringComparison.OrdinalIgnoreCase))
                             visibility = true;
-                        else if (!finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
+                        else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase) ||
+                                 finalValue.Equals("0", StringComparison.OrdinalIgnoreCase))
+                            visibility = false;
+                        else
                         {
                             logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid boolean value"));
                             return logs;
@@ -330,7 +338,7 @@ namespace PEBakery.Core.Commands
                     }
                     break;
                 default:
-                    throw new InternalException($"Internal Logic Error at WriteInterface");
+                    throw new InternalException("Internal Logic Error at WriteInterface");
             }
 
             // Update uiCmd into file
@@ -339,8 +347,8 @@ namespace PEBakery.Core.Commands
             // Rerender Script
             Application.Current?.Dispatcher.Invoke(() =>
             { // Application.Current is null in unit test
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
-                if (w.CurMainTree.Script == cmd.Addr.Script)
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
                     w.DrawScript(cmd.Addr.Script);
             });
 
@@ -354,6 +362,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
             CodeInfo_Message info = cmd.Info as CodeInfo_Message;
 
+            // ReSharper disable once PossibleNullReferenceException
             string message = StringEscaper.Preprocess(s, info.Message);
             MessageBoxImage image;
             switch (info.Action)
@@ -372,9 +381,7 @@ namespace PEBakery.Core.Commands
                     image = MessageBoxImage.Warning;
                     break;
                 default: // Internal Logic Error
-                    Debug.Assert(false);
-                    image = MessageBoxImage.Information;
-                    break;
+                    throw new InternalException("Internal Logic Error at Message");
             }
 
             System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
@@ -417,6 +424,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
             CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
 
+            // ReSharper disable once PossibleNullReferenceException
             string message = StringEscaper.Preprocess(s, info.Message);
 
             s.MainViewModel.BuildEchoMessage = message;
@@ -433,6 +441,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_EchoFile));
             CodeInfo_EchoFile info = cmd.Info as CodeInfo_EchoFile;
 
+            // ReSharper disable once PossibleNullReferenceException
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
 
             if (!File.Exists(srcFile))
@@ -454,9 +463,6 @@ namespace PEBakery.Core.Commands
                     string fileName = Path.GetFileName(srcFile);
                     EncodedFile.AttachFile(sc, "Folder", fileName, srcFile, EncodedFile.EncodeMode.ZLib);
 
-                    // Remove Script instance
-                    sc = null;
-
                     // Read encoded text strings into memory
                     string txtStr;
                     Encoding encoding = FileHelper.DetectTextEncoding(tempFile);
@@ -465,12 +471,7 @@ namespace PEBakery.Core.Commands
                         txtStr = r.ReadToEnd();
                     }
 
-                    string logStr;
-                    if (txtStr.EndsWith("\r\n", StringComparison.Ordinal))
-                        logStr = $"Encoded File [{srcFile}]\r\n{txtStr}";
-                    else
-                        logStr = $"Encoded File [{srcFile}]\r\n{txtStr}\r\n";
-
+                    string logStr = $"Encoded File [{srcFile}]\r\n{txtStr.Trim()}\r\n";
                     s.MainViewModel.BuildEchoMessage = logStr;
                     logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
                 }
@@ -488,12 +489,7 @@ namespace PEBakery.Core.Commands
                     txtStr = r.ReadToEnd();
                 }
 
-                string logStr;
-                if (txtStr.EndsWith("\r\n", StringComparison.Ordinal))
-                    logStr = $"File [{srcFile}]\r\n{txtStr}";
-                else
-                    logStr = $"File [{srcFile}]\r\n{txtStr}\r\n";
-
+                string logStr = $"Encoded File [{srcFile}]\r\n{txtStr.Trim()}\r\n";
                 s.MainViewModel.BuildEchoMessage = logStr;
                 logs.Add(new LogInfo(info.Warn ? LogState.Warning : LogState.Success, logStr, cmd));
             }
@@ -508,6 +504,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_UserInput));
             CodeInfo_UserInput info = cmd.Info as CodeInfo_UserInput;
 
+            // ReSharper disable once PossibleNullReferenceException
             UserInputType type = info.Type;
             switch (type)
             {
@@ -520,6 +517,7 @@ namespace PEBakery.Core.Commands
                         System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
                         s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
 
+                        // ReSharper disable once PossibleNullReferenceException
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
                         string selectedPath = initPath;
                         if (type == UserInputType.FilePath)
@@ -598,16 +596,17 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface));
             CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
 
+            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
 
-            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out bool inCurrentScript);
+            Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;
                 try { uiCtrls = sc.Sections[interfaceSection].GetUICtrls(true); }
-                catch { } // No [Interface] section, or unable to get List<UIControl>
+                catch { } // No [Interface] section, or unable to get List<UIControl> 
 
                 if (uiCtrls != null)
                 {

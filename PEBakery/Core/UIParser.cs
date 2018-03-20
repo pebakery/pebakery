@@ -30,7 +30,6 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -80,7 +79,7 @@ namespace PEBakery.Core
 
         public static UIControl ParseUIControl(List<string> rawLines, SectionAddress addr, ref int idx)
         {
-            UIControlType type = UIControlType.None;
+            UIControlType type;
             string rawLine = rawLines[idx].Trim();
 
             // Check if rawCode is Empty
@@ -92,7 +91,7 @@ namespace PEBakery.Core
                 return null;
 
             // Find key of interface control
-            string key = string.Empty;
+            string key;
             string rawValue = string.Empty;
             int equalIdx = rawLine.IndexOf('=');
             if (equalIdx != -1 && equalIdx != 0)
@@ -150,7 +149,16 @@ namespace PEBakery.Core
 
             // Forge UIControl
             string text = StringEscaper.Unescape(args[0]);
-            bool visibility = args[1].Equals("1", StringComparison.Ordinal);
+            string visibilityStr = args[1];
+            bool visibility;
+            if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
+                visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+                visibility = true;
+            else if (visibilityStr.Equals("0", StringComparison.Ordinal) ||
+                     visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                visibility = false;
+            else
+                throw new InvalidCommandException($"Invalid value in [{visibilityStr}]", rawLine);
 
             bool intParse = true;
             intParse &= NumberHelper.ParseInt32(args[2], out int x);
@@ -170,16 +178,10 @@ namespace PEBakery.Core
         public static UIControlType ParseControlType(string typeStr)
         {
             // typeStr must be number
-            if (!Regex.IsMatch(typeStr, @"^[0-9]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (!StringHelper.IsInteger(typeStr))
                 throw new InvalidCommandException("Only numbers can be used for interface control type");
 
-            bool failure = false;
-            if (Enum.TryParse(typeStr, false, out UIControlType type) == false)
-                failure = true;
-            if (Enum.IsDefined(typeof(UIControlType), type) == false)
-                failure = true;
-
-            if (failure)
+            if (!(Enum.TryParse(typeStr, false, out UIControlType type) && Enum.IsDefined(typeof(UIControlType), type)))
                 throw new InvalidCommandException("Invalid interface control type");
 
             return type;
@@ -265,7 +267,8 @@ namespace PEBakery.Core
                         bool hideProgress = false;
                         if (3 <= args.Count &&
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                            (args[1].StartsWith("_", StringComparison.Ordinal) && args[1].EndsWith("_", StringComparison.Ordinal)))
+                            args[1].StartsWith("_", StringComparison.Ordinal) &&
+                            args[1].EndsWith("_", StringComparison.Ordinal))
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
@@ -296,7 +299,8 @@ namespace PEBakery.Core
                         bool hideProgress = false;
                         if (2 <= cnt &&
                             (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt - 1].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                            (args[cnt - 2].StartsWith("_", StringComparison.Ordinal) && args[cnt - 2].EndsWith("_", StringComparison.Ordinal)))
+                            args[cnt - 2].StartsWith("_", StringComparison.Ordinal) &&
+                            args[cnt - 2].EndsWith("_", StringComparison.Ordinal))
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[cnt - 1].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
@@ -364,8 +368,6 @@ namespace PEBakery.Core
                             cnt -= 1;
                         }
 
-                        string sectionName = args[0];
-
                         string picture = null;
                         if (2 <= cnt)
                         {
@@ -389,7 +391,6 @@ namespace PEBakery.Core
                         }
 
                         // Ignore [UnknownBoolean] and [RunOptional]
-
                         return new UIInfo_Button(tooltip, args[0], picture, hideProgress);
                     }
                 #endregion
@@ -426,7 +427,8 @@ namespace PEBakery.Core
                         bool hideProgress = false;
                         if (3 <= args.Count &&
                             (args[2].Equals("True", StringComparison.OrdinalIgnoreCase) || args[2].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                            (args[1].StartsWith("_", StringComparison.Ordinal) && args[1].EndsWith("_", StringComparison.Ordinal)))
+                            args[1].StartsWith("_", StringComparison.Ordinal) &&
+                            args[1].EndsWith("_", StringComparison.Ordinal))
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[2].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 hideProgress = true;
@@ -481,9 +483,7 @@ namespace PEBakery.Core
                         {
                             if (args[0].Equals("file", StringComparison.OrdinalIgnoreCase))
                                 isFile = true;
-                            else if (args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
-                                isFile = false;
-                            else
+                            else if (!args[0].Equals("dir", StringComparison.OrdinalIgnoreCase))
                                 throw new InvalidCommandException($"Argument [{type}] should be either [file] or [dir]");
                         }
 
@@ -502,8 +502,9 @@ namespace PEBakery.Core
                         if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                             cnt -= 1;
 
-                        if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) &&
-                                (args[cnt - 1].StartsWith("_", StringComparison.Ordinal) && args[cnt - 1].EndsWith("_", StringComparison.Ordinal)))
+                        if ((args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase) || args[cnt].Equals("False", StringComparison.OrdinalIgnoreCase)) && 
+                            args[cnt - 1].StartsWith("_", StringComparison.Ordinal) &&
+                            args[cnt - 1].EndsWith("_", StringComparison.Ordinal))
                         { // Has [RunOptinal] -> <SectionName>,<HideProgress>
                             if (args[cnt].Equals("True", StringComparison.OrdinalIgnoreCase))
                                 showProgress = true;

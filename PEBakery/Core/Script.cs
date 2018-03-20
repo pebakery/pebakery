@@ -1059,46 +1059,38 @@ namespace PEBakery.Core
             {
                 return Codes; // Codes for Load()
             }
-            else if (convert && DataType == SectionDataType.Lines)
+
+            if (convert && DataType == SectionDataType.Lines)
             {
                 ConvertLineToCodeSection(Lines); // Lines for Load()
                 return _codes;
             }
-            else
-            {
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-            }
+
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<CodeCommand> GetCodesForce(bool convert)
         {
             if (DataType == SectionDataType.Lines &&
                 _convDataType == SectionDataConverted.Codes)
-            {
                 return Codes; // Codes for Load()
-            }
-            else if (DataType == SectionDataType.Lines)
+
+            if (convert && DataType == SectionDataType.Lines)
             {
                 ConvertLineToCodeSection(Lines); // Lines for Load()
                 return _codes;
             }
-            else
-            {
-                throw new InternalException("GetCodes must be used with SectionDataType.Codes");
-            }
+
+            throw new InternalException("GetCodes must be used with SectionDataType.Codes");
         }
 
         public List<UIControl> GetUICtrls()
         {
             if (DataType == SectionDataType.Lines &&
                 _convDataType == SectionDataConverted.Interfaces)
-            {
                 return UICtrls; // UICtrls for Load()
-            }
-            else
-            {
-                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
-            }
+
+            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
         }
 
         /// <summary>
@@ -1110,18 +1102,15 @@ namespace PEBakery.Core
         {
             if (DataType == SectionDataType.Lines &&
                 _convDataType == SectionDataConverted.Interfaces)
-            {
                 return UICtrls; // UICtrls for Load()
-            }
-            else if (convert && DataType == SectionDataType.Lines)
+
+            if (convert && DataType == SectionDataType.Lines)
             { // SectionDataType.Codes for custom interface section
                 ConvertLineToUICtrlSection(Lines); // Lines for Load()
                 return _uiCtrls;
             }
-            else
-            {
-                throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
-            }
+
+            throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
         }
         #endregion
     }
