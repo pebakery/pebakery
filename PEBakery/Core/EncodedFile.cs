@@ -901,8 +901,14 @@ namespace PEBakery.Core
             // Remove "lines=n"
             encodedList.RemoveAt(0);
 
-            if (Ini.GetKeyValueFromLines(encodedList, out _, out List<string> base64Blocks))
+            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
                 throw new FileDecodeFailException("Encoded lines are malformed");
+            if (!keys.All(StringHelper.IsInteger))
+                throw new FileDecodeFailException("Encoded lines are malformed");
+
+            if (base64Blocks.Count == 0)
+                throw new FileDecodeFailException("Encoded lines are not found");
+            int lineLen = base64Blocks[0].Length;
 
             int encodeLen = 0;
             int decodeLen = 0;
@@ -911,7 +917,8 @@ namespace PEBakery.Core
             {
                 string block = base64Blocks[i];
 
-                if (i + 1 < base64Blocks.Count && block.Length != 4090)
+                if (4090 < block.Length || 
+                    (i + 1 < base64Blocks.Count && block.Length != lineLen))
                     throw new FileDecodeFailException("Encoded lines are malformed");
 
                 b.Append(block);

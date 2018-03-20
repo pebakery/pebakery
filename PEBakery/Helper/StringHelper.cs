@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -55,9 +56,15 @@ namespace PEBakery.Helper
 
         public static bool IsUpperAlphabet(string str)
         {
-            return Regex.IsMatch(str, @"^[A-Z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            foreach (char ch in str)
+            {
+                if (!IsUpperAlphabet(ch))
+                    return false;
+            }
+            return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsUpperAlphabet(char ch)
         {
             return 'A' <= ch && ch <= 'Z';
@@ -65,10 +72,15 @@ namespace PEBakery.Helper
 
         public static bool IsLowerAlphabet(string str)
         {
-            str = str.Trim();
-            return Regex.IsMatch(str, @"^[a-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            foreach (char ch in str)
+            {
+                if (!IsLowerAlphabet(ch))
+                    return false;
+            }
+            return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLowerAlphabet(char ch)
         {
             return 'a' <= ch && ch <= 'z';
@@ -76,13 +88,36 @@ namespace PEBakery.Helper
 
         public static bool IsAlphabet(string str)
         {
-            return Regex.IsMatch(str, @"^[A-Za-z]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            foreach (char ch in str)
+            {
+                if (!IsAlphabet(ch))
+                    return false;
+            }
+            return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAlphabet(char ch)
         {
             return 'A' <= ch && ch <= 'Z' || 'a' <= ch && ch <= 'z';
         }
+
+        public static bool IsInteger(string str)
+        {
+            foreach (char ch in str)
+            {
+                if (!IsInteger(ch))
+                    return false;
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsInteger(char ch)
+        {
+            return '0' <= ch && ch <= '9';
+        }
+
 
         public static bool IsWildcard(string str)
         {

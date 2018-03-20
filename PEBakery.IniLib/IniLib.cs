@@ -1731,9 +1731,9 @@ namespace PEBakery.IniLib
         {
             keys = new List<string>();
             values = new List<string>();
-            for (int i = 0; i < rawLines.Count; i++)
+            foreach (string rawLine in rawLines)
             {
-                if (GetKeyValueFromLine(rawLines[i], out string key, out string value))
+                if (GetKeyValueFromLine(rawLine, out string key, out string value))
                     return true;
                 keys.Add(key);
                 values.Add(value);
