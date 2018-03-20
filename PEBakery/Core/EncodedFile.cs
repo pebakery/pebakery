@@ -194,10 +194,7 @@ namespace PEBakery.Core
                 throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
 
             List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
-            MemoryStream ms = new MemoryStream();
-            Decode(encoded, ms);
-            ms.Position = 0;
-            return ms;
+            return DecodeInMemory(encoded);
         }
 
         public static MemoryStream ExtractInterfaceEncoded(Script sc, string fileName)
@@ -207,10 +204,7 @@ namespace PEBakery.Core
                 throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
-            MemoryStream ms = new MemoryStream();
-            Decode(encoded, ms);
-            ms.Position = 0;
-            return ms;
+            return DecodeInMemory(encoded);
         }
         #endregion
 
@@ -427,9 +421,9 @@ namespace PEBakery.Core
             // [Stage 8] Refresh Script
             return sc.Project.RefreshScript(sc);
         }
-#endregion
+        #endregion
 
-#region Decode
+        #region Decode
         private static long Decode(List<string> encodedList, Stream outStream)
         {
             string tempDecode = Path.GetTempFileName();
@@ -461,9 +455,9 @@ namespace PEBakery.Core
 
                     // [Stage 3] Validate final footer
                     if (compressedBodyLen != compressedFooterIdx)
-                        throw new FileDecodeFailException("Encoded file is corrupted");
+                        throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
                     if (full_crc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
-                        throw new FileDecodeFailException("Encoded file is corrupted");
+                        throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
 
                     // [Stage 4] Decompress first footer
                     byte[] firstFooter = new byte[0x226];
@@ -499,7 +493,8 @@ namespace PEBakery.Core
                     switch ((EncodeMode)compMode)
                     {
                         case EncodeMode.ZLib: // Type 1, zlib
-                            if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
+                            if (compressedBodyLen2 == 0 || 
+                                compressedBodyLen2 != compressedBodyLen)
                                 throw new FileDecodeFailException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
                                 throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
@@ -607,6 +602,136 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region DecodeInMemory
+        private static MemoryStream DecodeInMemory(List<string> encodedList)
+        {
+            // [Stage 1] Concat sliced base64-encoded lines into one string
+            byte[] decoded = SplitBase64.DecodeInMemory(encodedList);
+
+            // [Stage 2] Read final footer
+            const int finalFooterLen = 0x24;
+            int finalFooterIdx = decoded.Length - finalFooterLen;
+            // 0x00 - 0x04 : 4B -> CRC32
+            uint full_crc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
+            // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+            int compressedFooterLen = (int)BitConverter.ToUInt32(decoded, finalFooterIdx + 0x0C);
+            int compressedFooterIdx = decoded.Length - (finalFooterLen + compressedFooterLen);
+            // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
+            int compressedBodyLen = (int)BitConverter.ToUInt64(decoded, finalFooterIdx + 0x10);
+
+            // [Stage 3] Validate final footer
+            if (compressedBodyLen != compressedFooterIdx)
+                throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
+            if (full_crc32 != calcFull_crc32)
+                throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+
+            // [Stage 4] Decompress first footer
+            byte[] rawFooter;
+            using (MemoryStream rawFooterStream = new MemoryStream())
+            {
+                using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                {
+                    zs.CopyTo(rawFooterStream);
+                }
+
+                rawFooter = rawFooterStream.ToArray();
+            }
+
+            // [Stage 5] Read first footer
+            // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
+            int rawBodyLen = BitConverter.ToInt32(rawFooter, 0x200);
+            // 0x208 - 0x20F : 8B -> Length of zlib-compressed file, in little endian
+            //     Note: In Type 2, 0x208 entry is null - padded
+            int compressedBodyLen2 = BitConverter.ToInt32(rawFooter, 0x208);
+            // 0x220 - 0x223 : 4B -> CRC32C Checksum of zlib-compressed file
+            uint compressedBody_crc32 = BitConverter.ToUInt32(rawFooter, 0x220);
+            // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+            byte compMode = rawFooter[0x224];
+            // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+            byte compLevel = rawFooter[0x225];
+
+            // [Stage 6] Validate first footer
+            switch ((EncodeMode)compMode)
+            {
+                case EncodeMode.ZLib: // Type 1, zlib
+                    {
+                        if (compressedBodyLen2 == 0 || 
+                            compressedBodyLen2 != compressedBodyLen)
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                        if (compLevel < 1 || 9 < compLevel)
+                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                    }
+                    break;
+                case EncodeMode.Raw: // Type 2, raw
+                    {
+                        if (compressedBodyLen2 != 0)
+                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                        if (compLevel != 0)
+                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                    }
+                    break;
+#if ENABLE_XZ
+                case EncodeMode.XZ: // Type 3, LZMA
+                    {
+                        if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
+                            throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                        if (compLevel < 1 || 9 < compLevel)
+                            throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
+                    }
+                    break;
+#endif
+                default:
+                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+            }
+
+            // [Stage 7] Decompress body
+            MemoryStream rawBodyStream = new MemoryStream(); // This stream should be alive even after this method returns
+            switch ((EncodeMode)compMode)
+            {
+                case EncodeMode.ZLib: // Type 1, zlib
+                    {
+                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, false))
+                        {
+                            zs.CopyTo(rawBodyStream);
+                        }
+                    }
+                    break;
+                case EncodeMode.Raw: // Type 2, raw
+                    {
+                        rawBodyStream.Write(decoded, 0, rawBodyLen);
+                    }
+                    break;
+#if ENABLE_XZ
+                case EncodeMode.XZ: // Type 3, LZMA
+                    {
+                        using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
+                        using (XZInputStream xzs = new XZInputStream(ms))
+                        {
+                            xzs.CopyTo(rawBodyStream);
+                        }
+                    }
+                    break;
+#endif
+                default:
+                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+            }
+
+            rawBodyStream.Position = 0;
+
+            // [Stage 8] Validate decompressed body
+            uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
+            if (compressedBody_crc32 != calcCompBody_crc32)
+                throw new FileDecodeFailException("Encoded file is corrupted: body");
+
+            // [Stage 9] Return decompressed body stream
+            rawBodyStream.Position = 0;
+            return rawBodyStream;
+        }
+        #endregion
+
         #region Utility
         private static uint CalcCrc32(Stream stream)
         {
@@ -651,11 +776,11 @@ namespace PEBakery.Core
             stream.Position = posBak;
             return calc.Checksum;
         }
-#endregion
+        #endregion
     }
-#endregion
+    #endregion
 
-#region EncodedFileInfo
+    #region EncodedFileInfo
     /// <inheritdoc />
     /// <summary>
     /// Class to handle malformed WB082-attached files
@@ -855,6 +980,7 @@ namespace PEBakery.Core
     #region SplitBase64
     public static class SplitBase64
     {
+        #region Encode
         public static (List<IniKey>, int) Encode(Stream stream, string section)
         {
             int idx = 0;
@@ -895,7 +1021,9 @@ namespace PEBakery.Core
             keys.Insert(0, new IniKey(section, "lines", idx.ToString())); // lines=X
             return (keys, encodedLen);
         }
+        #endregion
 
+        #region Decode
         public static int Decode(List<string> encodedList, Stream outStream)
         {
             // Remove "lines=n"
@@ -918,7 +1046,7 @@ namespace PEBakery.Core
                 string block = base64Blocks[i];
 
                 if (4090 < block.Length || 
-                    (i + 1 < base64Blocks.Count && block.Length != lineLen))
+                    i + 1 < base64Blocks.Count && block.Length != lineLen)
                     throw new FileDecodeFailException("Length of encoded lines is inconsistent");
 
                 b.Append(block);
@@ -955,6 +1083,41 @@ namespace PEBakery.Core
 
             return decodeLen;
         }
+        #endregion
+
+        #region DecodeInMemory
+        public static byte[] DecodeInMemory(List<string> encodedList)
+        {
+            // Remove "lines=n"
+            encodedList.RemoveAt(0);         
+           
+            if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
+                throw new FileDecodeFailException("Encoded lines are malformed");
+            if (!keys.All(StringHelper.IsInteger))
+                throw new FileDecodeFailException("Key of the encoded lines are malformed");
+            if (base64Blocks.Count == 0)
+                throw new FileDecodeFailException("Encoded lines are not found");
+
+            StringBuilder b = new StringBuilder();
+            foreach (string block in base64Blocks)
+                b.Append(block);
+            switch (b.Length % 4)
+            {
+                case 0:
+                    break;
+                case 1:
+                    throw new FileDecodeFailException("Encoded lines are malformed");
+                case 2:
+                    b.Append("==");
+                    break;
+                case 3:
+                    b.Append("=");
+                    break;
+            }
+
+            return Convert.FromBase64String(b.ToString());
+        }
+        #endregion
     }
-#endregion
+    #endregion
 }
