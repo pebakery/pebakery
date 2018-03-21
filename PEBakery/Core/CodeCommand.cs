@@ -114,7 +114,7 @@ namespace PEBakery.Core
         {
             if (obj is SectionAddress addr)
             {
-                bool result = (Script == addr.Script && Section == addr.Section);
+                bool result = Script == addr.Script && Section == addr.Section;
                 return result;
             }
             
@@ -170,15 +170,14 @@ namespace PEBakery.Core
             return RawCode;
         }
 
-        public readonly static CodeType[] DeprecatedCodeType = new CodeType[]
+        public static readonly CodeType[] DeprecatedCodeType = 
         {
             CodeType.WebGetIfNotExist, // Better to have as Macro
-            CodeType.ExtractAndRun, // Better to have as Macro
             CodeType.GetParam,
             CodeType.PackParam,
         };
 
-        public readonly static CodeType[] OptimizedCodeType = new CodeType[]
+        public static readonly CodeType[] OptimizedCodeType = 
         {
             CodeType.TXTAddLineOp, 
             CodeType.TXTDelLineOp,
@@ -198,18 +197,7 @@ namespace PEBakery.Core
 
     #region CodeInfo
     [Serializable]
-    public class CodeInfo
-    {
-        /// <summary>
-        /// This function should only be called from child Class
-        /// Note : this function includes first ','
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return base.ToString();
-        }
-    }
+    public class CodeInfo { }
     #endregion
 
     #region CodeInfo 00 - Error
@@ -337,14 +325,16 @@ namespace PEBakery.Core
                 b.Append(",NOWARN");
             if (Encoding != null)
             {
-                if (Encoding == Encoding.UTF8)
+                if (Encoding.Equals(Encoding.UTF8))
                     b.Append(",UTF8");
-                else if (Encoding == Encoding.Unicode)
+                else if (Encoding.Equals(Encoding.Unicode))
                     b.Append(",UTF16");
-                else if (Encoding == Encoding.BigEndianUnicode)
+                else if (Encoding.Equals(Encoding.BigEndianUnicode))
                     b.Append(",UTF16BE");
-                else if (Encoding == Encoding.ASCII)
+                else if (Encoding.Equals(Encoding.Default))
                     b.Append(",ANSI");
+                else
+                    throw new InternalException("Internal Logic Error at CodeInfo_FileCreateBlank");
             }
             return b.ToString();
         }
@@ -625,10 +615,10 @@ namespace PEBakery.Core
             b.Append(ValueType);
             b.Append(",");
             b.Append(KeyPath);
-            for (int i = 0; i < ValueDatas.Length; i++)
+            foreach (string valueData in ValueDatas)
             {
                 b.Append(",");
-                b.Append(ValueDatas[i]);
+                b.Append(valueData);
             }
             if (NoWarn)
                 b.Append(",NOWARN");
@@ -947,10 +937,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniReadOp : CodeInfo
     {    
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniRead> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniRead).ToList();
-        }
+        public List<CodeInfo_IniRead> Infos => Cmds.Select(x => x.Info as CodeInfo_IniRead).ToList();
 
         public CodeInfo_IniReadOp(List<CodeCommand> cmds)
         {
@@ -992,10 +979,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniWriteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniWrite> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniWrite).ToList();
-        }
+        public List<CodeInfo_IniWrite> Infos => Cmds.Select(x => x.Info as CodeInfo_IniWrite).ToList();
 
         public CodeInfo_IniWriteOp(List<CodeCommand> cmds)
         {
@@ -1033,10 +1017,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniDeleteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniDelete> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniDelete).ToList();
-        }
+        public List<CodeInfo_IniDelete> Infos => Cmds.Select(x => x.Info as CodeInfo_IniDelete).ToList();
 
         public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
         {
@@ -1068,10 +1049,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniReadSectionOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniReadSection> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
-        }
+        public List<CodeInfo_IniReadSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
 
         public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
         {
@@ -1105,10 +1083,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniAddSectionOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniAddSection> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniAddSection).ToList();
-        }
+        public List<CodeInfo_IniAddSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniAddSection).ToList();
 
         public CodeInfo_IniAddSectionOp(List<CodeCommand> cmds)
         {
@@ -1142,10 +1117,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniDeleteSectionOp : CodeInfo
     { 
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniDeleteSection> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniDeleteSection).ToList();
-        }
+        public List<CodeInfo_IniDeleteSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniDeleteSection).ToList();
 
         public CodeInfo_IniDeleteSectionOp(List<CodeCommand> cmds)
         {
@@ -1187,10 +1159,7 @@ namespace PEBakery.Core
     public class CodeInfo_IniWriteTextLineOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniWriteTextLine> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_IniWriteTextLine).ToList();
-        }
+        public List<CodeInfo_IniWriteTextLine> Infos => Cmds.Select(x => x.Info as CodeInfo_IniWriteTextLine).ToList();
 
         public CodeInfo_IniWriteTextLineOp(List<CodeCommand> cmds)
         {
@@ -1249,6 +1218,8 @@ namespace PEBakery.Core
                 case ArchiveCompressFormat.Zip:
                     b.Append("Zip");
                     break;
+                default:
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
             }
             b.Append(",");
             b.Append(SrcPath);
@@ -1261,14 +1232,16 @@ namespace PEBakery.Core
             }
             if (Encoding != null)
             {
-                if (Encoding == Encoding.UTF8)
+                if (Encoding.Equals(Encoding.UTF8))
                     b.Append(",UTF8");
-                else if (Encoding == Encoding.Unicode)
+                else if (Encoding.Equals(Encoding.Unicode))
                     b.Append(",UTF16");
-                else if (Encoding == Encoding.BigEndianUnicode)
+                else if (Encoding.Equals(Encoding.BigEndianUnicode))
                     b.Append(",UTF16BE");
-                else if (Encoding == Encoding.ASCII)
+                else if (Encoding.Equals(Encoding.Default))
                     b.Append(",ANSI");
+                else
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
             }
             return b.ToString();
         }
@@ -1296,14 +1269,16 @@ namespace PEBakery.Core
             b.Append(DestDir);
             if (Encoding != null)
             {
-                if (Encoding == Encoding.UTF8)
+                if (Encoding.Equals(Encoding.UTF8))
                     b.Append(",UTF8");
-                else if (Encoding == Encoding.Unicode)
+                else if (Encoding.Equals(Encoding.Unicode))
                     b.Append(",UTF16");
-                else if (Encoding == Encoding.BigEndianUnicode)
+                else if (Encoding.Equals(Encoding.BigEndianUnicode))
                     b.Append(",UTF16BE");
-                else if (Encoding == Encoding.ASCII)
+                else if (Encoding.Equals(Encoding.Default))
                     b.Append(",ANSI");
+                else
+                    throw new InternalException("Internal Logic Error at CodeInfo_Compress");
             }
             return b.ToString();
         }
@@ -2843,10 +2818,7 @@ namespace PEBakery.Core
     public class CodeInfo_WimExtractOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_WimExtract> Infos
-        {
-            get => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
-        }
+        public List<CodeInfo_WimExtract> Infos => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
 
         public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
         {
@@ -3191,7 +3163,6 @@ namespace PEBakery.Core
             return b.ToString();
         }
     }
-    #endregion
 
     #region WimExport
     [Serializable]
@@ -3259,15 +3230,11 @@ namespace PEBakery.Core
             if (BootFlag)
                 b.Append(",BOOT");
             if (CheckFlag != null)
-            {
-                if (CheckFlag == true)
-                    b.Append(",CHECK");
-                else
-                    b.Append(",NOCHECK");
-            }
+                b.Append(CheckFlag == true ? ",CHECK" : ",NOCHECK");
             return b.ToString();
         }
     }
+    #endregion
     #endregion
 
     #region BranchCondition
@@ -3586,7 +3553,7 @@ namespace PEBakery.Core
         }
 
         public override string ToString()
-        { // TODO
+        {
             StringBuilder b = new StringBuilder();
             b.Append(Condition);
             b.Append(",");
@@ -3620,7 +3587,7 @@ namespace PEBakery.Core
         }
 
         public override string ToString()
-        { // TODO
+        {
             StringBuilder b = new StringBuilder();
             b.Append(Embed);
             return b.ToString();
@@ -3818,7 +3785,7 @@ namespace PEBakery.Core
 
         public override string ToString()
         {
-            return $"{Type},{SubInfo.ToString()}";
+            return $"{Type},{SubInfo}";
         }
     }
 
@@ -3996,23 +3963,7 @@ namespace PEBakery.Core
             return $"OnScriptExit,{Cmd}";
         }
     }
-
-    [Serializable]
-    public class SystemInfo_RefreshInterface : SystemInfo
-    { // System,RefreshInterface
-        public SystemInfo_RefreshInterface() { }
-        public override string ToString() { return "RefreshInterface"; }
-    }
-
-    [Serializable]
-    public class SystemInfo_LoadAll : SystemInfo
-    {
-        // System,LoadAll
-        // System,RescanScripts
-        public SystemInfo_LoadAll() { }
-        public override string ToString() { return "LoadAll"; }
-    }
-
+    
     [Serializable]
     public class SystemInfo_Load : SystemInfo
     { // System,Load,<FilePath>,[NOREC]

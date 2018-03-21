@@ -33,8 +33,8 @@ using System.Threading.Tasks;
 using System.IO;
 using Microsoft.Win32;
 using PEBakery.Exceptions;
-using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using ManagedWimLib;
@@ -44,6 +44,7 @@ using PEBakery.WPF.Controls;
 
 namespace PEBakery.Core.Commands
 {
+    [SuppressMessage("ReSharper", "RedundantAssignment")]
     public static class CommandBranch
     {
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams = false, bool forceLog = false)
@@ -53,8 +54,9 @@ namespace PEBakery.Core.Commands
 
         public static void RunExec(EngineState s, CodeCommand cmd, bool preserveCurParams, bool forceLog, bool callback)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_RunExec), "Invalid CodeInfo");
             CodeInfo_RunExec info = cmd.Info as CodeInfo_RunExec;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -127,8 +129,9 @@ namespace PEBakery.Core.Commands
 
         public static void Loop(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Loop), "Invalid CodeInfo");
             CodeInfo_Loop info = cmd.Info as CodeInfo_Loop;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             if (info.Break)
             {
@@ -171,7 +174,7 @@ namespace PEBakery.Core.Commands
                 for (int i = 0; i < paramList.Count; i++)
                     paramDict[i + 1] = paramList[i];
 
-                long loopCount = 0;
+                long loopCount;
                 long startIdx = 0, endIdx = 0;
                 char startLetter = ' ', endLetter = ' ';
                 switch (cmd.Type)
@@ -196,7 +199,7 @@ namespace PEBakery.Core.Commands
                             endLetter = char.ToUpper(endStr[0]);
 
                             if (endLetter < startLetter)
-                                throw new ExecuteException($"StartLetter must be smaller than EndLetter in lexicographic order");
+                                throw new ExecuteException("StartLetter must be smaller than EndLetter in lexicographic order");
 
                             loopCount = endLetter - startLetter + 1;
                         }
@@ -266,9 +269,10 @@ namespace PEBakery.Core.Commands
 
         public static void If(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_If), "Invalid CodeInfo");
             CodeInfo_If info = cmd.Info as CodeInfo_If;
-
+            Debug.Assert(info != null, "Invalid CodeInfo");
+            
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
                 s.Logger.Build_Write(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
@@ -276,7 +280,7 @@ namespace PEBakery.Core.Commands
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
             }
@@ -290,8 +294,9 @@ namespace PEBakery.Core.Commands
 
         public static void Else(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Else), "Invalid CodeInfo");
             CodeInfo_Else info = cmd.Info as CodeInfo_Else;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             if (s.ElseFlag)
             {
@@ -300,7 +305,7 @@ namespace PEBakery.Core.Commands
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
             }
@@ -327,8 +332,7 @@ namespace PEBakery.Core.Commands
                             string compArg1 = StringEscaper.Preprocess(s, c.Arg1);
                             string compArg2 = StringEscaper.Preprocess(s, c.Arg2);
 
-                            bool ignoreCase = true;
-                            if (c.Type == BranchConditionType.EqualX) ignoreCase = false;
+                            bool ignoreCase = c.Type != BranchConditionType.EqualX;
 
                             NumberHelper.CompareStringNumberResult comp = NumberHelper.CompareStringNumber(compArg1, compArg2, ignoreCase);
                             switch (comp)
@@ -387,9 +391,7 @@ namespace PEBakery.Core.Commands
                             string filePath = StringEscaper.Preprocess(s, c.Arg1);
 
                             // Check filePath contains wildcard
-                            bool containsWildcard = true;
-                            if (Path.GetFileName(filePath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                                containsWildcard = false;
+                            bool containsWildcard = Path.GetFileName(filePath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
 
                             // Check if file exists
                             if (filePath.Trim().Equals(string.Empty, StringComparison.Ordinal))
@@ -430,9 +432,7 @@ namespace PEBakery.Core.Commands
                             string dirPath = StringEscaper.Preprocess(s, c.Arg1);
 
                             // Check filePath contains wildcard
-                            bool containsWildcard = true;
-                            if (Path.GetFileName(dirPath).IndexOfAny(new char[] { '*', '?' }) == -1) // No wildcard
-                                containsWildcard = false;
+                            bool containsWildcard = Path.GetFileName(dirPath)?.IndexOfAny(new char[] { '*', '?' }) != -1;
 
                             // Check if directory exists
                             if (dirPath.Trim().Equals(string.Empty, StringComparison.Ordinal))
@@ -494,7 +494,7 @@ namespace PEBakery.Core.Commands
                                 throw new InvalidRegKeyException($"Invalid registry root key [{rootKey}]");
                             using (RegistryKey regSubKey = regRoot.OpenSubKey(subKey))
                             {
-                                match = (regSubKey != null);
+                                match = regSubKey != null;
                                 if (match)
                                     logMessage = $"Registry SubKey [{rootKey}\\{subKey}] exists";
                                 else
@@ -820,20 +820,16 @@ namespace PEBakery.Core.Commands
                         {
                             string host = StringEscaper.Preprocess(s, c.Arg1);
 
-                            Ping pinger = new Ping();
                             try
                             {
-                                try
+                                using (Ping pinger = new Ping())
                                 {
                                     PingReply reply = pinger.Send(host);
+                                    Debug.Assert(reply != null, nameof(reply) + " != null");
                                     if (reply.Status == IPStatus.Success)
                                         match = true;
                                     else
                                         match = false;
-                                }
-                                catch
-                                {
-                                    match = false;
                                 }
 
                                 if (match)
@@ -841,7 +837,12 @@ namespace PEBakery.Core.Commands
                                 else
                                     logMessage = $"[{host}] did not respond to Ping";
                             }
-                            catch (PingException e)
+                            catch (PingException e) when (e.InnerException != null)
+                            {
+                                match = false;
+                                logMessage = $"Error while pinging [{host}] : [{e.InnerException.Message}]";
+                            }
+                            catch (Exception e)
                             {
                                 match = false;
                                 logMessage = $"Error while pinging [{host}] : [{e.Message}]";
@@ -869,10 +870,7 @@ namespace PEBakery.Core.Commands
                         {
                             string question = StringEscaper.Preprocess(s, c.Arg1);
 
-                            bool autoTimeout = false;
-
-                            if (c.Arg2 != null && c.Arg3 != null)
-                                autoTimeout = true;
+                            bool autoTimeout = c.Arg2 != null && c.Arg3 != null;
 
                             int timeout = 0;
                             bool defaultChoice = false;
@@ -951,7 +949,7 @@ namespace PEBakery.Core.Commands
                         }
                         break;
                     default:
-                        throw new InternalException($"Internal BranchCondition check error");
+                        throw new InternalException("Internal BranchCondition check error");
                 }
                 return match;
             }

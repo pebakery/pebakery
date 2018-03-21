@@ -43,12 +43,17 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead), "Invalide CodeInfo");
             CodeInfo_IniRead info = cmd.Info as CodeInfo_IniRead;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
+
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(sectionName != null, $"{nameof(sectionName)} != null");
+            Debug.Assert(key != null, $"{nameof(key)} != null");
 
             if (sectionName.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -79,16 +84,15 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadOp), "Invalid CodeInfo");
             CodeInfo_IniReadOp infoOp = cmd.Info as CodeInfo_IniReadOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -142,27 +146,32 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite), "Invalid CodeInfo");
             CodeInfo_IniWrite info = cmd.Info as CodeInfo_IniWrite;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section); 
             string key = StringEscaper.Preprocess(s, info.Key); 
             string value = StringEscaper.Preprocess(s, info.Value);
 
-            if(sectionName.Length == 0)
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(sectionName != null, $"{nameof(sectionName)} != null");
+            Debug.Assert(key != null, $"{nameof(key)} != null");
+            Debug.Assert(value != null, $"{nameof(value)} != null");
+
+            if (sectionName.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniWrite");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.SetKey(fileName, sectionName, key, value);
@@ -177,16 +186,15 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteOp), "Invalid CodeInfo");
             CodeInfo_IniWriteOp infoOp = cmd.Info as CodeInfo_IniWriteOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             IniKey[] keys = new IniKey[infoOp.Cmds.Count];
             for (int i = 0; i < keys.Length; i++)
@@ -206,7 +214,9 @@ namespace PEBakery.Core.Commands
             }
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniWriteOp");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.SetKeys(fileName, keys);
@@ -237,23 +247,25 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete), "Invalid CodeInfo");
             CodeInfo_IniDelete info = cmd.Info as CodeInfo_IniDelete;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string sectionName = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
+
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(sectionName != null, $"{nameof(sectionName)} != null");
+            Debug.Assert(key != null, $"{nameof(key)} != null");
 
             if (sectionName.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             bool result = Ini.DeleteKey(fileName, sectionName, key);
             if (result)
@@ -267,10 +279,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteOp), "Invalid CodeInfoOp");
             CodeInfo_IniDeleteOp infoOp = cmd.Info as CodeInfo_IniDeleteOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
             {
@@ -307,7 +322,7 @@ namespace PEBakery.Core.Commands
                 }
                 else
                 {
-                    logs.Add(new LogInfo(LogState.Ignore, $"Could not delete key", infoOp.Cmds[i]));
+                    logs.Add(new LogInfo(LogState.Ignore, $"Could not delete key [{kv.Key}]", infoOp.Cmds[i]));
                 }
             }
 
@@ -323,11 +338,15 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection), "Invalid CodeInfo");
             CodeInfo_IniReadSection info = cmd.Info as CodeInfo_IniReadSection;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
             string section = StringEscaper.Preprocess(s, info.Section);
+
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
 
             if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
@@ -361,16 +380,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSectionOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSectionOp), "Invalid CodeInfoOp");
             CodeInfo_IniReadSectionOp infoOp = cmd.Info as CodeInfo_IniReadSectionOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
 
             string[] sections = new string[infoOp.Cmds.Count];
             string[] destVars = new string[infoOp.Cmds.Count];
@@ -427,31 +443,34 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection), "Invalid CodeInfo");
             CodeInfo_IniAddSection info = cmd.Info as CodeInfo_IniAddSection;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section);
+            string section = StringEscaper.Preprocess(s, info.Section);
 
-            if (sectionName.Length == 0)
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
+
+            if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniAddSection");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.AddSection(fileName, sectionName);
-
+            bool result = Ini.AddSection(fileName, section);
             if (result)
-                logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] added to [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Section [{section}] added to [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not add section [{sectionName}] to [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Error, $"Could not add section [{section}] to [{fileName}]", cmd));
+
             return logs;
         }
 
@@ -459,16 +478,16 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSectionOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSectionOp), "Invalid CodeInfoOp");
             CodeInfo_IniAddSectionOp infoOp = cmd.Info as CodeInfo_IniAddSectionOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
@@ -483,7 +502,9 @@ namespace PEBakery.Core.Commands
             }
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniAddSectionOp");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.AddSections(fileName, sections);
@@ -508,27 +529,28 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection), "Invalid CodeInfo");
             CodeInfo_IniDeleteSection info = cmd.Info as CodeInfo_IniDeleteSection;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section); 
+            string section = StringEscaper.Preprocess(s, info.Section);
 
-            if (sectionName.Length == 0)
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
+
+            if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
-            bool result = Ini.DeleteSection(fileName, sectionName);
+            bool result = Ini.DeleteSection(fileName, section);
 
             if (result)
-                logs.Add(new LogInfo(LogState.Success, $"Section [{sectionName}] deleted from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Success, $"Section [{section}] deleted from [{fileName}]", cmd));
             else
-                logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{sectionName}] from [{fileName}]", cmd));
+                logs.Add(new LogInfo(LogState.Error, $"Could not delete section [{section}] from [{fileName}]", cmd));
             return logs;
         }
 
@@ -536,16 +558,16 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSectionOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSectionOp), "Invalid CodeInfo");
             CodeInfo_IniDeleteSectionOp infoOp = cmd.Info as CodeInfo_IniDeleteSectionOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             string[] sections = new string[infoOp.Cmds.Count];
             for (int i = 0; i < sections.Length; i++)
@@ -581,27 +603,31 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine), "Invalid CodeInfo");
             CodeInfo_IniWriteTextLine info = cmd.Info as CodeInfo_IniWriteTextLine;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            string sectionName = StringEscaper.Preprocess(s, info.Section);
-            string line = StringEscaper.Preprocess(s, info.Line); 
+            string section = StringEscaper.Preprocess(s, info.Section);
+            string line = StringEscaper.Preprocess(s, info.Line);
 
-            if (sectionName.Length == 0)
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
+            Debug.Assert(line != null, $"{nameof(line)} != null");
+
+            if (section.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Section name cannot be empty");
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniWriteTextLine");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.WriteRawLine(fileName, sectionName, line, info.Append);
+            bool result = Ini.WriteRawLine(fileName, section, line, info.Append);
 
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Line [{line}] wrote to [{fileName}]", cmd));
@@ -614,17 +640,18 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLineOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLineOp), "Invalid CodeInfoOp");
             CodeInfo_IniWriteTextLineOp infoOp = cmd.Info as CodeInfo_IniWriteTextLineOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             string fileName = StringEscaper.Preprocess(s, infoOp.Infos[0].FileName);
+
+            Debug.Assert(fileName != null, $"{nameof(fileName)} != null");
+
             bool append = infoOp.Infos[0].Append;
 
-            if (StringEscaper.PathSecurityCheck(fileName, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             List<IniKey> keyList = new List<IniKey>(infoOp.Infos.Count);
             for (int i = 0; i < infoOp.Infos.Count; i++)
@@ -642,7 +669,9 @@ namespace PEBakery.Core.Commands
             IniKey[] keys = keyList.ToArray();
 
             string dirPath = Path.GetDirectoryName(fileName);
-            if (Directory.Exists(dirPath) == false)
+            if (dirPath == null)
+                throw new InternalException("Internal Logic Error at IniWriteTextLineOp");
+            if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
             bool result = Ini.WriteRawLines(fileName, keyList, append);
@@ -673,24 +702,24 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniMerge));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniMerge), "Invalid CodeInfo");
             CodeInfo_IniMerge info = cmd.Info as CodeInfo_IniMerge;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
             string destFile = StringEscaper.Preprocess(s, info.DestFile);
 
-            if (StringEscaper.PathSecurityCheck(destFile, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
+            Debug.Assert(destFile != null, $"{nameof(destFile)} != null");
+
+            if (!StringEscaper.PathSecurityCheck(destFile, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             bool result = Ini.Merge(srcFile, destFile);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] merged into [{destFile}]", cmd));
             else
                 logs.Add(new LogInfo(LogState.Error, $"Could not merge [{srcFile}] into [{destFile}]", cmd));
-
             
             return logs;
         }

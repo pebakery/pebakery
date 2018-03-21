@@ -35,7 +35,6 @@ using PEBakery.WPF;
 using System.Windows;
 using System.Windows.Threading;
 using System.Diagnostics;
-using System.Globalization;
 using PEBakery.WPF.Controls;
 using System.IO;
 using PEBakery.Helper;
@@ -49,35 +48,32 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible), "Invalid CodeInfo");
             CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
-            bool visibility = false;
-            if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
+            Debug.Assert(visibilityStr != null, $"{nameof(visibilityStr)} != null");
+
+            bool visibility;
+            if (visibilityStr.Equals("1", StringComparison.Ordinal) ||
+                visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                 visibility = true;
-            else if (visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Invalid boolean value [{visibilityStr}]"));
-                return logs;
-            }
+            else if (visibilityStr.Equals("0", StringComparison.Ordinal) ||
+                     visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
+                visibility = false;
+            else
+                return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
             Script sc = cmd.Addr.Script;
             ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface == null)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
             UIControl uiCtrl = uiCtrls.Find(x => x.Key.Equals(info.InterfaceKey, StringComparison.OrdinalIgnoreCase));
             if (uiCtrl == null)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{info.InterfaceKey}] in section [{ifaceSecName}]");
 
             if (uiCtrl.Visibility != visibility)
             {
@@ -85,7 +81,7 @@ namespace PEBakery.Core.Commands
                 uiCtrl.Update();
 
                 // Re-render Script
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
                     if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)
@@ -102,21 +98,18 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp), "Invalid CodeInfo");
             CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
+            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
 
             Script sc = cmd.Addr.Script;
             ScriptSection iface = sc.GetInterface(out string ifaceSecName);
             if (iface == null)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
 
             List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
-            // ReSharper disable once PossibleNullReferenceException
             foreach (CodeInfo_Visible info in infoOp.InfoList)
             {
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
@@ -134,11 +127,8 @@ namespace PEBakery.Core.Commands
             {
                 UIControl uiCmd = uiCtrls.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]"));
-                    continue;
-                }
-
+                    return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]");
+                
                 uiCmd.Visibility = args.Item2;
                 uiCmdList.Add(uiCmd);
             }
@@ -163,31 +153,29 @@ namespace PEBakery.Core.Commands
         { // ReadInterface,<Element>,<ScriptFile>,<Section>,<Key>,<DestVar>
             List<LogInfo> logs = new List<LogInfo>(1);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ReadInterface), "Invalid CodeInfo");
             CodeInfo_ReadInterface info = cmd.Info as CodeInfo_ReadInterface;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
 
+            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
+            Debug.Assert(key != null, $"{nameof(key)} != null");
+
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!sc.Sections.ContainsKey(section))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCmds = iface.GetUICtrls(true);
             UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
-                return logs;
-            }
-
+                return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist");
+            
             string destStr;
             switch (info.Element)
             {
@@ -232,31 +220,30 @@ namespace PEBakery.Core.Commands
         { // WriteInterface,<Element>,<ScriptFile>,<Section>,<Key>,<Value>
             List<LogInfo> logs = new List<LogInfo>(2);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WriteInterface), "Invalid CodeInfo");
             CodeInfo_WriteInterface info = cmd.Info as CodeInfo_WriteInterface;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string section = StringEscaper.Preprocess(s, info.Section);
             string key = StringEscaper.Preprocess(s, info.Key);
             string finalValue = StringEscaper.Preprocess(s, info.Value);
 
+            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
+            Debug.Assert(section != null, $"{nameof(section)} != null");
+            Debug.Assert(key != null, $"{nameof(key)} != null");
+            Debug.Assert(finalValue != null, $"{nameof(finalValue)} != null");
+
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
             if (!sc.Sections.ContainsKey(section))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Script [{scriptFile}] does not have section [{section}]"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Script [{scriptFile}] does not have section [{section}]");
 
             ScriptSection iface = sc.Sections[section];
             List<UIControl> uiCmds = iface.GetUICtrls(true);
             UIControl uiCmd = uiCmds.Find(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
             if (uiCmd == null)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Interface control [{key}] does not exist"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"Interface control [{key}] does not exist");
 
             switch (info.Element)
             {
@@ -266,17 +253,14 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.Visible:
                     {
                         bool visibility;
-                        if (finalValue.Equals("True", StringComparison.OrdinalIgnoreCase) ||
-                            finalValue.Equals("1", StringComparison.OrdinalIgnoreCase))
+                        if (finalValue.Equals("1", StringComparison.Ordinal) || 
+                            finalValue.Equals("True", StringComparison.OrdinalIgnoreCase))
                             visibility = true;
-                        else if (finalValue.Equals("False", StringComparison.OrdinalIgnoreCase) ||
-                                 finalValue.Equals("0", StringComparison.OrdinalIgnoreCase))
+                        else if (finalValue.Equals("0", StringComparison.Ordinal) || 
+                                 finalValue.Equals("False", StringComparison.OrdinalIgnoreCase))
                             visibility = false;
                         else
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid boolean value"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid boolean value");
 
                         uiCmd.Visibility = visibility;
                     }
@@ -284,10 +268,7 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.PosX:
                     {
                         if (!NumberHelper.ParseInt32(finalValue, out int x))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid integer");
 
                         uiCmd.Rect.X = x;
                     }
@@ -295,10 +276,7 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.PosY:
                     {
                         if (!NumberHelper.ParseInt32(finalValue, out int y))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid integer");
 
                         uiCmd.Rect.Y = y;
                     }
@@ -306,10 +284,7 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.Width:
                     {
                         if (!NumberHelper.ParseInt32(finalValue, out int width))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid integer");
 
                         uiCmd.Rect.Width = width;
                     }
@@ -317,10 +292,7 @@ namespace PEBakery.Core.Commands
                 case InterfaceElement.Height:
                     {
                         if (!NumberHelper.ParseInt32(finalValue, out int height))
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"[{finalValue}] is not a valid integer"));
-                            return logs;
-                        }
+                            return LogInfo.LogErrorMessage(logs, $"[{finalValue}] is not a valid integer");
 
                         uiCmd.Rect.Height = height;
                     }
@@ -331,10 +303,7 @@ namespace PEBakery.Core.Commands
                         logs.AddRange(varLogs);
 
                         if (success == false && varLogs.Count == 0)
-                        {
-                            logs.Add(new LogInfo(LogState.Error, $"Writing [Value] to [{uiCmd.Type}] is not supported"));
-                            return logs;
-                        } 
+                            return LogInfo.LogErrorMessage(logs, $"Writing [Value] to [{uiCmd.Type}] is not supported");
                     }
                     break;
                 default:
@@ -359,11 +328,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Message), "Invalid CodeInfo");
             CodeInfo_Message info = cmd.Info as CodeInfo_Message;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string message = StringEscaper.Preprocess(s, info.Message);
+
+            Debug.Assert(message != null, $"{nameof(message)} != null");
+
             MessageBoxImage image;
             switch (info.Action)
             {
@@ -421,11 +393,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Echo), "Invalid CodeInfo");
             CodeInfo_Echo info = cmd.Info as CodeInfo_Echo;
-
-            // ReSharper disable once PossibleNullReferenceException
+            Debug.Assert(info != null, "Invalid CodeInfo");
+            
             string message = StringEscaper.Preprocess(s, info.Message);
+
+            Debug.Assert(message != null, $"{nameof(message)} != null");
 
             s.MainViewModel.BuildEchoMessage = message;
 
@@ -438,11 +412,13 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_EchoFile));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_EchoFile), "Invalid CodeInfo");
             CodeInfo_EchoFile info = cmd.Info as CodeInfo_EchoFile;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string srcFile = StringEscaper.Preprocess(s, info.SrcFile);
+
+            Debug.Assert(srcFile != null, $"{nameof(srcFile)} != null");
 
             if (!File.Exists(srcFile))
             {
@@ -501,24 +477,27 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_UserInput));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_UserInput), "Invalid CodeInfo");
             CodeInfo_UserInput info = cmd.Info as CodeInfo_UserInput;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             UserInputType type = info.Type;
             switch (type)
             {
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile), "Invalid SubInfo");
                         UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
+                        Debug.Assert(subInfo != null, "Invalid SubInfo");
 
                         System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
                         s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;
 
-                        // ReSharper disable once PossibleNullReferenceException
                         string initPath = StringEscaper.Preprocess(s, subInfo.InitPath);
+
+                        Debug.Assert(initPath != null, $"{nameof(initPath)} != null");
+
                         string selectedPath = initPath;
                         if (type == UserInputType.FilePath)
                         {
@@ -532,10 +511,13 @@ namespace PEBakery.Core.Commands
                                 filter = $"{ext} Files|{initFile}";
                             }
 
-                            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+                            string initDir = Path.GetDirectoryName(initPath);
+                            if (initDir == null)
+                                throw new InternalException("Internal Logic Error at UserInput");
+                            Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                             {
                                 Filter = filter,
-                                InitialDirectory = Path.GetDirectoryName(initPath),
+                                InitialDirectory = initDir,
                             };
 
                             if (dialog.ShowDialog() == true)
@@ -593,20 +575,24 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddInterface), "Invalid CodeInfo");
             CodeInfo_AddInterface info = cmd.Info as CodeInfo_AddInterface;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string interfaceSection = StringEscaper.Preprocess(s, info.Interface);
             string prefix = StringEscaper.Preprocess(s, info.Prefix);
+
+            Debug.Assert(scriptFile != null, $"{nameof(scriptFile)} != null");
+            Debug.Assert(interfaceSection != null, $"{nameof(interfaceSection)} != null");
+            Debug.Assert(prefix != null, $"{nameof(prefix)} != null");
 
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
             if (sc.Sections.ContainsKey(interfaceSection))
             {
                 List<UIControl> uiCtrls = null;
                 try { uiCtrls = sc.Sections[interfaceSection].GetUICtrls(true); }
-                catch { } // No [Interface] section, or unable to get List<UIControl> 
+                catch { /* No [Interface] section, or unable to get List<UIControl> */ }
 
                 if (uiCtrls != null)
                 {

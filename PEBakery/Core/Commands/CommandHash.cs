@@ -43,11 +43,14 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Hash));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Hash), "Invalid CodeInfo");
             CodeInfo_Hash info = cmd.Info as CodeInfo_Hash;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string hashTypeStr = StringEscaper.Preprocess(s, info.HashType);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
+            Debug.Assert(hashTypeStr != null, $"{nameof(hashTypeStr)} != null");
+            Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             string digest;
             HashHelper.HashType hashType = HashHelper.ParseHashType(hashTypeStr);

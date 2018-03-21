@@ -160,6 +160,8 @@ namespace PEBakery.Core.Commands
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
                         FileInfo f = new FileInfo(path);
+                        if (f.Directory == null)
+                            return LogInfo.LogErrorMessage(logs, $"Unable to get drive information of [{path}]");
                         DriveInfo drive = new DriveInfo(f.Directory.Root.FullName);
                         long freeSpaceMB = drive.TotalFreeSpace / (1024 * 1024); // B to MB
 
@@ -235,7 +237,7 @@ namespace PEBakery.Core.Commands
                         AutoResetEvent resetEvent = null;
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            MainWindow w = (Application.Current.MainWindow as MainWindow);
+                            MainWindow w = Application.Current.MainWindow as MainWindow;
                             resetEvent = w?.StartLoadWorker(true);
                         });
                         resetEvent?.WaitOne();
@@ -390,9 +392,10 @@ namespace PEBakery.Core.Commands
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
                         SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
 
-                        logs.Add(new LogInfo(LogState.Warning, $"[System,HasUAC] is deprecated"));
+                        logs.Add(new LogInfo(LogState.Warning, "[System,HasUAC] is deprecated"));
 
                         // Deprecated, WB082 Compability Shim
+                        // ReSharper disable once PossibleNullReferenceException
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
                         logs.AddRange(varLogs);
                     }
@@ -410,8 +413,7 @@ namespace PEBakery.Core.Commands
                         s.Variables.ResetVariables(VarsType.Local);
 
                         // Load Global Variables
-                        List<LogInfo> varLogs;
-                        varLogs = s.Variables.LoadDefaultGlobalVariables();
+                        var varLogs = s.Variables.LoadDefaultGlobalVariables();
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                         // Load Per-Script Variables
@@ -423,7 +425,7 @@ namespace PEBakery.Core.Commands
                         varLogs = s.Macro.LoadLocalMacroDict(cmd.Addr.Script, false);
                         logs.AddRange(LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
-                        logs.Add(new LogInfo(LogState.Success, $"Variables are reset to their default state"));
+                        logs.Add(new LogInfo(LogState.Success, "Variables are reset to their default state"));
                     }
                     break;
                 default: // Error
@@ -440,6 +442,7 @@ namespace PEBakery.Core.Commands
             Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute));
             CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
 
+            // ReSharper disable once PossibleNullReferenceException
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
@@ -504,7 +507,7 @@ namespace PEBakery.Core.Commands
                         {
                             redirectStandardStream = true;
 
-                            // Windows Console uses OEM Code Pages
+                            // Windows console uses OEM code pages
                             Encoding cmdEncoding = Encoding.GetEncoding(CultureInfo.CurrentCulture.TextInfo.OEMCodePage);
 
                             proc.StartInfo.RedirectStandardOutput = true;
@@ -573,12 +576,8 @@ namespace PEBakery.Core.Commands
 
                     if (cmd.Type != CodeType.ShellExecuteEx)
                     {
-                        string exitOutVar;
-                        if (info.ExitOutVar == null)
-                            exitOutVar = "%ExitCode%"; // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
-                        else
-                            exitOutVar = info.ExitOutVar;
-
+                        // WB082 behavior -> even if info.ExitOutVar is not specified, it will save value to %ExitCode%
+                        string exitOutVar = info.ExitOutVar ?? "%ExitCode%";
                         LogInfo log = Variables.SetVariable(s, exitOutVar, proc.ExitCode.ToString()).First();
                         if (log.State == LogState.Success)
                             logs.Add(new LogInfo(LogState.Success, $"Exit code [{proc.ExitCode}] saved into variable [{exitOutVar}]"));

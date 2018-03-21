@@ -270,9 +270,9 @@ namespace PEBakery.Helper
             {
                 const int block = 4096; // Memory Page is 4KB!
                 byte[] buffer = new byte[block];
-                for (long i = offset - (offset % block); i < offset + length; i += block)
+                for (long i = offset - offset % block; i < offset + length; i += block)
                 {
-                    if (i == offset - (offset % block)) // First block
+                    if (i == offset - offset % block) // First block
                     {
                         accessor.ReadArray(i, buffer, 0, block);
                         stream.Write(buffer, (int)(offset % block), block - (int)(offset % block));

@@ -45,18 +45,17 @@ namespace PEBakery.Core.Commands
         { // WebGet,<URL>,<DestPath>,[HashType],[HashDigest]
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WebGet));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_WebGet), "Invalid CodeInfo");
             CodeInfo_WebGet info = cmd.Info as CodeInfo_WebGet;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string url = StringEscaper.Preprocess(s, info.URL);
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
             const string destVar = @"%StatusCode%";
 
             // Check PathSecurity in destPath
-            {
-                if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
-                    return LogInfo.LogErrorMessage(logs, errorMsg);
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string pathErrorMsg))
+                return LogInfo.LogErrorMessage(logs, pathErrorMsg);
 
             Uri uri = new Uri(url);
             string destFile;
@@ -201,6 +200,7 @@ namespace PEBakery.Core.Commands
                         long bytePerSec = (long)(e.BytesReceived / totalSec); // Byte per sec
                         string speedStr = NumberHelper.ByteSizeToHumanReadableString((long)(e.BytesReceived / totalSec), 1) + "/s"; // KB/s, MB/s, ...
 
+                        // ReSharper disable once PossibleLossOfFraction
                         TimeSpan r = TimeSpan.FromSeconds((e.TotalBytesToReceive - e.BytesReceived) / bytePerSec);
                         int hour = (int)r.TotalHours;
                         int min = r.Minutes;

@@ -46,8 +46,9 @@ namespace PEBakery.Core.Commands
     {
         public static List<LogInfo> Set(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Set));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Set), "Invalid CodeInfo");
             CodeInfo_Set info = cmd.Info as CodeInfo_Set;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             Variables.VarKeyType varType = Variables.DetermineType(info.VarKey);
             if (varType == Variables.VarKeyType.None)
@@ -82,7 +83,7 @@ namespace PEBakery.Core.Commands
 
                         #region Set UI
                         Script sc = cmd.Addr.Script;
-                        ScriptSection iface = sc.GetInterface(out string sectionName);
+                        ScriptSection iface = sc.GetInterface(out _);
                         if (iface == null)
                             goto case false;
 
@@ -115,8 +116,9 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> SetMacro(EngineState s, CodeCommand cmd)
         { // SetMacro,<MacroName>,<MacroCommand>,[GLOBAL|PERMANENT]
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_SetMacro), "Invalid CodeInfo");
             CodeInfo_SetMacro info = cmd.Info as CodeInfo_SetMacro;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string macroCommand = StringEscaper.Preprocess(s, info.MacroCommand);
 
@@ -129,8 +131,9 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> AddVariables(EngineState s, CodeCommand cmd)
         {
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddVariables));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_AddVariables), "Invalid CodeInfo");
             CodeInfo_AddVariables info = cmd.Info as CodeInfo_AddVariables;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string sectionName = StringEscaper.Preprocess(s, info.SectionName);
@@ -165,8 +168,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Exit), "Invalid CodeInfo");
             CodeInfo_Exit info = cmd.Info as CodeInfo_Exit;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -181,8 +185,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Halt), "Invalid CodeInfo");
             CodeInfo_Halt info = cmd.Info as CodeInfo_Halt;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string message = StringEscaper.Preprocess(s, info.Message);
 
@@ -199,8 +204,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Wait), "Invalid CodeInfo");
             CodeInfo_Wait info = cmd.Info as CodeInfo_Wait;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             if (!NumberHelper.ParseInt32(info.Second, out int second))
             {
@@ -225,8 +231,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Beep), "Invalid CodeInfo");
             CodeInfo_Beep info = cmd.Info as CodeInfo_Beep;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             switch (info.Type)
             {
@@ -253,8 +260,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(2);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_GetParam), "Invalid CodeInfo");
             CodeInfo_GetParam info = cmd.Info as CodeInfo_GetParam;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string indexStr = StringEscaper.Preprocess(s, info.Index);
             if (!NumberHelper.ParseInt32(indexStr, out int index))
@@ -283,8 +291,9 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(4);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_PackParam), "Invalid CodeInfo");
             CodeInfo_PackParam info = cmd.Info as CodeInfo_PackParam;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             string startIndexStr = StringEscaper.Preprocess(s, info.StartIndex);
             if (!NumberHelper.ParseInt32(startIndexStr, out int startIndex))
