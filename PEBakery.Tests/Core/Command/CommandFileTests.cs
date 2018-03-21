@@ -4,6 +4,7 @@ using PEBakery.Helper;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 namespace PEBakery.Tests.Core.Command
 {
     [TestClass]
+    [SuppressMessage("ReSharper", "ParameterOnlyUsedForPreconditionCheck.Local")]
     public class CommandFileTests
     {
         #region Const String
@@ -22,8 +24,6 @@ namespace PEBakery.Tests.Core.Command
         private const string DestDir_FileRename = "Dest_FileRename";
         private const string DestDir_FileCreateBlank = "Dest_FileCreateBlank";
         private const string DestDir_DirCopy = "Dest_DirCopy";
-        private const string DestDir_DirDelete = "Dest_DirDelete";
-        private const string DestDir_DirMove = "Dest_DirMove";
         private const string DestDir_DirMake = "Dest_DirMake";
         private const string DestDir_PathMove = "Dest_PathMove";
         #endregion
@@ -159,7 +159,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_File);
             string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileDelete);
 
             FileDelete_SingleTemplate(s, $@"FileDelete,{scriptDestDir}\A.txt", "A.txt");
@@ -240,7 +239,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_File);
             string scriptDestDir = Path.Combine(scriptDirPath, DestDir_FileRename);
 
             FileRename_Template(s, $@"FileRename,{scriptDestDir}\A.txt,{scriptDestDir}\R.txt", "A.txt", "R.txt");
@@ -327,12 +325,13 @@ namespace PEBakery.Tests.Core.Command
                 if (check == ErrorCheck.Success)
                 {
                     Assert.IsTrue(File.Exists(destFullPath));
-                    Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath) == encoding);
+                    Assert.IsTrue(FileHelper.DetectTextEncoding(destFullPath).Equals(encoding));
                 }
             }
             finally
             {
-                Directory.Delete(destDir, true);
+                if (Directory.Exists(destDir))
+                    Directory.Delete(destDir, true);
             }
         }
         #endregion
@@ -500,27 +499,33 @@ namespace PEBakery.Tests.Core.Command
         { // DirDelete,<DirPath>
             EngineState s = EngineTests.CreateEngineState();
 
-            string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
-            string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirDelete);
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ABCD", "ABCD");
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ABDE", "ABDE");
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}", string.Empty);
-            DirDelete_Template(s, $@"DirDelete,{scriptDestDir}\ACDE.txt", "ACDE.txt", ErrorCheck.Error, false);
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ABCD", tempDir, "ABCD");
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ABDE", tempDir, "ABDE");
+                DirDelete_Template(s, $@"DirDelete,{tempDir}", tempDir, string.Empty);
+                DirDelete_Template(s, $@"DirDelete,{tempDir}\ACDE.txt", tempDir, "ACDE.txt", ErrorCheck.Error, false);
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
         }
 
-        private void DirDelete_Template(EngineState s, string rawCode, string dirName, ErrorCheck check = ErrorCheck.Success, bool copyDir = true)
+        private void DirDelete_Template(EngineState s, string rawCode, string destDir, string dirName, ErrorCheck check = ErrorCheck.Success, bool copyDir = true)
         {
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandFile"));
             string srcDir = Path.Combine(dirPath, SrcDir_Dir);
-            string destDir = Path.Combine(dirPath, DestDir_DirDelete);
 
             string srcFullPath = Path.Combine(srcDir, dirName);
             string destFullPath = Path.Combine(destDir, dirName);
 
-            if (Directory.Exists(destDir))
-                Directory.Delete(destDir, true);
+            if (Directory.Exists(destFullPath))
+                Directory.Delete(destFullPath, true);
             try
             {
                 if (copyDir)
@@ -535,8 +540,8 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                if (Directory.Exists(destDir))
-                    Directory.Delete(destDir, true);
+                if (Directory.Exists(destFullPath))
+                    Directory.Delete(destFullPath, true);
             }
         }
         #endregion
@@ -583,8 +588,6 @@ namespace PEBakery.Tests.Core.Command
             Template($@"DirMove,{destDir}\XYZ,{destDir}\WUV", "XYZ", "WUV", ErrorCheck.Error);
             Template($@"DirMove,{destDir}\ACDE.txt,{destDir}\XYZ", "ACDE.txt", "XYZ", ErrorCheck.Error);
         }
-
-        
         #endregion
 
         #region DirMake
@@ -596,7 +599,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string scriptDirPath = Path.Combine("%TestBench%", "CommandFile");
-            string scriptSrcDir = Path.Combine(scriptDirPath, SrcDir_Dir);
             string scriptDestDir = Path.Combine(scriptDirPath, DestDir_DirMake);
 
             DirMake_Template(s, $@"DirMake,{scriptDestDir}\A", "A");

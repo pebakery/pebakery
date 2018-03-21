@@ -184,7 +184,6 @@ namespace PEBakery.Core
         private static CodeCommand ParseCommand(List<string> rawCodes, SectionAddress addr, ref int idx)
         {
             int lineIdx = addr.Section.LineIdx + 1 + idx;
-            CodeType type = CodeType.None;
 
             // Remove whitespace of rawCode's from start and end
             string rawCode = rawCodes[idx].Trim();
@@ -203,7 +202,7 @@ namespace PEBakery.Core
             string remainder = tuple.Item2;
 
             // Parse opcode
-            type = ParseCodeType(codeTypeStr, out string macroType);
+            CodeType type = ParseCodeType(codeTypeStr, out string macroType);
 
             // Check doublequote's occurence - must be 2n
             if (StringHelper.CountOccurrences(rawCode, "\"") % 2 == 1)
@@ -231,8 +230,10 @@ namespace PEBakery.Core
                     string nextRawCode = rawCodes[idx + 1].Trim();
 
                     // Check if nextRawCode is Empty / Comment
-                    if (nextRawCode.Equals(string.Empty, StringComparison.Ordinal) || 
-                        (rawCode.StartsWith("//") || rawCode.StartsWith("#") || rawCode.StartsWith(";")))
+                    if (nextRawCode.Length == 0 || 
+                        rawCode.StartsWith("//") ||
+                        rawCode.StartsWith("#") || 
+                        rawCode.StartsWith(";"))
                         throw new InvalidCommandException(@"Valid command should be placed after '\'", rawCode);
 
                     // Parse next raw code
@@ -267,7 +268,7 @@ namespace PEBakery.Core
         /// <returns></returns>
         private static CodeCommand ParseStatementFromSlicedArgs(string rawCode, List<string> args, SectionAddress addr, int lineIdx)
         {
-            CodeType type = CodeType.None;
+            CodeType type;
 
             // Parse opcode
             string macroType;
@@ -300,14 +301,12 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z0-9_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet, number and underscore can be used as CodeType");
 
-            bool isMacro = false;
-            if (Enum.TryParse(typeStr, true, out CodeType type) == false)
-                isMacro = true;
-            if (Enum.IsDefined(typeof(CodeType), type) == false ||
-                type == CodeType.None || type == CodeType.Macro ||
-                CodeCommand.OptimizedCodeType.Contains(type))
-                isMacro = true;
-
+            bool isMacro = !Enum.TryParse(typeStr, true, out CodeType type) || 
+                           !Enum.IsDefined(typeof(CodeType), type) ||
+                           type == CodeType.None ||
+                           type == CodeType.Macro ||
+                           CodeCommand.OptimizedCodeType.Contains(type);
+            
             if (isMacro)
             {
                 type = CodeType.Macro;
@@ -413,31 +412,31 @@ namespace PEBakery.Core
                             else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.UTF8;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.BigEndianUnicode;
                             }
                             else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.ASCII;
                             }
                             else
@@ -775,7 +774,7 @@ namespace PEBakery.Core
                             throw new InvalidCommandException($"Command [{type}] must have [{argCount}] arguments", rawCode);
 
                         if (args[1].Contains("#$x"))
-                            throw new InvalidCommandException($"Keyword cannot include line feed", rawCode);
+                            throw new InvalidCommandException("Keyword cannot include line feed", rawCode);
 
                         return new CodeInfo_TXTDelLine(args[0], args[1]);
                     }
@@ -903,55 +902,55 @@ namespace PEBakery.Core
                             if (arg.Equals("STORE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
-                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
                                 compLevel = ArchiveHelper.CompressLevel.Store;
                             }
                             else if (arg.Equals("FASTEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
-                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
                                 compLevel = ArchiveHelper.CompressLevel.Fastest;
                             }
                             else if (arg.Equals("NORMAL", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
-                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
                                 compLevel = ArchiveHelper.CompressLevel.Normal;
                             }
                             else if (arg.Equals("BEST", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (compLevel != null)
-                                    throw new InvalidCommandException($"CompressLevel cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("CompressLevel cannot be duplicated", rawCode);
                                 compLevel = ArchiveHelper.CompressLevel.Best;
                             }
                             else if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.UTF8;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.BigEndianUnicode;
                             }
                             else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Default;
                             }
                             else
@@ -976,31 +975,31 @@ namespace PEBakery.Core
                             if (arg.Equals("UTF8", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.UTF8;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16", StringComparison.OrdinalIgnoreCase) || arg.Equals("UTF16LE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.Unicode;
                             }
                             else if (arg.Equals("UTF16BE", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.BigEndianUnicode;
                             }
                             else if (arg.Equals("ANSI", StringComparison.OrdinalIgnoreCase))
                             {
                                 if (encoding != null)
-                                    throw new InvalidCommandException($"Encoding cannot be duplicated", rawCode);
+                                    throw new InvalidCommandException("Encoding cannot be duplicated", rawCode);
                                 encoding = Encoding.ASCII;
                             }
                             else
@@ -1148,13 +1147,17 @@ namespace PEBakery.Core
                         return new CodeInfo_ExtractFile(args[0], args[1], args[2], args[3]);
                     }
                 case CodeType.ExtractAndRun:
-                    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName> // ,[Params] - deprecated
+                    { // ExtractAndRun,%ScriptFile%,<DirName>,<FileName>,[Params]
                         const int minArgCount = 3;
                         const int maxArgCount = 4;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
-                        return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], new string[0]);
+                        string _params = null;
+                        if (4 <= args.Count)
+                            _params = args[3];
+
+                        return new CodeInfo_ExtractAndRun(args[0], args[1], args[2], _params);
                     }
                 case CodeType.ExtractAllFiles:
                     { // ExtractAllFiles,%ScriptFile%,<DirName>,<ExtractTo>
@@ -2288,11 +2291,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong RegMultiType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out RegMultiType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(RegMultiType), type) == false)
-                invalid = true;
+            bool invalid = !Enum.TryParse(typeStr, true, out RegMultiType type) || 
+                           !Enum.IsDefined(typeof(RegMultiType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid RegMultiType [{typeStr}]");
@@ -2307,11 +2307,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(str, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{str}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (!Enum.TryParse(str, true, out InterfaceElement e))
-                invalid = true;
-            if (!Enum.IsDefined(typeof(InterfaceElement), e))
-                invalid = true;
+            bool invalid = !Enum.TryParse(str, true, out InterfaceElement e) || 
+                           !Enum.IsDefined(typeof(InterfaceElement), e);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid InterfaceElement [{str}]");
@@ -2363,11 +2360,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out UserInputType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(UserInputType), type) == false)
-                invalid = true;
+            bool invalid = !Enum.TryParse(typeStr, true, out UserInputType type) || 
+                           !Enum.IsDefined(typeof(UserInputType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid UserInputType [{typeStr}]");
@@ -2681,11 +2675,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out StrFormatType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(StrFormatType), type) == false)
-                invalid = true;
+            bool invalid = !Enum.TryParse(typeStr, true, out StrFormatType type) ||
+                           !Enum.IsDefined(typeof(StrFormatType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid StrFormatType [{typeStr}]");
@@ -2733,7 +2724,7 @@ namespace PEBakery.Core
         };
 
         // Year, Month, Date, Hour, Minute, Second, Millisecond, AM, PM, 12 hr Time, Era
-        private static readonly char[] FormatStringAllowedChars = new char[] { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
+        private static readonly char[] FormatStringAllowedChars = { 'y', 'm', 'd', 'h', 'n', 's', 'z', 'a', 'p', 't', 'g', };
         
         private static string StrFormat_Date_FormatString(string str)
         { 
@@ -2905,7 +2896,7 @@ namespace PEBakery.Core
                             else if (sizeStr.Equals("64", StringComparison.Ordinal))
                                 bitSize = 64;
                             else
-                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
+                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
                         info = new MathInfo_IntegerSignedness(args[0], args[1], bitSize);
@@ -2986,7 +2977,7 @@ namespace PEBakery.Core
                             else if (sizeStr.Equals("64", StringComparison.Ordinal))
                                 bitSize = 64;
                             else
-                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
+                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
                         info = new MathInfo_BitNot(args[0], args[1], bitSize);
@@ -3091,7 +3082,7 @@ namespace PEBakery.Core
                             else if (sizeStr.Equals("64", StringComparison.Ordinal))
                                 bitSize = 64;
                             else
-                                throw new InvalidCommandException($"BitSize must be one of [8, 16, 32, 64]", rawCode);
+                                throw new InvalidCommandException("BitSize must be one of [8, 16, 32, 64]", rawCode);
                         }
 
                         info = new MathInfo_Hex(destVar, args[1], bitSize);
@@ -3111,11 +3102,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out MathType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(MathType), type) == false)
-                invalid = true;
+            bool invalid = !Enum.TryParse(typeStr, true, out MathType type) || 
+                           !Enum.IsDefined(typeof(MathType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid MathType [{typeStr}]");
@@ -3332,11 +3320,8 @@ namespace PEBakery.Core
             if (!Regex.IsMatch(typeStr, @"^[A-Za-z_]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
                 throw new InvalidCommandException($"Wrong CodeType [{typeStr}], Only alphabet and underscore can be used as opcode");
 
-            bool invalid = false;
-            if (Enum.TryParse(typeStr, true, out SystemType type) == false)
-                invalid = true;
-            if (Enum.IsDefined(typeof(SystemType), type) == false)
-                invalid = true;
+            bool invalid = !Enum.TryParse(typeStr, true, out SystemType type) || 
+                           !Enum.IsDefined(typeof(SystemType), type);
 
             if (invalid)
                 throw new InvalidCommandException($"Invalid SystemType [{typeStr}]");
@@ -3350,9 +3335,9 @@ namespace PEBakery.Core
         {
             MatchCollection matches = Regex.Matches(str, Variables.VarKeyRegex_ContainsVariable, RegexOptions.Compiled | RegexOptions.CultureInvariant); // ABC%Joveler%
             bool sectionParamMatch = Regex.IsMatch(str, Variables.VarKeyRegex_ContainsSectionParams, RegexOptions.Compiled | RegexOptions.CultureInvariant); // #1
-            bool sectionLoopMatch = (str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1); // #c
-            bool sectionParamCountMatch = (str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1); // #a
-            bool sectionReturnValueMatch = (str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1); // #r
+            bool sectionLoopMatch = str.IndexOf("#c", StringComparison.OrdinalIgnoreCase) != -1; // #c
+            bool sectionParamCountMatch = str.IndexOf("#a", StringComparison.OrdinalIgnoreCase) != -1; // #a
+            bool sectionReturnValueMatch = str.IndexOf("#r", StringComparison.OrdinalIgnoreCase) != -1; // #r
 
             if (0 < matches.Count || sectionParamMatch || sectionLoopMatch || sectionParamCountMatch || sectionReturnValueMatch)
                 return true;
@@ -3595,8 +3580,7 @@ namespace PEBakery.Core
                 CodeCommand cmd = codeList[i];
                 if (cmd.Type == CodeType.If)
                 { // Change it to IfCompact, and parse Begin - End
-                    CodeInfo_If info = cmd.Info as CodeInfo_If;
-                    if (info == null)
+                    if (!(cmd.Info is CodeInfo_If info))
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (info.LinkParsed)
@@ -3611,8 +3595,7 @@ namespace PEBakery.Core
                 }
                 else if (cmd.Type == CodeType.Else) // SingleLine or MultiLine?
                 { // Compile to ElseCompact
-                    CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-                    if (info == null)
+                    if (!(cmd.Info is CodeInfo_Else info))
                         throw new InternalParserException($"Error while parsing command [{cmd.RawCode}]");
 
                     if (elseFlag)
@@ -3654,12 +3637,10 @@ namespace PEBakery.Core
             // Run if condition is met : Echo,Success
             // Command compiledCmd; // Compiled If : IfCompact,Equal,%A%,B
 
-            CodeInfo_If info = cmd.Info as CodeInfo_If;
-            if (info == null)
+            if (!(cmd.Info is CodeInfo_If info))
                 throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
             newList.Add(cmd);
-            CodeCommand ifCmd = cmd;
 
             // <Raw>
             // If,%A%,Equal,B,Echo,Success
@@ -3703,17 +3684,10 @@ namespace PEBakery.Core
         /// <summary>
         /// Parsed nested Else
         /// </summary>
-        /// <param name="cmd">BakeryCommand else</param>
-        /// <param name="elseFlag">Reset else flag</param>
-        /// <param name="cmdList">raw command list</param>
-        /// <param name="cmdListIdx">raw command index of list</param>
-        /// <param name="parsedList">parsed command list</param>
-        /// <param name="addr">section address addr</param>
         /// <returns>Return next command index</returns>
         private static int ParseNestedElse(CodeCommand cmd, List<CodeCommand> codeList, int codeListIdx, List<CodeCommand> newList, out bool elseFlag)
         {
-            CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-            if (info == null)
+            if (!(cmd.Info is CodeInfo_Else info))
                 throw new InternalParserException("Invalid CodeInfo_Else while processing nested [Else]");
 
             newList.Add(cmd);
@@ -3724,8 +3698,7 @@ namespace PEBakery.Core
                 info.Link.Add(elseEmbCmd);
                 info.LinkParsed = true;
 
-                CodeInfo_If ifInfo = info.Embed.Info as CodeInfo_If;
-                if (ifInfo == null)
+                if (!(info.Embed.Info is CodeInfo_If ifInfo))
                     throw new InternalParserException("Invalid CodeInfo_If while processing nested [If]");
 
                 while (true)
@@ -3811,8 +3784,7 @@ namespace PEBakery.Core
                 {
                     while (true)
                     {
-                        CodeInfo_If info = cmd.Info as CodeInfo_If;
-                        if (info == null)
+                        if (!(cmd.Info is CodeInfo_If info))
                             throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                         if (info.Embed.Type == CodeType.If) // Nested If
@@ -3831,22 +3803,21 @@ namespace PEBakery.Core
                 }
                 else if (cmd.Type == CodeType.Else)
                 {
-                    CodeInfo_Else info = cmd.Info as CodeInfo_Else;
-                    if (info == null)
+                    if (!(cmd.Info is CodeInfo_Else info))
                         throw new InternalParserException("Invalid CodeInfo_Else while matching [Begin] with [End]");
 
                     CodeCommand ifCmd = info.Embed;
                     if (ifCmd.Type == CodeType.If) // Nested If
                     {
+                        CodeInfo_If embedInfo = ifCmd.Info as CodeInfo_If;
                         while (true)
                         {
-                            CodeInfo_If embedInfo = ifCmd.Info as CodeInfo_If;
                             if (embedInfo == null)
                                 throw new InternalParserException("Invalid CodeInfo_If while matching [Begin] with [End]");
 
                             if (embedInfo.Embed.Type == CodeType.If) // Nested If
                             {
-                                ifCmd = embedInfo.Embed;
+                                // ifCmd = embedInfo.Embed;
                             }
                             else if (embedInfo.Embed.Type == CodeType.Begin)
                             {
@@ -3876,11 +3847,9 @@ namespace PEBakery.Core
             }
 
             // Met Begin, End and returned, success
-            // if (beginExist && finalizedWithEnd && nestedBeginEnd == 0)
             if (finalizedWithEnd && nestedBeginEnd == 0)
                 return codeListIdx;
-            else
-                return -1;
+            return -1;
         }
         #endregion
     }

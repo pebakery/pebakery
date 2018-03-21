@@ -1421,9 +1421,9 @@ namespace PEBakery.Core
         public string ScriptFile;
         public string DirName;
         public string FileName;
-        public string[] Params;
+        public string Params;
 
-        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string[] parameters)
+        public CodeInfo_ExtractAndRun(string scriptFile, string dirName, string fileName, string parameters)
         {
             ScriptFile = scriptFile;
             DirName = dirName;
@@ -1439,12 +1439,10 @@ namespace PEBakery.Core
             b.Append(DirName);
             b.Append(",");
             b.Append(FileName);
-            b.Append(",");
-            for (int i = 0; i < Params.Length; i++)
+            if (Params != null)
             {
-                b.Append(Params[i]);
-                if (i < Params.Length - 1)
-                    b.Append(",");
+                b.Append(",");
+                b.Append(Params);
             }
             return b.ToString();
         }

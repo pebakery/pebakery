@@ -76,11 +76,8 @@ namespace PEBakery.Core.Commands
 
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (!Directory.Exists(destDir)) // DestDir already exists
             {
@@ -112,41 +109,60 @@ namespace PEBakery.Core.Commands
             string scriptFile = StringEscaper.Preprocess(s, info.ScriptFile);
             string dirName = StringEscaper.Preprocess(s, info.DirName);
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-            List<string> parameters = StringEscaper.Preprocess(s, info.Params);
-
+            
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
-            string destPath = Path.GetTempFileName();
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            Directory.CreateDirectory(tempDir);
+            string tempPath = Path.Combine(tempDir, fileName);
 
-            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+            using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
             {
                 EncodedFile.ExtractFile(sc, dirName, info.FileName, fs);
             }
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            Process proc = new Process
             {
-                FileName = destPath,
-                UseShellExecute = true,
+                EnableRaisingEvents = true,
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = tempPath,
+                    UseShellExecute = true,
+                }
             };
-                /*
+
+            string _params = null;
             if (!string.IsNullOrEmpty(info.Params))
             {
-                string parameters = StringEscaper.Preprocess(s, info.Params);
-                proc.StartInfo.Arguments = parameters;
-                b.Append(" ");
-                b.Append(parameters);
+                _params = StringEscaper.Preprocess(s, info.Params);
+                proc.StartInfo.Arguments = _params;
             }
-            */
-            Process.Start(startInfo);
 
-            logs.Add(new LogInfo(LogState.Success, $"Encoded file [{fileName}] was extracted and executed"));
+            proc.Exited += (object sender, EventArgs e) =>
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
 
-            return logs;
+                // ReSharper disable once AccessToDisposedClosure
+                proc.Dispose();
+            };
+
+            try
+            {
+                proc.Start();
+            }
+            catch (Exception)
+            {
+                proc.Dispose();
+                throw;
+            }
+
+            if (_params == null)
+                logs.Add(new LogInfo(LogState.Success, $"Extracted and executed [{fileName}]"));
+            else
+                logs.Add(new LogInfo(LogState.Success, $"Extracted and executed [{fileName} {_params}]"));
+
+            return logs;            
         }
 
         public static List<LogInfo> ExtractAllFiles(EngineState s, CodeCommand cmd)
@@ -163,20 +179,18 @@ namespace PEBakery.Core.Commands
 
             Script sc = Engine.GetScriptInstance(s, cmd, s.CurrentScript.RealPath, scriptFile, out _);
 
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
             List<string> dirs = sc.Sections["EncodedFolders"].Lines;
-            bool dirNameValid = dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase));
-            if (dirNameValid == false)
+            if (!dirs.Any(d => d.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
                 return LogInfo.LogErrorMessage(logs, $"Directory [{dirName}] not exists in [{scriptFile}]");
 
             if (!Directory.Exists(destDir))
             {
                 if (File.Exists(destDir))
                     return LogInfo.LogErrorMessage(logs, $"File [{destDir}] is not a directory");
-                else
-                    Directory.CreateDirectory(destDir);
+                Directory.CreateDirectory(destDir);
             }
 
             List<string> lines = sc.Sections[dirName].Lines;

@@ -458,6 +458,7 @@ namespace PEBakery.Core.Commands
             StringBuilder b = new StringBuilder(filePath);
             using (Process proc = new Process())
             {
+                proc.EnableRaisingEvents = true;
                 proc.StartInfo = new ProcessStartInfo(filePath);
                 if (!string.IsNullOrEmpty(info.Params))
                 {
@@ -537,16 +538,20 @@ namespace PEBakery.Core.Commands
                     }
 
                     // Register process instance in EngineState, and run it
-                    s.RunningSubProcess = proc;
-                    proc.Exited += (object sender, EventArgs e) => 
+                    if (cmd.Type != CodeType.ShellExecuteEx)
                     {
-                        s.RunningSubProcess = null;
-                        if (redirectStandardStream)
+                        s.RunningSubProcess = proc;
+                        proc.Exited += (object sender, EventArgs e) =>
                         {
-                            s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
-                            watch.Stop();
-                        }
-                    };
+                            s.RunningSubProcess = null;
+                            if (redirectStandardStream)
+                            {
+                                s.MainViewModel.BuildConOutRedirect = bConOut.ToString();
+                                watch.Stop();
+                            }
+                        };
+                    }
+                    
                     proc.Start();
 
                     if (redirectStandardStream)

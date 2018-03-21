@@ -429,7 +429,6 @@ namespace PEBakery.Core.Commands
             Debug.Assert(info != null, "Invalid CodeInfo");
 
             string fileName = StringEscaper.Preprocess(s, info.FileName);
-
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
 
