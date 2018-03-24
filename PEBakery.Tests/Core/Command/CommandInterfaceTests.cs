@@ -35,16 +35,17 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pTextBox1,%Dest%", @"200");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pTextBox1,%Dest%", @"21");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pTextBox1,%Dest%", @"StringValue");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pTextBox1,%Dest%", string.Empty);
 
             // 1 - TextLabel
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pTextLabel1,%Dest%", @"Display");
             ReadInterface_Template(s, $@"ReadInterface,Visible,{scriptFile},Interface,pTextLabel1,%Dest%", @"True");
-            ReadInterface_Template(s, $@"ReadInterface,Visible,{scriptFile},Interface,pTextLabel2,%Dest%", @"False");
             ReadInterface_Template(s, $@"ReadInterface,PosX,{scriptFile},Interface,pTextLabel1,%Dest%", @"20");
             ReadInterface_Template(s, $@"ReadInterface,PosY,{scriptFile},Interface,pTextLabel1,%Dest%", @"50");
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pTextLabel1,%Dest%", @"230");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pTextLabel1,%Dest%", @"18");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pTextLabel1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pTextLabel1,%Dest%", string.Empty);
 
             // 2 - NumberBox
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pNumberBox1,%Dest%", @"pNumberBox1");
@@ -54,6 +55,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pNumberBox1,%Dest%", @"40");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pNumberBox1,%Dest%", @"22");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pNumberBox1,%Dest%", @"3");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pNumberBox1,%Dest%", string.Empty);
 
             // 3 - CheckBox
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pCheckBox1,%Dest%", @"pCheckBox1");
@@ -63,6 +65,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pCheckBox1,%Dest%", @"200");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pCheckBox1,%Dest%", @"18");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pCheckBox1,%Dest%", @"True");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pCheckBox1,%Dest%", string.Empty);
 
             // 4 - ComboBox
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pComboBox1,%Dest%", @"A");
@@ -72,6 +75,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pComboBox1,%Dest%", @"150");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pComboBox1,%Dest%", @"21");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pComboBox1,%Dest%", @"A");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pComboBox1,%Dest%", string.Empty);
 
             // 5 - Image
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pImage1,%Dest%", @"Logo.jpg");
@@ -81,6 +85,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pImage1,%Dest%", @"40");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pImage1,%Dest%", @"40");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pImage1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pImage1,%Dest%", string.Empty);
 
             // 6 - TextFile
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pTextFile1,%Dest%", @"HelpMsg.txt");
@@ -90,6 +95,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pTextFile1,%Dest%", @"200");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pTextFile1,%Dest%", @"86");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pTextFile1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pTextFile1,%Dest%", string.Empty);
 
             // 8 - Button
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pButton1,%Dest%", @"ShowProgress");
@@ -100,6 +106,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pButton1,%Dest%", @"80");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pButton1,%Dest%", @"25");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pButton1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pButton1,%Dest%", string.Empty);
 
             // 10 - WebLabel
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pWebLabel1,%Dest%", @"GitHub");
@@ -109,6 +116,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pWebLabel1,%Dest%", @"32");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pWebLabel1,%Dest%", @"18");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pWebLabel1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pWebLabel1,%Dest%", string.Empty);
 
             // 11 - RadioButton
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pRadioButton1,%Dest%", @"pRadioButton1");
@@ -118,6 +126,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pRadioButton1,%Dest%", @"100");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pRadioButton1,%Dest%", @"20");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pRadioButton1,%Dest%", @"False");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pRadioButton1,%Dest%", string.Empty);
 
             // 12 - Bevel
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pBevel1,%Dest%", @"pBevel1");
@@ -127,6 +136,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pBevel1,%Dest%", @"235");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pBevel1,%Dest%", @"60");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pBevel1,%Dest%", null, ErrorCheck.Error);
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pBevel1,%Dest%", string.Empty);
 
             // 13 - FileBox
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pFileBox1,%Dest%", @"C:\Windows\notepad.exe");
@@ -136,6 +146,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pFileBox1,%Dest%", @"200");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pFileBox1,%Dest%", @"20");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pFileBox1,%Dest%", @"C:\Windows\notepad.exe");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pFileBox1,%Dest%", string.Empty);
 
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pFileBox2,%Dest%", @"E:\WinPE\");
             ReadInterface_Template(s, $@"ReadInterface,Visible,{scriptFile},Interface,pFileBox2,%Dest%", @"True");
@@ -144,6 +155,7 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pFileBox2,%Dest%", @"200");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pFileBox2,%Dest%", @"20");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pFileBox2,%Dest%", @"E:\WinPE\");
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pFileBox2,%Dest%", string.Empty);
 
             // 14 - RadioGroup
             ReadInterface_Template(s, $@"ReadInterface,Text,{scriptFile},Interface,pRadioGroup1,%Dest%", @"pRadioGroup1");
@@ -153,6 +165,12 @@ namespace PEBakery.Tests.Core.Command
             ReadInterface_Template(s, $@"ReadInterface,Width,{scriptFile},Interface,pRadioGroup1,%Dest%", @"150");
             ReadInterface_Template(s, $@"ReadInterface,Height,{scriptFile},Interface,pRadioGroup1,%Dest%", @"60");
             ReadInterface_Template(s, $@"ReadInterface,Value,{scriptFile},Interface,pRadioGroup1,%Dest%", @"0");
+
+            // Visible - False
+            ReadInterface_Template(s, $@"ReadInterface,Visible,{scriptFile},Interface,pTextLabel2,%Dest%", @"False");
+
+            // ToolTip
+            ReadInterface_Template(s, $@"ReadInterface,ToolTip,{scriptFile},Interface,pTextLabel3,%Dest%", @"PEBakery");
         }
 
         public void ReadInterface_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
@@ -177,7 +195,7 @@ namespace PEBakery.Tests.Core.Command
 
             string scriptFile = Path.Combine("%ProjectTemp%", "WriteInterface.script");
 
-            // 0 - TextBox
+            // Common
             WriteInterface_Template(s, $@"WriteInterface,Text,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
                 @"PEBakery,1,0,20,20,200,21,StringValue");
             WriteInterface_Template(s, $@"WriteInterface,Visible,{scriptFile},Interface,pTextBox1,False", @"pTextBox1",
@@ -190,6 +208,10 @@ namespace PEBakery.Tests.Core.Command
                 @"Display,1,0,20,20,30,21,StringValue");
             WriteInterface_Template(s, $@"WriteInterface,Height,{scriptFile},Interface,pTextBox1,10", @"pTextBox1",
                 @"Display,1,0,20,20,200,10,StringValue");
+            WriteInterface_Template(s, $@"WriteInterface,ToolTip,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
+                @"Display,1,0,20,20,200,21,StringValue,__PEBakery");
+
+            // 0 - TextBox
             WriteInterface_Template(s, $@"WriteInterface,Value,{scriptFile},Interface,pTextBox1,PEBakery", @"pTextBox1",
                 @"Display,1,0,20,20,200,21,PEBakery");
 

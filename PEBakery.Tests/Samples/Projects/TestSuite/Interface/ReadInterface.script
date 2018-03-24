@@ -18,12 +18,13 @@ pImage1=Logo.jpg,1,5,20,230,40,40,
 pTextFile1=HelpMsg.txt,1,6,240,20,200,86
 pButton1=ShowProgress,1,8,240,115,80,25,Hello,0,False,False,_Hello_,False
 pButton2=HideProgress,1,8,330,115,80,25,Hello,0,True,_Hello_,True
-pWebLabel1=GitHub,1,10,250,160,32,18,https://github.com/ied206/PEBakery
+pWebLabel1=GitHub,1,10,250,160,32,18,https://github.com/pebakery/PEBakery
 pRadioButton1=pRadioButton1,1,11,250,180,100,20,False
 pBevel1=pBevel1,1,12,240,150,235,60
 pFileBox1=C:\Windows\notepad.exe,1,13,240,230,200,20,file
 pFileBox2=E:\WinPE\,1,13,240,260,200,20,dir
 pTextLabel2=Hidden,0,1,20,50,280,18,8,Normal
+pTextLabel3=ToolTip,1,1,20,50,320,18,8,Normal,__PEBakery
 
 [Process]
 

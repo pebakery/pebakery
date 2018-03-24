@@ -205,6 +205,9 @@ namespace PEBakery.Core.Commands
                         return logs;
                     }
                     break;
+                case InterfaceElement.ToolTip:
+                    destStr = uiCmd.Info.ToolTip ?? string.Empty;
+                    break;
                 default:
                     throw new InternalException("Internal Logic Error at ReadInterface");
             }
@@ -304,6 +307,14 @@ namespace PEBakery.Core.Commands
 
                         if (success == false && varLogs.Count == 0)
                             return LogInfo.LogErrorMessage(logs, $"Writing [Value] to [{uiCmd.Type}] is not supported");
+                    }
+                    break;
+                case InterfaceElement.ToolTip:
+                    {
+                        if (finalValue.Length == 0 || finalValue.Equals("NIL", StringComparison.OrdinalIgnoreCase))
+                            uiCmd.Info.ToolTip = null; // Deletion
+                        else
+                            uiCmd.Info.ToolTip = finalValue; // Modify
                     }
                     break;
                 default:
@@ -487,9 +498,9 @@ namespace PEBakery.Core.Commands
                 case UserInputType.DirPath:
                 case UserInputType.FilePath:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile), "Invalid SubInfo");
+                        Debug.Assert(info.SubInfo.GetType() == typeof(UserInputInfo_DirFile), "Invalid UserInputInfo");
                         UserInputInfo_DirFile subInfo = info.SubInfo as UserInputInfo_DirFile;
-                        Debug.Assert(subInfo != null, "Invalid SubInfo");
+                        Debug.Assert(subInfo != null, "Invalid UserInputInfo");
 
                         System.Windows.Shell.TaskbarItemProgressState oldTaskbarItemProgressState = s.MainViewModel.TaskbarProgressState; // Save our progress state
                         s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Paused;

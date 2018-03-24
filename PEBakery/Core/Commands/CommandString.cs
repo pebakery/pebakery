@@ -113,8 +113,8 @@ namespace PEBakery.Core.Commands
                         StrFormatInfo_CeilFloorRound subInfo = info.SubInfo as StrFormatInfo_CeilFloorRound;
                         Debug.Assert(subInfo != null, "Invalid StrFormatInfo");
 
-                        // subInfo.SizeVar;
                         string roundToStr = StringEscaper.Preprocess(s, subInfo.RoundTo);
+
                         // Is roundToStr number?
                         if (!NumberHelper.ParseInt64(roundToStr, out long roundTo))
                         { // Is roundToStr is one of K, M, G, T, P?
@@ -139,23 +139,31 @@ namespace PEBakery.Core.Commands
                         if (!NumberHelper.ParseInt64(srcIntStr, out long srcInt))
                             return LogInfo.LogErrorMessage(logs, $"[{srcIntStr}] is not a valid integer");
                         long destInt;
-                        if (type == StrFormatType.Ceil)
+                        switch (type)
                         {
-                            long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder + roundTo;
-                        }
-                        else if (type == StrFormatType.Floor)
-                        {
-                            long remainder = srcInt % roundTo;
-                            destInt = srcInt - remainder;
-                        }
-                        else // if (type == StrFormatType.Round)
-                        {
-                            long remainder = srcInt % roundTo;
-                            if ((roundTo - 1) / 2 < remainder)
+                            case StrFormatType.Ceil:
+                            {
+                                long remainder = srcInt % roundTo;
                                 destInt = srcInt - remainder + roundTo;
-                            else
+                                break;
+                            }
+                            case StrFormatType.Floor:
+                            {
+                                long remainder = srcInt % roundTo;
                                 destInt = srcInt - remainder;
+                                break;
+                            }
+                            case StrFormatType.Round:
+                            {
+                                long remainder = srcInt % roundTo;
+                                if ((roundTo - 1) / 2 < remainder)
+                                    destInt = srcInt - remainder + roundTo;
+                                else
+                                    destInt = srcInt - remainder;
+                                break;
+                            }
+                            default:
+                                throw new InternalException($"Internal Logic Error at StrFormat,{type}");
                         }
 
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.SizeVar, destInt.ToString());
@@ -192,43 +200,46 @@ namespace PEBakery.Core.Commands
                         {
                             logs.Add(new LogInfo(LogState.Info, $"Source string [{srcStr}] is empty"));
                         }
-                        else 
+                        else
                         {
-                            if (type == StrFormatType.FileName)
+                            switch (type)
                             {
-                                destStr = Path.GetFileName(srcStr);
-                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
-                            }
-                            else if (type == StrFormatType.DirPath || type == StrFormatType.Path)
-                            { // Includes Last Seperator - Default WB082 Behavior
-                                int bsIdx = srcStr.LastIndexOf('\\');
-                                int sIdx = srcStr.LastIndexOf('/');
+                                case StrFormatType.FileName:
+                                    destStr = Path.GetFileName(srcStr);
+                                    logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s file name is [{destStr}]"));
+                                    break;
+                                case StrFormatType.DirPath:
+                                case StrFormatType.Path: // Includes Last Seperator - Default WB082 Behavior
+                                    int bsIdx = srcStr.LastIndexOf('\\');
+                                    int sIdx = srcStr.LastIndexOf('/');
 
-                                if (bsIdx != -1 && sIdx != -1)
-                                { // Slash and BackSlash cannot exist at same time
-                                    logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
-                                    return logs;
-                                }
+                                    if (bsIdx != -1 && sIdx != -1)
+                                    { // Slash and BackSlash cannot exist at same time
+                                        logs.Add(new LogInfo(LogState.Error, $"Path [{srcStr}] is invalid"));
+                                        return logs;
+                                    }
 
-                                if (bsIdx != -1)
-                                { // Normal file path
-                                    // destStr = Path.GetDirectoryName(srcStr) + '\\';
-                                    destStr = srcStr.Substring(0, bsIdx + 1);
-                                }
-                                else
-                                { // URL
-                                    if (sIdx == -1)
-                                        destStr = string.Empty;
+                                    if (bsIdx != -1)
+                                    { // Normal file path
+                                        // destStr = Path.GetDirectoryName(srcStr) + '\\';
+                                        destStr = srcStr.Substring(0, bsIdx + 1);
+                                    }
                                     else
-                                        destStr = srcStr.Substring(0, sIdx + 1);
-                                }
+                                    { // URL
+                                        if (sIdx == -1)
+                                            destStr = string.Empty;
+                                        else
+                                            destStr = srcStr.Substring(0, sIdx + 1);
+                                    }
                                 
-                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
-                            }
-                            else if (type == StrFormatType.Ext)
-                            {
-                                destStr = Path.GetExtension(srcStr);
-                                logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s extension is [{destStr}]"));
+                                    logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s directory path is [{destStr}]"));
+                                    break;
+                                case StrFormatType.Ext:
+                                    destStr = Path.GetExtension(srcStr);
+                                    logs.Add(new LogInfo(LogState.Success, $"Path [{srcStr}]'s extension is [{destStr}]"));
+                                    break;
+                                default:
+                                    throw new InternalException($"Internal Logic Error at StrFormat,{type}");
                             }
                         }
 

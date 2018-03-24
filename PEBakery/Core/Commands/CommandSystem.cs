@@ -49,19 +49,19 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_System));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_System), "Invalid CodeInfo");
             CodeInfo_System info = cmd.Info as CodeInfo_System;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             SystemType type = info.Type;
             switch (type)
             {
                 case SystemType.Cursor:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Cursor));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Cursor), "Invalid SystemInfo");
                         SystemInfo_Cursor subInfo = info.SubInfo as SystemInfo_Cursor;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         string iconStr = StringEscaper.Preprocess(s, subInfo.IconKind);
 
                         if (iconStr.Equals("WAIT", StringComparison.OrdinalIgnoreCase))
@@ -88,10 +88,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.ErrorOff:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_ErrorOff));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_ErrorOff), "Invalid SystemInfo");
                         SystemInfo_ErrorOff subInfo = info.SubInfo as SystemInfo_ErrorOff;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
                             throw new ExecuteException($"[{linesStr}] is not a valid integer");
@@ -108,10 +108,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetEnv:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetEnv));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetEnv), "Invalid SystemInfo");
                         SystemInfo_GetEnv subInfo = info.SubInfo as SystemInfo_GetEnv;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         string envVarName = StringEscaper.Preprocess(s, subInfo.EnvVarName);
                         string envVarValue = Environment.GetEnvironmentVariable(envVarName);
                         if (envVarValue == null) // Failure
@@ -127,8 +127,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeDrive:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeDrive));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeDrive), "Invalid SystemInfo");
                         SystemInfo_GetFreeDrive subInfo = info.SubInfo as SystemInfo_GetFreeDrive;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
                         DriveInfo[] drives = DriveInfo.GetDrives();
                         const string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -137,7 +138,6 @@ namespace PEBakery.Core.Commands
                         if (lastFreeLetter != '\0') // Success
                         {
                             logs.Add(new LogInfo(LogState.Success, $"Last free drive letter is [{lastFreeLetter}]"));
-                            // ReSharper disable once PossibleNullReferenceException
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, lastFreeLetter.ToString());
                             logs.AddRange(varLogs);
                         }
@@ -153,10 +153,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.GetFreeSpace:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeSpace));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_GetFreeSpace), "Invalid SystemInfo");
                         SystemInfo_GetFreeSpace subInfo = info.SubInfo as SystemInfo_GetFreeSpace;
-
-                        // ReSharper disable once PossibleNullReferenceException
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        
                         string path = StringEscaper.Preprocess(s, subInfo.Path);
 
                         FileInfo f = new FileInfo(path);
@@ -171,8 +171,9 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.IsAdmin:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_IsAdmin));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_IsAdmin), "Invalid SystemInfo");
                         SystemInfo_IsAdmin subInfo = info.SubInfo as SystemInfo_IsAdmin;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
                         bool isAdmin;
                         using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
@@ -186,17 +187,16 @@ namespace PEBakery.Core.Commands
                         else
                             logs.Add(new LogInfo(LogState.Success, "PEBakery is not running as Administrator"));
 
-                        // ReSharper disable once PossibleNullReferenceException
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, isAdmin.ToString());
                         logs.AddRange(varLogs);
                     }
                     break;
                 case SystemType.OnBuildExit:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnBuildExit));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnBuildExit), "Invalid SystemInfo");
                         SystemInfo_OnBuildExit subInfo = info.SubInfo as SystemInfo_OnBuildExit;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         s.OnBuildExit = subInfo.Cmd;
 
                         logs.Add(new LogInfo(LogState.Success, "OnBuildExit callback registered"));
@@ -204,10 +204,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.OnScriptExit:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnScriptExit));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_OnScriptExit), "Invalid SystemInfo");
                         SystemInfo_OnScriptExit subInfo = info.SubInfo as SystemInfo_OnScriptExit;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         s.OnScriptExit = subInfo.Cmd;
 
                         logs.Add(new LogInfo(LogState.Success, "OnScriptExit callback registered"));
@@ -247,10 +247,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.Load:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_Load), "Invalid SystemInfo");
                         SystemInfo_Load subInfo = info.SubInfo as SystemInfo_Load;
-
-                        // ReSharper disable once PossibleNullReferenceException
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
+                        
                         string filePath = StringEscaper.Preprocess(s, subInfo.FilePath);
                         SearchOption searchOption = SearchOption.AllDirectories;
                         if (subInfo.NoRec)
@@ -351,10 +351,10 @@ namespace PEBakery.Core.Commands
                     break;
                 case SystemType.SaveLog:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_SaveLog), "Invalid SystemInfo");
                         SystemInfo_SaveLog subInfo = info.SubInfo as SystemInfo_SaveLog;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
-                        // ReSharper disable once PossibleNullReferenceException
                         string destPath = StringEscaper.Preprocess(s, subInfo.DestPath);
                         string logFormatStr = StringEscaper.Preprocess(s, subInfo.LogFormat);
 
@@ -389,13 +389,13 @@ namespace PEBakery.Core.Commands
                 // WB082 Compatibility Shim
                 case SystemType.HasUAC:
                     {
-                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC));
+                        Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo_HasUAC), "Invalid SystemInfo");
                         SystemInfo_HasUAC subInfo = info.SubInfo as SystemInfo_HasUAC;
+                        Debug.Assert(subInfo != null, "Invalid SystemInfo");
 
                         logs.Add(new LogInfo(LogState.Warning, "[System,HasUAC] is deprecated"));
 
                         // Deprecated, WB082 Compability Shim
-                        // ReSharper disable once PossibleNullReferenceException
                         List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, "True");
                         logs.AddRange(varLogs);
                     }
@@ -439,10 +439,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute));
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_ShellExecute), "Invalid CodeInfo");
             CodeInfo_ShellExecute info = cmd.Info as CodeInfo_ShellExecute;
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
-            // ReSharper disable once PossibleNullReferenceException
             string verb = StringEscaper.Preprocess(s, info.Action);
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 

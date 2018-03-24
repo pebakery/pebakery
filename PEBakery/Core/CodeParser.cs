@@ -25,9 +25,6 @@
     not derived from or based on this program. 
 */
 
-// TODO: Full Lexer / Parser and AST!
-//       -> Experimental Parser in PEBakery.Core.Parser
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,8 +38,7 @@ namespace PEBakery.Core
 {
     public static class CodeParser
     {
-        #region Field
-        // Options
+        #region Static Fields
         public static bool OptimizeCode = true;
         public static bool AllowLegacyBranchCondition = true;
         public static bool AllowRegWriteLegacy = true;

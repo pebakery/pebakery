@@ -1535,7 +1535,7 @@ namespace PEBakery.Core
     [Serializable]
     public enum InterfaceElement
     {
-        Text, Visible, PosX, PosY, Width, Height, Value
+        Text, Visible, PosX, PosY, Width, Height, Value, ToolTip, 
     }
 
     [Serializable]
