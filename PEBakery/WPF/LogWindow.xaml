@@ -39,7 +39,8 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         Title="PEBakery Log Viewer"
         Width="900" Height="640"
-        MinWidth="640" MinHeight="480">
+        MinWidth="640" MinHeight="480"
+        d:DataContext="{d:DesignInstance Type=local:LogViewModel}">
     <Window.Resources>
         <Style TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />

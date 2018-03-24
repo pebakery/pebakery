@@ -16,6 +16,7 @@ namespace PEBakery
         public static string[] Args;
         public static int Version = 0;
         public static Logger Logger;
+        public static string BaseDir;
 
         void App_Startup(object sender, StartupEventArgs e)
         {

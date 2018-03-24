@@ -182,16 +182,16 @@ namespace PEBakery.Helper
 
         public static ImageBrush BitmapImageToImageBrush(BitmapImage bitmap)
         {
-            return new ImageBrush() { ImageSource = bitmap };
+            return new ImageBrush { ImageSource = bitmap };
         }
 
         public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin = 0)
         {
-            PackIconMaterial icon = new PackIconMaterial()
+            PackIconMaterial icon = new PackIconMaterial
             {
                 Kind = kind,
-                Width = Double.NaN,
-                Height = Double.NaN,
+                Width = double.NaN,
+                Height = double.NaN,
                 Margin = new Thickness(margin, margin, margin, margin),
             };
             return icon;

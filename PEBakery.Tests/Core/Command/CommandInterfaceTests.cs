@@ -190,9 +190,8 @@ namespace PEBakery.Tests.Core.Command
         [TestCategory("CommandInterface")]
         public void Interface_WriteInterface()
         { // WriteInterface,<Element>,<PluginFile>,<Section>,<Key>,<Value>
-            // Element = Text, Visible, PosX, PosY, Width, Height, Value
+            // Element = Text, Visible, PosX, PosY, Width, Height, Value, ToolTip
             EngineState s = EngineTests.CreateEngineState();
-
             string scriptFile = Path.Combine("%ProjectTemp%", "WriteInterface.script");
 
             // Common

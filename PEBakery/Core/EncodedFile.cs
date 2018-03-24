@@ -41,6 +41,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using XZ.NET;
 
 namespace PEBakery.Core
@@ -111,7 +113,7 @@ namespace PEBakery.Core
     #region EncodedFile
     public class EncodedFile
     {
-        #region Wrapper Methods
+        #region Enum EncodeMode 
         public enum EncodeMode : byte
         {
             ZLib = 0x00, // Type 1
@@ -137,7 +139,9 @@ namespace PEBakery.Core
 
             return mode;
         }
+        #endregion
 
+        #region AttachFile
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
@@ -164,29 +168,34 @@ namespace PEBakery.Core
 
             return Encode(sc, dirName, fileName, srcBuffer, type);
         }
+        #endregion
 
+        #region ExtractFile
         public static long ExtractFile(Script sc, string dirName, string fileName, Stream outStream)
         {
             if (sc == null) throw new ArgumentNullException(nameof(sc));
 
             string section = $"EncodedFile-{dirName}-{fileName}";
-            if (sc.Sections.ContainsKey(section) == false)
+            if (!sc.Sections.ContainsKey(section))
                 throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded, outStream);
         }
+        #endregion
 
+        #region ExtractLogo
         public static MemoryStream ExtractLogo(Script sc, out ImageHelper.ImageType type)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
 
-            if (sc.Sections.ContainsKey("AuthorEncoded") == false)
+            if (!sc.Sections.ContainsKey("AuthorEncoded"))
                 throw new ExtractFileNotFoundException("Directory [AuthorEncoded] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
 
-            if (fileDict.ContainsKey("Logo") == false)
+            if (!fileDict.ContainsKey("Logo"))
                 throw new ExtractFileNotFoundException($"Logo does not exist in \'{sc.Title}\'");
 
             string logoFile = fileDict["Logo"];
@@ -197,6 +206,47 @@ namespace PEBakery.Core
             return DecodeInMemory(encoded);
         }
 
+        public static Image ExtractLogoImage(Script sc, double? svgSize = null)
+        {
+            ImageSource imageSource;
+            using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
+            {
+                if (type == ImageHelper.ImageType.Svg)
+                {
+                    if (svgSize == null)
+                        imageSource = ImageHelper.SvgToBitmapImage(mem);
+                    else
+                        imageSource = ImageHelper.SvgToBitmapImage(mem, (double)svgSize, (double)svgSize);
+                }
+                else
+                {
+                    imageSource = ImageHelper.ImageToBitmapImage(mem);
+                }
+            }
+
+            return new Image
+            {
+                StretchDirection = StretchDirection.DownOnly,
+                Stretch = Stretch.Uniform,
+                UseLayoutRounding = true, // To prevent blurry image rendering
+                Source = imageSource,
+            };
+        }
+
+        public static bool LogoExists(Script sc)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            if (!sc.Sections.ContainsKey("AuthorEncoded"))
+                return false;
+
+            Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
+            return fileDict.ContainsKey("Logo");
+        }
+        #endregion
+
+        #region ExtractInterfaceEncoded
         public static MemoryStream ExtractInterfaceEncoded(Script sc, string fileName)
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";

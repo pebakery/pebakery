@@ -56,12 +56,11 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         public static int Count = 0;
-
-        UtilityViewModel m;
+        private readonly UtilityViewModel m;
 
         public UtilityWindow(FontHelper.WPFFont monoFont)
         {
-            Interlocked.Increment(ref UtilityWindow.Count);
+            Interlocked.Increment(ref Count);
 
             m = new UtilityViewModel(monoFont);
 
@@ -70,7 +69,9 @@ namespace PEBakery.WPF
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                MainWindow w = (Application.Current.MainWindow as MainWindow);
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                Debug.Assert(w != null, "MainWindow != null");
+
                 List<Project> projList = w.Projects.Projects;
                 for (int i = 0; i < projList.Count; i++)
                 {
@@ -88,7 +89,7 @@ namespace PEBakery.WPF
         #region Window Event
         private void Window_Closed(object sender, EventArgs e)
         {
-            Interlocked.Decrement(ref UtilityWindow.Count);
+            Interlocked.Decrement(ref Count);
         }
         #endregion
 
@@ -154,7 +155,9 @@ namespace PEBakery.WPF
                 MainViewModel mainModel = null;
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = (Application.Current.MainWindow as MainWindow);
+                    MainWindow w = Application.Current.MainWindow as MainWindow;
+                    Debug.Assert(w != null, "MainWindow != null");
+
                     logger = w.Logger;
                     setting = w.Setting;
                     mainModel = w.Model;
@@ -176,6 +179,7 @@ namespace PEBakery.WPF
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MainWindow w = Application.Current.MainWindow as MainWindow;
+                    Debug.Assert(w != null, "MainWindow != null");
 
                     w.DrawScript(w.CurMainTree.Script);
 
@@ -217,7 +221,7 @@ namespace PEBakery.WPF
             List<CodeCommand> cmds = CodeParser.ParseStatements(lines, addr, out List<LogInfo> errorLogs);
 
             // Check Macros
-            Macro macro = new Macro(project, project.Variables, out List<LogInfo> macroLogs);
+            Macro macro = new Macro(project, project.Variables, out _);
 
             if (macro.MacroEnabled)
             {
@@ -225,8 +229,9 @@ namespace PEBakery.WPF
                 {
                     if (cmd.Type == CodeType.Macro)
                     {
-                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro));
+                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
                         CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
+                        Debug.Assert(info != null, "Invalid CodeInfo");
 
                         if (!macro.MacroDict.ContainsKey(info.MacroType))
                             errorLogs.Add(new LogInfo(LogState.Error, $"Invalid CodeType or Macro [{info.MacroType}]", cmd));
@@ -255,10 +260,10 @@ namespace PEBakery.WPF
     #region UtiltiyViewModel
     public class UtilityViewModel : INotifyPropertyChanged
     {
-        public FontHelper.WPFFont MonoFont { get; private set; }
-        public FontFamily MonoFontFamily { get => MonoFont.FontFamily; }
-        public FontWeight MonoFontWeight { get => MonoFont.FontWeight; }
-        public double MonoFontSize { get => MonoFont.FontSizeInDIP; }
+        public FontHelper.WPFFont MonoFont { get; }
+        public FontFamily MonoFontFamily => MonoFont.FontFamily;
+        public FontWeight MonoFontWeight => MonoFont.FontWeight;
+        public double MonoFontSize => MonoFont.FontSizeInDIP;
 
         public UtilityViewModel(FontHelper.WPFFont monoFont)
         {
@@ -266,8 +271,7 @@ namespace PEBakery.WPF
         }
 
         #region CodeBox
-        private string codeFile;
-        public string CodeFile { get => codeFile; }
+        public string CodeFile { get; private set; }
 
         private int codeBox_SelectedProjectIndex;
         public int CodeBox_SelectedProjectIndex
@@ -280,11 +284,11 @@ namespace PEBakery.WPF
                     codeBox_SelectedProjectIndex = value;
 
                     Project proj = codeBox_Projects[value].Item2;
-                    codeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
-                    if (File.Exists(codeFile))
+                    CodeFile = System.IO.Path.Combine(proj.ProjectDir, "CodeBox.txt");
+                    if (File.Exists(CodeFile))
                     {
-                        Encoding encoding = FileHelper.DetectTextEncoding(codeFile);
-                        using (StreamReader reader = new StreamReader(codeFile, encoding))
+                        Encoding encoding = FileHelper.DetectTextEncoding(CodeFile);
+                        using (StreamReader reader = new StreamReader(CodeFile, encoding))
                         {
                             CodeBox_Input = reader.ReadToEnd();
                             OnPropertyUpdate("CodeBox_Input");

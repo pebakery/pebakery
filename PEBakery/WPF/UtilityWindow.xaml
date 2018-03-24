@@ -38,21 +38,22 @@
         FontSize="13"
         Closed="Window_Closed"
         Width="800" Height="640"
-        MinWidth="640" MinHeight="480">
+        MinWidth="640" MinHeight="480"
+        d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="60"></RowDefinition>
+            <RowDefinition/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="CodeBox">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="22"></RowDefinition>
-                        <RowDefinition Height="25"></RowDefinition>
-                        <RowDefinition Height="10"></RowDefinition>
-                        <RowDefinition Height="22"></RowDefinition>
-                        <RowDefinition></RowDefinition>
+                        <RowDefinition Height="22"/>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="22"/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"

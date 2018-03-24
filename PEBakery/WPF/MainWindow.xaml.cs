@@ -74,7 +74,7 @@ namespace PEBakery.WPF
         public Logger Logger { get; }
         private readonly ScriptCache _scriptCache;
 
-        private const int MaxDpiScale = 4;
+        public const int MaxDpiScale = 4;
         private int allScriptCount = 0;
         public SettingViewModel Setting { get; }
 
@@ -83,6 +83,7 @@ namespace PEBakery.WPF
 
         public LogWindow LogDialog = null;
         public UtilityWindow UtilityDialog = null;
+        public ScriptEditWindow ScriptEditDialog = null;
         #endregion
 
         #region Constructor
@@ -115,6 +116,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
+                        // ReSharper disable once LocalizableElement
                         Console.WriteLine("\'/basedir\' must be used with path\r\n");
                     }
                 }
@@ -122,11 +124,12 @@ namespace PEBakery.WPF
                     || args[i].Equals("/help", StringComparison.OrdinalIgnoreCase)
                     || args[i].Equals("/h", StringComparison.OrdinalIgnoreCase))
                 {
+                    // ReSharper disable once LocalizableElement
                     Console.WriteLine("Sorry, help message not implemented\r\n");
                 }
             }
 
-            BaseDir = argBaseDir;
+            App.BaseDir = BaseDir = argBaseDir;
 
             var settingFile = System.IO.Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new SettingViewModel(settingFile);
@@ -535,7 +538,7 @@ namespace PEBakery.WPF
 
                 if (errorWarns == 0)
                 {
-                    Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGreen);                   
+                    Model.ScriptCheckResult = true;
 
                     if (!quiet)
                     {
@@ -548,7 +551,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.Orange);
+                    Model.ScriptCheckResult = false;
 
                     if (!quiet)
                     {
@@ -580,7 +583,7 @@ namespace PEBakery.WPF
         {
             DrawScriptLogo(sc);
 
-            Model.ScriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
+            Model.ScriptCheckResult = null;
 
             MainCanvas.Children.Clear();
             if (sc.Type == ScriptType.Directory)
@@ -628,23 +631,7 @@ namespace PEBakery.WPF
             {
                 try
                 {
-                    ImageSource imageSource;
-
-                    using (MemoryStream mem = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
-                    {                       
-                        if (type == ImageHelper.ImageType.Svg)
-                            imageSource = ImageHelper.SvgToBitmapImage(mem, size, size);
-                        else
-                            imageSource = ImageHelper.ImageToBitmapImage(mem);
-                    }
-
-                    Image image = new Image
-                    {
-                        StretchDirection = StretchDirection.DownOnly,
-                        Stretch = Stretch.Uniform,
-                        UseLayoutRounding = true, // To prevent blurry image rendering
-                        Source = imageSource,
-                    };
+                    Image image = EncodedFile.ExtractLogoImage(sc, size);
 
                     Grid grid = new Grid();
                     grid.Children.Add(image);
@@ -878,7 +865,7 @@ namespace PEBakery.WPF
             }
         }
 
-        private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
+        private void ScriptOpenExternalButton_Click(object sender, RoutedEventArgs e)
         {
             if (CurMainTree?.Script == null)
                 return;
@@ -888,6 +875,22 @@ namespace PEBakery.WPF
 
             Script sc = CurMainTree.Script;
             OpenTextFile(sc.RealPath, false);
+        }
+
+        private void ScriptEditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurMainTree?.Script == null)
+                return;
+
+            if (Model.WorkInProgress)
+                return;
+
+            Script sc = CurMainTree.Script;
+            if (ScriptEditWindow.Count == 0)
+            {
+                ScriptEditDialog = new ScriptEditWindow(sc);
+                ScriptEditDialog.ShowDialog(); // Open as Modal
+            }
         }
 
         private void ScriptRefreshButton_Click(object sender, RoutedEventArgs e)
@@ -1197,6 +1200,12 @@ namespace PEBakery.WPF
                 UtilityDialog = null;
             }
 
+            if (0 < ScriptEditWindow.Count)
+            {
+                ScriptEditDialog.Close();
+                ScriptEditDialog = null;
+            }
+
             // TODO: Do this in more cleaner way
             while (refreshWorker.IsBusy)
                 await Task.Delay(500);
@@ -1311,22 +1320,74 @@ namespace PEBakery.WPF
             {
                 isTreeEntryFile = value;
                 OnPropertyUpdate(nameof(IsTreeEntryFile));
-                OnPropertyUpdate(nameof(EditButtonToopTip));
-                OnPropertyUpdate(nameof(EditButtonIconKind));
+                OnPropertyUpdate(nameof(OpenExternalButtonToopTip));
+                OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
         }
 
-        public string EditButtonToopTip => IsTreeEntryFile ? "Edit Script" : "Open Folder";
-        public PackIconMaterialKind EditButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.Pencil : PackIconMaterialKind.Folder;
+        public string OpenExternalButtonToopTip => IsTreeEntryFile ? "Open Editor" : "Open Folder";
+        public PackIconMaterialKind OpenExternalButtonIconKind  => IsTreeEntryFile ? PackIconMaterialKind.OpenInApp : PackIconMaterialKind.Folder;
 
-        private Brush scriptCheckButtonColor = new SolidColorBrush(Colors.LightGray);
-        public Brush ScriptCheckButtonColor
+        private bool? scriptCheckResult = null;
+        public bool? ScriptCheckResult
         {
-            get => scriptCheckButtonColor;
+            get => scriptCheckResult;
             set
             {
-                scriptCheckButtonColor = value;
-                OnPropertyUpdate(nameof(ScriptCheckButtonColor));
+                scriptCheckResult = value;
+                OnPropertyUpdate(nameof(ScriptCheckIcon));
+                OnPropertyUpdate(nameof(ScriptCheckColor));
+                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
+            }
+        }
+
+        public PackIconMaterialKind ScriptCheckIcon
+        {
+            get
+            {
+                switch (scriptCheckResult)
+                {
+                    case true:
+                        return PackIconMaterialKind.CheckboxMarked;
+                    case false:
+                        return PackIconMaterialKind.CloseBox;
+                    default: // null
+                        return PackIconMaterialKind.None;
+                }
+            }
+        }
+
+        public Brush ScriptCheckColor
+        {
+            get
+            {
+                switch (scriptCheckResult)
+                {
+                    case true:
+                        return new SolidColorBrush(Colors.Green);
+                    case false:
+                        return new SolidColorBrush(Colors.Red);
+                    default: // null
+                        return new SolidColorBrush(Colors.Transparent);
+                }
+            }
+        }
+
+        public Visibility ScriptCheckVisiblility
+        {
+            get
+            {
+                if (!IsTreeEntryFile)
+                    return Visibility.Collapsed;
+
+                switch (scriptCheckResult)
+                {
+                    case true:
+                    case false:
+                        return Visibility.Visible;
+                    default: // null
+                        return Visibility.Collapsed;
+                }
             }
         }
 

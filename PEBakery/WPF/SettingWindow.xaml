@@ -38,7 +38,8 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded"
         Title="PEBakery Setting"
-        Width="600" Height="480">
+        Width="600" Height="480"
+        d:DataContext="{d:DesignInstance Type=local:SettingViewModel}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition></RowDefinition>
@@ -106,7 +107,7 @@
                                         <iconPacks:PackIconMaterial Kind="FolderOpen"
                                                                     Width="Auto"
                                                                     Height="Auto"
-                                                                    Margin="2"/>    
+                                                                    Margin="2"/>
                                     </Button.Content>
                                 </Button>
                                 <Button Grid.Column="3"
@@ -287,7 +288,7 @@
                                       VerticalContentAlignment="Center"
                                       IsChecked="{Binding Interface_UseCustomEditor}"
                                       Content="Use Custom Editor" />
-                            <DockPanel>
+                            <DockPanel Height="25">
                                 <Button DockPanel.Dock="Right"
                                         Width="25"
                                         VerticalContentAlignment="Center"

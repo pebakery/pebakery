@@ -508,8 +508,7 @@
                                       Margin="14"
                                       VerticalAlignment="Center"
                                       HorizontalAlignment="Center"
-                                      UseLayoutRounding="True">
-                    </ContentPresenter>
+                                      UseLayoutRounding="True"/>
                     <Grid Grid.Row="0" Grid.Column="1"
                           Margin="0, 0, 6, 0">
                         <Grid.RowDefinitions>
@@ -517,7 +516,8 @@
                             <RowDefinition Height="70" />
                         </Grid.RowDefinitions>
 
-                        <DockPanel Grid.Row="0">
+                        <DockPanel Grid.Row="0"
+                                   VerticalAlignment="Center">
                             <TextBlock DockPanel.Dock="Right"
                                        Name="ScriptVersion"
                                        Text="{Binding ScriptVersionText}"
@@ -532,6 +532,17 @@
                                        HorizontalAlignment="Right"
                                        FontStretch="Condensed"
                                        TextWrapping="Wrap" />
+                            <Button DockPanel.Dock="Left"
+                                    Margin="0, 6, 5, 3"
+                                    Click="ScriptCheckButton_Click"
+                                    IsEnabled="{Binding IsTreeEntryFile}"
+                                    Visibility="{Binding ScriptCheckVisiblility}"
+                                    BorderThickness="0"
+                                    Background="Transparent"
+                                    Foreground="{Binding ScriptCheckColor}"
+                                    ToolTip="Syntax Check">
+                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"/>
+                            </Button>
                             <TextBlock DockPanel.Dock="Left"
                                        Name="ScriptTitle"
                                        FontStretch="SemiCondensed"
@@ -585,23 +596,22 @@
                         <Button Grid.Row="2"
                                 Grid.Column="0"
                                 Click="ScriptEditButton_Click"
-                                ToolTip="{Binding EditButtonToopTip}">
+                                IsEnabled="{Binding IsTreeEntryFile}"
+                                ToolTip="Edit Script">
+                            <iconPacks:PackIconMaterial Kind="Pencil"
+                                                        Width="Auto"
+                                                        Height="Auto" Margin="4"/>
+                        </Button>
+                        <Button Grid.Row="3"
+                                Grid.Column="0"
+                                Click="ScriptOpenExternalButton_Click"
+                                ToolTip="{Binding OpenExternalButtonToopTip}">
                             <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="{Binding EditButtonIconKind}"
+                                <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="4"/>
                             </Button.Content>
-                        </Button>
-                        <Button Grid.Row="3"
-                                Grid.Column="0"
-                                Click="ScriptCheckButton_Click"
-                                Background="{Binding ScriptCheckButtonColor}"
-                                IsEnabled="{Binding IsTreeEntryFile}"
-                                ToolTip="Syntax Check">
-                            <iconPacks:PackIconMaterial Kind="Check"
-                                                        Width="Auto"
-                                                        Height="Auto" Margin="4"/>
                         </Button>
                     </Grid>
                 </Grid>
