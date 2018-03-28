@@ -292,7 +292,12 @@ namespace PEBakery.Core
         public void ForceStop()
         {
             s.MainViewModel.TaskbarProgressState = System.Windows.Shell.TaskbarItemProgressState.Error;
-            s.RunningSubProcess?.Kill();
+            if (s.RunningSubProcess != null)
+            {
+                try { s.RunningSubProcess.Kill(); }
+                catch { /* Ignore error */ }
+                s.RunningSubProcess = null;
+            }
             s.RunningWebClient?.CancelAsync();
             s.UserHaltFlag = true;
         }

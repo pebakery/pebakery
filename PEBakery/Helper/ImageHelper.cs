@@ -187,14 +187,13 @@ namespace PEBakery.Helper
 
         public static PackIconMaterial GetMaterialIcon(PackIconMaterialKind kind, double margin = 0)
         {
-            PackIconMaterial icon = new PackIconMaterial
+            return new PackIconMaterial
             {
                 Kind = kind,
                 Width = double.NaN,
                 Height = double.NaN,
                 Margin = new Thickness(margin, margin, margin, margin),
             };
-            return icon;
         }
     }
     #endregion

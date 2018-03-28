@@ -56,8 +56,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultValue = 0;
         public decimal Value
         {
-            get { return (decimal)GetValue(ValueProperty); }
-            set { SetValue(ValueProperty, value); }
+            get => (decimal)GetValue(ValueProperty);
+            set => SetValue(ValueProperty, value);
         }
 
         public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(FreeNumberBox),
@@ -66,8 +66,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultMinimum = 0;
         public decimal Minimum 
         {
-            get { return (decimal)GetValue(MinimumProperty);  }
-            set { SetValue(MinimumProperty, value); }
+            get => (decimal)GetValue(MinimumProperty);
+            set => SetValue(MinimumProperty, value);
         }
 
         public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register("Minimum", typeof(decimal), typeof(FreeNumberBox),
@@ -76,8 +76,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultMaximum = ushort.MaxValue;
         public decimal Maximum
         {
-            get { return (decimal)GetValue(MaximumProperty); }
-            set { SetValue(MaximumProperty, value); }
+            get => (decimal)GetValue(MaximumProperty);
+            set => SetValue(MaximumProperty, value);
         }
 
         public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register("Maximum", typeof(decimal), typeof(FreeNumberBox),
@@ -86,8 +86,8 @@ namespace PEBakery.WPF.Controls
         private const decimal DefaultIncrementUnit = 1;
         public decimal IncrementUnit
         {
-            get { return (decimal)GetValue(IncrementUnitProperty); }
-            set { SetValue(IncrementUnitProperty, value); }
+            get => (decimal)GetValue(IncrementUnitProperty);
+            set => SetValue(IncrementUnitProperty, value);
         }
 
         public static readonly DependencyProperty IncrementUnitProperty = DependencyProperty.Register("IncrementUnit", typeof(decimal), typeof(FreeNumberBox),
@@ -96,8 +96,8 @@ namespace PEBakery.WPF.Controls
         private const int DefaultDecimalPlaces = 0;
         public int DecimalPlaces
         {
-            get { return (int)GetValue(DecimalPlacesProperty); }
-            set { SetValue(DecimalPlacesProperty, value); }
+            get => (int)GetValue(DecimalPlacesProperty);
+            set => SetValue(DecimalPlacesProperty, value);
         }
 
         public static readonly DependencyProperty DecimalPlacesProperty = DependencyProperty.Register("DecimalPlaces", typeof(int), typeof(FreeNumberBox),
@@ -137,8 +137,8 @@ namespace PEBakery.WPF.Controls
 
         public event RoutedPropertyChangedEventHandler<decimal> ValueChanged
         {
-            add { AddHandler(ValueChangedEvent, value); }
-            remove { RemoveHandler(ValueChangedEvent, value); }
+            add => AddHandler(ValueChangedEvent, value);
+            remove => RemoveHandler(ValueChangedEvent, value);
         }
 
         protected virtual void OnValueChanged(RoutedPropertyChangedEventArgs<decimal> args)
@@ -160,7 +160,7 @@ namespace PEBakery.WPF.Controls
 
             e.Handled = !check;
 
-            base.OnPreviewTextInput(e);
+            OnPreviewTextInput(e);
         }
         #endregion
 

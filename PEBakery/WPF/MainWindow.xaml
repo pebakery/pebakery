@@ -519,21 +519,34 @@
                         <DockPanel Grid.Row="0"
                                    VerticalAlignment="Center">
                             <TextBlock DockPanel.Dock="Right"
+                                       Margin="0, 0, 0, 2"
                                        Name="ScriptVersion"
                                        Text="{Binding ScriptVersionText}"
-                                       FontWeight="Bold" FontSize="14" 
-                                       VerticalAlignment="Center"/>
+                                       FontWeight="Bold"
+                                       FontSize="14" 
+                                       VerticalAlignment="Bottom"/>
                             <TextBlock DockPanel.Dock="Right"
                                        Name="ScriptAuthor"
                                        Text="{Binding ScriptAuthorText}" 
-                                       Margin="0, 0, 5, 6"
+                                       Margin="0, 0, 5, 2"
                                        FontSize="12"
                                        VerticalAlignment="Bottom"
                                        HorizontalAlignment="Right"
                                        FontStretch="Condensed"
                                        TextWrapping="Wrap" />
+                            <TextBlock DockPanel.Dock="Left"
+                                       Name="ScriptTitle"
+                                       FontStretch="SemiCondensed"
+                                       Text="{Binding ScriptTitleText}" 
+                                       FontWeight="Bold" FontSize="16"
+                                       VerticalAlignment="Bottom"
+                                       TextWrapping="Wrap"/>
                             <Button DockPanel.Dock="Left"
-                                    Margin="0, 6, 5, 3"
+                                    Margin="4, 0, 0, 2"
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
                                     Click="ScriptCheckButton_Click"
                                     IsEnabled="{Binding IsTreeEntryFile}"
                                     Visibility="{Binding ScriptCheckVisiblility}"
@@ -541,15 +554,10 @@
                                     Background="Transparent"
                                     Foreground="{Binding ScriptCheckColor}"
                                     ToolTip="Syntax Check">
-                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"/>
+                                <iconPacks:PackIconMaterial Kind="{Binding ScriptCheckIcon}"
+                                                            Width="Auto"
+                                                            Height="Auto"/>
                             </Button>
-                            <TextBlock DockPanel.Dock="Left"
-                                       Name="ScriptTitle"
-                                       FontStretch="SemiCondensed"
-                                       Text="{Binding ScriptTitleText}" 
-                                       FontWeight="Bold" FontSize="16"
-                                       VerticalAlignment="Center"
-                                       TextWrapping="Wrap"/>
                         </DockPanel>
                         <TextBlock Grid.Row="1" Grid.Column="0"
                                    FontWeight="Medium"
@@ -576,12 +584,10 @@
                                 Click="ScriptRunButton_Click"
                                 IsEnabled="{Binding IsTreeEntryFile}"
                                 ToolTip="Run Script">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="Play"
+                            <iconPacks:PackIconMaterial Kind="Play"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="4"/>
-                            </Button.Content>
                         </Button>
                         <Button Grid.Row="1"
                                 Grid.Column="0"
@@ -606,12 +612,10 @@
                                 Grid.Column="0"
                                 Click="ScriptOpenExternalButton_Click"
                                 ToolTip="{Binding OpenExternalButtonToopTip}">
-                            <Button.Content>
-                                <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
+                            <iconPacks:PackIconMaterial Kind="{Binding OpenExternalButtonIconKind}"
                                                             Width="Auto"
                                                             Height="Auto"
                                                             Margin="4"/>
-                            </Button.Content>
                         </Button>
                     </Grid>
                 </Grid>

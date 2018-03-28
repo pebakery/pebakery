@@ -562,7 +562,7 @@ namespace PEBakery.Core
         #region CheckMainSection
         private void CheckMainSection(ScriptType type)
         {
-            if (_sections.ContainsKey("Main") == false)
+            if (!_sections.ContainsKey("Main"))
                 throw new ScriptParseException($"[{_realPath}] is invalid, please Add [Main] Section");
 
             bool fail = true;

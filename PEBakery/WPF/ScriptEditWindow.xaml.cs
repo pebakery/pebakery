@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,13 +22,15 @@ using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
 using PEBakery.Core;
 using PEBakery.Helper;
+using PEBakery.IniLib;
+using PEBakery.WPF.Controls;
 
 namespace PEBakery.WPF
 {
     #region ScriptEditWindow
     public partial class ScriptEditWindow : Window
     {
-        #region Field
+        #region Field and Property
         public static int Count = 0;
 
         private Script _sc;
@@ -45,44 +49,66 @@ namespace PEBakery.WPF
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
 
-                PopulateInformation();
+                ReadScript();
             }
             catch
             { // Rollback Count to 0
                 Interlocked.Decrement(ref Count);
                 throw;
             }
-            
-            /*
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                Debug.Assert(w != null, "MainWindow != null");
-
-                List<Project> projList = w.Projects.Projects;
-                for (int i = 0; i < projList.Count; i++)
-                {
-                    Project proj = projList[i];
-
-                    m.CodeBox_Projects.Add(new Tuple<string, Project>(proj.ProjectName, proj));
-
-                    if (proj.ProjectName.Equals(w.CurMainTree.Script.Project.ProjectName, StringComparison.Ordinal))
-                        m.CodeBox_SelectedProjectIndex = i;
-                }
-            });
-            */
         }
         #endregion
 
-        #region PopulateInformation
-        private void PopulateInformation()
+        #region ReadScript
+        private void ReadScript()
         {
+            // Nested Function
+            string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
+            int GetIntValue(string key, int defaultValue = 0)
+            {
+                if (_sc.MainInfo.ContainsKey(key))
+                {
+                    return NumberHelper.ParseInt32(key, out int intVal) ? intVal : defaultValue;
+                }
+                else
+                {
+                    return defaultValue;
+                }
+            }
+
             // General
             if (EncodedFile.LogoExists(_sc))
                 m.ScriptLogo = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
             else
                 m.ScriptLogo = ScriptEditViewModel.ScriptLogoDefault;
-            m.ScriptTitle = _sc.MainInfo["Title"];
+            m.ScriptTitle = _sc.Title; // GetStringValue("Title"); 
+            m.ScriptAuthor = _sc.Author; // GetStringValue("Author");
+            m.ScriptVersion = _sc.Version; // GetStringValue("Version");
+            m.ScriptDate = GetStringValue("Date");
+            m.ScriptLevel = _sc.Level; // GetIntValue("Level", 0);
+            m.ScriptDescription = _sc.Description;  // GetStringValue("Description");
+            m.ScriptSelectedState = _sc.Selected;
+            m.ScriptMandatory = _sc.Mandatory;
+        }
+        #endregion
+
+        #region WriteScript
+        private void WriteScript()
+        {
+            IniKey[] keys =
+            {
+                new IniKey("Main", "Title", m.ScriptTitle),
+                new IniKey("Main", "Author", m.ScriptAuthor),
+                new IniKey("Main", "Version", m.ScriptVersion.ToString()),
+                new IniKey("Main", "Date", m.ScriptDate),
+                new IniKey("Main", "Level", ((int)m.ScriptLevel).ToString()),
+                new IniKey("Main", "Description", m.ScriptDescription),
+                new IniKey("Main", "Selected", m.ScriptSelectedState.ToString()),
+                new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
+            };
+
+            Ini.SetKeys(_sc.RealPath, keys);
+            _sc = _sc.Project.RefreshScript(_sc);
         }
         #endregion
 
@@ -92,58 +118,62 @@ namespace PEBakery.WPF
             Interlocked.Decrement(ref Count);
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            WriteScript();
+
+            DialogResult = true;
+            Tag = _sc;
 
             Close();
         }
-        #endregion
 
-        #region Button Event - Attachment
-        private void NewFolderButton_Click(object sender, RoutedEventArgs e)
+        private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
+            WriteScript();
 
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                Debug.Assert(w != null);
+
+                w.DrawScript(_sc);
+            });
         }
 
-        private void RemoveFolderButton_Click(object sender, RoutedEventArgs e)
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-
+            DialogResult = false;
+            Tag = _sc;
+            Close();
         }
         #endregion
 
         #region Button Event - General
         private void ScriptLogoAttachButton_Click(object sender, RoutedEventArgs e)
         {
-            /*
-            if (EncodedFile.LogoExists(_sc))
+            OpenFileDialog dialog = new OpenFileDialog
             {
-                using (MemoryStream ms = EncodedFile.ExtractLogo(_sc, out ImageHelper.ImageType type))
+                InitialDirectory = App.BaseDir,
+                Filter = "Supported Image (bmp, jpg, png, gif, ico, svg)|*.bmp;*.jpg;*.png;*.gif;*.ico;*.svg",
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string srcFile = dialog.FileName;
+                try
+                { 
+                    string srcFileName = System.IO.Path.GetFileName(srcFile);
+                    _sc = EncodedFile.AttachLogo(_sc, "AuthorEncoded", srcFileName, srcFile, EncodedFile.EncodeMode.ZLib);
+                    MessageBox.Show("Logo successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ReadScript();
+                }
+                catch (Exception ex)
                 {
-                    SaveFileDialog dialog = new SaveFileDialog
-                    {
-                        InitialDirectory = App.BaseDir,
-                        OverwritePrompt = true,
-                        DefaultExt = $".{type}",
-                        AddExtension = true,
-                    };
-
-                    if (dialog.ShowDialog() == true)
-                    {
-                        string destPath = dialog.FileName;
-                        using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                        {
-                            ms.CopyTo(fs);
-                        }
-
-                        MessageBox.Show($"Logo of script extracted to [{destPath}]", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    App.Logger.System_Write(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show("Attach failed.\r\nSee system log for details.", "Attach Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            else
-            {
-                MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Extract Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-                */
         }
 
         private void ScriptLogoExtractButton_Click(object sender, RoutedEventArgs e)
@@ -156,7 +186,7 @@ namespace PEBakery.WPF
                     {
                         InitialDirectory = App.BaseDir,
                         OverwritePrompt = true,
-                        Filter = $"Image (.{type.ToString().ToLower()})|*.{type}",
+                        Filter = $"Image ({type.ToString().ToLower()})|*.{type}",
                         DefaultExt = $".{type}",
                         AddExtension = true,
                     };
@@ -190,15 +220,62 @@ namespace PEBakery.WPF
 
         private void ScriptLogoDeleteButton_Click(object sender, RoutedEventArgs e)
         {
+            if (EncodedFile.LogoExists(_sc))
+            {
+                _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
+                if (errorMsg == null)
+                {
+                    MessageBox.Show("Logo successfully deleted.", "Delete Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ReadScript();
+                }
+                else
+                {
+                    App.Logger.System_Write(new LogInfo(LogState.Error, errorMsg));
+                    MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
+        private void ScriptLevelNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+        {
+            m.ScriptLevel = e.NewValue;
         }
         #endregion
+
+        #region Event Handler - Attachment
+        private void NewFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void RemoveFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ScriptAttachTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            
+        }
+        #endregion
+
     }
     #endregion
 
     #region ScriptEditViewModel
     public class ScriptEditViewModel : INotifyPropertyChanged
     {
+        #region Constructor
+        public ScriptEditViewModel()
+        {
+            ScriptLogoDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
+        }
+        #endregion
+
         #region Field and Property - General
         public static readonly PackIconMaterial ScriptLogoDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
         private FrameworkElement scriptLogo = ScriptLogoDefault;
@@ -222,9 +299,134 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(ScriptTitle));
             }
         }
+
+        private string scriptAuthor = string.Empty;
+        public string ScriptAuthor
+        {
+            get => scriptAuthor;
+            set
+            {
+                scriptAuthor = value;
+                OnPropertyUpdate(nameof(ScriptAuthor));
+            }
+        }
+
+        private int scriptVersion = 0;
+        public int ScriptVersion
+        {
+            get => scriptVersion;
+            set
+            {
+                scriptVersion = value;
+                OnPropertyUpdate(nameof(ScriptVersion));
+            }
+        }
+
+        private string scriptDate = string.Empty;
+        public string ScriptDate
+        {
+            get => scriptDate;
+            set
+            {
+                scriptDate = value;
+                OnPropertyUpdate(nameof(ScriptDate));
+            }
+        }
+
+        private decimal scriptLevel = 0;
+        public decimal ScriptLevel
+        {
+            get => scriptLevel;
+            set
+            {
+                scriptLevel = value;
+                OnPropertyUpdate(nameof(ScriptLevel));
+            }
+        }
+
+        private string scriptDescription = string.Empty;
+        public string ScriptDescription
+        {
+            get => scriptDescription;
+            set
+            {
+                scriptDescription = value;
+                OnPropertyUpdate(nameof(ScriptDescription));
+            }
+        }
+
+        private SelectedState scriptSelectedState = SelectedState.False;
+        public SelectedState ScriptSelectedState
+        {
+            get => scriptSelectedState;
+            set
+            {
+                scriptSelectedState = value;
+                OnPropertyUpdate(nameof(ScriptSelected));
+            }
+        }
+
+        [SuppressMessage("ReSharper", "RedundantCaseLabel")]
+        public bool? ScriptSelected
+        {
+            get
+            {
+                switch (scriptSelectedState)
+                {
+                    case SelectedState.True:
+                        return true;
+                    default:
+                    case SelectedState.False:
+                        return false;
+                    case SelectedState.None:
+                        return null;
+                }
+            }
+            set
+            {
+                switch (value)
+                {
+                    case true:
+                        scriptSelectedState = SelectedState.True;
+                        return;
+                    default:
+                    case false:
+                        scriptSelectedState = SelectedState.False;
+                        return;
+                    case null:
+                        scriptSelectedState = SelectedState.None;
+                        return;                      
+                }
+            }
+        }
+
+        private bool scriptMandatory = false;
+        public bool ScriptMandatory
+        {
+            get => scriptMandatory;
+            set
+            {
+                scriptMandatory = value;
+                OnPropertyUpdate(nameof(ScriptMandatory));
+            }
+        }
         #endregion
 
-        #region Utility
+        #region OnPropertyChnaged
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyUpdate(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
+    }
+    #endregion
+
+    #region ScriptAttachTreeViewModel
+
+    public class ScriptAttachTreeViewModel : INotifyPropertyChanged
+    {
+        #region OnPropertyChnaged
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
         {

@@ -32,6 +32,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PEBakery.WPF"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:custom="clr-namespace:PEBakery.WPF.Controls"
         mc:Ignorable="d"
         Title="Edit Script"
         FontFamily="Segoe UI"
@@ -53,118 +54,181 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
+                    <!-- Script Description -->
+                    <Grid Grid.Row="0"
+                            Margin="10, 0, 0, 0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Title -->
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Title"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"
+                                    />
+                        <TextBox Grid.Row="0" Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding ScriptTitle}"/>
+
+                        <!-- Author -->
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Author"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"/>
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding ScriptAuthor}"/>
+
+                        <!-- Description -->
+                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                    Margin="0, 0, 5, 0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"
+                                    Text="Description"/>
+                        <TextBox Grid.Row="2" Grid.Column="1"
+                                    Grid.RowSpan="3"
+                                    Height="70"
+                                    Text="{Binding ScriptDescription}"
+                                    TextWrapping="Wrap"
+                                    VerticalAlignment="Center"/>
+
+                        <!-- Version -->
+                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Version"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"/>
+                        <TextBox Grid.Row="0" Grid.Column="3"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding ScriptVersion}"/>
+
+                        <!-- Date -->
+                        <TextBlock Grid.Row="1" Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Date"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"/>
+                        <TextBox Grid.Row="1" Grid.Column="3"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding ScriptDate}"/>
+
+                        <!-- Level -->
+                        <TextBlock Grid.Row="2" Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"
+                                    Text="Level"/>
+                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
+                                                VerticalAlignment="Center"
+                                                Minimum="-256"
+                                                Maximum="255"
+                                                IncrementUnit="1"
+                                                Value="{Binding ScriptLevel}"
+                                                ValueChanged="ScriptLevelNumberBox_ValueChanged"/>
+
+                        <!-- Selected -->
+                        <TextBlock Grid.Row="3" Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Selected"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"/>
+                        <CheckBox Grid.Row="3" Grid.Column="3"
+                                    IsThreeState="True"
+                                    IsChecked="{Binding ScriptSelected}"
+                                    VerticalAlignment="Center"/>
+                        <!-- Mandatory -->
+                        <TextBlock Grid.Row="4" Grid.Column="2"
+                                    Margin="0, 0, 5, 0"
+                                    Text="Mandatory"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontWeight="Bold"/>
+                        <CheckBox Grid.Row="4" Grid.Column="3" 
+                                    IsChecked="{Binding ScriptMandatory}"
+                                    VerticalAlignment="Center"/>
+                    </Grid>
+                    <!-- Script Logo -->
+                    <Grid Grid.Row="1"
+                          Width="125"
+                          Height="125">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="25"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Script Logo -->
-                        <Grid Grid.Column="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="25"/>
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="25"/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Row="0" Grid.Column="0"
+                        <TextBlock Grid.Row="0" Grid.Column="0"
                                        Margin="5, 0, 0, 0"
                                        VerticalAlignment="Center"
                                        FontWeight="Bold"
                                        Text="Logo"/>
-                            <ContentPresenter x:Name="ScriptLogo"
+                        <ContentPresenter x:Name="ScriptLogo"
                                               Grid.Row="1" Grid.Column="0"
                                               Margin="14"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               Content="{Binding ScriptLogo}"/>
-                            <StackPanel Grid.Row="1" Grid.Column="1"
+                        <StackPanel Grid.Row="1" Grid.Column="1"
                                         Orientation="Vertical"
                                         VerticalAlignment="Center">
-                                <Button Width="25" Height="25"
+                            <Button Width="25" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoAttachButton"
                                         Click="ScriptLogoAttachButton_Click"
                                         ToolTip="Import logo from image">
-                                    <iconPacks:Material Kind="Plus"/>
-                                </Button>
-                                <Button Width="25" Height="25"
+                                <iconPacks:Material Kind="Plus"/>
+                            </Button>
+                            <Button Width="25" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoExtractButton"
                                         Click="ScriptLogoExtractButton_Click"
                                         ToolTip="Export logo to image">
-                                    <iconPacks:Material Kind="ArrowExpandRight"/>
-                                </Button>
-                                <Button Width="25" Height="25"
+                                <iconPacks:Material Kind="ArrowExpandRight"/>
+                            </Button>
+                            <Button Width="25" Height="25"
                                         x:Name="ScriptLogoDeleteButton"
                                         Click="ScriptLogoDeleteButton_Click"
                                         ToolTip="Delete logo">
-                                    <iconPacks:Material Kind="Close"/>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- Script Description -->
-                        <Grid Grid.Column="1"
-                              Margin="10, 0, 0, 0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="25"/>
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Title -->
-                            <TextBlock Grid.Row="0" Grid.Column="0"
-                                       VerticalAlignment="Center"
-                                       FontWeight="Bold"
-                                       Text="Title"/>
-                            <TextBox Grid.Row="0" Grid.Column="1"
-                                     VerticalAlignment="Center"
-                                     Text="{Binding ScriptTitle}"/>
-                        </Grid>
+                                <iconPacks:Material Kind="Close"/>
+                            </Button>
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </TabItem>
             <TabItem Header="Attachment">
                 <Grid Margin="10, 10, 10, 10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="22"/>
-                        <RowDefinition Height="25"/>
-                        <RowDefinition Height="10"/>
-                        <RowDefinition Height="22"/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0"
-                               VerticalAlignment="Center"
-                               FontWeight="Bold"
-                               Text="Folder">
-                    </TextBlock>
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition Width="30"/>
-                            <ColumnDefinition Width="30"/>
-                        </Grid.ColumnDefinitions>
-
-                        <ComboBox Grid.Column="0"
-                                  SelectedIndex="{Binding Attach_FolderListIndex}"
-                                  ItemsSource="{Binding Attach_FolderList}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Item1}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                    </Grid.ColumnDefinitions>
+                    
+<!--
                         <Button Grid.Column="1"
                                 Margin="5, 0, 0, 0"
                                 x:Name="NewFolderButton"
@@ -182,7 +246,54 @@
                                 <iconPacks:PackIconMaterial Kind="FolderRemove"/>
                             </Button.Content>
                         </Button>
-                    </Grid>
+                    -->
+
+                    <TreeView x:Name="ScriptAttachTreeView"
+                              Grid.Column="0"
+                              Background="PaleGreen"
+                              FontSize="12"
+                              SelectedItemChanged="ScriptAttachTreeView_SelectedItemChanged"
+                              VirtualizingStackPanel.IsVirtualizing="True"
+                              VirtualizingStackPanel.VirtualizationMode="Recycling">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate DataType="{x:Type local:ScriptAttachTreeViewModel}"
+                                                      ItemsSource="{Binding Children}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="20"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Row="0" Grid.Column="0"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding CheckBoxVisible}"
+                                          IsChecked="{Binding Checked, Mode=TwoWay}"
+                                          Focusable="False">
+                                    </CheckBox>
+                                    <ContentPresenter Content="{Binding Icon}"
+                                                  Grid.Row="0" Grid.Column="1"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"
+                                                  Margin="3,2,3,2">
+                                    </ContentPresenter>
+                                    <TextBlock Grid.Row="0" Grid.Column="2"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Text}">
+                                    </TextBlock>
+                                </Grid>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="IsExpanded"
+                                    Value="{Binding IsExpanded}" />
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
                 </Grid>
             </TabItem>
         </TabControl>
@@ -190,12 +301,25 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="110"/>
             </Grid.ColumnDefinitions>
 
             <Button Grid.Row="0" Grid.Column="1"
-                IsCancel="True"
-                Content="Close"
-                Click="CloseButton_Click">
+                    IsDefault="True"
+                    Content="Save"
+                    Click="SaveButton_Click">
+            </Button>
+            <Button Grid.Row="0" Grid.Column="2"
+                    Margin="10, 0, 0, 0"
+                    Content="Apply"
+                    Click="ApplyButton_Click">
+            </Button>
+            <Button Grid.Row="0" Grid.Column="3"
+                    Margin="10, 0, 0, 0"
+                    IsCancel="True"
+                    Content="Cancel"
+                    Click="CancelButton_Click">
             </Button>
         </Grid>
     </Grid>

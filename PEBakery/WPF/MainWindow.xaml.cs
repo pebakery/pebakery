@@ -837,7 +837,7 @@ namespace PEBakery.WPF
                     // Run
                     long buildId = await Engine.WorkingEngine.Run($"{sc.Title} - Run");
 
-#if DEBUG  // TODO: Remove this later, this line is for Debug
+#if DEBUG
                     Logger.ExportBuildLog(LogExportType.Text, Path.Combine(s.BaseDir, "LogDebugDump.txt"), buildId);
 #endif
 
@@ -889,7 +889,16 @@ namespace PEBakery.WPF
             if (ScriptEditWindow.Count == 0)
             {
                 ScriptEditDialog = new ScriptEditWindow(sc);
-                ScriptEditDialog.ShowDialog(); // Open as Modal
+
+                // Open as Modal
+                if (ScriptEditDialog.ShowDialog() == true)
+                {
+                    sc = ScriptEditDialog.Tag as Script;
+                    Debug.Assert(sc != null, $"{nameof(sc)} != null");
+
+                    DrawScript(sc);
+                    CurMainTree.Script = sc;
+                }
             }
         }
 
@@ -1105,9 +1114,11 @@ namespace PEBakery.WPF
             {
                 if (Keyboard.FocusedElement is FrameworkElement focusedElement)
                 {
-                    if (!(focusedElement.DataContext is TreeViewModel node)) return;
-                    node.Checked = !node.Checked;
-                    e.Handled = true;
+                    if (focusedElement.DataContext is TreeViewModel node)
+                    {
+                        node.Checked = !node.Checked;
+                        e.Handled = true;
+                    }
                 }
             }
         }
@@ -1320,6 +1331,7 @@ namespace PEBakery.WPF
             {
                 isTreeEntryFile = value;
                 OnPropertyUpdate(nameof(IsTreeEntryFile));
+                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
                 OnPropertyUpdate(nameof(OpenExternalButtonToopTip));
                 OnPropertyUpdate(nameof(OpenExternalButtonIconKind));
             }
@@ -1348,11 +1360,11 @@ namespace PEBakery.WPF
                 switch (scriptCheckResult)
                 {
                     case true:
-                        return PackIconMaterialKind.CheckboxMarked;
+                        return PackIconMaterialKind.Check;
                     case false:
-                        return PackIconMaterialKind.CloseBox;
+                        return PackIconMaterialKind.Close;
                     default: // null
-                        return PackIconMaterialKind.None;
+                        return PackIconMaterialKind.Help;
                 }
             }
         }
@@ -1368,7 +1380,7 @@ namespace PEBakery.WPF
                     case false:
                         return new SolidColorBrush(Colors.Red);
                     default: // null
-                        return new SolidColorBrush(Colors.Transparent);
+                        return new SolidColorBrush(Colors.Gray);
                 }
             }
         }
@@ -1377,17 +1389,9 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (!IsTreeEntryFile)
+                if (!IsTreeEntryFile || !SwitchNormalBuildInterface)
                     return Visibility.Collapsed;
-
-                switch (scriptCheckResult)
-                {
-                    case true:
-                    case false:
-                        return Visibility.Visible;
-                    default: // null
-                        return Visibility.Collapsed;
-                }
+                return Visibility.Visible;
             }
         }
 
@@ -1518,6 +1522,7 @@ namespace PEBakery.WPF
             {
                 normalInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(NormalInterfaceVisibility));
+                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
             }
         }
 
@@ -1529,6 +1534,7 @@ namespace PEBakery.WPF
             {
                 buildInterfaceVisibility = value;
                 OnPropertyUpdate(nameof(BuildInterfaceVisibility));
+                OnPropertyUpdate(nameof(ScriptCheckVisiblility));
             }
         }
 

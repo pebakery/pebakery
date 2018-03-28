@@ -144,32 +144,6 @@ namespace PEBakery.Exceptions
     }
     #endregion
 
-    #region EncodedFile
-    [Serializable]
-    public class FileEncodeFailException : Exception
-    {
-        public FileEncodeFailException() { }
-        public FileEncodeFailException(string message) : base(message) { }
-        public FileEncodeFailException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [Serializable]
-    public class FileDecodeFailException : Exception
-    {
-        public FileDecodeFailException() { }
-        public FileDecodeFailException(string message) : base(message) { }
-        public FileDecodeFailException(string message, Exception inner) : base(message, inner) { }
-    }
-
-    [Serializable]
-    public class ExtractFileNotFoundException : Exception
-    {
-        public ExtractFileNotFoundException() { }
-        public ExtractFileNotFoundException(string message) : base(message) { }
-        public ExtractFileNotFoundException(string message, Exception inner) : base(message, inner) { }
-    }
-    #endregion
-
     #region Variables
     [Serializable]
     public class VariableCircularReferenceException : Exception

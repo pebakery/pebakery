@@ -144,29 +144,58 @@ namespace PEBakery.Core
         #region AttachFile
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
 
-            byte[] input;
-            using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                input = new byte[fs.Length];
-                fs.Read(input, 0, input.Length);
+                return Encode(sc, dirName, fileName, fs, type, false);
             }
-            return Encode(sc, dirName, fileName, input, type);
         }
 
         public static Script AttachFile(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcStream, type);
+            return Encode(sc, dirName, fileName, srcStream, type, false);
         }
 
         public static Script AttachFile(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
         {
-            if (sc == null) throw new ArgumentNullException(nameof(sc));
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
 
-            return Encode(sc, dirName, fileName, srcBuffer, type);
+            return Encode(sc, dirName, fileName, srcBuffer, type, false);
+        }
+        #endregion
+
+        #region AttachLogo
+        public static Script AttachLogo(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return Encode(sc, dirName, fileName, fs, type, true);
+            }
+        }
+
+        public static Script AttachLogo(Script sc, string dirName, string fileName, Stream srcStream, EncodeMode type = EncodeMode.ZLib)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            return Encode(sc, dirName, fileName, srcStream, type, true);
+        }
+
+        public static Script AttachLogo(Script sc, string dirName, string fileName, byte[] srcBuffer, EncodeMode type = EncodeMode.ZLib)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            return Encode(sc, dirName, fileName, srcBuffer, type, true);
         }
         #endregion
 
@@ -177,7 +206,7 @@ namespace PEBakery.Core
 
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (!sc.Sections.ContainsKey(section))
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
+                throw new InvalidOperationException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded, outStream);
@@ -191,16 +220,16 @@ namespace PEBakery.Core
                 throw new ArgumentNullException(nameof(sc));
 
             if (!sc.Sections.ContainsKey("AuthorEncoded"))
-                throw new ExtractFileNotFoundException("Directory [AuthorEncoded] does not exist");
+                throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
 
             Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
 
             if (!fileDict.ContainsKey("Logo"))
-                throw new ExtractFileNotFoundException($"Logo does not exist in \'{sc.Title}\'");
+                throw new InvalidOperationException($"Logo does not exist in \'{sc.Title}\'");
 
             string logoFile = fileDict["Logo"];
             if (ImageHelper.GetImageType(logoFile, out type))
-                throw new ExtractFileNotFoundException($"Image type of [{logoFile}] is not supported");
+                throw new InvalidOperationException($"Image type of [{logoFile}] is not supported");
 
             List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
             return DecodeInMemory(encoded);
@@ -242,7 +271,11 @@ namespace PEBakery.Core
                 return false;
 
             Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
-            return fileDict.ContainsKey("Logo");
+            if (!fileDict.ContainsKey("Logo"))
+                return false;
+
+            string logoName = fileDict["Logo"];
+            return sc.Sections.ContainsKey($"EncodedFile-AuthorEncoded-{logoName}");
         }
         #endregion
 
@@ -251,27 +284,198 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-InterfaceEncoded-{fileName}";
             if (sc.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
+                throw new InvalidOperationException($"[InterfaceEncoded\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return DecodeInMemory(encoded);
         }
         #endregion
 
+        #region DeleteFile
+        public static Script DeleteFile(Script sc, string dirName, string fileName, out string errorMsg)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+            if (dirName == null)
+                throw new ArgumentNullException(nameof(dirName));
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            errorMsg = null;
+
+            // Backup
+            string backupFile = Path.GetTempFileName();
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                // Delete encoded file index
+                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, dirName);
+                if (dict == null)
+                {
+                    errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                }
+                else
+                {
+                    if (!Ini.DeleteKey(sc.RealPath, dirName, fileName))
+                        errorMsg = $"Index of encoded file [{fileName}] not found in [{sc.RealPath}]";
+                }
+
+                // Delete encoded file section
+                if (!Ini.DeleteSection(sc.RealPath, $"EncodedFile-{dirName}-{fileName}"))
+                    errorMsg = $"Encoded file [{fileName}] not found in [{sc.RealPath}]";
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            return sc.Project.RefreshScript(sc);
+        }
+
+        public static Script DeleteFolder(Script sc, string dirName, out string errorMsg)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+            if (dirName == null)
+                throw new ArgumentNullException(nameof(dirName));
+            errorMsg = null;
+
+            // Backup
+            string backupFile = Path.GetTempFileName();
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                List<string> folders = Ini.ParseIniSection(sc.RealPath, "EncodedFolders");
+
+                // Delete index of encoded folder
+                if (folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)) == 0)
+                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                if (!Ini.DeleteSection(sc.RealPath, "EncodedFolders"))
+                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                foreach (string folder in folders.Where(x => !x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
+                    Ini.WriteRawLine(sc.RealPath, "EncodedFolders", folder);
+
+                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, dirName);
+                if (dict == null)
+                {
+                    errorMsg = $"Index of encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                }
+                else
+                {
+                    // Get index of files
+                    if (dirName.Equals("AuthorEncoded", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (dict.ContainsKey("Logo"))
+                            dict.Remove("Logo");
+                    }
+                    var files = dict.Keys;
+
+                    // Delete section [dirName]
+                    if (!Ini.DeleteSection(sc.RealPath, dirName))
+                        errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
+
+                    // Delete encoded file section
+                    foreach (string file in files)
+                    {
+                        if (!Ini.DeleteSection(sc.RealPath, $"EncodedFile-{dirName}-{file}"))
+                            errorMsg = $"Encoded folder [{dirName}] not found in [{sc.RealPath}]";
+                    }
+                }
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            return sc.Project.RefreshScript(sc);
+        }
+
+        public static Script DeleteLogo(Script sc, out string errorMsg)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            // Backup
+            string backupFile = Path.GetTempFileName();
+            File.Copy(sc.RealPath, backupFile, true);
+            try
+            {
+                errorMsg = null;
+
+                // Get filename of logo
+                Dictionary<string, string> dict = Ini.ParseIniSectionToDict(sc.RealPath, "AuthorEncoded");
+                if (dict == null)
+                {
+                    errorMsg = $"Logo not found in [{sc.RealPath}]";
+                    return sc;
+                }
+
+                if (!dict.ContainsKey("Logo"))
+                {
+                    errorMsg = $"Logo not found in [{sc.RealPath}]";
+                    return sc;
+                }
+                    
+                string logoFile = dict["Logo"];
+                if (!dict.ContainsKey(logoFile))
+                {
+                    errorMsg = $"Logo not found in [{sc.RealPath}]";
+                    return sc;
+                }   
+
+                // Delete encoded file section
+                if (!Ini.DeleteSection(sc.RealPath, $"EncodedFile-AuthorEncoded-{logoFile}"))
+                    errorMsg = $"Encoded file [{logoFile}] not found in [{sc.RealPath}]";
+
+                // Delete encoded file index
+                if (!(Ini.DeleteKey(sc.RealPath, "AuthorEncoded", logoFile) && Ini.DeleteKey(sc.RealPath, "AuthorEncoded", "Logo")))
+                    errorMsg = $"Unable to delete index of logo [{logoFile}] from [{sc.RealPath}]";
+            }
+            catch
+            { // Error -> Rollback!
+                File.Copy(backupFile, sc.RealPath, true);
+                throw;
+            }
+            finally
+            { // Delete backup script
+                if (File.Exists(backupFile))
+                    File.Delete(backupFile);
+            }
+
+            // Return refreshed script
+            return sc.Project.RefreshScript(sc);
+        }
+
+       
+        #endregion
+
         #region Encode
-        private static Script Encode(Script sc, string dirName, string fileName, byte[] input, EncodeMode mode)
+        private static Script Encode(Script sc, string dirName, string fileName, byte[] input, EncodeMode mode, bool encodeLogo)
         {
             using (MemoryStream ms = new MemoryStream(input))
             {
-                return Encode(sc, dirName, fileName, ms, mode);
+                return Encode(sc, dirName, fileName, ms, mode, encodeLogo);
             }
         }
 
-        private static Script Encode(Script sc, string dirName, string fileName, Stream inputStream, EncodeMode mode)
+        private static Script Encode(Script sc, string dirName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo)
         {
             byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
             if (fileNameUTF8.Length == 0 || 512 <= fileNameUTF8.Length)
-                throw new FileDecodeFailException("UTF8 encoded filename should be shorter than 512B");
+                throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
             string section = $"EncodedFile-{dirName}-{fileName}";
 
             // Check Overwrite
@@ -279,11 +483,23 @@ namespace PEBakery.Core
             if (sc.Sections.ContainsKey(dirName))
             {
                 // Check if [{dirName}] section and [EncodedFile-{dirName}-{fileName}] section exists
-                List<string> lines = sc.Sections[dirName].GetLines();
-                var dict = Ini.ParseIniLinesIniStyle(lines);
-                if (0 < dict.Count(x => x.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase)) &&
-                    sc.Sections.ContainsKey(section))
-                    fileOverwrite = true;
+                ScriptSection scSect = sc.Sections[dirName];
+                switch (scSect.DataType)
+                {
+                    case SectionDataType.IniDict:
+                        if (scSect.GetIniDict().ContainsKey(fileName) &&
+                            sc.Sections.ContainsKey(section))
+                            fileOverwrite = true;
+                        break;
+                    case SectionDataType.Lines:
+                        var dict = Ini.ParseIniLinesIniStyle(scSect.GetLines());
+                        if (0 < dict.Count(x => x.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase)) &&
+                            sc.Sections.ContainsKey(section))
+                            fileOverwrite = true;
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at DeleteFile");
+                }
             }
 
             int encodedLen;
@@ -455,12 +671,25 @@ namespace PEBakery.Core
                 // Write encoded file into [EncodedFile-{dirName}-{fileName}]
                 if (fileOverwrite)
                     Ini.DeleteSection(sc.RealPath, section); // Delete existing encoded file
-                Ini.SetKeys(sc.RealPath, keys); // Write into 
+                Ini.SetKeys(sc.RealPath, keys);
+
+                // Write additional line when encoding logo.
+                if (encodeLogo)
+                {
+                    string lastLogo = Ini.GetKey(sc.RealPath, "AuthorEncoded", "Logo");
+                    Ini.SetKey(sc.RealPath, "AuthorEncoded", "Logo", fileName);
+
+                    if (lastLogo != null)
+                    {
+                        Ini.DeleteKey(sc.RealPath, "AuthorEncoded", lastLogo);
+                        Ini.DeleteSection(sc.RealPath, $"EncodedFile-AuthorEncoded-{lastLogo}");
+                    }
+                }    
             }
             catch
             { // Error -> Rollback!
                 File.Copy(backupFile, sc.RealPath, true);
-                throw new FileDecodeFailException($"Error while writing encoded file into [{sc.RealPath}]");
+                throw new InvalidOperationException($"Error while writing encoded file into [{sc.RealPath}]");
             }
             finally
             { // Delete backup script
@@ -505,9 +734,9 @@ namespace PEBakery.Core
 
                     // [Stage 3] Validate final footer
                     if (compressedBodyLen != compressedFooterIdx)
-                        throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+                        throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
                     if (full_crc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
-                        throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+                        throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
                     // [Stage 4] Decompress first footer
                     byte[] firstFooter = new byte[0x226];
@@ -545,15 +774,15 @@ namespace PEBakery.Core
                         case EncodeMode.ZLib: // Type 1, zlib
                             if (compressedBodyLen2 == 0 || 
                                 compressedBodyLen2 != compressedBodyLen)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                                throw new InvalidOperationException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
                         case EncodeMode.Raw: // Type 2, raw
                             if (compressedBodyLen2 != 0)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                                throw new InvalidOperationException("Encoded file is corrupted: compMode");
                             if (compLevel != 0)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
@@ -564,7 +793,7 @@ namespace PEBakery.Core
                             break;
 #endif
                         default:
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     }
 
                     // [Stage 7] Decompress body
@@ -631,13 +860,13 @@ namespace PEBakery.Core
                             break;
 #endif
                         default:
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
                     }
                     long outLen = outStream.Position - outPosBak;
 
                     // [Stage 8] Validate decompressed body
                     if (compressedBody_crc32 != crc32.Checksum)
-                        throw new FileDecodeFailException("Encoded file is corrupted: body");
+                        throw new InvalidOperationException("Encoded file is corrupted: body");
 
                     return outLen;
                 }
@@ -671,10 +900,10 @@ namespace PEBakery.Core
 
             // [Stage 3] Validate final footer
             if (compressedBodyLen != compressedFooterIdx)
-                throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+                throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
             uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
             if (full_crc32 != calcFull_crc32)
-                throw new FileDecodeFailException("Encoded file is corrupted: finalFooter");
+                throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
 
             // [Stage 4] Decompress first footer
             byte[] rawFooter;
@@ -709,17 +938,17 @@ namespace PEBakery.Core
                     {
                         if (compressedBodyLen2 == 0 || 
                             compressedBodyLen2 != compressedBodyLen)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
                         if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     }
                     break;
                 case EncodeMode.Raw: // Type 2, raw
                     {
                         if (compressedBodyLen2 != 0)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
                         if (compLevel != 0)
-                            throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     }
                     break;
 #if ENABLE_XZ
@@ -733,7 +962,7 @@ namespace PEBakery.Core
                     break;
 #endif
                 default:
-                    throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                    throw new InvalidOperationException($"Encoded file is corrupted: compMode");
             }
 
             // [Stage 7] Decompress body
@@ -766,7 +995,7 @@ namespace PEBakery.Core
                     break;
 #endif
                 default:
-                    throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                    throw new InvalidOperationException("Encoded file is corrupted: compMode");
             }
 
             rawBodyStream.Position = 0;
@@ -774,7 +1003,7 @@ namespace PEBakery.Core
             // [Stage 8] Validate decompressed body
             uint calcCompBody_crc32 = Crc32Checksum.Crc32(rawBodyStream.ToArray());
             if (compressedBody_crc32 != calcCompBody_crc32)
-                throw new FileDecodeFailException("Encoded file is corrupted: body");
+                throw new InvalidOperationException("Encoded file is corrupted: body");
 
             // [Stage 9] Return decompressed body stream
             rawBodyStream.Position = 0;
@@ -862,11 +1091,11 @@ namespace PEBakery.Core
         {
             string section = $"EncodedFile-{dirName}-{fileName}";
             if (sc.Sections.ContainsKey(section) == false)
-                throw new FileDecodeFailException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
+                throw new InvalidOperationException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
             List<string> encodedList = sc.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
             if (Ini.GetKeyValueFromLine(encodedList[0], out string key, out string value))
-                throw new FileDecodeFailException("Encoded lines are malformed");
+                throw new InvalidOperationException("Encoded lines are malformed");
 
             // [Stage 1] Concat sliced base64-encoded lines into one string
             byte[] decoded;
@@ -876,7 +1105,7 @@ namespace PEBakery.Core
 
                 // Each line is 64KB block
                 if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                    throw new FileDecodeFailException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed");
 
                 StringBuilder b = new StringBuilder();
                 foreach (string block in base64Blocks)
@@ -886,7 +1115,7 @@ namespace PEBakery.Core
                     case 0:
                         break;
                     case 1:
-                        throw new FileDecodeFailException("Encoded lines are malformed");
+                        throw new InvalidOperationException("Encoded lines are malformed");
                     case 2:
                         b.Append("==");
                         break;
@@ -1080,12 +1309,12 @@ namespace PEBakery.Core
             encodedList.RemoveAt(0);
 
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                throw new FileDecodeFailException("Encoded lines are malformed");
+                throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
-                throw new FileDecodeFailException("Key of the encoded lines are malformed");
+                throw new InvalidOperationException("Key of the encoded lines are malformed");
 
             if (base64Blocks.Count == 0)
-                throw new FileDecodeFailException("Encoded lines are not found");
+                throw new InvalidOperationException("Encoded lines are not found");
             int lineLen = base64Blocks[0].Length;
 
             int encodeLen = 0;
@@ -1097,7 +1326,7 @@ namespace PEBakery.Core
 
                 if (4090 < block.Length || 
                     i + 1 < base64Blocks.Count && block.Length != lineLen)
-                    throw new FileDecodeFailException("Length of encoded lines is inconsistent");
+                    throw new InvalidOperationException("Length of encoded lines is inconsistent");
 
                 b.Append(block);
                 encodeLen += block.Length;
@@ -1118,7 +1347,7 @@ namespace PEBakery.Core
                 case 0:
                     break;
                 case 1:
-                    throw new FileDecodeFailException("Wrong base64 padding");
+                    throw new InvalidOperationException("Wrong base64 padding");
                 case 2:
                     b.Append("==");
                     break;
@@ -1142,11 +1371,11 @@ namespace PEBakery.Core
             encodedList.RemoveAt(0);         
            
             if (Ini.GetKeyValueFromLines(encodedList, out List<string> keys, out List<string> base64Blocks))
-                throw new FileDecodeFailException("Encoded lines are malformed");
+                throw new InvalidOperationException("Encoded lines are malformed");
             if (!keys.All(StringHelper.IsInteger))
-                throw new FileDecodeFailException("Key of the encoded lines are malformed");
+                throw new InvalidOperationException("Key of the encoded lines are malformed");
             if (base64Blocks.Count == 0)
-                throw new FileDecodeFailException("Encoded lines are not found");
+                throw new InvalidOperationException("Encoded lines are not found");
 
             StringBuilder b = new StringBuilder();
             foreach (string block in base64Blocks)
@@ -1156,7 +1385,7 @@ namespace PEBakery.Core
                 case 0:
                     break;
                 case 1:
-                    throw new FileDecodeFailException("Encoded lines are malformed");
+                    throw new InvalidOperationException("Encoded lines are malformed");
                 case 2:
                     b.Append("==");
                     break;
