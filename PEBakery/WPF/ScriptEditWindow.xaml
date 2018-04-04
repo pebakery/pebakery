@@ -41,12 +41,18 @@
         Width="800" Height="640"
         MinWidth="640" MinHeight="480"
         d:DataContext="{d:DesignInstance Type=local:ScriptEditViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Save"
+                        Executed="ScriptMain_Executed"
+                        CanExecute="ScriptMain_CanExecute"/>
+    </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0">
+        <TabControl Grid.Row="0"
+                    SelectedIndex="{Binding TabIndex}">
             <TabItem Header="General">
                 <StackPanel Margin="10, 0, 10, 10">
                     <GroupBox Header="Main"
@@ -173,8 +179,14 @@
                             <Button Grid.Row="1"
                                     Width="100"
                                     Content="Save"
+                                    x:Name="MainSaveButton"
                                     Click="MainSaveButton_Click"
                                     HorizontalAlignment="Right">
+                                <Button.InputBindings>
+                                    <KeyBinding Key="S"
+                                                Modifiers="Ctrl" 
+                                                Command="ApplicationCommands.Save" />
+                                </Button.InputBindings>
                             </Button>
                         </Grid>
                     </GroupBox>

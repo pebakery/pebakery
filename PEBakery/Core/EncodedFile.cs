@@ -246,7 +246,7 @@ namespace PEBakery.Core
                     if (svgSize == null)
                         imageSource = ImageHelper.SvgToBitmapImage(mem);
                     else
-                        imageSource = ImageHelper.SvgToBitmapImage(mem, (double)svgSize, (double)svgSize);
+                        imageSource = ImageHelper.SvgToBitmapImage(mem, (double)svgSize, (double)svgSize, true);
                 }
                 else
                 {
@@ -259,7 +259,7 @@ namespace PEBakery.Core
                 StretchDirection = StretchDirection.DownOnly,
                 Stretch = Stretch.Uniform,
                 UseLayoutRounding = true, // To prevent blurry image rendering
-                Source = imageSource,
+                Source = imageSource
             };
         }
 

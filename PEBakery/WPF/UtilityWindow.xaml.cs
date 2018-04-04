@@ -56,6 +56,7 @@ namespace PEBakery.WPF
     {
         #region Field and Constructor
         public static int Count = 0;
+
         private readonly UtilityViewModel m;
 
         public UtilityWindow(FontHelper.WPFFont monoFont)
@@ -255,9 +256,33 @@ namespace PEBakery.WPF
             }
         }
         #endregion
+
+        #region InputBinding Event
+        public static RoutedUICommand CodeBoxSaveCommand { get; } = new RoutedUICommand("Save", "Save", typeof(UtilityWindow));
+        public static RoutedUICommand CodeBoxRunCommand { get; } = new RoutedUICommand("Run", "Run", typeof(UtilityWindow), 
+            new InputGestureCollection { new KeyGesture(Key.F5, ModifierKeys.Control) });
+            
+        private void CodeBox_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = m.TabIndex == 0;
+        }
+
+        private void CodeBoxSave_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CodeBoxSaveButton.Focus();
+            CodeBoxSaveButton_Click(sender, e);
+        }
+
+        private void CodeBoxRun_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            CodeBoxRunButton.Focus();
+            CodeBoxRunButton_Click(sender, e);
+        }
+
+        #endregion
     }
 
-    #region UtiltiyViewModel
+    #region UtilityViewModel
     public class UtilityViewModel : INotifyPropertyChanged
     {
         public FontHelper.WPFFont MonoFont { get; }
@@ -269,6 +294,19 @@ namespace PEBakery.WPF
         {
             MonoFont = monoFont;
         }
+
+        #region Tab Index
+        private int _tabIndex = 0;
+        public int TabIndex
+        {
+            get => _tabIndex;
+            set
+            {
+                _tabIndex = value;
+                OnPropertyUpdate(nameof(TabIndex));
+            }
+        }
+        #endregion
 
         #region CodeBox
         public string CodeFile { get; private set; }
@@ -414,6 +452,36 @@ Description=Test Commands
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
         #endregion
+    }
+    #endregion
+
+    #region WindowCommand
+    public class WindowCommand : ICommand
+    {
+        private readonly Action<object> _onExecute;
+        private readonly Predicate<object> _onCanExecute;
+
+        public WindowCommand(Action<object> onExecute, Predicate<object> onCanExecuteDelegate)
+        {
+            _onExecute = onExecute;
+            _onCanExecute = onCanExecuteDelegate;
+        }
+
+        public void Execute(object parameter) => _onExecute?.Invoke(parameter);
+
+        public bool CanExecute(object parameter) => _onCanExecute == null || _onCanExecute(parameter);
+
+        public event EventHandler CanExecuteChanged;
+        /*
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+        */
+
+        public void OnCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+
     }
     #endregion
 }

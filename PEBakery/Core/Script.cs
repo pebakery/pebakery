@@ -62,7 +62,7 @@ namespace PEBakery.Core
         private readonly string _title = string.Empty;
         private readonly string _author = string.Empty;
         private readonly string _description = string.Empty;
-        private readonly int _version;
+        private readonly string _version;
         private readonly int _level;
         private SelectedState _selected = SelectedState.None;
         private readonly bool _mandatory = false;
@@ -154,7 +154,7 @@ namespace PEBakery.Core
                     return _description;
             }
         }
-        public int Version
+        public string Version
         {
             get
             {
@@ -249,7 +249,7 @@ namespace PEBakery.Core
 
                         // Optional Entries
                         _author = string.Empty;
-                        _version = 0;
+                        _version = "0";
                         _selected = SelectedState.None; // This Value should be adjusted later!
                         _mandatory = false;
                         _link = null;
@@ -313,7 +313,7 @@ namespace PEBakery.Core
                             if (mainSection.IniDict.ContainsKey("Author"))
                                 _author = mainSection.IniDict["Author"];
                             if (mainSection.IniDict.ContainsKey("Version"))
-                                _version = int.Parse(mainSection.IniDict["Version"]);
+                                _version = mainSection.IniDict["Version"];
                             if (mainSection.IniDict.ContainsKey("Selected"))
                             {
                                 string src = mainSection.IniDict["Selected"];

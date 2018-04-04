@@ -232,7 +232,7 @@ namespace PEBakery.Core
     public class SystemLogUpdateEventArgs : EventArgs
     {
         public DB_SystemLog Log { get; set; }
-        public SystemLogUpdateEventArgs(DB_SystemLog log) : base()
+        public SystemLogUpdateEventArgs(DB_SystemLog log)
         {
             Log = log;
         }
@@ -240,7 +240,7 @@ namespace PEBakery.Core
     public class BuildInfoUpdateEventArgs : EventArgs
     {
         public DB_BuildInfo Log { get; set; }
-        public BuildInfoUpdateEventArgs(DB_BuildInfo log) : base()
+        public BuildInfoUpdateEventArgs(DB_BuildInfo log)
         {
             Log = log;
         }
@@ -248,7 +248,7 @@ namespace PEBakery.Core
     public class BuildLogUpdateEventArgs : EventArgs
     {
         public DB_BuildLog Log { get; set; }
-        public BuildLogUpdateEventArgs(DB_BuildLog log) : base()
+        public BuildLogUpdateEventArgs(DB_BuildLog log)
         {
             Log = log;
         }
@@ -256,7 +256,7 @@ namespace PEBakery.Core
     public class ScriptUpdateEventArgs : EventArgs
     {
         public DB_Script Log { get; set; }
-        public ScriptUpdateEventArgs(DB_Script log) : base()
+        public ScriptUpdateEventArgs(DB_Script log)
         {
             Log = log;
         }
@@ -264,7 +264,7 @@ namespace PEBakery.Core
     public class VariableUpdateEventArgs : EventArgs
     {
         public DB_Variable Log { get; set; }
-        public VariableUpdateEventArgs(DB_Variable log) : base()
+        public VariableUpdateEventArgs(DB_Variable log)
         {
             Log = log;
         }
@@ -304,7 +304,7 @@ namespace PEBakery.Core
         public static DebugLevel DebugLevel;
         public readonly ConcurrentStack<bool> TurnOff = new ConcurrentStack<bool>();
 
-        private List<DB_BuildLog> BuildLogPool = new List<DB_BuildLog>(4096);
+        private readonly List<DB_BuildLog> BuildLogPool = new List<DB_BuildLog>(4096);
 
         private readonly ConcurrentDictionary<long, DB_BuildInfo> buildDict = new ConcurrentDictionary<long, DB_BuildInfo>();
         private readonly ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>> scriptDict = new ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>>();
@@ -315,7 +315,7 @@ namespace PEBakery.Core
         public event ScriptUpdateEventHandler ScriptUpdated;
         public event VariableUpdateEventHandler VariableUpdated;
 
-        public static readonly string LogSeperator = "--------------------------------------------------------------------------------";
+        public const string LogSeperator = "--------------------------------------------------------------------------------";
 
         public Logger(string path)
         {
@@ -401,7 +401,7 @@ namespace PEBakery.Core
                 return 0;
 
             long buildId = s.BuildId;
-            DB_Script dbScript = new DB_Script()
+            DB_Script dbScript = new DB_Script
             {
                 BuildId = buildId,
                 Level = sc.Level,
@@ -827,62 +827,64 @@ namespace PEBakery.Core
             switch (Logger.DebugLevel)
             {
                 case DebugLevel.Production:
-                    if (e.GetType() == typeof(AggregateException))
                     {
-                        StringBuilder builder = new StringBuilder();
-                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
-                        foreach (var inEx in (e as AggregateException).InnerExceptions)
+                        if (e is AggregateException aggEx)
                         {
-                            builder.Append("\r\n    ");
-                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                            StringBuilder b = new StringBuilder();
+                            b.Append(StringHelper.RemoveLastNewLine(aggEx.Message));
+                            foreach (var inEx in aggEx.InnerExceptions)
+                            {
+                                b.Append("\r\n    ");
+                                b.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                            }
+                            b.Append("\r\n ");
+                            return b.ToString();
                         }
-                        builder.Append("\r\n ");
-                        return builder.ToString();
-                    }
-                    else
                         return StringHelper.RemoveLastNewLine(e.Message);
+                    }
                 case DebugLevel.PrintException:
-                    if (e.GetType() == typeof(AggregateException))
                     {
-                        StringBuilder builder = new StringBuilder();
-                        builder.Append(e.GetType());
-                        builder.Append(": ");
-                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
-                        foreach (var inEx in (e as AggregateException).InnerExceptions)
+                        if (e is AggregateException aggEx)
                         {
-                            builder.Append("\r\n    ");
-                            builder.Append(inEx.GetType());
-                            builder.Append(": ");
-                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                            StringBuilder b = new StringBuilder();
+                            b.Append(e.GetType());
+                            b.Append(": ");
+                            b.Append(StringHelper.RemoveLastNewLine(aggEx.Message));
+                            foreach (var inEx in aggEx.InnerExceptions)
+                            {
+                                b.Append("\r\n    ");
+                                b.Append(inEx.GetType());
+                                b.Append(": ");
+                                b.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                            }
+                            b.Append("\r\n ");
+                            return b.ToString();
                         }
-                        builder.Append("\r\n ");
-                        return builder.ToString();
-                    }
-                    else
                         return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message);
-                case DebugLevel.PrintExceptionStackTrace:
-                    if (e.GetType() == typeof(AggregateException))
-                    {
-                        StringBuilder builder = new StringBuilder();
-                        builder.Append(e.GetType());
-                        builder.Append(": ");
-                        builder.Append(StringHelper.RemoveLastNewLine(e.Message));
-                        foreach (var inEx in (e as AggregateException).InnerExceptions)
-                        {
-                            builder.Append("\r\n    ");
-                            builder.Append(inEx.GetType());
-                            builder.Append(": ");
-                            builder.Append(StringHelper.RemoveLastNewLine(inEx.Message));
-                        }
-                        builder.Append("\r\n");
-                        builder.Append(e.StackTrace);
-                        builder.Append("\r\n ");
-                        return builder.ToString();
                     }
-                    else
+                case DebugLevel.PrintExceptionStackTrace:
+                    {
+                        if (e is AggregateException aggEx)
+                        {
+                            StringBuilder b = new StringBuilder();
+                            b.Append(e.GetType());
+                            b.Append(": ");
+                            b.Append(StringHelper.RemoveLastNewLine(aggEx.Message));
+                            foreach (var inEx in aggEx.InnerExceptions)
+                            {
+                                b.Append("\r\n    ");
+                                b.Append(inEx.GetType());
+                                b.Append(": ");
+                                b.Append(StringHelper.RemoveLastNewLine(inEx.Message));
+                            }
+                            b.Append("\r\n");
+                            b.Append(e.StackTrace);
+                            b.Append("\r\n ");
+                            return b.ToString();
+                        }
                         return e.GetType() + ": " + StringHelper.RemoveLastNewLine(e.Message) + "\r\n" + e.StackTrace + "\r\n ";
+                    }
                 default:
-                    Debug.Assert(false);
                     return "Internal Logic Error";
             }
         }
@@ -894,7 +896,7 @@ namespace PEBakery.Core
     public class DB_SystemLog
     {
         [PrimaryKey, AutoIncrement]
-        public long Id { get; set; }
+        public int Id { get; set; }
         public DateTime Time { get; set; }
         public LogState State { get; set; }
         [MaxLength(65535)]
@@ -902,18 +904,10 @@ namespace PEBakery.Core
 
         // Used in LogWindow
         [Ignore]
-        public string StateStr
-        {
-            get
-            {
-                if (State == LogState.None)
-                    return string.Empty;
-                else
-                    return State.ToString();
-            }
-        }
+        public string StateStr => State == LogState.None ? string.Empty : State.ToString();
+
         [Ignore]
-        public string TimeStr { get => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture); }
+        public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
 
         public override string ToString()
         {
@@ -924,7 +918,7 @@ namespace PEBakery.Core
     public class DB_BuildInfo
     {
         [PrimaryKey, AutoIncrement]
-        public long Id { get; set; }
+        public int Id { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         [MaxLength(256)]
@@ -939,7 +933,7 @@ namespace PEBakery.Core
     public class DB_Script
     {
         [PrimaryKey, AutoIncrement]
-        public long Id { get; set; }
+        public int Id { get; set; }
         [Indexed]
         public long BuildId { get; set; }
         public int Order { get; set; } // Starts from 1
@@ -948,7 +942,7 @@ namespace PEBakery.Core
         public string Name { get; set; }
         [MaxLength(32767)] // https://msdn.microsoft.com/library/windows/desktop/aa365247.aspx#maxpath
         public string Path { get; set; }
-        public int Version { get; set; }
+        public string Version { get; set; }
         public long ElapsedMilliSec { get; set; }
 
         public override string ToString()
@@ -960,7 +954,7 @@ namespace PEBakery.Core
     public class DB_Variable
     {
         [PrimaryKey, AutoIncrement]
-        public long Id { get; set; }
+        public int Id { get; set; }
         [Indexed]
         public long BuildId { get; set; }
         [Indexed]
@@ -980,7 +974,7 @@ namespace PEBakery.Core
     public class DB_BuildLog
     {
         [PrimaryKey, AutoIncrement]
-        public long Id { get; set; }
+        public int Id { get; set; }
         public DateTime Time { get; set; }
         [Indexed]
         public long BuildId { get; set; }

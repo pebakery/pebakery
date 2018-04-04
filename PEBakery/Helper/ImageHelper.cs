@@ -138,14 +138,27 @@ namespace PEBakery.Helper
             return ImageHelper.ToBitmapImage(svgDoc.Draw());
         }
 
-        public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height)
+        public static BitmapImage SvgToBitmapImage(Stream stream, double width, double height, bool keepAspectRatio = true)
         {
-            return SvgToBitmapImage(stream, (int)Math.Round(width), (int)Math.Round(height));
+            return SvgToBitmapImage(stream, (int)Math.Round(width), (int)Math.Round(height), keepAspectRatio);
         }
 
-        public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height)
+        public static BitmapImage SvgToBitmapImage(Stream stream, int width, int height, bool keepAspectRatio = true)
         {
             SvgDocument svgDoc = SvgDocument.Open<SvgDocument>(stream);
+            if (keepAspectRatio)
+            {
+                SizeF size = svgDoc.GetDimensions();
+                float imageRatio = size.Width / size.Height;
+                float drawRatio = (float)width / height;
+
+                if (Math.Abs(imageRatio - drawRatio) < float.Epsilon) // Ratio is equal, do not touch it 
+                    return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
+                else if (imageRatio < drawRatio) 
+                    return ImageHelper.ToBitmapImage(svgDoc.Draw((int)Math.Round(width / imageRatio, 0), height));
+                else // if (drawRatio < imageRatio) 
+                    return ImageHelper.ToBitmapImage(svgDoc.Draw(width, (int)Math.Round(height / imageRatio, 0)));
+            }
             return ImageHelper.ToBitmapImage(svgDoc.Draw(width, height));
         }
 

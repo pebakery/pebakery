@@ -421,8 +421,6 @@ namespace PEBakery.Helper
         /// <summary>
         /// Compare string, which would be number
         /// </summary>
-        /// <param name="str1"></param>
-        /// <param name="str2"></param>
         public static CompareStringNumberResult CompareStringNumber(string str1, string str2, bool ignoreCase = true)
         {
             // Try version number compare
@@ -457,7 +455,7 @@ namespace PEBakery.Helper
                 type1 == ParseStringToNumberType.Decimal && type2 == ParseStringToNumberType.Integer ||
                 type1 == ParseStringToNumberType.Decimal && type2 == ParseStringToNumberType.Decimal)
             { // One arg is decimal
-                decimal comp = z1 - r2;
+                decimal comp = r1 - r2;
                 if (comp < 0)
                     return CompareStringNumberResult.Smaller;
                 else if (comp == 0)
@@ -504,7 +502,7 @@ namespace PEBakery.Helper
 
             public static VersionEx Parse(string str)
             {
-                int[] arr = new int[4] { 0, 0, -1, -1 };
+                int[] arr = { 0, 0, -1, -1 };
 
                 string[] parts = str.Split('.');
                 if (parts.Length < 1 && 4 < parts.Length)
@@ -685,6 +683,26 @@ namespace PEBakery.Helper
                 ret *= val;
             return ret;
         }
+
+        #region Round
+        public static int Round(int src, int unit)
+        {
+            int remainder = src % unit;
+            if ((unit - 1) / 2 < remainder)
+                return src - remainder + unit;
+            else
+                return src - remainder;
+        }
+
+        public static long Round(long src, long unit)
+        {
+            long remainder = src % unit;
+            if ((unit - 1) / 2 < remainder)
+                return src - remainder + unit;
+            else
+                return src - remainder;
+        }
+        #endregion
     }
     #endregion
 }

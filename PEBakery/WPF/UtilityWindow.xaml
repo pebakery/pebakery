@@ -40,12 +40,21 @@
         Width="800" Height="640"
         MinWidth="640" MinHeight="480"
         d:DataContext="{d:DesignInstance Type=local:UtilityViewModel}">
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Save"
+                        Executed="CodeBoxSave_Executed"
+                        CanExecute="CodeBox_CanExecute"/>
+        <CommandBinding Command="local:UtilityWindow.CodeBoxSaveCommand"
+                        Executed="CodeBoxRun_Executed"
+                        CanExecute="CodeBox_CanExecute"/>
+    </Window.CommandBindings>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0">
+        <TabControl Grid.Row="0"
+                    SelectedIndex="{Binding TabIndex}">
             <TabItem Header="CodeBox">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
@@ -79,20 +88,32 @@
                         </ComboBox>
 
                         <Button Grid.Column="1"
-                                Name="CodeBpxSaveButton"
+                                x:Name="CodeBoxSaveButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Save"
+                                ToolTip="Ctrl + S"
                                 Click="CodeBoxSaveButton_Click">
                             <Button.InputBindings>
                                 <KeyBinding Key="S"
-                                            Modifiers="Ctrl" />
+                                            Modifiers="Ctrl" 
+                                            Command="ApplicationCommands.Save" />
                             </Button.InputBindings>
                         </Button>
 
                         <Button Grid.Column="2"
+                                x:Name="CodeBoxRunButton"
                                 Margin="10, 0, 0, 0"
                                 Content="Run"
+                                ToolTip="Ctrl + R"
                                 Click="CodeBoxRunButton_Click">
+                            <!-- "{x:Static local:UtilityWindow.CodeBoxSaveCommand}"> -->
+                            <!--
+                            <Button.InputBindings>
+                                <KeyBinding Key="R"
+                                            Modifiers="Ctrl" 
+                                            Command="local:UtilityWindow.CodeBoxSaveCommand" />
+                            </Button.InputBindings>
+                            -->
                         </Button>
                     </Grid>
 

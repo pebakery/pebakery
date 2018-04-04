@@ -64,17 +64,15 @@ namespace PEBakery.WPF
         {
             // Nested Function
             string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
+            /*
             int GetIntValue(string key, int defaultValue = 0)
             {
                 if (_sc.MainInfo.ContainsKey(key))
-                {
                     return NumberHelper.ParseInt32(key, out int intVal) ? intVal : defaultValue;
-                }
                 else
-                {
                     return defaultValue;
-                }
             }
+            */
 
             // General
             if (EncodedFile.LogoExists(_sc))
@@ -87,12 +85,12 @@ namespace PEBakery.WPF
                 m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
             }
                 
-            m.ScriptTitle = _sc.Title; // GetStringValue("Title"); 
-            m.ScriptAuthor = _sc.Author; // GetStringValue("Author");
-            m.ScriptVersion = _sc.Version; // GetStringValue("Version");
+            m.ScriptTitle = _sc.Title; 
+            m.ScriptAuthor = _sc.Author;
+            m.ScriptVersion = _sc.Version;
             m.ScriptDate = GetStringValue("Date");
-            m.ScriptLevel = _sc.Level; // GetIntValue("Level", 0);
-            m.ScriptDescription = StringEscaper.Unescape(_sc.Description);  // GetStringValue("Description");
+            m.ScriptLevel = _sc.Level;
+            m.ScriptDescription = StringEscaper.Unescape(_sc.Description);
             m.ScriptSelectedState = _sc.Selected;
             m.ScriptMandatory = _sc.Mandatory;
         }
@@ -105,7 +103,7 @@ namespace PEBakery.WPF
             {
                 new IniKey("Main", "Title", m.ScriptTitle),
                 new IniKey("Main", "Author", m.ScriptAuthor),
-                new IniKey("Main", "Version", m.ScriptVersion.ToString()),
+                new IniKey("Main", "Version", m.ScriptVersion),
                 new IniKey("Main", "Date", m.ScriptDate),
                 new IniKey("Main", "Level", ((int)m.ScriptLevel).ToString()),
                 new IniKey("Main", "Description", StringEscaper.Escape(m.ScriptDescription)),
@@ -115,6 +113,14 @@ namespace PEBakery.WPF
 
             Ini.SetKeys(_sc.RealPath, keys);
             _sc = _sc.Project.RefreshScript(_sc);
+
+            Application.Current?.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                MainWindow w = Application.Current.MainWindow as MainWindow;
+                w?.DrawScript(_sc);
+            }));
+
+            m.ScriptUpdated = false;
         }
         #endregion
 
@@ -131,26 +137,21 @@ namespace PEBakery.WPF
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            if (m.ScriptUpdated)
+            {
+                // Make MainWindow to refresh script
+                DialogResult = true;
+                
+            }
+            else
+            {
+                DialogResult = false;
+            }
+                
             Tag = _sc;
 
             Close();
         }
-
-        /*
-        private void ApplyButton_Click(object sender, RoutedEventArgs e)
-        {
-            WriteScript();
-
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                MainWindow w = Application.Current.MainWindow as MainWindow;
-                Debug.Assert(w != null);
-
-                w.DrawScript(_sc);
-            });
-        }
-        */
         #endregion
 
         #region Button Event - General
@@ -267,6 +268,27 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region ShortCut Command Handler
+        private void ScriptMain_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (e.Command is RoutedCommand rCmd)
+            {
+                if (rCmd.Name.Equals("Save", StringComparison.Ordinal))
+                {
+                    // Changing focus is required to make sure changes in UI updated to ViewModel
+                    MainSaveButton.Focus();
+
+                    WriteScript();
+                }
+            }
+        }
+
+        private void ScriptMain_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            // Only in Tab [General]
+            e.CanExecute = m.TabIndex == 0;
+        }
+        #endregion
     }
     #endregion
 
@@ -280,7 +302,20 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Field and Property - General
+        #region Property - Tab Index
+        private int _tabIndex = 0;
+        public int TabIndex
+        {
+            get => _tabIndex;
+            set
+            {
+                _tabIndex = value;
+                OnPropertyUpdate(nameof(TabIndex));
+            }
+        }
+        #endregion
+
+        #region Property - General - Script Logo
         public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
         private FrameworkElement scriptLogoImage = ScriptLogoImageDefault;
         public FrameworkElement ScriptLogoImage
@@ -319,6 +354,10 @@ namespace PEBakery.WPF
                 return b.ToString();
             }
         }
+        #endregion
+
+        #region Property - General - Script Main
+        public bool ScriptUpdated { get; set; } = false;
 
         private string scriptTitle = string.Empty;
         public string ScriptTitle
@@ -327,6 +366,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptTitle = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptTitle));
             }
         }
@@ -342,13 +382,14 @@ namespace PEBakery.WPF
             }
         }
 
-        private int scriptVersion = 0;
-        public int ScriptVersion
+        private string scriptVersion = "0";
+        public string ScriptVersion
         {
             get => scriptVersion;
             set
             {
                 scriptVersion = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptVersion));
             }
         }
@@ -360,6 +401,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptDate = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDate));
             }
         }
@@ -371,6 +413,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptLevel = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptLevel));
             }
         }
@@ -382,6 +425,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptDescription = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDescription));
             }
         }
@@ -393,6 +437,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptSelectedState = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptSelected));
             }
         }
@@ -419,15 +464,16 @@ namespace PEBakery.WPF
                 {
                     case true:
                         scriptSelectedState = SelectedState.True;
-                        return;
+                        break;
                     default:
                     case false:
                         scriptSelectedState = SelectedState.False;
-                        return;
+                        break;
                     case null:
                         scriptSelectedState = SelectedState.None;
-                        return;                      
+                        break;                
                 }
+                ScriptUpdated = true;
             }
         }
 
@@ -438,6 +484,7 @@ namespace PEBakery.WPF
             set
             {
                 scriptMandatory = value;
+                ScriptUpdated = true;
                 OnPropertyUpdate(nameof(ScriptMandatory));
             }
         }
