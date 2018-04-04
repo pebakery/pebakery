@@ -39,6 +39,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -288,6 +289,95 @@ namespace PEBakery.Core
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return DecodeInMemory(encoded);
+        }
+        #endregion
+
+        #region GetFileInfo
+        public class EncodedFileInfo
+        {
+            public string DirName;
+            public string FileName;
+            public int RawSize;
+            public int CompressedSize;
+            public EncodeMode EncodeMode;
+        }
+
+        public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            EncodedFileInfo info = new EncodedFileInfo
+            {
+                DirName = dirName,
+                FileName = fileName,
+            };
+
+            if (!sc.Sections.ContainsKey(dirName))
+                throw new InvalidOperationException($"Directory [{dirName}] does not exist");
+            Dictionary<string, string> fileDict = sc.Sections[dirName].GetIniDict();
+
+            if (!fileDict.ContainsKey(fileName))
+                throw new InvalidOperationException("File index does not exist");
+
+            string index = fileDict[fileName].Trim();
+            Match m = Regex.Match(index, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (!m.Success)
+                throw new InvalidOperationException("File index corrupted");
+
+            if (!NumberHelper.ParseInt32(m.Groups[1].Value, out info.RawSize))
+                throw new InvalidOperationException("File index corrupted");
+            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out info.CompressedSize))
+                throw new InvalidOperationException("File index corrupted");
+
+            if (detail)
+            {
+                List<string> encoded = sc.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
+                info.EncodeMode = GetEncodeMode(encoded);
+            }
+
+            return info;
+        }
+
+        public static EncodedFileInfo GetLogoInfo(Script sc, bool detail = false)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            EncodedFileInfo info = new EncodedFileInfo
+            {
+                DirName = "AuthorEncoded",
+            };
+            
+            if (!sc.Sections.ContainsKey("AuthorEncoded"))
+                throw new InvalidOperationException("Directory [AuthorEncoded] does not exist");
+
+            Dictionary<string, string> fileDict = sc.Sections["AuthorEncoded"].GetIniDict();
+
+            if (!fileDict.ContainsKey("Logo"))
+                throw new InvalidOperationException("Logo does not exist");
+
+            info.FileName = fileDict["Logo"];
+            if (!fileDict.ContainsKey(info.FileName))
+                throw new InvalidOperationException("File index does not exist");
+
+            string index = fileDict[info.FileName].Trim();
+            Match m = Regex.Match(index, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (!m.Success)
+                throw new InvalidOperationException("File index corrupted");
+
+            if (!NumberHelper.ParseInt32(m.Groups[1].Value, out info.RawSize))
+                throw new InvalidOperationException("File index corrupted");
+            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out info.CompressedSize))
+                throw new InvalidOperationException("File index corrupted");
+
+            if (detail)
+            {
+                List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{info.FileName}"].GetLinesOnce();
+                info.EncodeMode = GetEncodeModeInMemory(encoded);
+            }
+
+            return info;
         }
         #endregion
 
@@ -962,7 +1052,7 @@ namespace PEBakery.Core
                     break;
 #endif
                 default:
-                    throw new InvalidOperationException($"Encoded file is corrupted: compMode");
+                    throw new InvalidOperationException("Encoded file is corrupted: compMode");
             }
 
             // [Stage 7] Decompress body
@@ -1008,6 +1098,164 @@ namespace PEBakery.Core
             // [Stage 9] Return decompressed body stream
             rawBodyStream.Position = 0;
             return rawBodyStream;
+        }
+        #endregion
+
+        #region GetEncodeMode
+        private static EncodeMode GetEncodeMode(List<string> encodedList)
+        {
+            string tempDecode = Path.GetTempFileName();
+            try
+            {
+                using (FileStream decodeStream = new FileStream(tempDecode, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                {
+                    // [Stage 1] Concat sliced base64-encoded lines into one string
+                    int decodeLen = SplitBase64.Decode(encodedList, decodeStream);
+
+                    // [Stage 2] Read final footer
+                    const int finalFooterLen = 0x24;
+                    byte[] finalFooter = new byte[finalFooterLen];
+                    int finalFooterIdx = decodeLen - finalFooterLen;
+
+                    decodeStream.Flush();
+                    decodeStream.Position = finalFooterIdx;
+                    int readByte = decodeStream.Read(finalFooter, 0, finalFooterLen);
+                    Debug.Assert(readByte == finalFooterLen);
+
+                    // 0x00 - 0x04 : 4B -> CRC32
+                    uint full_crc32 = BitConverter.ToUInt32(finalFooter, 0x00);
+                    // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+                    int compressedFooterLen = (int)BitConverter.ToUInt32(finalFooter, 0x0C);
+                    int compressedFooterIdx = finalFooterIdx - compressedFooterLen;
+                    // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
+                    int compressedBodyLen = (int)BitConverter.ToUInt64(finalFooter, 0x10);
+
+                    // [Stage 3] Validate final footer
+                    if (compressedBodyLen != compressedFooterIdx)
+                        throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
+                    if (full_crc32 != CalcCrc32(decodeStream, 0, finalFooterIdx))
+                        throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
+
+                    // [Stage 4] Decompress first footer
+                    byte[] firstFooter = new byte[0x226];
+                    using (MemoryStream compressedFooter = new MemoryStream(compressedFooterLen))
+                    {
+                        decodeStream.Position = compressedFooterIdx;
+                        decodeStream.CopyTo(compressedFooter, compressedFooterLen);
+                        decodeStream.Position = 0;
+
+                        compressedFooter.Flush();
+                        compressedFooter.Position = 0;
+                        using (ZLibStream zs = new ZLibStream(compressedFooter, CompressionMode.Decompress, CompressionLevel.Default))
+                        {
+                            readByte = zs.Read(firstFooter, 0, firstFooter.Length);
+                            Debug.Assert(readByte == firstFooter.Length);
+                        }
+                    }
+
+                    // [Stage 5] Read first footer
+                    // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+                    byte compMode = firstFooter[0x224];
+                    // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+                    byte compLevel = firstFooter[0x225];
+
+                    // [Stage 6] Validate first footer
+                    switch ((EncodeMode)compMode)
+                    {
+                        case EncodeMode.ZLib: // Type 1, zlib
+                            if (compLevel < 1 || 9 < compLevel)
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
+                            break;
+                        case EncodeMode.Raw: // Type 2, raw
+                            if (compLevel != 0)
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
+                            break;
+#if ENABLE_XZ
+                        case EncodeMode.XZ: // Type 3, LZMA
+                            if (compLevel < 1 || 9 < compLevel)
+                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                            break;
+#endif
+                        default:
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
+                    }
+
+                    return (EncodeMode)compMode;
+                }
+            }
+            finally
+            {
+                if (!File.Exists(tempDecode))
+                    File.Delete(tempDecode);
+            }
+        }
+        #endregion
+
+        #region GetEncodeModeInMemory
+        private static EncodeMode GetEncodeModeInMemory(List<string> encodedList)
+        {
+            // [Stage 1] Concat sliced base64-encoded lines into one string
+            byte[] decoded = SplitBase64.DecodeInMemory(encodedList);
+
+            // [Stage 2] Read final footer
+            const int finalFooterLen = 0x24;
+            int finalFooterIdx = decoded.Length - finalFooterLen;
+            // 0x00 - 0x04 : 4B -> CRC32
+            uint full_crc32 = BitConverter.ToUInt32(decoded, finalFooterIdx + 0x00);
+            // 0x0C - 0x0F : 4B -> Zlib Compressed Footer Length
+            int compressedFooterLen = (int)BitConverter.ToUInt32(decoded, finalFooterIdx + 0x0C);
+            int compressedFooterIdx = decoded.Length - (finalFooterLen + compressedFooterLen);
+            // 0x10 - 0x17 : 8B -> Zlib Compressed File Length
+            int compressedBodyLen = (int)BitConverter.ToUInt64(decoded, finalFooterIdx + 0x10);
+
+            // [Stage 3] Validate final footer
+            if (compressedBodyLen != compressedFooterIdx)
+                throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
+            uint calcFull_crc32 = Crc32Checksum.Crc32(decoded, 0, finalFooterIdx);
+            if (full_crc32 != calcFull_crc32)
+                throw new InvalidOperationException("Encoded file is corrupted: finalFooter");
+
+            // [Stage 4] Decompress first footer
+            byte[] rawFooter;
+            using (MemoryStream rawFooterStream = new MemoryStream())
+            {
+                using (MemoryStream ms = new MemoryStream(decoded, compressedFooterIdx, compressedFooterLen))
+                using (ZLibStream zs = new ZLibStream(ms, CompressionMode.Decompress, CompressionLevel.Default))
+                {
+                    zs.CopyTo(rawFooterStream);
+                }
+
+                rawFooter = rawFooterStream.ToArray();
+            }
+
+            // [Stage 5] Read first footer
+            // 0x224         : 1B -> Compress Mode (Type 1 : 00, Type 2 : 01)
+            byte compMode = rawFooter[0x224];
+            // 0x225         : 1B -> ZLib Compress Level (Type 1 : 01~09, Type 2 : 00)
+            byte compLevel = rawFooter[0x225];
+
+            // [Stage 6] Validate first footer
+            switch ((EncodeMode)compMode)
+            {
+                case EncodeMode.ZLib: // Type 1, zlib
+                    if (compLevel < 1 || 9 < compLevel)
+                        throw new InvalidOperationException("Encoded file is corrupted: compLevel");
+                    break;
+                case EncodeMode.Raw: // Type 2, raw
+                    if (compLevel != 0)
+                        throw new InvalidOperationException("Encoded file is corrupted: compLevel");
+                    break;
+#if ENABLE_XZ
+                case EncodeMode.XZ: // Type 3, LZMA
+                    if (compLevel < 1 || 9 < compLevel)
+                        throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                    break;
+#endif
+                default:
+                    throw new InvalidOperationException("Encoded file is corrupted: compMode");
+            }
+
+            return (EncodeMode)compMode;
         }
         #endregion
 
@@ -1060,6 +1308,7 @@ namespace PEBakery.Core
     #endregion
 
     #region EncodedFileInfo
+    /*
     /// <inheritdoc />
     /// <summary>
     /// Class to handle malformed WB082-attached files
@@ -1254,6 +1503,7 @@ namespace PEBakery.Core
             this.RawBodyStream.Position = 0;
         }
     }
+    */
     #endregion
 
     #region SplitBase64

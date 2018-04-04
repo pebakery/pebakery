@@ -78,15 +78,21 @@ namespace PEBakery.WPF
 
             // General
             if (EncodedFile.LogoExists(_sc))
-                m.ScriptLogo = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
+            {
+                m.ScriptLogoImage = EncodedFile.ExtractLogoImage(_sc, ScriptLogo.ActualWidth);
+                m.ScriptLogoInfo = EncodedFile.GetLogoInfo(_sc, true);
+            }
             else
-                m.ScriptLogo = ScriptEditViewModel.ScriptLogoDefault;
+            {
+                m.ScriptLogoImage = ScriptEditViewModel.ScriptLogoImageDefault;
+            }
+                
             m.ScriptTitle = _sc.Title; // GetStringValue("Title"); 
             m.ScriptAuthor = _sc.Author; // GetStringValue("Author");
             m.ScriptVersion = _sc.Version; // GetStringValue("Version");
             m.ScriptDate = GetStringValue("Date");
             m.ScriptLevel = _sc.Level; // GetIntValue("Level", 0);
-            m.ScriptDescription = _sc.Description;  // GetStringValue("Description");
+            m.ScriptDescription = StringEscaper.Unescape(_sc.Description);  // GetStringValue("Description");
             m.ScriptSelectedState = _sc.Selected;
             m.ScriptMandatory = _sc.Mandatory;
         }
@@ -102,7 +108,7 @@ namespace PEBakery.WPF
                 new IniKey("Main", "Version", m.ScriptVersion.ToString()),
                 new IniKey("Main", "Date", m.ScriptDate),
                 new IniKey("Main", "Level", ((int)m.ScriptLevel).ToString()),
-                new IniKey("Main", "Description", m.ScriptDescription),
+                new IniKey("Main", "Description", StringEscaper.Escape(m.ScriptDescription)),
                 new IniKey("Main", "Selected", m.ScriptSelectedState.ToString()),
                 new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
             };
@@ -118,16 +124,20 @@ namespace PEBakery.WPF
             Interlocked.Decrement(ref Count);
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private void MainSaveButton_Click(object sender, RoutedEventArgs e)
         {
             WriteScript();
+        }
 
-            DialogResult = true;
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
             Tag = _sc;
 
             Close();
         }
 
+        /*
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
             WriteScript();
@@ -140,13 +150,7 @@ namespace PEBakery.WPF
                 w.DrawScript(_sc);
             });
         }
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
-        {
-            DialogResult = false;
-            Tag = _sc;
-            Close();
-        }
+        */
         #endregion
 
         #region Button Event - General
@@ -272,20 +276,47 @@ namespace PEBakery.WPF
         #region Constructor
         public ScriptEditViewModel()
         {
-            ScriptLogoDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
+            ScriptLogoImageDefault.Foreground = new SolidColorBrush(Color.FromRgb(192, 192, 192));
         }
         #endregion
 
         #region Field and Property - General
-        public static readonly PackIconMaterial ScriptLogoDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
-        private FrameworkElement scriptLogo = ScriptLogoDefault;
-        public FrameworkElement ScriptLogo
+        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
+        private FrameworkElement scriptLogoImage = ScriptLogoImageDefault;
+        public FrameworkElement ScriptLogoImage
         {
-            get => scriptLogo;
+            get => scriptLogoImage;
             set
             {
-                scriptLogo = value;
-                OnPropertyUpdate(nameof(ScriptLogo));
+                scriptLogoImage = value;
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+            }
+        }
+
+        private EncodedFile.EncodedFileInfo scriptLogoInfo;
+        public EncodedFile.EncodedFileInfo ScriptLogoInfo
+        {
+            get => scriptLogoInfo;
+            set
+            {
+                scriptLogoInfo = value;
+                OnPropertyUpdate(nameof(ScriptLogoInfoStr));
+            }
+        }
+
+        public string ScriptLogoInfoStr
+        {
+            get
+            {
+                if (ScriptLogoInfo == null)
+                    return "Logo not found";
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine($"File : {ScriptLogoInfo.FileName}");
+                b.AppendLine($"Raw Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.RawSize, 1)}");
+                b.AppendLine($"Compressed Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.CompressedSize, 1)}");
+                b.Append($"Compression : {ScriptLogoInfo.EncodeMode}");
+                return b.ToString();
             }
         }
 

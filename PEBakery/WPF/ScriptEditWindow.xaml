@@ -48,177 +48,206 @@
         </Grid.RowDefinitions>
         <TabControl Grid.Row="0">
             <TabItem Header="General">
-                <Grid Margin="10, 10, 10, 10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="125"/>
-                        <RowDefinition />
-                    </Grid.RowDefinitions>
+                <StackPanel Margin="10, 0, 10, 10">
+                    <GroupBox Header="Main"
+                              BorderBrush="Gray">
+                        <Grid Margin="5, 5, 5, 5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="130"/>
+                                <RowDefinition Height="25"/>
+                            </Grid.RowDefinitions>
 
-                    <!-- Script Description -->
-                    <Grid Grid.Row="0"
-                            Margin="10, 0, 0, 0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                            <!-- Main Description -->
+                            <Grid Grid.Row="0"
+                                  Margin="5, 0, 5, 5">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition Height="25"/>
+                                    <RowDefinition />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                        <!-- Title -->
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Title"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"
-                                    />
-                        <TextBox Grid.Row="0" Grid.Column="1"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding ScriptTitle}"/>
+                                <!-- Title -->
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Title"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="0" Grid.Column="1"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptTitle}"/>
 
-                        <!-- Author -->
-                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Author"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"/>
-                        <TextBox Grid.Row="1" Grid.Column="1"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding ScriptAuthor}"/>
+                                <!-- Author -->
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Author"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="1" Grid.Column="1"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptAuthor}"/>
 
-                        <!-- Description -->
-                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                    Margin="0, 0, 5, 0"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"
-                                    Text="Description"/>
-                        <TextBox Grid.Row="2" Grid.Column="1"
-                                    Grid.RowSpan="3"
-                                    Height="70"
-                                    Text="{Binding ScriptDescription}"
-                                    TextWrapping="Wrap"
-                                    VerticalAlignment="Center"/>
+                                <!-- Description -->
+                                <TextBlock Grid.Row="2" Grid.Column="0"
+                                           Margin="0, 0, 5, 0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Text="Description"/>
+                                <TextBox Grid.Row="2" Grid.Column="1"
+                                         Grid.RowSpan="3"
+                                         Height="70"
+                                         Text="{Binding ScriptDescription, Mode=TwoWay}"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         VerticalAlignment="Center"/>
 
-                        <!-- Version -->
-                        <TextBlock Grid.Row="0" Grid.Column="2"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Version"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"/>
-                        <TextBox Grid.Row="0" Grid.Column="3"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding ScriptVersion}"/>
+                                <!-- Version -->
+                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Version"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="0" Grid.Column="3"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptVersion}"/>
 
-                        <!-- Date -->
-                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Date"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"/>
-                        <TextBox Grid.Row="1" Grid.Column="3"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding ScriptDate}"/>
+                                <!-- Date -->
+                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Date"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <TextBox Grid.Row="1" Grid.Column="3"
+                                         VerticalAlignment="Center"
+                                         Text="{Binding ScriptDate}"/>
 
-                        <!-- Level -->
-                        <TextBlock Grid.Row="2" Grid.Column="2"
-                                    Margin="0, 0, 5, 0"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"
-                                    Text="Level"/>
-                        <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
-                                                VerticalAlignment="Center"
-                                                Minimum="-256"
-                                                Maximum="255"
-                                                IncrementUnit="1"
-                                                Value="{Binding ScriptLevel}"
-                                                ValueChanged="ScriptLevelNumberBox_ValueChanged"/>
+                                <!-- Level -->
+                                <TextBlock Grid.Row="2" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Text="Level"/>
+                                <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
+                                                      VerticalAlignment="Center"
+                                                      Minimum="-256"
+                                                      Maximum="255"
+                                                      IncrementUnit="1"
+                                                      Value="{Binding ScriptLevel}"
+                                                      ValueChanged="ScriptLevelNumberBox_ValueChanged"/>
 
-                        <!-- Selected -->
-                        <TextBlock Grid.Row="3" Grid.Column="2"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Selected"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"/>
-                        <CheckBox Grid.Row="3" Grid.Column="3"
-                                    IsThreeState="True"
-                                    IsChecked="{Binding ScriptSelected}"
-                                    VerticalAlignment="Center"/>
-                        <!-- Mandatory -->
-                        <TextBlock Grid.Row="4" Grid.Column="2"
-                                    Margin="0, 0, 5, 0"
-                                    Text="Mandatory"
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    FontWeight="Bold"/>
-                        <CheckBox Grid.Row="4" Grid.Column="3" 
-                                    IsChecked="{Binding ScriptMandatory}"
-                                    VerticalAlignment="Center"/>
-                    </Grid>
-                    <!-- Script Logo -->
-                    <Grid Grid.Row="1"
-                          Width="125"
-                          Height="125">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="25"/>
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="25"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
+                                <!-- Selected -->
+                                <TextBlock Grid.Row="3" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Selected"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <CheckBox Grid.Row="3" Grid.Column="3"
+                                          IsThreeState="True"
+                                          IsChecked="{Binding ScriptSelected}"
+                                          VerticalAlignment="Center"/>
+                                <!-- Mandatory -->
+                                <TextBlock Grid.Row="4" Grid.Column="2"
+                                           Margin="0, 0, 5, 0"
+                                           Text="Mandatory"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"/>
+                                <CheckBox Grid.Row="4" Grid.Column="3" 
+                                          IsChecked="{Binding ScriptMandatory}"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                            <Button Grid.Row="1"
+                                    Width="100"
+                                    Content="Save"
+                                    Click="MainSaveButton_Click"
+                                    HorizontalAlignment="Right">
+                            </Button>
+                        </Grid>
+                    </GroupBox>
+                    <GroupBox Header="Logo"
+                              BorderBrush="Gray">
+                    
+                        <!-- Script Logo -->
+                        <Grid Height="100"
+                              Margin="3, 0, 5, 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                       Margin="5, 0, 0, 0"
-                                       VerticalAlignment="Center"
-                                       FontWeight="Bold"
-                                       Text="Logo"/>
-                        <ContentPresenter x:Name="ScriptLogo"
-                                              Grid.Row="1" Grid.Column="0"
+                            <ContentPresenter x:Name="ScriptLogo"
+                                              Grid.Row="0" Grid.Column="0"
                                               Margin="14"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
-                                              Content="{Binding ScriptLogo}"/>
-                        <StackPanel Grid.Row="1" Grid.Column="1"
+                                              Content="{Binding ScriptLogoImage}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding ScriptLogoInfoStr}"/>
+                            <StackPanel Grid.Row="0" Grid.Column="2"
                                         Orientation="Vertical"
                                         VerticalAlignment="Center">
-                            <Button Width="25" Height="25"
+                                <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoAttachButton"
                                         Click="ScriptLogoAttachButton_Click"
                                         ToolTip="Import logo from image">
-                                <iconPacks:Material Kind="Plus"/>
-                            </Button>
-                            <Button Width="25" Height="25"
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Plus"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Add"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Width="100" Height="25"
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoExtractButton"
                                         Click="ScriptLogoExtractButton_Click"
                                         ToolTip="Export logo to image">
-                                <iconPacks:Material Kind="ArrowExpandRight"/>
-                            </Button>
-                            <Button Width="25" Height="25"
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Extract"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Width="100" Height="25"
                                         x:Name="ScriptLogoDeleteButton"
                                         Click="ScriptLogoDeleteButton_Click"
                                         ToolTip="Delete logo">
-                                <iconPacks:Material Kind="Close"/>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Close"
+                                                                    Width="Auto"
+                                                                    Height="Auto"
+                                                                    Margin="0, 5, 5, 5"/>
+                                        <TextBlock Text="Delete"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </GroupBox>
+                </StackPanel>
             </TabItem>
             <TabItem Header="Attachment">
                 <Grid Margin="10, 10, 10, 10">
@@ -305,21 +334,11 @@
                 <ColumnDefinition Width="110"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Row="0" Grid.Column="1"
-                    IsDefault="True"
-                    Content="Save"
-                    Click="SaveButton_Click">
-            </Button>
-            <Button Grid.Row="0" Grid.Column="2"
-                    Margin="10, 0, 0, 0"
-                    Content="Apply"
-                    Click="ApplyButton_Click">
-            </Button>
             <Button Grid.Row="0" Grid.Column="3"
                     Margin="10, 0, 0, 0"
                     IsCancel="True"
-                    Content="Cancel"
-                    Click="CancelButton_Click">
+                    Content="Close"
+                    Click="CloseButton_Click">
             </Button>
         </Grid>
     </Grid>
