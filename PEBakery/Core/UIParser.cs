@@ -286,12 +286,11 @@ namespace PEBakery.Core
                     { // Variable Length
                         List<string> items = new List<string>();
 
-                        // Have ToolTip?
-                        string toolTip = null;
                         int cnt = args.Count;
-                        if (args.Last().StartsWith("__", StringComparison.Ordinal))
+                        string toolTip = null;
+                        if (args.Last().StartsWith("__", StringComparison.Ordinal)) // Has <ToolTip>
                         {
-                            toolTip = args.Last();
+                            toolTip = GetInfoTooltip(args, args.Count - 1);
                             cnt -= 1;
                         }
 
