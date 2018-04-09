@@ -174,124 +174,171 @@ namespace PEBakery.IniLib.Tests
             IniLib_SetKey_2();
             IniLib_SetKey_3();
             IniLib_SetKey_4();
+            IniLib_SetKey_5();
         }
 
         public void IniLib_SetKey_1()
         {
             string tempFile = Path.GetTempFileName();
-
-            Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
-
-            string read;
-            using (StreamReader r = new StreamReader(tempFile))
+            try
             {
-                read = r.ReadToEnd();
+                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
+
+                string read;
+                using (StreamReader r = new StreamReader(tempFile))
+                {
+                    read = r.ReadToEnd();
+                }
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Section]");
+                b.AppendLine("Key=Value");
+                string comp = b.ToString();
+
+                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("[Section]");
-            b.AppendLine("Key=Value");
-            string comp = b.ToString();
-
-            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-
-            File.Delete(tempFile);
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
 
         public void IniLib_SetKey_2()
         {
             string tempFile = Path.GetTempFileName();
-            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+            try
             {
-                w.WriteLine("[Section]");
-                w.WriteLine("Key=A");
-                w.Close();
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("Key=A");
+                    w.Close();
+                }
+
+                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "B"));
+
+                string read;
+                Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
+                using (StreamReader r = new StreamReader(tempFile, encoding))
+                {
+                    read = r.ReadToEnd();
+                }
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Section]");
+                b.AppendLine("Key=B");
+                b.AppendLine();
+                string comp = b.ToString();
+
+                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
-
-            Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "B"));
-
-            string read;
-            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
-            using (StreamReader r = new StreamReader(tempFile, encoding))
+            finally
             {
-                read = r.ReadToEnd();
+                File.Delete(tempFile);
             }
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("[Section]");
-            b.AppendLine("Key=B");
-            string comp = b.ToString();
-
-            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-
-            File.Delete(tempFile);
         }
 
         public void IniLib_SetKey_3()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+            try
             {
-                w.WriteLine("[Section]");
-                w.WriteLine("Sect2");
-                w.Close();
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("Sect2");
+                    w.Close();
+                }
+
+                Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
+
+                string read;
+                Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
+                using (StreamReader r = new StreamReader(tempFile, encoding))
+                {
+                    read = r.ReadToEnd();
+                }
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Section]");
+                b.AppendLine("Sect2");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("Key=B");
+                string comp = b.ToString();
+
+                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
-
-            Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
-
-            string read;
-            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
-            using (StreamReader r = new StreamReader(tempFile, encoding))
+            finally
             {
-                read = r.ReadToEnd();
+                File.Delete(tempFile);
             }
-
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("[Section]");
-            b.AppendLine("Sect2");
-            b.AppendLine();
-            b.AppendLine("[Section2]");
-            b.AppendLine("Key=B");
-            string comp = b.ToString();
-
-            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
-
-            File.Delete(tempFile);
         }
 
         public void IniLib_SetKey_4()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
-            TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
-            using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+            try
             {
-                w.WriteLine("[Section]");
-                w.WriteLine("Section2");
-                w.Close();
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("Section2");
+                    w.Close();
+                }
+
+                Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
+
+                string read;
+                Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
+                using (StreamReader r = new StreamReader(tempFile, encoding))
+                {
+                    read = r.ReadToEnd();
+                }
+
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Section]");
+                b.AppendLine("Section2");
+                b.AppendLine();
+                b.AppendLine("[Section2]");
+                b.AppendLine("Key=B");
+                string comp = b.ToString();
+
+                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
             }
-
-            Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
-
-            string read;
-            Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
-            using (StreamReader r = new StreamReader(tempFile, encoding))
+            finally
             {
-                read = r.ReadToEnd();
+                File.Delete(tempFile);
             }
+        }
 
-            StringBuilder b = new StringBuilder();
-            b.AppendLine("[Section]");
-            b.AppendLine("Section2");
-            b.AppendLine();
-            b.AppendLine("[Section2]");
-            b.AppendLine("Key=B");
-            string comp = b.ToString();
+        public void IniLib_SetKey_5()
+        {
+            string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            try
+            {
+                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
 
-            Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+                string read;
+                using (StreamReader r = new StreamReader(tempFile))
+                {
+                    read = r.ReadToEnd();
+                }
 
-            File.Delete(tempFile);
+                StringBuilder b = new StringBuilder();
+                b.AppendLine("[Section]");
+                b.AppendLine("Key=Value");
+                string comp = b.ToString();
+
+                Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
         }
         #endregion
 
@@ -388,10 +435,12 @@ namespace PEBakery.IniLib.Tests
             b.AppendLine("11=국");
             b.AppendLine("12=어");
             b.AppendLine("13=한글");
+            b.AppendLine();
             b.AppendLine("[Section3]");
             b.AppendLine("20=韓");
             b.AppendLine("21=國");
             b.AppendLine("22=語");
+            b.AppendLine();
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
@@ -1988,6 +2037,7 @@ namespace PEBakery.IniLib.Tests
             b.AppendLine("[Section2]");
             b.AppendLine("04=F");
             b.AppendLine("03=C");
+            b.AppendLine();
             string comp = b.ToString();
 
             Assert.IsTrue(read.Equals(comp, StringComparison.Ordinal));
