@@ -39,7 +39,9 @@ using PEBakery.Helper;
 using PEBakery.WPF.Controls;
 using PEBakery.IniLib;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using ManagedWimLib;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core
 {
@@ -146,7 +148,7 @@ namespace PEBakery.Core
         public SectionAddress Addr;
         public CodeType Type;
         public CodeInfo Info;
-        public int LineIdx = 0;
+        public int LineIdx;
 
         public CodeCommand(string rawCode, CodeType type, CodeInfo info, int lineIdx)
         {
@@ -1356,7 +1358,7 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_WebGet : CodeInfo
     { // WebGet,<URL>,<DestPath>,[Hash=HashType,HashDigest],[NOERR]
-        // This command was rebuilt, and scarped WB082 spec.
+        // This command was rebuilt, and scraped WB082 spec.
         public string URL;
         public string DestPath;
         public HashHelper.HashType HashType; // Optional Argument
@@ -2638,23 +2640,35 @@ namespace PEBakery.Core
 
     [Serializable]
     public class CodeInfo_WimInfo : CodeInfo
-    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>
+    { // WimInfo,<SrcWim>,<ImageIndex>,<Key>,<DestVar>,[NOERR]
         public string SrcWim;
         public string ImageIndex;
         public string Key;
         public string DestVar;
+        public bool NoErrFlag;
 
-        public CodeInfo_WimInfo(string srcWim, string imageIndex, string key, string destVar)
+        public CodeInfo_WimInfo(string srcWim, string imageIndex, string key, string destVar, bool noErrFlag)
         {
             SrcWim = srcWim;
             ImageIndex = imageIndex;
             Key = key;
             DestVar = destVar;
+            NoErrFlag = noErrFlag;
         }
 
         public override string ToString()
         {
-            return $"{SrcWim},{ImageIndex},{Key},{DestVar}";
+            StringBuilder b = new StringBuilder();
+            b.Append(SrcWim);
+            b.Append(",");
+            b.Append(ImageIndex);
+            b.Append(",");
+            b.Append(Key);
+            b.Append(",");
+            b.Append(DestVar);
+            if (NoErrFlag)
+                b.Append(",NOERR");
+            return b.ToString();
         }
     }
 
@@ -3256,6 +3270,7 @@ namespace PEBakery.Core
         WimExistIndex,
         WimExistFile,
         WimExistDir,
+        WimExistImageInfo,
         // ETC
         Ping, Online, Question,
         // Deprecated
@@ -3339,6 +3354,7 @@ namespace PEBakery.Core
                 case BranchConditionType.Question: // can have 1 or 3 argument
                 case BranchConditionType.WimExistFile:
                 case BranchConditionType.WimExistDir:
+                case BranchConditionType.WimExistImageInfo:
                     Arg1 = arg1;
                     Arg2 = arg2;
                     Arg3 = arg3;
