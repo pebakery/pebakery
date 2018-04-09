@@ -121,7 +121,7 @@ namespace PEBakery.Core
             {
                 new IniKey("Main", "Title"),
             };
-            keys = Ini.GetKeys(fullPath, keys);
+            keys = Ini.ReadKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             string projectTitle = dict["Title"];
@@ -190,7 +190,7 @@ namespace PEBakery.Core
                 new IniKey("Main", "TargetDir"),
                 new IniKey("Main", "ISOFile"),
             };
-            keys = Ini.GetKeys(fullPath, keys);
+            keys = Ini.ReadKeys(fullPath, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => x.Key, x => x.Value);
 
             // If PathSetting is set to False, do not set SourceDir, TargetDir and ISOFile
@@ -878,7 +878,7 @@ namespace PEBakery.Core
 
                         if (log.State == LogState.Success)
                         { // SetValue success, write to IniFile
-                            if (Ini.SetKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
+                            if (Ini.WriteKey(s.Project.MainScript.RealPath, "Variables", $"%{key}%", finalValue)) // To ensure final form being written
                                 logs.Add(new LogInfo(LogState.Success, $"Permanent variable [%{key}%] set to [{finalValue}]"));
                             else
                                 logs.Add(new LogInfo(LogState.Error, $"Failed to write permanent variable [%{key}%] and its value [{finalValue}] into script.project"));

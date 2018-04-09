@@ -198,7 +198,7 @@ namespace PEBakery.Core
                         if (_sections.ContainsKey("Main"))
                         {
                             _sections["Main"].IniDict["Selected"] = valStr;
-                            Ini.SetKey(_realPath, new IniKey("Main", "Selected", valStr));
+                            Ini.WriteKey(_realPath, new IniKey("Main", "Selected", valStr));
                         }
                     }
                 }

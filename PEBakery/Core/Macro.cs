@@ -238,7 +238,7 @@ namespace PEBakery.Core
                 if (permanent) // MacroDict
                 {
                     MacroDict[macroName] = cmd;
-                    if (Ini.SetKey(addr.Project.MainScript.RealPath, "Variables", macroName, cmd.RawCode))
+                    if (Ini.WriteKey(addr.Project.MainScript.RealPath, "Variables", macroName, cmd.RawCode))
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] set to [{cmd.RawCode}]");
                     else
                         return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainScript.RealPath}]");

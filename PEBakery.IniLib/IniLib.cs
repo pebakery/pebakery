@@ -68,7 +68,7 @@ namespace PEBakery.IniLib
     public static class Ini
     {
         #region Lock
-        private static readonly ConcurrentDictionary<string, ReaderWriterLockSlim> lockDict =
+        private static readonly ConcurrentDictionary<string, ReaderWriterLockSlim> LockDict =
             new ConcurrentDictionary<string, ReaderWriterLockSlim>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -76,45 +76,45 @@ namespace PEBakery.IniLib
         /// </summary>
         public static void ClearLockDict()
         {
-            lockDict.Clear();
+            LockDict.Clear();
         }
         #endregion
 
-        #region GetKey
+        #region ReadKey
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        public static string GetKey(string file, IniKey iniKey)
+        public static string ReadKey(string file, IniKey iniKey)
         {
-            IniKey[] iniKeys = InternalGetKeys(file, new IniKey[] { iniKey });
+            IniKey[] iniKeys = InternalReadKeys(file, new IniKey[] { iniKey });
             return iniKeys[0].Value;
         }
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        public static string GetKey(string file, string section, string key)
+        public static string ReadKey(string file, string section, string key)
         {
-            IniKey[] iniKeys = InternalGetKeys(file, new IniKey[] { new IniKey(section, key) });
+            IniKey[] iniKeys = InternalReadKeys(file, new IniKey[] { new IniKey(section, key) });
             return iniKeys[0].Value;
         }
         /// <summary>
         /// Get key's value from ini file.
         /// </summary>
-        public static IniKey[] GetKeys(string file, IEnumerable<IniKey> iniKeys)
+        public static IniKey[] ReadKeys(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalGetKeys(file, iniKeys.ToArray());
+            return InternalReadKeys(file, iniKeys.ToArray());
         }
-        private static IniKey[] InternalGetKeys(string file, IniKey[] iniKeys)
+        private static IniKey[] InternalReadKeys(string file, IniKey[] iniKeys)
         {
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterReadLock();
@@ -222,33 +222,33 @@ namespace PEBakery.IniLib
         }
         #endregion
 
-        #region SetKey
-        public static bool SetKey(string file, string section, string key, string value)
+        #region WriteKey
+        public static bool WriteKey(string file, string section, string key, string value)
         {
-            return InternalSetKeys(file, new List<IniKey> { new IniKey(section, key, value) });
+            return InternalWriteKeys(file, new List<IniKey> { new IniKey(section, key, value) });
         }
 
-        public static bool SetKey(string file, IniKey iniKey)
+        public static bool WriteKey(string file, IniKey iniKey)
         {
-            return InternalSetKeys(file, new List<IniKey> { iniKey });
+            return InternalWriteKeys(file, new List<IniKey> { iniKey });
         }
 
-        public static bool SetKeys(string file, IEnumerable<IniKey> iniKeys)
+        public static bool WriteKeys(string file, IEnumerable<IniKey> iniKeys)
         {
-            return InternalSetKeys(file, iniKeys.ToList());
+            return InternalWriteKeys(file, iniKeys.ToList());
         }
 
-        private static bool InternalSetKeys(string file, List<IniKey> inputKeys)
+        private static bool InternalWriteKeys(string file, List<IniKey> inputKeys)
         {
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             #region FinalizeFile
@@ -488,14 +488,14 @@ namespace PEBakery.IniLib
         private static bool InternalWriteRawLine(string file, List<IniKey> iniKeys, bool append = true)
         {
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterWriteLock();
@@ -535,7 +535,6 @@ namespace PEBakery.IniLib
                 using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
                 {
                     string rawLine;
-                    string line;
                     bool inTargetSection = false;
                     string currentSection = null;
                     List<string> processedSections = new List<string>(iniKeys.Count);
@@ -570,7 +569,7 @@ namespace PEBakery.IniLib
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineWritten = false;
-                        line = rawLine.Trim(); // Remove whitespace
+                        string line = rawLine.Trim();
 
                         // Ignore comments. If you wrote all keys successfully, also skip.
                         if (iniKeys.Count == 0 ||
@@ -660,8 +659,6 @@ namespace PEBakery.IniLib
                                         if (currentSection.Equals(iniKeys[i].Section, StringComparison.OrdinalIgnoreCase))
                                         { // append key to section
                                             processedKeys.Add(i);
-                                            thisLineWritten = true;
-
                                             writer.WriteLine(iniKeys[i].Key);
                                         }
                                     }
@@ -768,14 +765,14 @@ namespace PEBakery.IniLib
                 processed[i] = false;
 
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterWriteLock();
@@ -795,23 +792,21 @@ namespace PEBakery.IniLib
                         return processed; // All False
                     }
 
-                    string rawLine = string.Empty;
-                    string line = string.Empty;
+                    string rawLine;
                     bool inTargetSection = false;
                     string currentSection = null;
 
                     while ((rawLine = reader.ReadLine()) != null)
                     { // Read text line by linev
                         bool thisLineProcessed = false;
-                        line = rawLine.Trim(); // Remove whitespace
+                        string line = rawLine.Trim();
 
                         // Ignore comments. If you deleted all keys successfully, also skip.
-                        if (processed.Where(x => x == false).Count() == 0
+                        if (processed.Count(x => !x) == 0
                             || line.StartsWith("#", StringComparison.Ordinal)
                             || line.StartsWith(";", StringComparison.Ordinal)
                             || line.StartsWith("//", StringComparison.Ordinal))
                         {
-                            thisLineProcessed = true;
                             writer.WriteLine(rawLine);
                             continue;
                         }
@@ -869,7 +864,7 @@ namespace PEBakery.IniLib
                     writer.Close();
                 }
 
-                if (0 < processed.Where(x => x).Count())
+                if (0 < processed.Count(x => x))
                     IniHelper.FileReplaceEx(tempPath, file);
 
                 return processed;
@@ -902,18 +897,18 @@ namespace PEBakery.IniLib
         {
             string[] sectionNames = sections.ToArray();
             Dictionary<string, List<IniKey>> secDict = new Dictionary<string, List<IniKey>>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < sectionNames.Length; i++)
-                secDict[sectionNames[i]] = null;
+            foreach (string section in sectionNames)
+                secDict[section] = null;
 
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterReadLock();
@@ -923,7 +918,7 @@ namespace PEBakery.IniLib
                 using (StreamReader reader = new StreamReader(file, encoding, true))
                 {
                     // int len = iniKeys.Count;
-                    string line = string.Empty;
+                    string line;
                     bool inTargetSection = false;
                     string currentSection = null;
                     List<IniKey> currentIniKeys = null;
@@ -1025,14 +1020,14 @@ namespace PEBakery.IniLib
         {
             List<string> sectionList = sections.ToList();
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterWriteLock();
@@ -1057,23 +1052,23 @@ namespace PEBakery.IniLib
 
                 string tempPath = Path.GetTempFileName();
                 Encoding encoding = IniHelper.DetectTextEncoding(file);
-                using (StreamReader reader = new StreamReader(file, encoding, true))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     // Is Original File Empty?
-                    if (reader.Peek() == -1)
+                    if (r.Peek() == -1)
                     {
-                        reader.Close();
+                        r.Close();
 
                         // Write all and exit
                         for (int i = 0; i < sectionList.Count; i++)
                         {
                             if (0 < i)
-                                writer.WriteLine();
-                            writer.WriteLine($"[{sectionList[i]}]");
+                                w.WriteLine();
+                            w.WriteLine($"[{sectionList[i]}]");
                         }
 
-                        writer.Close();
+                        w.Close();
                         IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }
@@ -1081,7 +1076,7 @@ namespace PEBakery.IniLib
                     string rawLine;
                     List<string> processedSections = new List<string>(sectionList.Count);
 
-                    while ((rawLine = reader.ReadLine()) != null)
+                    while ((rawLine = r.ReadLine()) != null)
                     { // Read text line by line
                         bool thisLineProcessed = false;
                         string line = rawLine.Trim();
@@ -1097,29 +1092,29 @@ namespace PEBakery.IniLib
                             for (int i = 0; i < sectionList.Count; i++)
                             {
                                 if (foundSection.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase))
-                                { // Delete this section!
+                                {
                                     processedSections.Add(foundSection);
                                     sectionList.RemoveAt(i);
                                     break; // for shorter O(n)
                                 }
                             }
                             thisLineProcessed = true;
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
                         }
 
                         if (thisLineProcessed == false)
-                            writer.WriteLine(rawLine);
+                            w.WriteLine(rawLine);
 
                         // End of file
-                        if (reader.Peek() == -1)
-                        { // If there are sections not added, add it now
+                        if (r.Peek() == -1)
+                        { // If sections were not added, add it now
                             List<int> processedIdxs = new List<int>(sectionList.Count);
                             for (int i = 0; i < sectionList.Count; i++)
                             { // At this time, only unfound section remains in iniKeys
                                 if (processedSections.Any(s => s.Equals(sectionList[i], StringComparison.OrdinalIgnoreCase)) == false)
                                 {
                                     processedSections.Add(sectionList[i]);
-                                    writer.WriteLine($"\r\n[{sectionList[i]}]");
+                                    w.WriteLine($"\r\n[{sectionList[i]}]");
                                 }
                                 processedIdxs.Add(i);
                             }
@@ -1127,8 +1122,6 @@ namespace PEBakery.IniLib
                                 sectionList.RemoveAt(i);
                         }
                     }
-                    reader.Close();
-                    writer.Close();
                 }
 
                 if (sectionList.Count == 0)
@@ -1176,14 +1169,14 @@ namespace PEBakery.IniLib
             List<string> sectionList = sections.ToList();
 
             ReaderWriterLockSlim rwLock;
-            if (lockDict.ContainsKey(file))
+            if (LockDict.ContainsKey(file))
             {
-                rwLock = lockDict[file];
+                rwLock = LockDict[file];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[file] = rwLock;
+                LockDict[file] = rwLock;
             }
 
             rwLock.EnterWriteLock();
@@ -1268,7 +1261,7 @@ namespace PEBakery.IniLib
                 foreach (var kvKey in kvSec.Value)
                     keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                result = result & InternalSetKeys(destFile, keys);
+                result = result & InternalWriteKeys(destFile, keys);
             }
 
             return result;
@@ -1294,7 +1287,7 @@ namespace PEBakery.IniLib
                     foreach (var kvKey in kvSec.Value)
                         keys.Add(new IniKey(kvSec.Key, kvKey.Key, kvKey.Value));
 
-                    result = result & InternalSetKeys(destFile, keys);
+                    result = result & InternalWriteKeys(destFile, keys);
                 }
             }
 
@@ -1529,14 +1522,14 @@ namespace PEBakery.IniLib
         {
             ReaderWriterLockSlim rwLock;
 
-            if (lockDict.ContainsKey(srcFile))
+            if (LockDict.ContainsKey(srcFile))
             {
-                rwLock = lockDict[srcFile];
+                rwLock = LockDict[srcFile];
             }
             else
             {
                 rwLock = new ReaderWriterLockSlim();
-                lockDict[srcFile] = rwLock;
+                LockDict[srcFile] = rwLock;
             }
 
             Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);

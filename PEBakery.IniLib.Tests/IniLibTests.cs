@@ -34,22 +34,22 @@ namespace PEBakery.IniLib.Tests
     [TestClass]
     public class IniLibTests
     {
-        #region GetKey
+        #region ReadKey
         [TestCategory("IniLib")]
         [TestMethod]
-        public void IniLib_GetKey()
+        public void IniLib_ReadKey()
         {
-            IniLib_GetKey_1();
-            IniLib_GetKey_2();
-            IniLib_GetKey_3();
+            IniLib_ReadKey_1();
+            IniLib_ReadKey_2();
+            IniLib_ReadKey_3();
         }
 
-        public void IniLib_GetKey_1()
+        public void IniLib_ReadKey_1()
         {
             string tempFile = Path.GetTempFileName();
             try
             {
-                Assert.IsNull(Ini.GetKey(tempFile, "Section", "Key"));
+                Assert.IsNull(Ini.ReadKey(tempFile, "Section", "Key"));
             }
             finally
             {
@@ -57,7 +57,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_GetKey_2()
+        public void IniLib_ReadKey_2()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -70,11 +70,11 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
-                Assert.IsFalse(Ini.GetKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section", "Key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section", "key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section", "Key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section", "key").Equals("Value", StringComparison.Ordinal));
+                Assert.IsFalse(Ini.ReadKey(tempFile, "Section", "Key").Equals("value", StringComparison.Ordinal));
 
             }
             finally
@@ -83,7 +83,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_GetKey_3()
+        public void IniLib_ReadKey_3()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -106,14 +106,14 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
-                Assert.IsTrue(Ini.GetKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section1", "1").Equals("A", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section1", "2").Equals("B", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section1", "3").Equals("C", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section2", "4").Equals("D", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "Section2", "5").Equals("E", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section3", "6").Equals("F", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section3", "7").Equals("G", StringComparison.Ordinal));
+                Assert.IsTrue(Ini.ReadKey(tempFile, "section3", "8").Equals("H", StringComparison.Ordinal));
             }
             finally
             {
@@ -122,15 +122,15 @@ namespace PEBakery.IniLib.Tests
         }
         #endregion
 
-        #region GetKeys
+        #region ReadKeys
         [TestCategory("IniLib")]
         [TestMethod]
-        public void IniLib_GetKeys()
+        public void IniLib_ReadKeys()
         {
-            IniLib_GetKeys_1();
+            IniLib_ReadKeys_1();
         }
 
-        public void IniLib_GetKeys_1()
+        public void IniLib_ReadKeys_1()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -165,7 +165,7 @@ namespace PEBakery.IniLib.Tests
                 keys[8] = new IniKey("Section1", "1");
                 keys[9] = new IniKey("Section2", "4");
 
-                keys = Ini.GetKeys(tempFile, keys);
+                keys = Ini.ReadKeys(tempFile, keys);
                 Assert.IsTrue(keys[0].Value.Equals("C", StringComparison.Ordinal));
                 Assert.IsTrue(keys[1].Value.Equals("H", StringComparison.Ordinal));
                 Assert.IsTrue(keys[2].Value.Equals("E", StringComparison.Ordinal));
@@ -184,25 +184,25 @@ namespace PEBakery.IniLib.Tests
         }
         #endregion
 
-        #region SetKey
+        #region WriteKey
         [TestCategory("IniLib")]
         [TestMethod]
-        public void IniLib_SetKey()
+        public void IniLib_WriteKey()
         {
-            IniLib_SetKey_1();
-            IniLib_SetKey_2();
-            IniLib_SetKey_3();
-            IniLib_SetKey_4();
-            IniLib_SetKey_5();
-            IniLib_SetKey_6();
+            IniLib_WriteKey_1();
+            IniLib_WriteKey_2();
+            IniLib_WriteKey_3();
+            IniLib_WriteKey_4();
+            IniLib_WriteKey_5();
+            IniLib_WriteKey_6();
         }
 
-        public void IniLib_SetKey_1()
+        public void IniLib_WriteKey_1()
         {
             string tempFile = Path.GetTempFileName();
             try
             {
-                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Section", "Key", "Value"));
 
                 string read;
                 using (StreamReader r = new StreamReader(tempFile))
@@ -223,7 +223,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKey_2()
+        public void IniLib_WriteKey_2()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -236,7 +236,7 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "B"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Section", "Key", "B"));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
@@ -259,7 +259,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKey_3()
+        public void IniLib_WriteKey_3()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
             try
@@ -272,7 +272,7 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Section2", "Key", "B"));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
@@ -297,7 +297,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKey_4()
+        public void IniLib_WriteKey_4()
         { // Found while testing EncodedFile.EncodeFile()
             string tempFile = Path.GetTempFileName();
             try
@@ -310,7 +310,7 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.SetKey(tempFile, "Section2", "Key", "B"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Section2", "Key", "B"));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
@@ -335,12 +335,12 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKey_5()
+        public void IniLib_WriteKey_5()
         {
             string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
             {
-                Assert.IsTrue(Ini.SetKey(tempFile, "Section", "Key", "Value"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Section", "Key", "Value"));
 
                 string read;
                 using (StreamReader r = new StreamReader(tempFile))
@@ -361,7 +361,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKey_6()
+        public void IniLib_WriteKey_6()
         { // https://github.com/pebakery/pebakery/issues/57
             string tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             try
@@ -382,8 +382,8 @@ namespace PEBakery.IniLib.Tests
                     w.Close();
                 }
 
-                Assert.IsTrue(Ini.SetKey(tempFile, "Interface", "FileBox2", "Overwrite2"));
-                Assert.IsTrue(Ini.SetKey(tempFile, "Interface", "FileBox3", "Overwrite3"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Interface", "FileBox2", "Overwrite2"));
+                Assert.IsTrue(Ini.WriteKey(tempFile, "Interface", "FileBox3", "Overwrite3"));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
@@ -415,16 +415,16 @@ namespace PEBakery.IniLib.Tests
         }
         #endregion
 
-        #region SetKeys
+        #region WriteKeys
         [TestCategory("IniLib")]
         [TestMethod]
-        public void IniLib_SetKeys()
+        public void IniLib_WriteKeys()
         {
-            IniLib_SetKeys_1();
-            IniLib_SetKeys_2();
+            IniLib_WriteKeys_1();
+            IniLib_WriteKeys_2();
         }
 
-        public void IniLib_SetKeys_1()
+        public void IniLib_WriteKeys_1()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -436,7 +436,7 @@ namespace PEBakery.IniLib.Tests
                 keys[1] = new IniKey("Section1", "10", "한국어");
                 keys[2] = new IniKey("Section3", "30", "Français");
 
-                Assert.IsTrue(Ini.SetKeys(tempFile, keys));
+                Assert.IsTrue(Ini.WriteKeys(tempFile, keys));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);
@@ -464,7 +464,7 @@ namespace PEBakery.IniLib.Tests
             }
         }
 
-        public void IniLib_SetKeys_2()
+        public void IniLib_WriteKeys_2()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -493,7 +493,7 @@ namespace PEBakery.IniLib.Tests
                 keys[3] = new IniKey("Section1", "04", "Unicode");
                 keys[4] = new IniKey("Section2", "13", "한글");
 
-                Assert.IsTrue(Ini.SetKeys(tempFile, keys));
+                Assert.IsTrue(Ini.WriteKeys(tempFile, keys));
 
                 string read;
                 Encoding encoding = TestHelper.DetectTextEncoding(tempFile);

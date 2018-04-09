@@ -756,18 +756,18 @@ namespace PEBakery.Core
                     Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
 
                 // Write file info into [{dirName}]
-                Ini.SetKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
+                Ini.WriteKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
 
                 // Write encoded file into [EncodedFile-{dirName}-{fileName}]
                 if (fileOverwrite)
                     Ini.DeleteSection(sc.RealPath, section); // Delete existing encoded file
-                Ini.SetKeys(sc.RealPath, keys);
+                Ini.WriteKeys(sc.RealPath, keys);
 
                 // Write additional line when encoding logo.
                 if (encodeLogo)
                 {
-                    string lastLogo = Ini.GetKey(sc.RealPath, "AuthorEncoded", "Logo");
-                    Ini.SetKey(sc.RealPath, "AuthorEncoded", "Logo", fileName);
+                    string lastLogo = Ini.ReadKey(sc.RealPath, "AuthorEncoded", "Logo");
+                    Ini.WriteKey(sc.RealPath, "AuthorEncoded", "Logo", fileName);
 
                     if (lastLogo != null)
                     {

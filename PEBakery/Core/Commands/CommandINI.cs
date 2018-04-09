@@ -60,7 +60,7 @@ namespace PEBakery.Core.Commands
             if (key.Length == 0)
                 return LogInfo.LogErrorMessage(logs, "Key name cannot be empty");
 
-            string value = Ini.GetKey(fileName, sectionName, key);
+            string value = Ini.ReadKey(fileName, sectionName, key);
             if (value != null)
             {
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] read from [{fileName}]"));
@@ -110,7 +110,7 @@ namespace PEBakery.Core.Commands
                 keys[i] = new IniKey(sectionName, key);
             }
 
-            keys = Ini.GetKeys(fileName, keys);
+            keys = Ini.ReadKeys(fileName, keys);
 
             int successCount = 0;
             for (int i = 0; i < keys.Length; i++)
@@ -174,7 +174,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.SetKey(fileName, sectionName, key, value);
+            bool result = Ini.WriteKey(fileName, sectionName, key, value);
             if (result)
                 logs.Add(new LogInfo(LogState.Success, $"Key [{key}] and its value [{value}] written to [{fileName}]", cmd));
             else
@@ -219,7 +219,7 @@ namespace PEBakery.Core.Commands
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            bool result = Ini.SetKeys(fileName, keys);
+            bool result = Ini.WriteKeys(fileName, keys);
 
             if (result)
             {

@@ -2026,7 +2026,7 @@ namespace PEBakery.WPF
                 int exist = sc.Project.AllScripts.Count(x => x.RealPath.Equals(path, StringComparison.OrdinalIgnoreCase));
                 if (exist == 1)
                 {
-                    Ini.SetKey(path, "Main", "Selected", "False");
+                    Ini.WriteKey(path, "Main", "Selected", "False");
                     TreeViewModel found = FindScriptByFullPath(path);
                     if (found != null)
                     {

@@ -282,7 +282,7 @@ namespace PEBakery.Tests.Core.Command
                 EngineTests.Eval(s, rawCode, CodeType.WriteInterface, check);
                 if (check == ErrorCheck.Success)
                 {
-                    string dest = Ini.GetKey(destFile, "Interface", key);
+                    string dest = Ini.ReadKey(destFile, "Interface", key);
                     Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
                 }
             }

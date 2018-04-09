@@ -111,7 +111,7 @@ namespace PEBakery.WPF
                 new IniKey("Main", "Mandatory", m.ScriptMandatory.ToString()),
             };
 
-            Ini.SetKeys(_sc.RealPath, keys);
+            Ini.WriteKeys(_sc.RealPath, keys);
             _sc = _sc.Project.RefreshScript(_sc);
 
             Application.Current?.Dispatcher.BeginInvoke((Action)(() =>

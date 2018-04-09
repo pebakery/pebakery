@@ -77,7 +77,7 @@ namespace PEBakery.Tests.Core.Command
             string dest = s.Variables.GetValue(VarsType.Global, "Set_3");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
-            string permanent = Ini.GetKey(pPath, "Variables", "%Set_3%");
+            string permanent = Ini.ReadKey(pPath, "Variables", "%Set_3%");
             Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
 
             Ini.DeleteKey(pPath, "Variables", "%Set_3%");

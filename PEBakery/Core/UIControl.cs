@@ -200,7 +200,7 @@ namespace PEBakery.Core
         #region Update
         public void Update()
         {
-            Ini.SetKey(Addr.Script.RealPath, new IniKey(Addr.Section.Name, Key, ForgeRawLine(false)));
+            Ini.WriteKey(Addr.Script.RealPath, new IniKey(Addr.Section.Name, Key, ForgeRawLine(false)));
         }
         
         public static void Update(List<UIControl> uiCmdList)
@@ -217,7 +217,7 @@ namespace PEBakery.Core
                     keys.Add(new IniKey(uiCmd.Addr.Section.Name, uiCmd.Key, uiCmd.ForgeRawLine(false)));
                 }
 
-                Ini.SetKeys(fullPath, keys);
+                Ini.WriteKeys(fullPath, keys);
             }           
         }
         #endregion

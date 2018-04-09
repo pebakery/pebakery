@@ -157,7 +157,7 @@ namespace PEBakery.WPF
 
             int idx = Model.Project_SelectedIndex;
             string fullPath = Model.Projects[idx].MainScript.RealPath;
-            Ini.SetKey(fullPath, "Main", "SourceDir", string.Empty);
+            Ini.WriteKey(fullPath, "Main", "SourceDir", string.Empty);
         }
 
         private void Button_TargetDirectory_Click(object sender, RoutedEventArgs e)
@@ -271,7 +271,7 @@ namespace PEBakery.WPF
                         new IniKey("Main", "ISOFile"),
                         new IniKey("Main", "PathSetting"),
                     };
-                    keys = Ini.GetKeys(fullPath, keys);
+                    keys = Ini.ReadKeys(fullPath, keys);
 
                     // PathSetting
                     if (keys[3].Value != null && keys[3].Value.Equals("False", StringComparison.OrdinalIgnoreCase))
@@ -359,7 +359,7 @@ namespace PEBakery.WPF
                         b.Append(",");
                         b.Append(Project_SourceDirectoryList[x]);
                     }
-                    Ini.SetKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
+                    Ini.WriteKey(project.MainScript.RealPath, "Main", "SourceDir", b.ToString());
                 }
                 
                 OnPropertyUpdate(nameof(Project_SourceDirectoryIndex));
@@ -376,7 +376,7 @@ namespace PEBakery.WPF
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    Ini.SetKey(fullPath, "Main", "TargetDir", value);
+                    Ini.WriteKey(fullPath, "Main", "TargetDir", value);
                     project.Variables.SetValue(VarsType.Fixed, "TargetDir", value);
                 }
 
@@ -396,7 +396,7 @@ namespace PEBakery.WPF
                 {
                     Project project = Projects[project_SelectedIndex];
                     string fullPath = project.MainScript.RealPath;
-                    Ini.SetKey(fullPath, "Main", "ISOFile", value);
+                    Ini.WriteKey(fullPath, "Main", "ISOFile", value);
                     project.Variables.SetValue(VarsType.Fixed, "ISOFile", value);
                 }
 
@@ -939,7 +939,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
             }; 
 
-            keys = Ini.GetKeys(_settingFile, keys);
+            keys = Ini.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
             (string Section, string Key) SplitSectionKey(string varName)
@@ -1088,7 +1088,7 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr), Compat_OverridableFixedVariables.ToString()), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr), Compat_EnableEnvironmentVariables.ToString()), // Boolean
             };
-            Ini.SetKeys(_settingFile, keys);
+            Ini.WriteKeys(_settingFile, keys);
         }
 
         private static string KeyPart(string str, string section)
