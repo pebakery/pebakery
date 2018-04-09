@@ -34,6 +34,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+// ReSharper disable InconsistentNaming
 
 namespace PEBakery.Core.Commands
 {
@@ -161,8 +162,9 @@ namespace PEBakery.Core.Commands
             else if (mode == TXTAddLineMode.Append)
             {
                 StringBuilder b = new StringBuilder();
-                for (int i = 0; i < infoOp.InfoList.Count; i++)
-                    b.AppendLine(StringEscaper.Preprocess(s, infoOp.InfoList[i].Line));
+                foreach (CodeInfo_TXTAddLine subInfo in infoOp.InfoList)
+                    b.AppendLine(StringEscaper.Preprocess(s, subInfo.Line));
+
                 linesToWrite = b.ToString();
 
                 bool newLineExist = true;
