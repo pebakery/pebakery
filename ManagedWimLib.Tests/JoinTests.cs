@@ -24,10 +24,7 @@
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ManagedWimLib;
 using System.IO;
-using System.Threading;
-using System.Collections.Generic;
 
 namespace ManagedWimLib.Tests
 {
@@ -46,7 +43,7 @@ namespace ManagedWimLib.Tests
         {
             string[] splitWims = splitWimNames.Select(x => Path.Combine(TestSetup.SampleDir, x)).ToArray();
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string destWim = Path.Combine(TestSetup.SampleDir, "Dest.wim");
+            string destWim = Path.Combine(destDir, "Dest.wim");
             try
             {
                 Directory.CreateDirectory(destDir);
@@ -75,7 +72,7 @@ namespace ManagedWimLib.Tests
         {
             string[] splitWims = splitWimNames.Select(x => Path.Combine(TestSetup.SampleDir, x)).ToArray();
             string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            string destWim = Path.Combine(TestSetup.SampleDir, "Dest.wim");
+            string destWim = Path.Combine(destDir, "Dest.wim");
             try
             {
                 Directory.CreateDirectory(destDir);
