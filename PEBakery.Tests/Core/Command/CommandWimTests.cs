@@ -3,6 +3,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -260,6 +262,8 @@ namespace PEBakery.Tests.Core.Command
                 EngineTests.Eval(s, rawCode, CodeType.WimExtractBulk, check);
                 if (check == ErrorCheck.Success)
                 {
+                    Debug.Assert(compFiles != null);
+
                     if (compFiles.Length == 0)
                     {
                         DirectoryInfo di = new DirectoryInfo(destDir);
@@ -421,7 +425,7 @@ namespace PEBakery.Tests.Core.Command
                     using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
                     {
                         WimInfo wi = wim.GetWimInfo();
-                        Assert.IsTrue(wi.ImageCount == (srcImageCount + 1));
+                        Assert.IsTrue(wi.ImageCount == srcImageCount + 1);
 
                         wim.ExtractImage((int)(srcImageCount + 1), applyDir, ExtractFlags.DEFAULT);
                     }
@@ -481,7 +485,7 @@ namespace PEBakery.Tests.Core.Command
                     using (Wim wim = Wim.OpenWim(destWim, OpenFlags.DEFAULT))
                     {
                         WimInfo wi = wim.GetWimInfo();
-                        Assert.IsTrue(wi.ImageCount == (srcImageCount - 1));
+                        Assert.IsTrue(wi.ImageCount == srcImageCount - 1);
                     }
                 }
             }
@@ -815,6 +819,7 @@ namespace PEBakery.Tests.Core.Command
         #endregion
 
         #region Helper
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public enum SampleSet
         {
             // TestSet Src01 is created for basic test and compresstion type test
@@ -881,7 +886,7 @@ namespace PEBakery.Tests.Core.Command
                     case SampleSet.Src03:
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
 
             }
@@ -961,7 +966,7 @@ namespace PEBakery.Tests.Core.Command
                         Assert.IsTrue(File.Exists(Path.Combine(dir, "나")));
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
             }
 
@@ -1030,7 +1035,7 @@ namespace PEBakery.Tests.Core.Command
                     };
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw new InvalidOperationException("Invalid SampleSet");
                 }
 
                 foreach (var tup in checkList)
@@ -1079,6 +1084,11 @@ namespace PEBakery.Tests.Core.Command
             {
                 public bool Equals(Tuple<string, bool> x, Tuple<string, bool> y)
                 {
+                    if (x == null)
+                        throw new ArgumentNullException(nameof(x));
+                    if (y == null)
+                        throw new ArgumentNullException(nameof(y));
+
                     bool path = x.Item1.Equals(y.Item1, StringComparison.Ordinal);
                     bool isDir = x.Item2 == y.Item2;
                     return path && isDir;
