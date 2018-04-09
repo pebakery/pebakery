@@ -349,7 +349,6 @@ namespace PEBakery.Tests.Core.Command
         }
         #endregion
 
-        // Disabled due to issue in MSTest
         #region WimExistFile
         [TestMethod]
         [TestCategory("Command")]
@@ -405,6 +404,46 @@ namespace PEBakery.Tests.Core.Command
             BranchCondition_Single_Template(s, $"If,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,A.txt,Set,%Dest%,T", "T");
             BranchCondition_Single_Template(s, $"If,Not,WimExistDir,{srcWim},1,B,Set,%Dest%,T", "F");
+        }
+        #endregion
+
+        #region WimExistImageInfo
+        [TestMethod]
+        [TestCategory("Command")]
+        [TestCategory("CommandBranch")]
+        public void Branch_IfWimExistImageInfo()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+            const BranchConditionType type = BranchConditionType.WimExistImageInfo;
+
+            string srcWim = Path.Combine("%TestBench%", "CommandWim", "LZX.wim");
+
+            BranchCondition cond = new BranchCondition(type, false, srcWim, "0", "Name");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "Name");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "1", "Dummy");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, false, srcWim, "2", "Name");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            cond = new BranchCondition(type, true, srcWim, "0", "Name");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "Name");
+            Assert.IsFalse(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "1", "Dummy");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+            cond = new BranchCondition(type, true, srcWim, "2", "Name");
+            Assert.IsTrue(CommandBranch.CheckBranchCondition(s, cond, out _));
+
+            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},0,Name,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},1,Name,Set,%Dest%,T", "F");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},1,Dummy,Set,%Dest%,T", "T");
+            BranchCondition_Single_Template(s, $"If,Not,WimExistImageInfo,{srcWim},2,Name,Set,%Dest%,T", "T");
         }
         #endregion
 

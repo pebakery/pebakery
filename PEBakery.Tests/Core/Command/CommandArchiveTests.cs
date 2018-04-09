@@ -45,9 +45,9 @@ namespace PEBakery.Tests.Core.Command
         { // Compress,<ArchiveType>,<SrcPath>,<DestArchive>,[CompressLevel],[UTF8|UTF16|UTF16BE|ANSI]
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "CommandArchive"));
-            string destRootDir = Path.Combine(dirPath, "Compress_Dest");
+            string destRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string destFullPath = Path.Combine(destRootDir, destArc);
-            string compRootDir = Path.Combine(dirPath, "Compress_Comp");
+            string compRootDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             string compDir = Path.Combine(compRootDir, destArc);
             string srcFullPath = Path.Combine(dirPath, srcDirPath);
 
@@ -56,13 +56,14 @@ namespace PEBakery.Tests.Core.Command
                 Directory.CreateDirectory(destRootDir);
                 Directory.CreateDirectory(compDir);
 
-                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcDirPath}\",\"%TestBench%\\CommandArchive\\Compress_Dest\\{destArc}\"";
+                string rawCode = $"Compress,{arcType},\"%TestBench%\\CommandArchive\\{srcDirPath}\",\"{destFullPath}\"";
                 if (encodingStr != null)
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
 
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
                 CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
+                Debug.Assert(info != null, "Invalid CodeInfo");
 
                 ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
 
@@ -83,8 +84,10 @@ namespace PEBakery.Tests.Core.Command
             }
             finally
             {
-                Directory.Delete(destRootDir, true);
-                Directory.Delete(compRootDir, true);
+                if (Directory.Exists(destRootDir))
+                    Directory.Delete(destRootDir, true);
+                if (Directory.Exists(compRootDir))
+                    Directory.Delete(compRootDir, true);
             }
         }
 
@@ -109,8 +112,9 @@ namespace PEBakery.Tests.Core.Command
                     rawCode += "," + encodingStr;
                 EngineTests.Eval(s, rawCode, CodeType.Compress, ErrorCheck.Success, out CodeCommand cmd);
 
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress));
+                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Compress), "Invalid CodeInfo");
                 CodeInfo_Compress info = cmd.Info as CodeInfo_Compress;
+                Debug.Assert(info != null, "Invalid CodeInfo");
 
                 ArchiveHelper.DecompressManaged(destFullPath, compDir, true, info.Encoding);
 

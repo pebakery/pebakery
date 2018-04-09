@@ -22,7 +22,6 @@ namespace PEBakery.Tests.Core.Command
             EngineState s = EngineTests.CreateEngineState();
 
             string pbSrcDir = Path.Combine("%TestBench%", "CommandWim");
-            string srcDir = StringEscaper.Preprocess(s, pbSrcDir);
 
             // Global Information
             Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,0,ImageCount,%Dest%", "1");
@@ -33,6 +32,8 @@ namespace PEBakery.Tests.Core.Command
 
             // Per-Image Information
             Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Name,%Dest%", "Sample");
+            Info_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%", null, ErrorCheck.Error);
+            InfoNoErr_Template(s, $@"WimInfo,{pbSrcDir}\LZX.wim,1,Dummy,%Dest%,NOERR");
         }
 
         public void Info_Template(EngineState s, string rawCode, string comp, ErrorCheck check = ErrorCheck.Success)
@@ -44,6 +45,11 @@ namespace PEBakery.Tests.Core.Command
                 string dest = s.Variables["Dest"];
                 Assert.IsTrue(dest.Equals(comp, StringComparison.Ordinal));
             }
+        }
+
+        public void InfoNoErr_Template(EngineState s, string rawCode, ErrorCheck check = ErrorCheck.Success)
+        {
+            EngineTests.Eval(s, rawCode, CodeType.WimInfo, check);
         }
         #endregion
 
