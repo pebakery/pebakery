@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -47,8 +48,19 @@ namespace PEBakery.Helper
             Bmp, Jpg, Png, Gif, Ico, Svg
         }
 
+        public static readonly ReadOnlyDictionary<string, ImageType> ImageTypeDict = new ReadOnlyDictionary<string, ImageType>(
+            new Dictionary<string, ImageType>(StringComparer.OrdinalIgnoreCase)
+            {
+                { ".bmp", ImageType.Bmp },
+                { ".jpg", ImageType.Jpg },
+                { ".png", ImageType.Png },
+                { ".gif", ImageType.Gif },
+                { ".ico", ImageType.Ico },
+                { ".svg", ImageType.Svg },
+            });
+
         /// <summary>
-        /// Return true if failed
+        /// Return true if success
         /// </summary>
         /// <param name="path"></param>
         /// <param name="type"></param>
@@ -57,23 +69,17 @@ namespace PEBakery.Helper
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            type = ImageType.Bmp; // Dummy
-            string logoType = Path.GetExtension(path);
-            if (logoType.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Bmp;
-            else if (logoType.Equals(".jpg", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Jpg;
-            else if (logoType.Equals(".png", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Png;
-            else if (logoType.Equals(".gif", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Gif;
-            else if (logoType.Equals(".ico", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Ico;
-            else if (logoType.Equals(".svg", StringComparison.OrdinalIgnoreCase))
-                type = ImageType.Svg;
-            else
+            string ext = Path.GetExtension(path);
+            if (ImageTypeDict.ContainsKey(ext))
+            {
+                type = ImageTypeDict[ext];
                 return true;
-            return false;
+            }
+            else
+            {
+                type = ImageType.Bmp; // Dummy
+                return false;
+            }
         }
 
         public static BitmapImage ImageToBitmapImage(byte[] image)

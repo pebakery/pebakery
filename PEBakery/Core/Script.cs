@@ -27,16 +27,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.Collections;
 using PEBakery.Helper;
 using PEBakery.Exceptions;
 using PEBakery.IniLib;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PEBakery.Core
 {
@@ -728,6 +726,7 @@ namespace PEBakery.Core
 
     #region ScriptSection
     [Serializable]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class ScriptSection
     {
         #region Fields and Properties
@@ -859,26 +858,6 @@ namespace PEBakery.Core
             Loaded = true;
             _lines = lines;
             LineIdx = lineIdx;
-        }
-        #endregion
-
-        #region Equals, GetHashCode
-        public override bool Equals(object obj)
-        {
-            ScriptSection section = obj as ScriptSection;
-            return Equals(section);
-        }
-
-        public bool Equals(ScriptSection section)
-        {
-            if (section == null) throw new ArgumentNullException(nameof(section));
-
-            return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
-        }
-
-        public override int GetHashCode()
-        {
-            return Script.GetHashCode() ^ Name.GetHashCode();
         }
         #endregion
 
@@ -1111,6 +1090,26 @@ namespace PEBakery.Core
             }
 
             throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
+        }
+        #endregion
+
+        #region Equals, GetHashCode
+        public override bool Equals(object obj)
+        {
+            ScriptSection section = obj as ScriptSection;
+            return Equals(section);
+        }
+
+        public bool Equals(ScriptSection section)
+        {
+            if (section == null) throw new ArgumentNullException(nameof(section));
+
+            return Script.Equals(section.Script) && Name.Equals(section.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override int GetHashCode()
+        {
+            return Script.GetHashCode() ^ Name.GetHashCode();
         }
         #endregion
 

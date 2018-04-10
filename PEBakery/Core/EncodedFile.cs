@@ -33,6 +33,7 @@ using PEBakery.Helper;
 using PEBakery.IniLib;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -142,6 +143,22 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region Dict ImageEncodeModeDict
+        public static readonly ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode> ImageEncodeDict = new ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode>(
+            new Dictionary<ImageHelper.ImageType, EncodeMode>
+            {
+                // Auto detect compress algorithm by extension.
+                // Note: .ico file can be either raw (bmp) or compressed (png).
+                //       To be sure, use EncodeMode.ZLib in .ico file.
+                { ImageHelper.ImageType.Bmp, EncodeMode.ZLib },
+                { ImageHelper.ImageType.Jpg, EncodeMode.Raw },
+                { ImageHelper.ImageType.Png, EncodeMode.Raw },
+                { ImageHelper.ImageType.Gif, EncodeMode.Raw },
+                { ImageHelper.ImageType.Ico, EncodeMode.ZLib },
+                { ImageHelper.ImageType.Svg, EncodeMode.ZLib },
+            });
+        #endregion
+
         #region AttachFile
         public static Script AttachFile(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
         {
@@ -172,14 +189,19 @@ namespace PEBakery.Core
         #endregion
 
         #region AttachLogo
-        public static Script AttachLogo(Script sc, string dirName, string fileName, string srcFilePath, EncodeMode type = EncodeMode.ZLib)
+        public static Script AttachLogo(Script sc, string dirName, string fileName, string srcFilePath)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
+            if (srcFilePath == null)
+                throw new ArgumentNullException(nameof(srcFilePath));
+
+            if (!ImageHelper.GetImageType(srcFilePath, out ImageHelper.ImageType imageType))
+                throw new ArgumentException($"Image [{Path.GetExtension(srcFilePath)}] is not supported");
 
             using (FileStream fs = new FileStream(srcFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                return Encode(sc, dirName, fileName, fs, type, true);
+                return Encode(sc, dirName, fileName, fs, ImageEncodeDict[imageType], true);
             }
         }
 
@@ -229,7 +251,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException($"Logo does not exist in \'{sc.Title}\'");
 
             string logoFile = fileDict["Logo"];
-            if (ImageHelper.GetImageType(logoFile, out type))
+            if (!ImageHelper.GetImageType(logoFile, out type))
                 throw new InvalidOperationException($"Image type of [{logoFile}] is not supported");
 
             List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();

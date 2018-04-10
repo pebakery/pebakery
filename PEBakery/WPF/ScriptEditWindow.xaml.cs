@@ -169,7 +169,7 @@ namespace PEBakery.WPF
                 try
                 { 
                     string srcFileName = System.IO.Path.GetFileName(srcFile);
-                    _sc = EncodedFile.AttachLogo(_sc, "AuthorEncoded", srcFileName, srcFile, EncodedFile.EncodeMode.ZLib);
+                    _sc = EncodedFile.AttachLogo(_sc, "AuthorEncoded", srcFileName, srcFile);
                     MessageBox.Show("Logo successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     ReadScript();
                 }

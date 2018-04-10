@@ -221,11 +221,11 @@
                                         Click="ScriptLogoAttachButton_Click"
                                         ToolTip="Import logo from image">
                                     <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Plus"
+                                        <iconPacks:PackIconMaterial Kind="ArrowExpandLeft"
                                                                     Width="Auto"
                                                                     Height="Auto"
                                                                     Margin="0, 5, 5, 5"/>
-                                        <TextBlock Text="Add"
+                                        <TextBlock Text="Import"
                                                    VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>

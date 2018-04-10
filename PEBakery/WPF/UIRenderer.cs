@@ -390,7 +390,7 @@ namespace PEBakery.WPF
             Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image));
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
 
-            Image image = new Image()
+            Image image = new Image
             {
                 StretchDirection = StretchDirection.DownOnly,
                 Stretch = Stretch.Uniform,
@@ -401,10 +401,10 @@ namespace PEBakery.WPF
 
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
             {
-                if (ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
+                if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                     return;
 
-                button = new Button()
+                button = new Button
                 {
                     Style = (Style)r.Window.FindResource("ImageButton")
                 };
@@ -511,7 +511,7 @@ namespace PEBakery.WPF
             Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button));
             UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
 
-            Button button = new Button()
+            Button button = new Button
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -525,20 +525,20 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke((Action)(() =>
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
                         w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                    }));
+                    });
                 }
             };
 
             if (info.Picture != null && uiCtrl.Addr.Script.Sections.ContainsKey($"EncodedFile-InterfaceEncoded-{info.Picture}"))
             { // Has Picture
-                if (ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
+                if (!ImageHelper.GetImageType(info.Picture, out ImageHelper.ImageType type))
                     return;
 
-                Image image = new Image()
+                Image image = new Image
                 {
                     StretchDirection = StretchDirection.DownOnly,
                     Stretch = Stretch.Uniform,
@@ -549,13 +549,9 @@ namespace PEBakery.WPF
                 using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, info.Picture))
                 {
                     if (type == ImageHelper.ImageType.Svg)
-                    {
                         image.Source = ImageHelper.SvgToBitmapImage(ms);
-                    }
                     else
-                    {
                         image.Source = ImageHelper.ImageToBitmapImage(ms);
-                    }
                 }
 
                 if (uiCtrl.Text.Equals(string.Empty, StringComparison.Ordinal))
