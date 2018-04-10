@@ -242,11 +242,6 @@ namespace PEBakery.Tests.Core.Command
             {
                 Path.Combine("Z.txt"),
             }, ErrorCheck.Warning);
-
-            ExtractBulk_Template(s, $@"WimExtractBulk,{pbSampleDir}\LZX.wim,1,{pbDestDir}\ListFile.txt,{pbDestDir},NOERR,NOWARN", destDir, new string[]
-            {
-                Path.Combine("Z.txt"),
-            }, ErrorCheck.Warning);
         }
 
         public void ExtractBulk_Template(EngineState s, string rawCode, string destDir, string[] compFiles, ErrorCheck check = ErrorCheck.Success)
