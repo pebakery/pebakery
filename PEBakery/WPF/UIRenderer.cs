@@ -38,6 +38,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using MahApps.Metro.IconPacks;
 using System.Windows.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,7 @@ namespace PEBakery.WPF
 {
     // TODO: Fix potential memory leak due to event handler
     #region UIRenderer
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public class UIRenderer
     {
         #region Fields
@@ -61,41 +63,41 @@ namespace PEBakery.WPF
         public static bool IgnoreWidthOfWebLabel = false;
         public static bool DisableBevelCaption = false;
 
-        private readonly RenderInfo renderInfo;
-        private readonly List<UIControl> uiCtrls;
-        private readonly Variables variables;
-        private readonly Logger logger;
+        private readonly RenderInfo _renderInfo;
+        private readonly List<UIControl> _uiCtrls;
+        private readonly Variables _variables;
+        private readonly Logger _logger;
         #endregion
 
         #region Constructor
         public UIRenderer(Canvas canvas, MainWindow window, Script script, Logger logger, double scale)
         {
-            this.logger = logger;
-            this.variables = script.Project.Variables;
+            _logger = logger;
+            _variables = script.Project.Variables;
 
             // Check if script has custom interface section
             string interfaceSectionName = "Interface";
             if (script.MainInfo.ContainsKey("Interface")) 
                 interfaceSectionName = script.MainInfo["Interface"];
 
-            this.renderInfo = new RenderInfo(canvas, window, logger, script, interfaceSectionName, scale);
+            _renderInfo = new RenderInfo(canvas, window, logger, script, interfaceSectionName, scale);
 
             if (script.Sections.ContainsKey(interfaceSectionName))
             {
                 try
                 {
-                    this.uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true).Where(x => x.Visibility).ToList();
+                    _uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true).Where(x => x.Visibility).ToList();
                     logger.System_Write(script.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
                 {
-                    this.uiCtrls = null;
+                    _uiCtrls = null;
                     logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
                 }
             }
             else
             {
-                this.uiCtrls = null;
+                _uiCtrls = null;
                 logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
             }
         }
@@ -104,68 +106,66 @@ namespace PEBakery.WPF
         #region Render All
         public void Render()
         {
-            if (uiCtrls == null) // This script does not have 'Interface' section
+            if (_uiCtrls == null) // This script does not have 'Interface' section
                 return;
 
-            InitCanvas(renderInfo.Canvas);
-            UIControl[] radioButtons = uiCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
-            foreach (UIControl uiCmd in uiCtrls)
+            InitCanvas(_renderInfo.Canvas);
+            UIControl[] radioButtons = _uiCtrls.Where(x => x.Type == UIControlType.RadioButton).ToArray();
+            foreach (UIControl uiCmd in _uiCtrls)
             {
                 try
                 {
                     switch (uiCmd.Type)
                     {
                         case UIControlType.TextBox:
-                            UIRenderer.RenderTextBox(renderInfo, uiCmd);
+                            UIRenderer.RenderTextBox(_renderInfo, uiCmd);
                             break;
                         case UIControlType.TextLabel:
-                            UIRenderer.RenderTextLabel(renderInfo, uiCmd);
+                            UIRenderer.RenderTextLabel(_renderInfo, uiCmd);
                             break;
                         case UIControlType.NumberBox:
-                            UIRenderer.RenderNumberBox(renderInfo, uiCmd);
+                            UIRenderer.RenderNumberBox(_renderInfo, uiCmd);
                             break;
                         case UIControlType.CheckBox:
-                            UIRenderer.RenderCheckBox(renderInfo, uiCmd);
+                            UIRenderer.RenderCheckBox(_renderInfo, uiCmd);
                             break;
                         case UIControlType.ComboBox:
-                            UIRenderer.RenderComboBox(renderInfo, uiCmd);
+                            UIRenderer.RenderComboBox(_renderInfo, uiCmd);
                             break;
                         case UIControlType.Image:
-                            UIRenderer.RenderImage(renderInfo, uiCmd);
+                            UIRenderer.RenderImage(_renderInfo, uiCmd);
                             break;
                         case UIControlType.TextFile:
-                            UIRenderer.RenderTextFile(renderInfo, uiCmd);
+                            UIRenderer.RenderTextFile(_renderInfo, uiCmd);
                             break;
                         case UIControlType.Button:
-                            UIRenderer.RenderButton(renderInfo, uiCmd, logger);
+                            UIRenderer.RenderButton(_renderInfo, uiCmd, _logger);
                             break;
                         case UIControlType.WebLabel:
-                            UIRenderer.RenderWebLabel(renderInfo, uiCmd);
+                            UIRenderer.RenderWebLabel(_renderInfo, uiCmd);
                             break;
                         case UIControlType.RadioButton:
-                            UIRenderer.RenderRadioButton(renderInfo, uiCmd, radioButtons);
+                            UIRenderer.RenderRadioButton(_renderInfo, uiCmd, radioButtons);
                             break;
                         case UIControlType.Bevel:
-                            UIRenderer.RenderBevel(renderInfo, uiCmd);
+                            UIRenderer.RenderBevel(_renderInfo, uiCmd);
                             break;
                         case UIControlType.FileBox:
-                            UIRenderer.RenderFileBox(renderInfo, uiCmd, variables);
+                            UIRenderer.RenderFileBox(_renderInfo, uiCmd, _variables);
                             break;
                         case UIControlType.RadioGroup:
-                            UIRenderer.RenderRadioGroup(renderInfo, uiCmd);
+                            UIRenderer.RenderRadioGroup(_renderInfo, uiCmd);
                             break;
                         default:
-                            logger.System_Write(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
+                            _logger.System_Write(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
                             break;
                     }
                 }
                 catch (Exception e)
                 { // Log failure
-                    logger.System_Write(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
+                    _logger.System_Write(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
                 }
             }
-
-            return;
         }
         #endregion
 
@@ -178,10 +178,11 @@ namespace PEBakery.WPF
         public static void RenderTextBox(RenderInfo r, UIControl uiCtrl)
         {
             // WB082 textbox control's y coord is of textbox's, not textlabel's.
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextBox), "Invalid UIInfo");
             UIInfo_TextBox info = uiCtrl.Info as UIInfo_TextBox;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            TextBox box = new TextBox()
+            TextBox box = new TextBox
             {
                 Text = info.Value,
                 FontSize = CalcFontPointScale(),
@@ -190,6 +191,8 @@ namespace PEBakery.WPF
             box.LostFocus += (object sender, RoutedEventArgs e) =>
             {
                 TextBox tBox = sender as TextBox;
+                Debug.Assert(tBox != null);
+
                 info.Value = tBox.Text;
                 uiCtrl.Update();
             };
@@ -219,10 +222,11 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextLabel(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextLabel), "Invalid UIInfo");
             UIInfo_TextLabel info = uiCtrl.Info as UIInfo_TextLabel;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            TextBlock block = new TextBlock()
+            TextBlock block = new TextBlock
             {
                 Text = uiCtrl.Text,
                 TextWrapping = TextWrapping.Wrap,
@@ -258,10 +262,11 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderNumberBox(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_NumberBox), "Invalid UIInfo");
             UIInfo_NumberBox info = uiCtrl.Info as UIInfo_NumberBox;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            FreeNumberBox box = new FreeNumberBox()
+            FreeNumberBox box = new FreeNumberBox
             {
                 Value = info.Value,
                 FontSize = CalcFontPointScale(),
@@ -289,10 +294,11 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderCheckBox(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_CheckBox), "Invalid UIInfo");
             UIInfo_CheckBox info = uiCtrl.Info as UIInfo_CheckBox;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            CheckBox checkBox = new CheckBox()
+            CheckBox checkBox = new CheckBox
             {
                 Content = uiCtrl.Text,
                 IsChecked = info.Value,
@@ -338,10 +344,11 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderComboBox(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_ComboBox), "Invalid UIInfo");
             UIInfo_ComboBox info = uiCtrl.Info as UIInfo_ComboBox;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            ComboBox comboBox = new ComboBox()
+            ComboBox comboBox = new ComboBox
             {
                 FontSize = CalcFontPointScale(),
                 ItemsSource = info.Items,
@@ -352,6 +359,8 @@ namespace PEBakery.WPF
             comboBox.LostFocus += (object sender, RoutedEventArgs e) =>
             {
                 ComboBox box = sender as ComboBox;
+                Debug.Assert(box != null);
+
                 if (info.Index != box.SelectedIndex)
                 {
                     info.Index = box.SelectedIndex;
@@ -387,8 +396,9 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderImage(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Image), "Invalid UIInfo");
             UIInfo_Image info = uiCtrl.Info as UIInfo_Image;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
             Image image = new Image
             {
@@ -422,7 +432,7 @@ namespace PEBakery.WPF
             }
                 
             bool hasUrl = false;
-            if (string.IsNullOrEmpty(info.URL) == false)
+            if (!string.IsNullOrEmpty(info.URL))
             {
                 if (Uri.TryCreate(info.URL, UriKind.Absolute, out Uri _)) // Success
                     hasUrl = true;
@@ -446,7 +456,7 @@ namespace PEBakery.WPF
                 {
                     if (ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
                         return;
-                    string path = System.IO.Path.ChangeExtension(System.IO.Path.GetTempFileName(), "." + t.ToString().ToLower());
+                    string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
 
                     using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
                     using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
@@ -476,14 +486,15 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderTextFile(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_TextFile), "Invalid UIInfo");
             UIInfo_TextFile info = uiCtrl.Info as UIInfo_TextFile;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
             TextBox textBox;
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
             using (StreamReader sr = new StreamReader(ms, FileHelper.DetectTextEncoding(ms)))
             {
-                textBox = new TextBox()
+                textBox = new TextBox
                 {
                     TextWrapping = TextWrapping.Wrap,
                     AcceptsReturn = true,
@@ -508,8 +519,9 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderButton(RenderInfo r, UIControl uiCtrl, Logger logger)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Button), "Invalid UIInfo");
             UIInfo_Button info = uiCtrl.Info as UIInfo_Button;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
             Button button = new Button
             {
@@ -528,7 +540,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     });
                 }
             };
@@ -598,16 +610,17 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderWebLabel(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_WebLabel), "Invalid UIInfo");
             UIInfo_WebLabel info = uiCtrl.Info as UIInfo_WebLabel;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            TextBlock block = new TextBlock()
+            TextBlock block = new TextBlock
             {
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = CalcFontPointScale(),
             };
 
-            Hyperlink hyperLink = new Hyperlink()
+            Hyperlink hyperLink = new Hyperlink
             {
                 NavigateUri = new Uri(info.URL),
             };
@@ -640,10 +653,11 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderBevel(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_Bevel), "Invalid UIInfo");
             UIInfo_Bevel info = uiCtrl.Info as UIInfo_Bevel;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            Border bevel = new Border()
+            Border bevel = new Border
             {
                 IsHitTestVisible = false,
                 Background = Brushes.Transparent,
@@ -660,16 +674,13 @@ namespace PEBakery.WPF
                 if (info.FontSize != null)
                     fontSize = (int) info.FontSize;
 
-                UIInfo_BevelCaption_Style style = UIInfo_BevelCaption_Style.Normal;
-                if (info.Style != null)
-                    style = (UIInfo_BevelCaption_Style)info.Style;
-
-                Border textBorder = new Border()
+                Border textBorder = new Border
                 {
-                    BorderThickness = new Thickness(CalcFontPointScale() / 3), // Don't use info.FontSize for border thickness. It throws off X Pos.
+                    // Don't use info.FontSize for border thickness. It throws off X Pos.
+                    BorderThickness = new Thickness(CalcFontPointScale() / 3), 
                     BorderBrush = Brushes.Transparent,
                 };
-                TextBlock textBlock = new TextBlock()
+                TextBlock textBlock = new TextBlock
                 {
                     Text = uiCtrl.Text,
                     FontSize = CalcFontPointScale(fontSize),
@@ -680,9 +691,9 @@ namespace PEBakery.WPF
                 if (info.Style == UIInfo_BevelCaption_Style.Bold)
                     textBlock.FontWeight = FontWeights.Bold;
 
-                Rect blockRect = new Rect()
+                Rect blockRect = new Rect
                 {
-                    X = uiCtrl.Rect.X + (CalcFontPointScale(fontSize) / 3),
+                    X = uiCtrl.Rect.X + CalcFontPointScale(fontSize) / 3,
                     Y = uiCtrl.Rect.Y - CalcFontPointScale(fontSize),
                     Width = double.NaN,
                     Height = double.NaN,
@@ -698,12 +709,13 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioButton(RenderInfo r, UIControl uiCtrl, UIControl[] radioButtons)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
             UIInfo_RadioButton info = uiCtrl.Info as UIInfo_RadioButton;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
             double fontSize = CalcFontPointScale();
 
-            RadioButton radio = new RadioButton()
+            RadioButton radio = new RadioButton
             {
                 GroupName = r.Script.RealPath,
                 Content = uiCtrl.Text,
@@ -723,26 +735,27 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        Application.Current.Dispatcher.Invoke((Action)(() =>
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
-                        }));
+                            w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        });
                     }
                 };
             }
 
             radio.Checked += (object sender, RoutedEventArgs e) =>
             {
-                RadioButton btn = sender as RadioButton;
+                // RadioButton btn = sender as RadioButton;
                 info.Selected = true;
 
                 // Uncheck the other RadioButtons
                 List<UIControl> updateList = radioButtons.Where(x => !x.Key.Equals(uiCtrl.Key, StringComparison.Ordinal)).ToList();
                 foreach (UIControl uncheck in updateList)
                 {
-                    Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton));
+                    Debug.Assert(uncheck.Info.GetType() == typeof(UIInfo_RadioButton), "Invalid UIInfo");
                     UIInfo_RadioButton unInfo = uncheck.Info as UIInfo_RadioButton;
+                    Debug.Assert(unInfo != null, "Invalid UIInfo");
 
                     unInfo.Selected = false;
                 }
@@ -763,10 +776,11 @@ namespace PEBakery.WPF
         public static void RenderFileBox(RenderInfo r, UIControl uiCtrl, Variables variables)
         {
             // It took time to find WB082 textbox control's y coord is of textbox's, not textlabel's.
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_FileBox), "Invalid UIInfo");
             UIInfo_FileBox info = uiCtrl.Info as UIInfo_FileBox;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
-            TextBox box = new TextBox()
+            TextBox box = new TextBox
             {
                 Text = uiCtrl.Text,
                 FontSize = CalcFontPointScale(),
@@ -775,12 +789,14 @@ namespace PEBakery.WPF
             box.TextChanged += (object sender, TextChangedEventArgs e) =>
             {
                 TextBox tBox = sender as TextBox;
+                Debug.Assert(tBox != null);
+
                 uiCtrl.Text = tBox.Text;
                 uiCtrl.Update();
             };
             SetToolTip(box, info.ToolTip);
 
-            Button button = new Button()
+            Button button = new Button
             {
                 FontSize = CalcFontPointScale(),
                 Content = ImageHelper.GetMaterialIcon(PackIconMaterialKind.FolderOpen, 0),
@@ -789,7 +805,7 @@ namespace PEBakery.WPF
 
             button.Click += (object sender, RoutedEventArgs e) =>
             {
-                Button bt = sender as Button;
+                // Button bt = sender as Button;
                 
                 if (info.IsFile)
                 { // File
@@ -798,8 +814,9 @@ namespace PEBakery.WPF
                         currentPath = Path.GetDirectoryName(currentPath);
                     else
                         currentPath = string.Empty;
-
-                    Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog()
+                    Debug.Assert(currentPath != null);
+                    
+                    Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog
                     { 
                         Filter = "All Files|*.*",
                         InitialDirectory = currentPath,
@@ -843,12 +860,13 @@ namespace PEBakery.WPF
         /// <returns>Success = false, Failure = true</returns>
         public static void RenderRadioGroup(RenderInfo r, UIControl uiCtrl)
         {
-            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup));
+            Debug.Assert(uiCtrl.Info.GetType() == typeof(UIInfo_RadioGroup), "Invalid UIInfo");
             UIInfo_RadioGroup info = uiCtrl.Info as UIInfo_RadioGroup;
+            Debug.Assert(info != null, "Invalid UIInfo");
 
             double fontSize = CalcFontPointScale();
 
-            GroupBox box = new GroupBox()
+            GroupBox box = new GroupBox
             {
                 Header = uiCtrl.Text,
                 FontSize = fontSize,
@@ -861,19 +879,21 @@ namespace PEBakery.WPF
 
             for (int i = 0; i < info.Items.Count; i++)
             {
-                RadioButton radio = new RadioButton()
+                RadioButton radio = new RadioButton
                 {
                     GroupName = r.Script.RealPath + uiCtrl.Key,
                     Content = info.Items[i],
                     Tag = i,
                     FontSize = fontSize,
                     VerticalContentAlignment = VerticalAlignment.Center,
+                    IsChecked = i == info.Selected,
                 };
 
-                radio.IsChecked = (i == info.Selected);
                 radio.Checked += (object sender, RoutedEventArgs e) =>
                 {
                     RadioButton btn = sender as RadioButton;
+                    Debug.Assert(btn != null);
+
                     info.Selected = (int)btn.Tag;
                     uiCtrl.Update();
                 };
@@ -892,7 +912,7 @@ namespace PEBakery.WPF
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 MainWindow w = Application.Current.MainWindow as MainWindow;
-                                w.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                                w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                             });
                         }
                     };
@@ -972,18 +992,19 @@ namespace PEBakery.WPF
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MainWindow w = Application.Current.MainWindow as MainWindow;
-
-                    logger = w.Logger;
-                    mainModel = w.Model;
-                    setting = w.Setting;
-
-                    // Populate BuildTree
-                    if (!hideProgress)
+                    if (Application.Current.MainWindow is MainWindow w)
                     {
-                        w.Model.BuildTree.Children.Clear();
-                        w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
-                        w.CurBuildTree = null;
+                        logger = w.Logger;
+                        mainModel = w.Model;
+                        setting = w.Setting;
+
+                        // Populate BuildTree
+                        if (!hideProgress)
+                        {
+                            w.Model.BuildTree.Children.Clear();
+                            w.PopulateOneTreeView(addr.Script, w.Model.BuildTree, w.Model.BuildTree);
+                            w.CurBuildTree = null;
+                        }
                     }
                 });
 
@@ -1000,7 +1021,8 @@ namespace PEBakery.WPF
                     mainModel.SwitchNormalBuildInterface = false;
 
                 // Run
-                long buildId = await Engine.WorkingEngine.Run(logMsg);
+                // long buildId = await Engine.WorkingEngine.Run(logMsg);
+                await Engine.WorkingEngine.Run(logMsg);
 
                 // Build Ended, Switch to Normal View
                 if (!hideProgress)
@@ -1017,7 +1039,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w.DrawScript(w.CurMainTree.Script);
+                        w?.DrawScript(w.CurMainTree.Script);
                     });
                 }
             }
