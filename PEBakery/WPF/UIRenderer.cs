@@ -412,7 +412,10 @@ namespace PEBakery.WPF
             using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
+                {
+                    r.Logger.System_Write(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                     return;
+                }
 
                 button = new Button
                 {
@@ -454,8 +457,12 @@ namespace PEBakery.WPF
             { // Open picture with external viewer
                 button.Click += (object sender, RoutedEventArgs e) =>
                 {
-                    if (ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+                    if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
+                    {
+                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                         return;
+                    }
+
                     string path = Path.ChangeExtension(Path.GetTempFileName(), "." + t.ToString().ToLower());
 
                     using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(uiCtrl.Addr.Script, uiCtrl.Text))
@@ -465,7 +472,7 @@ namespace PEBakery.WPF
                         ms.CopyTo(fs);
                     }
                         
-                    ProcessStartInfo procInfo = new ProcessStartInfo()
+                    ProcessStartInfo procInfo = new ProcessStartInfo
                     {
                         Verb = "open",
                         FileName = path,

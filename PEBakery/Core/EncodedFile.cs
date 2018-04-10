@@ -252,7 +252,7 @@ namespace PEBakery.Core
 
             string logoFile = fileDict["Logo"];
             if (!ImageHelper.GetImageType(logoFile, out type))
-                throw new InvalidOperationException($"Image type of [{logoFile}] is not supported");
+                throw new ArgumentException($"Image [{Path.GetExtension(logoFile)}] is not supported");
 
             List<string> encoded = sc.Sections[$"EncodedFile-AuthorEncoded-{logoFile}"].GetLinesOnce();
             return DecodeInMemory(encoded);
