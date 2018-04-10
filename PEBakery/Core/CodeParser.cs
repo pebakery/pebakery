@@ -1531,9 +1531,9 @@ namespace PEBakery.Core
                         return new CodeInfo_WimExtract(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib);
                     }
                 case CodeType.WimExtractBulk:
-                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR]
+                    { // WimExtractBulk,<SrcWim>,<ImageIndex>,<ListFile>,<DestDir>,[Split=],[CHECK],[NOACL],[NOATTRIB],[NOERR],[NOWARN]
                         const int minArgCount = 4;
-                        const int maxArgCount = 9;
+                        const int maxArgCount = 10;
                         if (CodeParser.CheckInfoArgumentCount(args, minArgCount, maxArgCount))
                             throw new InvalidCommandException($"Command [{type}] can have [{minArgCount}] ~ [{maxArgCount}] arguments", rawCode);
 
@@ -1542,6 +1542,7 @@ namespace PEBakery.Core
                         bool noAcl = false;
                         bool noAttrib = false;
                         bool noErr = false;
+                        bool noWarn = false;
                         for (int i = minArgCount; i < args.Count; i++)
                         {
                             string arg = args[i];
@@ -1577,13 +1578,19 @@ namespace PEBakery.Core
                                     throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
                                 noErr = true;
                             }
+                            else if (arg.Equals("NOWARN", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (noWarn)
+                                    throw new InvalidCommandException("Flag cannot be duplicated", rawCode);
+                                noWarn = true;
+                            }
                             else
                             {
                                 throw new InvalidCommandException($"Invalid optional argument or flag [{arg}]", rawCode);
                             }
                         }
 
-                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib, noErr);
+                        return new CodeInfo_WimExtractBulk(args[0], args[1], args[2], args[3], split, check, noAcl, noAttrib, noErr, noWarn);
                     }
                 case CodeType.WimCapture:
                     { // WimCapture,<SrcDir>,<DestWim>,<Compress>,[IMAGENAME=STR],[IMAGEDESC=STR],[FLAGS=STR],[BOOT],[CHECK],[NOACL]

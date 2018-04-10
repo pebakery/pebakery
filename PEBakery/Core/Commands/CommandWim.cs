@@ -760,7 +760,7 @@ namespace PEBakery.Core.Commands
 
                             Wim.ResetErrorFile();
                             wim.ExtractPaths(imageIndex, destDir, extractNormalPaths, extractGlobFlags);
-                            logs.AddRange(Wim.GetErrors().Select(x => new LogInfo(LogState.Warning, x)));
+                            logs.AddRange(Wim.GetErrors().Select(x => new LogInfo(info.NoWarnFlag ? LogState.Ignore : LogState.Warning, x)));
 
                             wim.ExtractPaths(imageIndex, destDir, extractGlobPaths, extractGlobFlags);
                         }
