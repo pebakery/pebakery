@@ -1113,6 +1113,13 @@ namespace PEBakery.Core
             throw new InternalException("GetUICtrls must be used with SectionDataType.Interfaces");
         }
         #endregion
+
+        #region Override Methods
+        public override string ToString()
+        {
+            return Name;
+        }
+        #endregion
     }
     #endregion
 }

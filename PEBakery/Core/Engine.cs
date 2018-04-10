@@ -40,6 +40,7 @@ using PEBakery.Core.Commands;
 using PEBakery.WPF;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace PEBakery.Core
@@ -52,8 +53,9 @@ namespace PEBakery.Core
         public static int WorkingLock = 0;
         public static bool StopBuildOnError = true;
 
+        // ReSharper disable once InconsistentNaming
         public EngineState s;
-        private Task<long> task;
+        private Task<long> _task;
 
         public Engine(EngineState state)
         {
@@ -156,7 +158,7 @@ namespace PEBakery.Core
 
         private static void FinishRunScript(EngineState s)
         {
-            // Finish Per-PScript Log
+            // Finish Per-Script Log
             s.Logger.Build_Write(s, $"End of Script [{s.CurrentScript.TreePath}]");
             s.Logger.Build_Write(s, Logger.LogSeperator);
             s.Logger.Build_Script_Finish(s, s.Variables.GetVarDict(VarsType.Local));
@@ -166,7 +168,7 @@ namespace PEBakery.Core
         #region Run, Stop 
         public Task<long> Run(string runName)
         {
-            task = Task.Run(() =>
+            _task = Task.Run(() =>
             {
                 s.BuildId = s.Logger.Build_Init(s, runName);
 
@@ -286,7 +288,7 @@ namespace PEBakery.Core
                 return s.BuildId;
             });
 
-            return task;
+            return _task;
         }
 
         public void ForceStop()
@@ -305,7 +307,7 @@ namespace PEBakery.Core
         public Task ForceStopWait()
         {
             ForceStop();
-            return Task.Run(() => task.Wait());
+            return Task.Run(() => _task.Wait());
         }
         #endregion
 
@@ -916,10 +918,8 @@ namespace PEBakery.Core
         /// </summary>
         public static Script GetScriptInstance(EngineState s, CodeCommand cmd, string currentScriptPath, string loadScriptPath, out bool inCurrentScript)
         {
-            inCurrentScript = false;
-            if (loadScriptPath.Equals(currentScriptPath, StringComparison.OrdinalIgnoreCase) ||
-                loadScriptPath.Equals(Path.GetDirectoryName(currentScriptPath), StringComparison.OrdinalIgnoreCase))
-                inCurrentScript = true; // Sometimes this value is not legal, so always use Project.GetScriptByFullPath.
+            inCurrentScript = loadScriptPath.Equals(currentScriptPath, StringComparison.OrdinalIgnoreCase) ||
+                              loadScriptPath.Equals(Path.GetDirectoryName(currentScriptPath), StringComparison.OrdinalIgnoreCase);
 
             string fullPath = loadScriptPath;
             Script sc = s.Project.GetScriptByRealPath(fullPath);
@@ -942,19 +942,28 @@ namespace PEBakery.Core
 
         public static void EnableSetLocal(EngineState s, ScriptSection section)
         {
-            s.LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local);
-            s.SetLocalSection = section;
+            s.SetLocalStack.Push(new SetLocalState
+            {
+                Section = section,
+                SectionDepth = s.CurDepth,
+                LocalVarsBackup = s.Variables.GetVarDict(VarsType.Local),
+            });
         }
 
-        public static void DisableSetLocal(EngineState s, ScriptSection section)
+        public static bool DisableSetLocal(EngineState s, ScriptSection section)
         {
-            if (s.SetLocalSection != null && s.SetLocalSection.Equals(section) &&
-                s.LocalVarsBackup != null)
+            if (0 < s.SetLocalStack.Count)
             {
-                s.Variables.SetVarDict(VarsType.Local, s.LocalVarsBackup);
-                s.LocalVarsBackup = null;
-                s.SetLocalSection = null;
+                SetLocalState last = s.SetLocalStack.Peek();
+                if (last.Section.Equals(section) && last.SectionDepth == s.CurDepth)
+                {
+                    s.SetLocalStack.Pop();
+                    s.Variables.SetVarDict(VarsType.Local, last.LocalVarsBackup);
+                    return true;
+                }
             }
+
+            return false;
         }
         #endregion
     }
@@ -975,6 +984,7 @@ namespace PEBakery.Core
         OnDriveLetter,
     }
 
+    [SuppressMessage("ReSharper", "RedundantDefaultMemberInitializer")]
     public class EngineState
     {
         #region Field and Properties
@@ -1012,7 +1022,6 @@ namespace PEBakery.Core
         public LoopState LoopState = LoopState.Off;
         public long LoopCounter = 0;
         public char LoopLetter = ' ';
-        public Dictionary<string, string> LocalVarsBackup = null; // For System,SetLocal
         public bool InMacro = false;
         public bool PassCurrentScriptFlag = false; // Exit Command
         public bool ErrorHaltFlag = false; 
@@ -1029,7 +1038,7 @@ namespace PEBakery.Core
         // ShellExecute
         public Process RunningSubProcess = null;
         // System,SetLocal
-        public ScriptSection SetLocalSection = null; 
+        public Stack<SetLocalState> SetLocalStack = new Stack<SetLocalState>(16);
         // WebGet
         public WebClient RunningWebClient = null;
 
@@ -1116,6 +1125,15 @@ namespace PEBakery.Core
             CustomUserAgent = m.General_UseCustomUserAgent ? m.General_CustomUserAgent : null;
         }
         #endregion
+    }
+    #endregion
+
+    #region SetLocalState
+    public struct SetLocalState
+    {
+        public ScriptSection Section;
+        public int SectionDepth;
+        public Dictionary<string, string> LocalVarsBackup;
     }
     #endregion
 

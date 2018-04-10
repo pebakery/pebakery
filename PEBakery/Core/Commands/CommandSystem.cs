@@ -373,7 +373,7 @@ namespace PEBakery.Core.Commands
 
                         Engine.EnableSetLocal(s, cmd.Addr.Section);
 
-                        logs.Add(new LogInfo(LogState.Success, "Local variables are isolated"));
+                        logs.Add(new LogInfo(LogState.Success, "Start of local variables isolation"));
                     }
                     break;
                 case SystemType.EndLocal:
@@ -381,9 +381,10 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
-                        Engine.DisableSetLocal(s, cmd.Addr.Section);
-
-                        logs.Add(new LogInfo(LogState.Success, "Local variables are no longer isolated"));
+                        if (Engine.DisableSetLocal(s, cmd.Addr.Section))
+                            logs.Add(new LogInfo(LogState.Success, "End of local variables isolation"));
+                        else
+                            logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
                     }
                     break;
                 // WB082 Compatibility Shim
