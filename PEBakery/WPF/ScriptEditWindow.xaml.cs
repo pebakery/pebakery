@@ -175,7 +175,7 @@ namespace PEBakery.WPF
                 }
                 catch (Exception ex)
                 {
-                    App.Logger.System_Write(new LogInfo(LogState.Error, ex));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                     MessageBox.Show("Attach failed.\r\nSee system log for details.", "Attach Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -210,7 +210,7 @@ namespace PEBakery.WPF
                         }
                         catch (Exception ex)
                         {
-                            App.Logger.System_Write(new LogInfo(LogState.Error, ex));
+                            App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
                             MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
@@ -234,7 +234,7 @@ namespace PEBakery.WPF
                 }
                 else
                 {
-                    App.Logger.System_Write(new LogInfo(LogState.Error, errorMsg));
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
                     MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }

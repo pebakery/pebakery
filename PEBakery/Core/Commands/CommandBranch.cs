@@ -97,18 +97,18 @@ namespace PEBakery.Core.Commands
                 // Load Per-Script Variables
                 s.Variables.ResetVariables(VarsType.Local);
                 List<LogInfo> varLogs = s.Variables.LoadDefaultScriptVariables(sc);
-                s.Logger.Build_Write(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(varLogs, s.CurDepth + 1));
 
                 // Load Per-Script Macro
                 s.Macro.ResetLocalMacros();
                 List<LogInfo> macroLogs = s.Macro.LoadLocalMacroDict(sc, false);
-                s.Logger.Build_Write(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
+                s.Logger.BuildWrite(s, LogInfo.AddDepth(macroLogs, s.CurDepth + 1));
             }
 
             // Run Section
             int depthBackup = s.CurDepth;
-            int errorOffStartLineIdxBackup = s.ErrorOffStartLineIdx;
-            int erroroffCountBackup = s.ErrorOffLineCount;
+            // int errorOffStartLineIdxBackup = s.ErrorOffStartLineIdx;
+            //int erroroffCountBackup = s.ErrorOffLineCount;
             Engine.RunSection(s, nextAddr, paramDict, s.CurDepth + 1, callback);
 
             if (cmd.Type == CodeType.Exec)
@@ -122,8 +122,8 @@ namespace PEBakery.Core.Commands
             }
 
             s.CurDepth = depthBackup;
-            s.ErrorOffStartLineIdx = errorOffStartLineIdxBackup;
-            s.ErrorOffLineCount = erroroffCountBackup;
+            // s.ErrorOffStartLineIdx = errorOffStartLineIdxBackup;
+            // s.ErrorOffLineCount = erroroffCountBackup;
             s.Logger.LogEndOfSection(s, nextAddr, s.CurDepth, inCurrentScript, cmd, forceLog);
         }  
 
@@ -137,12 +137,12 @@ namespace PEBakery.Core.Commands
             {
                 if (s.LoopState == LoopState.Off)
                 {
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Loop is not running", cmd, s.CurDepth));
                 }
                 else
                 {
                     s.LoopState = LoopState.Off;
-                    s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Breaking loop", cmd, s.CurDepth));
+                    s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Breaking loop", cmd, s.CurDepth));
 
                     // Reset LoopCounter, to be sure
                     s.LoopLetter = ' ';
@@ -151,7 +151,7 @@ namespace PEBakery.Core.Commands
             }
             else if (s.LoopState != LoopState.Off)
             { // If loop is already turned on, throw error
-                s.Logger.Build_Write(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Error, "Nested loop is not supported", cmd, s.CurDepth));
             }
             else
             {
@@ -214,7 +214,7 @@ namespace PEBakery.Core.Commands
                     logMessage = $"Loop Section [{sectionName}] [{loopCount}] times";
                 else
                     logMessage = $"Loop [{sc.Title}]'s Section [{sectionName}] [{loopCount}] times";
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, logMessage, cmd, s.CurDepth));
 
                 // Loop it
                 SectionAddress nextAddr = new SectionAddress(sc, sc.Sections[sectionName]);
@@ -224,7 +224,7 @@ namespace PEBakery.Core.Commands
                     case CodeType.Loop:
                         for (s.LoopCounter = startIdx; s.LoopCounter <= endIdx; s.LoopCounter++)
                         { // Counter Variable is [#c]
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
                             int depthBackup = s.CurDepth;
@@ -235,14 +235,14 @@ namespace PEBakery.Core.Commands
                             s.LoopState = LoopState.Off;
                             s.CurDepth = depthBackup;
 
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopCounter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
                         }
                         break;
                     case CodeType.LoopLetter:
                         for (s.LoopLetter = startLetter; s.LoopLetter <= endLetter; s.LoopLetter++)
                         { // Counter Variable is [#c]
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Entering Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             s.Logger.LogSectionParameter(s, s.CurDepth, paramDict, cmd);
 
                             int depthBackup = s.CurDepth;
@@ -253,7 +253,7 @@ namespace PEBakery.Core.Commands
                             s.LoopState = LoopState.Off;
                             s.CurDepth = depthBackup;
 
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"End of Loop with [{s.LoopLetter}] ({loopIdx}/{loopCount})", cmd, s.CurDepth));
                             loopIdx += 1;
                         }
                         break;
@@ -275,18 +275,18 @@ namespace PEBakery.Core.Commands
             
             if (CheckBranchCondition(s, info.Condition, out string msg))
             { // Condition matched, run it
-                s.Logger.Build_Write(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
             }
             else
             { // Do not run
-                s.Logger.Build_Write(s, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, msg, cmd, s.CurDepth));
 
                 s.ElseFlag = true;
             }
@@ -300,18 +300,18 @@ namespace PEBakery.Core.Commands
 
             if (s.ElseFlag)
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
                 int depthBackup = s.CurDepth;
                 Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
                 s.CurDepth = depthBackup;
-                s.Logger.Build_Write(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
             }
             else
             {
-                s.Logger.Build_Write(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
+                s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
             }
         }
 

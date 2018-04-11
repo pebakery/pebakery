@@ -94,16 +94,27 @@ namespace PEBakery.Core.Commands
 
                         string linesStr = StringEscaper.Preprocess(s, subInfo.Lines);
                         if (!NumberHelper.ParseInt32(linesStr, out int lines))
-                            throw new ExecuteException($"[{linesStr}] is not a valid integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{linesStr}] is not a positive integer");
                         if (lines <= 0)
-                            throw new ExecuteException($"[{linesStr}] must be a positive integer");
+                            return LogInfo.LogErrorMessage(logs, $"[{linesStr}] is not a positive integer");
 
-                        // +1 to not count ErrorOff itself
-                        s.ErrorOffSection = cmd.Addr.Section;
-                        s.ErrorOffStartLineIdx = cmd.LineIdx + 1;
-                        s.ErrorOffLineCount = lines;
-
-                        logs.Add(new LogInfo(LogState.Success, $"Error is off for [{lines}] lines"));
+                        if (s.ErrorOff == null) 
+                        {
+                            // Enable s.ErrorOff
+                            // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
+                            s.ErrorOffWaitingRegister = new ErrorOffState
+                            {
+                                Section = cmd.Addr.Section,
+                                SectionDepth = s.CurDepth,
+                                StartLineIdx = cmd.LineIdx,
+                                LineCount = lines,
+                            };
+                            logs.Add(new LogInfo(LogState.Success, $"Error and warning logs will be muted for [{lines}] lines"));
+                        }
+                        else
+                        { // If s.ErrorOff is already enabled, do nothing. Ex) Nested ErrorOff
+                            logs.Add(new LogInfo(LogState.Ignore, "ErrorOff is already enabled"));
+                        }
                     }
                     break;
                 case SystemType.GetEnv:
@@ -145,7 +156,6 @@ namespace PEBakery.Core.Commands
                         {
                             // TODO: Is it correct WB082 behavior?
                             logs.Add(new LogInfo(LogState.Ignore, "No free drive letter"));
-                            // ReSharper disable once PossibleNullReferenceException
                             List<LogInfo> varLogs = Variables.SetVariable(s, subInfo.DestVar, string.Empty);
                             logs.AddRange(varLogs);
                         }
@@ -362,7 +372,7 @@ namespace PEBakery.Core.Commands
 
                         if (!s.DisableLogger)
                         { // When logger is disabled, s.BuildId is invalid.
-                            s.Logger.Build_Write(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
+                            s.Logger.BuildWrite(s, new LogInfo(LogState.Success, $"Exported Build Logs to [{destPath}]", cmd, s.CurDepth));
                             s.Logger.ExportBuildLog(logFormat, destPath, s.BuildId);
                         }
                     }   

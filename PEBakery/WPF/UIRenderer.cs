@@ -87,18 +87,18 @@ namespace PEBakery.WPF
                 try
                 {
                     _uiCtrls = script.Sections[interfaceSectionName].GetUICtrls(true).Where(x => x.Visibility).ToList();
-                    logger.System_Write(script.Sections[interfaceSectionName].LogInfos);
+                    logger.SystemWrite(script.Sections[interfaceSectionName].LogInfos);
                 }
                 catch
                 {
                     _uiCtrls = null;
-                    logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                    logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
                 }
             }
             else
             {
                 _uiCtrls = null;
-                logger.System_Write(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
+                logger.SystemWrite(new LogInfo(LogState.Error, $"Cannot read interface controls from [{script.TreePath}]"));
             }
         }
         #endregion
@@ -157,13 +157,13 @@ namespace PEBakery.WPF
                             UIRenderer.RenderRadioGroup(_renderInfo, uiCmd);
                             break;
                         default:
-                            _logger.System_Write(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
+                            _logger.SystemWrite(new LogInfo(LogState.Error, $"Unable to render [{uiCmd.RawLine}]"));
                             break;
                     }
                 }
                 catch (Exception e)
                 { // Log failure
-                    _logger.System_Write(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
+                    _logger.SystemWrite(new LogInfo(LogState.Error, $"{Logger.LogExceptionMessage(e)} [{uiCmd.RawLine}]"));
                 }
             }
         }
@@ -317,7 +317,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
@@ -380,7 +380,7 @@ namespace PEBakery.WPF
                     }
                     else
                     {
-                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     }
                 };
             }
@@ -413,7 +413,7 @@ namespace PEBakery.WPF
             {
                 if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType type))
                 {
-                    r.Logger.System_Write(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                    r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                     return;
                 }
 
@@ -459,7 +459,7 @@ namespace PEBakery.WPF
                 {
                     if (!ImageHelper.GetImageType(uiCtrl.Text, out ImageHelper.ImageType t))
                     {
-                        r.Logger.System_Write(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
+                        r.Logger.SystemWrite(new LogInfo(LogState.Error, $"Image [{Path.GetExtension(uiCtrl.Text)}] is not supported"));
                         return;
                     }
 
@@ -547,7 +547,7 @@ namespace PEBakery.WPF
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MainWindow w = Application.Current.MainWindow as MainWindow;
-                        w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                        w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                     });
                 }
             };
@@ -745,7 +745,7 @@ namespace PEBakery.WPF
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MainWindow w = Application.Current.MainWindow as MainWindow;
-                            w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                            w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                         });
                     }
                 };
@@ -919,7 +919,7 @@ namespace PEBakery.WPF
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 MainWindow w = Application.Current.MainWindow as MainWindow;
-                                w?.Logger.System_Write(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
+                                w?.Logger.SystemWrite(new LogInfo(LogState.Error, $"Section [{info.SectionName}] does not exists"));
                             });
                         }
                     };

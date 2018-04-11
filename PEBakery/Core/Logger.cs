@@ -212,17 +212,13 @@ namespace PEBakery.Core
         #region ToString
         public override string ToString()
         {
-            if (Command != null)
-            {
-                if (0 < Command.LineIdx)
-                    return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
-                else
-                    return $"[{State}] {Message} ({Command.RawCode})";
-            }
-            else
-            {
+            if (Command == null)
                 return $"[{State}] {Message}";
-            }
+
+            if (0 < Command.LineIdx)
+                return $"[{State}] {Message} ({Command.RawCode}) (Line {Command.LineIdx})";
+            else
+                return $"[{State}] {Message} ({Command.RawCode})";
         }
         #endregion
     }
@@ -297,17 +293,18 @@ namespace PEBakery.Core
     #region Logger Class
     public class Logger
     {
-        #region Fields, Constructor, Destructor
+        #region Fields
+        // ReSharper disable once InconsistentNaming
         public LogDB DB;
         public bool SuspendLog = false;
 
         public static DebugLevel DebugLevel;
         public readonly ConcurrentStack<bool> TurnOff = new ConcurrentStack<bool>();
 
-        private readonly List<DB_BuildLog> BuildLogPool = new List<DB_BuildLog>(4096);
+        private readonly List<DB_BuildLog> _buildLogPool = new List<DB_BuildLog>(4096);
 
-        private readonly ConcurrentDictionary<long, DB_BuildInfo> buildDict = new ConcurrentDictionary<long, DB_BuildInfo>();
-        private readonly ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>> scriptDict = new ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>>();
+        private readonly ConcurrentDictionary<long, DB_BuildInfo> _buildDict = new ConcurrentDictionary<long, DB_BuildInfo>();
+        private readonly ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>> _scriptDict = new ConcurrentDictionary<long, Tuple<DB_Script, Stopwatch>>();
 
         public event SystemLogUpdateEventHandler SystemLogUpdated;
         public event BuildLogUpdateEventHandler BuildLogUpdated;
@@ -316,7 +313,9 @@ namespace PEBakery.Core
         public event VariableUpdateEventHandler VariableUpdated;
 
         public const string LogSeperator = "--------------------------------------------------------------------------------";
+        #endregion
 
+        #region Constructor, Destructor
         public Logger(string path)
         {
             DB = new LogDB(path);
@@ -329,19 +328,19 @@ namespace PEBakery.Core
         #endregion
 
         #region Build Init/Finish
-        public long Build_Init(EngineState s, string name)
+        public long BuildInit(EngineState s, string name)
         {
             if (s.DisableLogger)
                 return 0;
 
             // Build Id
-            DB_BuildInfo dbBuild = new DB_BuildInfo()
+            DB_BuildInfo dbBuild = new DB_BuildInfo
             {
                 StartTime = DateTime.UtcNow,
                 Name = name,
             };
             DB.Insert(dbBuild);
-            buildDict[dbBuild.Id] = dbBuild;
+            _buildDict[dbBuild.Id] = dbBuild;
             s.BuildId = dbBuild.Id;
 
             // Fire Event
@@ -354,7 +353,7 @@ namespace PEBakery.Core
                 Dictionary<string, string> dict = s.Variables.GetVarDict(type);
                 foreach (var kv in dict)
                 {
-                    DB_Variable dbVar = new DB_Variable()
+                    DB_Variable dbVar = new DB_Variable
                     {
                         BuildId = dbBuild.Id,
                         Type = type,
@@ -369,33 +368,33 @@ namespace PEBakery.Core
             }
             DB.InsertAll(varLogs);
 
-            System_Write(new LogInfo(LogState.Info, $"Build [{name}] started"));
+            SystemWrite(new LogInfo(LogState.Info, $"Build [{name}] started"));
             
             return dbBuild.Id;
         }
 
-        public void Build_Finish(EngineState s)
+        public void BuildFinish(EngineState s)
         {
             if (s.DisableLogger)
                 return;
 
-            buildDict.TryRemove(s.BuildId, out DB_BuildInfo dbBuild);
+            _buildDict.TryRemove(s.BuildId, out DB_BuildInfo dbBuild);
             if (dbBuild == null)
                 throw new KeyNotFoundException($"Unable to find DB_BuildInfo Instance, id = {s.BuildId}");
 
             if (s.DelayedLogging)
             {
-                DB.InsertAll(BuildLogPool);
-                BuildLogPool.Clear();
+                DB.InsertAll(_buildLogPool);
+                _buildLogPool.Clear();
             }
 
             dbBuild.EndTime = DateTime.UtcNow;
             DB.Update(dbBuild);
 
-            System_Write(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
+            SystemWrite(new LogInfo(LogState.Info, $"Build [{dbBuild.Name}] finished"));
         }
 
-        public long Build_Script_Init(EngineState s, Script sc, int order)
+        public long BuildScriptInit(EngineState s, Script sc, int order)
         {
             if (s.DisableLogger)
                 return 0;
@@ -411,7 +410,7 @@ namespace PEBakery.Core
                 Version = sc.Version,
             };
             DB.Insert(dbScript);
-            scriptDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
+            _scriptDict[dbScript.Id] = new Tuple<DB_Script, Stopwatch>(dbScript, Stopwatch.StartNew());
 
             // Fire Event
             if (!s.DelayedLogging)
@@ -420,64 +419,61 @@ namespace PEBakery.Core
             return dbScript.Id;
         }
 
-        public void Build_Script_Finish(EngineState s, Dictionary<string, string> localVars)
+        public void BuildScriptFinish(EngineState s, Dictionary<string, string> localVars)
         {
             if (s.DisableLogger)
                 return;
 
             if (s.DelayedLogging)
             {
-                DB.InsertAll(BuildLogPool);
-                BuildLogPool.Clear();
+                DB.InsertAll(_buildLogPool);
+                _buildLogPool.Clear();
             }
 
-            if (s.DisableLogger == false)
+            long buildId = s.BuildId;
+            long scriptId = s.ScriptId;
+
+            // Scripts 
+            _scriptDict.TryRemove(scriptId, out Tuple<DB_Script, Stopwatch> tuple);
+            if (tuple == null)
+                throw new KeyNotFoundException($"Unable to find DB_Script Instance, id = {scriptId}");
+
+            DB_Script dbScript = tuple.Item1;
+            Stopwatch watch = tuple.Item2;
+            watch.Stop();
+
+            dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
+            if (localVars != null)
             {
-                long buildId = s.BuildId;
-                long scriptId = s.ScriptId;
-
-                // Scripts 
-                scriptDict.TryRemove(scriptId, out Tuple<DB_Script, Stopwatch> tuple);
-                if (tuple == null)
-                    throw new KeyNotFoundException($"Unable to find DB_Script Instance, id = {scriptId}");
-
-                DB_Script dbScript = tuple.Item1;
-                Stopwatch watch = tuple.Item2;
-                watch.Stop();
-
-                dbScript.ElapsedMilliSec = watch.ElapsedMilliseconds;
-                if (localVars != null)
+                List<DB_Variable> varLogs = new List<DB_Variable>(localVars.Count);
+                foreach (var kv in localVars)
                 {
-                    List<DB_Variable> varLogs = new List<DB_Variable>(localVars.Count);
-                    foreach (var kv in localVars)
+                    DB_Variable dbVar = new DB_Variable
                     {
-                        DB_Variable dbVar = new DB_Variable()
-                        {
-                            BuildId = buildId,
-                            ScriptId = scriptId,
-                            Type = VarsType.Local,
-                            Key = kv.Key,
-                            Value = kv.Value,
-                        };
-                        varLogs.Add(dbVar);
+                        BuildId = buildId,
+                        ScriptId = scriptId,
+                        Type = VarsType.Local,
+                        Key = kv.Key,
+                        Value = kv.Value,
+                    };
+                    varLogs.Add(dbVar);
 
-                        // Fire Event
-                        VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
-                    }
-                    DB.InsertAll(varLogs);
+                    // Fire Event
+                    VariableUpdated?.Invoke(this, new VariableUpdateEventArgs(dbVar));
                 }
-
-                DB.Update(dbScript);
-
-                // Fire Event
-                if (s.DelayedLogging)
-                    ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
+                DB.InsertAll(varLogs);
             }
+
+            DB.Update(dbScript);
+
+            // Fire Event
+            if (s.DelayedLogging)
+                ScriptUpdated?.Invoke(this, new ScriptUpdateEventArgs(dbScript));
         }
         #endregion
 
-        #region Build_Write
-        public void Build_Write(EngineState s, string message)
+        #region BuildWrite
+        public void BuildWrite(EngineState s, string message)
         {
             if (s.DisableLogger)
                 return;
@@ -485,13 +481,13 @@ namespace PEBakery.Core
             bool doNotLog = false;
             if (0 < TurnOff.Count)
             {
-                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                if (!TurnOff.TryPeek(out doNotLog)) // Stack Failure
                     doNotLog = false;
             }
 
-            if (doNotLog == false)
+            if (!doNotLog)
             {
-                DB_BuildLog dbCode = new DB_BuildLog()
+                DB_BuildLog dbCode = new DB_BuildLog
                 {
                     Time = DateTime.UtcNow,
                     BuildId = s.BuildId,
@@ -501,7 +497,7 @@ namespace PEBakery.Core
 
                 if (s.DelayedLogging)
                 {
-                    BuildLogPool.Add(dbCode);
+                    _buildLogPool.Add(dbCode);
                 }
                 else
                 {
@@ -513,7 +509,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void Build_Write(EngineState s, LogInfo log)
+        public void BuildWrite(EngineState s, LogInfo log)
         {
             if (s.DisableLogger)
                 return;
@@ -521,19 +517,28 @@ namespace PEBakery.Core
             bool doNotLog = false;
             if (0 < TurnOff.Count)
             {
-                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                if (!TurnOff.TryPeek(out doNotLog)) // Stack Failure
                     doNotLog = false;
             }
 
-            if (doNotLog == false)
+            if (!doNotLog)
             {
-                DB_BuildLog dbCode = new DB_BuildLog()
+                // Normally this should be already done in Engine.ExecuteCommand.
+                // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
+                // => Need to double-check 'muting logs' at Logger.BuildWrite.
+                LogState state;
+                if (s.ErrorOff != null && (log.State == LogState.Error || log.State == LogState.Warning))
+                    state = LogState.Muted;
+                else
+                    state = log.State;
+
+                DB_BuildLog dbCode = new DB_BuildLog
                 {
                     Time = DateTime.UtcNow,
                     BuildId = s.BuildId,
                     ScriptId = s.ScriptId,
                     Depth = log.Depth,
-                    State = log.State,
+                    State = state,
                 };
 
                 if (log.Command == null)
@@ -542,7 +547,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    if (log.Message == string.Empty)
+                    if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
@@ -552,7 +557,7 @@ namespace PEBakery.Core
 
                 if (s.DelayedLogging)
                 {
-                    BuildLogPool.Add(dbCode);
+                    _buildLogPool.Add(dbCode);
                 }
                 else
                 {
@@ -564,7 +569,7 @@ namespace PEBakery.Core
             }
         }
 
-        public void Build_Write(EngineState s, IEnumerable<LogInfo> logs)
+        public void BuildWrite(EngineState s, IEnumerable<LogInfo> logs)
         {
             if (s.DisableLogger)
                 return;
@@ -572,22 +577,22 @@ namespace PEBakery.Core
             bool doNotLog = false;
             if (0 < TurnOff.Count)
             {
-                if (TurnOff.TryPeek(out doNotLog) == false) // Stack Failure
+                if (!TurnOff.TryPeek(out doNotLog)) // Stack Failure
                     doNotLog = false;
             }
 
-            if (doNotLog == false)
+            if (!doNotLog)
             {
                 foreach (LogInfo log in logs)
-                    Build_Write(s, log);
+                    BuildWrite(s, log);
             }
         }
 
-        public void Build_Write(long buildId, IEnumerable<LogInfo> logs)
+        public void BuildWrite(long buildId, IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
             {
-                DB_BuildLog dbCode = new DB_BuildLog()
+                DB_BuildLog dbCode = new DB_BuildLog
                 {
                     Time = DateTime.UtcNow,
                     BuildId = buildId,
@@ -595,7 +600,7 @@ namespace PEBakery.Core
                     Depth = log.Depth,
                     State = log.State,
                 };
-                BuildLogPool.Add(dbCode);
+                _buildLogPool.Add(dbCode);
 
                 if (log.Command == null)
                 {
@@ -603,7 +608,7 @@ namespace PEBakery.Core
                 }
                 else
                 {
-                    if (log.Message == string.Empty)
+                    if (log.Message.Length == 0)
                         dbCode.Message = log.Command.Type.ToString();
                     else
                         dbCode.Message = $"{log.Command.Type} - {log.Message}";
@@ -619,10 +624,10 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region System_Write
-        public void System_Write(string message)
+        #region SystemWrite
+        public void SystemWrite(string message)
         {
-            DB_SystemLog dbLog = new DB_SystemLog()
+            DB_SystemLog dbLog = new DB_SystemLog
             {
                 Time = DateTime.UtcNow,
                 State = LogState.None,
@@ -635,9 +640,9 @@ namespace PEBakery.Core
             SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
         }
 
-        public void System_Write(LogInfo log)
+        public void SystemWrite(LogInfo log)
         {
-            DB_SystemLog dbLog = new DB_SystemLog()
+            DB_SystemLog dbLog = new DB_SystemLog
             {
                 Time = DateTime.UtcNow,
                 State = log.State,
@@ -650,10 +655,10 @@ namespace PEBakery.Core
             SystemLogUpdated?.Invoke(this, new SystemLogUpdateEventArgs(dbLog));
         }
 
-        public void System_Write(IEnumerable<LogInfo> logs)
+        public void SystemWrite(IEnumerable<LogInfo> logs)
         {
             foreach (LogInfo log in logs)
-                System_Write(log);
+                SystemWrite(log);
         }
         #endregion
 
@@ -670,8 +675,8 @@ namespace PEBakery.Core
                     turnOff = false;
             }
 
-            bool TurnOffOriginalValue = turnOff;
-            if (forceLog && TurnOffOriginalValue)
+            bool turnOffBackup = turnOff;
+            if (forceLog && turnOffBackup)
                 turnOff = false;
 
             if (logScriptName)
@@ -679,7 +684,7 @@ namespace PEBakery.Core
             else
                 LogStartOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, sectionParam, cmd);
 
-            if (forceLog && TurnOffOriginalValue)
+            if (forceLog && turnOffBackup)
                 turnOff = true;
         }
 
@@ -690,9 +695,9 @@ namespace PEBakery.Core
 
             string msg = $"Processing Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(s, new LogInfo(LogState.Info, msg, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(s, new LogInfo(LogState.Info, msg, cmd, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
             LogSectionParameter(s, depth, paramDict, cmd);
         }
@@ -704,9 +709,9 @@ namespace PEBakery.Core
 
             string msg = $"Processing [{scriptName}]'s Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(s, new LogInfo(LogState.Info, msg, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(s, new LogInfo(LogState.Info, msg, cmd, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
 
             LogSectionParameter(s, depth, paramDict, cmd);
         }
@@ -719,12 +724,12 @@ namespace PEBakery.Core
             bool turnOff = false;
             if (0 < TurnOff.Count)
             {
-                if (TurnOff.TryPeek(out turnOff) == false) // Stack Failure
+                if (!TurnOff.TryPeek(out turnOff)) // Stack Failure
                     turnOff = false;
             }
 
-            bool TurnOffOriginalValue = turnOff;
-            if (forceLog && TurnOffOriginalValue)
+            bool turnOffBackup = turnOff;
+            if (forceLog && turnOffBackup)
                 turnOff = false;
 
             if (logScriptName)
@@ -732,7 +737,7 @@ namespace PEBakery.Core
             else
                 LogEndOfSection(s, addr.Script.TreePath, addr.Section.Name, depth, cmd);
 
-            if (forceLog && TurnOffOriginalValue)
+            if (forceLog && turnOffBackup)
                 turnOff = true;
         }
 
@@ -743,9 +748,9 @@ namespace PEBakery.Core
 
             string msg = $"End of Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(s, new LogInfo(LogState.Info, msg, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(s, new LogInfo(LogState.Info, msg, cmd, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
         }
 
         public void LogEndOfSection(EngineState s, string scriptName, string sectionName, int depth, CodeCommand cmd = null)
@@ -755,9 +760,9 @@ namespace PEBakery.Core
 
             string msg = $"End of [{scriptName}]'s Section [{sectionName}]";
             if (cmd == null)
-                Build_Write(s, new LogInfo(LogState.Info, msg, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, depth));
             else
-                Build_Write(s, new LogInfo(LogState.Info, msg, cmd, depth));
+                BuildWrite(s, new LogInfo(LogState.Info, msg, cmd, depth));
         }
         #endregion
 
@@ -783,9 +788,9 @@ namespace PEBakery.Core
                 b.Append(" }");
 
                 if (cmd == null)
-                    Build_Write(s, new LogInfo(LogState.Info, b.ToString(), depth + 1));
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), depth + 1));
                 else
-                    Build_Write(s, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
+                    BuildWrite(s, new LogInfo(LogState.Info, b.ToString(), cmd, depth + 1));
             }
         }
         #endregion

@@ -964,7 +964,7 @@ namespace PEBakery.WPF
                     return false;
 
                 (string section, string key) = SplitSectionKey(varName);
-                App.Logger.System_Write(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
                 return defaultValue;
             }
 
@@ -993,7 +993,7 @@ namespace PEBakery.WPF
                 }
 
                 (string section, string key) = SplitSectionKey(varName);
-                App.Logger.System_Write(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Setting [{section}.{key}] has wrong value: {valStr}"));
                 return defaultValue;
             }
 

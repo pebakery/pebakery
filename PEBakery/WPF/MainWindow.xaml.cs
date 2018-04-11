@@ -142,7 +142,7 @@ namespace PEBakery.WPF
             try
             {
                 App.Logger = Logger = new Logger(logDBFile);
-                Logger.System_Write(new LogInfo(LogState.Info, "PEBakery launched"));
+                Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
             }
             catch (SQLiteException e)
             { // Update failure
@@ -159,7 +159,7 @@ namespace PEBakery.WPF
                 try
                 {
                     _scriptCache = new ScriptCache(cacheDBFile);
-                    Logger.System_Write(new LogInfo(LogState.Info, $"ScriptCache enabled, {_scriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, $"ScriptCache enabled, {_scriptCache.Table<DB_ScriptCache>().Count()} cached scripts found"));
                 }
                 catch (SQLiteException e)
                 { // Update failure
@@ -172,7 +172,7 @@ namespace PEBakery.WPF
             }
             else
             {
-                Logger.System_Write(new LogInfo(LogState.Info, "ScriptCache disabled"));
+                Logger.SystemWrite(new LogInfo(LogState.Info, "ScriptCache disabled"));
             }
 
             StartLoadWorker();
@@ -194,7 +194,7 @@ namespace PEBakery.WPF
                 Model.ScriptTitleText = "Welcome to PEBakery!";
                 Model.ScriptDescriptionText = "PEBakery loading...";
             }
-            Logger.System_Write(new LogInfo(LogState.Info, $@"Loading from [{BaseDir}]"));
+            Logger.SystemWrite(new LogInfo(LogState.Info, $@"Loading from [{BaseDir}]"));
             MainCanvas.Children.Clear();
             (MainTreeView.DataContext as TreeViewModel)?.Children.Clear();
 
@@ -235,7 +235,7 @@ namespace PEBakery.WPF
 
                 // Let's load scripts parallelly
                 List<LogInfo> errorLogs = Projects.Load(worker);
-                Logger.System_Write(errorLogs);
+                Logger.SystemWrite(errorLogs);
                 Setting.UpdateProjectList();
 
                 if (0 < Projects.ProjectNames.Count)
@@ -319,7 +319,7 @@ namespace PEBakery.WPF
                             b.Append(", ");
                     }
                     b.Append("] loaded");
-                    Logger.System_Write(new LogInfo(LogState.Info, b.ToString()));
+                    Logger.SystemWrite(new LogInfo(LogState.Info, b.ToString()));
 
                     watch.Stop();
                     double t = watch.Elapsed.TotalMilliseconds / 1000.0;
@@ -339,8 +339,8 @@ namespace PEBakery.WPF
                         Model.WorkInProgress = false;
                     Model.SwitchStatusProgressBar = true; // Show Status Bar
 
-                    Logger.System_Write(new LogInfo(LogState.Info, msg));
-                    Logger.System_Write(Logger.LogSeperator);
+                    Logger.SystemWrite(new LogInfo(LogState.Info, msg));
+                    Logger.SystemWrite(Logger.LogSeperator);
 
                     // If script cache is enabled, generate cache.
                     if (Setting.Script_EnableCache)
@@ -401,8 +401,8 @@ namespace PEBakery.WPF
 
                         double t = watch.Elapsed.TotalMilliseconds / 1000.0;
                         string msg = $"{allScriptCount} scripts cached ({t:0.###}s), {cachePercent:0.#}% updated";
-                        Logger.System_Write(new LogInfo(LogState.Info, msg));
-                        Logger.System_Write(Logger.LogSeperator);
+                        Logger.SystemWrite(new LogInfo(LogState.Info, msg));
+                        Logger.SystemWrite(Logger.LogSeperator);
 
                         Model.WorkInProgress = false;
                     };
@@ -1865,11 +1865,11 @@ namespace PEBakery.WPF
                             {
                                 // Run 'Disable' directive
                                 List<LogInfo> errorLogs = DisableScripts(Root, script);
-                                w.Logger.System_Write(errorLogs);
+                                w.Logger.SystemWrite(errorLogs);
                             }
                             catch (Exception e)
                             {
-                                w.Logger.System_Write(new LogInfo(LogState.Error, e));
+                                w.Logger.SystemWrite(new LogInfo(LogState.Error, e));
                             }
                         }
                         else

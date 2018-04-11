@@ -610,10 +610,10 @@ namespace PEBakery.Core.Commands
                     List<LogInfo> subLogs = s.Variables.UIControlToVariables(uiCtrls, prefix);
                     if (0 < subLogs.Count)
                     {
-                        s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
+                        s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Import variables from [{interfaceSection}]", cmd, s.CurDepth));
                         logs.AddRange(LogInfo.AddCommandDepth(subLogs, cmd, s.CurDepth + 1));
-                        s.Logger.Build_Write(s, subLogs);
-                        s.Logger.Build_Write(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
+                        s.Logger.BuildWrite(s, subLogs);
+                        s.Logger.BuildWrite(s, new LogInfo(LogState.Info, $"Imported {subLogs.Count} variables", cmd, s.CurDepth));
                     }
                 }
             }

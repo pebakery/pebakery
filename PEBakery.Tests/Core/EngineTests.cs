@@ -72,7 +72,7 @@ namespace PEBakery.Tests.Core
             // Use InMemory Database for Tests
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
-            Logger.System_Write(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
+            Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
         }
 
         private static void NativeAssemblyInit()
