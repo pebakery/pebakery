@@ -28,6 +28,7 @@
 using RazorEngine.Templating;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -38,31 +39,31 @@ namespace PEBakery.Core
 {
     public class LogExporter
     {
-        private readonly LogDB DB;
-        private readonly LogExportType exportType;
-        private readonly StreamWriter w;
+        private readonly LogDB _db;
+        private readonly LogExportType _exportType;
+        private readonly StreamWriter _w;
 
-        public LogExporter(LogDB DB, LogExportType type, StreamWriter writer)
+        public LogExporter(LogDB db, LogExportType type, StreamWriter writer)
         {
-            this.DB = DB ?? throw new ArgumentNullException(nameof(DB));
-            this.w = writer ?? throw new ArgumentNullException(nameof(writer));
-            this.exportType = type;
+            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _w = writer ?? throw new ArgumentNullException(nameof(writer));
+            _exportType = type;
         }
 
         public void ExportSystemLog()
         {
-            switch (exportType)
+            switch (_exportType)
             {
                 case LogExportType.Text:
                     {
-                        w.WriteLine($"- PEBakery System Log -");
-                        var logs = DB.Table<DB_SystemLog>().OrderBy(x => x.Time);
+                        _w.WriteLine("- PEBakery System Log -");
+                        var logs = _db.Table<DB_SystemLog>().OrderBy(x => x.Time);
                         foreach (DB_SystemLog log in logs)
                         {
                             if (log.State == LogState.None)
-                                w.WriteLine($"[{log.TimeStr}] {log.Message}");
+                                _w.WriteLine($"[{log.TimeStr}] {log.Message}");
                             else
-                                w.WriteLine($"[{log.TimeStr}] [{log.State}] {log.Message}");
+                                _w.WriteLine($"[{log.TimeStr}] [{log.State}] {log.Message}");
                         }
                     }
                     break;
@@ -74,7 +75,7 @@ namespace PEBakery.Core
                             SysLogs = new List<SystemLogHtmlModel>(),
                         };
 
-                        var logs = DB.Table<DB_SystemLog>().OrderBy(x => x.Time);
+                        var logs = _db.Table<DB_SystemLog>().OrderBy(x => x.Time);
                         foreach (DB_SystemLog log in logs)
                         {
                             m.SysLogs.Add(new SystemLogHtmlModel()
@@ -86,7 +87,7 @@ namespace PEBakery.Core
                         }
 
                         string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.SystemLogHtmlTemplate, "SystemLogHtmlTemplateKey", null, m);
-                        w.WriteLine(html);
+                        _w.WriteLine(html);
                     }
                     break;
             }
@@ -94,138 +95,140 @@ namespace PEBakery.Core
 
         public void ExportBuildLog(long buildId)
         {
-            switch (exportType)
+            switch (_exportType)
             {
                 #region Text
                 case LogExportType.Text:
                     {
-                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().First(x => x.Id == buildId);
+                        DB_BuildInfo dbBuild = _db.Table<DB_BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.EndTime == DateTime.MinValue)
                             dbBuild.EndTime = DateTime.UtcNow;
 
-                        w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
-                        w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
-                        w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"- PEBakery Build <{dbBuild.Name}> -");
+                        _w.WriteLine($"Started at  {dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
+                        _w.WriteLine($"Finished at {dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture)}");
                         TimeSpan t = dbBuild.EndTime - dbBuild.StartTime;
-                        w.WriteLine($"Took {t:h\\:mm\\:ss}");
-                        w.WriteLine();
-                        w.WriteLine();
+                        _w.WriteLine($"Took {t:h\\:mm\\:ss}");
+                        _w.WriteLine();
+                        _w.WriteLine();
 
-                        w.WriteLine($"<Log Statistics>");
+                        _w.WriteLine("<Log Statistics>");
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
                         { 
-                            int count = DB.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
-                            w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
+                            int count = _db.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
+                            _w.WriteLine($"{state.ToString().PadRight(9)}: {count}");
                         }
-                        w.WriteLine();
-                        w.WriteLine();
+                        _w.WriteLine();
+                        _w.WriteLine();
 
                         // Show ErrorLogs
-                        DB_BuildLog[] errors = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
+                        DB_BuildLog[] errors = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
                         if (0 < errors.Length)
                         {
-                            w.WriteLine("<Errors>");
+                            _w.WriteLine("<Errors>");
 
                             long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
-                            DB_Script[] scLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                             foreach (DB_Script scLog in scLogs)
                             {
                                 DB_BuildLog[] eLogs = errors.Where(x => x.ScriptId == scLog.Id).ToArray();
                                 if (eLogs.Length == 1)
-                                    w.WriteLine($"- [{eLogs.Length}] Error in Script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{eLogs.Length}] Error in Script [{scLog.Name}] ({scLog.Path})");
                                 else
-                                    w.WriteLine($"- [{eLogs.Length}] Errors in Script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{eLogs.Length}] Errors in Script [{scLog.Name}] ({scLog.Path})");
 
                                 foreach (DB_BuildLog eLog in eLogs)
-                                    w.WriteLine(eLog.Export(LogExportType.Text, false));
-                                w.WriteLine();
+                                    _w.WriteLine(eLog.Export(LogExportType.Text, false));
+                                _w.WriteLine();
                             }
 
-                            w.WriteLine();
+                            _w.WriteLine();
                         }
 
                         // Show WarnLogs
-                        DB_BuildLog[] warns = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
+                        DB_BuildLog[] warns = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
                         if (0 < errors.Length)
                         {
-                            w.WriteLine("<Warnings>");
+                            _w.WriteLine("<Warnings>");
 
                             long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
-                            DB_Script[] scLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                            DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                             foreach (DB_Script scLog in scLogs)
                             {
                                 DB_BuildLog[] wLogs = warns.Where(x => x.ScriptId == scLog.Id).ToArray();
+                                Debug.Assert(0 < wLogs.Length);
+
                                 if (wLogs.Length == 1)
-                                    w.WriteLine($"- [{wLogs.Length}] Warning in Script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{wLogs.Length}] Warning in Script [{scLog.Name}] ({scLog.Path})");
                                 else
-                                    w.WriteLine($"- [{wLogs.Length}] Warnings in Script [{scLog.Name}] ({scLog.Path})");
+                                    _w.WriteLine($"- [{wLogs.Length}] Warnings in Script [{scLog.Name}] ({scLog.Path})");
 
                                 foreach (DB_BuildLog eLog in wLogs)
-                                    w.WriteLine(eLog.Export(LogExportType.Text, false));
-                                w.WriteLine();
+                                    _w.WriteLine(eLog.Export(LogExportType.Text, false));
+                                _w.WriteLine();
                             }
 
-                            w.WriteLine();
+                            _w.WriteLine();
                         }
 
                         // Script
-                        var scripts = DB.Table<DB_Script>()
+                        var scripts = _db.Table<DB_Script>()
                             .Where(x => x.BuildId == buildId)
                             .OrderBy(x => x.Order);
-                        w.WriteLine("<Scripts>");
+                        _w.WriteLine("<Scripts>");
                         {
                             int count = scripts.Count();
                             int idx = 1;
                             foreach (DB_Script sc in scripts)
                             {
-                                w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
+                                _w.WriteLine($"[{idx}/{count}] {sc.Name} v{sc.Version} ({sc.ElapsedMilliSec / 1000.0:0.000}s)");
                                 idx++;
                             }
 
-                            w.WriteLine($"Total {count} Scripts");
-                            w.WriteLine();
-                            w.WriteLine();
+                            _w.WriteLine($"Total {count} Scripts");
+                            _w.WriteLine();
+                            _w.WriteLine();
                         }
 
-                        w.WriteLine("<Variables>");
-                        VarsType[] typeList = new VarsType[] { VarsType.Fixed, VarsType.Global };
+                        _w.WriteLine("<Variables>");
+                        VarsType[] typeList = { VarsType.Fixed, VarsType.Global };
                         foreach (VarsType varsType in typeList)
                         {
-                            w.WriteLine($"- {varsType} Variables");
-                            var vars = DB.Table<DB_Variable>()
+                            _w.WriteLine($"- {varsType} Variables");
+                            var vars = _db.Table<DB_Variable>()
                                 .Where(x => x.BuildId == buildId && x.Type == varsType)
                                 .OrderBy(x => x.Key);
                             foreach (DB_Variable log in vars)
-                                w.WriteLine($"%{log.Key}% = {log.Value}");
-                            w.WriteLine();
+                                _w.WriteLine($"%{log.Key}% = {log.Value}");
+                            _w.WriteLine();
                         }
-                        w.WriteLine();
+                        _w.WriteLine();
 
-                        w.WriteLine("<Code Logs>");
+                        _w.WriteLine("<Code Logs>");
                         {
                             foreach (DB_Script scLog in scripts)
                             {
                                 // Log codes
-                                var cLogs = DB.Table<DB_BuildLog>()
+                                var cLogs = _db.Table<DB_BuildLog>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id)
                                     .OrderBy(x => x.Id);
                                 foreach (DB_BuildLog log in cLogs)
-                                    w.WriteLine(log.Export(LogExportType.Text));
+                                    _w.WriteLine(log.Export(LogExportType.Text));
 
                                 // Log local variables
-                                var vLogs = DB.Table<DB_Variable>()
+                                var vLogs = _db.Table<DB_Variable>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
                                     .OrderBy(x => x.Key);
                                 if (vLogs.Any())
                                 {
-                                    w.WriteLine($"- Local Variables of Script [{scLog.Name}]");
+                                    _w.WriteLine($"- Local Variables of Script [{scLog.Name}]");
                                     foreach (DB_Variable vLog in vLogs)
-                                        w.WriteLine($"%{vLog.Key}% = {vLog.Value}");
-                                    w.WriteLine(Logger.LogSeperator);
+                                        _w.WriteLine($"%{vLog.Key}% = {vLog.Value}");
+                                    _w.WriteLine(Logger.LogSeperator);
                                 }
 
-                                w.WriteLine();
+                                _w.WriteLine();
                             }
                         }
                     }
@@ -234,24 +237,24 @@ namespace PEBakery.Core
                 #region HTML
                 case LogExportType.Html:
                     {
-                        DB_BuildInfo dbBuild = DB.Table<DB_BuildInfo>().First(x => x.Id == buildId);
+                        DB_BuildInfo dbBuild = _db.Table<DB_BuildInfo>().First(x => x.Id == buildId);
                         if (dbBuild.EndTime == DateTime.MinValue)
                             dbBuild.EndTime = DateTime.UtcNow;
-                        ExportBuildLogHtmlModel m = new ExportBuildLogHtmlModel()
+                        ExportBuildLogHtmlModel m = new ExportBuildLogHtmlModel
                         {
                             PEBakeryVersion = Properties.Resources.StringVersionFull,
                             BuildName = dbBuild.Name,
                             BuildStartTimeStr = dbBuild.StartTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
                             BuildEndTimeStr = dbBuild.EndTime.ToLocalTime().ToString("yyyy-MM-dd h:mm:ss tt", CultureInfo.InvariantCulture),
-                            BuildTookTimeStr = $"{(dbBuild.EndTime - dbBuild.StartTime):h\\:mm\\:ss}",
+                            BuildTookTimeStr = $"{dbBuild.EndTime - dbBuild.StartTime:h\\:mm\\:ss}",
+                            LogStats = new List<LogStatHtmlModel>(),
                         };
 
                         // Log Statistics
-                        m.LogStats = new List<LogStatHtmlModel>();
                         var states = ((LogState[])Enum.GetValues(typeof(LogState))).Where(x => x != LogState.None && x != LogState.CriticalError);
                         foreach (LogState state in states)
                         {
-                            int count = DB.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
+                            int count = _db.Table<DB_BuildLog>().Count(x => x.BuildId == buildId && x.State == state);
 
                             m.LogStats.Add(new LogStatHtmlModel()
                             {
@@ -264,25 +267,25 @@ namespace PEBakery.Core
                         m.ErrorCodeDicts = new Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]>();
                         {
                             int errIdx = 0;
-                            DB_BuildLog[] errors = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
+                            DB_BuildLog[] errors = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Error).ToArray();
                             if (0 < errors.Length)
                             {
                                 long[] pLogIds = errors.Select(x => x.ScriptId).Distinct().ToArray();
-                                DB_Script[] scLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                                DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                                 foreach (DB_Script scLog in scLogs)
                                 {
-                                    ScriptHtmlModel pModel = new ScriptHtmlModel()
+                                    ScriptHtmlModel pModel = new ScriptHtmlModel
                                     {
                                         Name = scLog.Name,
                                         Path = scLog.Path,
                                     };
                                     m.ErrorCodeDicts[pModel] = errors
                                         .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new CodeLogHtmlModel()
+                                        .Select(x => new CodeLogHtmlModel
                                         {
                                             State = x.State,
                                             Message = x.Export(LogExportType.Html, false),
-                                            Href = (errIdx++),
+                                            Href = errIdx++,
                                         }).ToArray();
                                 }
                             }
@@ -292,32 +295,32 @@ namespace PEBakery.Core
                         m.WarnCodeDicts = new Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]>();
                         {
                             int warnIdx = 0;
-                            DB_BuildLog[] warns = DB.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
+                            DB_BuildLog[] warns = _db.Table<DB_BuildLog>().Where(x => x.BuildId == buildId && x.State == LogState.Warning).ToArray();
                             if (0 < warns.Length)
                             {
                                 long[] pLogIds = warns.Select(x => x.ScriptId).Distinct().ToArray();
-                                DB_Script[] scLogs = DB.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
+                                DB_Script[] scLogs = _db.Table<DB_Script>().Where(x => x.BuildId == buildId && pLogIds.Contains(x.Id)).ToArray();
                                 foreach (DB_Script scLog in scLogs)
                                 {
-                                    ScriptHtmlModel pModel = new ScriptHtmlModel()
+                                    ScriptHtmlModel pModel = new ScriptHtmlModel
                                     {
                                         Name = scLog.Name,
                                         Path = scLog.Path,
                                     };
                                     m.WarnCodeDicts[pModel] = warns
                                         .Where(x => x.ScriptId == scLog.Id)
-                                        .Select(x => new CodeLogHtmlModel()
+                                        .Select(x => new CodeLogHtmlModel
                                         {
                                             State = x.State,
                                             Message = x.Export(LogExportType.Html, false),
-                                            Href = (warnIdx++),
+                                            Href = warnIdx++,
                                         }).ToArray();
                                 }
                             }
                         }
 
                         // Scripts
-                        var scripts = DB.Table<DB_Script>()
+                        var scripts = _db.Table<DB_Script>()
                             .Where(x => x.BuildId == buildId)
                             .OrderBy(x => x.Order);
                         m.Scripts = new List<ScriptHtmlModel>();
@@ -340,7 +343,7 @@ namespace PEBakery.Core
                         // Variables
                         m.Vars = new List<VarHtmlModel>();
                         {
-                            var vars = DB.Table<DB_Variable>()
+                            var vars = _db.Table<DB_Variable>()
                                         .Where(x => x.BuildId == buildId && (x.Type == VarsType.Fixed || x.Type == VarsType.Global))
                                         .OrderBy(x => x.Type)
                                         .ThenBy(x => x.Key);
@@ -367,7 +370,7 @@ namespace PEBakery.Core
                                 pIdx += 1;
 
                                 // Log codes
-                                DB_BuildLog[] codeLogs = DB.Table<DB_BuildLog>()
+                                DB_BuildLog[] codeLogs = _db.Table<DB_BuildLog>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id)
                                     .OrderBy(x => x.Id).ToArray();
 
@@ -383,25 +386,25 @@ namespace PEBakery.Core
                                 {
                                     if (log.State == LogState.Error)
                                     {
-                                        logModel.Add(new CodeLogHtmlModel()
+                                        logModel.Add(new CodeLogHtmlModel
                                         {
                                             State = log.State,
                                             Message = log.Export(LogExportType.Html),
-                                            Href = (errIdx++),
+                                            Href = errIdx++,
                                         });
                                     }
                                     else if (log.State == LogState.Warning)
                                     {
-                                        logModel.Add(new CodeLogHtmlModel()
+                                        logModel.Add(new CodeLogHtmlModel
                                         {
                                             State = log.State,
                                             Message = log.Export(LogExportType.Html),
-                                            Href = (warnIdx++),
+                                            Href = warnIdx++,
                                         });
                                     }
                                     else
                                     {
-                                        logModel.Add(new CodeLogHtmlModel()
+                                        logModel.Add(new CodeLogHtmlModel
                                         {
                                             State = log.State,
                                             Message = log.Export(LogExportType.Html),
@@ -410,10 +413,10 @@ namespace PEBakery.Core
                                 }
 
                                 // Log local variables
-                                VarHtmlModel[] localVarModel = DB.Table<DB_Variable>()
+                                VarHtmlModel[] localVarModel = _db.Table<DB_Variable>()
                                     .Where(x => x.BuildId == buildId && x.ScriptId == scLog.Id && x.Type == VarsType.Local)
                                     .OrderBy(x => x.Key)
-                                    .Select(x => new VarHtmlModel()
+                                    .Select(x => new VarHtmlModel
                                     {
                                         Type = x.Type,
                                         Key = x.Key,
@@ -425,7 +428,7 @@ namespace PEBakery.Core
                         }
 
                         string html = RazorEngine.Engine.Razor.RunCompile(Properties.Resources.BuildLogHtmlTemplate, "BuildLogHtmlTemplateKey", null, m);
-                        w.WriteLine(html);
+                        _w.WriteLine(html);
                     }
                     break;
                     #endregion
@@ -435,6 +438,7 @@ namespace PEBakery.Core
         #region HtmlModel
         public class ExportSystemLogHtmlModel
         {
+            // ReSharper disable once InconsistentNaming
             public string PEBakeryVersion { get; set; }
             public List<SystemLogHtmlModel> SysLogs { get; set; }
         }
@@ -448,6 +452,7 @@ namespace PEBakery.Core
 
         public class ExportBuildLogHtmlModel
         {
+            // ReSharper disable once InconsistentNaming
             public string PEBakeryVersion { get; set; }
             public string BuildName { get; set; }
             public string BuildStartTimeStr { get; set; }
@@ -459,7 +464,6 @@ namespace PEBakery.Core
             public Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]> ErrorCodeDicts { get; set; }
             public Dictionary<ScriptHtmlModel, CodeLogHtmlModel[]> WarnCodeDicts { get; set; }
             public List<Tuple<ScriptHtmlModel, CodeLogHtmlModel[], VarHtmlModel[]>> CodeLogs { get; set; }
-            // public List<CodeLogHtmlModel> CodeLogs { get; set; }
         }
 
         public class LogStatHtmlModel

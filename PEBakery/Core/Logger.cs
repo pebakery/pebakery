@@ -666,7 +666,7 @@ namespace PEBakery.Core
             bool turnOff = false;
             if (0 < TurnOff.Count)
             {
-                if (TurnOff.TryPeek(out turnOff) == false) // Stack Failure
+                if (!TurnOff.TryPeek(out turnOff)) // Stack Failure
                     turnOff = false;
             }
 
@@ -990,16 +990,8 @@ namespace PEBakery.Core
 
         // Used in LogWindow
         [Ignore]
-        public string StateStr
-        {
-            get
-            {
-                if (State == LogState.None)
-                    return string.Empty;
-                else
-                    return State.ToString();
-            }
-        }
+        public string StateStr => State == LogState.None ? string.Empty : State.ToString();
+
         [Ignore]
         public string TimeStr => Time.ToLocalTime().ToString("yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
         [Ignore]
@@ -1038,7 +1030,7 @@ namespace PEBakery.Core
                                 b.Append($"[{State}] {Message} ({RawCode})");
                         }
 
-                        if (State == LogState.Error || State == LogState.Warning)
+                        if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
                             b.Append($" (Line {LineIdx})");
 
                         str = b.ToString();
@@ -1061,7 +1053,7 @@ namespace PEBakery.Core
                         else
                             b.Append($"{Message} ({RawCode})");
 
-                        if (State == LogState.Error || State == LogState.Warning)
+                        if ((State == LogState.Error || State == LogState.Warning) && 0 < LineIdx)
                             b.Append($" (Line {LineIdx})");
 
                         str = b.ToString();

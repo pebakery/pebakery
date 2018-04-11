@@ -391,7 +391,12 @@ namespace PEBakery.Core
                 }
             }
 
-            DisableSetLocal(s, addr.Section);
+            if (Engine.DisableSetLocal(s, addr.Section)) 
+            {
+                int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
+                s.Logger.Build_Write(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
+                s.Logger.Build_Write(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.CurDepth));
+            }       
         }
         #endregion
 
@@ -819,10 +824,10 @@ namespace PEBakery.Core
             s.CurDepth = 0;
             if (cbCmd.Type == CodeType.Run || cbCmd.Type == CodeType.Exec)
             {
-                Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec));
+                Debug.Assert(cbCmd.Info.GetType() == typeof(CodeInfo_RunExec), "Invalid CodeInfo");
                 CodeInfo_RunExec info = cbCmd.Info as CodeInfo_RunExec;
-
-                // ReSharper disable once PossibleNullReferenceException
+                Debug.Assert(info != null, "Invalid CodeInfo");
+                
                 if (1 <= info.Parameters.Count)
                     info.Parameters[0] = eventParam;
                 else

@@ -381,9 +381,8 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
-                        int stackDepth = s.SetLocalStack.Count;
-                        if (Engine.DisableSetLocal(s, cmd.Addr.Section))
-                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {stackDepth}) disabled"));
+                        if (Engine.DisableSetLocal(s, cmd.Addr.Section)) // If SetLocal is disabled, SetLocalStack is decremented. 
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count + 1}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
                     }
