@@ -54,11 +54,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(destPath != null, $"{nameof(destPath)} != null");
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Check destPath is directory
             bool destPathExists = false;
@@ -74,7 +71,6 @@ namespace PEBakery.Core.Commands
             }
 
             // Check srcFileName contains wildcard
-            
             string wildcard = Path.GetFileName(srcFile);
             if (wildcard.IndexOfAny(new char[] { '*', '?' }) == -1)
             { // No Wildcard
@@ -89,10 +85,8 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destFullPath}] will not be overwritten", cmd));
                             return logs;
                         }
-                        else
-                        {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destFullPath}] will be overwritten", cmd));
-                        }
+
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destFullPath}] will be overwritten", cmd));
                     }
 
                     File.Copy(srcFile, destFullPath, true);
@@ -108,10 +102,8 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{destPath}] will not be overwritten", cmd));
                             return logs;
                         }
-                        else
-                        {
-                            logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] will be overwritten", cmd));
-                        }
+
+                        logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"File [{destPath}] will be overwritten", cmd));
                     }
 
                     File.Copy(srcFile, destPath, true);
@@ -131,13 +123,12 @@ namespace PEBakery.Core.Commands
 
                 if (0 < files.Length)
                 { // One or more file will be copied
-                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]", cmd));
+                    logs.Add(new LogInfo(LogState.Success, $"[{srcFile}] will be copied to [{destPath}]"));
 
                     if (destPathIsDir || !destPathExists)
                     {
-                        for (int i = 0; i < files.Length; i++)
+                        foreach (string f in files)
                         {
-                            string f = files[i];
                             string destFullPath = Path.Combine(destPath, f.Substring(srcDirToFind.Length + 1));
                             
                             if (File.Exists(destFullPath))
@@ -190,11 +181,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(filePath != null, $"{nameof(filePath)} != null");
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Check srcFileName contains wildcard
             string wildcard = Path.GetFileName(filePath);
@@ -217,7 +205,7 @@ namespace PEBakery.Core.Commands
             { // With Wildcard
                 // Use FileHelper.GetDirNameEx to prevent ArgumentException of Directory.GetFiles
                 string srcDirToFind = FileHelper.GetDirNameEx(filePath);
-                if (Directory.Exists(srcDirToFind) == false)
+                if (!Directory.Exists(srcDirToFind))
                 {
                     logs.Add(new LogInfo(LogState.Error, $"Cannot find path [{srcDirToFind}]"));
                     return logs;
@@ -261,11 +249,8 @@ namespace PEBakery.Core.Commands
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             if (File.Exists(srcPath) == false)
             {
@@ -282,24 +267,18 @@ namespace PEBakery.Core.Commands
                             logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destFullPath}]"));
                             return logs;
                         }
-                        else
-                        {
-                            Directory.Move(srcPath, destPath);
-                            logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
-                            return logs;
-                        }
-                    }
-                    else
-                    {
-                        logs.Add(new LogInfo(LogState.Error, $"[{srcPath}] is a directory, not a file"));
+
+                        Directory.Move(srcPath, destPath);
+                        logs.Add(new LogInfo(LogState.Success, $"Directory [{srcPath}] moved to [{destPath}]"));
                         return logs;
                     }
-                }
-                else
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"File [{srcPath}] does not exist"));
+
+                    logs.Add(new LogInfo(LogState.Error, $"[{srcPath}] is a directory, not a file"));
                     return logs;
                 }
+
+                logs.Add(new LogInfo(LogState.Error, $"File [{srcPath}] does not exist"));
+                return logs;
             }
 
             File.SetAttributes(srcPath, FileAttributes.Normal);
@@ -333,17 +312,12 @@ namespace PEBakery.Core.Commands
                     logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{filePath}] will not be overwritten", cmd));
                     return logs;
                 }
-                else
-                {
-                    logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{filePath}] will be overwritten", cmd));
-                }
+
+                logs.Add(new LogInfo(info.NoWarn ? LogState.Ignore : LogState.Overwrite, $"[{filePath}] will be overwritten", cmd));
             }
 
-            if (StringEscaper.PathSecurityCheck(filePath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(filePath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             Directory.CreateDirectory(FileHelper.GetDirNameEx(filePath));
             FileHelper.WriteTextBOM(filePath, encoding);
@@ -362,11 +336,8 @@ namespace PEBakery.Core.Commands
 
             string filePath = StringEscaper.Preprocess(s, info.FilePath);
 
-            if (File.Exists(filePath) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{filePath}] does not exist"));
-                return logs;
-            }
+            if (!File.Exists(filePath))
+                return LogInfo.LogErrorMessage(logs, $"File [{filePath}] does not exist");
 
             FileInfo fileInfo = new FileInfo(filePath);
 
@@ -412,11 +383,8 @@ namespace PEBakery.Core.Commands
             Debug.Assert(destDir != null, $"{nameof(destDir)} != null");
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // DestPath must be directory 
             if (File.Exists(destDir))
@@ -480,11 +448,8 @@ namespace PEBakery.Core.Commands
             string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(dirPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(dirPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // Delete Directory
             FileHelper.DirectoryDeleteEx(dirPath);
@@ -506,26 +471,17 @@ namespace PEBakery.Core.Commands
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // SrcPath must be directory 
             // WB082 does not check this, so file can be moved with DirMove
             if (File.Exists(srcDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"[{srcDir}] is a file, not a directory"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"[{srcDir}] is a file, not a directory");
 
             // DestPath must be directory 
             if (File.Exists(destPath))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"[{destPath}] is a file, not a directory"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"[{destPath}] is a file, not a directory");
 
             if (Directory.Exists(destPath))
             {
@@ -559,18 +515,12 @@ namespace PEBakery.Core.Commands
             string destDir = StringEscaper.Preprocess(s, info.DestDir);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destDir, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destDir, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // DestPath cannot be file
             if (File.Exists(destDir))
-            {
-                logs.Add(new LogInfo(LogState.Error, $"File [{destDir}] already exists"));
-                return logs;
-            }
+                return LogInfo.LogErrorMessage(logs, $"File [{destDir}] already exists");
 
             if (Directory.Exists(destDir))
             {
@@ -595,19 +545,11 @@ namespace PEBakery.Core.Commands
 
             string dirPath = StringEscaper.Preprocess(s, info.DirPath);
 
-            if (Directory.Exists(dirPath) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, $"Directory [{dirPath}] does not exist"));
-                return logs;
-            }
+            if (!Directory.Exists(dirPath))
+                return LogInfo.LogErrorMessage(logs, $"Directory [{dirPath}] does not exist");
 
             string[] files = FileHelper.GetFilesEx(dirPath, "*", SearchOption.AllDirectories);
-            long dirSize = 0;
-            for (int i = 0; i < files.Length; i++)
-            {
-                FileInfo fileInfo = new FileInfo(files[i]);
-                dirSize += fileInfo.Length;
-            }
+            long dirSize = files.Sum(f => new FileInfo(f).Length);
 
             logs.Add(new LogInfo(LogState.Success, $"Directory [{dirPath}] is [{dirSize}B]", cmd));
 
@@ -629,11 +571,8 @@ namespace PEBakery.Core.Commands
             string destPath = StringEscaper.Preprocess(s, info.DestPath);
 
             // Path Security Check
-            if (StringEscaper.PathSecurityCheck(destPath, out string errorMsg) == false)
-            {
-                logs.Add(new LogInfo(LogState.Error, errorMsg));
-                return logs;
-            }
+            if (!StringEscaper.PathSecurityCheck(destPath, out string errorMsg))
+                return LogInfo.LogErrorMessage(logs, errorMsg);
 
             // SrcPath must be directory
             if (File.Exists(srcPath))
@@ -646,10 +585,7 @@ namespace PEBakery.Core.Commands
             {
                 // DestPath must be directory 
                 if (File.Exists(destPath))
-                {
-                    logs.Add(new LogInfo(LogState.Error, $"[{destPath}] is a file, not a directory"));
-                    return logs;
-                }
+                    return LogInfo.LogErrorMessage(logs, $"[{destPath}] is a file, not a directory");
 
                 if (Directory.Exists(destPath))
                 {

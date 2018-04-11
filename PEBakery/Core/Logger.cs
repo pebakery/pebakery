@@ -527,7 +527,8 @@ namespace PEBakery.Core
                 // But some commands like RunExec bypass Engine.ExecuteCommand and call Logger.BuildWrite directly when logging.
                 // => Need to double-check 'muting logs' at Logger.BuildWrite.
                 LogState state;
-                if (s.ErrorOff != null && (log.State == LogState.Error || log.State == LogState.Warning))
+                if (s.ErrorOff != null &&
+                    (log.State == LogState.Error || log.State == LogState.Warning || log.State == LogState.Overwrite))
                     state = LogState.Muted;
                 else
                     state = log.State;

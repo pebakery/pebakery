@@ -938,7 +938,7 @@ namespace PEBakery.Core
             for (int i = 0; i < logs.Count; i++)
             {
                 LogInfo log = logs[i];
-                if (log.State == LogState.Error || log.State == LogState.Warning)
+                if (log.State == LogState.Error || log.State == LogState.Warning || log.State == LogState.Overwrite)
                 {
                     log.State = LogState.Muted;
                     logs[i] = log;
