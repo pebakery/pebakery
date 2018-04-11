@@ -389,10 +389,9 @@ namespace PEBakery.Core
             {
                 try
                 {
-                    CodeCommand curCommand = code;
                     s.CurDepth = depth;
                     s.CurSectionParams = sectionParams;
-                    ExecuteCommand(s, curCommand);
+                    ExecuteCommand(s, code);
 
                     if (s.PassCurrentScriptFlag || s.ErrorHaltFlag || s.UserHaltFlag || s.CmdHaltFlag)
                         break;
@@ -409,7 +408,9 @@ namespace PEBakery.Core
                 int stackDepth = s.SetLocalStack.Count + 1; // If SetLocal is disabled, SetLocalStack is decremented. 
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Warning, $"Local variable isolation (depth {stackDepth}) implicitly disabled", s.CurDepth));
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "Explicit use of [System.EndLocal] is recommended", s.CurDepth));
-            }       
+            }
+
+            DisableErrorOff(s, addr.Section, depth, ErrorOffState.ForceDisable);
         }
         #endregion
 
@@ -904,20 +905,32 @@ namespace PEBakery.Core
         #endregion
 
         #region ErrorOff
-        public static void ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
+        public static bool ProcessErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx, List<LogInfo> logs)
+        {
+            if (s.ErrorOff == null)
+                return false;
+
+            // When muting error, never check lineIdx.
+            // If lineIdx is involved, ErrorOff will not work properly in RunExec.
+            MuteLogError(logs);
+
+            return DisableErrorOff(s, section, depth, lineIdx);
+        }
+
+        public static bool DisableErrorOff(EngineState s, ScriptSection section, int depth, int lineIdx)
         {
             if (s.ErrorOff is ErrorOffState es)
             {
-                // When muting error, never check lineIdx.
-                // If lineIdx is involved, ErrorOff will not work properly in RunExec.
-                MuteLogError(logs);
-
-                if (es.Section.Equals(section) && es.SectionDepth == depth)
+                if (es.Section.Equals(section) && es.SectionDepth == depth &&
+                    (lineIdx == ErrorOffState.ForceDisable || es.StartLineIdx + es.LineCount <= lineIdx))
                 {
-                    if (0 < lineIdx && es.StartLineIdx + es.LineCount <= lineIdx)
-                        s.ErrorOff = null;
+                    s.ErrorOff = null;
+                    s.ErrorOffWaitingRegister = null;
+                    s.ErrorOffDepthMinusOne = false;
+                    return true;
                 }
             }
+            return false;
         }
 
         private static void MuteLogError(List<LogInfo> logs)
@@ -1037,6 +1050,7 @@ namespace PEBakery.Core
 
         // ErrorOff
         public ErrorOffState? ErrorOffWaitingRegister = null;
+        public bool ErrorOffDepthMinusOne = false;
         public ErrorOffState? ErrorOff = null;
         // ShellExecute
         public Process RunningSubProcess = null;
@@ -1148,7 +1162,7 @@ namespace PEBakery.Core
         public int StartLineIdx;
         public int LineCount;
 
-        public const int ForceMute = -1;
+        public const int ForceDisable = -1;
     }
     #endregion
 

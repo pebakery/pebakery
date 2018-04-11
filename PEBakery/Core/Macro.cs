@@ -228,8 +228,9 @@ namespace PEBakery.Core
                 CodeCommand cmd = CodeParser.ParseStatement(macroCommand, addr);
                 if (cmd.Type == CodeType.Error)
                 {
-                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error));
+                    Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Error), "Invalid CodeInfo");
                     CodeInfo_Error info = cmd.Info as CodeInfo_Error;
+                    Debug.Assert(info != null, "Invalid CodeInfo");
 
                     return new LogInfo(LogState.Error, info.ErrorMessage);
                 }
@@ -243,19 +244,19 @@ namespace PEBakery.Core
                     else
                         return new LogInfo(LogState.Error, $"Could not write macro into [{addr.Project.MainScript.RealPath}]");
                 }
-                else if (global) // MacroDict
+
+                if (global) // MacroDict
                 {
                     MacroDict[macroName] = cmd;
                     return new LogInfo(LogState.Success, $"Global Macro [{macroName}] set to [{cmd.RawCode}]");
                 }
-                else
-                {
-                    LocalDict[macroName] = cmd;
-                    return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
-                }
+
+                LocalDict[macroName] = cmd;
+                return new LogInfo(LogState.Success, $"Local Macro [{macroName}] set to [{cmd.RawCode}]");
             }
             else
-            { // Delete
+            {
+                // Delete
                 // Put into dictionary
                 if (permanent) // MacroDict
                 {
@@ -265,12 +266,11 @@ namespace PEBakery.Core
                         Ini.DeleteKey(addr.Project.MainScript.RealPath, "Variables", macroName);
                         return new LogInfo(LogState.Success, $"Permanent Macro [{macroName}] deleted");
                     }
-                    else
-                    {
-                        return new LogInfo(LogState.Error, $"Permanent Macro [{macroName}] not found");
-                    }                   
+
+                    return new LogInfo(LogState.Error, $"Permanent Macro [{macroName}] not found");
                 }
-                else if (global) // MacroDict
+
+                if (global) // MacroDict
                 {
                     if (MacroDict.ContainsKey(macroName))
                     {
@@ -282,18 +282,15 @@ namespace PEBakery.Core
                         return new LogInfo(LogState.Error, $"Global Macro [{macroName}] not found");
                     }
                 }
-                else // LocalDict
+
+                // LocalDict
+                if (LocalDict.ContainsKey(macroName))
                 {
-                    if (LocalDict.ContainsKey(macroName))
-                    {
-                        LocalDict.Remove(macroName);
-                        return new LogInfo(LogState.Success, $"Local Macro [{macroName}] deleted");
-                    }
-                    else
-                    {
-                        return new LogInfo(LogState.Error, $"Local Macro [{macroName}] not found");
-                    }
+                    LocalDict.Remove(macroName);
+                    return new LogInfo(LogState.Success, $"Local Macro [{macroName}] deleted");
                 }
+
+                return new LogInfo(LogState.Error, $"Local Macro [{macroName}] not found");
             }
         }
     }
@@ -302,9 +299,9 @@ namespace PEBakery.Core
     {
         public static void Macro(EngineState s, CodeCommand cmd)
         {
+            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Macro), "Invalid CodeInfo");
             CodeInfo_Macro info = cmd.Info as CodeInfo_Macro;
-            if (info == null)
-                throw new InvalidCodeCommandException("Command [Macro] should have [CodeInfo_Macro]", cmd);
+            Debug.Assert(info != null, "Invalid CodeInfo");
 
             CodeCommand macroCmd;
             if (s.Macro.MacroDict.ContainsKey(info.MacroType))
@@ -313,7 +310,7 @@ namespace PEBakery.Core
                 macroCmd.RawCode = cmd.RawCode;
             }
             else if (s.Macro.LocalDict.ContainsKey(info.MacroType))
-            { // Try to find [infoMacroType] in [Variables] <- I hate undocumented behaviors!
+            { 
                 macroCmd = s.Macro.LocalDict[info.MacroType];
                 macroCmd.RawCode = cmd.RawCode;
             }

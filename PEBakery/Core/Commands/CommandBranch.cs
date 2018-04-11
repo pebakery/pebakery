@@ -277,9 +277,8 @@ namespace PEBakery.Core.Commands
             { // Condition matched, run it
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, msg, cmd, s.CurDepth));
 
-                int depthBackup = s.CurDepth;
-                Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
-                s.CurDepth = depthBackup;
+                RunBranchLink(s, cmd.Addr, info.Link);
+
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
@@ -302,9 +301,8 @@ namespace PEBakery.Core.Commands
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Success, "Else condition met", cmd, s.CurDepth));
 
-                int depthBackup = s.CurDepth;
-                Engine.RunCommands(s, cmd.Addr, info.Link, s.CurSectionParams, s.CurDepth + 1, false);
-                s.CurDepth = depthBackup;
+                RunBranchLink(s, cmd.Addr, info.Link);
+
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Info, "End of CodeBlock", cmd, s.CurDepth));
 
                 s.ElseFlag = false;
@@ -313,6 +311,27 @@ namespace PEBakery.Core.Commands
             {
                 s.Logger.BuildWrite(s, new LogInfo(LogState.Ignore, "Else condition not met", cmd, s.CurDepth));
             }
+        }
+
+        private static void RunBranchLink(EngineState s, SectionAddress addr, List<CodeCommand> link)
+        {
+            int depthBackup = s.CurDepth;
+            if (link.Count == 1)
+            { // Check if link[0] is System,ErrorOff
+                CodeCommand subCmd = link[0];
+                if (subCmd.Type == CodeType.System)
+                {
+                    Debug.Assert(subCmd.Info.GetType() == typeof(CodeInfo_System), "Invalid CodeInfo");
+                    CodeInfo_System info = subCmd.Info as CodeInfo_System;
+                    Debug.Assert(info != null, "Invalid CodeInfo");
+
+                    if (info.Type == SystemType.ErrorOff)
+                        s.ErrorOffDepthMinusOne = true;
+                }
+            }
+
+            Engine.RunCommands(s, addr, link, s.CurSectionParams, s.CurDepth + 1, false);
+            s.CurDepth = depthBackup;
         }
 
         #region BranchConditionCheck

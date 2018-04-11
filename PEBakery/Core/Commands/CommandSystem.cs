@@ -102,13 +102,19 @@ namespace PEBakery.Core.Commands
                         {
                             // Enable s.ErrorOff
                             // Write to s.ErrorOffWaitingRegister instead of s.ErrorOff, to prevent muting error of [System,ErrorOff] itself.
-                            s.ErrorOffWaitingRegister = new ErrorOffState
+                            ErrorOffState newState = new ErrorOffState
                             {
                                 Section = cmd.Addr.Section,
                                 SectionDepth = s.CurDepth,
                                 StartLineIdx = cmd.LineIdx,
                                 LineCount = lines,
                             };
+
+                            if (s.ErrorOffDepthMinusOne)
+                                newState.SectionDepth -= 1;
+
+                            s.ErrorOffWaitingRegister = newState;
+                            s.ErrorOffDepthMinusOne = false;
                             logs.Add(new LogInfo(LogState.Success, $"Error and warning logs will be muted for [{lines}] lines"));
                         }
                         else
