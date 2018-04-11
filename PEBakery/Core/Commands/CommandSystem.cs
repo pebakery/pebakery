@@ -373,7 +373,7 @@ namespace PEBakery.Core.Commands
 
                         Engine.EnableSetLocal(s, cmd.Addr.Section);
 
-                        logs.Add(new LogInfo(LogState.Success, "Start of local variables isolation"));
+                        logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {s.SetLocalStack.Count}) enabled"));
                     }
                     break;
                 case SystemType.EndLocal:
@@ -381,8 +381,9 @@ namespace PEBakery.Core.Commands
                         // No CodeInfo
                         Debug.Assert(info.SubInfo.GetType() == typeof(SystemInfo));
 
+                        int stackDepth = s.SetLocalStack.Count;
                         if (Engine.DisableSetLocal(s, cmd.Addr.Section))
-                            logs.Add(new LogInfo(LogState.Success, "End of local variables isolation"));
+                            logs.Add(new LogInfo(LogState.Success, $"Local variable isolation (depth {stackDepth}) disabled"));
                         else
                             logs.Add(new LogInfo(LogState.Error, "[System,EndLocal] must be used with [System,SetLocal]"));
                     }

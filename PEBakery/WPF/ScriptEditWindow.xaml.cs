@@ -201,8 +201,7 @@ namespace PEBakery.WPF
                         string destPath = dialog.FileName;
                         try
                         {
-                            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write,
-                                FileShare.None))
+                            using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
                             {
                                 ms.CopyTo(fs);
                             }
