@@ -37,6 +37,7 @@
         Title="Edit Script"
         FontFamily="Segoe UI"
         FontSize="13"
+        Closing="Window_Closing"
         Closed="Window_Closed"
         Width="800" Height="640"
         MinWidth="640" MinHeight="480"
@@ -55,7 +56,7 @@
                     SelectedIndex="{Binding TabIndex}">
             <TabItem Header="General">
                 <StackPanel Margin="10, 0, 10, 10">
-                    <GroupBox Header="Main"
+                    <GroupBox Header="Header"
                               BorderBrush="Gray">
                         <Grid Margin="5, 5, 5, 5">
                             <Grid.RowDefinitions>
@@ -341,17 +342,13 @@
         <Grid Grid.Row="1" Margin="15, 15, 15, 15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="110"/>
                 <ColumnDefinition Width="110"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Row="0" Grid.Column="3"
+            <Button Grid.Row="0" Grid.Column="1"
                     Margin="10, 0, 0, 0"
                     IsCancel="True"
-                    Content="Close"
-                    Click="CloseButton_Click">
-            </Button>
+                    Content="Close"/>
         </Grid>
     </Grid>
 </Window>

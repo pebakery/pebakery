@@ -187,10 +187,7 @@ namespace PEBakery.Core
 
         public static List<string> Unescape(IEnumerable<string> strs, bool escapePercent = false)
         {
-            List<string> unescaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                unescaped.Add(Unescape(str, escapePercent));
-            return unescaped;
+            return strs.Select(str => Unescape(str, escapePercent)).ToList();
         }
 
         public static string QuoteUnescape(string str, bool escapePercent = false)
@@ -307,11 +304,8 @@ namespace PEBakery.Core
 
         public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
         {
-            bool needQuote = false;
-
             // Check if str need doublequote escaping
-            if (str.Contains(' ') || str.Contains(','))
-                needQuote = true;
+            bool needQuote = str.Contains(' ') || str.Contains(',');
 
             // Escape characters
             str = Escape(str, fullEscape, escapePercent); // WB082 escape sequence
@@ -322,10 +316,7 @@ namespace PEBakery.Core
 
         public static List<string> QuoteEscape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(QuoteEscape(str, fullEscape, escapePercent));
-            return escaped;
+            return strs.Select(str => QuoteEscape(str, fullEscape, escapePercent)).ToList();
         }
         #endregion
 
@@ -343,10 +334,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(EngineState s, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(s.Variables.Expand(ExpandSectionParams(s, str)));
-            return list;
+            return strs.Select(str => s.Variables.Expand(ExpandSectionParams(s, str))).ToList();
         }
 
         public static string ExpandVariables(Variables vars, string str)
@@ -356,17 +344,12 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(Variables vars, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(vars.Expand(str));
-            return list;
+            return strs.Select(str => vars.Expand(str)).ToList();
         }
 
         /// <summary>
         /// Expand #1, #2, #3, etc...
         /// </summary>
-        /// <param name="str"></param>
-        /// <returns></returns>
         public static string ExpandSectionParams(EngineState s, string str)
         {
             // Expand #1 into its value
@@ -441,10 +424,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandSectionParams(EngineState s, IEnumerable<string> strs)
         {
-            List<string> list = new List<string>(strs.Count());
-            foreach (string str in strs)
-                list.Add(ExpandSectionParams(s, str));
-            return list;
+            return strs.Select(str => ExpandSectionParams(s, str)).ToList();
         }
         #endregion
 
@@ -592,6 +572,20 @@ namespace PEBakery.Core
             }
 
             return list;
+        }
+        #endregion
+
+        #region VersionString
+        public static string ProcessVersionString(string str)
+        {
+            // Integer - Ex) 001 -> 1
+            if (NumberHelper.ParseInt32(str, out int intVal))
+                return intVal.ToString();
+
+            // Semantic Versioning - Ex) 5.1.2600 
+            // If does not conform to Semantic Versioning, return null
+            NumberHelper.VersionEx semVer = NumberHelper.VersionEx.Parse(str);
+            return semVer?.ToString();
         }
         #endregion
     }

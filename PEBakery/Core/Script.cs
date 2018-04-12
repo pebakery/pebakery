@@ -60,7 +60,7 @@ namespace PEBakery.Core
         private readonly string _title = string.Empty;
         private readonly string _author = string.Empty;
         private readonly string _description = string.Empty;
-        private readonly string _version;
+        private readonly string _version = "0";
         private readonly int _level;
         private SelectedState _selected = SelectedState.None;
         private readonly bool _mandatory = false;
@@ -211,7 +211,8 @@ namespace PEBakery.Core
             Project project, string projectRoot,
             int? level, bool isMainScript, bool ignoreMain, bool isDirLink)
         {
-            if (projectRoot == null) throw new ArgumentNullException(nameof(projectRoot));
+            if (projectRoot == null)
+                throw new ArgumentNullException(nameof(projectRoot));
 
             _realPath = realPath ?? throw new ArgumentNullException(nameof(realPath));
             if (treePath.StartsWith(projectRoot, StringComparison.OrdinalIgnoreCase))

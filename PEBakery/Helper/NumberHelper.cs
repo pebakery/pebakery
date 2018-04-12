@@ -36,21 +36,7 @@ namespace PEBakery.Helper
     #region NumberHelper
     public static class NumberHelper
     {
-        public enum ParseStringToNumberType
-        {
-            String, Integer, Decimal
-        }
-
-        [Flags]
-        public enum CompareStringNumberResult
-        {
-            None = 0,
-            Equal = 1,
-            NotEqual = 2,
-            Smaller = 4,
-            Bigger = 8,
-        }
-
+        #region IsStringHexInteger
         public enum StringNumberType
         {
             PositiveInteger, NegativeInteger, HexInteger, Decimal, NotNumber
@@ -69,21 +55,16 @@ namespace PEBakery.Helper
                 else
                     return StringNumberType.HexInteger;
             }
+
+            if (pCnt == 1)
+                return StringNumberType.Decimal;
+
+            if (str.StartsWith("-", StringComparison.Ordinal))
+                return StringNumberType.NegativeInteger;
             else
-            {
-                if (pCnt == 1)
-                {
-                    return StringNumberType.Decimal;
-                }
-                else
-                {
-                    if (str.StartsWith("-", StringComparison.Ordinal))
-                        return StringNumberType.NegativeInteger;
-                    else
-                        return StringNumberType.PositiveInteger;
-                }
-            }
+                return StringNumberType.PositiveInteger;
         }
+        #endregion
 
         #region ParseInt / ParseUInt
         /// <summary>
@@ -373,13 +354,15 @@ namespace PEBakery.Helper
         }
         #endregion
 
+        #region ParseStringToNumber
+        public enum ParseStringToNumberType
+        {
+            String, Integer, Decimal
+        }
+
         /// <summary>
         /// Parse string to int or decimal
         /// </summary>
-        /// <param name="str"></param>
-        /// <param name="integer"></param>
-        /// <param name="real"></param>
-        /// <returns>Return true if string is number</returns>
         public static ParseStringToNumberType ParseStringToNumber(string str, out long integer, out decimal real)
         {
             integer = 0;
@@ -404,18 +387,30 @@ namespace PEBakery.Helper
                 else
                     return ParseStringToNumberType.String;
             }
+
             // real number - R
-            else if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
+            if (Regex.IsMatch(str, @"^([0-9]+)\.([0-9]+)$", RegexOptions.Compiled | RegexOptions.CultureInvariant))
             {
                 if (decimal.TryParse(str, NumberStyles.AllowDecimalPoint | NumberStyles.Integer, CultureInfo.InvariantCulture, out real))
                     return ParseStringToNumberType.Decimal;
                 else
                     return ParseStringToNumberType.String;
             }
-            else
-            { // Just String
-                return ParseStringToNumberType.String;
-            }
+
+            // Just String
+            return ParseStringToNumberType.String;
+        }
+        #endregion
+
+        #region CompareStringNumber
+        [Flags]
+        public enum CompareStringNumberResult
+        {
+            None = 0,
+            Equal = 1,
+            NotEqual = 2,
+            Smaller = 4,
+            Bigger = 8,
         }
 
         /// <summary>
@@ -451,7 +446,8 @@ namespace PEBakery.Helper
                 else
                     return CompareStringNumberResult.Bigger;
             }
-            else if (type1 == ParseStringToNumberType.Integer && type2 == ParseStringToNumberType.Decimal ||
+
+            if (type1 == ParseStringToNumberType.Integer && type2 == ParseStringToNumberType.Decimal ||
                 type1 == ParseStringToNumberType.Decimal && type2 == ParseStringToNumberType.Integer ||
                 type1 == ParseStringToNumberType.Decimal && type2 == ParseStringToNumberType.Decimal)
             { // One arg is decimal
@@ -463,17 +459,17 @@ namespace PEBakery.Helper
                 else
                     return CompareStringNumberResult.Bigger;
             }
-            else // if (type1 == ParseStringToNumberType.String || type2 == ParseStringToNumberType.String)
-            { // One of arg is string, so just compare
-                StringComparison compOpt = StringComparison.Ordinal;
-                if (ignoreCase)
-                    compOpt = StringComparison.OrdinalIgnoreCase;
 
-                if (str1.Equals(str2, compOpt))
-                    return CompareStringNumberResult.Equal;
-                else
-                    return CompareStringNumberResult.NotEqual;
-            }
+            // if (type1 == ParseStringToNumberType.String || type2 == ParseStringToNumberType.String)
+            // One of arg is string, so just compare
+            StringComparison compOpt = StringComparison.Ordinal;
+            if (ignoreCase)
+                compOpt = StringComparison.OrdinalIgnoreCase;
+
+            if (str1.Equals(str2, compOpt))
+                return CompareStringNumberResult.Equal;
+            else
+                return CompareStringNumberResult.NotEqual;
         }
 
         /// <summary>
@@ -502,10 +498,13 @@ namespace PEBakery.Helper
 
             public static VersionEx Parse(string str)
             {
+                if (str == null)
+                    return null;
+
                 int[] arr = { 0, 0, -1, -1 };
 
                 string[] parts = str.Split('.');
-                if (parts.Length < 1 && 4 < parts.Length)
+                if (parts.Length < 1 || 4 < parts.Length)
                     return null;
 
                 for (int i = 0; i < parts.Length; i++)
@@ -556,8 +555,29 @@ namespace PEBakery.Helper
 
                 return 0;
             }
-        }
 
+            public override string ToString()
+            {
+                StringBuilder b = new StringBuilder();
+                b.Append(Major);
+                b.Append('.');
+                b.Append(Minor);
+                if (Build != -1)
+                {
+                    b.Append('.');
+                    b.Append(Build);
+                    if (Revision != -1)
+                    {
+                        b.Append('.');
+                        b.Append(Revision);
+                    }
+                }
+                return b.ToString();
+            }
+        }
+        #endregion
+
+        #region Bytes Manipulation
         /// <summary>
         /// Parse hex string into byte array. Hex string must be in form of A0B1C2. Return true if success.
         /// </summary>
@@ -675,7 +695,9 @@ namespace PEBakery.Helper
             str = str.Substring(0, str.Length - subStrEndIdx);
             return decimal.Parse(str, NumberStyles.Float, CultureInfo.InvariantCulture) * multifier;
         }
+        #endregion
 
+        #region DecimalPower
         public static decimal DecimalPower(decimal val, uint pow)
         {
             decimal ret = 1;
@@ -683,6 +705,7 @@ namespace PEBakery.Helper
                 ret *= val;
             return ret;
         }
+        #endregion
 
         #region Round
         public static int Round(int src, int unit)

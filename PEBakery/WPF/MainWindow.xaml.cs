@@ -38,6 +38,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Threading;
 using System.Globalization;
 using System.Threading;
@@ -53,6 +54,8 @@ using System.Windows.Shell;
 namespace PEBakery.WPF
 {
     #region MainWindow
+    // ReSharper disable once RedundantExtendsListEntry
+    [SuppressMessage("ReSharper", "RedundantNameQualifier")]
     public partial class MainWindow : Window
     {
         #region Constants
@@ -131,7 +134,7 @@ namespace PEBakery.WPF
 
             App.BaseDir = BaseDir = argBaseDir;
 
-            var settingFile = System.IO.Path.Combine(BaseDir, "PEBakery.ini");
+            var settingFile = Path.Combine(BaseDir, "PEBakery.ini");
             Setting = new SettingViewModel(settingFile);
 
             string dbDir = System.IO.Path.Combine(BaseDir, "Database");
@@ -597,7 +600,18 @@ namespace PEBakery.WPF
             {
                 Model.ScriptTitleText = StringEscaper.Unescape(sc.Title);
                 Model.ScriptDescriptionText = StringEscaper.Unescape(sc.Description);
-                Model.ScriptVersionText = "v" + sc.Version;
+
+                string verStr = StringEscaper.ProcessVersionString(sc.Version);
+                if (verStr == null)
+                {
+                    Model.ScriptVersionText = string.Empty;
+                    Logger.SystemWrite(new LogInfo(LogState.Error, $"Script [{sc.Title}] contains invalid version string [{sc.Version}]"));
+                }
+                else
+                {
+                    Model.ScriptVersionText = "v" + verStr;
+                }
+                
                 if (ScriptAuthorLenLimit < sc.Author.Length)
                     Model.ScriptAuthorText = sc.Author.Substring(0, ScriptAuthorLenLimit) + "...";
                 else

@@ -28,6 +28,7 @@ using PEBakery.WPF.Controls;
 namespace PEBakery.WPF
 {
     #region ScriptEditWindow
+    // ReSharper disable once RedundantExtendsListEntry
     public partial class ScriptEditWindow : Window
     {
         #region Field and Property
@@ -97,8 +98,18 @@ namespace PEBakery.WPF
         #endregion
 
         #region WriteScript
-        private void WriteScript()
+        private bool WriteScript()
         {
+            // Check m.ScriptVersion
+            string verStr = StringEscaper.ProcessVersionString(m.ScriptVersion);
+            if (verStr == null)
+            {
+                string errMsg = $"Invalid version string [{m.ScriptVersion}], please check again";
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show(errMsg + '.', "Invalid Version String", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }           
+
             IniKey[] keys =
             {
                 new IniKey("Main", "Title", m.ScriptTitle),
@@ -120,11 +131,38 @@ namespace PEBakery.WPF
                 w?.DrawScript(_sc);
             }));
 
-            m.ScriptUpdated = false;
+            m.ScriptHeaderNotSaved = false;
+            return true;
         }
         #endregion
 
         #region Window Event
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (m.ScriptHeaderNotSaved)
+            {
+                switch (MessageBox.Show("Script header was modified.\r\nSave changes?", "Save Confirmation", MessageBoxButton.YesNo, MessageBoxImage.Exclamation))
+                {
+                    case MessageBoxResult.Yes:
+                        if (!WriteScript())
+                        {
+                            e.Cancel = true; // Error while saving, do not close ScriptEditWindow
+                            return;
+                        }
+                        break;
+                    case MessageBoxResult.No:
+                        break;
+                    default:
+                        throw new InvalidOperationException("Internal Logic Error at ScriptEditWindow.CloseButton_Click");
+                }
+            }
+
+            // If script was updated, force MainWindow to refresh script
+            DialogResult = m.ScriptHeaderUpdated;
+
+            Tag = _sc;
+        }
+
         private void Window_Closed(object sender, EventArgs e)
         {
             Interlocked.Decrement(ref Count);
@@ -133,24 +171,6 @@ namespace PEBakery.WPF
         private void MainSaveButton_Click(object sender, RoutedEventArgs e)
         {
             WriteScript();
-        }
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (m.ScriptUpdated)
-            {
-                // Make MainWindow to refresh script
-                DialogResult = true;
-                
-            }
-            else
-            {
-                DialogResult = false;
-            }
-                
-            Tag = _sc;
-
-            Close();
         }
         #endregion
 
@@ -287,7 +307,13 @@ namespace PEBakery.WPF
             // Only in Tab [General]
             e.CanExecute = m.TabIndex == 0;
         }
+
         #endregion
+
+        private void Window_Closed_1(object sender, EventArgs e)
+        {
+
+        }
     }
     #endregion
 
@@ -356,7 +382,8 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General - Script Main
-        public bool ScriptUpdated { get; set; } = false;
+        public bool ScriptHeaderNotSaved { get; set; } = false;
+        public bool ScriptHeaderUpdated { get; set; } = false;
 
         private string scriptTitle = string.Empty;
         public string ScriptTitle
@@ -365,7 +392,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptTitle = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptTitle));
             }
         }
@@ -388,7 +416,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptVersion = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptVersion));
             }
         }
@@ -400,7 +429,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptDate = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDate));
             }
         }
@@ -412,7 +442,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptLevel = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptLevel));
             }
         }
@@ -424,7 +455,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptDescription = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDescription));
             }
         }
@@ -436,7 +468,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptSelectedState = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptSelected));
             }
         }
@@ -472,7 +505,8 @@ namespace PEBakery.WPF
                         scriptSelectedState = SelectedState.None;
                         break;                
                 }
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
             }
         }
 
@@ -483,7 +517,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptMandatory = value;
-                ScriptUpdated = true;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptMandatory));
             }
         }
