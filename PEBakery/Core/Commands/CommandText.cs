@@ -72,13 +72,13 @@ namespace PEBakery.Core.Commands
             if (mode == TXTAddLineMode.Prepend)
             {
                 string tempPath = Path.GetTempFileName();
-                using (StreamReader reader = new StreamReader(fileName, encoding))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(fileName, encoding))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
-                    writer.WriteLine(line);
+                    w.WriteLine(line);
                     string lineFromSrc;
-                    while ((lineFromSrc = reader.ReadLine()) != null)
-                        writer.WriteLine(lineFromSrc);
+                    while ((lineFromSrc = r.ReadLine()) != null)
+                        w.WriteLine(lineFromSrc);
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -115,14 +115,13 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> TXTAddLineOp(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(8);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLineOp), "Invalid CodeInfo");
-            CodeInfo_TXTAddLineOp infoOp = cmd.Info as CodeInfo_TXTAddLineOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfo");
+            CodeInfo_TXTAddLineOp infoOp = cmd.Info.Cast<CodeInfo_TXTAddLineOp>();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
-            string modeStr = StringEscaper.Preprocess(s, infoOp.InfoList[0].Mode);
+            CodeInfo_TXTAddLine firstInfo = infoOp.Infos[0];
+            string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
+            string modeStr = StringEscaper.Preprocess(s, firstInfo.Mode);
             TXTAddLineMode mode;
             if (modeStr.Equals("Append", StringComparison.OrdinalIgnoreCase))
                 mode = TXTAddLineMode.Append;
@@ -144,16 +143,18 @@ namespace PEBakery.Core.Commands
             if (mode == TXTAddLineMode.Prepend)
             {
                 string tempPath = Path.GetTempFileName();
-                using (StreamReader reader = new StreamReader(fileName, encoding))
-                using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+                using (StreamReader r = new StreamReader(fileName, encoding))
+                using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
                 {
                     StringBuilder b = new StringBuilder();
-                    for (int i = infoOp.InfoList.Count - 1; 0 <= i; i--)
-                        b.AppendLine(StringEscaper.Preprocess(s, infoOp.InfoList[i].Line));
+                    List<CodeInfo_TXTAddLine> infos = infoOp.Infos;
+                    infos.Reverse();
+                    foreach (CodeInfo_TXTAddLine subInfo in infos)
+                        b.AppendLine(StringEscaper.Preprocess(s, subInfo.Line));
                     linesToWrite = b.ToString();
 
-                    writer.Write(linesToWrite);
-                    writer.Write(reader.ReadToEnd());
+                    w.Write(linesToWrite);
+                    w.Write(r.ReadToEnd());
                 }
                 FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -162,7 +163,7 @@ namespace PEBakery.Core.Commands
             else if (mode == TXTAddLineMode.Append)
             {
                 StringBuilder b = new StringBuilder();
-                foreach (CodeInfo_TXTAddLine subInfo in infoOp.InfoList)
+                foreach (CodeInfo_TXTAddLine subInfo in infoOp.Infos)
                     b.AppendLine(StringEscaper.Preprocess(s, subInfo.Line));
 
                 linesToWrite = b.ToString();
@@ -219,12 +220,16 @@ namespace PEBakery.Core.Commands
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            string txtStr;
+            using (StreamReader r = new StreamReader(fileName, encoding))
             {
-                string str = reader.ReadToEnd();
-                str = StringHelper.ReplaceEx(str, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
-                writer.Write(str);
+                txtStr = r.ReadToEnd();
+            }
+
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+            {
+                txtStr = StringHelper.ReplaceEx(txtStr, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
+                w.Write(txtStr);
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
@@ -235,13 +240,12 @@ namespace PEBakery.Core.Commands
 
         public static List<LogInfo> TXTReplaceOp(EngineState s, CodeCommand cmd)
         {
-            List<LogInfo> logs = new List<LogInfo>();
+            List<LogInfo> logs = new List<LogInfo>(8);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplaceOp), "Invalid CodeInfo");
-            CodeInfo_TXTReplaceOp infoOp = cmd.Info as CodeInfo_TXTReplaceOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfo");
+            CodeInfo_TXTReplaceOp infoOp = cmd.Info.Cast<CodeInfo_TXTReplaceOp>();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
+            CodeInfo_TXTReplace firstInfo = infoOp.Infos[0];
+            string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -249,31 +253,39 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            List<Tuple<string, string>> prepReplace = new List<Tuple<string, string>>();
-            foreach (CodeInfo_TXTReplace info in infoOp.InfoList)
+            List<(CodeCommand, string, string)> prepReplace = new List<(CodeCommand, string, string)>();
+            // foreach (CodeInfo_TXTReplace info in infoOp.Infos)
+            foreach (CodeCommand subCmd in infoOp.Cmds)
             {
+                CodeInfo_TXTReplace info = subCmd.Info.Cast<CodeInfo_TXTReplace>();
+
                 string oldStr = StringEscaper.Preprocess(s, info.OldStr);
                 string newStr = StringEscaper.Preprocess(s, info.NewStr);
-                prepReplace.Add(new Tuple<string, string>(oldStr, newStr));
+
+                prepReplace.Add((subCmd, oldStr, newStr));
             }
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            string txtStr;
+            using (StreamReader r = new StreamReader(fileName, encoding))
             {
-                string str = reader.ReadToEnd();
-                foreach (var tup in prepReplace)
-                {
-                    string oldStr = tup.Item1;
-                    string newStr = tup.Item2;
-
-                    str = StringHelper.ReplaceEx(str, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
-                    logs.Add(new LogInfo(LogState.Success, $"Replaced [{oldStr}] with [{newStr}]"));
-                }
-                writer.Write(str);
+                txtStr = r.ReadToEnd();
             }
+
+            foreach ((CodeCommand subCmd, string oldStr, string newStr) in prepReplace)
+            {
+                txtStr = StringHelper.ReplaceEx(txtStr, oldStr, newStr, StringComparison.OrdinalIgnoreCase);
+                logs.Add(new LogInfo(LogState.Success, $"Replaced [{oldStr}] with [{newStr}]", subCmd));
+            }
+
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
+            {
+                w.Write(txtStr);
+            }
+            logs.Add(new LogInfo(LogState.Success, $"Replaced [{prepReplace.Count}] strings from [{fileName}]"));
+
             FileHelper.FileReplaceEx(tempPath, fileName);
 
             return logs;
@@ -298,26 +310,25 @@ namespace PEBakery.Core.Commands
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
 
-            int i = 0;
+            int count = 0;
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
-                while ((srcLine = reader.ReadLine()) != null)
+                while ((srcLine = r.ReadLine()) != null)
                 {
                     // Strange enough, WB082 treat [deleteLine] as case sensitive string.
                     if (srcLine.StartsWith(deleteLine, StringComparison.Ordinal))
-                    {
-                        i++;
-                        continue;
-                    }                        
-                    writer.WriteLine(srcLine);
+                        count++;
+                    else
+                        w.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
-            logs.Add(new LogInfo(LogState.Success, $"Deleted [{i}] lines from [{fileName}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Line [{deleteLine}] deleted from [{fileName}]"));
+            logs.Add(new LogInfo(LogState.Success, $"Deleted [{count}] lines"));
 
             return logs;
         }
@@ -326,11 +337,10 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>();
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLineOp), "Invalid CodeInfo");
-            CodeInfo_TXTDelLineOp infoOp = cmd.Info as CodeInfo_TXTDelLineOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfo");
+            CodeInfo_TXTDelLineOp infoOp = cmd.Info.Cast<CodeInfo_TXTDelLineOp>();
 
-            string fileName = StringEscaper.Preprocess(s, infoOp.InfoList[0].FileName);
+            CodeInfo_TXTDelLine firstInfo = infoOp.Infos[0];
+            string fileName = StringEscaper.Preprocess(s, firstInfo.FileName);
 
             if (!StringEscaper.PathSecurityCheck(fileName, out string errorMsg))
                 return LogInfo.LogErrorMessage(logs, errorMsg);
@@ -338,41 +348,47 @@ namespace PEBakery.Core.Commands
             if (!File.Exists(fileName))
                 return LogInfo.LogErrorMessage(logs, $"File [{fileName}] does not exist");
 
-            List<string> prepDeleteLine = new List<string>();
-            foreach (CodeInfo_TXTDelLine info in infoOp.InfoList)
+            List<(CodeCommand, string)> prepDeleteLine = new List<(CodeCommand, string)>();
+            // foreach (CodeInfo_TXTDelLine info in infoOp.InfoList)
+            foreach (CodeCommand subCmd in infoOp.Cmds)
             {
+                CodeInfo_TXTDelLine info = subCmd.Info.Cast<CodeInfo_TXTDelLine>();
+
                 string deleteLine = StringEscaper.Preprocess(s, info.DeleteLine);
-                prepDeleteLine.Add(deleteLine);
+                prepDeleteLine.Add((subCmd, deleteLine));
             }
 
             Encoding encoding = FileHelper.DetectTextEncoding(fileName);
             
             int count = 0;
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
-                while ((srcLine = reader.ReadLine()) != null)
+                while ((srcLine = r.ReadLine()) != null)
                 {
                     bool writeLine = true;
-                    foreach (string deleteLine in prepDeleteLine)
+                    foreach ((CodeCommand _, string deleteLine) in prepDeleteLine)
                     {
                         // Strange enough, WB082 treat [deleteLine] as case sensitive string.
                         if (srcLine.StartsWith(deleteLine, StringComparison.Ordinal))
                         {
                             writeLine = false;
                             count++;
+
                             break;
                         }
                     }
                     
                     if (writeLine)
-                        writer.WriteLine(srcLine);
+                        w.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
 
+            foreach ((CodeCommand subCmd, string deleteLine) in prepDeleteLine)
+                logs.Add(new LogInfo(LogState.Success, $"Line [{deleteLine}] deleted from [{fileName}]", subCmd));
             logs.Add(new LogInfo(LogState.Success, $"Deleted [{count}] lines from [{fileName}]"));
 
             return logs;
@@ -398,11 +414,11 @@ namespace PEBakery.Core.Commands
 
             int i = 0;
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string srcLine;
-                while ((srcLine = reader.ReadLine()) != null)
+                while ((srcLine = r.ReadLine()) != null)
                 {
                     // WB082 delete spaces only if spaces are placed in front of line.
                     // Same with C#'s string.TrimStart().
@@ -412,7 +428,7 @@ namespace PEBakery.Core.Commands
                         i++;
                         srcLine = srcLine.TrimStart();
                     }
-                    writer.WriteLine(srcLine);
+                    w.WriteLine(srcLine);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);
@@ -441,16 +457,16 @@ namespace PEBakery.Core.Commands
 
             int i = 0;
             string tempPath = Path.GetTempFileName();
-            using (StreamReader reader = new StreamReader(fileName, encoding))
-            using (StreamWriter writer = new StreamWriter(tempPath, false, encoding))
+            using (StreamReader r = new StreamReader(fileName, encoding))
+            using (StreamWriter w = new StreamWriter(tempPath, false, encoding))
             {
                 string lineFromSrc;
-                while ((lineFromSrc = reader.ReadLine()) != null)
+                while ((lineFromSrc = r.ReadLine()) != null)
                 {
                     if (lineFromSrc.Equals(string.Empty, StringComparison.Ordinal))
                         i++;
                     else
-                        writer.WriteLine(lineFromSrc);
+                        w.WriteLine(lineFromSrc);
                 }
             }
             FileHelper.FileReplaceEx(tempPath, fileName);

@@ -98,9 +98,7 @@ namespace PEBakery.Core.Commands
         {
             List<LogInfo> logs = new List<LogInfo>(8);
 
-            Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_VisibleOp), "Invalid CodeInfo");
-            CodeInfo_VisibleOp infoOp = cmd.Info as CodeInfo_VisibleOp;
-            Debug.Assert(infoOp != null, "Invalid CodeInfoOp");
+            CodeInfo_VisibleOp infoOp = cmd.Info.Cast<CodeInfo_VisibleOp>();
 
             Script sc = cmd.Addr.Script;
             ScriptSection iface = sc.GetInterface(out string ifaceSecName);
@@ -108,38 +106,41 @@ namespace PEBakery.Core.Commands
                 return LogInfo.LogErrorMessage(logs, $"Script [{cmd.Addr.Script.TreePath}] does not have section [{ifaceSecName}]");
 
             List<UIControl> uiCtrls = iface.GetUICtrls(true);
-
-            List<Tuple<string, bool>> prepArgs = new List<Tuple<string, bool>>();
-            foreach (CodeInfo_Visible info in infoOp.InfoList)
+            
+            List<(string, bool, CodeCommand)> prepArgs = new List<(string, bool, CodeCommand)>(infoOp.Cmds.Count);
+            foreach (CodeCommand subCmd in infoOp.Cmds)
             {
+                CodeInfo_Visible info = subCmd.Info.Cast<CodeInfo_Visible>();
+
                 string visibilityStr = StringEscaper.Preprocess(s, info.Visibility);
                 bool visibility = false;
                 if (visibilityStr.Equals("True", StringComparison.OrdinalIgnoreCase))
                     visibility = true;
-                else if (visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase) == false)
+                else if (!visibilityStr.Equals("False", StringComparison.OrdinalIgnoreCase))
                     return LogInfo.LogErrorMessage(logs, $"Invalid boolean value [{visibilityStr}]");
 
-                prepArgs.Add(new Tuple<string, bool>(info.InterfaceKey, visibility));
+                prepArgs.Add((info.InterfaceKey, visibility, subCmd));
             }
 
-            List<UIControl> uiCmdList = new List<UIControl>();
-            foreach (Tuple<string, bool> args in prepArgs)
+            List<UIControl> uiCmds = new List<UIControl>();
+            foreach ((string key, bool visibility, CodeCommand _) in prepArgs)
             {
-                UIControl uiCmd = uiCtrls.Find(x => x.Key.Equals(args.Item1, StringComparison.OrdinalIgnoreCase));
+                UIControl uiCmd = uiCtrls.FirstOrDefault(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
                 if (uiCmd == null)
-                    return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{args.Item1}] in section [{ifaceSecName}]");
+                    return LogInfo.LogErrorMessage(logs, $"Cannot find interface control [{key}] in section [{ifaceSecName}]");
                 
-                uiCmd.Visibility = args.Item2;
-                uiCmdList.Add(uiCmd);
+                uiCmd.Visibility = visibility;
+                uiCmds.Add(uiCmd);
             }
 
-            UIControl.Update(uiCmdList);
+            UIControl.Update(uiCmds);
 
-            foreach (Tuple<string, bool> args in prepArgs)
-                logs.Add(new LogInfo(LogState.Success, $"Interface control [{args.Item1}]'s visibility set to [{args.Item2}]"));
+            foreach ((string key, bool visibility, CodeCommand subCmd) in prepArgs)
+                logs.Add(new LogInfo(LogState.Success, $"Interface control [{key}]'s visibility set to [{visibility}]", subCmd));
+            logs.Add(new LogInfo(LogState.Success, $"Total [{prepArgs.Count}] interface control set", cmd));
 
-            // Re-render Script
-            Application.Current.Dispatcher.Invoke(() =>
+            // Rerender Script
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 MainWindow w = Application.Current.MainWindow as MainWindow;
                 if (w?.CurMainTree.Script.Equals(cmd.Addr.Script) == true)

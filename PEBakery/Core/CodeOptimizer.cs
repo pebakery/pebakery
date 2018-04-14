@@ -47,23 +47,8 @@ namespace PEBakery.Core
 
     public static class CodeOptimizer
     {
-        #region Enum, Dict and Delegate
-        private static readonly List<CodeType> ToOptimize = new List<CodeType>
-        {
-            CodeType.TXTAddLine,
-            CodeType.TXTReplace,
-            CodeType.TXTDelLine,
-            CodeType.INIRead,
-            CodeType.INIWrite,
-            CodeType.INIDelete,
-            CodeType.INIReadSection,
-            CodeType.INIAddSection,
-            CodeType.INIDeleteSection,
-            CodeType.INIWriteTextLine,
-            CodeType.Visible,
-            CodeType.WimExtract,
-            CodeType.WimPathAdd, CodeType.WimPathDelete, CodeType.WimPathRename,
-        };
+        #region Dictionary and Delegate
+        private delegate CodeCommand PackCommandDelegate(List<CodeCommand> cmdList);
 
         private static readonly Dictionary<CodeType, PackCommandDelegate> PackDict =
             new Dictionary<CodeType, PackCommandDelegate>
@@ -80,12 +65,8 @@ namespace PEBakery.Core
                 { CodeType.INIWriteTextLine, OptimizeINIWriteTextLine },
                 { CodeType.Visible, OptimizeVisible },
                 { CodeType.WimExtract, OptimizeWimExtract },
-                { CodeType.WimPathAdd, OptimizeWimPath },
-                { CodeType.WimPathDelete, OptimizeWimPath },
-                { CodeType.WimPathRename, OptimizeWimPath },
+                { CodeType.WimPathAdd, OptimizeWimPath }, // WimPathAdd is a representative of WimPath{Add, Delete, Rename}
             };
-
-        private delegate CodeCommand PackCommandDelegate(List<CodeCommand> cmdList);
         #endregion
 
         #region OptimizeCommands
@@ -122,10 +103,8 @@ namespace PEBakery.Core
         private static List<CodeCommand> InternalOptimize(List<CodeCommand> codes)
         {
             List<CodeCommand> optimized = new List<CodeCommand>();
-            
-            Dictionary<CodeType, List<CodeCommand>> opDict = new Dictionary<CodeType, List<CodeCommand>>();
-            foreach (CodeType type in ToOptimize)
-                opDict[type] = new List<CodeCommand>();
+
+            Dictionary<CodeType, List<CodeCommand>> opDict = PackDict.ToDictionary(x => x.Key, x => new List<CodeCommand>(codes.Count / 2));
 
             CodeType s = CodeType.None;
             foreach (CodeCommand cmd in codes)
@@ -202,33 +181,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTAddLine:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine), "Invalid CodeInfo");
-                                        CodeInfo_TXTAddLine firstInfo = opDict[s][0].Info as CodeInfo_TXTAddLine;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_TXTAddLine info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
-                                            info.Mode.Equals(firstInfo.Mode, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_TXTAddLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTAddLine>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeTXTAddLine(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -241,31 +205,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTReplace:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace), "Invalid CodeInfo");
-                                        CodeInfo_TXTReplace firstInfo = opDict[s][0].Info as CodeInfo_TXTReplace;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_TXTReplace info && info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_TXTReplace firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTReplace>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeTXTReplace(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -278,32 +229,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.TXTDelLine:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine), "Invalid CodeInfo");
-                                        CodeInfo_TXTDelLine firstInfo = opDict[s][0].Info as CodeInfo_TXTDelLine;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_TXTDelLine info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_TXTDelLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_TXTDelLine>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeTXTDelLine(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -316,32 +253,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIRead:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniRead), "Invalid CodeInfo");
-                                        CodeInfo_IniRead firstInfo = opDict[s][0].Info as CodeInfo_IniRead;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniRead info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_IniRead firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniRead>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIRead(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -354,32 +277,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIWrite:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWrite), "Invalid CodeInfo");
-                                        CodeInfo_IniWrite firstInfo = opDict[s][0].Info as CodeInfo_IniWrite;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniWrite info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
+                                {
+                                    CodeInfo_IniWrite firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWrite>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
                                         else
-                                            goto default;
-                                        break;
-                                    }
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIWrite(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -392,32 +301,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIDelete:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDelete), "Invalid CodeInfo");
-                                        CodeInfo_IniDelete firstInfo = opDict[s][0].Info as CodeInfo_IniDelete;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniDelete info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_IniDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDelete>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIDelete(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -429,33 +324,19 @@ namespace PEBakery.Core
                             Debug.Assert(opDict[s][0].Info.GetType() == typeof(CodeInfo_IniReadSection));
                             switch (cmd.Type)
                             {
-                                case CodeType.INIAddSection:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniReadSection), "Invalid CodeInfo");
-                                        CodeInfo_IniReadSection firstInfo = opDict[s][0].Info as CodeInfo_IniReadSection;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniReadSection info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                case CodeType.INIReadSection:
+                                {
+                                    CodeInfo_IniReadSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniReadSection>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIReadSection(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -468,32 +349,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIAddSection:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniAddSection), "Invalid CodeInfo");
-                                        CodeInfo_IniAddSection firstInfo = opDict[s][0].Info as CodeInfo_IniAddSection;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniAddSection info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_IniAddSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniAddSection>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIAddSection(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -506,32 +373,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIDeleteSection:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniDeleteSection), "Invalid CodeInfo");
-                                        CodeInfo_IniDeleteSection firstInfo = opDict[s][0].Info as CodeInfo_IniDeleteSection;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniDeleteSection info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_IniDeleteSection firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniDeleteSection>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIDeleteSection(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -544,33 +397,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.INIWriteTextLine:
-                                    {
-                                        Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_IniWriteTextLine), "Invalid CodeInfo");
-                                        CodeInfo_IniWriteTextLine firstInfo = opDict[s][0].Info as CodeInfo_IniWriteTextLine;
-                                        Debug.Assert(firstInfo != null, "Invalid CodeInfo");
-
-                                        if (cmd.Info is CodeInfo_IniWriteTextLine info &&
-                                            info.FileName.Equals(firstInfo.FileName, StringComparison.OrdinalIgnoreCase) &&
-                                            info.Append == firstInfo.Append)
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_IniWriteTextLine firstInfo = opDict[s][0].Info.Cast<CodeInfo_IniWriteTextLine>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeINIWriteTextLine(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -587,19 +425,9 @@ namespace PEBakery.Core
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    if (opDict[s].Count == 1)
-                                    {
-                                        CodeCommand oneCmd = opDict[s][0];
-                                        optimized.Add(oneCmd);
-                                    }
-                                    else
-                                    {
-                                        CodeCommand opCmd = OptimizeVisible(opDict[s]);
-                                        optimized.Add(opCmd);
-                                    }
-                                    opDict[s].Clear();
-                                    optimized.Add(cmd);
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
+                                    loopAgain = true;
                                     break;
                             }
                             break;
@@ -610,18 +438,18 @@ namespace PEBakery.Core
                             switch (cmd.Type)
                             {
                                 case CodeType.WimExtract:
-                                    {
-                                        CodeInfo_WimExtract firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimExtract>();
-                                        if (firstInfo.OptimizeCompare(cmd.Info))
-                                            opDict[s].Add(cmd);
-                                        else
-                                            goto default;
-                                        break;
-                                    }
+                                {
+                                    CodeInfo_WimExtract firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimExtract>();
+                                    if (firstInfo.OptimizeCompare(cmd.Info))
+                                        opDict[s].Add(cmd);
+                                    else
+                                        goto default;
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    Finalize(s, opDict[s]);
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -638,38 +466,38 @@ namespace PEBakery.Core
                                 case CodeType.WimPathAdd:
                                 case CodeType.WimPathDelete:
                                 case CodeType.WimPathRename:
+                                {
+                                    CodeCommand firstCmd = opDict[s][0];
+                                    if (firstCmd.Type == CodeType.WimPathAdd)
                                     {
-                                        CodeCommand firstCmd = opDict[s][0];
-                                        if (firstCmd.Type == CodeType.WimPathAdd)
-                                        {
-                                            CodeInfo_WimPathAdd firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathAdd>();
-                                            if (firstInfo.OptimizeCompare(cmd.Info))
-                                                opDict[s].Add(cmd);
-                                            else
-                                                goto default;
-                                        }
-                                        else if (firstCmd.Type == CodeType.WimPathDelete)
-                                        {
-                                            CodeInfo_WimPathDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathDelete>();
-                                            if (firstInfo.OptimizeCompare(cmd.Info))
-                                                opDict[s].Add(cmd);
-                                            else
-                                                goto default;
-                                        }
-                                        else if (firstCmd.Type == CodeType.WimPathRename)
-                                        {
-                                            CodeInfo_WimPathRename firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathRename>();
-                                            if (firstInfo.OptimizeCompare(cmd.Info))
-                                                opDict[s].Add(cmd);
-                                            else
-                                                goto default;
-                                        }
-                                        break;
+                                        CodeInfo_WimPathAdd firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathAdd>();
+                                        if (firstInfo.OptimizeCompare(cmd.Info))
+                                            opDict[s].Add(cmd);
+                                        else
+                                            goto default;
                                     }
+                                    else if (firstCmd.Type == CodeType.WimPathDelete)
+                                    {
+                                        CodeInfo_WimPathDelete firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathDelete>();
+                                        if (firstInfo.OptimizeCompare(cmd.Info))
+                                            opDict[s].Add(cmd);
+                                        else
+                                            goto default;
+                                    }
+                                    else if (firstCmd.Type == CodeType.WimPathRename)
+                                    {
+                                        CodeInfo_WimPathRename firstInfo = opDict[s][0].Info.Cast<CodeInfo_WimPathRename>();
+                                        if (firstInfo.OptimizeCompare(cmd.Info))
+                                            opDict[s].Add(cmd);
+                                        else
+                                            goto default;
+                                    }
+                                    break;
+                                }
                                 case CodeType.Comment: // Remove comments
                                     break;
                                 default: // Optimize them
-                                    Finalize(s, opDict[s]);
+                                    FinalizeSequence(s, opDict[s]);
                                     s = CodeType.None;
                                     loopAgain = true;
                                     break;
@@ -684,32 +512,29 @@ namespace PEBakery.Core
                     }
                 }
                 while (loopAgain);
-                
             }
 
-            void Finalize(CodeType state, List<CodeCommand> cmds)
-            {
-                if (cmds.Count == 1)
-                    optimized.Add(cmds[0]);
-                else
-                    optimized.Add(PackDict[state](cmds));
-                cmds.Clear();
-            }
+            #region Finish
 
-            #region Finalize
             foreach (var kv in opDict)
+                FinalizeSequence(kv.Key, kv.Value);
+            #endregion
+
+            #region FinalizeSequence
+            void FinalizeSequence(CodeType state, List<CodeCommand> cmds)
             {
-                if (1 < kv.Value.Count)
-                {
-                    CodeCommand opCmd = PackDict[kv.Key](kv.Value);
-                    Debug.Assert(opCmd != null); // Logic Error
-                    optimized.Add(opCmd);
-                }
-                else if (1 == kv.Value.Count)
-                {
-                    CodeCommand oneCmd = kv.Value[0];
-                    optimized.Add(oneCmd);
-                }
+                CodeCommand opCmd;
+                if (cmds.Count == 1)
+                    opCmd = cmds[0];
+                else if (1 < cmds.Count)
+                    opCmd = PackDict[state](cmds);
+                else // if (cmds.Count < 0)
+                    return;
+
+                Debug.Assert(opCmd != null, "Internal Logic Error in CodeOptimizer.Optimize"); // Logic Error
+                optimized.Add(opCmd);
+
+                cmds.Clear();
             }
             #endregion
 
@@ -719,70 +544,32 @@ namespace PEBakery.Core
 
         #region Optimize Individual
         // TODO: Is there any 'generic' way?
-        private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeTXTAddLine(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeInfo_TXTAddLine> infoList = new List<CodeInfo_TXTAddLine>();
-            foreach (CodeCommand cmd in cmdList)
-            {
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTAddLine));
-                CodeInfo_TXTAddLine info = cmd.Info as CodeInfo_TXTAddLine;
-
-                infoList.Add(info);
-            }
-
-            string rawCode = $"Optimized TXTAddLine at [{cmdList[0].Addr.Section.Name}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(infoList), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTAddLineOp, new CodeInfo_TXTAddLineOp(cmds), cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeTXTReplace(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeTXTReplace(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeInfo_TXTReplace> infoList = new List<CodeInfo_TXTReplace>();
-            foreach (CodeCommand cmd in cmdList)
-            {
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTReplace));
-                CodeInfo_TXTReplace info = cmd.Info as CodeInfo_TXTReplace;
-
-                infoList.Add(info);
-            }
-
-            string rawCode = $"Optimized TXTReplace at [{cmdList[0].Addr.Section.Name}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.TXTReplaceOp, new CodeInfo_TXTReplaceOp(infoList), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTReplaceOp, new CodeInfo_TXTReplaceOp(cmds), cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeTXTDelLine(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeInfo_TXTDelLine> infoList = new List<CodeInfo_TXTDelLine>();
-            foreach (CodeCommand cmd in cmdList)
-            {
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_TXTDelLine));
-                CodeInfo_TXTDelLine info = cmd.Info as CodeInfo_TXTDelLine;
-
-                infoList.Add(info);
-            }
-
-            // string rawCode = $"Optimized TXTDelLine at [{cmdList[0].Addr.Section.SectionName}]";
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < cmdList.Count; i++)
-            {
-                b.Append(cmdList[i].RawCode);
-                if (i + 1 < cmdList.Count)
-                    b.AppendLine();
-            }
-            return new CodeCommand(b.ToString(), cmdList[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(infoList), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.TXTDelLineOp, new CodeInfo_TXTDelLineOp(cmds), cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeINIRead(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeINIRead(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
             
-            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            return new CodeCommand(MergeRawCodes(cmds), cmdList[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.INIReadOp, new CodeInfo_IniReadOp(cmds), cmds[0].LineIdx);
         }
 
         private static CodeCommand OptimizeINIWrite(List<CodeCommand> cmdList)
@@ -833,51 +620,36 @@ namespace PEBakery.Core
             return new CodeCommand(MergeRawCodes(cmds), cmdList[0].Addr, CodeType.INIWriteTextLineOp, new CodeInfo_IniWriteTextLineOp(cmds), cmdList[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeVisible(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeVisible(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeInfo_Visible> infoList = new List<CodeInfo_Visible>();
-            foreach (CodeCommand cmd in cmdList)
-            {
-                Debug.Assert(cmd.Info.GetType() == typeof(CodeInfo_Visible));
-                CodeInfo_Visible info = cmd.Info as CodeInfo_Visible;
-
-                infoList.Add(info);
-            }
-
-            string rawCode = $"Optimized Visible at [{cmdList[0].Addr.Section.Name}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(infoList), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.VisibleOp, new CodeInfo_VisibleOp(cmds), cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeWimExtract(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeWimExtract(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            string rawCode = $"Optimized WimExtract at [{cmdList[0].Addr.Section.Name}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.WimExtractOp, new CodeInfo_WimExtractOp(cmds), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WimExtractOp, new CodeInfo_WimExtractOp(cmds), cmds[0].LineIdx);
         }
 
-        private static CodeCommand OptimizeWimPath(List<CodeCommand> cmdList)
+        private static CodeCommand OptimizeWimPath(List<CodeCommand> cmds)
         {
-            Debug.Assert(0 < cmdList.Count);
+            Debug.Assert(0 < cmds.Count);
 
-            List<CodeCommand> cmds = new List<CodeCommand>(cmdList);
-            string rawCode = $"Optimized WimPath at [{cmdList[0].Addr.Section.Name}]";
-            return new CodeCommand(rawCode, cmdList[0].Addr, CodeType.WimPathOp, new CodeInfo_WimPathOp(cmds), cmdList[0].LineIdx);
+            return new CodeCommand(MergeRawCodes(cmds), cmds[0].Addr, CodeType.WimPathOp, new CodeInfo_WimPathOp(cmds), cmds[0].LineIdx);
         }
         #endregion
 
         #region Utility
-
-        private static string MergeRawCodes(List<CodeCommand> cmdList)
+        private static string MergeRawCodes(List<CodeCommand> cmds)
         {
             StringBuilder b = new StringBuilder();
-            for (int i = 0; i < cmdList.Count; i++)
+            for (int i = 0; i < cmds.Count; i++)
             {
-                b.Append(cmdList[i].RawCode);
-                if (i + 1 < cmdList.Count)
+                b.Append(cmds[i].RawCode);
+                if (i + 1 < cmds.Count)
                     b.AppendLine();
             }
 

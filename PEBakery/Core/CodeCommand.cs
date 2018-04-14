@@ -200,31 +200,19 @@ namespace PEBakery.Core
 
     #region CodeInfo
     [Serializable]
-    // [SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
     public class CodeInfo
     {
         #region Cast
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Cast<T>() where T : CodeInfo
         {
             Debug.Assert(GetType() == typeof(T), "Invalid CodeInfo");
             T cast = this as T;
             Debug.Assert(cast != null, "Invalid CodeInfo");
             return cast;
-
-            /*
-            try
-            {
-                return Convert.ChangeType(this, typeof(T)) as T;
-                
-            }
-            catch
-            {
-                Debug.Assert(false, "Invalid CodeInfo");
-                return null;
-            }
-            */
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Cast<T>(CodeInfo info) where T : CodeInfo
         {
             return info.Cast<T>();
@@ -232,9 +220,6 @@ namespace PEBakery.Core
         #endregion
 
         #region Optimize
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Optimizable() => false;
-
         public bool OptimizeCompare(CodeInfo info) => false;
         #endregion
     }
@@ -822,16 +807,38 @@ namespace PEBakery.Core
             Line = line;
             Mode = mode;
         }
-    }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_TXTAddLine info = cmpInfo.Cast<CodeInfo_TXTAddLine>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase) &&
+                   Mode.Equals(info.Mode, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder b = new StringBuilder();
+            b.Append(FileName);
+            b.Append(",");
+            b.Append(Line);
+            b.Append(",");
+            b.Append(Mode);
+            return b.ToString();
+        }
+    }    
 
     [Serializable]
     public class CodeInfo_TXTAddLineOp : CodeInfo
-    { 
-        public List<CodeInfo_TXTAddLine> InfoList;
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_TXTAddLine> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_TXTAddLine>()).ToList();
 
-        public CodeInfo_TXTAddLineOp(List<CodeInfo_TXTAddLine> infoList)
+        public CodeInfo_TXTAddLineOp(List<CodeCommand> cmds)
         {
-            InfoList = infoList;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -849,6 +856,15 @@ namespace PEBakery.Core
             NewStr = newStr;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_TXTReplace info = cmpInfo.Cast<CodeInfo_TXTReplace>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -864,11 +880,12 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_TXTReplaceOp : CodeInfo
     { // TXTReplace,<FileName>,<OldStr>,<NewStr>
-        public List<CodeInfo_TXTReplace> InfoList;
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_TXTReplace> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_TXTReplace>()).ToList();
 
-        public CodeInfo_TXTReplaceOp(List<CodeInfo_TXTReplace> infoList)
+        public CodeInfo_TXTReplaceOp(List<CodeCommand> cmds)
         {
-            InfoList = infoList;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -884,6 +901,15 @@ namespace PEBakery.Core
             DeleteLine = deleteLine;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_TXTDelLine info = cmpInfo.Cast<CodeInfo_TXTDelLine>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -896,11 +922,12 @@ namespace PEBakery.Core
 
     public class CodeInfo_TXTDelLineOp : CodeInfo
     {
-        public List<CodeInfo_TXTDelLine> InfoList;
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_TXTDelLine> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_TXTDelLine>()).ToList();
 
-        public CodeInfo_TXTDelLineOp(List<CodeInfo_TXTDelLine> infoList)
+        public CodeInfo_TXTDelLineOp(List<CodeCommand> cmds)
         {
-            InfoList = infoList;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -958,6 +985,15 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniRead info = cmpInfo.Cast<CodeInfo_IniRead>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             StringBuilder b = new StringBuilder();
@@ -977,11 +1013,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniReadOp : CodeInfo
     {    
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniRead> Infos => Cmds.Select(x => x.Info as CodeInfo_IniRead).ToList();
+        public List<CodeInfo_IniRead> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniRead>()).ToList();
 
         public CodeInfo_IniReadOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -999,6 +1035,15 @@ namespace PEBakery.Core
             Section = section;
             Key = key;
             Value = value;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniWrite info = cmpInfo.Cast<CodeInfo_IniWrite>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
@@ -1019,11 +1064,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniWriteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniWrite> Infos => Cmds.Select(x => x.Info as CodeInfo_IniWrite).ToList();
+        public List<CodeInfo_IniWrite> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniWrite>()).ToList();
 
         public CodeInfo_IniWriteOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1039,6 +1084,15 @@ namespace PEBakery.Core
             FileName = fileName;
             Section = section;
             Key = key;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniDelete info = cmpInfo.Cast<CodeInfo_IniDelete>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
@@ -1057,11 +1111,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniDeleteOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniDelete> Infos => Cmds.Select(x => x.Info as CodeInfo_IniDelete).ToList();
+        public List<CodeInfo_IniDelete> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniDelete>()).ToList();
 
         public CodeInfo_IniDeleteOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1079,6 +1133,15 @@ namespace PEBakery.Core
             DestVar = destVar;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniReadSection info = cmpInfo.Cast<CodeInfo_IniReadSection>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
+        }
+
         public override string ToString()
         {
             return $"{FileName},{Section},{DestVar}";
@@ -1089,11 +1152,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniReadSectionOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniReadSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniReadSection).ToList();
+        public List<CodeInfo_IniReadSection> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniReadSection>()).ToList();
 
         public CodeInfo_IniReadSectionOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1107,6 +1170,15 @@ namespace PEBakery.Core
         {
             FileName = fileName;
             Section = section;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniAddSection info = cmpInfo.Cast<CodeInfo_IniAddSection>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
@@ -1123,11 +1195,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniAddSectionOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniAddSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniAddSection).ToList();
+        public List<CodeInfo_IniAddSection> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniAddSection>()).ToList();
 
         public CodeInfo_IniAddSectionOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1141,6 +1213,15 @@ namespace PEBakery.Core
         {
             FileName = fileName;
             Section = section;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniDeleteSection info = cmpInfo.Cast<CodeInfo_IniDeleteSection>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()
@@ -1157,11 +1238,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniDeleteSectionOp : CodeInfo
     { 
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniDeleteSection> Infos => Cmds.Select(x => x.Info as CodeInfo_IniDeleteSection).ToList();
+        public List<CodeInfo_IniDeleteSection> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniDeleteSection>()).ToList();
 
         public CodeInfo_IniDeleteSectionOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1179,6 +1260,16 @@ namespace PEBakery.Core
             Section = section;
             Line = line;
             Append = append;
+        }
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            CodeInfo_IniWriteTextLine info = cmpInfo.Cast<CodeInfo_IniWriteTextLine>();
+            if (info == null)
+                return false;
+
+            return FileName.Equals(info.FileName, StringComparison.OrdinalIgnoreCase) &&
+                   Append == info.Append;
         }
 
         public override string ToString()
@@ -1199,11 +1290,11 @@ namespace PEBakery.Core
     public class CodeInfo_IniWriteTextLineOp : CodeInfo
     {
         public List<CodeCommand> Cmds;
-        public List<CodeInfo_IniWriteTextLine> Infos => Cmds.Select(x => x.Info as CodeInfo_IniWriteTextLine).ToList();
+        public List<CodeInfo_IniWriteTextLine> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_IniWriteTextLine>()).ToList();
 
         public CodeInfo_IniWriteTextLineOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -1555,6 +1646,8 @@ namespace PEBakery.Core
             Visibility = visibility;
         }
 
+        public new bool OptimizeCompare(CodeInfo cmpInfo) => true;
+
         public override string ToString()
         {
             return $"{InterfaceKey},{Visibility}";
@@ -1564,11 +1657,12 @@ namespace PEBakery.Core
     [Serializable]
     public class CodeInfo_VisibleOp : CodeInfo
     { // Visible,<%InterfaceKey%>,<Visiblity>
-        public List<CodeInfo_Visible> InfoList;
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_Visible> Infos => Cmds.Select(x => x.Info.Cast<CodeInfo_Visible>()).ToList();
 
-        public CodeInfo_VisibleOp(List<CodeInfo_Visible> infoList)
+        public CodeInfo_VisibleOp(List<CodeCommand> cmds)
         {
-            InfoList = infoList;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -2780,8 +2874,6 @@ namespace PEBakery.Core
             NoAttribFlag = noAttrib;
         }
 
-        public new bool Optimizable() => true;
-
         public new bool OptimizeCompare(CodeInfo cmpInfo)
         { // Condition : Every argument except DestDir should be identical
             CodeInfo_WimExtract info = cmpInfo.Cast<CodeInfo_WimExtract>();
@@ -2841,7 +2933,7 @@ namespace PEBakery.Core
 
         public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
@@ -3105,8 +3197,6 @@ namespace PEBakery.Core
             PreserveFlag = preserveFlag;
         }
 
-        public new bool Optimizable() => true;
-
         public new bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
@@ -3190,8 +3280,6 @@ namespace PEBakery.Core
             Path = path;
         }
 
-        public new bool Optimizable() => true;
-
         public new bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
@@ -3271,8 +3359,6 @@ namespace PEBakery.Core
             DestPath = destPath;
         }
 
-        public new bool Optimizable() => true;
-
         public new bool OptimizeCompare(CodeInfo cmpInfo)
         {
             if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
@@ -3337,7 +3423,7 @@ namespace PEBakery.Core
 
         public CodeInfo_WimPathOp(List<CodeCommand> cmds)
         {
-            Cmds = cmds;
+            Cmds = new List<CodeCommand>(cmds);
         }
     }
 
