@@ -1264,6 +1264,7 @@ namespace PEBakery.WPF
     #region MainViewModel
     public class MainViewModel : INotifyPropertyChanged
     {
+        #region Constructor
         public MainViewModel()
         {
             MainTree = new TreeViewModel(null, null);
@@ -1280,15 +1281,16 @@ namespace PEBakery.WPF
             Panel.SetZIndex(canvas, -1);
             MainCanvas = canvas;
         }
+        #endregion
 
         #region Normal Interface
-        private bool workInProgress = false;
+        private bool _workInProgress = false;
         public bool WorkInProgress
         {
-            get => workInProgress;
+            get => _workInProgress;
             set
             {
-                workInProgress = value;
+                _workInProgress = value;
                 OnPropertyUpdate(nameof(WorkInProgress));
             }
         }
@@ -1576,115 +1578,115 @@ namespace PEBakery.WPF
         #endregion
 
         #region Build Interface
-        private TreeViewModel buildTree;
+        private TreeViewModel _buildTree;
         public TreeViewModel BuildTree
         {
-            get => buildTree;
+            get => _buildTree;
             set
             {
-                buildTree = value;
+                _buildTree = value;
                 OnPropertyUpdate(nameof(BuildTree));
             }
         }
 
-        private string buildPosition = string.Empty;
+        private string _buildPosition = string.Empty;
         public string BuildPosition
         {
-            get => buildPosition;
+            get => _buildPosition;
             set
             {
-                buildPosition = value;
+                _buildPosition = value;
                 OnPropertyUpdate(nameof(BuildPosition));
             }
         }
 
-        private string buildEchoMessage = string.Empty;
+        private string _buildEchoMessage = string.Empty;
         public string BuildEchoMessage
         {
-            get => buildEchoMessage;
+            get => _buildEchoMessage;
             set
             {
-                buildEchoMessage = value;
+                _buildEchoMessage = value;
                 OnPropertyUpdate(nameof(BuildEchoMessage));
             }
         }
 
         // ProgressBar
-        private double buildScriptProgressBarMax = 100;
+        private double _buildScriptProgressBarMax = 100;
         public double BuildScriptProgressBarMax
         {
-            get => buildScriptProgressBarMax;
+            get => _buildScriptProgressBarMax;
             set
             {
-                buildScriptProgressBarMax = value;
+                _buildScriptProgressBarMax = value;
                 OnPropertyUpdate(nameof(BuildScriptProgressBarMax));
             }
         }
 
-        private double buildScriptProgressBarValue = 0;
+        private double _buildScriptProgressBarValue = 0;
         public double BuildScriptProgressBarValue
         {
-            get => buildScriptProgressBarValue;
+            get => _buildScriptProgressBarValue;
             set
             {
-                buildScriptProgressBarValue = value;
+                _buildScriptProgressBarValue = value;
                 OnPropertyUpdate(nameof(BuildScriptProgressBarValue));
             }
         }
 
-        private Visibility buildFullProgressBarVisibility = Visibility.Visible;
+        private Visibility _buildFullProgressBarVisibility = Visibility.Visible;
         public Visibility BuildFullProgressBarVisibility
         {
-            get => buildFullProgressBarVisibility;
+            get => _buildFullProgressBarVisibility;
             set
             {
-                buildFullProgressBarVisibility = value;
+                _buildFullProgressBarVisibility = value;
                 OnPropertyUpdate(nameof(BuildFullProgressBarVisibility));
             }
         }
 
-        private double buildFullProgressBarMax = 100;
+        private double _buildFullProgressBarMax = 100;
         public double BuildFullProgressBarMax
         {
-            get => buildFullProgressBarMax;
+            get => _buildFullProgressBarMax;
             set
             {
-                buildFullProgressBarMax = value;
+                _buildFullProgressBarMax = value;
                 OnPropertyUpdate(nameof(BuildFullProgressBarMax));
             }
         }
 
-        private double buildFullProgressBarValue = 0;
+        private double _buildFullProgressBarValue = 0;
         public double BuildFullProgressBarValue
         {
-            get => buildFullProgressBarValue;
+            get => _buildFullProgressBarValue;
             set
             {
-                buildFullProgressBarValue = value;
+                _buildFullProgressBarValue = value;
                 OnPropertyUpdate(nameof(BuildFullProgressBarValue));
             }
         }
 
         // ShellExecute Console Output
-        private string buildConOutRedirect = string.Empty;
+        private string _buildConOutRedirect = string.Empty;
         public string BuildConOutRedirect
         {
-            get => buildConOutRedirect;
+            get => _buildConOutRedirect;
             set
             {
-                buildConOutRedirect = value;
+                _buildConOutRedirect = value;
                 OnPropertyUpdate(nameof(BuildConOutRedirect));
             }
         }
 
         public static bool DisplayShellExecuteConOut = true;
-        private Visibility buildConOutRedirectVisibility = Visibility.Collapsed;
+        private Visibility _buildConOutRedirectVisibility = Visibility.Collapsed;
         public Visibility BuildConOutRedirectVisibility
         {
             get
             {
                 if (DisplayShellExecuteConOut)
-                    return buildConOutRedirectVisibility;
+                    return _buildConOutRedirectVisibility;
                 else
                     return Visibility.Collapsed;
             }
@@ -1694,70 +1696,86 @@ namespace PEBakery.WPF
             set
             {
                 if (value)
-                    buildConOutRedirectVisibility = Visibility.Visible;
+                    _buildConOutRedirectVisibility = Visibility.Visible;
                 else
-                    buildConOutRedirectVisibility = Visibility.Collapsed;
+                    _buildConOutRedirectVisibility = Visibility.Collapsed;
                 OnPropertyUpdate(nameof(BuildConOutRedirectVisibility));
             }
         }
 
         // Command Progress
-        private string buildCommandProgressTitle = string.Empty;
+        private string _buildCommandProgressTitle = string.Empty;
         public string BuildCommandProgressTitle
         {
-            get => buildCommandProgressTitle;
+            get => _buildCommandProgressTitle;
             set
             {
-                buildCommandProgressTitle = value;
+                _buildCommandProgressTitle = value;
                 OnPropertyUpdate(nameof(BuildCommandProgressTitle));
             }
         }
 
-        private string buildCommandProgressText = string.Empty;
+        private string _buildCommandProgressText = string.Empty;
         public string BuildCommandProgressText
         {
-            get => buildCommandProgressText;
+            get => _buildCommandProgressText;
             set
             {
-                buildCommandProgressText = value;
+                _buildCommandProgressText = value;
                 OnPropertyUpdate(nameof(BuildCommandProgressText));
             }
         }
 
-        private double buildCommandProgressMax = 100;
+        private double _buildCommandProgressMax = 100;
         public double BuildCommandProgressMax
         {
-            get => buildCommandProgressMax;
+            get => _buildCommandProgressMax;
             set
             {
-                buildCommandProgressMax = value;
+                _buildCommandProgressMax = value;
                 OnPropertyUpdate(nameof(BuildCommandProgressMax));
             }
         }
 
-        private double buildCommandProgressValue = 0;
+        private double _buildCommandProgressValue = 0;
         public double BuildCommandProgressValue
         {
-            get => buildCommandProgressValue;
+            get => _buildCommandProgressValue;
             set
             {
-                buildCommandProgressValue = value;
+                _buildCommandProgressValue = value;
                 OnPropertyUpdate(nameof(BuildCommandProgressValue));
             }
         }
 
-        private Visibility buildCommandProgressVisibility = Visibility.Collapsed;
-        public Visibility BuildCommandProgressVisibility => buildCommandProgressVisibility;
+        private Visibility _buildCommandProgressVisibility = Visibility.Collapsed;
+        public Visibility BuildCommandProgressVisibility => _buildCommandProgressVisibility;
         public bool BuildCommandProgressShow
         {
             set
             {
                 if (value)
-                    buildCommandProgressVisibility = Visibility.Visible;
+                    _buildCommandProgressVisibility = Visibility.Visible;
                 else
-                    buildCommandProgressVisibility = Visibility.Collapsed;
+                    _buildCommandProgressVisibility = Visibility.Collapsed;
                 OnPropertyUpdate(nameof(BuildCommandProgressVisibility));
             }
+        }
+
+        public void EnableBuildCommandProgress(string title, string text, int progressMax)
+        {
+            BuildCommandProgressTitle = title;
+            BuildCommandProgressText = text;
+            BuildCommandProgressMax = progressMax;
+            BuildCommandProgressShow = true;
+        }
+
+        public void DisableBuildCommandProgress()
+        {
+            BuildCommandProgressShow = false;
+            BuildCommandProgressTitle = "Progress";
+            BuildCommandProgressText = string.Empty;
+            BuildCommandProgressValue = 0;
         }
 
         // Taskbar Progress State
@@ -1767,17 +1785,16 @@ namespace PEBakery.WPF
         // Normal - Green
         // Error - Red
         // Paused - Yellow
-        private TaskbarItemProgressState taskbarProgressState;
+        private TaskbarItemProgressState _taskbarProgressState;
         public TaskbarItemProgressState TaskbarProgressState
         {
-            get => taskbarProgressState;
+            get => _taskbarProgressState;
             set
             {
-                taskbarProgressState = value;
+                _taskbarProgressState = value;
                 OnPropertyUpdate(nameof(TaskbarProgressState));
             }
         }
-
         #endregion
 
         #region OnPropertyUpdate

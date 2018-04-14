@@ -264,6 +264,9 @@
             </TabItem>
             <TabItem Header="Attachment">
                 <Grid Margin="10, 10, 10, 10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="100"/>

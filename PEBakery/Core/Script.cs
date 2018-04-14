@@ -96,13 +96,11 @@ namespace PEBakery.Core
             {
                 if (_type == ScriptType.Link && _linkLoaded)
                     return _link.MainInfo;
-                else
-                {
-                    if (_sections.ContainsKey("Main"))
-                        return _sections["Main"].GetIniDict();
-                    else // Just return empty dictionary
-                        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                }
+
+                if (_sections.ContainsKey("Main"))
+                    return _sections["Main"].GetIniDict();
+                else // Just return empty dictionary
+                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
