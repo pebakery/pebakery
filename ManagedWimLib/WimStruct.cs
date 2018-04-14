@@ -24,6 +24,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -33,6 +34,7 @@ using System.Threading.Tasks;
 namespace ManagedWimLib
 {
     #region WimStruct
+    [SuppressMessage("ReSharper", "RedundantExplicitArraySize")]
     public class Wim : IDisposable
     { // Wrapper of WimStruct and wimlib API
         #region Const
@@ -66,7 +68,7 @@ namespace ManagedWimLib
         #region Disposable Pattern
         ~Wim()
         {
-            this.Dispose(false);
+            Dispose(false);
         }
 
         public void Dispose()
@@ -324,7 +326,8 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void AddImageMultiSource(IEnumerable<CaptureSource> sources, string name, string configFile, AddFlags addFlags)
         {
-            ErrorCode ret = NativeMethods.AddImageMultiSource(Ptr, sources.ToArray(), new IntPtr(sources.Count()), name, configFile, addFlags);
+            CaptureSource[] srcArr = sources.ToArray();
+            ErrorCode ret = NativeMethods.AddImageMultiSource(Ptr, srcArr, new IntPtr(srcArr.Length), name, configFile, addFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -441,12 +444,6 @@ namespace ManagedWimLib
         /// <summary>
         /// Extract an image, or all images, from a WimStruct.
         /// </summary>
-        /// <param name="wim">
-        /// The WIM from which to extract the image(s), specified as a pointer to the
-        /// WimStruct for a standalone WIM file, a delta WIM file, or part 1 of a split WIM.
-        /// In the case of a WIM file that is not standalone, this WimStruct must have had any needed external resources previously
-        /// referenced using Wim.ReferenceResources() or Wim.ReferenceResourceFiles().
-        /// </param>
         /// <param name="image">
         /// The 1-based index of the image to extract, or Wim.AllImages to extract all images.
         /// Note: Wim.AllImages is unsupported in NTFS-3G extraction mode.
@@ -456,7 +453,7 @@ namespace ManagedWimLib
         /// By default, this is interpreted as a path to a directory.
         /// Alternatively, if ExtractFlags.NTFS is specified in extractFlags, then this is interpreted as a path to an unmounted NTFS volume.
         /// </param>
-        /// <param name="extract_flags">
+        /// <param name="extractFlags">
         /// Bitwise OR of ExtractFlags.
         /// </param>
         /// <remarks>
@@ -503,7 +500,7 @@ namespace ManagedWimLib
         /// however, the case sensitivity can be configured explicitly at library initialization time by passing an
         /// appropriate flag to AssemblyInit().
         /// </param>
-        /// <param name="extract_flags">
+        /// <param name="extractFlags">
         /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
@@ -546,16 +543,14 @@ namespace ManagedWimLib
         /// however, the case sensitivity can be configured explicitly at library initialization time by passing an
         /// appropriate flag to AssemblyInit().
         /// </param>
-        /// <param name="num_paths">
-        /// Number of paths specified in paths.
-        /// </param>
-        /// <param name="extract_flags">
+        /// <param name="extractFlags">
         /// Bitwise OR of flags prefixed with WIMLIB_EXTRACT_FLAG.
         /// </param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public void ExtractPaths(int image, string target, IEnumerable<string> paths, ExtractFlags extractFlags)
         {
-            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, paths.ToArray(), new IntPtr(paths.Count()), extractFlags);
+            string[] pathArr = paths.ToArray();
+            ErrorCode ret = NativeMethods.ExtractPaths(Ptr, image, target, pathArr, new IntPtr(pathArr.Length), extractFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -618,7 +613,7 @@ namespace ManagedWimLib
         /// This is an alternative to wimlib_get_image_name() and Wim.GetImageDescription() which allows getting any simple string property.
         /// </remarks>
         /// <param name="image">The 1-based index of the image for which to set the property.</param>
-        /// <param name="property_name">
+        /// <param name="propertyName">
         /// The name of the image property, for example "NAME", "DESCRIPTION", or "TOTALBYTES".
         /// The name can contain forward slashes to indicate a nested XML element; for example, "WINDOWS/VERSION/BUILD"
         /// indicates the BUILD element nested within the VERSION element nested within the WINDOWS element.
@@ -785,7 +780,8 @@ namespace ManagedWimLib
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public static void Join(IEnumerable<string> swms, string outputPath, OpenFlags swmOpenFlags, WriteFlags wimWriteFlags)
         {
-            ErrorCode ret = NativeMethods.Join(swms.ToArray(), (uint)swms.Count(), outputPath, swmOpenFlags, wimWriteFlags);
+            string[] swmArr = swms.ToArray();
+            ErrorCode ret = NativeMethods.Join(swmArr, (uint)swmArr.Length, outputPath, swmOpenFlags, wimWriteFlags);
             WimLibException.CheckWimLibError(ret);
         }
 
@@ -804,13 +800,16 @@ namespace ManagedWimLib
         /// <param name="outputPath">The path to write the joined WIM file to.</param>
         /// <param name="swmOpenFlags">Open flags for the split WIM parts (e.g. OpenFlags.CHECK_INTEGRITY).</param>
         /// <param name="wimWriteFlags">Bitwise OR of relevant WriteFlags, which will be used to write the joined WIM.</param>
+        /// <param name="callback">Callback function to receive progress report</param>
+        /// <param name="userData">Data to be passed to callback function</param>
         /// <exception cref="WimLibException">wimlib did not return ErrorCode.SUCCESS.</exception>
         public static void Join(IEnumerable<string> swms, string outputPath, OpenFlags swmOpenFlags, WriteFlags wimWriteFlags,
             ProgressCallback callback, object userData = null)
         {
-            ManagedProgressCallback mCallback = new ManagedProgressCallback(callback, userData); 
+            ManagedProgressCallback mCallback = new ManagedProgressCallback(callback, userData);
 
-            ErrorCode ret = NativeMethods.JoinWithProgress(swms.ToArray(), (uint)swms.Count(), outputPath, swmOpenFlags, wimWriteFlags,
+            string[] swmArr = swms.ToArray();
+            ErrorCode ret = NativeMethods.JoinWithProgress(swmArr, (uint)swmArr.Length, outputPath, swmOpenFlags, wimWriteFlags,
                 mCallback.NativeFunc, IntPtr.Zero);
             WimLibException.CheckWimLibError(ret);
         }
@@ -852,6 +851,8 @@ namespace ManagedWimLib
         /// </remarks>
         /// <param name="wimFile">The path to the WIM file to open.</param>
         /// <param name="openFlags">Bitwise OR of flags prefixed with WIMLIB_OPEN_FLAG.</param>
+        /// <param name="callback">Callback function to receive progress report</param>
+        /// <param name="userData">Data to be passed to callback function</param>
         /// <returns>
         /// On success, a new instance of Wim class backed by the specified on-disk WIM file is returned.
         ///	This instance must be disposed when finished with it.
@@ -961,6 +962,9 @@ namespace ManagedWimLib
             List<string> resources = new List<string>();
             foreach (string f in resourceWimFiles)
             {
+                if (f == null)
+                    throw new ArgumentNullException(nameof(resourceWimFiles));
+
                 string dirPath = Path.GetDirectoryName(f);
                 string wildcard = Path.GetFileName(f);
                 if (dirPath == null) dirPath = @"\";
@@ -1433,10 +1437,10 @@ namespace ManagedWimLib
         /// This indicates that all images are to be included in the new on-disk WIM file.
         /// If for some reason you only want to include a single image, specify the 1-based index of that image instead.
         /// </param>
-        /// <param name="write_flags">
+        /// <param name="writeFlags">
         /// Bitwise OR of WriteFlags.
         /// </param>
-        /// <param name="num_threads">
+        /// <param name="numThreads">
         /// The number of threads to use for compressing data, or 0 to have the library automatically choose an appropriate number.
         /// </param>
         /// <remarks>
@@ -1513,7 +1517,7 @@ namespace ManagedWimLib
 
             try
             {
-                this.IterateDirTree(image, wimFilePath, IterateFlags.DEFAULT, ExistCallback, null);
+                IterateDirTree(image, wimFilePath, IterateFlags.DEFAULT, ExistCallback, null);
                 return exists;
             }
             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
@@ -1545,7 +1549,7 @@ namespace ManagedWimLib
 
             try
             {
-                this.IterateDirTree(image, wimDirPath, IterateFlags.DEFAULT, ExistCallback, null);
+                IterateDirTree(image, wimDirPath, IterateFlags.DEFAULT, ExistCallback, null);
                 return exists;
             }
             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
@@ -1568,7 +1572,7 @@ namespace ManagedWimLib
         {
             try
             {
-                this.IterateDirTree(image, wimPath, IterateFlags.DEFAULT, null, null);
+                IterateDirTree(image, wimPath, IterateFlags.DEFAULT, null, null);
                 return true;
             }
             catch (WimLibException e) when (e.ErrorCode == ErrorCode.PATH_DOES_NOT_EXIST)
