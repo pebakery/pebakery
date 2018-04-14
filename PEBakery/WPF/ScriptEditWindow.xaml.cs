@@ -94,6 +94,9 @@ namespace PEBakery.WPF
             m.ScriptDescription = StringEscaper.Unescape(_sc.Description);
             m.ScriptSelectedState = _sc.Selected;
             m.ScriptMandatory = _sc.Mandatory;
+
+            m.ScriptHeaderNotSaved = false;
+            m.ScriptHeaderUpdated = false;
         }
         #endregion
 
@@ -263,11 +266,6 @@ namespace PEBakery.WPF
                 MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private void ScriptLevelNumberBox_ValueChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
-        {
-            m.ScriptLevel = e.NewValue;
-        }
         #endregion
 
         #region Event Handler - Attachment
@@ -309,11 +307,6 @@ namespace PEBakery.WPF
         }
 
         #endregion
-
-        private void Window_Closed_1(object sender, EventArgs e)
-        {
-
-        }
     }
     #endregion
 
@@ -382,7 +375,11 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - General - Script Main
-        public bool ScriptHeaderNotSaved { get; set; } = false;
+        public bool ScriptHeaderNotSaved
+        {
+            get;
+            set;
+        } = false;
         public bool ScriptHeaderUpdated { get; set; } = false;
 
         private string scriptTitle = string.Empty;
@@ -405,6 +402,8 @@ namespace PEBakery.WPF
             set
             {
                 scriptAuthor = value;
+                ScriptHeaderNotSaved = true;
+                ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptAuthor));
             }
         }
@@ -435,13 +434,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private decimal scriptLevel = 0;
+        private decimal _scriptLevel = 0;
         public decimal ScriptLevel
         {
-            get => scriptLevel;
+            get => _scriptLevel;
             set
             {
-                scriptLevel = value;
+                _scriptLevel = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptLevel));

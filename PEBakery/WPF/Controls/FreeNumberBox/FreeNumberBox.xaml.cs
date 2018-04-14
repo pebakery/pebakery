@@ -49,6 +49,9 @@ namespace PEBakery.WPF.Controls
         public FreeNumberBox()
         {
             InitializeComponent();
+
+            // DataContext = this;
+            // LayoutGrid.DataContext = this;
         }
         #endregion
 
@@ -61,7 +64,7 @@ namespace PEBakery.WPF.Controls
         }
 
         public static readonly DependencyProperty ValueProperty = DependencyProperty.Register("Value", typeof(decimal), typeof(FreeNumberBox),
-            new FrameworkPropertyMetadata(DefaultValue, new PropertyChangedCallback(OnValueChanged), new CoerceValueCallback(CoerceValue)));
+            new FrameworkPropertyMetadata(DefaultValue, OnValueChanged, CoerceValue));
 
         private const decimal DefaultMinimum = 0;
         public decimal Minimum 
@@ -152,8 +155,8 @@ namespace PEBakery.WPF.Controls
         {
             // Aloow only [0-9]+ 
             bool check = true;
-            for (int i = 0; i < e.Text.Length; i++)
-                check &= char.IsDigit(e.Text[i]);
+            foreach (char ch in e.Text)
+                check &= char.IsDigit(ch);
 
             if (e.Text.Length == 0)
                 check = false;

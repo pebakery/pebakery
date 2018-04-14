@@ -148,12 +148,12 @@
                                            FontWeight="Bold"
                                            Text="Level"/>
                                 <custom:FreeNumberBox Grid.Row="2" Grid.Column="3"
+                                                      x:Name="ScriptLevel"
                                                       VerticalAlignment="Center"
                                                       Minimum="-256"
                                                       Maximum="255"
                                                       IncrementUnit="1"
-                                                      Value="{Binding ScriptLevel}"
-                                                      ValueChanged="ScriptLevelNumberBox_ValueChanged"/>
+                                                      Value="{Binding ScriptLevel, Mode=TwoWay}"/>
 
                                 <!-- Selected -->
                                 <TextBlock Grid.Row="3" Grid.Column="2"
