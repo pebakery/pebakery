@@ -40,6 +40,7 @@ using PEBakery.WPF.Controls;
 using PEBakery.IniLib;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using ManagedWimLib;
 // ReSharper disable InconsistentNaming
 
@@ -199,7 +200,44 @@ namespace PEBakery.Core
 
     #region CodeInfo
     [Serializable]
-    public class CodeInfo { }
+    // [SuppressMessage("ReSharper", "HeuristicUnreachableCode")]
+    public class CodeInfo
+    {
+        #region Cast
+        public T Cast<T>() where T : CodeInfo
+        {
+            Debug.Assert(GetType() == typeof(T), "Invalid CodeInfo");
+            T cast = this as T;
+            Debug.Assert(cast != null, "Invalid CodeInfo");
+            return cast;
+
+            /*
+            try
+            {
+                return Convert.ChangeType(this, typeof(T)) as T;
+                
+            }
+            catch
+            {
+                Debug.Assert(false, "Invalid CodeInfo");
+                return null;
+            }
+            */
+        }
+
+        public static T Cast<T>(CodeInfo info) where T : CodeInfo
+        {
+            return info.Cast<T>();
+        }
+        #endregion
+
+        #region Optimize
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Optimizable() => false;
+
+        public bool OptimizeCompare(CodeInfo info) => false;
+        #endregion
+    }
     #endregion
 
     #region CodeInfo 00 - Error
@@ -2725,7 +2763,7 @@ namespace PEBakery.Core
         public string ImageIndex;
         public string ExtractPath;
         public string DestDir;
-        public string Split;
+        public string Split; // Nullable
         public bool CheckFlag;
         public bool NoAclFlag;
         public bool NoAttribFlag;
@@ -2740,6 +2778,32 @@ namespace PEBakery.Core
             CheckFlag = check;
             NoAclFlag = noAcl;
             NoAttribFlag = noAttrib;
+        }
+
+        public new bool Optimizable() => true;
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        { // Condition : Every argument except DestDir should be identical
+            CodeInfo_WimExtract info = cmpInfo.Cast<CodeInfo_WimExtract>();
+            if (info != null)
+            {
+                if (SrcWim.Equals(info.SrcWim, StringComparison.OrdinalIgnoreCase) &&
+                    ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                    DestDir.Equals(info.DestDir, StringComparison.OrdinalIgnoreCase) &&
+                    CheckFlag == info.CheckFlag &&
+                    NoAclFlag == info.NoAclFlag &&
+                    NoAttribFlag == info.NoAttribFlag)
+                {
+                    if (Split == null && info.Split == null)
+                        return true;
+                    if (Split != null && info.Split != null &&
+                        Split.Equals(info.Split, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    return false;
+                }
+            }
+
+            return false;
         }
 
         public override string ToString()
@@ -2766,6 +2830,18 @@ namespace PEBakery.Core
             if (NoAttribFlag)
                 b.Append(",NOATTRIB");
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimExtractOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+        public List<CodeInfo_WimExtract> Infos => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
+
+        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
@@ -2827,18 +2903,6 @@ namespace PEBakery.Core
             if (NoWarnFlag)
                 b.Append(",NOWARN");
             return b.ToString();
-        }
-    }
-
-    [Serializable]
-    public class CodeInfo_WimExtractOp : CodeInfo
-    {
-        public List<CodeCommand> Cmds;
-        public List<CodeInfo_WimExtract> Infos => Cmds.Select(x => x.Info as CodeInfo_WimExtract).ToList();
-
-        public CodeInfo_WimExtractOp(List<CodeCommand> cmds)
-        {
-            Cmds = cmds;
         }
     }
 
@@ -3028,16 +3092,58 @@ namespace PEBakery.Core
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
             ImageIndex = imageIndex;
+            // Common Optional Flags
+            CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
 
             // WimPathAdd Specific
             SrcPath = srcPath;
             DestPath = destPath;
 
             // Optional Flags
-            CheckFlag = checkFlag;
             NoAclFlag = noAclFlag;
             PreserveFlag = preserveFlag;
-            RebuildFlag = rebuildFlag;
+        }
+
+        public new bool Optimizable() => true;
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            {
+                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            {
+                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            {
+                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+
+            return false;
         }
 
         public override string ToString()
@@ -3076,13 +3182,53 @@ namespace PEBakery.Core
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
             ImageIndex = imageIndex;
+            // Common Optional Flags
+            CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
 
             // WimPathDelete Specific
             Path = path;
+        }
 
-            // Optional Flags
-            CheckFlag = checkFlag;
-            RebuildFlag = rebuildFlag;
+        public new bool Optimizable() => true;
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            {
+                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            {
+                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            {
+                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+
+            return false;
         }
 
         public override string ToString()
@@ -3116,14 +3262,54 @@ namespace PEBakery.Core
             // WimPath (WimUpdate) Series Common
             WimFile = wimFile;
             ImageIndex = imageIndex;
+            // Common Optional Flags
+            CheckFlag = checkFlag;
+            RebuildFlag = rebuildFlag;
 
             // WimPathDelete Specific
             SrcPath = srcPath;
             DestPath = destPath;
+        }
 
-            // Optional Flags
-            CheckFlag = checkFlag;
-            RebuildFlag = rebuildFlag;
+        public new bool Optimizable() => true;
+
+        public new bool OptimizeCompare(CodeInfo cmpInfo)
+        {
+            if (cmpInfo.GetType() == typeof(CodeInfo_WimPathAdd))
+            {
+                CodeInfo_WimPathAdd info = cmpInfo.Cast<CodeInfo_WimPathAdd>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathRename))
+            {
+                CodeInfo_WimPathRename info = cmpInfo.Cast<CodeInfo_WimPathRename>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+            else if (cmpInfo.GetType() == typeof(CodeInfo_WimPathDelete))
+            {
+                CodeInfo_WimPathDelete info = cmpInfo.Cast<CodeInfo_WimPathDelete>();
+                if (info != null)
+                {
+                    return WimFile.Equals(info.WimFile, StringComparison.OrdinalIgnoreCase) &&
+                           ImageIndex.Equals(info.ImageIndex, StringComparison.OrdinalIgnoreCase) &&
+                           CheckFlag == info.CheckFlag &&
+                           RebuildFlag == info.RebuildFlag;
+                }
+            }
+
+            return false;
         }
 
         public override string ToString()
@@ -3141,6 +3327,17 @@ namespace PEBakery.Core
             if (RebuildFlag)
                 b.Append(",REBUILD");
             return b.ToString();
+        }
+    }
+
+    [Serializable]
+    public class CodeInfo_WimPathOp : CodeInfo
+    {
+        public List<CodeCommand> Cmds;
+
+        public CodeInfo_WimPathOp(List<CodeCommand> cmds)
+        {
+            Cmds = cmds;
         }
     }
 
