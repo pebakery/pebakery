@@ -1296,11 +1296,16 @@ namespace PEBakery.IniLib
         #endregion
 
         #region Utility
-        private static bool IsLineComment(string line)
+        public static bool IsLineComment(string line)
         {
             return line.StartsWith("#", StringComparison.Ordinal) ||
                    line.StartsWith(";", StringComparison.Ordinal) ||
                    line.StartsWith("//", StringComparison.Ordinal);
+        }
+
+        public static List<string> FilterLines(IEnumerable<string> lines)
+        {
+            return lines.Where(x => 0 < x.Length && !Ini.IsLineComment(x)).ToList();
         }
 
         /// <summary>

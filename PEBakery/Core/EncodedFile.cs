@@ -36,9 +36,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -143,7 +141,7 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region Dict ImageEncodeModeDict
+        #region Dict ImageEncodeDict
         public static readonly ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode> ImageEncodeDict = new ReadOnlyDictionary<ImageHelper.ImageType, EncodeMode>(
             new Dictionary<ImageHelper.ImageType, EncodeMode>
             {
@@ -315,15 +313,6 @@ namespace PEBakery.Core
         #endregion
 
         #region GetFileInfo
-        public class EncodedFileInfo
-        {
-            public string DirName;
-            public string FileName;
-            public int RawSize;
-            public int CompressedSize;
-            public EncodeMode EncodeMode;
-        }
-
         public static EncodedFileInfo GetFileInfo(Script sc, string dirName, string fileName, bool detail = false)
         {
             if (sc == null)
@@ -337,20 +326,14 @@ namespace PEBakery.Core
 
             if (!sc.Sections.ContainsKey(dirName))
                 throw new InvalidOperationException($"Directory [{dirName}] does not exist");
-            Dictionary<string, string> fileDict = sc.Sections[dirName].GetIniDict();
+            // Dictionary<string, string> fileDict = sc.Sections[dirName].GetIniDict();
+            Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
 
             if (!fileDict.ContainsKey(fileName))
                 throw new InvalidOperationException("File index does not exist");
 
-            string index = fileDict[fileName].Trim();
-            Match m = Regex.Match(index, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            if (!m.Success)
-                throw new InvalidOperationException("File index corrupted");
-
-            if (!NumberHelper.ParseInt32(m.Groups[1].Value, out info.RawSize))
-                throw new InvalidOperationException("File index corrupted");
-            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out info.CompressedSize))
-                throw new InvalidOperationException("File index corrupted");
+            string fileIndex = fileDict[fileName].Trim();
+            (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
 
             if (detail)
             {
@@ -383,15 +366,8 @@ namespace PEBakery.Core
             if (!fileDict.ContainsKey(info.FileName))
                 throw new InvalidOperationException("File index does not exist");
 
-            string index = fileDict[info.FileName].Trim();
-            Match m = Regex.Match(index, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-            if (!m.Success)
-                throw new InvalidOperationException("File index corrupted");
-
-            if (!NumberHelper.ParseInt32(m.Groups[1].Value, out info.RawSize))
-                throw new InvalidOperationException("File index corrupted");
-            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out info.CompressedSize))
-                throw new InvalidOperationException("File index corrupted");
+            string fileIndex = fileDict[info.FileName].Trim();
+            (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
 
             if (detail)
             {
@@ -400,6 +376,76 @@ namespace PEBakery.Core
             }
 
             return info;
+        }
+
+        public static Dictionary<string, List<EncodedFileInfo>> GetAllFilesInfo(Script sc, bool detail = false)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            // List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
+            Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
+
+            const string encodedFoldersStr = "EncodedFolders";
+            if (!sc.Sections.ContainsKey(encodedFoldersStr))
+                return infoDict;
+
+            List<string> dirNames = Ini.FilterLines(sc.Sections[encodedFoldersStr].GetLines());
+            foreach (string dirName in dirNames)
+            {
+                if (!infoDict.ContainsKey(dirName))
+                    infoDict[dirName] = new List<EncodedFileInfo>();
+
+                // Follow WB082 behavior
+                if (!sc.Sections.ContainsKey(dirName))
+                    continue;
+
+                /*
+                   Example
+
+                   [Fonts]
+                   README.txt=522,696
+                   D2Coding-OFL-License.txt=2102,2803
+                   D2Coding-Ver1.2-TTC-20161024.7z=3118244,4157659
+                */
+                Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+                foreach (var kv in fileDict)
+                {
+                    string fileName = kv.Key;
+                    string fileIndex = kv.Value;
+
+                    EncodedFileInfo info = new EncodedFileInfo
+                    {
+                        DirName = dirName,
+                        FileName = fileName,
+                    };
+                    (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
+
+                    if (detail)
+                    {
+                        List<string> encoded = sc.Sections[$"EncodedFile-{dirName}-{fileName}"].GetLinesOnce();
+                        info.EncodeMode = GetEncodeMode(encoded);
+                    }
+
+                    infoDict[dirName].Add(info);
+                }
+            }
+
+            return infoDict;
+        }
+
+        private static (int rawSize, int compressedSize) ParseFileIndex(string fileIndex)
+        {
+            Match m = Regex.Match(fileIndex, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (!m.Success)
+                throw new InvalidOperationException("File index corrupted");
+
+            if (!NumberHelper.ParseInt32(m.Groups[1].Value, out int rawSize))
+                throw new InvalidOperationException("File index corrupted");
+            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out int compressedSize))
+                throw new InvalidOperationException("File index corrupted");
+
+            return (rawSize, compressedSize);
         }
         #endregion
 
@@ -1669,6 +1715,17 @@ namespace PEBakery.Core
             return Convert.FromBase64String(b.ToString());
         }
         #endregion
+    }
+    #endregion
+
+    #region EncodedFileInfo
+    public class EncodedFileInfo
+    {
+        public string DirName;
+        public string FileName;
+        public int RawSize;
+        public int CompressedSize;
+        public EncodedFile.EncodeMode EncodeMode;
     }
     #endregion
 }

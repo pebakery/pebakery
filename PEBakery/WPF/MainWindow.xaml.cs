@@ -1819,26 +1819,26 @@ namespace PEBakery.WPF
             Parent = parent;
         }
 
-        private bool isExpanded = false;
+        private bool _isExpanded = false;
         public bool IsExpanded
         {
-            get => isExpanded;
+            get => _isExpanded;
             set
             {
-                isExpanded = value;
+                _isExpanded = value;
                 OnPropertyUpdate(nameof(IsExpanded));
             }
         }
 
         #region Build Mode Property
-        private bool buildFocus = false;
+        private bool _buildFocus = false;
         public bool BuildFocus
         {
-            get => buildFocus;
+            get => _buildFocus;
             set
             {
-                buildFocus = value;
-                icon.Foreground = BuildBrush;
+                _buildFocus = value;
+                _icon.Foreground = BuildBrush;
                 OnPropertyUpdate(nameof(BuildFontWeight));
                 OnPropertyUpdate(nameof(BuildBrush));
                 OnPropertyUpdate("BuildIcon");
@@ -1849,7 +1849,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (buildFocus)
+                if (_buildFocus)
                     return FontWeights.Bold;
                 else
                     return FontWeights.Normal;
@@ -1860,7 +1860,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (buildFocus)
+                if (_buildFocus)
                     return Brushes.Red;
                 else
                     return Brushes.Black;
@@ -1872,7 +1872,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (script.Selected)
+                switch (_script.Selected)
                 {
                     case SelectedState.True:
                         return true;
@@ -1886,16 +1886,16 @@ namespace PEBakery.WPF
                 w?.Dispatcher.Invoke(() =>
                 {
                     w.Model.WorkInProgress = true;
-                    if (script.Mandatory == false && script.Selected != SelectedState.None)
+                    if (_script.Mandatory == false && _script.Selected != SelectedState.None)
                     {
                         if (value)
                         {
-                            script.Selected = SelectedState.True;
+                            _script.Selected = SelectedState.True;
 
                             try
                             {
                                 // Run 'Disable' directive
-                                List<LogInfo> errorLogs = DisableScripts(Root, script);
+                                List<LogInfo> errorLogs = DisableScripts(Root, _script);
                                 w.Logger.SystemWrite(errorLogs);
                             }
                             catch (Exception e)
@@ -1905,10 +1905,10 @@ namespace PEBakery.WPF
                         }
                         else
                         {
-                            script.Selected = SelectedState.False;
+                            _script.Selected = SelectedState.False;
                         }
 
-                        if (script.IsMainScript == false)
+                        if (_script.IsMainScript == false)
                         {
                             if (0 < Children.Count)
                             { // Set child scripts, too -> Top-down propagation
@@ -1947,12 +1947,12 @@ namespace PEBakery.WPF
             if (Parent == null)
                 return;
 
-            if (!script.Mandatory && script.Selected != SelectedState.None)
+            if (!_script.Mandatory && _script.Selected != SelectedState.None)
             {
                 if (value)
-                    script.Selected = SelectedState.True;
+                    _script.Selected = SelectedState.True;
                 else
-                    script.Selected = SelectedState.False;
+                    _script.Selected = SelectedState.False;
             }
 
             OnPropertyUpdate(nameof(Checked));
@@ -1963,22 +1963,22 @@ namespace PEBakery.WPF
         {
             get
             {
-                if (script.Selected == SelectedState.None)
+                if (_script.Selected == SelectedState.None)
                     return Visibility.Collapsed;
                 else
                     return Visibility.Visible;
             }
         }
 
-        public string Text => script.Title;
+        public string Text => _script.Title;
 
-        private Script script;
+        private Script _script;
         public Script Script
         {
-            get => script;
+            get => _script;
             set
             {
-                script = value;
+                _script = value;
                 OnPropertyUpdate(nameof(Script));
                 OnPropertyUpdate(nameof(Checked));
                 OnPropertyUpdate(nameof(CheckBoxVisible));
@@ -1987,27 +1987,26 @@ namespace PEBakery.WPF
             }
         }
 
-        private Control icon;
+        private Control _icon;
         public Control Icon
         {
-            get => icon;
+            get => _icon;
             set
             {
-                icon = value;
+                _icon = value;
                 OnPropertyUpdate(nameof(Icon));
             }
         }
 
-        private ObservableCollection<TreeViewModel> children = new ObservableCollection<TreeViewModel>();
-        public ObservableCollection<TreeViewModel> Children => children;
+        public ObservableCollection<TreeViewModel> Children { get; private set; } = new ObservableCollection<TreeViewModel>();
 
         public void SortChildren()
         {
-            IOrderedEnumerable<TreeViewModel> sorted = children
+            IOrderedEnumerable<TreeViewModel> sorted = Children
                 .OrderBy(x => x.Script.Level)
                 .ThenBy(x => x.Script.Type)
                 .ThenBy(x => x.Script.RealPath);
-            children = new ObservableCollection<TreeViewModel>(sorted);
+            Children = new ObservableCollection<TreeViewModel>(sorted);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

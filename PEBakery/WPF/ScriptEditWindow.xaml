@@ -265,11 +265,13 @@
             <TabItem Header="Attachment">
                 <Grid Margin="10, 10, 10, 10">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition />
                         <ColumnDefinition Width="100"/>
                     </Grid.ColumnDefinitions>
                     
@@ -292,52 +294,39 @@
                             </Button.Content>
                         </Button>
                     -->
-
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Attached Files"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
                     <TreeView x:Name="ScriptAttachTreeView"
-                              Grid.Column="0"
-                              Background="PaleGreen"
+                              Grid.Row="1" Grid.Column="0"
                               FontSize="12"
-                              SelectedItemChanged="ScriptAttachTreeView_SelectedItemChanged"
+                              ItemsSource="{Binding AttachedFiles}"
                               VirtualizingStackPanel.IsVirtualizing="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling">
                         <TreeView.ItemTemplate>
-                            <HierarchicalDataTemplate DataType="{x:Type local:ScriptAttachTreeViewModel}"
+                            <HierarchicalDataTemplate DataType="{x:Type local:AttachedFilesItem}"
                                                       ItemsSource="{Binding Children}">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="20"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition/>
                                         <ColumnDefinition Width="20"/>
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
 
-                                    <CheckBox Grid.Row="0" Grid.Column="0"
-                                          VerticalAlignment="Center"
-                                          Visibility="{Binding CheckBoxVisible}"
-                                          IsChecked="{Binding Checked, Mode=TwoWay}"
-                                          Focusable="False">
-                                    </CheckBox>
                                     <ContentPresenter Content="{Binding Icon}"
-                                                  Grid.Row="0" Grid.Column="1"
-                                                  VerticalAlignment="Center"
-                                                  HorizontalAlignment="Center"
-                                                  Margin="3,2,3,2">
-                                    </ContentPresenter>
-                                    <TextBlock Grid.Row="0" Grid.Column="2"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding Text}">
-                                    </TextBlock>
+                                                      Grid.Row="0" Grid.Column="0"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Center"
+                                                      Margin="3,2,3,2"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Name}"/>
                                 </Grid>
                             </HierarchicalDataTemplate>
                         </TreeView.ItemTemplate>
-                        <TreeView.ItemContainerStyle>
-                            <Style TargetType="TreeViewItem">
-                                <Setter Property="IsExpanded"
-                                    Value="{Binding IsExpanded}" />
-                            </Style>
-                        </TreeView.ItemContainerStyle>
                     </TreeView>
                 </Grid>
             </TabItem>

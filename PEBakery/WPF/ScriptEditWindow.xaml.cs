@@ -97,6 +97,23 @@ namespace PEBakery.WPF
 
             m.ScriptHeaderNotSaved = false;
             m.ScriptHeaderUpdated = false;
+
+            // Attachment
+            m.AttachedFiles.Clear();
+
+            Dictionary<string, List<EncodedFileInfo>> fileDict = EncodedFile.GetAllFilesInfo(_sc);
+            foreach (var kv in fileDict)
+            {
+                string dirName = kv.Key;
+                
+                AttachedFilesItem item = new AttachedFilesItem(true, dirName);
+                foreach (EncodedFileInfo fi in kv.Value)
+                {
+                    AttachedFilesItem child = new AttachedFilesItem(false, fi.FileName);
+                    item.Children.Add(child);
+                }
+                m.AttachedFiles.Add(item);
+            }
         }
         #endregion
 
@@ -346,13 +363,13 @@ namespace PEBakery.WPF
             }
         }
 
-        private EncodedFile.EncodedFileInfo scriptLogoInfo;
-        public EncodedFile.EncodedFileInfo ScriptLogoInfo
+        private EncodedFileInfo _scriptLogoInfo;
+        public EncodedFileInfo ScriptLogoInfo
         {
-            get => scriptLogoInfo;
+            get => _scriptLogoInfo;
             set
             {
-                scriptLogoInfo = value;
+                _scriptLogoInfo = value;
                 OnPropertyUpdate(nameof(ScriptLogoInfoStr));
             }
         }
@@ -374,60 +391,56 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Property - General - Script Main
-        public bool ScriptHeaderNotSaved
-        {
-            get;
-            set;
-        } = false;
+        #region Property - General - Script Header
+        public bool ScriptHeaderNotSaved { get; set; } = false;
         public bool ScriptHeaderUpdated { get; set; } = false;
 
-        private string scriptTitle = string.Empty;
+        private string _scriptTitle = string.Empty;
         public string ScriptTitle
         {
-            get => scriptTitle;
+            get => _scriptTitle;
             set
             {
-                scriptTitle = value;
+                _scriptTitle = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptTitle));
             }
         }
 
-        private string scriptAuthor = string.Empty;
+        private string _scriptAuthor = string.Empty;
         public string ScriptAuthor
         {
-            get => scriptAuthor;
+            get => _scriptAuthor;
             set
             {
-                scriptAuthor = value;
+                _scriptAuthor = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptAuthor));
             }
         }
 
-        private string scriptVersion = "0";
+        private string _scriptVersion = "0";
         public string ScriptVersion
         {
-            get => scriptVersion;
+            get => _scriptVersion;
             set
             {
-                scriptVersion = value;
+                _scriptVersion = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptVersion));
             }
         }
 
-        private string scriptDate = string.Empty;
+        private string _scriptDate = string.Empty;
         public string ScriptDate
         {
-            get => scriptDate;
+            get => _scriptDate;
             set
             {
-                scriptDate = value;
+                _scriptDate = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDate));
@@ -447,26 +460,26 @@ namespace PEBakery.WPF
             }
         }
 
-        private string scriptDescription = string.Empty;
+        private string _scriptDescription = string.Empty;
         public string ScriptDescription
         {
-            get => scriptDescription;
+            get => _scriptDescription;
             set
             {
-                scriptDescription = value;
+                _scriptDescription = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptDescription));
             }
         }
 
-        private SelectedState scriptSelectedState = SelectedState.False;
+        private SelectedState _scriptSelectedState = SelectedState.False;
         public SelectedState ScriptSelectedState
         {
-            get => scriptSelectedState;
+            get => _scriptSelectedState;
             set
             {
-                scriptSelectedState = value;
+                _scriptSelectedState = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptSelected));
@@ -478,7 +491,7 @@ namespace PEBakery.WPF
         {
             get
             {
-                switch (scriptSelectedState)
+                switch (_scriptSelectedState)
                 {
                     case SelectedState.True:
                         return true;
@@ -494,14 +507,14 @@ namespace PEBakery.WPF
                 switch (value)
                 {
                     case true:
-                        scriptSelectedState = SelectedState.True;
+                        _scriptSelectedState = SelectedState.True;
                         break;
                     default:
                     case false:
-                        scriptSelectedState = SelectedState.False;
+                        _scriptSelectedState = SelectedState.False;
                         break;
                     case null:
-                        scriptSelectedState = SelectedState.None;
+                        _scriptSelectedState = SelectedState.None;
                         break;                
                 }
                 ScriptHeaderNotSaved = true;
@@ -509,18 +522,22 @@ namespace PEBakery.WPF
             }
         }
 
-        private bool scriptMandatory = false;
+        private bool _scriptMandatory = false;
         public bool ScriptMandatory
         {
-            get => scriptMandatory;
+            get => _scriptMandatory;
             set
             {
-                scriptMandatory = value;
+                _scriptMandatory = value;
                 ScriptHeaderNotSaved = true;
                 ScriptHeaderUpdated = true;
                 OnPropertyUpdate(nameof(ScriptMandatory));
             }
         }
+        #endregion
+
+        #region Property - Attachment
+        public ObservableCollection<AttachedFilesItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFilesItem>();
         #endregion
 
         #region OnPropertyChnaged
@@ -533,10 +550,64 @@ namespace PEBakery.WPF
     }
     #endregion
 
-    #region ScriptAttachTreeViewModel
+    #region AttachedFilesItem
 
-    public class ScriptAttachTreeViewModel : INotifyPropertyChanged
+    public class AttachedFilesItem : INotifyPropertyChanged
     {
+        #region Constructor
+        public AttachedFilesItem(bool isFolder, string name)
+        {
+            IsFolder = isFolder;
+            Name = name;
+            if (isFolder)
+                Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
+            else
+                Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
+
+            Children = new ObservableCollection<AttachedFilesItem>();
+        }
+        #endregion
+
+        #region Enum
+        #endregion
+
+        #region Property - TreeView
+        private bool _isFolder;
+        public bool IsFolder
+        {
+            get => _isFolder;
+            set
+            {
+                _isFolder = value;
+                OnPropertyUpdate(nameof(IsFolder));
+            }
+        }
+
+        private string _name;
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = value;
+                OnPropertyUpdate(nameof(Name));
+            }
+        }
+
+        public ObservableCollection<AttachedFilesItem> Children { get; private set; }
+
+        private Control _icon;
+        public Control Icon
+        {
+            get => _icon;
+            set
+            {
+                _icon = value;
+                OnPropertyUpdate(nameof(Icon));
+            }
+        }
+        #endregion
+
         #region OnPropertyChnaged
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyUpdate(string propertyName)
