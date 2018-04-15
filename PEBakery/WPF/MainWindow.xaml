@@ -387,7 +387,9 @@
         </Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200"
+                                  MinWidth="100"
+                                  MaxWidth="400"/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0"
@@ -724,8 +726,7 @@
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto"
                               Visibility="{Binding NormalInterfaceVisibility}"
-                              Content="{Binding MainCanvas}">
-                </ScrollViewer>
+                              Content="{Binding MainCanvas}"/>
             </Grid>
         </Grid>
     </DockPanel>

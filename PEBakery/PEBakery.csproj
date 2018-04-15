@@ -177,6 +177,7 @@
     <Compile Include="Helper\FileHelper.cs" />
     <Compile Include="Helper\HashHelper.cs" />
     <Compile Include="Helper\ImageHelper.cs" />
+    <Compile Include="Helper\NativeMethods.cs" />
     <Compile Include="Helper\NumberHelper.cs" />
     <Compile Include="Helper\RegistryHelper.cs" />
     <Compile Include="Helper\StringHelper.cs" />

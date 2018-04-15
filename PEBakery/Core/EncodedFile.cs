@@ -326,14 +326,25 @@ namespace PEBakery.Core
 
             if (!sc.Sections.ContainsKey(dirName))
                 throw new InvalidOperationException($"Directory [{dirName}] does not exist");
-            // Dictionary<string, string> fileDict = sc.Sections[dirName].GetIniDict();
-            Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+
+            Dictionary<string, string> fileDict;
+            switch (sc.Sections[dirName].DataType)
+            {
+                case SectionDataType.IniDict:
+                    fileDict = sc.Sections[dirName].GetIniDict();
+                    break;
+                case SectionDataType.Lines:
+                    fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+                    break;
+                default:
+                    throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+            }
 
             if (!fileDict.ContainsKey(fileName))
                 throw new InvalidOperationException("File index does not exist");
 
             string fileIndex = fileDict[fileName].Trim();
-            (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
+            (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
 
             if (detail)
             {
@@ -367,7 +378,7 @@ namespace PEBakery.Core
                 throw new InvalidOperationException("File index does not exist");
 
             string fileIndex = fileDict[info.FileName].Trim();
-            (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
+            (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
 
             if (detail)
             {
@@ -391,6 +402,20 @@ namespace PEBakery.Core
                 return infoDict;
 
             List<string> dirNames = Ini.FilterLines(sc.Sections[encodedFoldersStr].GetLines());
+            int aeIdx = dirNames.FindIndex(x => x.Equals("AuthorEncoded", StringComparison.OrdinalIgnoreCase));
+            if (aeIdx != -1)
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [AuthorEncoded] should not be listed in [EncodedFolders]"));
+                dirNames.RemoveAt(aeIdx);
+            }
+
+            int ieIdx = dirNames.FindIndex(x => x.Equals("InterfaceEncoded", StringComparison.OrdinalIgnoreCase));
+            if (ieIdx != -1)
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, $"Error at script [{sc.TreePath}]\r\nSection [InterfaceEncoded] should not be listed in [EncodedFolders]"));
+                dirNames.RemoveAt(aeIdx);
+            }
+
             foreach (string dirName in dirNames)
             {
                 if (!infoDict.ContainsKey(dirName))
@@ -408,7 +433,19 @@ namespace PEBakery.Core
                    D2Coding-OFL-License.txt=2102,2803
                    D2Coding-Ver1.2-TTC-20161024.7z=3118244,4157659
                 */
-                Dictionary<string, string> fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+                Dictionary<string, string> fileDict;
+                switch (sc.Sections[dirName].DataType)
+                {
+                    case SectionDataType.IniDict:
+                        fileDict = sc.Sections[dirName].GetIniDict();
+                        break;
+                    case SectionDataType.Lines:
+                        fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+                        break;
+                    default:
+                        throw new InternalException("Internal Logic Error at EncodedFile.GetAllFilesInfo");
+                }
+
                 foreach (var kv in fileDict)
                 {
                     string fileName = kv.Key;
@@ -419,7 +456,7 @@ namespace PEBakery.Core
                         DirName = dirName,
                         FileName = fileName,
                     };
-                    (info.RawSize, info.CompressedSize) = ParseFileIndex(fileIndex);
+                    (info.RawSize, info.EncodedSize) = ParseFileIndex(fileIndex);
 
                     if (detail)
                     {
@@ -434,7 +471,7 @@ namespace PEBakery.Core
             return infoDict;
         }
 
-        private static (int rawSize, int compressedSize) ParseFileIndex(string fileIndex)
+        private static (int rawSize, int encodedSize) ParseFileIndex(string fileIndex)
         {
             Match m = Regex.Match(fileIndex, @"([0-9]+),([0-9]+)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
             if (!m.Success)
@@ -442,10 +479,10 @@ namespace PEBakery.Core
 
             if (!NumberHelper.ParseInt32(m.Groups[1].Value, out int rawSize))
                 throw new InvalidOperationException("File index corrupted");
-            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out int compressedSize))
+            if (!NumberHelper.ParseInt32(m.Groups[2].Value, out int encodedSize))
                 throw new InvalidOperationException("File index corrupted");
 
-            return (rawSize, compressedSize);
+            return (rawSize, encodedSize);
         }
         #endregion
 
@@ -812,16 +849,19 @@ namespace PEBakery.Core
             try
             {
                 // Write folder info to [EncodedFolders]
-                bool writeFolderSection = true;
-                if (sc.Sections.ContainsKey("EncodedFolders"))
-                {
-                    List<string> folders = sc.Sections["EncodedFolders"].GetLines();
-                    if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
-                        writeFolderSection = false;
-                }
+                if (!encodeLogo)
+                { // "AuthorEncoded" and "InterfaceEncoded" should not be listed here
+                    bool writeFolderSection = true;
+                    if (sc.Sections.ContainsKey("EncodedFolders"))
+                    {
+                        List<string> folders = sc.Sections["EncodedFolders"].GetLines();
+                        if (0 < folders.Count(x => x.Equals(dirName, StringComparison.OrdinalIgnoreCase)))
+                            writeFolderSection = false;
+                    }
 
-                if (writeFolderSection)
-                    Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
+                    if (writeFolderSection)
+                        Ini.WriteRawLine(sc.RealPath, "EncodedFolders", dirName, false);
+                }
 
                 // Write file info into [{dirName}]
                 Ini.WriteKey(sc.RealPath, dirName, fileName, $"{inputStream.Length},{encodedLen}"); // UncompressedSize,EncodedSize
@@ -1724,8 +1764,8 @@ namespace PEBakery.Core
         public string DirName;
         public string FileName;
         public int RawSize;
-        public int CompressedSize;
-        public EncodedFile.EncodeMode EncodeMode;
+        public int EncodedSize;
+        public EncodedFile.EncodeMode? EncodeMode;
     }
     #endregion
 }

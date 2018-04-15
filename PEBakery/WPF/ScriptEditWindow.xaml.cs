@@ -52,10 +52,10 @@ namespace PEBakery.WPF
 
                 ReadScript();
             }
-            catch
+            catch (Exception e)
             { // Rollback Count to 0
                 Interlocked.Decrement(ref Count);
-                throw;
+                App.Logger.SystemWrite(new LogInfo(LogState.CriticalError, e));
             }
         }
         #endregion
@@ -109,7 +109,7 @@ namespace PEBakery.WPF
                 AttachedFilesItem item = new AttachedFilesItem(true, dirName);
                 foreach (EncodedFileInfo fi in kv.Value)
                 {
-                    AttachedFilesItem child = new AttachedFilesItem(false, fi.FileName);
+                    AttachedFilesItem child = new AttachedFilesItem(false, fi.FileName, fi);
                     item.Children.Add(child);
                 }
                 m.AttachedFiles.Add(item);
@@ -286,20 +286,46 @@ namespace PEBakery.WPF
         #endregion
 
         #region Event Handler - Attachment
-        private void NewFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void RemoveFolderButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void ScriptAttachTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            
+            if (e.NewValue is AttachedFilesItem item)
+            {
+                m.AttachSelected = item;
+                m.UpdateAttachFileDetail();
+            }
         }
+
+        private void AddFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ExtractFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DeleteFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void AttachFileButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ExtractFileButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void DeleteFileButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        
         #endregion
 
         #region ShortCut Command Handler
@@ -323,7 +349,11 @@ namespace PEBakery.WPF
             e.CanExecute = m.TabIndex == 0;
         }
 
+
+
         #endregion
+
+       
     }
     #endregion
 
@@ -352,13 +382,13 @@ namespace PEBakery.WPF
 
         #region Property - General - Script Logo
         public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
-        private FrameworkElement scriptLogoImage = ScriptLogoImageDefault;
+        private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
         public FrameworkElement ScriptLogoImage
         {
-            get => scriptLogoImage;
+            get => _scriptLogoImage;
             set
             {
-                scriptLogoImage = value;
+                _scriptLogoImage = value;
                 OnPropertyUpdate(nameof(ScriptLogoImage));
             }
         }
@@ -384,7 +414,7 @@ namespace PEBakery.WPF
                 StringBuilder b = new StringBuilder();
                 b.AppendLine($"File : {ScriptLogoInfo.FileName}");
                 b.AppendLine($"Raw Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.RawSize, 1)}");
-                b.AppendLine($"Compressed Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.CompressedSize, 1)}");
+                b.AppendLine($"Compressed Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.EncodedSize, 1)}");
                 b.Append($"Compression : {ScriptLogoInfo.EncodeMode}");
                 return b.ToString();
             }
@@ -538,6 +568,110 @@ namespace PEBakery.WPF
 
         #region Property - Attachment
         public ObservableCollection<AttachedFilesItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFilesItem>();
+
+        public AttachedFilesItem AttachSelected;
+
+        public Visibility AttachDetailFileVisiblity
+        {
+            get
+            {
+                if (AttachSelected == null)
+                    return Visibility.Collapsed;
+                if (AttachSelected.IsFolder)
+                    return Visibility.Collapsed;
+                return Visibility.Visible;
+            }
+        }
+
+        public Visibility AttachDetailFolderVisiblity
+        {
+            get
+            {
+                if (AttachSelected == null)
+                    return Visibility.Collapsed;
+                if (AttachSelected.IsFolder)
+                    return Visibility.Visible;
+                return Visibility.Collapsed;
+            }
+        }
+
+        public Visibility AttachDetailNoneVisiblity => AttachSelected == null ? Visibility.Visible : Visibility.Collapsed;
+
+        private bool _attachFileDeepInspect;
+        public bool AttachFileDeepInspect
+        {
+            get => _attachFileDeepInspect;
+            set
+            {
+                _attachFileDeepInspect = value;
+                OnPropertyUpdate(nameof(AttachFileDeepInspect));
+            }
+        }
+
+        public string AttachFileName
+        {
+            get
+            {
+                if (AttachSelected == null || AttachSelected.IsFolder)
+                    return string.Empty; // Empty value
+                return AttachSelected.Name;
+            }
+        }
+
+        public string AttachFileRawSize
+        {
+            get
+            {
+                if (AttachSelected == null || AttachSelected.IsFolder)
+                    return string.Empty; // Invalid value
+                Debug.Assert(AttachSelected.Detail != null);
+
+                string str = NumberHelper.ByteSizeToHumanReadableString(AttachSelected.Detail.RawSize, 1);
+                return $"{str} ({AttachSelected.Detail.RawSize})";
+            }
+        }
+
+        public string AttachFileEncodedSize
+        {
+            get
+            {
+                if (AttachSelected == null || AttachSelected.IsFolder)
+                    return string.Empty; // Invalid value
+                Debug.Assert(AttachSelected.Detail != null);
+
+                string str = NumberHelper.ByteSizeToHumanReadableString(AttachSelected.Detail.EncodedSize, 1);
+                return $"{str} ({AttachSelected.Detail.EncodedSize})";
+            }
+        }
+
+        public string AttachFileCompression
+        {
+            get
+            {
+                if (AttachSelected == null || AttachSelected.IsFolder)
+                    return string.Empty; // Empty value
+                Debug.Assert(AttachSelected.Detail != null);
+
+                return AttachFileDeepInspect 
+                    ? AttachSelected.Detail.EncodeMode.ToString() 
+                    : "-";
+            }
+        }
+        #endregion
+
+        #region UpdateAttachFileDetail
+
+        public void UpdateAttachFileDetail()
+        {
+            OnPropertyUpdate(nameof(AttachFileDeepInspect));
+            OnPropertyUpdate(nameof(AttachFileName));
+            OnPropertyUpdate(nameof(AttachFileRawSize));
+            OnPropertyUpdate(nameof(AttachFileEncodedSize));
+            OnPropertyUpdate(nameof(AttachFileCompression));
+            OnPropertyUpdate(nameof(AttachDetailFileVisiblity));
+            OnPropertyUpdate(nameof(AttachDetailFolderVisiblity));
+            OnPropertyUpdate(nameof(AttachDetailNoneVisiblity));
+        }
         #endregion
 
         #region OnPropertyChnaged
@@ -551,24 +685,23 @@ namespace PEBakery.WPF
     #endregion
 
     #region AttachedFilesItem
-
     public class AttachedFilesItem : INotifyPropertyChanged
     {
         #region Constructor
-        public AttachedFilesItem(bool isFolder, string name)
+        public AttachedFilesItem(bool isFolder, string name, EncodedFileInfo detail = null)
         {
+            if (!isFolder && detail == null) // If file, info must not be null
+                throw new ArgumentException($"File's [{nameof(detail)}] must not be null");
+            if (isFolder && detail != null) // If folder, info must be null
+                throw new ArgumentException($"Folder's [{nameof(detail)}] must be null");
+
             IsFolder = isFolder;
             Name = name;
-            if (isFolder)
-                Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.Folder, 0);
-            else
-                Icon = ImageHelper.GetMaterialIcon(PackIconMaterialKind.File, 0);
+            Detail = detail;
+            Icon = ImageHelper.GetMaterialIcon(isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File, 0);
 
             Children = new ObservableCollection<AttachedFilesItem>();
         }
-        #endregion
-
-        #region Enum
         #endregion
 
         #region Property - TreeView
@@ -593,6 +726,9 @@ namespace PEBakery.WPF
                 OnPropertyUpdate(nameof(Name));
             }
         }
+
+        // null if folder
+        public EncodedFileInfo Detail;
 
         public ObservableCollection<AttachedFilesItem> Children { get; private set; }
 
