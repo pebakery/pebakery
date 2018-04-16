@@ -394,7 +394,6 @@ namespace PEBakery.Core
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
-            // List<EncodedFileInfo> infos = new List<EncodedFileInfo>();
             Dictionary<string, List<EncodedFileInfo>> infoDict = new Dictionary<string, List<EncodedFileInfo>>(StringComparer.OrdinalIgnoreCase);
 
             const string encodedFoldersStr = "EncodedFolders";

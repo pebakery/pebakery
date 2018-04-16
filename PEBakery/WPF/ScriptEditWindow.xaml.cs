@@ -50,7 +50,8 @@ namespace PEBakery.WPF
                 InitializeComponent();
                 DataContext = m = new ScriptEditViewModel();
 
-                ReadScript();
+                ReadScriptGeneral();
+                ReadScriptAttachment();
             }
             catch (Exception e)
             { // Rollback Count to 0
@@ -61,7 +62,7 @@ namespace PEBakery.WPF
         #endregion
 
         #region ReadScript
-        private void ReadScript()
+        private void ReadScriptGeneral()
         {
             // Nested Function
             string GetStringValue(string key, string defaultValue = "") => _sc.MainInfo.ContainsKey(key) ? _sc.MainInfo[key] : defaultValue;
@@ -97,15 +98,18 @@ namespace PEBakery.WPF
 
             m.ScriptHeaderNotSaved = false;
             m.ScriptHeaderUpdated = false;
+        }
 
+        private void ReadScriptAttachment()
+        {
             // Attachment
             m.AttachedFiles.Clear();
 
-            Dictionary<string, List<EncodedFileInfo>> fileDict = EncodedFile.GetAllFilesInfo(_sc);
+            Dictionary<string, List<EncodedFileInfo>> fileDict = EncodedFile.GetAllFilesInfo(_sc, ScriptEditViewModel.DeepInspectAttachedFile);
             foreach (var kv in fileDict)
             {
                 string dirName = kv.Key;
-                
+
                 AttachedFilesItem item = new AttachedFilesItem(true, dirName);
                 foreach (EncodedFileInfo fi in kv.Value)
                 {
@@ -211,7 +215,7 @@ namespace PEBakery.WPF
                     string srcFileName = System.IO.Path.GetFileName(srcFile);
                     _sc = EncodedFile.AttachLogo(_sc, "AuthorEncoded", srcFileName, srcFile);
                     MessageBox.Show("Logo successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    ReadScript();
+                    ReadScriptGeneral();
                 }
                 catch (Exception ex)
                 {
@@ -270,7 +274,7 @@ namespace PEBakery.WPF
                 if (errorMsg == null)
                 {
                     MessageBox.Show("Logo successfully deleted.", "Delete Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    ReadScript();
+                    ReadScriptGeneral();
                 }
                 else
                 {
@@ -307,7 +311,24 @@ namespace PEBakery.WPF
 
         private void DeleteFolderButton_Click(object sender, RoutedEventArgs e)
         {
+            if (m.AttachSelected == null)
+                return;
 
+            Debug.Assert(m.AttachSelected.Detail == null);
+
+            _sc = EncodedFile.DeleteFolder(_sc, m.AttachSelected.Name, out string errMsg);
+            if (errMsg == null)
+            {
+                ReadScriptAttachment();
+
+                m.AttachSelected = null;
+                m.UpdateAttachFileDetail();
+            }
+            else // Failure
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void AttachFileButton_Click(object sender, RoutedEventArgs e)
@@ -322,10 +343,26 @@ namespace PEBakery.WPF
 
         private void DeleteFileButton_Click(object sender, RoutedEventArgs e)
         {
+            if (m.AttachSelected == null)
+                return;
 
+            Debug.Assert(m.AttachSelected.Detail != null);
+
+            EncodedFileInfo info = m.AttachSelected.Detail;
+            _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
+            if (errMsg == null)
+            {
+                ReadScriptAttachment();
+
+                m.AttachSelected = null;
+                m.UpdateAttachFileDetail();
+            }
+            else // Failure
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
-
-        
         #endregion
 
         #region ShortCut Command Handler
@@ -352,8 +389,6 @@ namespace PEBakery.WPF
 
 
         #endregion
-
-       
     }
     #endregion
 
@@ -376,47 +411,6 @@ namespace PEBakery.WPF
             {
                 _tabIndex = value;
                 OnPropertyUpdate(nameof(TabIndex));
-            }
-        }
-        #endregion
-
-        #region Property - General - Script Logo
-        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
-        private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
-        public FrameworkElement ScriptLogoImage
-        {
-            get => _scriptLogoImage;
-            set
-            {
-                _scriptLogoImage = value;
-                OnPropertyUpdate(nameof(ScriptLogoImage));
-            }
-        }
-
-        private EncodedFileInfo _scriptLogoInfo;
-        public EncodedFileInfo ScriptLogoInfo
-        {
-            get => _scriptLogoInfo;
-            set
-            {
-                _scriptLogoInfo = value;
-                OnPropertyUpdate(nameof(ScriptLogoInfoStr));
-            }
-        }
-
-        public string ScriptLogoInfoStr
-        {
-            get
-            {
-                if (ScriptLogoInfo == null)
-                    return "Logo not found";
-
-                StringBuilder b = new StringBuilder();
-                b.AppendLine($"File : {ScriptLogoInfo.FileName}");
-                b.AppendLine($"Raw Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.RawSize, 1)}");
-                b.AppendLine($"Compressed Size : {NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.EncodedSize, 1)}");
-                b.Append($"Compression : {ScriptLogoInfo.EncodeMode}");
-                return b.ToString();
             }
         }
         #endregion
@@ -566,7 +560,77 @@ namespace PEBakery.WPF
         }
         #endregion
 
+        #region Property - General - Script Logo
+        public static readonly PackIconMaterial ScriptLogoImageDefault = ImageHelper.GetMaterialIcon(PackIconMaterialKind.BorderNone);
+        private FrameworkElement _scriptLogoImage = ScriptLogoImageDefault;
+        public FrameworkElement ScriptLogoImage
+        {
+            get => _scriptLogoImage;
+            set
+            {
+                _scriptLogoImage = value;
+                OnPropertyUpdate(nameof(ScriptLogoImage));
+            }
+        }
+
+        private EncodedFileInfo _scriptLogoInfo;
+        public EncodedFileInfo ScriptLogoInfo
+        {
+            get => _scriptLogoInfo;
+            set
+            {
+                _scriptLogoInfo = value;
+                OnPropertyUpdate(nameof(ScriptLogoName));
+                OnPropertyUpdate(nameof(ScriptLogoRawSize));
+                OnPropertyUpdate(nameof(ScriptLogoEncodedSize));
+                OnPropertyUpdate(nameof(ScriptLogoCompression));
+                OnPropertyUpdate(nameof(ScriptLogoInfoVisibility));
+            }
+        }
+
+        public Visibility ScriptLogoInfoVisibility => ScriptLogoInfo == null ? Visibility.Collapsed : Visibility.Visible;
+
+        public string ScriptLogoName => ScriptLogoInfo == null ? string.Empty : ScriptLogoInfo.FileName;
+
+        public string ScriptLogoRawSize
+        {
+            get
+            {
+                if (ScriptLogoInfo == null)
+                    return string.Empty; // Invalid value
+
+                string str = NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.RawSize, 1);
+                return $"{str} ({ScriptLogoInfo.RawSize})";
+            }
+        }
+
+        public string ScriptLogoEncodedSize
+        {
+            get
+            {
+                if (ScriptLogoInfo == null)
+                    return string.Empty; // Invalid value
+
+                string str = NumberHelper.ByteSizeToHumanReadableString(ScriptLogoInfo.EncodedSize, 1);
+                return $"{str} ({ScriptLogoInfo.EncodedSize})";
+            }
+        }
+
+        public string ScriptLogoCompression
+        {
+            get
+            {
+                if (ScriptLogoInfo == null)
+                    return string.Empty; // Empty value
+
+                return ScriptLogoInfo.EncodeMode == null ? string.Empty : ScriptLogoInfo.EncodeMode.ToString();
+            }
+        }
+        #endregion
+
         #region Property - Attachment
+        public static bool DeepInspectAttachedFile = false;
+
         public ObservableCollection<AttachedFilesItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFilesItem>();
 
         public AttachedFilesItem AttachSelected;
@@ -596,17 +660,6 @@ namespace PEBakery.WPF
         }
 
         public Visibility AttachDetailNoneVisiblity => AttachSelected == null ? Visibility.Visible : Visibility.Collapsed;
-
-        private bool _attachFileDeepInspect;
-        public bool AttachFileDeepInspect
-        {
-            get => _attachFileDeepInspect;
-            set
-            {
-                _attachFileDeepInspect = value;
-                OnPropertyUpdate(nameof(AttachFileDeepInspect));
-            }
-        }
 
         public string AttachFileName
         {
@@ -652,9 +705,7 @@ namespace PEBakery.WPF
                     return string.Empty; // Empty value
                 Debug.Assert(AttachSelected.Detail != null);
 
-                return AttachFileDeepInspect 
-                    ? AttachSelected.Detail.EncodeMode.ToString() 
-                    : "-";
+                return AttachSelected.Detail.EncodeMode == null ? "-" : AttachSelected.Detail.EncodeMode.ToString();
             }
         }
         #endregion
@@ -663,7 +714,6 @@ namespace PEBakery.WPF
 
         public void UpdateAttachFileDetail()
         {
-            OnPropertyUpdate(nameof(AttachFileDeepInspect));
             OnPropertyUpdate(nameof(AttachFileName));
             OnPropertyUpdate(nameof(AttachFileRawSize));
             OnPropertyUpdate(nameof(AttachFileEncodedSize));

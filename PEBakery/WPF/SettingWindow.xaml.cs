@@ -562,36 +562,47 @@ namespace PEBakery.WPF
         #endregion
 
         #region Property - Script
-        private string script_CacheState;
+        private string _scriptCacheState;
         public string Script_CacheState
         {
-            get => script_CacheState;
+            get => _scriptCacheState;
             set
             {
-                script_CacheState = value;
+                _scriptCacheState = value;
                 OnPropertyUpdate(nameof(Script_CacheState));
             }
         }
 
-        private bool script_EnableCache;
+        private bool _scriptEnableCache;
         public bool Script_EnableCache
         {
-            get => script_EnableCache;
+            get => _scriptEnableCache;
             set
             {
-                script_EnableCache = value;
+                _scriptEnableCache = value;
                 OnPropertyUpdate(nameof(Script_EnableCache));
             }
         }
 
-        private bool script_AutoSyntaxCheck;
+        private bool _scriptAutoSyntaxCheck;
         public bool Script_AutoSyntaxCheck
         {
-            get => script_AutoSyntaxCheck;
+            get => _scriptAutoSyntaxCheck;
             set
             {
-                script_AutoSyntaxCheck = value;
+                _scriptAutoSyntaxCheck = value;
                 OnPropertyUpdate(nameof(Script_AutoSyntaxCheck));
+            }
+        }
+
+        private bool _scriptDeepInspectAttachedFile;
+        public bool Script_DeepInspectAttachedFile
+        {
+            get => _scriptDeepInspectAttachedFile;
+            set
+            {
+                _scriptDeepInspectAttachedFile = value;
+                OnPropertyUpdate(nameof(Script_DeepInspectAttachedFile));
             }
         }
         #endregion
@@ -815,17 +826,18 @@ namespace PEBakery.WPF
         #region ApplySetting
         public void ApplySetting()
         {
-            CodeParser.OptimizeCode = this.General_OptimizeCode;
-            Engine.StopBuildOnError = this.General_StopBuildOnError;
-            Logger.DebugLevel = this.Log_DebugLevel;
-            MainViewModel.DisplayShellExecuteConOut = this.Interface_DisplayShellExecuteConOut;
-            ProjectCollection.AsteriskBugDirLink = this.Compat_AsteriskBugDirLink;
-            CodeParser.AllowLegacyBranchCondition = this.Compat_LegacyBranchCondition;
-            CodeParser.AllowRegWriteLegacy = this.Compat_RegWriteLegacy;
-            UIRenderer.IgnoreWidthOfWebLabel = this.Compat_IgnoreWidthOfWebLabel;
-            UIRenderer.DisableBevelCaption = this.Compat_DisableBevelCaption;
-            Variables.OverridableFixedVariables = this.Compat_OverridableFixedVariables;
-            Variables.EnableEnvironmentVariables = this.Compat_EnableEnvironmentVariables;
+            CodeParser.OptimizeCode = General_OptimizeCode;
+            Engine.StopBuildOnError = General_StopBuildOnError;
+            Logger.DebugLevel = Log_DebugLevel;
+            MainViewModel.DisplayShellExecuteConOut = Interface_DisplayShellExecuteConOut;
+            ProjectCollection.AsteriskBugDirLink = Compat_AsteriskBugDirLink;
+            CodeParser.AllowLegacyBranchCondition = Compat_LegacyBranchCondition;
+            CodeParser.AllowRegWriteLegacy = Compat_RegWriteLegacy;
+            UIRenderer.IgnoreWidthOfWebLabel = Compat_IgnoreWidthOfWebLabel;
+            UIRenderer.DisableBevelCaption = Compat_DisableBevelCaption;
+            Variables.OverridableFixedVariables = Compat_OverridableFixedVariables;
+            Variables.EnableEnvironmentVariables = Compat_EnableEnvironmentVariables;
+            ScriptEditViewModel.DeepInspectAttachedFile = Script_DeepInspectAttachedFile;
         }
         #endregion
 
@@ -864,6 +876,7 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = true;
             Script_AutoSyntaxCheck = true;
+            Script_DeepInspectAttachedFile = false;
 
             // Log
 #if DEBUG
@@ -923,6 +936,7 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr)), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr)), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr)), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr)), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr)), // Boolean
@@ -937,8 +951,8 @@ namespace PEBakery.WPF
                 new IniKey(compatStr, KeyPart(nameof(Compat_DisableBevelCaption), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_OverridableFixedVariables), compatStr)), // Boolean
                 new IniKey(compatStr, KeyPart(nameof(Compat_EnableEnvironmentVariables), compatStr)), // Boolean
-            }; 
-
+            };
+            
             keys = Ini.ReadKeys(_settingFile, keys);
             Dictionary<string, string> dict = keys.ToDictionary(x => $"{x.Section}_{x.Key}", x => x.Value);
 
@@ -1027,6 +1041,7 @@ namespace PEBakery.WPF
             // Script
             Script_EnableCache = ParseBoolean(nameof(Script_EnableCache), Script_EnableCache);
             Script_AutoSyntaxCheck = ParseBoolean(nameof(Script_AutoSyntaxCheck), Script_AutoSyntaxCheck);
+            Script_DeepInspectAttachedFile = ParseBoolean(nameof(Script_DeepInspectAttachedFile), Script_DeepInspectAttachedFile);
 
             // Log
             Log_DebugLevelIndex = ParseInteger(nameof(Log_DebugLevel), Log_DebugLevelIndex, 0, 2);
@@ -1072,6 +1087,7 @@ namespace PEBakery.WPF
                 new IniKey(interfaceStr, KeyPart(nameof(Interface_DisplayShellExecuteConOut), interfaceStr), Interface_DisplayShellExecuteConOut.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_EnableCache), scriptStr), Script_EnableCache.ToString()), // Boolean
                 new IniKey(scriptStr, KeyPart(nameof(Script_AutoSyntaxCheck), scriptStr), Script_AutoSyntaxCheck.ToString()), // Boolean
+                new IniKey(scriptStr, KeyPart(nameof(Script_DeepInspectAttachedFile), scriptStr), Script_DeepInspectAttachedFile.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_DebugLevel), logStr), Log_DebugLevelIndex.ToString()), // Integer
                 new IniKey(logStr, KeyPart(nameof(Log_Macro), logStr), Log_Macro.ToString()), // Boolean
                 new IniKey(logStr, KeyPart(nameof(Log_Comment), logStr), Log_Comment.ToString()), // Boolean
