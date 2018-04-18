@@ -281,7 +281,7 @@ namespace PEBakery.Core
             {
                 List<UIControl> uiCtrls = null;
                 try { uiCtrls = sc.Sections[ifaceSecName].GetUICtrls(true); }
-                catch { } // No [Interface] section, or unable to get List<UIControl>
+                catch { /* No [Interface] section, or unable to get List<UIControl */ }
 
                 if (uiCtrls != null)
                 {
@@ -347,7 +347,7 @@ namespace PEBakery.Core
              * Set,%C%,%A% -> Wrong
              */
 
-            string str = value;
+                    string str = value;
             while (true)
             {
                 if (str.IndexOf($"%{key}%", StringComparison.OrdinalIgnoreCase) != -1) // Found circular reference

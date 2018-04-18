@@ -1058,8 +1058,6 @@ namespace PEBakery.IniLib
                     // Is Original File Empty?
                     if (r.Peek() == -1)
                     {
-                        r.Close();
-
                         // Write all and exit
                         for (int i = 0; i < sectionList.Count; i++)
                         {
@@ -1068,7 +1066,6 @@ namespace PEBakery.IniLib
                             w.WriteLine($"[{sectionList[i]}]");
                         }
 
-                        w.Close();
                         IniHelper.FileReplaceEx(tempPath, file);
                         return true;
                     }

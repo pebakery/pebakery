@@ -20,7 +20,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using MahApps.Metro.IconPacks;
 using Microsoft.Win32;
+using Ookii.Dialogs.Wpf;
 using PEBakery.Core;
+using PEBakery.Exceptions;
 using PEBakery.Helper;
 using PEBakery.IniLib;
 using PEBakery.WPF.Controls;
@@ -110,10 +112,10 @@ namespace PEBakery.WPF
             {
                 string dirName = kv.Key;
 
-                AttachedFilesItem item = new AttachedFilesItem(true, dirName);
+                AttachedFileItem item = new AttachedFileItem(true, dirName);
                 foreach (EncodedFileInfo fi in kv.Value)
                 {
-                    AttachedFilesItem child = new AttachedFilesItem(false, fi.FileName, fi);
+                    AttachedFileItem child = new AttachedFileItem(false, fi.FileName, fi);
                     item.Children.Add(child);
                 }
                 m.AttachedFiles.Add(item);
@@ -198,7 +200,7 @@ namespace PEBakery.WPF
         }
         #endregion
 
-        #region Button Event - General
+        #region Button Event - Logo
         private void ScriptLogoAttachButton_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
@@ -213,7 +215,7 @@ namespace PEBakery.WPF
                 try
                 { 
                     string srcFileName = System.IO.Path.GetFileName(srcFile);
-                    _sc = EncodedFile.AttachLogo(_sc, "AuthorEncoded", srcFileName, srcFile);
+                    _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
                     MessageBox.Show("Logo successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     ReadScriptGeneral();
                 }
@@ -292,31 +294,120 @@ namespace PEBakery.WPF
         #region Event Handler - Attachment
         private void ScriptAttachTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (e.NewValue is AttachedFilesItem item)
+            if (e.NewValue is AttachedFileItem item)
             {
                 m.AttachSelected = item;
                 m.UpdateAttachFileDetail();
             }
         }
 
+        #region Buttons for Folder
         private void AddFolderButton_Click(object sender, RoutedEventArgs e)
         {
+            string folderName = m.AddFolderName;
 
+            if (EncodedFile.ContainsFolder(_sc, folderName))
+            {
+                MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _sc = EncodedFile.AddFolder(_sc, folderName);
+
+            ReadScriptAttachment();
+
+            m.AttachSelected = null;
+            m.UpdateAttachFileDetail();
         }
 
         private void ExtractFolderButton_Click(object sender, RoutedEventArgs e)
         {
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
+                return;
 
+            Debug.Assert(item.Detail == null);
+
+            VistaFolderBrowserDialog dialog = new VistaFolderBrowserDialog
+            {
+                SelectedPath = App.BaseDir,
+                Description = "Select Destination",
+            };
+
+            if (dialog.ShowDialog(this) == true)
+            {
+                string destDir = dialog.SelectedPath;
+
+                List<EncodedFileInfo> fileInfos = EncodedFile.GetFolderInfo(_sc, item.Name, false);
+
+                StringBuilder b = new StringBuilder();
+                bool fileOverwrited = false;
+                for (int i = 0; i < fileInfos.Count; i++)
+                {
+                    EncodedFileInfo info = fileInfos[i];
+
+                    string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                    if (File.Exists(destFile))
+                    {
+                        fileOverwrited = true;
+
+                        b.Append(destFile);
+                        if (i + 1 < fileInfos.Count)
+                            b.Append(", ");
+                    }
+                }
+
+                bool proceedExtract = false;
+                if (fileOverwrited)
+                {
+                    MessageBoxResult owResult = MessageBox.Show($"File [{b}] would be overwrited.\r\nProceed with overwrite?",
+                                                                "Overwrite?",
+                                                                MessageBoxButton.YesNo,
+                                                                MessageBoxImage.Information);
+
+                    if (owResult == MessageBoxResult.Yes)
+                        proceedExtract = true;
+                    else if (owResult != MessageBoxResult.No)
+                        throw new InternalException("Internal Logic Error at ScriptEditWindow.ExtractFileButton_Click");
+                }
+                else
+                {
+                    proceedExtract = true;
+                }
+
+                if (!proceedExtract)
+                    return;
+
+                foreach (EncodedFileInfo info in fileInfos)
+                {
+                    try
+                    {
+                        string destFile = System.IO.Path.Combine(destDir, info.FileName);
+                        using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
+                        {
+                            EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
+                        }
+
+                        MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                        MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
         }
 
         private void DeleteFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            if (m.AttachSelected == null)
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
                 return;
 
-            Debug.Assert(m.AttachSelected.Detail == null);
+            Debug.Assert(item.Detail == null);
 
-            _sc = EncodedFile.DeleteFolder(_sc, m.AttachSelected.Name, out string errMsg);
+            _sc = EncodedFile.DeleteFolder(_sc, item.Name, out string errMsg);
             if (errMsg == null)
             {
                 ReadScriptAttachment();
@@ -330,39 +421,118 @@ namespace PEBakery.WPF
                 MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+        
         private void AttachFileButton_Click(object sender, RoutedEventArgs e)
         {
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
+                return;
 
+            Debug.Assert(item.Detail == null);
+
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                InitialDirectory = App.BaseDir,
+                Filter = "All Files|*.*",
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string srcFile = dialog.FileName;
+                try
+                {
+                    string srcFileName = System.IO.Path.GetFileName(srcFile);
+                    _sc = EncodedFile.AttachFile(_sc, item.Name, srcFileName, srcFile);
+                    MessageBox.Show("File successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    ReadScriptAttachment();
+                    m.AttachSelected = null;
+                    m.UpdateAttachFileDetail();
+                }
+                catch (Exception ex)
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show("Attach failed.\r\nSee system log for details.", "Attach Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
+        #endregion
 
+        #region Buttons for File
         private void ExtractFileButton_Click(object sender, RoutedEventArgs e)
         {
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
+                return;
 
+            Debug.Assert(item.Detail != null);
+
+            EncodedFileInfo info = item.Detail;
+
+            string ext = System.IO.Path.GetExtension(info.FileName);
+            SaveFileDialog dialog = new SaveFileDialog
+            {
+                InitialDirectory = App.BaseDir,
+                OverwritePrompt = true,
+                Filter = $"{ext} file|*{ext}"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string destPath = dialog.FileName;
+                try
+                {
+                    using (FileStream fs = new FileStream(destPath, FileMode.Create, FileAccess.Write))
+                    {
+                        EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
+                    }
+
+                    MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                    MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void DeleteFileButton_Click(object sender, RoutedEventArgs e)
         {
-            if (m.AttachSelected == null)
+            AttachedFileItem item = m.AttachSelected;
+            if (item == null)
                 return;
 
-            Debug.Assert(m.AttachSelected.Detail != null);
+            Debug.Assert(item.Detail != null);
+            EncodedFileInfo info = item.Detail;
 
-            EncodedFileInfo info = m.AttachSelected.Detail;
-            _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
-            if (errMsg == null)
+            MessageBoxResult result = MessageBox.Show(
+                $"Are you sure to delete [{info.DirName}\\{info.FileName}]?",
+                "Delete Confirm",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
             {
-                ReadScriptAttachment();
+                _sc = EncodedFile.DeleteFile(_sc, info.DirName, info.FileName, out string errMsg);
+                if (errMsg == null)
+                {
+                    ReadScriptAttachment();
 
-                m.AttachSelected = null;
-                m.UpdateAttachFileDetail();
+                    m.AttachSelected = null;
+                    m.UpdateAttachFileDetail();
+                }
+                else // Failure
+                {
+                    App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
+                    MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-            else // Failure
+            else if (result != MessageBoxResult.No)
             {
-                App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw new InternalException("Internal Logic Error at ScriptEditWindow.DeleteFileButton_Click");
             }
         }
+        #endregion
         #endregion
 
         #region ShortCut Command Handler
@@ -385,9 +555,6 @@ namespace PEBakery.WPF
             // Only in Tab [General]
             e.CanExecute = m.TabIndex == 0;
         }
-
-
-
         #endregion
     }
     #endregion
@@ -631,9 +798,9 @@ namespace PEBakery.WPF
         #region Property - Attachment
         public static bool DeepInspectAttachedFile = false;
 
-        public ObservableCollection<AttachedFilesItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFilesItem>();
+        public ObservableCollection<AttachedFileItem> AttachedFiles { get; private set; } = new ObservableCollection<AttachedFileItem>();
 
-        public AttachedFilesItem AttachSelected;
+        public AttachedFileItem AttachSelected;
 
         public Visibility AttachDetailFileVisiblity
         {
@@ -659,7 +826,28 @@ namespace PEBakery.WPF
             }
         }
 
-        public Visibility AttachDetailNoneVisiblity => AttachSelected == null ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility AttachAddFolderVisiblity
+        {
+            get
+            {
+                if (AttachSelected == null)
+                    return Visibility.Visible;
+                if (AttachSelected.IsFolder)
+                    return Visibility.Visible;
+                return Visibility.Collapsed;
+            }
+        }
+
+        private string _addFolderName = string.Empty;
+        public string AddFolderName
+        {
+            get => _addFolderName;
+            set
+            {
+                _addFolderName = value;
+                OnPropertyUpdate(nameof(AddFolderName));
+            }
+        }
 
         public string AttachFileName
         {
@@ -720,7 +908,7 @@ namespace PEBakery.WPF
             OnPropertyUpdate(nameof(AttachFileCompression));
             OnPropertyUpdate(nameof(AttachDetailFileVisiblity));
             OnPropertyUpdate(nameof(AttachDetailFolderVisiblity));
-            OnPropertyUpdate(nameof(AttachDetailNoneVisiblity));
+            OnPropertyUpdate(nameof(AttachAddFolderVisiblity));
         }
         #endregion
 
@@ -735,10 +923,10 @@ namespace PEBakery.WPF
     #endregion
 
     #region AttachedFilesItem
-    public class AttachedFilesItem : INotifyPropertyChanged
+    public class AttachedFileItem : INotifyPropertyChanged
     {
         #region Constructor
-        public AttachedFilesItem(bool isFolder, string name, EncodedFileInfo detail = null)
+        public AttachedFileItem(bool isFolder, string name, EncodedFileInfo detail = null)
         {
             if (!isFolder && detail == null) // If file, info must not be null
                 throw new ArgumentException($"File's [{nameof(detail)}] must not be null");
@@ -750,7 +938,7 @@ namespace PEBakery.WPF
             Detail = detail;
             Icon = ImageHelper.GetMaterialIcon(isFolder ? PackIconMaterialKind.Folder : PackIconMaterialKind.File, 0);
 
-            Children = new ObservableCollection<AttachedFilesItem>();
+            Children = new ObservableCollection<AttachedFileItem>();
         }
         #endregion
 
@@ -780,7 +968,7 @@ namespace PEBakery.WPF
         // null if folder
         public EncodedFileInfo Detail;
 
-        public ObservableCollection<AttachedFilesItem> Children { get; private set; }
+        public ObservableCollection<AttachedFileItem> Children { get; private set; }
 
         private Control _icon;
         public Control Icon

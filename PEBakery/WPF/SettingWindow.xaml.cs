@@ -136,8 +136,7 @@ namespace PEBakery.WPF
                     }
                 }
 
-                // Project project = Model.Projects[Model.Project_SelectedIndex];
-                if (exist == false) // Add to list
+                if (!exist) // Add to list
                 {
                     ObservableCollection<string> newSourceDirList = new ObservableCollection<string>
                     {

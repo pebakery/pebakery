@@ -42,7 +42,7 @@ namespace PEBakery.Core
     public static class StringEscaper
     {
         #region Static Variables and Constructor
-        private static readonly List<string> forbiddenPaths = new List<string>
+        private static readonly List<string> ForbiddenPaths = new List<string>
         {
             Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), 
@@ -57,21 +57,14 @@ namespace PEBakery.Core
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
-            bool containsInvalidChars = false;
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            foreach (char ch in invalidChars)
+            if (!IsPathValid(path))
             {
-                if (path.IndexOf(ch) != -1)
-                    containsInvalidChars = true;
+                errorMsg = $"[{path}] contains invalid character";
+                return false;
             }
 
-            string fullPath;
-            if (containsInvalidChars)
-                fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
-            else
-                fullPath = Path.GetFullPath(path);
-
-            foreach (string f in forbiddenPaths)
+            string fullPath = Path.GetFullPath(path);
+            foreach (string f in ForbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
                 {
@@ -80,6 +73,32 @@ namespace PEBakery.Core
                 }
             }
             errorMsg = string.Empty;
+            return true;
+        }
+        #endregion
+
+        #region IsPathValid
+        public static bool IsPathValid(string path, IEnumerable<char> more = null)
+        {
+            // Windows Reserved Characters
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+
+            foreach (char ch in path)
+            {
+                if (invalidChars.Contains(ch))
+                    return false;
+            }
+
+            if (more != null)
+            {
+                foreach (char ch in path)
+                {
+                    if (more.Contains(ch))
+                        return false;
+                }
+            }
+            
             return true;
         }
         #endregion
