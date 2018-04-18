@@ -57,13 +57,20 @@ namespace PEBakery.Core
         /// <returns>Return false if path is forbidden</returns>
         public static bool PathSecurityCheck(string path, out string errorMsg)
         {
-            if (!IsPathValid(path))
+            bool containsInvalidChars = false;
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            foreach (char ch in invalidChars)
             {
-                errorMsg = $"[{path}] contains invalid character";
-                return false;
+                if (path.IndexOf(ch) != -1)
+                    containsInvalidChars = true;
             }
 
-            string fullPath = Path.GetFullPath(path);
+            string fullPath;
+            if (containsInvalidChars)
+                fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
+            else
+                fullPath = Path.GetFullPath(path);
+
             foreach (string f in ForbiddenPaths)
             {
                 if (fullPath.StartsWith(f, StringComparison.OrdinalIgnoreCase))
@@ -82,12 +89,17 @@ namespace PEBakery.Core
         {
             // Windows Reserved Characters
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-            char[] invalidChars = Path.GetInvalidFileNameChars();
+            // Exclude backslash, because this function will receive 
+            char[] invalidChars = Path.GetInvalidFileNameChars().Where(x => x != '\\').ToArray();
 
-            foreach (char ch in path)
+            for (int i = 0; i < path.Length; i++)
             {
+                char ch = path[i];
                 if (invalidChars.Contains(ch))
-                    return false;
+                {
+                    if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
+                        return false;
+                }
             }
 
             if (more != null)
@@ -101,6 +113,36 @@ namespace PEBakery.Core
             
             return true;
         }
+
+        public static bool IsFileNameValid(string path, IEnumerable<char> more = null)
+        {
+            // Windows Reserved Characters
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+            // Exclude backslash, because this function will receive 
+            char[] invalidChars = Path.GetInvalidFileNameChars().ToArray();
+
+            for (int i = 0; i < path.Length; i++)
+            {
+                char ch = path[i];
+                if (invalidChars.Contains(ch))
+                {
+                    if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
+                        return false;
+                }
+            }
+
+            if (more != null)
+            {
+                foreach (char ch in path)
+                {
+                    if (more.Contains(ch))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         #endregion
 
         #region EscapeString

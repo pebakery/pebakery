@@ -237,7 +237,7 @@ namespace PEBakery.Core
             if (folderName == null)
                 throw new ArgumentNullException(nameof(folderName));
 
-            if (!StringEscaper.IsPathValid(folderName, new char[] {'[', ']'}))
+            if (!StringEscaper.IsFileNameValid(folderName, new char[] {'[', ']'}))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
 
             // Write folder name into EncodedFolder (except AuthorEncoded, InterfaceEncoded)
