@@ -65,6 +65,8 @@ namespace PEBakery.Core
                     containsInvalidChars = true;
             }
 
+            // PathSecurityCheck should be able to process paths like [*.exe]
+            // So remove filename if necessary.
             string fullPath;
             if (containsInvalidChars)
                 fullPath = Path.GetFullPath(FileHelper.GetDirNameEx(path));
@@ -92,12 +94,25 @@ namespace PEBakery.Core
             // Exclude backslash, because this function will receive 
             char[] invalidChars = Path.GetInvalidFileNameChars().Where(x => x != '\\').ToArray();
 
-            for (int i = 0; i < path.Length; i++)
+            // Ex) "C:\Program Files"
+            Match m = Regex.Match(path, "^[A-Za-z]:", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            if (m.Success) 
             {
-                char ch = path[i];
-                if (invalidChars.Contains(ch))
+                for (int i = 0; i < path.Length; i++)
                 {
-                    if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
+                    char ch = path[i];
+                    if (invalidChars.Contains(ch))
+                    {
+                        if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
+                            return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (char ch in path)
+                {
+                    if (invalidChars.Contains(ch))
                         return false;
                 }
             }
@@ -119,16 +134,12 @@ namespace PEBakery.Core
             // Windows Reserved Characters
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
             // Exclude backslash, because this function will receive 
-            char[] invalidChars = Path.GetInvalidFileNameChars().ToArray();
+            char[] invalidChars = Path.GetInvalidFileNameChars();
 
-            for (int i = 0; i < path.Length; i++)
+            foreach (char ch in path)
             {
-                char ch = path[i];
                 if (invalidChars.Contains(ch))
-                {
-                    if (!(ch == ':' && i == 1)) // Ex) C:\Users -> ':' should be ignored
-                        return false;
-                }
+                    return false;
             }
 
             if (more != null)

@@ -611,6 +611,62 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
+        #region IsPathValid
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void StringEscaper_IsPathValid()
+        {
+            void Template(string path, bool result, IEnumerable<char> more = null)
+            {
+                Assert.IsTrue(StringEscaper.IsPathValid(path, more) == result);
+            }
+
+            Template(@"notepad.exe", true);
+            Template(@"\notepad.exe", true);
+            Template(@"C:\notepad.exe", true);
+
+            Template(@"AB?C", false);
+            Template(@"\AB?C", false);
+            Template(@"Z:\AB?C", false);
+
+            Template(@"A[BC", true);
+            Template(@"\A[BC", true);
+            Template(@"E:\A[BC", true);
+
+            Template(@"A[BC", false, new char[] { '[' });
+            Template(@"\A[BC", false, new char[] { '[' });
+            Template(@"A:\A[BC", false, new char[] { '[' });
+        }
+        #endregion
+
+        #region IsFileNameValid
+        [TestMethod]
+        [TestCategory("StringEscaper")]
+        public void StringEscaper_IsFileNameValid()
+        {
+            void Template(string path, bool result, IEnumerable<char> more = null)
+            {
+                Assert.IsTrue(StringEscaper.IsFileNameValid(path, more) == result);
+            }
+
+            Template(@"notepad.exe", true);
+            Template(@"\notepad.exe", false);
+            Template(@"C:\notepad.exe", false);
+
+            Template(@"AB?C", false);
+            Template(@"\AB?C", false);
+            Template(@"Z:\AB?C", false);
+
+            Template(@"A[BC", true);
+            Template(@"\A[BC", false);
+            Template(@"E:\A[BC", false);
+
+            Template(@"A[BC", false, new char[] { '[' });
+            Template(@"\A[BC", false, new char[] { '[' });
+            Template(@"A:\A[BC", false, new char[] { '[' });
+        }
+        #endregion
+
         #region PackRegBinary
         [TestMethod]
         [TestCategory("StringEscaper")]
