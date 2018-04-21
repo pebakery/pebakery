@@ -1247,6 +1247,101 @@ namespace PEBakery.IniLib
         }
         #endregion
 
+        #region ReadRawSection
+        public static List<string> ReadRawSection(string file, IniKey iniKey, bool includeEmptyLine = false)
+        {
+            return InternalReadRawSection(file, new string[] { iniKey.Section }, includeEmptyLine).Select(x => x.Value).First();
+        }
+        public static List<string> ReadRawSection(string file, string section, bool includeEmptyLine = false)
+        {
+            return InternalReadRawSection(file, new string[] { section }, includeEmptyLine).Select(x => x.Value).First();
+        }
+        public static Dictionary<string, List<string>> ReadRawSections(string file, IEnumerable<IniKey> iniKeys, bool includeEmptyLine = false)
+        {
+            return InternalReadRawSection(file, iniKeys.Select(x => x.Section), includeEmptyLine);
+        }
+        public static Dictionary<string, List<string>> ReadRawSections(string file, IEnumerable<string> sections, bool includeEmptyLine = false)
+        {
+            return InternalReadRawSection(file, sections, includeEmptyLine);
+        }
+        private static Dictionary<string, List<string>> InternalReadRawSection(string file, IEnumerable<string> sections, bool includeEmptyLine)
+        {
+            List<string> sectionNames = sections.ToList();
+            Dictionary<string, List<string>> secDict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (string section in sectionNames)
+                secDict[section] = null;
+
+            ReaderWriterLockSlim rwLock;
+            if (LockDict.ContainsKey(file))
+            {
+                rwLock = LockDict[file];
+            }
+            else
+            {
+                rwLock = new ReaderWriterLockSlim();
+                LockDict[file] = rwLock;
+            }
+
+            rwLock.EnterReadLock();
+            try
+            {
+                Encoding encoding = IniHelper.DetectTextEncoding(file);
+                using (StreamReader r = new StreamReader(file, encoding, true))
+                {
+                    string line;
+                    bool inTargetSection = false;
+                    string currentSection = null;
+                    List<string> currentContents = null;
+
+                    while ((line = r.ReadLine()) != null)
+                    { // Read text line by line
+                        line = line.Trim(); // Remove whitespace
+                        if (line.StartsWith("#", StringComparison.Ordinal) ||
+                            line.StartsWith(";", StringComparison.Ordinal) ||
+                            line.StartsWith("//", StringComparison.Ordinal)) // Ignore comment
+                            continue;
+
+                        if (line.StartsWith("[", StringComparison.Ordinal) &&
+                            line.EndsWith("]", StringComparison.Ordinal))
+                        {
+                            inTargetSection = false;
+
+                            string foundSection = line.Substring(1, line.Length - 2);
+                            int sIdx = sectionNames.FindIndex(x => x.Equals(foundSection, StringComparison.OrdinalIgnoreCase));
+                            if (sIdx != -1)
+                            {
+                                inTargetSection = true;
+                                currentSection = foundSection;
+
+                                secDict[currentSection] = new List<string>(16);
+                                currentContents = secDict[currentSection];
+
+                                sectionNames.RemoveAt(sIdx);
+                                continue;
+                            }
+                        }
+
+                        if (inTargetSection)
+                        {
+                            Debug.Assert(currentSection != null);
+
+                            if (includeEmptyLine)
+                                currentContents.Add(line);
+                            else if (0 < line.Length)
+                                currentContents.Add(line);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                rwLock.ExitReadLock();
+            }
+
+            return secDict;
+        }
+        #endregion
+
         #region Merge
         public static bool Merge(string srcFile, string destFile)
         {
@@ -1634,7 +1729,7 @@ namespace PEBakery.IniLib
         /// <param name="file"></param>
         /// <param name="section"></param>
         /// <returns></returns>
-        public static bool SectionExists(string file, string section)
+        public static bool ContainsSection(string file, string section)
         {
             bool result = false;
 

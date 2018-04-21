@@ -1754,6 +1754,278 @@ namespace PEBakery.IniLib.Tests
         }
         #endregion
 
+        #region ReadRawSection
+        [TestCategory("IniLib")]
+        [TestMethod]
+        public void IniLIb_ReadRawSection()
+        {
+            IniLib_ReadRawSection_1();
+            IniLib_ReadRawSection_2();
+            IniLib_ReadRawSection_3();
+            IniLib_ReadRawSection_4();
+        }
+
+        public void IniLib_ReadRawSection_1()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                }
+
+                List<string> lines = Ini.ReadRawSection(tempFile, "Section", false);
+
+                List<string> comps = new List<string>
+                {
+                    "1=A",
+                    "유니코드",
+                    "ABXYZ"
+                };
+                
+                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadRawSection_2()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                }
+
+                List<string> lines = Ini.ReadRawSection(tempFile, "Section", true);
+
+                List<string> comps = new List<string>
+                {
+                    "1=A",
+                    string.Empty,
+                    "유니코드",
+                    string.Empty,
+                    "ABXYZ"
+                };
+
+                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadRawSection_3()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine();
+                    w.WriteLine("1");
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                    w.WriteLine();
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("3");
+                }
+
+                List<string> lines = Ini.ReadRawSection(tempFile, "Section2", false);
+
+                List<string> comps = new List<string>
+                {
+                    "1=A",
+                    "유니코드",
+                    "ABXYZ"
+                };
+
+                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadRawSection_4()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine();
+                    w.WriteLine("1");
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                    w.WriteLine();
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("3");
+                }
+
+                List<string> lines = Ini.ReadRawSection(tempFile, "Section2", true);
+
+                List<string> comps = new List<string>
+                {
+                    "1=A",
+                    string.Empty,
+                    "유니코드",
+                    string.Empty,
+                    "ABXYZ",
+                    string.Empty,
+                };
+
+                Assert.IsTrue(comps.SequenceEqual(lines, StringComparer.Ordinal));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+        #endregion
+
+        #region ReadRawSections
+        [TestCategory("IniLib")]
+        [TestMethod]
+        public void IniLib_ReadRawSections()
+        {
+            IniLib_ReadRawSections_1();
+            IniLib_ReadRawSections_2();
+        }
+
+        public void IniLib_ReadRawSections_1()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine();
+                    w.WriteLine("1");
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                    w.WriteLine();
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("3");
+                }
+
+                Dictionary<string, List<string>> lineDict = Ini.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, true);
+                Dictionary<string, List<string>> compDict =
+                    new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["Section3"] = new List<string>
+                        {
+                            "3",
+                        },
+                        ["Section2"] = new List<string>
+                        {
+                            "1=A",
+                            string.Empty,
+                            "유니코드",
+                            string.Empty,
+                            "ABXYZ",
+                            string.Empty,
+                        }
+                    };
+
+                foreach (string key in lineDict.Keys)
+                {
+                    Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                }
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        public void IniLib_ReadRawSections_2()
+        {
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                TestHelper.WriteTextBOM(tempFile, Encoding.UTF8);
+                using (StreamWriter w = new StreamWriter(tempFile, false, Encoding.UTF8))
+                {
+                    w.WriteLine("[Section1]");
+                    w.WriteLine();
+                    w.WriteLine("1");
+                    w.WriteLine("[Section2]");
+                    w.WriteLine("1=A");
+                    w.WriteLine();
+                    w.WriteLine("유니코드");
+                    w.WriteLine("    ");
+                    w.WriteLine("ABXYZ");
+                    w.WriteLine();
+                    w.WriteLine("[Section3]");
+                    w.WriteLine("3");
+                }
+
+                Dictionary<string, List<string>> lineDict = Ini.ReadRawSections(tempFile, new string[] { "Section3", "Section2" }, false);
+                Dictionary<string, List<string>> compDict =
+                    new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["Section3"] = new List<string>
+                        {
+                            "3",
+                        },
+                        ["Section2"] = new List<string>
+                        {
+                            "1=A",
+                            "유니코드",
+                            "ABXYZ",
+                        }
+                    };
+
+                foreach (string key in lineDict.Keys)
+                {
+                    Assert.IsTrue(lineDict[key].SequenceEqual(compDict[key], StringComparer.Ordinal));
+                }
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+        #endregion
+
         #region Merge2
         [TestCategory("IniLib")]
         [TestMethod]
