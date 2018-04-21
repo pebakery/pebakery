@@ -411,7 +411,7 @@
                                       IsChecked="{Binding Compat_AsteriskBugDirCopy}" />
                             <CheckBox Margin="0, 0, 0, 5"
                                       VerticalContentAlignment="Center"
-                                      Content="Simulate WinBuilder's *.* bug in folder.script"
+                                      Content="Simulate WinBuilder's *.* bug in folder.project"
                                       IsChecked="{Binding Compat_AsteriskBugDirLink}" />
                         </StackPanel>
                     </GroupBox>
