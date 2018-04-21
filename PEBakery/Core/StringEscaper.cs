@@ -157,6 +157,7 @@ namespace PEBakery.Core
         #endregion
 
         #region EscapeString
+        /*
         private static readonly Dictionary<string, string> unescapeSeqs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             { @"#$c", @"," },
@@ -166,7 +167,7 @@ namespace PEBakery.Core
             { @"#$t", "\t"},
             { @"#$x", Environment.NewLine},
         };
-
+        */
         public static readonly string Legend = "#$c = Comma [,]\r\n#$p = Percent [%]\r\n#$q = DoubleQuote [\"]\r\n#$s = Space [ ]\r\n#$t = Tab [\t]\r\n#$x = NewLine\r\n## = Sharp [#]";
 
         public static string Unescape(string str, bool escapePercent = false)
@@ -347,10 +348,7 @@ namespace PEBakery.Core
 
         public static List<string> Escape(IEnumerable<string> strs, bool fullEscape = false, bool escapePercent = false)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(Escape(str, fullEscape, escapePercent));
-            return escaped;
+            return strs.Select(str => Escape(str, fullEscape, escapePercent)).ToList();
         }
 
         public static string EscapePercent(string str)
@@ -360,18 +358,14 @@ namespace PEBakery.Core
 
         public static List<string> EscapePercent(IEnumerable<string> strs)
         {
-            List<string> escaped = new List<string>(strs.Count());
-            foreach (string str in strs)
-                escaped.Add(EscapePercent(str));
-            return escaped;
+            return strs.Select(EscapePercent).ToList();
         }
 
         public static string Doublequote(string str)
         {
             if (str.Contains(' '))
                 return "\"" + str + "\"";
-            else
-                return str;
+            return str;
         }
 
         public static string QuoteEscape(string str, bool fullEscape = false, bool escapePercent = false)
@@ -416,7 +410,7 @@ namespace PEBakery.Core
 
         public static List<string> ExpandVariables(Variables vars, IEnumerable<string> strs)
         {
-            return strs.Select(str => vars.Expand(str)).ToList();
+            return strs.Select(vars.Expand).ToList();
         }
 
         /// <summary>

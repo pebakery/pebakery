@@ -141,10 +141,10 @@ namespace PEBakery.WPF
             if (!Directory.Exists(dbDir))
                 Directory.CreateDirectory(dbDir);
 
-            string logDBFile = System.IO.Path.Combine(dbDir, "PEBakeryLog.db");
+            string logDbFile = System.IO.Path.Combine(dbDir, "PEBakeryLog.db");
             try
             {
-                App.Logger = Logger = new Logger(logDBFile);
+                App.Logger = Logger = new Logger(logDbFile);
                 Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery launched"));
             }
             catch (SQLiteException e)
@@ -272,32 +272,20 @@ namespace PEBakery.WPF
                 switch (e.ProgressPercentage)
                 {
                     case 0:  // Stage 1
-                        if (e.UserState == null)
-                            msg = "Error";
-                        else
-                            msg = $"{e.UserState}";
+                        msg = e.UserState == null ? "Error" : $"{e.UserState}";
                         break;
                     case 1:  // Stage 1, Cached
                         Interlocked.Increment(ref stage1CachedCount);
-                        if (e.UserState == null)
-                            msg = "Cached - Error";
-                        else
-                            msg = $"Cached - {e.UserState}";
+                        msg = e.UserState == null ? "Cached - Error" : $"Cached - {e.UserState}";
                         break;
                     case 2:  // Stage 2
                         Interlocked.Increment(ref stage2LoadedCount);
-                        if (e.UserState == null)
-                            msg = "Error";
-                        else
-                            msg = $"{e.UserState}";
+                        msg = e.UserState == null ? "Error" : $"{e.UserState}";
                         break;
                     case 3:  // Stage 2, Cached
                         Interlocked.Increment(ref stage2LoadedCount);
                         Interlocked.Increment(ref stage2CachedCount);
-                        if (e.UserState == null)
-                            msg = "Cached - Error";
-                        else
-                            msg = $"Cached - {e.UserState}";
+                        msg = e.UserState == null ? "Cached - Error" : $"Cached - {e.UserState}";
                         break;
                 }
                 int stage = e.ProgressPercentage / 2 + 1;

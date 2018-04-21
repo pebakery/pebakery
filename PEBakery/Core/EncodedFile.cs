@@ -25,7 +25,7 @@
     not derived from or based on this program. 
 */
 
-// #define ENABLE_XZ
+#define ENABLE_XZ
 
 using Joveler.ZLibWrapper;
 using PEBakery.Exceptions;
@@ -45,6 +45,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using XZ.NET;
+using SharpCompress.Compressors.Xz;
 
 namespace PEBakery.Core
 {
@@ -304,19 +305,19 @@ namespace PEBakery.Core
             return Decode(encoded, outStream);
         }
 
-        public static void ExtractFolder(Script sc, string dirName, string destDir, bool overwrite = false)
+        public static void ExtractFolder(Script sc, string folderName, string destDir, bool overwrite = false)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
 
             Dictionary<string, string> fileDict;
-            switch (sc.Sections[dirName].DataType)
+            switch (sc.Sections[folderName].DataType)
             {
                 case SectionDataType.IniDict:
-                    fileDict = sc.Sections[dirName].GetIniDict();
+                    fileDict = sc.Sections[folderName].GetIniDict();
                     break;
                 case SectionDataType.Lines:
-                    fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[dirName].GetLines());
+                    fileDict = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines());
                     break;
                 default:
                     throw new InternalException("Internal Logic Error at EncodedFile.ExtractFolder");
@@ -333,9 +334,9 @@ namespace PEBakery.Core
 
                 using (FileStream fs = new FileStream(destFile, FileMode.Create, FileAccess.Write))
                 {
-                    string section = GetSectionName(dirName, fileName);
+                    string section = GetSectionName(folderName, fileName);
                     if (!sc.Sections.ContainsKey(section))
-                        throw new InvalidOperationException($"[{dirName}\\{fileName}] does not exists in [{sc.RealPath}]");
+                        throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
 
                     List<string> encoded = sc.Sections[section].GetLinesOnce();
                     Decode(encoded, fs);
@@ -881,7 +882,8 @@ namespace PEBakery.Core
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ:
-                            using (XZOutputStream xzs = new XZOutputStream(encodeStream, Environment.ProcessorCount, XZOutputStream.DefaultPreset, true))
+                            // XZ.Net library's multithread support is broken -> use singlethread
+                            using (XZOutputStream xzs = new XZOutputStream(encodeStream, 1, XZOutputStream.DefaultPreset, true))
                             {
                                 while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
@@ -1136,10 +1138,11 @@ namespace PEBakery.Core
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
-                            if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                                throw new FileDecodeFailException("Encoded file is corrupted: compMode");
+                            if (compressedBodyLen2 == 0 || 
+                                compressedBodyLen2 != compressedBodyLen)
+                                throw new InvalidOperationException("Encoded file is corrupted: compMode");
                             if (compLevel < 1 || 9 < compLevel)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
 #endif
                         default:
@@ -1153,7 +1156,7 @@ namespace PEBakery.Core
                     switch ((EncodeMode)compMode)
                     {
                         case EncodeMode.ZLib: // Type 1, zlib
-                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
                             {
                                 decodeStream.Position = 0;
                                 decodeStream.CopyTo(compStream, compressedBodyLen);
@@ -1191,14 +1194,16 @@ namespace PEBakery.Core
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
-                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                            using (FileStream compStream = new FileStream(tempComp, FileMode.Create, FileAccess.ReadWrite))
                             {
                                 decodeStream.Position = 0;
                                 decodeStream.CopyTo(compStream, compressedBodyLen);
 
                                 compStream.Flush();
                                 compStream.Position = 0;
-                                using (XZInputStream xzs = new XZInputStream(compStream, true))
+
+                                // XZ.Net's decompression is unreliable, use SharpCompress
+                                using (XZStream xzs = new XZStream(compStream))
                                 {
                                     while ((readByte = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -1304,10 +1309,11 @@ namespace PEBakery.Core
 #if ENABLE_XZ
                 case EncodeMode.XZ: // Type 3, LZMA
                     {
-                        if (compressedBodyLen2 == 0 || (compressedBodyLen2 != compressedBodyLen))
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compMode");
+                        if (compressedBodyLen2 == 0 || 
+                            compressedBodyLen2 != compressedBodyLen)
+                            throw new InvalidOperationException("Encoded file is corrupted: compMode");
                         if (compLevel < 1 || 9 < compLevel)
-                            throw new FileDecodeFailException($"Encoded file is corrupted: compLevel");
+                            throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     }
                     break;
 #endif
@@ -1433,7 +1439,7 @@ namespace PEBakery.Core
 #if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
                             if (compLevel < 1 || 9 < compLevel)
-                                throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                                throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
 #endif
                         default:
@@ -1508,7 +1514,7 @@ namespace PEBakery.Core
 #if ENABLE_XZ
                 case EncodeMode.XZ: // Type 3, LZMA
                     if (compLevel < 1 || 9 < compLevel)
-                        throw new FileDecodeFailException("Encoded file is corrupted: compLevel");
+                        throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     break;
 #endif
                 default:

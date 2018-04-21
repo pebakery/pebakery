@@ -55,7 +55,7 @@ namespace PEBakery.Tests.Core
         {
             AttachFile_Template("Type1.jpg", EncodedFile.EncodeMode.ZLib); // Type 1
             AttachFile_Template("Type2.7z", EncodedFile.EncodeMode.Raw); // Type 2
-            // AttachFile_Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
+            AttachFile_Template("Type3.pdf", EncodedFile.EncodeMode.XZ); // Type 3
             AttachFile_Template("PEBakeryAlphaMemory.jpg", EncodedFile.EncodeMode.ZLib);
         }
 
@@ -63,7 +63,7 @@ namespace PEBakery.Tests.Core
         {
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
-            string blankPath = Path.Combine(dirPath, "EncodeFileTests_Blank.script");
+            string blankPath = Path.Combine(dirPath, "Blank.script");
             string scPath = Path.Combine(dirPath, "EncodeFileTests.script");
             File.Copy(blankPath, scPath, true);
 
@@ -78,7 +78,7 @@ namespace PEBakery.Tests.Core
                 Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
                 List<string> folders = sc.Sections["EncodedFolders"].GetLines();
                 folders = folders.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
-                Assert.IsTrue(folders.Count == 1);
+                Assert.IsTrue(folders.Count == 2);
                 Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
 
                 Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
@@ -116,6 +116,107 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
+        #region AddFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_AddFolder()
+        {
+            void Template(string folderName, bool overwrite, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
+                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
+
+                string destDir = StringEscaper.Preprocess(s, pbDestDir);
+                string destScript = StringEscaper.Preprocess(s, pbDestScript);
+
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScript, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    try
+                    {
+                        sc = EncodedFile.AddFolder(sc, folderName, overwrite);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+
+                    Assert.AreEqual(sc.Sections.ContainsKey(folderName), result);
+                    Assert.AreEqual(Ini.ContainsSection(destScript, folderName), result);
+
+                    if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                        !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                    {
+                        List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
+                        Assert.AreEqual(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase), result);
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("UnitTestEncode", false, true);
+            Template("DummySection", false, false);
+            Template("DummySection", true, true);
+            Template("AuthorEncoded", false, false);
+            Template("AuthorEncoded", true, true);
+            Template("InterfaceEncoded", false, true);
+            Template("InterfaceEncoded", true, true);
+        }
+        #endregion
+
+        #region ContainsFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ContainsFolder()
+        {
+            void Template(string folderName, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
+                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
+
+                string destDir = StringEscaper.Preprocess(s, pbDestDir);
+                string destScript = StringEscaper.Preprocess(s, pbDestScript);
+
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScript, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Assert.AreEqual(EncodedFile.ContainsFolder(sc, folderName), result);
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template(AuthorEncoded, true);
+            Template(InterfaceEncoded, false);
+            Template("Attach", true);
+            Template("Process", false);
+        }
+        #endregion
+
         #region ExtractFile
         [TestMethod]
         [TestCategory("EncodedFile")]
@@ -123,7 +224,7 @@ namespace PEBakery.Tests.Core
         {
             ExtractFile_Template("Type1.jpg"); // Type 1
             ExtractFile_Template("Type2.7z"); // Type 2
-            // ExtractFile_Template("Type3.pdf"); // Type 3
+            ExtractFile_Template("Type3.pdf"); // Type 3
         }
 
         public void ExtractFile_Template(string fileName)
@@ -151,6 +252,43 @@ namespace PEBakery.Tests.Core
 
             // Compare Hash
             Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
+        }
+        #endregion
+
+        #region ExtractFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ExtractFolder()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void Template(string folderName)
+            {
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                string destDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    Script sc = s.Project.LoadScriptMonkeyPatch(originScript);
+
+                    EncodedFile.ExtractFolder(sc, folderName, destDir);
+
+                    string[] comps = Ini.ParseIniLinesIniStyle(sc.Sections[folderName].GetLines()).Keys.ToArray();
+                    string[] dests = Directory.EnumerateFiles(destDir).Select(Path.GetFileName).ToArray();
+
+                    Assert.IsTrue(comps.SequenceEqual(dests, StringComparer.OrdinalIgnoreCase));
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("FolderExample");
         }
         #endregion
 
@@ -223,105 +361,6 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
-        #region AddFolder
-        [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void EncodedFile_AddFolder()
-        {
-            void Template(string folderName, bool overwrite, bool result)
-            {
-                EngineState s = EngineTests.CreateEngineState();
-                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
-                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
-
-                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
-                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
-
-                string destDir = StringEscaper.Preprocess(s, pbDestDir);
-                string destScript = StringEscaper.Preprocess(s, pbDestScript);
-
-                if (!Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
-                try
-                {
-                    File.Copy(originScript, destScript, true);
-
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
-                    try
-                    {
-                        sc = EncodedFile.AddFolder(sc, folderName, overwrite);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        Assert.IsFalse(result);
-                        return;
-                    }
-                    
-                    Assert.AreEqual(sc.Sections.ContainsKey(folderName), result);
-                    Assert.AreEqual(Ini.ContainsSection(destScript, folderName), result);
-
-                    if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
-                        !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
-                    {
-                        List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
-                        Assert.AreEqual(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase), result);
-                    }
-                }
-                finally
-                {
-                    if (Directory.Exists(destDir))
-                        Directory.Delete(destDir, true);
-                }
-            }
-
-            Template("UnitTestEncode", false, true);
-            Template("DummySection", false, false);
-            Template("DummySection", true, true);
-            Template("AuthorEncoded", false, false);
-            Template("AuthorEncoded", true, true);
-            Template("InterfaceEncoded", false, true);
-            Template("InterfaceEncoded", true, true);
-        }
-        #endregion
-
-        #region ContainsFolder
-        [TestMethod]
-        [TestCategory("EncodedFile")]
-        public void EncodedFile_ContainsFolder()
-        {
-            void Template(string folderName, bool result)
-            {
-                EngineState s = EngineTests.CreateEngineState();
-                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
-                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
-
-                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
-                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
-
-                string destDir = StringEscaper.Preprocess(s, pbDestDir);
-                string destScript = StringEscaper.Preprocess(s, pbDestScript);
-
-                if (!Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
-                try
-                {
-                    File.Copy(originScript, destScript, true);
-
-                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
-                    Assert.AreEqual(EncodedFile.ContainsFolder(sc, folderName), result);
-                }
-                finally
-                {
-                    if (Directory.Exists(destDir))
-                        Directory.Delete(destDir, true);
-                }
-            }
-
-            Template(AuthorEncoded, true);
-            Template(InterfaceEncoded, false);
-            Template("Attach", true);
-            Template("Process", false);
-        }
-        #endregion
+        
     }
 }

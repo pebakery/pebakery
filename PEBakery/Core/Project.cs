@@ -680,8 +680,8 @@ namespace PEBakery.Core
         public Script LoadScriptMonkeyPatch(string fullPath, bool addToProjectTree = false, bool ignoreMain = false)
         {
             // Limit: fullPath must be in BaseDir
-            if (!fullPath.StartsWith(BaseDir, StringComparison.OrdinalIgnoreCase))
-                return null;
+            // if (!fullPath.StartsWith(BaseDir, StringComparison.OrdinalIgnoreCase))
+            //    return null;
 
             Script sc = LoadScript(fullPath, fullPath, ignoreMain, false);
             if (addToProjectTree)

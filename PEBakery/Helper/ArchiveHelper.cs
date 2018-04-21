@@ -46,11 +46,7 @@ namespace PEBakery.Helper
         static ArchiveHelper()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string arch;
-            if (IntPtr.Size == 8)
-                arch = "x64";
-            else
-                arch = "x86";
+            string arch = IntPtr.Size == 8 ? "x64" : "x86";
 
             SevenZipDllPath = Path.Combine(baseDir, arch, "7z.dll");
         }
@@ -202,10 +198,7 @@ namespace PEBakery.Helper
                 stream.Close();
             }
 
-            if (File.Exists(destArchive))
-                return true;
-            else
-                return false;
+            return File.Exists(destArchive);
         }
 
         public static void DecompressNative(string srcArchive, string destDir, bool overwrite)
@@ -218,15 +211,15 @@ namespace PEBakery.Helper
 
         public static void DecompressManaged(string srcArchive, string destDir, bool overwrite, Encoding encoding = null)
         {
-            ExtractionOptions exOptions = new ExtractionOptions()
+            ExtractionOptions exOptions = new ExtractionOptions
             {
                 ExtractFullPath = true,
                 Overwrite = overwrite,
             };
 
-            ReaderOptions rOptions = new ReaderOptions() { LeaveStreamOpen = true, };
+            ReaderOptions rOptions = new ReaderOptions { LeaveStreamOpen = true, };
             if (encoding != null)
-                rOptions.ArchiveEncoding = new ArchiveEncoding() { Default = encoding };
+                rOptions.ArchiveEncoding = new ArchiveEncoding { Default = encoding };
 
             using (Stream stream = new FileStream(srcArchive, FileMode.Open, FileAccess.Read))
             using (var reader = ReaderFactory.Open(stream, rOptions))
