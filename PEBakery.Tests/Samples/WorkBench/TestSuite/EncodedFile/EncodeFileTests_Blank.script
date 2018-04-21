@@ -3,16 +3,15 @@ Title=EncodeFileTests
 Author=ied206
 Description=Test Plugin for Unit Test of EncodedFile Class
 Credits=ied206
-Version=024
-Download_Level=1
 Level=3
-NoWarning=False
 
 [Interface]
-TextLabel1=EncodeFileTests,1,1,13,14,146,18,8,Bold
+TextLabel1="Test Plugin for Unit Test of EncodedFile Class",1,1,13,14,146,18,8,Bold
 
 [Process]
 Echo,"Test Plugin for Unit Test of EncodedFile Class"
+
+[DummySection]
 
 [AuthorEncoded]
 Logo.jpg=973,1298

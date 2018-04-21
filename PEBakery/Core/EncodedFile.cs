@@ -230,7 +230,7 @@ namespace PEBakery.Core
         #endregion
 
         #region AddFolder, ContainsFolder
-        public static Script AddFolder(Script sc, string folderName)
+        public static Script AddFolder(Script sc, string folderName, bool overwrite)
         {
             if (sc == null)
                 throw new ArgumentNullException(nameof(sc));
@@ -240,6 +240,12 @@ namespace PEBakery.Core
             if (!StringEscaper.IsFileNameValid(folderName, new char[] {'[', ']'}))
                 throw new ArgumentException($"[{folderName}] contains invalid character");
 
+            if (!overwrite)
+            {
+                if (sc.Sections.ContainsKey(folderName))
+                    throw new InvalidOperationException($"Section [{folderName}] already exists");
+            }
+           
             // Write folder name into EncodedFolder (except AuthorEncoded, InterfaceEncoded)
             if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
                 !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
@@ -247,7 +253,7 @@ namespace PEBakery.Core
                 if (sc.Sections.ContainsKey(EncodedFolders))
                 {
                     List<string> folders = sc.Sections[EncodedFolders].GetLines();
-                    if (folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) != -1)
+                    if (folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) == -1)
                         Ini.WriteRawLine(sc.RealPath, EncodedFolders, folderName, false);
                 }
                 else
@@ -269,10 +275,15 @@ namespace PEBakery.Core
 
             // AuthorEncoded, InterfaceEncoded is not recorded to EncodedFolders
             if (folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) ||
-                folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase) ||
-                sc.Sections.ContainsKey(EncodedFolders))
+                folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
             {
                 return sc.Sections.ContainsKey(folderName);
+            }
+
+            if (sc.Sections.ContainsKey(folderName) && sc.Sections.ContainsKey(EncodedFolders))
+            {
+                List<string> folders = sc.Sections[EncodedFolders].GetLines();
+                return folders.FindIndex(x => x.Equals(folderName, StringComparison.OrdinalIgnoreCase)) != -1;
             }
 
             return false;

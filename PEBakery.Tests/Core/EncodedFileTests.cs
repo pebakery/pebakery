@@ -34,12 +34,20 @@ using PEBakery.Helper;
 using System.Collections.Generic;
 using PEBakery.Exceptions;
 using System.Text;
+using PEBakery.IniLib;
 
 namespace PEBakery.Tests.Core
 {
     [TestClass]
     public class EncodedFileTests
     {
+        #region Const Strings, String Factory
+        private const string EncodedFolders = "EncodedFolders";
+        private const string AuthorEncoded = "AuthorEncoded";
+        private const string InterfaceEncoded = "InterfaceEncoded";
+        private static string GetSectionName(string dirName, string fileName) => $"EncodedFile-{dirName}-{fileName}";
+        #endregion
+
         #region AttachFile
         [TestMethod]
         [TestCategory("EncodedFile")]
@@ -56,30 +64,30 @@ namespace PEBakery.Tests.Core
             EngineState s = EngineTests.CreateEngineState();
             string dirPath = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
             string blankPath = Path.Combine(dirPath, "EncodeFileTests_Blank.script");
-            string pPath = Path.Combine(dirPath, "EncodeFileTests.script");
-            File.Copy(blankPath, pPath, true);
+            string scPath = Path.Combine(dirPath, "EncodeFileTests.script");
+            File.Copy(blankPath, scPath, true);
 
-            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
+            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
 
             string originFile = Path.Combine(dirPath, fileName);
-            p = EncodedFile.AttachFile(p, "FolderExample", fileName, originFile, encodeMode);
+            sc = EncodedFile.AttachFile(sc, "FolderExample", fileName, originFile, encodeMode);
 
             try
             {
                 // Check whether file was successfully encoded
-                Assert.IsTrue(p.Sections.ContainsKey("EncodedFolders"));
-                List<string> folders = p.Sections["EncodedFolders"].GetLines();
+                Assert.IsTrue(sc.Sections.ContainsKey("EncodedFolders"));
+                List<string> folders = sc.Sections["EncodedFolders"].GetLines();
                 folders = folders.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
                 Assert.IsTrue(folders.Count == 1);
                 Assert.IsTrue(folders[0].Equals("FolderExample", StringComparison.Ordinal));
 
-                Assert.IsTrue(p.Sections.ContainsKey("FolderExample"));
-                List<string> fileInfos = p.Sections["FolderExample"].GetLinesOnce();
+                Assert.IsTrue(sc.Sections.ContainsKey("FolderExample"));
+                List<string> fileInfos = sc.Sections["FolderExample"].GetLinesOnce();
                 fileInfos = fileInfos.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
                 Assert.IsTrue(fileInfos[0].StartsWith($"{fileName}=", StringComparison.Ordinal));
 
-                Assert.IsTrue(p.Sections.ContainsKey($"EncodedFile-FolderExample-{fileName}"));
-                List<string> encodedFile = p.Sections[$"EncodedFile-FolderExample-{fileName}"].GetLinesOnce();
+                Assert.IsTrue(sc.Sections.ContainsKey($"EncodedFile-FolderExample-{fileName}"));
+                List<string> encodedFile = sc.Sections[$"EncodedFile-FolderExample-{fileName}"].GetLinesOnce();
                 encodedFile = encodedFile.Where(x => x.Equals(string.Empty, StringComparison.Ordinal) == false).ToList();
                 Assert.IsTrue(1 < encodedFile.Count);
                 Assert.IsTrue(encodedFile[0].StartsWith("lines=", StringComparison.Ordinal));
@@ -88,7 +96,7 @@ namespace PEBakery.Tests.Core
                 byte[] extractDigest;
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    EncodedFile.ExtractFile(p, "FolderExample", fileName, ms);
+                    EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
                     ms.Position = 0;
                     extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
                 }
@@ -103,7 +111,7 @@ namespace PEBakery.Tests.Core
             }
             finally
             {
-                File.Delete(pPath);
+                File.Delete(scPath);
             }
         }
         #endregion
@@ -121,14 +129,14 @@ namespace PEBakery.Tests.Core
         public void ExtractFile_Template(string fileName)
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
-            string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-            pPath = StringEscaper.Preprocess(s, pPath);
-            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
+            string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            scPath = StringEscaper.Preprocess(s, scPath);
+            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
 
             byte[] extractDigest;
             using (MemoryStream ms = new MemoryStream())
             {
-                EncodedFile.ExtractFile(p, "FolderExample", fileName, ms);
+                EncodedFile.ExtractFile(sc, "FolderExample", fileName, ms);
                 ms.Position = 0;
                 extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
             }
@@ -157,12 +165,12 @@ namespace PEBakery.Tests.Core
         public void ExtractLogo_1()
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
-            string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-            pPath = StringEscaper.Preprocess(s, pPath);
-            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
+            string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            scPath = StringEscaper.Preprocess(s, scPath);
+            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractLogo(p, out ImageHelper.ImageType type))
+            using (MemoryStream ms = EncodedFile.ExtractLogo(sc, out ImageHelper.ImageType type))
             {
                 Assert.IsTrue(type == ImageHelper.ImageType.Jpg);
                 extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
@@ -192,12 +200,12 @@ namespace PEBakery.Tests.Core
         public void ExtractInterfaceEncoded_1()
         { // Type 1
             EngineState s = EngineTests.CreateEngineState();
-            string pPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
-            pPath = StringEscaper.Preprocess(s, pPath);
-            Script p = s.Project.LoadScriptMonkeyPatch(pPath);
+            string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            scPath = StringEscaper.Preprocess(s, scPath);
+            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
 
             byte[] extractDigest;
-            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(p, "PEBakeryAlphaMemory.jpg"))
+            using (MemoryStream ms = EncodedFile.ExtractInterfaceEncoded(sc, "PEBakeryAlphaMemory.jpg"))
             {
                 extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
             }
@@ -212,6 +220,107 @@ namespace PEBakery.Tests.Core
 
             // Compare Hash
             Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
+        }
+        #endregion
+
+        #region AddFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_AddFolder()
+        {
+            void Template(string folderName, bool overwrite, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
+                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
+
+                string destDir = StringEscaper.Preprocess(s, pbDestDir);
+                string destScript = StringEscaper.Preprocess(s, pbDestScript);
+
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScript, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    try
+                    {
+                        sc = EncodedFile.AddFolder(sc, folderName, overwrite);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        Assert.IsFalse(result);
+                        return;
+                    }
+                    
+                    Assert.AreEqual(sc.Sections.ContainsKey(folderName), result);
+                    Assert.AreEqual(Ini.ContainsSection(destScript, folderName), result);
+
+                    if (!folderName.Equals(AuthorEncoded, StringComparison.OrdinalIgnoreCase) &&
+                        !folderName.Equals(InterfaceEncoded, StringComparison.OrdinalIgnoreCase))
+                    {
+                        List<string> folders = sc.Sections[EncodedFolders].GetLinesOnce();
+                        Assert.AreEqual(folders.Contains(folderName, StringComparer.OrdinalIgnoreCase), result);
+                    }
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template("UnitTestEncode", false, true);
+            Template("DummySection", false, false);
+            Template("DummySection", true, true);
+            Template("AuthorEncoded", false, false);
+            Template("AuthorEncoded", true, true);
+            Template("InterfaceEncoded", false, true);
+            Template("InterfaceEncoded", true, true);
+        }
+        #endregion
+
+        #region ContainsFolder
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ContainsFolder()
+        {
+            void Template(string folderName, bool result)
+            {
+                EngineState s = EngineTests.CreateEngineState();
+                string pbOriginScript = Path.Combine("%TestBench%", "EncodedFile", "Blank.script");
+                string originScript = StringEscaper.Preprocess(s, pbOriginScript);
+
+                string pbDestDir = Path.Combine("%ProjectTemp%", Path.GetRandomFileName());
+                string pbDestScript = Path.Combine(pbDestDir, "AddFolderTest.script");
+
+                string destDir = StringEscaper.Preprocess(s, pbDestDir);
+                string destScript = StringEscaper.Preprocess(s, pbDestScript);
+
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    File.Copy(originScript, destScript, true);
+
+                    Script sc = s.Project.LoadScriptMonkeyPatch(destScript);
+                    Assert.AreEqual(EncodedFile.ContainsFolder(sc, folderName), result);
+                }
+                finally
+                {
+                    if (Directory.Exists(destDir))
+                        Directory.Delete(destDir, true);
+                }
+            }
+
+            Template(AuthorEncoded, true);
+            Template(InterfaceEncoded, false);
+            Template("Attach", true);
+            Template("Process", false);
         }
         #endregion
     }

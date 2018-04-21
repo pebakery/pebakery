@@ -216,13 +216,14 @@ namespace PEBakery.WPF
                 { 
                     string srcFileName = System.IO.Path.GetFileName(srcFile);
                     _sc = EncodedFile.AttachLogo(_sc, srcFileName, srcFile);
-                    MessageBox.Show("Logo successfully attached.", "Attach Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Logo successfully attached.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
                     ReadScriptGeneral();
                 }
                 catch (Exception ex)
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                    MessageBox.Show("Attach failed.\r\nSee system log for details.", "Attach Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Attach failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -252,19 +253,19 @@ namespace PEBakery.WPF
                                 ms.CopyTo(fs);
                             }
 
-                            MessageBox.Show("Logo successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox.Show("Logo successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                         catch (Exception ex)
                         {
                             App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                            MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                            MessageBox.Show($"Extraction failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         }
                     }
                 }
             }
             else
             {
-                MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Extract Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Script [{_sc.Title}] does not have logo attached", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -275,18 +276,18 @@ namespace PEBakery.WPF
                 _sc = EncodedFile.DeleteLogo(_sc, out string errorMsg);
                 if (errorMsg == null)
                 {
-                    MessageBox.Show("Logo successfully deleted.", "Delete Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Logo successfully deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     ReadScriptGeneral();
                 }
                 else
                 {
                     App.Logger.SystemWrite(new LogInfo(LogState.Error, errorMsg));
-                    MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Delete of logo had some issues.\r\n\r\n[Message]{errorMsg}", "Warning", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             else
             {
-                MessageBox.Show("Delete of logo had some issues.\r\nSee system log for details.", "Delete Warning", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Logo does not exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         #endregion
@@ -306,13 +307,21 @@ namespace PEBakery.WPF
         {
             string folderName = m.AddFolderName;
 
-            if (EncodedFile.ContainsFolder(_sc, folderName))
+            try
             {
-                MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                if (EncodedFile.ContainsFolder(_sc, folderName))
+                {
+                    MessageBox.Show($"Cannot overwrite folder [{folderName}]", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
+                MessageBox.Show($"Unable to add folder.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            _sc = EncodedFile.AddFolder(_sc, folderName);
+            _sc = EncodedFile.AddFolder(_sc, folderName, false);
 
             ReadScriptAttachment();
 
@@ -388,12 +397,12 @@ namespace PEBakery.WPF
                             EncodedFile.ExtractFile(_sc, info.DirName, info.FileName, fs);
                         }
 
-                        MessageBox.Show("File successfully extracted.", "Extract Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("File successfully extracted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     catch (Exception ex)
                     {
                         App.Logger.SystemWrite(new LogInfo(LogState.Error, ex));
-                        MessageBox.Show("Extraction failed.\r\nSee system log for details.", "Extract Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Extraction failed.\r\n\r\n[Message]{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -418,7 +427,7 @@ namespace PEBakery.WPF
             else // Failure
             {
                 App.Logger.SystemWrite(new LogInfo(LogState.Error, errMsg));
-                MessageBox.Show("Delete failed.\r\nSee system log for details.", "Delete Failure", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Delete failed.\r\n\r\n[Message]{errMsg}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
         
@@ -756,6 +765,7 @@ namespace PEBakery.WPF
         }
 
         public Visibility ScriptLogoInfoVisibility => ScriptLogoInfo == null ? Visibility.Collapsed : Visibility.Visible;
+        public bool ScriptLogoLoaded => ScriptLogoInfo != null;
 
         public string ScriptLogoName => ScriptLogoInfo == null ? string.Empty : ScriptLogoInfo.FileName;
 

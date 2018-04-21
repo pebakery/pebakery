@@ -289,6 +289,7 @@
                                         Margin="0, 0, 0, 5"
                                         x:Name="ScriptLogoExtractButton"
                                         Click="ScriptLogoExtractButton_Click"
+                                        IsEnabled="{Binding ScriptLogoLoaded}"
                                         ToolTip="Export logo to image">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="ArrowExpandRight"
@@ -302,6 +303,7 @@
                                 <Button Width="100" Height="25"
                                         x:Name="ScriptLogoDeleteButton"
                                         Click="ScriptLogoDeleteButton_Click"
+                                        IsEnabled="{Binding ScriptLogoLoaded}"
                                         ToolTip="Delete logo">
                                     <StackPanel Orientation="Horizontal">
                                         <iconPacks:PackIconMaterial Kind="Close"

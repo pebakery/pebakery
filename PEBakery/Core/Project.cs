@@ -170,7 +170,7 @@ namespace PEBakery.Core
         {
             var dirLinkPathList = new List<(string, string, bool)>();
             var linkFiles = Directory.EnumerateFiles(projectDir, "folder.project", SearchOption.AllDirectories);
-            foreach (string linkFile in linkFiles.Where(x => Ini.SectionExists(x, "Links")))
+            foreach (string linkFile in linkFiles.Where(x => Ini.ContainsSection(x, "Links")))
             {
                 string prefix = Path.GetDirectoryName(linkFile);
                 if (prefix == null)
@@ -680,7 +680,7 @@ namespace PEBakery.Core
         public Script LoadScriptMonkeyPatch(string fullPath, bool addToProjectTree = false, bool ignoreMain = false)
         {
             // Limit: fullPath must be in BaseDir
-            if (fullPath.StartsWith(this.BaseDir, StringComparison.OrdinalIgnoreCase) == false)
+            if (!fullPath.StartsWith(BaseDir, StringComparison.OrdinalIgnoreCase))
                 return null;
 
             Script sc = LoadScript(fullPath, fullPath, ignoreMain, false);
