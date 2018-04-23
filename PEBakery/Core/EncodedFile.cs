@@ -1252,7 +1252,7 @@ namespace PEBakery.Core
         private static MemoryStream DecodeInMemory(List<string> encodedList)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMemory(encodedList);
+            byte[] decoded = SplitBase64.DecodeInMem(encodedList);
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -1473,7 +1473,7 @@ namespace PEBakery.Core
         private static EncodeMode GetEncodeModeInMemory(List<string> encodedList)
         {
             // [Stage 1] Concat sliced base64-encoded lines into one string
-            byte[] decoded = SplitBase64.DecodeInMemory(encodedList);
+            byte[] decoded = SplitBase64.DecodeInMem(encodedList);
 
             // [Stage 2] Read final footer
             const int finalFooterLen = 0x24;
@@ -1631,6 +1631,37 @@ namespace PEBakery.Core
         }
         #endregion
 
+        #region EncodeInMem
+        public static (List<IniKey>, int) EncodeInMem(byte[] binData, string section)
+        {
+            // Encode body, footer and finalFooter with Base64
+            string encodedStr = Convert.ToBase64String(binData);
+
+            // Remove Base64 Padding (==, =)
+            if (encodedStr.EndsWith("==", StringComparison.Ordinal))
+                encodedStr = encodedStr.Substring(0, encodedStr.Length - 2);
+            else if (encodedStr.EndsWith("=", StringComparison.Ordinal))
+                encodedStr = encodedStr.Substring(0, encodedStr.Length - 1);
+
+            // Tokenize encoded string into 4090B.
+            List<IniKey> keys = new List<IniKey>();
+            for (int i = 0; i <= (encodedStr.Length / 4090); i++)
+            {
+                if (i < (encodedStr.Length / 4090)) // 1 Line is 4090 characters
+                {
+                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, 4090))); // X=eJyFk0Fr20AQhe8G...
+                }
+                else // Last Iteration
+                {
+                    keys.Add(new IniKey(section, i.ToString(), encodedStr.Substring(i * 4090, encodedStr.Length - (i * 4090)))); // X=N3q8ryccAAQWuBjqA5QvAAAAAA (end)
+                    keys.Insert(0, new IniKey(section, "lines", i.ToString())); // lines=X
+                }
+            }
+
+            return (keys, encodedStr.Length);
+        }
+        #endregion
+
         #region Decode
         public static int Decode(List<string> encodedList, Stream outStream)
         {
@@ -1693,8 +1724,8 @@ namespace PEBakery.Core
         }
         #endregion
 
-        #region DecodeInMemory
-        public static byte[] DecodeInMemory(List<string> encodedList)
+        #region DecodeInMem
+        public static byte[] DecodeInMem(List<string> encodedList)
         {
             // Remove "lines=n"
             encodedList.RemoveAt(0);         

@@ -25,6 +25,8 @@
     not derived from or based on this program. 
 */
 
+// #define DEBUG_MIDDLE_FILE
+
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PEBakery.Core;
@@ -398,6 +400,132 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
-        
+        #region SplitBase64
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void SplitBase64_Encode()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void Template(string binFileName, string encFileName, bool inMem)
+            {
+                string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
+
+                // Be careful! encFile will be converted to LF from CRLF in git tree!
+                string binFile = Path.Combine(workDir, binFileName);
+                string encFile = Path.Combine(workDir, encFileName);
+
+                List<string> lines = new List<string>();
+                using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
+                {
+                    string rawLine;
+                    while ((rawLine = r.ReadLine()) != null)
+                    {
+                        string line = rawLine.Trim();
+                        if (0 < line.Length)
+                            lines.Add(line);
+                    }
+                }
+
+                List<string> comps;
+                if (inMem)
+                {
+                    byte[] buffer;
+                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                    {
+                        buffer = new byte[fs.Length];
+                        fs.Read(buffer, 0, buffer.Length);
+                    }
+
+                    (List<IniKey> keys, _) = SplitBase64.EncodeInMem(buffer, string.Empty);
+                    comps = keys.Select(x => $"{x.Key}={x.Value}").ToList();
+                }
+                else
+                {
+                    List<IniKey> keys;
+                    using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                    {
+                        (keys, _) = SplitBase64.Encode(fs, string.Empty);
+                    }
+                    comps = keys.Select(x => $"{x.Key}={x.Value}").ToList();
+                }
+
+                Assert.IsTrue(lines.SequenceEqual(comps));
+            }
+
+            Template("BigData.bin", "BigDataBase64.txt", true);
+            Template("BigData.bin", "BigDataBase64.txt", false);
+        }
+
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void SplitBase64_Decode()
+        {
+            EngineState s = EngineTests.CreateEngineState();
+
+            void Template(string binFileName, string encFileName, bool inMem)
+            {
+                string workDir = StringEscaper.Preprocess(s, Path.Combine("%TestBench%", "EncodedFile"));
+
+                // Be careful! encFile will be converted to LF from CRLF in git tree!
+                string binFile = Path.Combine(workDir, binFileName);
+                string encFile = Path.Combine(workDir, encFileName);
+
+                byte[] binDigest;
+                byte[] encDigest;
+                using (FileStream fs = new FileStream(binFile, FileMode.Open, FileAccess.Read))
+                {
+                    binDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+                }
+
+                List<string> lines = new List<string>();
+                using (StreamReader r = new StreamReader(encFile, Encoding.UTF8))
+                {
+                    string rawLine;
+                    while ((rawLine = r.ReadLine()) != null)
+                    {
+                        string line = rawLine.Trim();
+                        if (0 < line.Length)
+                            lines.Add(line);
+                    }
+                }
+
+                if (inMem)
+                {
+                    byte[] decoded = SplitBase64.DecodeInMem(lines);
+#if DEBUG_MIDDLE_FILE
+                    using (FileStream fs = new FileStream(binFile + ".inMem.comp", FileMode.Create, FileAccess.Write))
+                    {
+                        fs.Write(decoded, 0, decoded.Length);
+                    }
+#endif
+                    encDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, decoded);
+                }
+                else
+                {
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        SplitBase64.Decode(lines, ms);
+                        ms.Position = 0;
+#if DEBUG_MIDDLE_FILE
+                        using (FileStream fs = new FileStream(binFile + ".noMem.comp", FileMode.Create, FileAccess.Write))
+                        {
+                            ms.CopyTo(fs);
+                        }
+                        ms.Position = 0;
+#endif
+                        encDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+                    }
+                        
+                }
+
+                Assert.IsTrue(binDigest.SequenceEqual(encDigest));
+            }
+
+            Template("BigData.bin", "BigDataBase64.txt", true);
+            Template("BigData.bin", "BigDataBase64.txt", false);
+        }
+        #endregion
     }
 }
