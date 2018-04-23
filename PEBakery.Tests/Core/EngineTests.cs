@@ -78,23 +78,24 @@ namespace PEBakery.Tests.Core
         private static void NativeAssemblyInit()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string arch;
-            if (IntPtr.Size == 8)
-                arch = "x64";
-            else
-                arch = "x86";
+            string arch = IntPtr.Size == 8 ? "x64" : "x86";
 
-            string ZLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
-            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(ZLibDllPath);
-
-            string WimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
-            ManagedWimLib.Wim.GlobalInit(WimLibDllPath);
+            string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
+            string wimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
+            Joveler.ZLibWrapper.ZLibNative.AssemblyInit(zLibDllPath);
+            ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
+            PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
         }
 
         [AssemblyCleanup]
-        public static void FinalizeTests()
+        public static void AssemblyCleanup()
         {
             Logger.DB.Close();
+
+            Joveler.ZLibWrapper.ZLibNative.AssemblyCleanup();
+            ManagedWimLib.Wim.GlobalCleanup();
+            PEBakery.XZLib.XZStream.GlobalCleanup();
         }
         #endregion
 

@@ -255,6 +255,43 @@ namespace PEBakery.Tests.Core
         }
         #endregion
 
+        #region ExtractFileInMem
+        [TestMethod]
+        [TestCategory("EncodedFile")]
+        public void EncodedFile_ExtractFileInMem()
+        {
+            ExtractFileInMem_Template("Type1.jpg"); // Type 1
+            ExtractFileInMem_Template("Type2.7z"); // Type 2
+            ExtractFileInMem_Template("Type3.pdf"); // Type 3
+        }
+
+        public void ExtractFileInMem_Template(string fileName)
+        { // Type 1
+            EngineState s = EngineTests.CreateEngineState();
+            string scPath = Path.Combine("%TestBench%", "EncodedFile", "ExtractFileTests.script");
+            scPath = StringEscaper.Preprocess(s, scPath);
+            Script sc = s.Project.LoadScriptMonkeyPatch(scPath);
+
+            byte[] extractDigest;
+            using (MemoryStream ms = EncodedFile.ExtractFileInMem(sc, "FolderExample", fileName))
+            {
+                ms.Position = 0;
+                extractDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, ms);
+            }
+
+            string originFile = Path.Combine("%TestBench%", "EncodedFile", fileName);
+            originFile = StringEscaper.Preprocess(s, originFile);
+            byte[] originDigest;
+            using (FileStream fs = new FileStream(originFile, FileMode.Open))
+            {
+                originDigest = HashHelper.CalcHash(HashHelper.HashType.SHA256, fs);
+            }
+
+            // Compare Hash
+            Assert.IsTrue(originDigest.SequenceEqual(extractDigest));
+        }
+        #endregion
+
         #region ExtractFolder
         [TestMethod]
         [TestCategory("EncodedFile")]

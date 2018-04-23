@@ -26,6 +26,7 @@
 */
 
 #define ENABLE_XZ
+#define DEBUG_MIDDLE_FILE
 
 using Joveler.ZLibWrapper;
 using PEBakery.Exceptions;
@@ -44,8 +45,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using XZ.NET;
-using SharpCompress.Compressors.Xz;
+using PEBakery.XZLib;
 
 namespace PEBakery.Core
 {
@@ -303,6 +303,19 @@ namespace PEBakery.Core
 
             List<string> encoded = sc.Sections[section].GetLinesOnce();
             return Decode(encoded, outStream);
+        }
+
+        public static MemoryStream ExtractFileInMem(Script sc, string folderName, string fileName)
+        {
+            if (sc == null)
+                throw new ArgumentNullException(nameof(sc));
+
+            string section = GetSectionName(folderName, fileName);
+            if (!sc.Sections.ContainsKey(section))
+                throw new InvalidOperationException($"[{folderName}\\{fileName}] does not exists in [{sc.RealPath}]");
+
+            List<string> encoded = sc.Sections[section].GetLinesOnce();
+            return DecodeInMemory(encoded);
         }
 
         public static void ExtractFolder(Script sc, string folderName, string destDir, bool overwrite = false)
@@ -821,8 +834,8 @@ namespace PEBakery.Core
 
         private static Script Encode(Script sc, string dirName, string fileName, Stream inputStream, EncodeMode mode, bool encodeLogo)
         {
-            byte[] fileNameUTF8 = Encoding.UTF8.GetBytes(fileName);
-            if (fileNameUTF8.Length == 0 || 512 <= fileNameUTF8.Length)
+            byte[] fileNameUtf8 = Encoding.UTF8.GetBytes(fileName);
+            if (fileNameUtf8.Length == 0 || 512 <= fileNameUtf8.Length)
                 throw new InvalidOperationException("UTF8 encoded filename should be shorter than 512B");
             string section = $"EncodedFile-{dirName}-{fileName}";
 
@@ -882,8 +895,8 @@ namespace PEBakery.Core
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ:
-                            // XZ.Net library's multithread support is broken -> use singlethread
-                            using (XZOutputStream xzs = new XZOutputStream(encodeStream, 1, XZOutputStream.DefaultPreset, true))
+                            // Multithreading will take up too much memory, use singlethread instead.
+                            using (XZStream xzs = new XZStream(encodeStream, LzmaMode.Compress, XZStream.DefaultPreset, true))
                             {
                                 while ((readByte = inputStream.Read(buffer, 0, buffer.Length)) != 0)
                                 {
@@ -903,9 +916,9 @@ namespace PEBakery.Core
                     byte[] rawFooter = new byte[0x226]; // 0x550
                     {
                         // 0x000 - 0x1FF : Filename and its length
-                        rawFooter[0] = (byte)fileNameUTF8.Length;
-                        fileNameUTF8.CopyTo(rawFooter, 1);
-                        for (int i = 1 + fileNameUTF8.Length; i < 0x200; i++)
+                        rawFooter[0] = (byte)fileNameUtf8.Length;
+                        fileNameUtf8.CopyTo(rawFooter, 1);
+                        for (int i = 1 + fileNameUtf8.Length; i < 0x200; i++)
                             rawFooter[i] = 0; // Null Pad
                         // 0x200 - 0x207 : 8B -> Length of raw file, in little endian
                         BitConverter.GetBytes(inputLen).CopyTo(rawFooter, 0x200);
@@ -944,7 +957,7 @@ namespace PEBakery.Core
                                 break;
 #if ENABLE_XZ
                             case EncodeMode.XZ: // Type 3
-                                rawFooter[0x225] = (byte)XZOutputStream.DefaultPreset;
+                                rawFooter[0x225] = (byte)XZStream.DefaultPreset;
                                 break;
 #endif
                             default:
@@ -1202,8 +1215,7 @@ namespace PEBakery.Core
                                 compStream.Flush();
                                 compStream.Position = 0;
 
-                                // XZ.Net's decompression is unreliable, use SharpCompress
-                                using (XZStream xzs = new XZStream(compStream))
+                                using (XZStream xzs = new XZStream(compStream, LzmaMode.Decompress, true))
                                 {
                                     while ((readByte = xzs.Read(buffer, 0, buffer.Length)) != 0)
                                     {
@@ -1312,7 +1324,7 @@ namespace PEBakery.Core
                         if (compressedBodyLen2 == 0 || 
                             compressedBodyLen2 != compressedBodyLen)
                             throw new InvalidOperationException("Encoded file is corrupted: compMode");
-                        if (compLevel < 1 || 9 < compLevel)
+                        if (9 < compLevel)
                             throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                     }
                     break;
@@ -1343,7 +1355,7 @@ namespace PEBakery.Core
                 case EncodeMode.XZ: // Type 3, LZMA
                     {
                         using (MemoryStream ms = new MemoryStream(decoded, 0, compressedBodyLen))
-                        using (XZInputStream xzs = new XZInputStream(ms))
+                        using (XZStream xzs = new XZStream(ms, LzmaMode.Decompress))
                         {
                             xzs.CopyTo(rawBodyStream);
                         }
@@ -1438,7 +1450,7 @@ namespace PEBakery.Core
                             break;
 #if ENABLE_XZ
                         case EncodeMode.XZ: // Type 3, LZMA
-                            if (compLevel < 1 || 9 < compLevel)
+                            if (9 < compLevel)
                                 throw new InvalidOperationException("Encoded file is corrupted: compLevel");
                             break;
 #endif

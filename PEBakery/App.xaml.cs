@@ -40,8 +40,10 @@ namespace PEBakery
 
             string zLibDllPath = Path.Combine(baseDir, arch, "zlibwapi.dll");
             string wimLibDllPath = Path.Combine(baseDir, arch, "libwim-15.dll");
+            string xzDllPath = Path.Combine(baseDir, arch, "liblzma.dll");
             Joveler.ZLibWrapper.ZLibNative.AssemblyInit(zLibDllPath);
             ManagedWimLib.Wim.GlobalInit(wimLibDllPath);
+            PEBakery.XZLib.XZStream.GlobalInit(xzDllPath);
         }
 
     }

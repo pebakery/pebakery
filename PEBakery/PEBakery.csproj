@@ -145,9 +145,6 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="XZ.NET">
-      <HintPath>..\XZNet20\XZ.NET.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -342,9 +339,9 @@
       <Project>{3c311891-f34a-45df-ac6f-1caf4f3ff33c}</Project>
       <Name>PEBakery.TreeLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\XZNet20\XZNet20.csproj">
-      <Project>{98ccec3e-79f8-40d3-9ea9-a4b35aa5405d}</Project>
-      <Name>XZNet20</Name>
+    <ProjectReference Include="..\PEBakery.XZLib\PEBakery.XZLib.csproj">
+      <Project>{b46ceb16-a610-4439-ac30-fd971e93a1d0}</Project>
+      <Name>PEBakery.XZLib</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
