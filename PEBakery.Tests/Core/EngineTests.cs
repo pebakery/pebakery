@@ -73,6 +73,9 @@ namespace PEBakery.Tests.Core
             Logger.DebugLevel = DebugLevel.PrintExceptionStackTrace;
             Logger = new Logger(":memory:");
             Logger.SystemWrite(new LogInfo(LogState.Info, "PEBakery.Tests launched"));
+
+            App.Logger = Logger;
+            App.BaseDir = BaseDir;
         }
 
         private static void NativeAssemblyInit()

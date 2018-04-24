@@ -456,6 +456,8 @@ namespace PEBakery.Tests.Core
 
             Template("BigData.bin", "BigDataBase64.txt", true);
             Template("BigData.bin", "BigDataBase64.txt", false);
+            Template("Type3.pdf", "Type3Base64.txt", true);
+            Template("Type3.pdf", "Type3Base64.txt", false);
         }
 
         [TestMethod]
@@ -525,6 +527,8 @@ namespace PEBakery.Tests.Core
 
             Template("BigData.bin", "BigDataBase64.txt", true);
             Template("BigData.bin", "BigDataBase64.txt", false);
+            Template("Type3.pdf", "Type3Base64.txt", true);
+            Template("Type3.pdf", "Type3Base64.txt", false);
         }
         #endregion
     }
